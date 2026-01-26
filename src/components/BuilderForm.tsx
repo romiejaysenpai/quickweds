@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 
 const STEPS = [
@@ -151,7 +153,6 @@ export default function BuilderForm() {
                     setPreviews({
                         heroImage: parsed.hero_image_preview || null,
                         couplePhoto: parsed.couple_photo_preview || null,
-                        giftQr: null,
                     });
                 }
                 // Remove it so it doesn't persist on fresh starts
@@ -211,34 +212,12 @@ export default function BuilderForm() {
             // 1. Generate ID client-side
             const weddingId = uuidv4().slice(0, 8);
 
-            // 2. Helper for Direct Upload via Signed URL
+            // 2. Helper for Direct Upload
             const uploadToFirebase = async (file: File, folder: string) => {
-                // Get Signed URL
-                const resSign = await fetch('/api/upload', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fileName: file.name,
-                        fileType: file.type,
-                        userId: user.uid,
-                        weddingId: weddingId,
-                        folder: folder
-                    }),
-                });
-
-                const dataSign = await resSign.json();
-                if (!dataSign.success) throw new Error(dataSign.error || 'Failed to get upload authorization');
-
-                // Direct PUT upload to Google Cloud Storage
-                const resUpload = await fetch(dataSign.uploadUrl, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': file.type },
-                    body: file,
-                });
-
-                if (!resUpload.ok) throw new Error('Direct upload failed');
-
-                return dataSign.publicUrl;
+                const filename = `${folder}-${file.name.replace(/\s+/g, '_')}`;
+                const storageRef = ref(storage, `quickweds/${user.uid}/${weddingId}/${filename}`);
+                await uploadBytes(storageRef, file);
+                return await getDownloadURL(storageRef);
             };
 
             // 3. Upload Media Directly (Bypasses Vercel Limit)
@@ -276,15 +255,34 @@ export default function BuilderForm() {
                 body: JSON.stringify(payload),
             });
 
+            // Handle potential non-JSON responses (e.g., HTML error pages)
+            const contentType = res.headers.get('content-type');
+            if (!res.ok) {
+                let errorMessage = `Server error (${res.status})`;
+                try {
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await res.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } else {
+                        const text = await res.text();
+                        console.error('Non-JSON Error Response:', text.slice(0, 500));
+                        errorMessage = `Server returned an unexpected response (${res.status})`;
+                    }
+                } catch (e) {
+                    console.error('Error parsing server response:', e);
+                }
+                throw new Error(errorMessage);
+            }
+
             const data = await res.json();
             if (data.success) {
                 router.push(`/dashboard/${data.id}?created=true`);
             } else {
-                alert('Server Error: ' + data.error);
+                throw new Error(data.error || 'Unknown server error');
             }
         } catch (err: any) {
             console.error('Submission error:', err);
-            alert('Error: ' + (err.message || 'Could not complete the upload.'));
+            alert('Error creating invitation: ' + (err.message || 'Could not complete the request. Please check your connection.'));
         } finally {
             setIsSubmitting(false);
         }

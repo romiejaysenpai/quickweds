@@ -18,6 +18,7 @@ if (!getApps().length) {
     if (serviceAccountVar) {
         // Method 1: All-in-one JSON (Easiest & Safest)
         try {
+            console.log("Firebase Admin: Initializing with SERVICE_ACCOUNT JSON");
             // Clean common Vercel/Copy-Paste issues
             const cleanedJson = serviceAccountVar
                 .trim()
@@ -33,6 +34,7 @@ if (!getApps().length) {
         }
     } else if (clientEmail && privateKey) {
         // Method 2: Individual variables
+        console.log("Firebase Admin: Initializing with Individual Credentials");
         const cleanedKey = privateKey
             .trim()
             .replace(/^['"]|['"]$/g, '')
@@ -48,6 +50,7 @@ if (!getApps().length) {
         });
     } else {
         // Fallback for local dev
+        console.log("Firebase Admin: Initializing with Default/Fallback Project ID:", firebaseAdminConfig.projectId);
         initializeApp({
             projectId: firebaseAdminConfig.projectId,
             storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${firebaseAdminConfig.projectId}.firebasestorage.app`
