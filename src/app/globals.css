@@ -172,3 +172,40 @@ h6 {
   outline: 2px solid var(--primary);
   outline-offset: 4px;
 }
+
+/* Premium Enhancements */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.premium-gradient {
+  background: radial-gradient(circle at 0% 0%, var(--primary) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, var(--secondary) 0%, transparent 50%);
+}
+
+.glossy {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px 0 rgba(192, 128, 129, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

@@ -10,11 +10,12 @@ async function getWeddingData(id: string) {
 
     const rsvpSnapshot = await db.collection(APP_COLLECTIONS.RSVPS)
         .where('wedding_id', '==', id)
-        .orderBy('created_at', 'desc')
         .get();
 
     const wedding = weddingDoc.data();
-    const rsvps = rsvpSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const rsvps = rsvpSnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     return { wedding, rsvps };
 }
@@ -27,8 +28,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
 
     const { wedding, rsvps } = data as any;
 
-    // In production, you would use a real domain or environment variable
-    const domain = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    // In production, fallback to the real URL instead of localhost
+    const domain = process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app';
     const url = `${domain}/w/${wedding.id}`;
 
     const confirmedGuests = rsvps.filter((r: any) => r.attendance === 'Yes').reduce((acc: number, r: any) => acc + (r.num_guests || 1), 0);

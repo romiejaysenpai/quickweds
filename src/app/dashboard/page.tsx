@@ -24,14 +24,11 @@ export default function DashboardRedirect() {
         if (user) {
             const fetchWeddings = async () => {
                 try {
-                    const q = query(
-                        collection(db, APP_COLLECTIONS.WEDDINGS),
-                        where('user_id', '==', user.uid),
-                        orderBy('created_at', 'desc')
-                    );
-                    const querySnapshot = await getDocs(q);
-                    const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setWeddings(docs);
+                    const res = await fetch(`/api/user/weddings?userId=${user.uid}`);
+                    const data = await res.json();
+                    if (data.success) {
+                        setWeddings(data.weddings);
+                    }
                 } catch (err) {
                     console.error(err);
                 } finally {
@@ -98,20 +95,35 @@ export default function DashboardRedirect() {
                                             <Heart className="w-20 h-20" />
                                         </div>
                                     )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent flex flex-end p-6">
-                                        <h3 className="text-white text-xl font-serif font-bold self-end">{wedding.bride_name} & {wedding.groom_name}</h3>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+                                        <div className="w-full">
+                                            <div className="flex justify-between items-end">
+                                                <h3 className="text-white text-xl font-serif font-bold">{wedding.bride_name} & {wedding.groom_name}</h3>
+                                                <div className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-lg text-white text-[10px] font-bold uppercase tracking-widest border border-white/20">
+                                                    {wedding.rsvp_count || 0} RSVPs
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="p-8 space-y-4">
-                                    <div className="flex items-center gap-3 text-sm text-text-secondary font-medium">
-                                        <Calendar className="w-4 h-4 text-accent" /> {wedding.wedding_date}
+                                <div className="p-8 space-y-6">
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3 text-sm text-text-secondary font-medium">
+                                            <Calendar className="w-4 h-4 text-primary/40" /> {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm text-text-secondary font-medium">
+                                            <MapPin className="w-4 h-4 text-primary/40" /> {wedding.venue_name}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-3 text-sm text-text-secondary font-medium">
-                                        <MapPin className="w-4 h-4 text-accent" /> {wedding.venue_name}
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Link href={`/w/${wedding.id}`} target="_blank" className="text-center py-3 rounded-xl border border-border text-foreground text-sm font-bold hover:bg-neutral transition-all">
+                                            View Page
+                                        </Link>
+                                        <Link href={`/dashboard/${wedding.id}`} className="text-center py-3 rounded-xl bg-primary text-white text-sm font-bold shadow-lg shadow-primary/10 hover:bg-primary-hover transition-all">
+                                            Manage
+                                        </Link>
                                     </div>
-                                    <Link href={`/dashboard/${wedding.id}`} className="block w-full text-center py-4 rounded-xl border border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all">
-                                        Manage RSVPs
-                                    </Link>
                                 </div>
                             </motion.div>
                         ))}

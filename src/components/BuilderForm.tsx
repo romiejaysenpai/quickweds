@@ -4,12 +4,16 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
 
 const STEPS = [
     { id: 'details', title: 'Details', icon: Heart },
     { id: 'templates', title: 'Layout', icon: Layout },
     { id: 'theme', title: 'Style', icon: Palette },
     { id: 'media', title: 'Media', icon: Camera },
+    { id: 'gifts', title: 'Gifts', icon: Heart }, // New Step
     { id: 'rsvp', title: 'RSVP', icon: Calendar },
 ];
 
@@ -56,7 +60,14 @@ const TEMPLATES = [
     { id: 'royal', name: 'Royal Grandeur', desc: 'Ornate details and traditional, majestic styling.', icon: '👑' },
     { id: 'whimsical', name: 'Whimsical Garden', desc: 'Playful animations and soft, watercolor elements.', icon: '🌸' },
     { id: 'urban', name: 'Industrial Urban', desc: 'Raw textures and modern, edgy monospaced fonts.', icon: '🏙️' },
-    { id: 'tropical', name: 'Tropical Paradise', desc: 'Vibrant accents and lush, exotic design elements.', icon: '🏝️' }
+    { id: 'tropical', name: 'Tropical Paradise', desc: 'Vibrant accents and lush, exotic design elements.', icon: '🏝️' },
+    { id: 'midnight', name: 'Midnight Luxury', desc: 'Premium dark aesthetic with gold foil accents.', icon: '🌑' },
+    { id: 'sakura', name: 'Sakura Blossom', desc: 'Soft pinks, cherry blossoms, and gentle floating petals.', icon: '🌸' },
+    { id: 'vogue', name: 'High Fashion', desc: 'Bold typography, asymmetrical layouts, and editorial chic.', icon: '👠' },
+    { id: 'rustic', name: 'Rustic Charm', desc: 'Warm wood textures, string lights, and cozy vibes.', icon: '🪵' },
+    { id: 'film', name: 'Retro Film', desc: 'Analog photography aesthetic with grain and film borders.', icon: '🎞️' },
+    { id: 'glitch', name: 'Cyber Glitch', desc: 'Modern digital art style with chromatic aberration.', icon: '👾' },
+    { id: 'garden', name: 'Secret Garden', desc: 'Lush greenery, trellis patterns, and botanical elegance.', icon: '🍃' }
 ];
 
 import { useAuth } from '@/context/AuthContext';
@@ -91,26 +102,33 @@ export default function BuilderForm() {
         hashtag: '',
         contactPerson: '',
         rsvpDeadline: '',
+        giftBank: '',
+        giftAccountName: '',
+        giftAccountNumber: '',
     });
 
     const [mediaFiles, setMediaFiles] = useState<{
         heroImage: File | null;
         couplePhoto: File | null;
         teaserVideo: File | null;
+        giftQr: File | null; // New File
         galleryImages: File[];
     }>({
         heroImage: null,
         couplePhoto: null,
         teaserVideo: null,
+        giftQr: null,
         galleryImages: [],
     });
 
     const [previews, setPreviews] = useState<{
         heroImage: string | null;
         couplePhoto: string | null;
+        giftQr: string | null;
     }>({
         heroImage: null,
         couplePhoto: null,
+        giftQr: null,
     });
 
     useEffect(() => {
@@ -163,7 +181,7 @@ export default function BuilderForm() {
             const file = files[0];
             setMediaFiles(prev => ({ ...prev, [field]: file }));
 
-            if (field === 'heroImage' || field === 'couplePhoto') {
+            if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr') {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     setPreviews(prev => ({ ...prev, [field]: reader.result as string }));
@@ -189,33 +207,63 @@ export default function BuilderForm() {
 
         setIsSubmitting(true);
         if (!user) return;
-        try {
-            const finalData = new FormData();
-            finalData.append('userId', user.uid);
-            Object.entries(formData).forEach(([key, value]) => {
-                finalData.append(key, value);
-            });
 
-            if (mediaFiles.heroImage) finalData.append('heroImage', mediaFiles.heroImage);
-            if (mediaFiles.couplePhoto) finalData.append('couplePhoto', mediaFiles.couplePhoto);
-            if (mediaFiles.teaserVideo) finalData.append('teaserVideo', mediaFiles.teaserVideo);
-            mediaFiles.galleryImages.forEach((file) => {
-                finalData.append('galleryImages', file);
-            });
+        try {
+            // 1. Generate ID client-side
+            const weddingId = uuidv4().slice(0, 8);
+
+            // 2. Helper for Direct Upload
+            const uploadToFirebase = async (file: File, folder: string) => {
+                const filename = `${folder}-${file.name.replace(/\s+/g, '_')}`;
+                const storageRef = ref(storage, `quickweds/${user.uid}/${weddingId}/${filename}`);
+                await uploadBytes(storageRef, file);
+                return await getDownloadURL(storageRef);
+            };
+
+            // 3. Upload Media Directly (Bypasses Vercel Limit)
+            let heroUrl = null;
+            let coupleUrl = null;
+            let videoUrl = null;
+            let giftQrUrl = null;
+            const galleryUrls: string[] = [];
+
+            if (mediaFiles.heroImage) heroUrl = await uploadToFirebase(mediaFiles.heroImage, 'hero');
+            if (mediaFiles.couplePhoto) coupleUrl = await uploadToFirebase(mediaFiles.couplePhoto, 'couple');
+            if (mediaFiles.teaserVideo) videoUrl = await uploadToFirebase(mediaFiles.teaserVideo, 'teaser');
+            if (mediaFiles.giftQr) giftQrUrl = await uploadToFirebase(mediaFiles.giftQr, 'gift-qr');
+
+            for (let i = 0; i < mediaFiles.galleryImages.length; i++) {
+                const url = await uploadToFirebase(mediaFiles.galleryImages[i], `gallery-${i}`);
+                galleryUrls.push(url);
+            }
+
+            // 4. Send Metadata to API
+            const payload = {
+                id: weddingId,
+                userId: user.uid,
+                ...formData,
+                heroImage: heroUrl,
+                couplePhoto: coupleUrl,
+                teaserVideo: videoUrl,
+                giftQrImage: giftQrUrl,
+                galleryImages: galleryUrls
+            };
 
             const res = await fetch('/api/weddings', {
                 method: 'POST',
-                body: finalData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
             });
+
             const data = await res.json();
             if (data.success) {
                 router.push(`/dashboard/${data.id}?created=true`);
             } else {
-                alert('Error: ' + data.error);
+                alert('Server Error: ' + data.error);
             }
-        } catch (err) {
-            console.error(err);
-            alert('Something went wrong. Please try again.');
+        } catch (err: any) {
+            console.error('Submission error:', err);
+            alert('Error: ' + (err.message || 'Could not complete the upload.'));
         } finally {
             setIsSubmitting(false);
         }
@@ -450,6 +498,53 @@ export default function BuilderForm() {
 
                             {currentStep === 4 && (
                                 <div className="space-y-6">
+                                    <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10">
+                                        <h3 className="text-lg font-serif font-bold text-primary mb-4 flex items-center gap-2">
+                                            <Heart className="w-5 h-5" /> Gift Registry / Cash Fund
+                                        </h3>
+                                        <p className="text-xs text-text-secondary mb-6">
+                                            Optional: Make it easy for guests to send cash gifts by providing your GCash or Bank details.
+                                        </p>
+
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Bank / App Name</label>
+                                                    <input name="giftBank" value={formData.giftBank} onChange={handleChange} placeholder="GCash / BDO" className="w-full px-4 py-3 rounded-xl border border-border bg-white outline-none focus:border-primary transition-all placeholder:text-text-secondary/30" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Number</label>
+                                                    <input name="giftAccountNumber" value={formData.giftAccountNumber} onChange={handleChange} placeholder="0917 123 4567" className="w-full px-4 py-3 rounded-xl border border-border bg-white outline-none focus:border-primary transition-all placeholder:text-text-secondary/30" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Name</label>
+                                                <input name="giftAccountName" value={formData.giftAccountName} onChange={handleChange} placeholder="Juana Dela Cruz" className="w-full px-4 py-3 rounded-xl border border-border bg-white outline-none focus:border-primary transition-all placeholder:text-text-secondary/30" />
+                                            </div>
+
+                                            <div className="space-y-2 pt-2">
+                                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Upload QR Code</label>
+                                                <div className="relative h-48 rounded-2xl border-2 border-dashed border-border bg-white flex flex-col items-center justify-center overflow-hidden hover:border-primary/50 transition-all group">
+                                                    {previews.giftQr ? (
+                                                        <img src={previews.giftQr} alt="QR Code" className="h-full w-auto object-contain" />
+                                                    ) : (
+                                                        <>
+                                                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                                                <ImageIcon className="w-6 h-6 text-primary" />
+                                                            </div>
+                                                            <span className="text-xs text-text-secondary/60 font-bold uppercase tracking-wider text-center">Tap to upload QR</span>
+                                                        </>
+                                                    )}
+                                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'giftQr')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {currentStep === 5 && (
+                                <div className="space-y-6">
                                     <div className="space-y-2">
                                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">RSVP Deadline</label>
                                         <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all" />
@@ -491,7 +586,7 @@ export default function BuilderForm() {
                     </div>
                 </form>
             </div>
-        </div>
+        </div >
     );
 }
 
