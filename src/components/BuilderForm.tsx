@@ -211,22 +211,34 @@ export default function BuilderForm() {
             // 1. Generate ID client-side
             const weddingId = uuidv4().slice(0, 8);
 
-            // 2. Helper for Backend Upload
+            // 2. Helper for Direct Upload via Signed URL
             const uploadToFirebase = async (file: File, folder: string) => {
-                const formDataUpload = new FormData();
-                formDataUpload.append('file', file);
-                formDataUpload.append('userId', user.uid);
-                formDataUpload.append('weddingId', weddingId);
-                formDataUpload.append('folder', folder);
-
-                const resUpload = await fetch('/api/upload', {
+                // Get Signed URL
+                const resSign = await fetch('/api/upload', {
                     method: 'POST',
-                    body: formDataUpload,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        fileType: file.type,
+                        userId: user.uid,
+                        weddingId: weddingId,
+                        folder: folder
+                    }),
                 });
 
-                const dataUpload = await resUpload.json();
-                if (!dataUpload.success) throw new Error(dataUpload.error || 'Upload failed');
-                return dataUpload.url;
+                const dataSign = await resSign.json();
+                if (!dataSign.success) throw new Error(dataSign.error || 'Failed to get upload authorization');
+
+                // Direct PUT upload to Google Cloud Storage
+                const resUpload = await fetch(dataSign.uploadUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': file.type },
+                    body: file,
+                });
+
+                if (!resUpload.ok) throw new Error('Direct upload failed');
+
+                return dataSign.publicUrl;
             };
 
             // 3. Upload Media Directly (Bypasses Vercel Limit)
