@@ -12,20 +12,23 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// --- Safety Guard for Build Time ---
-// During Next.js build time (prerendering), environment variables might be missing.
-// Firebase SDK throws 'auth/invalid-api-key' if apiKey is undefined.
+const isServer = typeof window === 'undefined';
 const isConfigValid = !!firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined';
 
-if (!isConfigValid && typeof window === 'undefined') {
-    console.warn("⚠️ Firebase API Key is missing. This is normal during build time if not provided, but will cause issues at runtime if not set in Vercel.");
-}
-
 // Initialize Firebase
-// We provide a dummy key during build time if missing to prevent 'invalid-api-key' from crashing the build
 const app = getApps().length === 0
-    ? initializeApp(isConfigValid ? firebaseConfig : { ...firebaseConfig, apiKey: "AIza-Placeholder-For-Build" })
+    ? initializeApp(
+        isConfigValid
+            ? firebaseConfig
+            : (isServer
+                ? { ...firebaseConfig, apiKey: "AIza-Build-Time-Only" }
+                : firebaseConfig)
+    )
     : getApp();
+
+if (!isConfigValid && !isServer) {
+    console.error("❌ Firebase API Key is missing! Check your Vercel/Local environment variables.");
+}
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);

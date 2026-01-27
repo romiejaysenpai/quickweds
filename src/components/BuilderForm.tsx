@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Clock } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -14,9 +14,7 @@ const STEPS = [
     { id: 'details', title: 'Details', icon: Heart },
     { id: 'templates', title: 'Layout', icon: Layout },
     { id: 'theme', title: 'Style', icon: Palette },
-    { id: 'logo', title: 'Logo', icon: CheckCircle2 },
     { id: 'media', title: 'Media', icon: Camera },
-    { id: 'program', title: 'Program', icon: Clock },
     { id: 'gifts', title: 'Gifts', icon: Heart },
     { id: 'rsvp', title: 'RSVP', icon: Calendar },
 ];
@@ -73,7 +71,6 @@ const TEMPLATES = [
 ];
 
 export default function BuilderForm() {
-    const searchParams = useSearchParams();
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
     const [currentStep, setCurrentStep] = useState(0);
@@ -91,8 +88,7 @@ export default function BuilderForm() {
         fontStyle: 'Elegant',
         backgroundStyle: 'gradient',
         template: 'classic',
-        dressCodeSponsors: '',
-        dressCodeGuests: '',
+        dressCode: '',
         programTimeline: '',
         story: '',
         quote: '',
@@ -102,12 +98,6 @@ export default function BuilderForm() {
         giftBank: '',
         giftAccountName: '',
         giftAccountNumber: '',
-        entourage: [{ role: 'Principal Sponsor', name: '' }],
-        faqs: [{ question: '', answer: '' }],
-        logoInitials: '',
-        logoFont: 'Elegant',
-        logoShape: 'minimal',
-        logoColor: '#C08081',
     });
 
     const [mediaFiles, setMediaFiles] = useState<{
@@ -139,17 +129,6 @@ export default function BuilderForm() {
             router.push('/login');
         }
     }, [user, authLoading, router]);
-
-    useEffect(() => {
-        if (formData.brideName || formData.groomName) {
-            const b = formData.brideName.charAt(0) || '';
-            const g = formData.groomName.charAt(0) || '';
-            setFormData(prev => ({
-                ...prev,
-                logoInitials: `${b}${g}`.toUpperCase()
-            }));
-        }
-    }, [formData.brideName, formData.groomName]);
 
     const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
     const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
@@ -184,46 +163,6 @@ export default function BuilderForm() {
             ...prev,
             galleryImages: prev.galleryImages.filter((_, i) => i !== index)
         }));
-    };
-
-    const addEntourage = () => {
-        setFormData(prev => ({
-            ...prev,
-            entourage: [...prev.entourage, { role: '', name: '' }]
-        }));
-    };
-
-    const removeEntourage = (index: number) => {
-        setFormData(prev => ({
-            ...prev,
-            entourage: prev.entourage.filter((_, i) => i !== index)
-        }));
-    };
-
-    const handleEntourageChange = (index: number, field: 'role' | 'name', value: string) => {
-        const newEntourage = [...formData.entourage];
-        newEntourage[index][field] = value;
-        setFormData(prev => ({ ...prev, entourage: newEntourage }));
-    };
-
-    const addFaq = () => {
-        setFormData(prev => ({
-            ...prev,
-            faqs: [...prev.faqs, { question: '', answer: '' }]
-        }));
-    };
-
-    const removeFaq = (index: number) => {
-        setFormData(prev => ({
-            ...prev,
-            faqs: prev.faqs.filter((_, i) => i !== index)
-        }));
-    };
-
-    const handleFaqChange = (index: number, field: 'question' | 'answer', value: string) => {
-        const newFaqs = [...formData.faqs];
-        newFaqs[index][field] = value;
-        setFormData(prev => ({ ...prev, faqs: newFaqs }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -351,11 +290,7 @@ export default function BuilderForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Venue Address</label>
-                            <textarea required name="venueAddress" value={formData.venueAddress} onChange={handleChange} placeholder="123 Wedding Lane..." className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none h-20 resize-none" />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Google Maps Link (Optional)</label>
-                            <input name="mapsLink" value={formData.mapsLink} onChange={handleChange} placeholder="https://maps.google.com/..." className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none text-xs" />
+                            <textarea required name="venueAddress" value={formData.venueAddress} onChange={handleChange} placeholder="123 Wedding Lane..." className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none h-24 resize-none" />
                         </div>
                     </div>
                 );
@@ -394,7 +329,7 @@ export default function BuilderForm() {
                         <div className="space-y-4">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Typography & Fonts</label>
                             <div className="grid grid-cols-2 gap-3">
-                                {FONTS.map((font) => (
+                                {FONTS.slice(0, 10).map((font) => (
                                     <button key={font.id} type="button" onClick={() => setFormData(prev => ({ ...prev, fontStyle: font.id }))} className={`p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-1 ${formData.fontStyle === font.id ? 'border-primary bg-primary/5' : 'border-border bg-white hover:border-primary/30'}`}>
                                         <p className={`text-lg leading-none ${font.class}`}>{font.name}</p>
                                         <p className="text-[10px] text-text-secondary/70">{font.desc}</p>
@@ -413,54 +348,6 @@ export default function BuilderForm() {
                     </div>
                 );
             case 3:
-                return (
-                    <div className="space-y-8">
-                        <div className="flex flex-col items-center gap-6 p-10 bg-neutral/30 rounded-[3rem] border border-primary/10">
-                            <label className="text-xs uppercase tracking-[0.3em] font-black text-primary/50">Logo Preview</label>
-                            <div
-                                className={`w-32 h-32 flex items-center justify-center transition-all duration-500 overflow-hidden ${formData.logoShape === 'circle' ? 'rounded-full' : formData.logoShape === 'square' ? 'rounded-3xl' : 'rounded-none'}`}
-                                style={{ backgroundColor: formData.logoShape === 'minimal' ? 'transparent' : formData.logoColor, color: formData.logoShape === 'minimal' ? formData.logoColor : '#FFF', border: formData.logoShape === 'minimal' ? `2px solid ${formData.logoColor}` : 'none' }}
-                            >
-                                <span className={`text-4xl font-bold tracking-tighter ${FONTS.find(f => f.id === formData.logoFont)?.class}`}>{formData.logoInitials}</span>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Initials</label>
-                            <input name="logoInitials" value={formData.logoInitials} onChange={handleChange} placeholder="S&J" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-3">
-                            {['circle', 'square', 'minimal'].map((shape) => (
-                                <button key={shape} type="button" onClick={() => setFormData(prev => ({ ...prev, logoShape: shape }))} className={`p-4 rounded-2xl border-2 capitalize font-bold text-xs transition-all ${formData.logoShape === shape ? 'border-primary bg-primary/5 text-primary' : 'border-border bg-white text-text-secondary'}`}>
-                                    {shape}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="space-y-4">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Logo Font</label>
-                            <div className="grid grid-cols-2 gap-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                                {FONTS.map((font) => (
-                                    <button key={font.id} type="button" onClick={() => setFormData(prev => ({ ...prev, logoFont: font.id }))} className={`p-3 rounded-xl border-2 transition-all text-left flex flex-col gap-1 ${formData.logoFont === font.id ? 'border-primary bg-primary/5' : 'border-border bg-white hover:border-primary/30'}`}>
-                                        <p className={`text-base leading-none ${font.class}`}>{font.name}</p>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Logo Color</label>
-                            <div className="flex gap-4">
-                                {[formData.motifColor, '#000000', '#FFFFFF', '#D6B87C', '#3A2A2D'].map((color) => (
-                                    <button key={color} type="button" onClick={() => setFormData(prev => ({ ...prev, logoColor: color }))} className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.logoColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral'}`} style={{ backgroundColor: color }} />
-                                ))}
-                                <input type="color" name="logoColor" value={formData.logoColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none" />
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 4:
                 return (
                     <div className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -498,39 +385,7 @@ export default function BuilderForm() {
                         </div>
                     </div>
                 );
-            case 5:
-                return (
-                    <div className="space-y-8 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                        <section className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary">Wedding Entourage</label>
-                                <button type="button" onClick={addEntourage} className="text-xs text-primary font-bold hover:underline">+ Add Member</button>
-                            </div>
-                            {formData.entourage.map((member, i) => (
-                                <div key={i} className="flex gap-2 items-start">
-                                    <input placeholder="Role (e.g. Best Man)" value={member.role} onChange={(e) => handleEntourageChange(i, 'role', e.target.value)} className="flex-1 px-3 py-2 rounded-lg border border-border bg-neutral focus:border-primary outline-none text-sm" />
-                                    <input placeholder="Name" value={member.name} onChange={(e) => handleEntourageChange(i, 'name', e.target.value)} className="flex-1 px-3 py-2 rounded-lg border border-border bg-neutral focus:border-primary outline-none text-sm" />
-                                    <button type="button" onClick={() => removeEntourage(i)} className="p-2 text-text-secondary/40 hover:text-red-500 transition-colors"><X className="w-4 h-4" /></button>
-                                </div>
-                            ))}
-                        </section>
-
-                        <section className="space-y-4 pt-4 border-t border-border">
-                            <div className="flex justify-between items-center">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary">Expected Questions (FAQs)</label>
-                                <button type="button" onClick={addFaq} className="text-xs text-primary font-bold hover:underline">+ Add FAQ</button>
-                            </div>
-                            {formData.faqs.map((faq, i) => (
-                                <div key={i} className="space-y-2 p-4 border border-border rounded-xl bg-neutral/50 relative">
-                                    <button type="button" onClick={() => removeFaq(i)} className="absolute top-2 right-2 text-text-secondary/40 hover:text-red-500 transition-colors"><X className="w-4 h-4" /></button>
-                                    <input placeholder="Question" value={faq.question} onChange={(e) => handleFaqChange(i, 'question', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-border bg-white focus:border-primary outline-none text-sm" />
-                                    <textarea placeholder="Answer" value={faq.answer} onChange={(e) => handleFaqChange(i, 'answer', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-border bg-white focus:border-primary outline-none text-sm h-16 resize-none" />
-                                </div>
-                            ))}
-                        </section>
-                    </div>
-                );
-            case 6:
+            case 4:
                 return (
                     <div className="space-y-6">
                         <h3 className="text-lg font-serif font-bold text-primary mb-4 flex items-center gap-2"><Heart className="w-5 h-5" /> Gift Registry</h3>
@@ -557,26 +412,20 @@ export default function BuilderForm() {
                         </div>
                     </div>
                 );
-            case 7:
+            case 5:
                 return (
                     <div className="space-y-6">
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">RSVP Deadline</label>
                             <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-border" />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Dress Code (Sponsors)</label>
-                                <input name="dressCodeSponsors" value={formData.dressCodeSponsors} onChange={handleChange} placeholder="Principal Sponsors" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Dress Code (Guests)</label>
-                                <input name="dressCodeGuests" value={formData.dressCodeGuests} onChange={handleChange} placeholder="All Guests" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                            </div>
+                        <div className="space-y-2">
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Dress Code</label>
+                            <input name="dressCode" value={formData.dressCode} onChange={handleChange} placeholder="Formal" className="w-full px-4 py-3 rounded-xl border border-border" />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Contact Person</label>
-                            <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                            <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border" />
                         </div>
                     </div>
                 );
