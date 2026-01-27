@@ -24,7 +24,8 @@ export async function POST(req: Request) {
             motif_color: body.motifColor || '#C08081',
             font_style: body.fontStyle || 'Elegant',
             background_style: body.backgroundStyle || 'gradient',
-            dress_code: body.dressCode || '',
+            dress_code_sponsors: body.dressCodeSponsors || '',
+            dress_code_guests: body.dressCodeGuests || '',
             program_timeline: body.programTimeline || '',
             story: body.story || '',
             contact_person: body.contactPerson || '',
@@ -33,6 +34,8 @@ export async function POST(req: Request) {
             couple_photo: body.couplePhoto || null,
             teaser_video: body.teaserVideo || null,
             gallery_images: JSON.stringify(body.galleryImages || []),
+            entourage: JSON.stringify(body.entourage || []),
+            faqs: JSON.stringify(body.faqs || []),
             template: body.template || 'classic',
             quote: body.quote || '',
             hashtag: body.hashtag || '',
@@ -40,6 +43,10 @@ export async function POST(req: Request) {
             gift_account_name: body.giftAccountName || '',
             gift_account_number: body.giftAccountNumber || '',
             gift_qr_image: body.giftQrImage || null,
+            logo_initials: body.logoInitials || '',
+            logo_font: body.logoFont || 'Elegant',
+            logo_shape: body.logoShape || 'minimal',
+            logo_color: body.logoColor || '#C08081',
             created_at: new Date().toISOString()
         };
 
