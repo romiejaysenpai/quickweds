@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, use } from 'react';
 import { notFound } from 'next/navigation';
 import { Heart, Calendar, MapPin, Clock, Shirt, Info, MessageSquare, Send, Quote, Music, Camera, Sparkles } from 'lucide-react';
 import RSVPForm from '@/components/RSVPForm';
+import DecorativeLayer from '@/components/DecorativeLayer';
 import { motion } from 'framer-motion';
 
 export default function WeddingPage({ params }: { params: Promise<{ id: string }> }) {
@@ -143,11 +144,34 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             </Suspense>
 
             {/* Common Footer */}
-            <footer className="py-24 text-center border-t border-primary/10">
-                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Heart className="w-5 h-5 text-primary fill-primary" />
-                </div>
-                <p className="font-serif text-2xl text-[#4A4444] mb-2">{wedding.bride_name} & {wedding.groom_name}</p>
+            <footer className="py-12 md:py-24 px-6 text-center border-t border-primary/10">
+                {/* Monogram Logo */}
+                {wedding.logo_initials && (
+                    <div className="mb-8">
+                        <div
+                            className={`w-20 h-20 md:w-24 md:h-24 mx-auto flex items-center justify-center transition-all ${wedding.logo_shape === 'circle' ? 'rounded-full' :
+                                wedding.logo_shape === 'square' ? 'rounded-2xl' : ''
+                                } ${wedding.logo_shape !== 'minimal' ? 'border-2 bg-primary/5' : ''}`}
+                            style={{
+                                color: wedding.logo_color || wedding.motif_color,
+                                borderColor: wedding.logo_color || wedding.motif_color
+                            }}
+                        >
+                            <span className={`font-serif text-2xl md:text-3xl uppercase tracking-tighter`} style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>
+                                {wedding.logo_initials}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Fallback Heart Icon */}
+                {!wedding.logo_initials && (
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Heart className="w-5 h-5 text-primary fill-primary" />
+                    </div>
+                )}
+
+                <p className="font-serif text-xl md:text-2xl text-[#4A4444] mb-2">{wedding.bride_name} & {wedding.groom_name}</p>
                 {wedding.hashtag && (
                     <p className="text-primary font-bold tracking-[0.2em] text-xs uppercase mb-6 drop-shadow-sm">
                         #{wedding.hashtag}
@@ -165,32 +189,28 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
 function ClassicTemplate({ wedding, gallery, isExpired }: any) {
     return (
         <>
-            <section className="relative min-h-screen py-20 flex flex-col items-center justify-center text-center px-6">
+            <section className="relative min-h-screen py-12 md:py-20 flex flex-col items-center justify-center text-center px-6">
                 <div className="absolute inset-0 -z-10" style={{ background: wedding.hero_image ? `linear-gradient(to bottom, rgba(255,248,244,0.4), rgba(255,248,244,0.9)), url(${wedding.hero_image})` : `radial-gradient(circle at center, ${wedding.motif_color}44 0%, transparent 70%)`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
 
-                {/* Decorative Floral SVGs */}
-                <div className="absolute top-0 left-0 w-64 h-64 opacity-20 pointer-events-none translate-x-[-20%] translate-y-[-20%]">
-                    <svg viewBox="0 0 200 200" className="w-full h-full fill-primary"><path d="M40,60 C40,40 60,30 80,40 C100,20 120,20 140,40 C160,30 180,40 180,60 C180,100 100,180 100,180 C100,180 20,100 20,60" /></svg>
-                </div>
-                <div className="absolute bottom-0 right-0 w-64 h-64 opacity-20 pointer-events-none translate-x-[20%] translate-y-[20%] rotate-180">
-                    <svg viewBox="0 0 200 200" className="w-full h-full fill-primary"><path d="M40,60 C40,40 60,30 80,40 C100,20 120,20 140,40 C160,30 180,40 180,60 C180,100 100,180 100,180 C100,180 20,100 20,60" /></svg>
-                </div>
+                {/* Decorative Botanical Elements */}
+                <DecorativeLayer type="floral" position="top-left" color={wedding.motif_color || '#C08081'} opacity={0.15} />
+                <DecorativeLayer type="floral" position="bottom-right" color={wedding.motif_color || '#C08081'} opacity={0.15} />
 
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.2, ease: "easeOut" }}>
-                    <div className="mb-12 relative">
-                        <motion.div initial={{ rotate: -5 }} animate={{ rotate: 0 }} transition={{ duration: 1, delay: 0.5 }} className="w-56 h-72 border-[12px] border-white soft-shadow overflow-hidden mx-auto relative z-10">
+                    <div className="mb-8 md:mb-12 relative">
+                        <motion.div initial={{ rotate: -5 }} animate={{ rotate: 0 }} transition={{ duration: 1, delay: 0.5 }} className="w-48 h-64 md:w-56 md:h-72 border-8 md:border-[12px] border-white soft-shadow overflow-hidden mx-auto relative z-10">
                             <img src={wedding.couple_photo || '/placeholder.jpg'} alt="Wedding Couple" className="w-full h-full object-cover scale-110" />
                         </motion.div>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 border border-primary/20 rounded-full -z-0 animate-pulse" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-60 h-60 md:w-72 md:h-72 border border-primary/20 rounded-full -z-0 animate-pulse" />
                     </div>
-                    <p className="text-sm uppercase tracking-[0.8em] font-bold text-primary mb-6">The Wedding Celebration Of</p>
-                    <h1 className="text-6xl md:text-8xl font-serif text-[#4A4444] mb-8 leading-[0.9]">{wedding.bride_name} <br /><span className="text-3xl italic opacity-40">&</span><br /> {wedding.groom_name}</h1>
-                    <div className="flex items-center gap-6 justify-center mb-12">
-                        <div className="h-[1px] w-12 bg-primary/30" />
-                        <p className="text-2xl font-serif italic text-primary">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                        <div className="h-[1px] w-12 bg-primary/30" />
+                    <p className="text-xs md:text-sm uppercase tracking-[0.4em] md:tracking-[0.8em] font-bold text-primary mb-4 md:mb-6">The Wedding Celebration Of</p>
+                    <h1 className="text-5xl md:text-6xl lg:text-8xl font-serif text-[#4A4444] mb-6 md:mb-8 leading-[0.9]">{wedding.bride_name} <br /><span className="text-2xl md:text-3xl italic opacity-40">&</span><br /> {wedding.groom_name}</h1>
+                    <div className="flex items-center gap-4 md:gap-6 justify-center mb-8 md:mb-12">
+                        <div className="h-[1px] w-8 md:w-12 bg-primary/30" />
+                        <p className="text-lg md:text-2xl font-serif italic text-primary">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                        <div className="h-[1px] w-8 md:w-12 bg-primary/30" />
                     </div>
-                    <motion.a whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} href="#rsvp" className="px-12 py-5 rounded-full bg-primary text-white font-bold tracking-widest uppercase text-xs shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all">Secure Your Spot</motion.a>
+                    <motion.a whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} href="#rsvp" className="inline-block px-8 md:px-12 py-4 md:py-5 rounded-full bg-primary text-white font-bold tracking-widest uppercase text-xs shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all">Secure Your Spot</motion.a>
                 </motion.div>
             </section>
             <DetailsSection wedding={wedding} />
@@ -205,23 +225,25 @@ function ClassicTemplate({ wedding, gallery, isExpired }: any) {
 
 function MinimalTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="font-sans pb-24">
-            <section className="relative min-h-[100dvh] flex grid grid-cols-1 lg:grid-cols-2">
-                <div className="flex flex-col justify-center px-12 lg:px-24 border-r border-black/5">
+        <div className="font-sans pb-12 md:pb-24">
+            <section className="relative min-h-[100dvh] flex flex-col lg:grid lg:grid-cols-2">
+                <DecorativeLayer type="boho" position="top-right" color={wedding.motif_color || '#C08081'} opacity={0.1} className="hidden lg:block" />
+
+                <div className="flex flex-col justify-center px-6 md:px-12 lg:px-24 py-12 lg:py-0 lg:border-r border-black/5">
                     <motion.div initial={{ opacity: 0, x: -100 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}>
-                        <div className="mb-12 w-12 h-[2px] bg-primary" />
-                        <h1 className="text-[12vw] lg:text-[10vw] font-black text-[#4A4444] leading-[0.8] tracking-tighter mb-12 mix-blend-multiply">
+                        <div className="mb-8 md:mb-12 w-12 h-[2px] bg-primary" />
+                        <h1 className="text-[15vw] md:text-[12vw] lg:text-[10vw] font-black text-[#4A4444] leading-[0.8] tracking-tighter mb-8 md:mb-12 mix-blend-multiply">
                             {wedding.bride_name.split(' ')[0]}
                             <br /><span className="text-primary">+</span><br />
                             {wedding.groom_name.split(' ')[0]}
                         </h1>
-                        <div className="flex gap-12 items-baseline">
-                            <p className="text-xl tracking-tighter mb-12 font-bold opacity-30">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                            <a href="#rsvp" className="inline-block border-b-4 border-primary pb-2 font-black tracking-tighter hover:text-primary transition-all text-4xl">GO →</a>
+                        <div className="flex flex-col md:flex-row gap-6 md:gap-12 items-start md:items-baseline">
+                            <p className="text-lg md:text-xl tracking-tighter font-bold opacity-30">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                            <a href="#rsvp" className="inline-block border-b-4 border-primary pb-2 font-black tracking-tighter hover:text-primary transition-all text-3xl md:text-4xl">GO →</a>
                         </div>
                     </motion.div>
                 </div>
-                <div className="relative bg-neutral/30 group overflow-hidden">
+                <div className="relative bg-neutral/30 group overflow-hidden min-h-[50vh] lg:min-h-full">
                     <motion.img
                         initial={{ scale: 1.2, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
@@ -230,13 +252,13 @@ function MinimalTemplate({ wedding, gallery, isExpired }: any) {
                         className="absolute inset-0 w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-primary/10 mix-blend-overlay" />
-                    <div className="absolute bottom-12 right-12 text-white/40 text-[10vw] font-black leading-none pointer-events-none select-none">
+                    <div className="absolute bottom-6 md:bottom-12 right-6 md:right-12 text-white/40 text-[15vw] md:text-[10vw] font-black leading-none pointer-events-none select-none">
                         {new Date(wedding.wedding_date).getFullYear()}
                     </div>
                 </div>
             </section>
 
-            <div className="py-32 px-6 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-24">
+            <div className="py-16 md:py-32 px-6 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-24">
                 <MinimalDetailItem icon={Calendar} title="When" value={new Date(wedding.wedding_date).toLocaleDateString()} />
                 <MinimalDetailItem icon={MapPin} title="Where" value={wedding.venue_name} />
                 <MinimalDetailItem icon={Shirt} title="Wear" value={wedding.dress_code || 'Formal'} />
@@ -273,9 +295,11 @@ function VintageTemplate({ wedding, gallery, isExpired }: any) {
     return (
         <div className="bg-[#f4ead5] min-h-screen text-[#5d4037] relative">
             <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/handmade-paper.png')` }} />
+            <DecorativeLayer type="sakura" position="top-left" color="#5d4037" opacity={0.08} />
+            <DecorativeLayer type="sakura" position="bottom-right" color="#5d4037" opacity={0.08} />
 
-            <section className="py-32 px-6 text-center relative z-10">
-                <div className="absolute top-12 left-12 w-24 h-24 opacity-20 rotate-[-15deg] pointer-events-none">
+            <section className="py-16 md:py-32 px-6 text-center relative z-10">
+                <div className="absolute top-6 md:top-12 left-6 md:left-12 w-20 h-20 md:w-24 md:h-24 opacity-20 rotate-[-15deg] pointer-events-none">
                     <svg viewBox="0 0 100 100" className="fill-current"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="5,5" /><text x="50" y="45" textAnchor="middle" fontSize="10" fontWeight="bold">POSTED</text><text x="50" y="60" textAnchor="middle" fontSize="12" fontWeight="bold">{new Date(wedding.wedding_date).getFullYear()}</text></svg>
                 </div>
 
@@ -283,43 +307,43 @@ function VintageTemplate({ wedding, gallery, isExpired }: any) {
                     initial={{ opacity: 0, y: 50 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="max-w-4xl mx-auto border-[1px] border-[#5d4037]/30 p-16 relative bg-[#fdfaf3] soft-shadow"
+                    className="max-w-4xl mx-auto border-[1px] border-[#5d4037]/30 p-8 md:p-16 relative bg-[#fdfaf3] soft-shadow"
                 >
-                    <div className="absolute -top-6 -left-6 w-32 h-32 border-t-2 border-l-2 border-[#5d4037]/60" />
-                    <div className="absolute -bottom-6 -right-6 w-32 h-32 border-b-2 border-r-2 border-[#5d4037]/60" />
+                    <div className="absolute -top-4 -left-4 md:-top-6 md:-left-6 w-20 h-20 md:w-32 md:h-32 border-t-2 border-l-2 border-[#5d4037]/60" />
+                    <div className="absolute -bottom-4 -right-4 md:-bottom-6 md:-right-6 w-20 h-20 md:w-32 md:h-32 border-b-2 border-r-2 border-[#5d4037]/60" />
 
-                    <p className="font-serif italic text-3xl mb-8 opacity-60">Together with their families</p>
+                    <p className="font-serif italic text-xl md:text-3xl mb-6 md:mb-8 opacity-60">Together with their families</p>
                     <motion.h1
                         initial={{ letterSpacing: "0.2em", opacity: 0 }}
                         animate={{ letterSpacing: "-0.02em", opacity: 1 }}
                         transition={{ duration: 2 }}
-                        className="text-6xl md:text-[6rem] font-serif mb-8 tracking-tighter"
+                        className="text-4xl md:text-6xl lg:text-[6rem] font-serif mb-6 md:mb-8 tracking-tighter"
                     >
-                        {wedding.bride_name} <br /><span className="text-4xl italic serif text-primary">&</span> <br /> {wedding.groom_name}
+                        {wedding.bride_name} <br /><span className="text-2xl md:text-4xl italic serif text-primary">&</span> <br /> {wedding.groom_name}
                     </motion.h1>
-                    <p className="text-sm uppercase tracking-[0.5em] mb-16 font-bold opacity-40">Request the honor of your presence</p>
+                    <p className="text-xs md:text-sm uppercase tracking-[0.3em] md:tracking-[0.5em] mb-12 md:mb-16 font-bold opacity-40">Request the honor of your presence</p>
 
-                    <div className="flex justify-center items-center gap-8 mb-16">
+                    <div className="flex justify-center items-center gap-4 md:gap-8 mb-12 md:mb-16">
                         <div className="h-[1px] flex-1 bg-[#5d4037]/20" />
                         <div className="text-center">
-                            <p className="text-4xl font-serif italic mb-2">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { weekday: 'long' })}</p>
-                            <p className="text-xl tracking-widest">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                            <p className="text-2xl md:text-4xl font-serif italic mb-2">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { weekday: 'long' })}</p>
+                            <p className="text-base md:text-xl tracking-widest">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                         </div>
                         <div className="h-[1px] flex-1 bg-[#5d4037]/20" />
                     </div>
 
-                    <a href="#rsvp" className="inline-block px-16 py-4 border-2 border-[#5d4037] text-xs uppercase font-black tracking-[0.4em] hover:bg-[#5d4037] hover:text-[#f4ead5] transition-all duration-500">Confirm Attendance</a>
+                    <a href="#rsvp" className="inline-block px-10 md:px-16 py-3 md:py-4 border-2 border-[#5d4037] text-xs uppercase font-black tracking-[0.3em] md:tracking-[0.4em] hover:bg-[#5d4037] hover:text-[#f4ead5] transition-all duration-500">Confirm Attendance</a>
                 </motion.div>
             </section>
 
-            <section className="py-24 max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+            <section className="py-12 md:py-24 max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-24 items-center">
                 <motion.div initial={{ rotate: 2 }} whileInView={{ rotate: -2 }} className="p-4 bg-white shadow-2xl skew-y-1">
                     <img src={wedding.couple_photo || wedding.hero_image} alt="Wedding Scene" className="w-full grayscale brightness-90 contrast-125" />
                     <p className="mt-4 font-serif italic text-center opacity-40 italic">Captured in 35mm</p>
                 </motion.div>
-                <div className="space-y-12">
-                    <h2 className="text-5xl font-serif italic border-b border-[#5d4037]/10 pb-6 text-primary">Our Journey</h2>
-                    <p className="text-2xl font-serif leading-relaxed opacity-80 italic italic">
+                <div className="space-y-8 md:space-y-12">
+                    <h2 className="text-3xl md:text-5xl font-serif italic border-b border-[#5d4037]/10 pb-4 md:pb-6 text-primary">Our Journey</h2>
+                    <p className="text-lg md:text-2xl font-serif leading-relaxed opacity-80 italic italic">
                         {wedding.story || "A tale of two souls becoming one, captured in a lifetime of beautiful moments."}
                     </p>
                 </div>
@@ -340,27 +364,27 @@ function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
                 <svg width="100%" height="100%"><defs><pattern id="deco" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M50 0 L100 50 L50 100 L0 50 Z" fill="none" stroke="currentColor" strokeWidth="1" /><circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" strokeWidth="0.5" /></pattern></defs><rect width="100%" height="100%" fill="url(#deco)" /></svg>
             </div>
 
-            <section className="min-h-screen flex flex-col items-center justify-center p-6 py-24 text-center border-[2px] border-current m-4 md:m-12 relative z-10 art-deco-border">
+            <section className="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 py-16 md:py-24 text-center border-[2px] border-current m-2 md:m-4 lg:m-12 relative z-10 art-deco-border">
                 <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/20 pointer-events-none" />
-                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5, ease: "easeOut" }} className="relative px-8 py-16">
-                    <p className="text-xs tracking-[1em] font-black uppercase mb-12">The Union Of</p>
-                    <h1 className="text-6xl md:text-[9rem] font-serif uppercase mb-16 tracking-tighter leading-[0.85]">{wedding.bride_name} <br /><span className="text-2xl tracking-[0.5em] block my-8 opacity-60">and</span>{wedding.groom_name}</h1>
-                    <div className="flex gap-12 items-center justify-center mb-16">
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5, ease: "easeOut" }} className="relative px-4 md:px-8 py-12 md:py-16">
+                    <p className="text-xs tracking-[0.5em] md:tracking-[1em] font-black uppercase mb-8 md:mb-12">The Union Of</p>
+                    <h1 className="text-4xl md:text-6xl lg:text-[9rem] font-serif uppercase mb-12 md:mb-16 tracking-tighter leading-[0.85]">{wedding.bride_name} <br /><span className="text-xl md:text-2xl tracking-[0.3em] md:tracking-[0.5em] block my-6 md:my-8 opacity-60">and</span>{wedding.groom_name}</h1>
+                    <div className="flex gap-6 md:gap-12 items-center justify-center mb-12 md:mb-16">
                         <div className="h-[2px] flex-1 bg-current" />
-                        <p className="text-4xl tracking-[0.3em] font-serif">{new Date(wedding.wedding_date).getFullYear()}</p>
+                        <p className="text-2xl md:text-4xl tracking-[0.2em] md:tracking-[0.3em] font-serif">{new Date(wedding.wedding_date).getFullYear()}</p>
                         <div className="h-[2px] flex-1 bg-current" />
                     </div>
-                    <motion.a whileHover={{ scale: 1.1, backgroundColor: wedding.motif_color, color: "#000" }} href="#rsvp" className="px-20 py-5 border-2 border-current text-xs uppercase font-black tracking-[0.8em] transition-all duration-700 bg-transparent">Access The Gala</motion.a>
+                    <motion.a whileHover={{ scale: 1.1, backgroundColor: wedding.motif_color, color: "#000" }} href="#rsvp" className="inline-block px-10 md:px-20 py-4 md:py-5 border-2 border-current text-xs uppercase font-black tracking-[0.4em] md:tracking-[0.8em] transition-all duration-700 bg-transparent">Access The Gala</motion.a>
                 </motion.div>
             </section>
 
-            <div className="relative z-10 py-32"><DetailsSection wedding={wedding} invert /></div>
-            <section className="relative z-10 max-w-6xl mx-auto px-6 py-32 grid grid-cols-1 lg:grid-cols-2 gap-32 items-center text-current">
-                <div className="space-y-12">
-                    <h2 className="text-7xl font-serif uppercase italic tracking-tighter border-l-8 border-current pl-12">The Romance</h2>
-                    <p className="text-3xl font-serif leading-tight opacity-90">{wedding.story || "A tale of two souls becoming one."}</p>
+            <div className="relative z-10 py-16 md:py-32"><DetailsSection wedding={wedding} invert /></div>
+            <section className="relative z-10 max-w-6xl mx-auto px-6 py-16 md:py-32 grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-32 items-center text-current">
+                <div className="space-y-8 md:space-y-12">
+                    <h2 className="text-4xl md:text-7xl font-serif uppercase italic tracking-tighter border-l-4 md:border-l-8 border-current pl-6 md:pl-12">The Romance</h2>
+                    <p className="text-xl md:text-3xl font-serif leading-tight opacity-90">{wedding.story || "A tale of two souls becoming one."}</p>
                 </div>
-                <div className="aspect-[3/4] border-4 border-current p-4 relative">
+                <div className="aspect-[3/4] border-2 md:border-4 border-current p-2 md:p-4 relative">
                     <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover grayscale brightness-75 contrast-125 hover:grayscale-0 transition-all duration-1000" />
                 </div>
             </section>
@@ -374,29 +398,31 @@ function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
 
 function BohoTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="bg-[#f9f1e7] text-[#7d6b5d] relative pb-24">
+        <div className="bg-[#f9f1e7] text-[#7d6b5d] relative pb-12 md:pb-24">
             {/* Organic Floating Shapes */}
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 100, repeat: Infinity, ease: "linear" }} className="absolute -top-32 -left-32 w-96 h-96 opacity-10 pointer-events-none">
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 100, repeat: Infinity, ease: "linear" }} className="absolute -top-32 -left-32 w-96 h-96 opacity-10 pointer-events-none hidden md:block">
                 <svg viewBox="0 0 200 200" className="fill-primary"><path d="M44.7,-76.4C58.2,-69.2,69.8,-57.4,77.6,-43.8C85.4,-30.2,89.5,-15.1,88.4,-0.6C87.4,13.9,81.1,27.7,72.6,40.1C64.1,52.5,53.4,63.4,40.5,71.5C27.6,79.5,13.8,84.7,-0.8,86C-15.4,87.4,-30.7,85,-44.1,77.7C-57.5,70.3,-68.9,58,-76.7,44.1C-84.5,30.2,-88.7,14.6,-88.2,0.3C-87.7,-14.1,-82.5,-27.1,-74,-38.3C-65.5,-49.5,-53.7,-58.8,-40.8,-66.4C-27.9,-73.9,-13.9,-79.8,0.4,-80.4C14.7,-81,29.3,-76.4,44.7,-76.4Z" transform="translate(100 100)" /></svg>
             </motion.div>
+            <DecorativeLayer type="tropical" position="top-right" color="#7d6b5d" opacity={0.12} />
+            <DecorativeLayer type="boho" position="bottom-left" color="#7d6b5d" opacity={0.12} />
 
-            <section className="relative min-h-screen py-20 flex items-center justify-center px-6">
+            <section className="relative min-h-screen py-12 md:py-20 flex items-center justify-center px-6">
                 <div className="z-10 text-center max-w-5xl">
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.5 }}>
-                        <div className="relative mb-16 px-12">
-                            <div className="absolute top-0 left-0 text-7xl opacity-10 animate-float translate-x-[-50%] translate-y-[-50%]">🌸</div>
-                            <div className="absolute bottom-0 right-0 text-7xl opacity-10 animate-float delay-1000 translate-x-[50%] translate-y-[50%]">🍃</div>
-                            <div className="w-80 h-96 rounded-t-full overflow-hidden border-[16px] border-white shadow-2xl mx-auto rotate-1">
+                        <div className="relative mb-12 md:mb-16 px-6 md:px-12">
+                            <div className="absolute top-0 left-0 text-5xl md:text-7xl opacity-10 animate-float translate-x-[-50%] translate-y-[-50%]">🌸</div>
+                            <div className="absolute bottom-0 right-0 text-5xl md:text-7xl opacity-10 animate-float delay-1000 translate-x-[50%] translate-y-[50%]">🍃</div>
+                            <div className="w-64 h-80 md:w-80 md:h-96 rounded-t-full overflow-hidden border-8 md:border-[16px] border-white shadow-2xl mx-auto rotate-1">
                                 <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover scale-110" />
                             </div>
                         </div>
-                        <h1 className="text-7xl md:text-[10vw] font-serif text-[#4A4444] mb-8 leading-none tracking-tighter">
+                        <h1 className="text-5xl md:text-7xl lg:text-[10vw] font-serif text-[#4A4444] mb-6 md:mb-8 leading-none tracking-tighter">
                             {wedding.bride_name} <br />
-                            <span className="text-3xl italic font-serif text-primary">&</span> <br />
+                            <span className="text-2xl md:text-3xl italic font-serif text-primary">&</span> <br />
                             {wedding.groom_name}
                         </h1>
-                        <p className="text-3xl font-serif italic text-primary/60 mb-12">Under the sun, over the moon</p>
-                        <motion.a whileHover={{ letterSpacing: "0.5em" }} href="#rsvp" className="px-16 py-5 rounded-full bg-[#7d6b5d] text-white font-bold tracking-widest uppercase text-xs shadow-lg transition-all">Join The Tribe</motion.a>
+                        <p className="text-xl md:text-3xl font-serif italic text-primary/60 mb-8 md:mb-12">Under the sun, over the moon</p>
+                        <motion.a whileHover={{ letterSpacing: "0.5em" }} href="#rsvp" className="inline-block px-10 md:px-16 py-4 md:py-5 rounded-full bg-[#7d6b5d] text-white font-bold tracking-widest uppercase text-xs shadow-lg transition-all">Join The Tribe</motion.a>
                     </motion.div>
                 </div>
             </section>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -14,6 +14,7 @@ const STEPS = [
     { id: 'details', title: 'Details', icon: Heart },
     { id: 'templates', title: 'Layout', icon: Layout },
     { id: 'theme', title: 'Style', icon: Palette },
+    { id: 'logo', title: 'Monogram', icon: Sparkles },
     { id: 'media', title: 'Media', icon: Camera },
     { id: 'gifts', title: 'Gifts', icon: Heart },
     { id: 'rsvp', title: 'RSVP', icon: Calendar },
@@ -98,6 +99,10 @@ export default function BuilderForm() {
         giftBank: '',
         giftAccountName: '',
         giftAccountNumber: '',
+        logoInitials: '',
+        logoFont: 'Elegant',
+        logoShape: 'minimal',
+        logoColor: '#C08081',
     });
 
     const [mediaFiles, setMediaFiles] = useState<{
@@ -213,7 +218,11 @@ export default function BuilderForm() {
                 couplePhoto: coupleUrl,
                 teaserVideo: videoUrl,
                 giftQrImage: giftQrUrl,
-                galleryImages: galleryUrls
+                galleryImages: galleryUrls,
+                logoInitials: formData.logoInitials,
+                logoFont: formData.logoFont,
+                logoShape: formData.logoShape,
+                logoColor: formData.logoColor || formData.motifColor
             };
 
             const res = await fetch('/api/weddings', {
@@ -323,7 +332,7 @@ export default function BuilderForm() {
                                 {['#D16C78', '#F2C1CC', '#D6B87C', '#3A2A2D', '#7A5A61', '#FFF8F4'].map((color) => (
                                     <button key={color} type="button" onClick={() => setFormData(prev => ({ ...prev, motifColor: color }))} className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.motifColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral'}`} style={{ backgroundColor: color }} />
                                 ))}
-                                <input type="color" name="motifColor" value={formData.motifColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none" />
+                                <input type="color" name="motifColor" value={formData.motifColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer" />
                             </div>
                         </div>
                         <div className="space-y-4">
@@ -348,6 +357,80 @@ export default function BuilderForm() {
                     </div>
                 );
             case 3:
+                return (
+                    <div className="space-y-6">
+                        <div className="text-center mb-8">
+                            <div
+                                className={`w-32 h-32 mx-auto flex items-center justify-center transition-all duration-500 ${formData.logoShape === 'circle' ? 'rounded-full' :
+                                    formData.logoShape === 'square' ? 'rounded-2xl' : ''
+                                    } ${formData.logoShape !== 'minimal' ? 'border-2 border-primary/20 bg-primary/5' : ''}`}
+                                style={{ color: formData.logoColor || formData.motifColor, borderColor: formData.logoColor || formData.motifColor }}
+                            >
+                                <span className={`font-serif text-4xl uppercase tracking-tighter ${FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'
+                                    }`}>
+                                    {formData.logoInitials || (formData.brideName?.[0] || 'A') + ' & ' + (formData.groomName?.[0] || 'B')}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Initials</label>
+                            <input
+                                name="logoInitials"
+                                value={formData.logoInitials}
+                                onChange={handleChange}
+                                placeholder={(formData.brideName?.[0] || 'A') + ' & ' + (formData.groomName?.[0] || 'B')}
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Minogram Shape</label>
+                                <select
+                                    name="logoShape"
+                                    value={formData.logoShape}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
+                                >
+                                    <option value="minimal">Minimal</option>
+                                    <option value="circle">Circle</option>
+                                    <option value="square">Rounded Square</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Font</label>
+                                <select
+                                    name="logoFont"
+                                    value={formData.logoFont}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
+                                >
+                                    {FONTS.slice(0, 15).map(f => (
+                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Color (Optional)</label>
+                            <div className="flex gap-4">
+                                {['#D16C78', '#F2C1CC', '#D6B87C', '#3A2A2D', '#7A5A61', '#FFF8F4'].map((color) => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, logoColor: color }))}
+                                        className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.logoColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral'}`}
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                                <input type="color" name="logoColor" value={formData.logoColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer" />
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 4:
                 return (
                     <div className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -385,47 +468,47 @@ export default function BuilderForm() {
                         </div>
                     </div>
                 );
-            case 4:
+            case 5:
                 return (
                     <div className="space-y-6">
                         <h3 className="text-lg font-serif font-bold text-primary mb-4 flex items-center gap-2"><Heart className="w-5 h-5" /> Gift Registry</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Bank Name</label>
-                                <input name="giftBank" value={formData.giftBank} onChange={handleChange} placeholder="GCash" className="w-full px-4 py-3 rounded-xl border border-border" />
+                                <input name="giftBank" value={formData.giftBank} onChange={handleChange} placeholder="GCash" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account number</label>
-                                <input name="giftAccountNumber" value={formData.giftAccountNumber} onChange={handleChange} placeholder="0917..." className="w-full px-4 py-3 rounded-xl border border-border" />
+                                <input name="giftAccountNumber" value={formData.giftAccountNumber} onChange={handleChange} placeholder="0917..." className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account name</label>
-                            <input name="giftAccountName" value={formData.giftAccountName} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border" />
+                            <input name="giftAccountName" value={formData.giftAccountName} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Upload QR</label>
-                            <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden">
+                            <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral">
                                 {previews.giftQr ? <img src={previews.giftQr} className="h-full object-contain" /> : <ImageIcon className="w-6 h-6 text-primary/40" />}
                                 <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'giftQr')} className="absolute inset-0 opacity-0 cursor-pointer" />
                             </div>
                         </div>
                     </div>
                 );
-            case 5:
+            case 6:
                 return (
                     <div className="space-y-6">
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">RSVP Deadline</label>
-                            <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-border" />
+                            <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Dress Code</label>
-                            <input name="dressCode" value={formData.dressCode} onChange={handleChange} placeholder="Formal" className="w-full px-4 py-3 rounded-xl border border-border" />
+                            <input name="dressCode" value={formData.dressCode} onChange={handleChange} placeholder="Formal" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Contact Person</label>
-                            <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border" />
+                            <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         </div>
                     </div>
                 );
