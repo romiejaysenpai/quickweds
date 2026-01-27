@@ -9,14 +9,16 @@ Vercel servers don't know who is allowed to access your Firebase database. You n
 3. Confirm by clicking **"Generate key"**.
 4. A JSON file will download to your computer. Open it with a text editor (Notepad, VS Code, etc.).
 
-### Step 2: Add Public Firebase Variables to Vercel
+---
 
-These variables are required for the login and signup pages to work.
+## Step 2: Add Public Firebase Variables to Vercel
+
+**CRITICAL:** These must be added for the Login/Signup pages to work in the browser.
 
 1. Go to your [Vercel Dashboard](https://vercel.com/dashboard).
 2. Click on your **quickweds** project.
 3. Go to **Settings** -> **Environment Variables**.
-4. Add the following variables (you can find these in your `.env.production` file):
+4. Add the following variables (values are in your Firebase Console project settings):
 
 - `NEXT_PUBLIC_FIREBASE_API_KEY`
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
@@ -28,18 +30,24 @@ These variables are required for the login and signup pages to work.
 ---
 
 ## Step 3: Add Admin Credentials to Vercel
-- **Key:** `FIREBASE_CLIENT_EMAIL`
-- **Value:** (Copy the value from `"client_email"` in the JSON file, e.g., `firebase-adminsdk-xxxxx@...`)
 
-### Variable 2
-- **Key:** `FIREBASE_PRIVATE_KEY`
-- **Value:** (Copy the value from `"private_key"` in the JSON file, including the `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` parts)
+This allows the server to save wedding data and RSVPs.
+
+### Option A: Using Service Account JSON (Recommended)
+1. **Key:** `FIREBASE_SERVICE_ACCOUNT`
+2. **Value:** (Copy the ENTIRE text from the `.json` file you downloaded in Step 1)
+
+**OR**
+
+### Option B: Using Individual Variables
+- **Key:** `FIREBASE_CLIENT_EMAIL` -> (Value of `"client_email"` from the JSON)
+- **Key:** `FIREBASE_PRIVATE_KEY` -> (Value of `"private_key"` from the JSON, include the BEGIN/END lines)
+
+---
 
 ## Step 4: Redeploy
 
 Once you've added the variables:
 1. Go to the **Deployments** tab in Vercel.
-2. Click the **three dots (...)** next to your failed deployment (or the latest one).
+2. Click the **three dots (...)** next to the latest deployment.
 3. Click **Redeploy**.
-
-Your app will now have the permission it needs to work!
