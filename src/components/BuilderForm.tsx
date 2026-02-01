@@ -225,24 +225,20 @@ export default function BuilderForm() {
                 return publicUrl;
             };
 
-            // Upload images in parallel first (smaller files)
+            // Upload ALL media in parallel including video
             const heroPromise = mediaFiles.heroImage ? uploadToSupabase(mediaFiles.heroImage, 'hero') : Promise.resolve(null);
             const couplePromise = mediaFiles.couplePhoto ? uploadToSupabase(mediaFiles.couplePhoto, 'couple') : Promise.resolve(null);
             const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
+            const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo, 'teaser') : Promise.resolve(null);
             const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToSupabase(file, `gallery-${i}`));
 
-            const [heroUrl, coupleUrl, giftQrUrl, galleryUrls] = await Promise.all([
+            const [heroUrl, coupleUrl, giftQrUrl, videoUrl, galleryUrls] = await Promise.all([
                 heroPromise,
                 couplePromise,
                 giftQrPromise,
+                videoPromise,
                 Promise.all(galleryPromises)
             ]);
-
-            // Upload video separately and LAST
-            let videoUrl = null;
-            if (mediaFiles.teaserVideo) {
-                videoUrl = await uploadToSupabase(mediaFiles.teaserVideo, 'teaser');
-            }
 
             const payload = {
                 id: weddingId,
@@ -498,7 +494,7 @@ export default function BuilderForm() {
                                 ) : (
                                     <div className="text-center group-hover:scale-105 transition-transform">
                                         <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                        <span className="text-sm text-text-secondary font-medium">Upload Video (Max 50MB)</span>
+                                        <span className="text-sm text-text-secondary font-medium">Upload Video (Max 500MB)</span>
                                     </div>
                                 )}
                                 <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />

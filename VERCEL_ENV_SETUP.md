@@ -1,53 +1,30 @@
-# Fixing "Could not load the default credentials" on Vercel
+# Supabase Environment Setup for Vercel
 
-Vercel servers don't know who is allowed to access your Firebase database. You need to give them a "Service Account" key.
+To ensure your wedding platform works correctly on Vercel, you need to add your Supabase credentials to the Vercel Environment Variables.
 
-## Step 1: Get the Key from Firebase
+## Step 1: Get Supabase Credentials
 
-1. Go to the [Firebase Console Service Accounts page](https://console.firebase.google.com/project/call2proposal-generator/settings/serviceaccounts/adminsdk).
-2. Click the **"Generate new private key"** button.
-3. Confirm by clicking **"Generate key"**.
-4. A JSON file will download to your computer. Open it with a text editor (Notepad, VS Code, etc.).
+1. Go to your [Supabase Project Settings](https://supabase.com/dashboard/project/_/settings/api).
+2. Copy the **Project URL** and the **anon public** API key.
 
----
-
-## Step 2: Add Public Firebase Variables to Vercel
-
-**CRITICAL:** These must be added for the Login/Signup pages to work in the browser.
+## Step 2: Add Variables to Vercel
 
 1. Go to your [Vercel Dashboard](https://vercel.com/dashboard).
 2. Click on your **quickweds** project.
 3. Go to **Settings** -> **Environment Variables**.
-4. Add the following variables (values are in your Firebase Console project settings):
+4. Add the following keys:
 
-- `NEXT_PUBLIC_FIREBASE_API_KEY`
-- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_SUPABASE_URL`: (Your Project URL)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: (Your anon public API key)
 
----
+## Step 3: Deployment
 
-## Step 3: Add Admin Credentials to Vercel
-
-This allows the server to save wedding data and RSVPs.
-
-### Option A: Using Service Account JSON (Recommended)
-1. **Key:** `FIREBASE_SERVICE_ACCOUNT`
-2. **Value:** (Copy the ENTIRE text from the `.json` file you downloaded in Step 1)
-
-**OR**
-
-### Option B: Using Individual Variables
-- **Key:** `FIREBASE_CLIENT_EMAIL` -> (Value of `"client_email"` from the JSON)
-- **Key:** `FIREBASE_PRIVATE_KEY` -> (Value of `"private_key"` from the JSON, include the BEGIN/END lines)
-
----
-
-## Step 4: Redeploy
-
-Once you've added the variables:
-1. Go to the **Deployments** tab in Vercel.
+Once the variables are added:
+1. Go to the **Deployments** tab.
 2. Click the **three dots (...)** next to the latest deployment.
-3. Click **Redeploy**.
+3. Select **Redeploy**.
+
+---
+
+### Note on Storage
+Ensure you have a storage bucket named `quickweds` in your Supabase project and that its policy is set to **Public** for allowed reads and writes (or appropriately restricted if you've set up RLS).
