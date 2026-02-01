@@ -288,7 +288,11 @@ export default function BuilderForm() {
         } catch (err: any) {
             console.error('Submission error:', err);
             setIsGenerating(false);
-            alert('Error creating invitation: ' + err.message);
+            if (err.message?.includes('exceeded the maximum allowed size')) {
+                alert('Storage Limit Error: Your Supabase bucket has a 50MB default limit. Please go to your Supabase Dashboard -> Storage -> Buckets -> Edit "quickweds" bucket and increase the "Maximum File Size" to 500MB.');
+            } else {
+                alert('Error creating invitation: ' + err.message);
+            }
         } finally {
             setIsSubmitting(false);
         }
