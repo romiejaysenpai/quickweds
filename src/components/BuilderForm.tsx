@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import GenerationLoading from './GenerationLoading';
 import { useAuth } from '@/context/AuthContext';
@@ -48,7 +47,17 @@ const FONTS = [
     { id: 'PremiumScript', name: 'Premium Script', desc: 'Pinyon Script (Luxe)', class: 'font-pinyon' },
     { id: 'MinimalScript', name: 'Minimal Script', desc: 'Sacramento (Retro)', class: 'font-sacramento' },
     { id: 'Ornate', name: 'Ornate Script', desc: 'Tangerine (Elongated)', class: 'font-tangerine' },
-    { id: 'Paris', name: 'Parisian', desc: 'Parisienne (Vintage)', class: 'font-parisienne' }
+    { id: 'Paris', name: 'Parisian', desc: 'Parisienne (Vintage)', class: 'font-parisienne' },
+    { id: 'Abril', name: 'Abril Fatface', desc: 'Bold & Elegant Display', class: 'font-abril' },
+    { id: 'Upright', name: 'Cormorant Upright', desc: 'Regal Vertical Serif', class: 'font-cormorant-upright' },
+    { id: 'Vintage', name: 'Old Standard', desc: 'True Vintage Character', class: 'font-old-standard' },
+    { id: 'Josefin', name: 'Josefin Style', desc: 'Geometric & Stylish', class: 'font-josefin' },
+    { id: 'Caslon', name: 'Caslon Edit', desc: 'High-end Editorial', class: 'font-caslon' },
+    { id: 'Quattro', name: 'Quattrocento', desc: 'Classic Roman Proportion', class: 'font-quattrocento' },
+    { id: 'Saint', name: 'Mrs Saint', desc: 'Ultra Fancy Calligraphy', class: 'font-mrs-saint' },
+    { id: 'Monsieur', name: 'Monsieur', desc: 'Artistic Fluid Script', class: 'font-monsieur' },
+    { id: 'Handmade', name: 'Homemade', desc: 'Charming Handwritten', class: 'font-homemade' },
+    { id: 'Mueller', name: 'Herr Muellerhoff', desc: 'Sophisticated Script', class: 'font-herr' }
 ];
 
 const TEMPLATES = [
@@ -157,8 +166,8 @@ export default function BuilderForm() {
         } else {
             const file = files[0];
             if (field === 'teaserVideo') {
-                if (file.size > 50 * 1024 * 1024) { // 50MB Limit
-                    alert("Video must be smaller than 50MB. Please compress it or choose a smaller file.");
+                if (file.size > 500 * 1024 * 1024) { // 500MB Limit
+                    alert("Video must be smaller than 500MB. Please compress it or choose a smaller file.");
                     return;
                 }
             }
@@ -199,18 +208,28 @@ export default function BuilderForm() {
 
         try {
             const weddingId = uuidv4().slice(0, 8);
-            const uploadToFirebase = async (file: File, folder: string) => {
+            const uploadToSupabase = async (file: File, folder: string) => {
                 const filename = `${folder}-${file.name.replace(/\s+/g, '_')}`;
-                const storageRef = ref(storage, `quickweds/${user.uid}/${weddingId}/${filename}`);
-                await uploadBytes(storageRef, file);
-                return await getDownloadURL(storageRef);
+                const filePath = `${user.id}/${weddingId}/${filename}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('quickweds')
+                    .upload(filePath, file);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('quickweds')
+                    .getPublicUrl(filePath);
+
+                return publicUrl;
             };
 
             // Upload images in parallel first (smaller files)
-            const heroPromise = mediaFiles.heroImage ? uploadToFirebase(mediaFiles.heroImage, 'hero') : Promise.resolve(null);
-            const couplePromise = mediaFiles.couplePhoto ? uploadToFirebase(mediaFiles.couplePhoto, 'couple') : Promise.resolve(null);
-            const giftQrPromise = mediaFiles.giftQr ? uploadToFirebase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
-            const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToFirebase(file, `gallery-${i}`));
+            const heroPromise = mediaFiles.heroImage ? uploadToSupabase(mediaFiles.heroImage, 'hero') : Promise.resolve(null);
+            const couplePromise = mediaFiles.couplePhoto ? uploadToSupabase(mediaFiles.couplePhoto, 'couple') : Promise.resolve(null);
+            const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
+            const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToSupabase(file, `gallery-${i}`));
 
             const [heroUrl, coupleUrl, giftQrUrl, galleryUrls] = await Promise.all([
                 heroPromise,
@@ -219,55 +238,57 @@ export default function BuilderForm() {
                 Promise.all(galleryPromises)
             ]);
 
-            // Upload video separately and LAST to prevent blocking/timeout of images
-            // and to give it full bandwidth
+            // Upload video separately and LAST
             let videoUrl = null;
             if (mediaFiles.teaserVideo) {
-                videoUrl = await uploadToFirebase(mediaFiles.teaserVideo, 'teaser');
+                videoUrl = await uploadToSupabase(mediaFiles.teaserVideo, 'teaser');
             }
 
             const payload = {
                 id: weddingId,
-                userId: user.uid,
-                ...formData,
-                heroImage: heroUrl,
-                couplePhoto: coupleUrl,
-                teaserVideo: videoUrl,
-                giftQrImage: giftQrUrl,
-                galleryImages: galleryUrls,
-                logoInitials: formData.logoInitials,
-                logoFont: formData.logoFont,
-                logoShape: formData.logoShape,
-                logoColor: formData.logoColor || formData.motifColor
+                user_id: user.id, // Supabase uses 'id' instead of 'uid'
+                bride_name: formData.brideName,
+                groom_name: formData.groomName,
+                wedding_date: formData.weddingDate,
+                wedding_time: formData.weddingTime,
+                venue_name: formData.venueName,
+                venue_address: formData.venueAddress,
+                maps_link: formData.mapsLink,
+                motif_color: formData.motifColor,
+                font_style: formData.fontStyle,
+                background_style: formData.backgroundStyle,
+                template: formData.template,
+                dress_code_sponsors: "", // TODO: Add to form if needed
+                dress_code_guests: formData.dressCode,
+                program_timeline: formData.programTimeline,
+                story: formData.story,
+                quote: formData.quote,
+                hashtag: formData.hashtag,
+                contact_person: formData.contactPerson,
+                rsvp_deadline: formData.rsvpDeadline,
+                gift_bank: formData.giftBank,
+                gift_account_name: formData.giftAccountName,
+                gift_account_number: formData.giftAccountNumber,
+                logo_initials: formData.logoInitials,
+                logo_font: formData.logoFont,
+                logo_shape: formData.logoShape,
+                logo_color: formData.logoColor || formData.motifColor,
+                hero_image: heroUrl,
+                couple_photo: coupleUrl,
+                teaser_video: videoUrl,
+                gift_qr_image: giftQrUrl,
+                gallery_images: galleryUrls, // Supabase handles JSON array automatically if column is jsonb
             };
 
-            const res = await fetch('/api/weddings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
+            const { error: insertError } = await supabase
+                .from('weddings')
+                .insert(payload);
 
-            const contentType = res.headers.get('content-type');
-            if (!res.ok) {
-                let errorMessage = `Server error (${res.status})`;
-                try {
-                    if (contentType && contentType.includes('application/json')) {
-                        const errorData = await res.json();
-                        errorMessage = errorData.error || errorMessage;
-                    } else {
-                        const text = await res.text();
-                        errorMessage = `Server returned an unexpected response (${res.status})`;
-                    }
-                } catch (e) { console.error(e); }
-                throw new Error(errorMessage);
-            }
+            if (insertError) throw new Error(insertError.message);
 
-            const data = await res.json();
-            if (data.success) {
-                router.push(`/dashboard/${data.id}?created=true`);
-            } else {
-                throw new Error(data.error || 'Unknown server error');
-            }
+            // Success
+            router.push(`/dashboard/${weddingId}?created=true`);
+
         } catch (err: any) {
             console.error('Submission error:', err);
             setIsGenerating(false);

@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { db, APP_COLLECTIONS } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase';
 import { Heart, Plus, Calendar, MapPin, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -24,10 +23,18 @@ export default function DashboardRedirect() {
         if (user) {
             const fetchWeddings = async () => {
                 try {
-                    const res = await fetch(`/api/user/weddings?userId=${user.uid}`);
-                    const data = await res.json();
-                    if (data.success) {
-                        setWeddings(data.weddings);
+                    // Supabase Query
+                    const { data, error } = await supabase
+                        .from('weddings')
+                        .select('*')
+                        .eq('user_id', user.id) // Supabase Auth User ID
+                        .order('created_at', { ascending: false });
+
+                    if (error) {
+                        console.error('Supabase error:', error);
+                    } else {
+                        // Assuming the data matches the interface used in render
+                        setWeddings(data || []);
                     }
                 } catch (err) {
                     console.error(err);
@@ -62,7 +69,7 @@ export default function DashboardRedirect() {
 
             <main className="max-w-6xl mx-auto px-6 pt-12">
                 <header className="mb-12">
-                    <h1 className="text-4xl font-serif font-bold text-foreground mb-2">Welcome, {user?.displayName || 'Bride & Groom'}</h1>
+                    <h1 className="text-4xl font-serif font-bold text-foreground mb-2">Welcome, {user?.user_metadata?.full_name || user?.email || 'Bride & Groom'}</h1>
                     <p className="text-text-secondary">Manage your wedding invitations and RSVPs</p>
                 </header>
 
@@ -100,7 +107,7 @@ export default function DashboardRedirect() {
                                             <div className="flex justify-between items-end">
                                                 <h3 className="text-white text-xl font-serif font-bold">{wedding.bride_name} & {wedding.groom_name}</h3>
                                                 <div className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-lg text-white text-[10px] font-bold uppercase tracking-widest border border-white/20">
-                                                    {wedding.rsvp_count || 0} RSVPs
+                                                    0 RSVPs {/* TODO: implement count if needed */}
                                                 </div>
                                             </div>
                                         </div>

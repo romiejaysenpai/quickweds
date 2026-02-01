@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
@@ -20,7 +19,11 @@ export default function LoginPage() {
         setLoading(true);
         setError('');
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+            if (error) throw error;
             router.push('/dashboard');
         } catch (err: any) {
             setError(err.message || 'Failed to login');

@@ -65,6 +65,14 @@
   --font-questrial: var(--font-questrial), sans-serif;
   --font-syne: var(--font-syne), sans-serif;
 
+  /* Additional Premium Fonts */
+  --font-abril: var(--font-abril), serif;
+  --font-cormorant-upright: var(--font-cormorant-upright), serif;
+  --font-old-standard: var(--font-old-standard), serif;
+  --font-josefin: var(--font-josefin), sans-serif;
+  --font-caslon: var(--font-caslon), serif;
+  --font-quattrocento: var(--font-quattrocento), serif;
+
   /* New Script Fonts */
   --font-alex: var(--font-alex), cursive;
   --font-allura: var(--font-allura), cursive;
@@ -75,6 +83,12 @@
   --font-sacramento: var(--font-sacramento), cursive;
   --font-tangerine: var(--font-tangerine), cursive;
   --font-parisienne: var(--font-parisienne), cursive;
+
+  /* Additional Calligraphy Fonts */
+  --font-mrs-saint: var(--font-mrs-saint), cursive;
+  --font-monsieur: var(--font-monsieur), cursive;
+  --font-homemade: var(--font-homemade), cursive;
+  --font-herr: var(--font-herr), cursive;
 }
 
 body {

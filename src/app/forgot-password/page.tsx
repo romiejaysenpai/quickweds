@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, Mail, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -18,7 +18,10 @@ export default function ForgotPasswordPage() {
         setLoading(true);
         setError('');
         try {
-            await sendPasswordResetEmail(auth, email);
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+            });
+            if (resetError) throw resetError;
             setSent(true);
         } catch (err: any) {
             setError(err.message || 'Failed to send reset email');

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
@@ -21,8 +20,16 @@ export default function SignUpPage() {
         setLoading(true);
         setError('');
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(userCredential.user, { displayName: name });
+            const { error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: name,
+                    },
+                },
+            });
+            if (error) throw error;
             router.push('/builder');
         } catch (err: any) {
             setError(err.message || 'Failed to create account');

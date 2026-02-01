@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function RSVPForm({ weddingId }: { weddingId: string }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,16 +20,26 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const res = await fetch(`/api/rsvp/${weddingId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-            if (res.ok) {
+            const { error } = await supabase
+                .from('rsvps')
+                .insert({
+                    wedding_id: weddingId,
+                    guest_name: formData.guestName,
+                    attendance: formData.attendance,
+                    num_guests: formData.numGuests,
+                    meal_preference: formData.mealPreference,
+                    message: formData.message
+                });
+
+            if (error) {
+                console.error("Supabase RSVP error:", error);
+                alert("Failed to submit RSVP. Please try again.");
+            } else {
                 setIsSubmitted(true);
             }
         } catch (err) {
             console.error(err);
+            alert("An unexpected error occurred.");
         } finally {
             setIsSubmitting(false);
         }

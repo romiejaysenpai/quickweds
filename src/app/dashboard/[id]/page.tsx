@@ -1,32 +1,72 @@
-import { notFound } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2 } from 'lucide-react';
+'use client';
+
+import { notFound, useSearchParams } from 'next/navigation';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
-import { db, APP_COLLECTIONS } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
+import { useEffect, useState, use } from 'react';
 
-async function getWeddingData(id: string) {
-    const weddingDoc = await db.collection(APP_COLLECTIONS.WEDDINGS).doc(id).get();
-    if (!weddingDoc.exists) return null;
+export default function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
+    const searchParams = useSearchParams();
+    const created = searchParams.get('created');
 
-    const rsvpSnapshot = await db.collection(APP_COLLECTIONS.RSVPS)
-        .where('wedding_id', '==', id)
-        .get();
+    const [wedding, setWedding] = useState<any>(null);
+    const [rsvps, setRsvps] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const wedding = weddingDoc.data();
-    const rsvps = rsvpSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch Wedding
+                const { data: weddingData, error: weddingError } = await supabase
+                    .from('weddings')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
 
-    return { wedding, rsvps };
-}
+                if (weddingError || !weddingData) {
+                    console.error('Error fetching wedding:', weddingError);
+                    setLoading(false);
+                    return;
+                }
 
-export default async function DashboardPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ created?: string }> }) {
-    const { id } = await params;
-    const { created } = await searchParams;
-    const data = await getWeddingData(id);
-    if (!data) notFound();
+                setWedding(weddingData);
 
-    const { wedding, rsvps } = data as any;
+                // Fetch RSVPs
+                const { data: rsvpsData, error: rsvpsError } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('wedding_id', id)
+                    .order('created_at', { ascending: false });
+
+                if (rsvpsError) {
+                    console.error('Error fetching RSVPs:', rsvpsError);
+                } else {
+                    setRsvps(rsvpsData || []);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-neutral/30">
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            </div>
+        );
+    }
+
+    if (!wedding) {
+        return <div className="p-20 text-center">Wedding not found.</div>;
+    }
 
     // In production, fallback to the real URL instead of localhost
     const domain = process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app';

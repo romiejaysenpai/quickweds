@@ -6,6 +6,7 @@ import { Heart, Calendar, MapPin, Clock, Shirt, Info, MessageSquare, Send, Quote
 import RSVPForm from '@/components/RSVPForm';
 import DecorativeLayer from '@/components/DecorativeLayer';
 import { motion } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
 
 export default function WeddingPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -15,15 +16,21 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await fetch(`/api/weddings/${id}`);
-                const data = await res.json();
-                if (data.success) {
-                    setWedding(data.wedding);
-                } else {
+                const { data, error } = await supabase
+                    .from('weddings')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) {
+                    console.error("Supabase error:", error);
                     setWedding(null);
+                } else {
+                    setWedding(data);
                 }
             } catch (err) {
                 console.error(err);
+                setWedding(null);
             } finally {
                 setLoading(false);
             }
