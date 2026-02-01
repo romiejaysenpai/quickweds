@@ -54,12 +54,17 @@ const FONTS = [
 const TEMPLATES = [
     { id: 'classic', name: 'Classic Elegance', desc: 'Timeless, centered layout with elegant serif typography.', icon: '✨' },
     { id: 'minimal', name: 'Modern Minimal', desc: 'Clean lines, high contrast, and bold sans-serif fonts.', icon: '⬛' },
-    { id: 'vintage', name: 'Vintage Love', desc: 'Soft textures, script fonts, and nostalgic framing.', icon: '📜' },
+    { id: 'romantic', name: 'Romantic', desc: 'Soft textures, script fonts, and nostalgic framing.', icon: '📜' },
+    { id: 'luxury', name: 'Luxury Editorial', desc: 'Magazine-style layout with large typography and fashion aesthetics.', icon: '📖' },
+    { id: 'elopement', name: 'Intimate Elopement', desc: 'Focused on the couple and the journey, perfect for small gatherings.', icon: '🌿' },
+    { id: 'traditional', name: 'Traditional Ceremonial', desc: 'Ornate details and majestic styling for grand celebrations.', icon: '👑' },
+    { id: 'timeline', name: 'Timeline Based', desc: 'Structured around the order of events and flow of the day.', icon: '⏱️' },
+    { id: 'rsvpfocus', name: 'RSVP First', desc: 'Prioritizes guest confirmation with a prominent RSVP section.', icon: '📩' },
+    { id: 'cinematic', name: 'Media Forward', desc: 'Video-centric layout for sharing your love story in motion.', icon: '🎥' },
+    { id: 'elegance', name: 'Minimal Elegant', desc: 'Sophisticated simplicity with refined typography and spacing.', icon: '🦢' },
     { id: 'artdeco', name: 'Art Deco Gold', desc: 'Geometric patterns and bold, luxurious accents.', icon: '💎' },
-    { id: 'boho', name: 'Boho Dream', desc: 'Organic shapes, earthy tones, and whimsical layouts.', icon: '🌿' },
-    { id: 'editorial', name: 'Editorial', desc: 'Magazine-style layout with large typography.', icon: '📖' },
-    { id: 'royal', name: 'Royal Grandeur', desc: 'Ornate details and traditional, majestic styling.', icon: '👑' },
-    { id: 'whimsical', name: 'Whimsical Garden', desc: 'Playful animations and soft, watercolor elements.', icon: '🌸' },
+    { id: 'boho', name: 'Boho Dream', desc: 'Organic shapes, earthy tones, and whimsical layouts.', icon: '🌸' },
+    { id: 'whimsical', name: 'Whimsical Garden', desc: 'Playful animations and soft, watercolor elements.', icon: '🦋' },
     { id: 'urban', name: 'Industrial Urban', desc: 'Raw textures and modern, edgy monospaced fonts.', icon: '🏙️' },
     { id: 'tropical', name: 'Tropical Paradise', desc: 'Vibrant accents and lush, exotic design elements.', icon: '🏝️' },
     { id: 'midnight', name: 'Midnight Luxury', desc: 'Premium dark aesthetic with gold foil accents.', icon: '🌑' },
@@ -151,6 +156,13 @@ export default function BuilderForm() {
             setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...Array.from(files)] }));
         } else {
             const file = files[0];
+            if (field === 'teaserVideo') {
+                if (file.size > 50 * 1024 * 1024) { // 50MB Limit
+                    alert("Video must be smaller than 50MB. Please compress it or choose a smaller file.");
+                    return;
+                }
+            }
+
             setMediaFiles(prev => ({ ...prev, [field]: file }));
 
             if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr') {
@@ -194,20 +206,24 @@ export default function BuilderForm() {
                 return await getDownloadURL(storageRef);
             };
 
-            let heroUrl = null;
-            let coupleUrl = null;
+            // Upload images in parallel first (smaller files)
+            const heroPromise = mediaFiles.heroImage ? uploadToFirebase(mediaFiles.heroImage, 'hero') : Promise.resolve(null);
+            const couplePromise = mediaFiles.couplePhoto ? uploadToFirebase(mediaFiles.couplePhoto, 'couple') : Promise.resolve(null);
+            const giftQrPromise = mediaFiles.giftQr ? uploadToFirebase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
+            const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToFirebase(file, `gallery-${i}`));
+
+            const [heroUrl, coupleUrl, giftQrUrl, galleryUrls] = await Promise.all([
+                heroPromise,
+                couplePromise,
+                giftQrPromise,
+                Promise.all(galleryPromises)
+            ]);
+
+            // Upload video separately and LAST to prevent blocking/timeout of images
+            // and to give it full bandwidth
             let videoUrl = null;
-            let giftQrUrl = null;
-            const galleryUrls: string[] = [];
-
-            if (mediaFiles.heroImage) heroUrl = await uploadToFirebase(mediaFiles.heroImage, 'hero');
-            if (mediaFiles.couplePhoto) coupleUrl = await uploadToFirebase(mediaFiles.couplePhoto, 'couple');
-            if (mediaFiles.teaserVideo) videoUrl = await uploadToFirebase(mediaFiles.teaserVideo, 'teaser');
-            if (mediaFiles.giftQr) giftQrUrl = await uploadToFirebase(mediaFiles.giftQr, 'gift-qr');
-
-            for (let i = 0; i < mediaFiles.galleryImages.length; i++) {
-                const url = await uploadToFirebase(mediaFiles.galleryImages[i], `gallery-${i}`);
-                galleryUrls.push(url);
+            if (mediaFiles.teaserVideo) {
+                videoUrl = await uploadToFirebase(mediaFiles.teaserVideo, 'teaser');
             }
 
             const payload = {
@@ -450,17 +466,35 @@ export default function BuilderForm() {
                             </div>
                         </div>
                         <div className="space-y-2">
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Teaser Video (Optional)</label>
+                            <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
+                                {mediaFiles.teaserVideo ? (
+                                    <div className="text-center p-4">
+                                        <Video className="w-8 h-8 text-primary mx-auto mb-2" />
+                                        <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
+                                        <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center group-hover:scale-105 transition-transform">
+                                        <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
+                                        <span className="text-sm text-text-secondary font-medium">Upload Video (Max 50MB)</span>
+                                    </div>
+                                )}
+                                <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Gallery</label>
                             <div className="grid grid-cols-4 gap-4">
                                 {mediaFiles.galleryImages.map((file, i) => (
                                     <div key={i} className="relative aspect-square rounded-xl overflow-hidden group border border-border">
                                         <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
-                                        <button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center">
+                                        <button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center hover:bg-red-500 transition-colors">
                                             <X className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 ))}
-                                <div className="relative aspect-square rounded-xl border-2 border-dashed border-border bg-neutral flex items-center justify-center">
+                                <div className="relative aspect-square rounded-xl border-2 border-dashed border-border bg-neutral flex items-center justify-center hover:bg-neutral/80 transition-colors">
                                     <ImageIcon className="w-6 h-6 text-primary/40" />
                                     <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'galleryImages')} className="absolute inset-0 opacity-0 cursor-pointer" />
                                 </div>

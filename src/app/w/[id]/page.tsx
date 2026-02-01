@@ -85,6 +85,22 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
                 return <GlitchTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
             case 'garden':
                 return <GardenTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
+            case 'romantic':
+                return <RomanticTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
+            case 'luxury':
+                return <LuxuryTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
+            case 'elopement':
+                return <ElopementTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
+            case 'traditional':
+                return <TraditionalTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
+            case 'timeline':
+                return <TimelineTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
+            case 'rsvpfocus':
+                return <RSVPFocusTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
+            case 'cinematic':
+                return <CinematicTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
+            case 'elegance':
+                return <EleganceTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
             default:
                 return <ClassicTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
         }
@@ -1301,5 +1317,229 @@ function MinimalGallery({ gallery }: any) {
                 ))}
             </div>
         </section>
+    );
+}
+
+function RomanticTemplate({ wedding, gallery, isExpired }: any) {
+    return (
+        <div className="bg-[#fff0f5] text-[#8b4513] relative overflow-hidden pb-24">
+            <DecorativeLayer type="sakura" position="top-right" color="#e3a6c1" opacity={0.15} />
+            <DecorativeLayer type="sakura" position="bottom-left" color="#e3a6c1" opacity={0.15} />
+
+            <section className="min-h-screen flex flex-col items-center justify-center p-6 text-center z-10 relative">
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5 }} className="relative">
+                    <div className="border-[1px] border-[#e3a6c1] p-12 md:p-24 rounded-[3rem] bg-white/50 backdrop-blur-sm relative soft-shadow">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#fff0f5] px-6 text-primary">
+                            <Heart className="w-8 h-8 fill-current" />
+                        </div>
+                        <p className="font-serif italic text-xl md:text-2xl text-primary/70 mb-6">We invite you to share in our love</p>
+                        <h1 className="text-6xl md:text-8xl font-serif text-[#4A4444] mb-8 leading-tight tracking-tight">
+                            {wedding.bride_name} <br />
+                            <span className="text-3xl md:text-4xl italic text-primary">&</span> <br />
+                            {wedding.groom_name}
+                        </h1>
+                        <p className="uppercase tracking-[0.3em] font-bold text-sm text-[#8b4513] mb-12">{new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                        <motion.a whileHover={{ scale: 1.05 }} href="#rsvp" className="px-10 py-4 bg-primary text-white rounded-full font-serif italic text-xl shadow-lg hover:shadow-primary/30 transition-all">Will you join us?</motion.a>
+                    </div>
+                </motion.div>
+            </section>
+
+            <DetailsSection wedding={wedding} />
+            <GallerySection gallery={gallery} />
+            <RSVPSection wedding={wedding} isExpired={isExpired} />
+        </div>
+    );
+}
+
+function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
+    return (
+        <div className="bg-white text-black font-serif pb-24">
+            <section className="h-screen relative grid grid-cols-1 md:grid-cols-2">
+                <div className="flex flex-col justify-center p-12 md:p-24 bg-neutral-50">
+                    <div className="w-16 h-[2px] bg-black mb-12" />
+                    <h1 className="text-6xl md:text-8xl leading-[0.9] font-light mb-8 uppercase tracking-tight">
+                        {wedding.bride_name} <br />
+                        <span className="font-thin opacity-50">&</span> <br />
+                        {wedding.groom_name}
+                    </h1>
+                    <div className="flex items-center gap-4 text-sm font-bold tracking-[0.2em] uppercase mt-12">
+                        <span>{new Date(wedding.wedding_date).getFullYear()}</span>
+                        <div className="w-12 h-[1px] bg-black/20" />
+                        <span>Wedding Editorial</span>
+                    </div>
+                </div>
+                <div className="relative h-full overflow-hidden">
+                    <img src={wedding.hero_image || wedding.couple_photo} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/10" />
+                </div>
+            </section>
+            <DetailsSection wedding={wedding} />
+            <GallerySection gallery={gallery} />
+            <RSVPSection wedding={wedding} isExpired={isExpired} />
+        </div>
+    );
+}
+
+function ElopementTemplate({ wedding, gallery, isExpired }: any) {
+    return (
+        <div className="bg-[#fcfaf7] text-[#4a4a4a] relative pb-24 font-sans">
+            <section className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+                <div className="max-w-2xl w-full space-y-12">
+                    <span className="text-xs uppercase tracking-[0.4em] text-primary block mb-4">Just Us</span>
+                    <div className="aspect-[4/5] rounded-t-full overflow-hidden relative mb-8">
+                        <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover" />
+                    </div>
+                    <h1 className="text-4xl md:text-5xl font-serif italic leading-relaxed">
+                        {wedding.bride_name} & {wedding.groom_name}
+                    </h1>
+                    <p className="text-lg opacity-60 max-w-md mx-auto">{wedding.story || "We decided to focus on what matters most: our promise to each other."}</p>
+                    <div className="pt-8 border-t border-black/5">
+                        <p className="font-bold uppercase tracking-widest text-sm mb-2">{new Date(wedding.wedding_date).toLocaleDateString()}</p>
+                        <p className="font-serif italic text-primary">{wedding.venue_name}</p>
+                    </div>
+                </div>
+            </section>
+            <GallerySection gallery={gallery} />
+            {/* Minimal RSVP mainly for messages */}
+            <RSVPSection wedding={wedding} isExpired={isExpired} />
+        </div>
+    );
+}
+
+function TraditionalTemplate({ wedding, gallery, isExpired }: any) {
+    return (
+        <div className="bg-[#fffefb] text-[#2c3e50] relative pb-24">
+            <div className="absolute top-0 left-0 w-full h-32 bg-[url('https://www.transparenttextures.com/patterns/black-linen.png')] opacity-10" />
+            <section className="py-24 px-6 text-center max-w-4xl mx-auto">
+                <div className="mb-12">
+                    <div className="w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center text-3xl font-serif text-primary mb-6">
+                        {wedding.bride_name[0]}&{wedding.groom_name[0]}
+                    </div>
+                    <p className="uppercase tracking-widest text-xs font-bold opacity-40 mb-4">The Honour of your presence is requested</p>
+                </div>
+                <h1 className="text-5xl md:text-7xl font-serif text-[#2c3e50] mb-8 leading-tight">
+                    {wedding.bride_name} <br />
+                    <span className="text-2xl italic font-light opacity-50">to</span> <br />
+                    {wedding.groom_name}
+                </h1>
+                <div className="border-t border-b border-[#2c3e50]/20 py-8 my-12 space-y-2">
+                    <p className="text-xl font-bold uppercase tracking-widest">{new Date(wedding.wedding_date).toLocaleDateString(undefined, { weekday: 'long' })}</p>
+                    <p className="text-3xl font-serif text-primary">{new Date(wedding.wedding_date).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}</p>
+                    <p className="text-xl font-bold uppercase tracking-widest">{new Date(wedding.wedding_date).getFullYear()}</p>
+                </div>
+                <p className="text-lg opacity-70 font-serif italic mb-12">{wedding.venue_name}</p>
+                <a href="#rsvp" className="px-12 py-4 border border-[#2c3e50] uppercase tracking-widest text-xs hover:bg-[#2c3e50] hover:text-white transition-all">RSVP</a>
+            </section>
+            <DetailsSection wedding={wedding} />
+            <RSVPSection wedding={wedding} isExpired={isExpired} />
+        </div>
+    );
+}
+
+function TimelineTemplate({ wedding, gallery, isExpired }: any) {
+    return (
+        <div className="bg-white text-slate-800 pb-24">
+            <section className="h-[70vh] flex items-end justify-start p-6 md:p-24 bg-slate-100 relative">
+                <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
+                <div className="relative z-10">
+                    <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter mb-4">{wedding.bride_name} / {wedding.groom_name}</h1>
+                    <p className="text-xl font-mono opacity-60">{new Date(wedding.wedding_date).toLocaleDateString()}</p>
+                </div>
+            </section>
+
+            <section className="py-24 px-6 max-w-4xl mx-auto">
+                <h2 className="text-4xl font-black uppercase mb-16 border-b-4 border-black inline-block">The Order of Events</h2>
+                <div className="space-y-12 relative border-l-2 border-black/10 ml-6 pl-12">
+                    {[
+                        { time: wedding.wedding_time, event: "Ceremony", icon: Heart },
+                        { time: "The Reception", event: "Dinner & Dancing", icon: Music },
+                        { time: "Late Night", event: "After Party", icon: Sparkles }
+                    ].map((item, i) => (
+                        <div key={i} className="relative">
+                            <div className="absolute -left-[54px] top-0 w-5 h-5 bg-primary rounded-full border-4 border-white shadow-sm" />
+                            <p className="font-mono text-sm opacity-50 mb-2">{item.time}</p>
+                            <h3 className="text-2xl font-bold">{item.event}</h3>
+                        </div>
+                    ))}
+                </div>
+            </section>
+            <RSVPSection wedding={wedding} isExpired={isExpired} />
+        </div>
+    );
+}
+
+function RSVPFocusTemplate({ wedding, gallery, isExpired }: any) {
+    return (
+        <div className="bg-[#f0f4f8] text-[#243b53] min-h-screen flex flex-col">
+            <section className="flex-1 flex flex-col md:flex-row">
+                <div className="w-full md:w-1/2 p-12 md:p-24 flex flex-col justify-center bg-white">
+                    <h1 className="text-5xl md:text-6xl font-serif font-black mb-6 text-primary">{wedding.bride_name} & {wedding.groom_name}</h1>
+                    <p className="text-xl mb-12 opacity-70 leading-relaxed font-serif">Are getting married on {new Date(wedding.wedding_date).toLocaleDateString()}. We would become the happiest couple if you could join us.</p>
+
+                    <div className="bg-[#f0f4f8] p-8 rounded-2xl mb-8">
+                        <h3 className="font-bold uppercase tracking-wider mb-4 text-sm">Event Details</h3>
+                        <div className="space-y-2 text-sm opacity-80">
+                            <p className="flex items-center gap-2"><Calendar className="w-4 h-4" /> {new Date(wedding.wedding_date).toLocaleDateString()} at {wedding.wedding_time}</p>
+                            <p className="flex items-center gap-2"><MapPin className="w-4 h-4" /> {wedding.venue_name}</p>
+                        </div>
+                    </div>
+
+                    <a href="#rsvp" className="w-full py-4 bg-primary text-white text-center rounded-xl font-bold hover:bg-primary-hover shadow-lg transition-all transform hover:-translate-y-1">RSVP Now</a>
+                </div>
+                <div className="w-full md:w-1/2 relative bg-neutral-200">
+                    <img src={wedding.hero_image || wedding.couple_photo} className="absolute inset-0 w-full h-full object-cover" />
+                </div>
+            </section>
+            <div id="rsvp" className="bg-white py-24 border-t border-slate-100">
+                {isExpired ? (
+                    <div className="text-center p-12 max-w-2xl mx-auto">
+                        <p className="text-3xl font-serif text-slate-400">RSVP strictly closed.</p>
+                    </div>
+                ) : (
+                    <div className="max-w-3xl mx-auto px-6">
+                        <RSVPForm weddingId={wedding.id} />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function CinematicTemplate({ wedding, gallery, isExpired }: any) {
+    return (
+        <div className="bg-black text-white min-h-screen">
+            <section className="h-screen relative flex items-center justify-center text-center px-6">
+                <div className="absolute inset-0 opacity-40">
+                    <video src={wedding.teaser_video} autoPlay muted loop className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black" />
+                </div>
+                <div className="relative z-10 space-y-8">
+                    <p className="uppercase tracking-[0.5em] text-xs font-bold">A Film By QuickWeds</p>
+                    <h1 className="text-6xl md:text-9xl font-black tracking-tighter uppercase">{wedding.bride_name} <span className="text-red-500">&</span> {wedding.groom_name}</h1>
+                    <p className="uppercase tracking-widest text-xl">{new Date(wedding.wedding_date).toLocaleDateString()}</p>
+                    <div className="pt-12">
+                        <a href="#rsvp" className="px-12 py-4 border border-white hover:bg-white hover:text-black transition-all uppercase tracking-widest text-xs font-bold">Watch Trailer</a>
+                    </div>
+                </div>
+            </section>
+            <GallerySection gallery={gallery} />
+            <RSVPSection wedding={wedding} isExpired={isExpired} />
+        </div>
+    );
+}
+
+function EleganceTemplate({ wedding, gallery, isExpired }: any) {
+    return (
+        <div className="bg-[#f8f8f8] text-[#333] font-serif pb-24 border-[20px] border-white">
+            <section className="min-h-[90vh] flex flex-col items-center justify-center p-6 bg-white m-6 shadow-sm">
+                <h1 className="text-5xl md:text-7xl font-light mb-8 tracking-wide text-center">
+                    {wedding.bride_name} <br /> <span className="text-2xl opacity-40 italic">with</span> <br /> {wedding.groom_name}
+                </h1>
+                <div className="w-24 h-[1px] bg-black/10 my-8" />
+                <p className="text-sm font-sans uppercase tracking-[0.3em]">{new Date(wedding.wedding_date).toLocaleDateString()}</p>
+            </section>
+            <DetailsSection wedding={wedding} />
+            <RSVPSection wedding={wedding} isExpired={isExpired} />
+        </div>
     );
 }

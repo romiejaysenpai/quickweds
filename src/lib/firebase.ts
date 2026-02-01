@@ -33,6 +33,9 @@ if (!isConfigValid && !isServer) {
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+// Increase retry timeout for large uploads (videos) significantly
+// 600000ms = 10 minutes. This helps users with slow upload speeds.
+storage.maxUploadRetryTime = 600000;
 
 export const APP_COLLECTIONS = {
     WEDDINGS: 'quickweds_weddings',
