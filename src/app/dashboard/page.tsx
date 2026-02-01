@@ -26,7 +26,7 @@ export default function DashboardRedirect() {
                     // Supabase Query
                     const { data, error } = await supabase
                         .from('weddings')
-                        .select('*')
+                        .select('*, rsvps(id)')
                         .eq('user_id', user.id) // Supabase Auth User ID
                         .order('created_at', { ascending: false });
 
@@ -107,7 +107,7 @@ export default function DashboardRedirect() {
                                             <div className="flex justify-between items-end">
                                                 <h3 className="text-white text-xl font-serif font-bold">{wedding.bride_name} & {wedding.groom_name}</h3>
                                                 <div className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-lg text-white text-[10px] font-bold uppercase tracking-widest border border-white/20">
-                                                    0 RSVPs {/* TODO: implement count if needed */}
+                                                    {wedding.rsvps?.length || 0} RSVPs
                                                 </div>
                                             </div>
                                         </div>

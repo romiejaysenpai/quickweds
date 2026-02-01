@@ -82,6 +82,9 @@ const TEMPLATES = [
     { id: 'rustic', name: 'Rustic Charm', desc: 'Warm wood textures, string lights, and cozy vibes.', icon: '🪵' },
     { id: 'film', name: 'Retro Film', desc: 'Analog photography aesthetic with grain and film borders.', icon: '🎞️' },
     { id: 'glitch', name: 'Cyber Glitch', desc: 'Modern digital art style with chromatic aberration.', icon: '👾' },
+    { id: 'vintage', name: 'Vintage Postcard', desc: 'Antique paper textures and classic typography.', icon: '✉️' },
+    { id: 'editorial', name: 'Editorial Chic', desc: 'High-fashion magazine layout with bold imagery.', icon: '👠' },
+    { id: 'royal', name: 'Royal Proclamation', desc: 'Majestic dark theme with gold heraldry elements.', icon: '👑' },
     { id: 'garden', name: 'Secret Garden', desc: 'Lush greenery, trellis patterns, and botanical elegance.', icon: '🍃' }
 ];
 
@@ -254,8 +257,7 @@ export default function BuilderForm() {
                 font_style: formData.fontStyle,
                 background_style: formData.backgroundStyle,
                 template: formData.template,
-                dress_code_sponsors: "", // TODO: Add to form if needed
-                dress_code_guests: formData.dressCode,
+                dress_code: formData.dressCode,
                 program_timeline: formData.programTimeline,
                 story: formData.story,
                 quote: formData.quote,
