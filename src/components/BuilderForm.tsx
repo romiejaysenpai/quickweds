@@ -169,8 +169,8 @@ export default function BuilderForm() {
         } else {
             const file = files[0];
             if (field === 'teaserVideo') {
-                if (file.size > 500 * 1024 * 1024) { // 500MB Limit
-                    alert("Video must be smaller than 500MB. Please compress it or choose a smaller file.");
+                if (file.size > 50 * 1024 * 1024) { // 50MB Limit
+                    alert("Video must be smaller than 50MB. Please compress it or choose a smaller file.");
                     return;
                 }
             }
@@ -291,7 +291,7 @@ export default function BuilderForm() {
             console.error('Submission error:', err);
             setIsGenerating(false);
             if (err.message?.includes('exceeded the maximum allowed size')) {
-                alert('Storage Limit Error: Your Supabase bucket has a 50MB default limit. Please go to your Supabase Dashboard -> Storage -> Buckets -> Edit "quickweds" bucket and increase the "Maximum File Size" to 500MB.');
+                alert('Storage Limit Error: Your Supabase bucket has a 50MB default limit. Please compress your files or go to your Supabase Dashboard to check your storage settings.');
             } else {
                 alert('Error creating invitation: ' + err.message);
             }
@@ -500,7 +500,7 @@ export default function BuilderForm() {
                                 ) : (
                                     <div className="text-center group-hover:scale-105 transition-transform">
                                         <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                        <span className="text-sm text-text-secondary font-medium">Upload Video (Max 500MB)</span>
+                                        <span className="text-sm text-text-secondary font-medium">Upload Video (Max 50MB)</span>
                                     </div>
                                 )}
                                 <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />

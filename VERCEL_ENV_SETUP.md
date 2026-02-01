@@ -17,15 +17,15 @@ To ensure your wedding platform works correctly on Vercel, you need to add your 
 - `NEXT_PUBLIC_SUPABASE_URL`: (Your Project URL)
 ---
 
-## Step 4: Storage Configuration (Crucial for Videos)
+## Step 4: Storage Configuration (Standard Limit)
 
-By default, Supabase limits file uploads to 50MB. Since we support up to 500MB HD videos, you **MUST** increase this limit:
+By default, Supabase limits file uploads to 50MB. Our application is configured to respect this limit for video uploads:
 
 1. Go to your [Supabase Storage Buckets](https://supabase.com/dashboard/project/_/storage/buckets).
-2. Find the `quickweds` bucket and click the **three dots (...)** -> **Edit bucket**.
-3. Scroll down to **Maximum File Size**.
-4. Change it from `50MB` to `500MB` (or more if needed).
-5. Click **Save**.
+2. Find the `quickweds` bucket.
+3. If you ever need to support larger files, you can click the **three dots (...)** -> **Edit bucket** and change the **Maximum File Size**.
+4. Standard limit is **50MB**.
+
 
 ### Note on Storage Policies
 Ensure you have a storage bucket named `quickweds` in your Supabase project. If you are getting "Permission Denied" errors, make sure you have created an **RLS Policy** that allowed `INSERT` and `SELECT` for authenticated (or anonymous, depending on your needs) users.
