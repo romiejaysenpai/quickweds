@@ -224,12 +224,21 @@ export default function BuilderForm() {
         if (!files || files.length === 0) return;
 
         if (field === 'galleryImages') {
-            setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...Array.from(files)] }));
+            const newFiles = Array.from(files);
+            if (!isPremium && (mediaFiles.galleryImages.length + newFiles.length) > 12) {
+                alert("Free plan is limited to 12 photos. Please upgrade to Premium for unlimited gallery uploads.");
+                const allowedCount = 12 - mediaFiles.galleryImages.length;
+                if (allowedCount <= 0) return;
+                setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...newFiles.slice(0, allowedCount)] }));
+            } else {
+                setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...newFiles] }));
+            }
         } else {
             const file = files[0];
             if (field === 'teaserVideo') {
-                if (file.size > 50 * 1024 * 1024) { // 50MB Limit
-                    alert("Video must be smaller than 50MB. Please compress it or choose a smaller file.");
+                const limit = 50 * 1024 * 1024; // 50MB
+                if (!isPremium && file.size > limit) {
+                    alert("Free plan only supports videos up to 50MB. Please upgrade to Premium to upload larger files.");
                     return;
                 }
             }
@@ -413,20 +422,20 @@ export default function BuilderForm() {
                         <div className="flex items-center justify-between">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Select Wireframe Style</label>
                             {!isPremium && (
-                                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">1 Free / 8 Premium</span>
+                                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">3 Free / 22 Premium</span>
                             )}
                         </div>
                         <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                             {TEMPLATES.map((tmpl, index) => {
-                                const isLocked = !isPremium && index > 0;
+                                const isLocked = !isPremium && !['classic', 'romantic', 'tropical'].includes(tmpl.id);
                                 return (
                                     <button
                                         key={tmpl.id}
                                         type="button"
                                         onClick={() => !isLocked && setFormData(prev => ({ ...prev, template: tmpl.id }))}
                                         className={`p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-2 relative ${isLocked ? 'border-border bg-neutral/50 opacity-60 cursor-not-allowed' :
-                                                formData.template === tmpl.id ? 'border-primary bg-primary/5' :
-                                                    'border-border bg-white hover:border-primary/30'
+                                            formData.template === tmpl.id ? 'border-primary bg-primary/5' :
+                                                'border-border bg-white hover:border-primary/30'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between">
@@ -450,8 +459,8 @@ export default function BuilderForm() {
                                 <div className="flex items-start gap-3">
                                     <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                                     <div className="flex-1">
-                                        <h4 className="font-bold text-sm text-foreground mb-1">Unlock 8 Premium Templates</h4>
-                                        <p className="text-xs text-text-secondary mb-3">Get access to all modern, boho, and editorial styles for $14.99</p>
+                                        <h4 className="font-bold text-sm text-foreground mb-1">Unlock 22 Premium Templates</h4>
+                                        <p className="text-xs text-text-secondary mb-3">Get access to all modern, luxury, and editorial styles for $14.99</p>
                                         <UpgradeButton weddingId={editId || ''} variant="outlined" className="text-xs px-4 py-2" />
                                     </div>
                                 </div>
@@ -642,37 +651,30 @@ export default function BuilderForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Teaser Video (Optional)</label>
-                            {!isPremium ? (
-                                <div className="p-8 rounded-2xl border-2 border-dashed border-primary/20 bg-primary/5 flex flex-col items-center text-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-primary shadow-sm">
-                                        <Video className="w-6 h-6" />
+                            <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
+                                {mediaFiles.teaserVideo ? (
+                                    <div className="text-center p-4">
+                                        <Video className="w-8 h-8 text-primary mx-auto mb-2" />
+                                        <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
+                                        <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold text-foreground">Premium Video Upload</h4>
-                                        <p className="text-xs text-text-secondary mb-4">Share your love story with high-definition video uploads.</p>
-                                        <UpgradeButton weddingId={editId || ''} variant="outlined" className="text-xs py-2" />
+                                ) : (
+                                    <div className="text-center group-hover:scale-105 transition-transform">
+                                        <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
+                                        <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
+                                        {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
-                                    {mediaFiles.teaserVideo ? (
-                                        <div className="text-center p-4">
-                                            <Video className="w-8 h-8 text-primary mx-auto mb-2" />
-                                            <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
-                                            <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center group-hover:scale-105 transition-transform">
-                                            <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                            <span className="text-sm text-text-secondary font-medium">Upload Video (Max 50MB)</span>
-                                        </div>
-                                    )}
-                                    <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                </div>
-                            )}
+                                )}
+                                <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                            </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Gallery</label>
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Gallery</label>
+                                {!isPremium && (
+                                    <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">{mediaFiles.galleryImages.length}/12 Free Photos</span>
+                                )}
+                            </div>
                             <div className="grid grid-cols-4 gap-4">
                                 {mediaFiles.galleryImages.map((file, i) => (
                                     <div key={i} className="relative aspect-square rounded-xl overflow-hidden group border border-border">
