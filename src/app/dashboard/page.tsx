@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { Heart, Plus, Calendar, MapPin, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import UpgradeButton from '@/components/UpgradeButton';
 
 export default function DashboardRedirect() {
     const { user, loading } = useAuth();
@@ -131,6 +132,9 @@ export default function DashboardRedirect() {
                                             Manage
                                         </Link>
                                     </div>
+                                    {!wedding.is_premium && (
+                                        <UpgradeButton weddingId={wedding.id} className="w-full text-sm py-2.5" />
+                                    )}
                                     <Link href={`/builder?edit=${wedding.id}`} className="block w-full text-center py-3 rounded-xl bg-neutral text-primary text-sm font-bold border border-primary/20 hover:bg-neutral-hover transition-all">
                                         Edit Design
                                     </Link>

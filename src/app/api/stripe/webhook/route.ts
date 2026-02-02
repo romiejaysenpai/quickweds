@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object as any;
             const weddingId = session.metadata?.weddingId;
+            const plan = session.metadata?.plan || 'premium';
 
             if (weddingId) {
                 // Update wedding to premium
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
                         payment_amount: session.amount_total / 100,
                         stripe_payment_intent_id: session.payment_intent,
                         is_premium: true,
+                        plan_type: plan,
                     })
                     .eq('id', weddingId);
 
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
                     throw error;
                 }
 
-                console.log(`Wedding ${weddingId} upgraded to premium`);
+                console.log(`Wedding ${weddingId} upgraded to ${plan}`);
             }
         }
 

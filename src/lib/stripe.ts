@@ -11,5 +11,6 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 export const PRICING = {
     PREMIUM_PRICE: 14.99,
+    ELITE_PRICE: 59.00,
     CURRENCY: 'usd',
 } as const;

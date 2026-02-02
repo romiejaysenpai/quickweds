@@ -5,11 +5,12 @@ import { Sparkles, Loader2 } from 'lucide-react';
 
 interface UpgradeButtonProps {
     weddingId: string;
+    plan?: 'premium' | 'elite';
     variant?: 'primary' | 'outlined';
     className?: string;
 }
 
-export default function UpgradeButton({ weddingId, variant = 'primary', className = '' }: UpgradeButtonProps) {
+export default function UpgradeButton({ weddingId, plan = 'premium', variant = 'primary', className = '' }: UpgradeButtonProps) {
     const [loading, setLoading] = useState(false);
 
     const handleUpgrade = async () => {
@@ -19,7 +20,7 @@ export default function UpgradeButton({ weddingId, variant = 'primary', classNam
             const response = await fetch('/api/stripe/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ weddingId }),
+                body: JSON.stringify({ weddingId, plan }),
             });
 
             const data = await response.json();

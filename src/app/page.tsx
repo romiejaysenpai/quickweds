@@ -45,15 +45,15 @@ const PRICING_PLANS = [
     price: "$14.99",
     desc: "Unlock all features, one-time.",
     features: ["All 45 Premium Fonts", "Custom Monogram Logo", "All 25+ Templates", "Unlimited Gallery", "Teaser Video Upload", "Lifetime Access"],
-    cta: "Go Premium",
+    cta: "Start Premium Subscription",
     popular: true
   },
   {
     name: "Elite",
     price: "$59",
-    desc: "The ultimate wedding experience.",
+    desc: "The professional choice.",
     features: ["Everything in Premium", "Custom Domain Mapping", "Priority Support", "Whitelabel (No Watermark)", "Guest QR Code Check-in"],
-    cta: "Get Elite",
+    cta: "Start Elite Subscription",
     popular: false
   }
 ];
@@ -338,8 +338,8 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-20">
               <span className="text-xs font-black uppercase tracking-[0.4em] text-primary/60 mb-4 block">Simple & Transparent</span>
-              <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">Plans for every <span className="italic text-primary">Celebration</span></h2>
-              <p className="text-text-secondary max-w-xl mx-auto font-light">Whether it's an intimate ceremony or a grand gala, we have you covered.</p>
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">Choose Your <span className="italic text-primary">Subscription Plan</span></h2>
+              <p className="text-text-secondary max-w-xl mx-auto font-light">Whether it's an intimate ceremony or a grand gala, we have a plan that fits your needs.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
