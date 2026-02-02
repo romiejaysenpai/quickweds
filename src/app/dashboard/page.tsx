@@ -123,7 +123,7 @@ export default function DashboardRedirect() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-3 pb-3">
                                         <Link href={`/w/${wedding.id}`} target="_blank" className="text-center py-3 rounded-xl border border-border text-foreground text-sm font-bold hover:bg-neutral transition-all">
                                             View Page
                                         </Link>
@@ -131,6 +131,9 @@ export default function DashboardRedirect() {
                                             Manage
                                         </Link>
                                     </div>
+                                    <Link href={`/builder?edit=${wedding.id}`} className="block w-full text-center py-3 rounded-xl bg-neutral text-primary text-sm font-bold border border-primary/20 hover:bg-neutral-hover transition-all">
+                                        Edit Design
+                                    </Link>
                                 </div>
                             </motion.div>
                         ))}

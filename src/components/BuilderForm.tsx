@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import GenerationLoading from './GenerationLoading';
@@ -57,7 +57,12 @@ const FONTS = [
     { id: 'Saint', name: 'Mrs Saint', desc: 'Ultra Fancy Calligraphy', class: 'font-mrs-saint' },
     { id: 'Monsieur', name: 'Monsieur', desc: 'Artistic Fluid Script', class: 'font-monsieur' },
     { id: 'Handmade', name: 'Homemade', desc: 'Charming Handwritten', class: 'font-homemade' },
-    { id: 'Mueller', name: 'Herr Muellerhoff', desc: 'Sophisticated Script', class: 'font-herr' }
+    { id: 'Mueller', name: 'Herr Muellerhoff', desc: 'Sophisticated Script', class: 'font-herr' },
+    { id: 'Lavish', name: 'Lavish Royale', desc: 'Lavishly Yours + Outfit', class: 'font-lavishly' },
+    { id: 'RoyalSC', name: 'Royal Small Caps', desc: 'Cormorant SC + Montserrat', class: 'font-cormorant-sc' },
+    { id: 'ModernGrotesk', name: 'Modern Grotesk', desc: 'Fraunces + Space Grotesk', class: 'font-space' },
+    { id: 'VogueEdit', name: 'Vogue Edition', desc: 'Bodoni + Outfit', class: 'font-bodoni' },
+    { id: 'Estate', name: 'Estate Serif', desc: 'Fraunces + Inter', class: 'font-fraunces' }
 ];
 
 const TEMPLATES = [
@@ -91,6 +96,8 @@ const TEMPLATES = [
 export default function BuilderForm() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
+    const searchParams = useSearchParams();
+    const editId = searchParams.get('edit');
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -150,7 +157,53 @@ export default function BuilderForm() {
         if (!authLoading && !user) {
             router.push('/login');
         }
-    }, [user, authLoading, router]);
+
+        if (user && editId) {
+            const fetchWedding = async () => {
+                const { data, error } = await supabase
+                    .from('weddings')
+                    .select('*')
+                    .eq('id', editId)
+                    .single();
+
+                if (data && data.user_id === user.id) {
+                    setFormData({
+                        brideName: data.bride_name || '',
+                        groomName: data.groom_name || '',
+                        weddingDate: data.wedding_date || '',
+                        weddingTime: data.wedding_time || '',
+                        venueName: data.venue_name || '',
+                        venueAddress: data.venue_address || '',
+                        mapsLink: data.maps_link || '',
+                        motifColor: data.motif_color || '#C08081',
+                        fontStyle: data.font_style || 'Elegant',
+                        backgroundStyle: data.background_style || 'gradient',
+                        template: data.template || 'classic',
+                        dressCode: data.dress_code || '',
+                        programTimeline: data.program_timeline || '',
+                        story: data.story || '',
+                        quote: data.quote || '',
+                        hashtag: data.hashtag || '',
+                        contactPerson: data.contact_person || '',
+                        rsvpDeadline: data.rsvp_deadline || '',
+                        giftBank: data.gift_bank || '',
+                        giftAccountName: data.gift_account_name || '',
+                        giftAccountNumber: data.gift_account_number || '',
+                        logoInitials: data.logo_initials || '',
+                        logoFont: data.logo_font || 'Elegant',
+                        logoShape: data.logo_shape || 'minimal',
+                        logoColor: data.logo_color || data.motif_color,
+                    });
+                    setPreviews({
+                        heroImage: data.hero_image || null,
+                        couplePhoto: data.couple_photo || null,
+                        giftQr: data.gift_qr_image || null,
+                    });
+                }
+            };
+            fetchWedding();
+        }
+    }, [user, authLoading, router, editId]);
 
     const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
     const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
@@ -210,7 +263,7 @@ export default function BuilderForm() {
         }
 
         try {
-            const weddingId = uuidv4().slice(0, 8);
+            const weddingId = editId || uuidv4().slice(0, 8);
             const uploadToSupabase = async (file: File, folder: string) => {
                 const filename = `${folder}-${file.name.replace(/\s+/g, '_')}`;
                 const filePath = `${user.id}/${weddingId}/${filename}`;
@@ -243,9 +296,7 @@ export default function BuilderForm() {
                 Promise.all(galleryPromises)
             ]);
 
-            const payload = {
-                id: weddingId,
-                user_id: user.id, // Supabase uses 'id' instead of 'uid'
+            const payload: any = {
                 bride_name: formData.brideName,
                 groom_name: formData.groomName,
                 wedding_date: formData.weddingDate,
@@ -271,18 +322,26 @@ export default function BuilderForm() {
                 logo_font: formData.logoFont,
                 logo_shape: formData.logoShape,
                 logo_color: formData.logoColor || formData.motifColor,
-                hero_image: heroUrl,
-                couple_photo: coupleUrl,
-                teaser_video: videoUrl,
-                gift_qr_image: giftQrUrl,
-                gallery_images: galleryUrls, // Supabase handles JSON array automatically if column is jsonb
             };
 
-            const { error: insertError } = await supabase
-                .from('weddings')
-                .insert(payload);
+            if (mediaFiles.heroImage || editId) payload.hero_image = heroUrl || previews.heroImage;
+            if (mediaFiles.couplePhoto || editId) payload.couple_photo = coupleUrl || previews.couplePhoto;
+            if (mediaFiles.teaserVideo || editId) payload.teaser_video = videoUrl || (formData as any).teaser_video; // Keep existing if edit
+            if (mediaFiles.giftQr || editId) payload.gift_qr_image = giftQrUrl || previews.giftQr;
+            if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
 
-            if (insertError) throw new Error(insertError.message);
+            if (editId) {
+                const { error: updateError } = await supabase
+                    .from('weddings')
+                    .update(payload)
+                    .eq('id', editId);
+                if (updateError) throw updateError;
+            } else {
+                const { error: insertError } = await supabase
+                    .from('weddings')
+                    .insert({ ...payload, id: weddingId, user_id: user.id });
+                if (insertError) throw insertError;
+            }
 
             // Success
             router.push(`/dashboard/${weddingId}?created=true`);
@@ -376,8 +435,8 @@ export default function BuilderForm() {
                         </div>
                         <div className="space-y-4">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Typography & Fonts</label>
-                            <div className="grid grid-cols-2 gap-3">
-                                {FONTS.slice(0, 10).map((font) => (
+                            <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                {FONTS.map((font) => (
                                     <button key={font.id} type="button" onClick={() => setFormData(prev => ({ ...prev, fontStyle: font.id }))} className={`p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-1 ${formData.fontStyle === font.id ? 'border-primary bg-primary/5' : 'border-border bg-white hover:border-primary/30'}`}>
                                         <p className={`text-lg leading-none ${font.class}`}>{font.name}</p>
                                         <p className="text-[10px] text-text-secondary/70">{font.desc}</p>
@@ -606,7 +665,7 @@ export default function BuilderForm() {
                                 <ArrowLeft className="w-4 h-4" /> Back
                             </button>
                             <button type="submit" disabled={isSubmitting} className="bg-primary text-white px-10 py-4 rounded-xl font-bold flex items-center gap-2 hover:bg-primary-hover shadow-lg disabled:opacity-50">
-                                {isSubmitting ? 'Processing...' : currentStep === STEPS.length - 1 ? <>Create Invitation <Send className="w-5 h-5" /></> : <>Next Step <ArrowRight className="w-5 h-5" /></>}
+                                {isSubmitting ? 'Processing...' : currentStep === STEPS.length - 1 ? <>{editId ? 'Update Invitation' : 'Create Invitation'} <Send className="w-5 h-5" /></> : <>Next Step <ArrowRight className="w-5 h-5" /></>}
                             </button>
                         </div>
                     </form>

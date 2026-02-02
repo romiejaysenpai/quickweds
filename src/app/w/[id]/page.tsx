@@ -155,6 +155,12 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             case 'Monsieur': return { '--font-serif': 'var(--font-monsieur)', '--font-sans': 'var(--font-eb-garamond)' };
             case 'Handmade': return { '--font-serif': 'var(--font-homemade)', '--font-sans': 'var(--font-inter)' };
             case 'Mueller': return { '--font-serif': 'var(--font-herr)', '--font-sans': 'var(--font-playfair)' };
+            // --- Newest Premium Additions ---
+            case 'Lavish': return { '--font-serif': 'var(--font-lavishly)', '--font-sans': 'var(--font-outfit)' };
+            case 'RoyalSC': return { '--font-serif': 'var(--font-cormorant-sc)', '--font-sans': 'var(--font-montserrat)' };
+            case 'ModernGrotesk': return { '--font-serif': 'var(--font-fraunces)', '--font-sans': 'var(--font-space)' };
+            case 'VogueEdit': return { '--font-serif': 'var(--font-bodoni)', '--font-sans': 'var(--font-outfit)' };
+            case 'Estate': return { '--font-serif': 'var(--font-fraunces)', '--font-sans': 'var(--font-inter)' };
             default: return { '--font-serif': 'var(--font-playfair)', '--font-sans': 'var(--font-inter)' };
         }
     };
@@ -179,23 +185,28 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
 
             {/* Common Footer */}
             <footer className="py-12 md:py-24 px-6 text-center border-t border-primary/10">
-                {/* Monogram Logo */}
+                {/* Monogram Logo in Footer */}
                 {wedding.logo_initials && (
-                    <div className="mb-8">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.8 }}
+                        className="mb-12"
+                    >
                         <div
-                            className={`w-20 h-20 md:w-24 md:h-24 mx-auto flex items-center justify-center transition-all ${wedding.logo_shape === 'circle' ? 'rounded-full' :
-                                wedding.logo_shape === 'square' ? 'rounded-2xl' : ''
-                                } ${wedding.logo_shape !== 'minimal' ? 'border-2 bg-primary/5' : ''}`}
+                            className={`w-20 h-20 md:w-28 md:h-28 mx-auto flex items-center justify-center transition-all ${wedding.logo_shape === 'circle' ? 'rounded-full' :
+                                wedding.logo_shape === 'square' ? 'rounded-[2rem]' : ''
+                                } ${wedding.logo_shape !== 'minimal' ? 'border-2 shadow-xl shadow-primary/5 bg-white/50 backdrop-blur-sm' : ''}`}
                             style={{
                                 color: wedding.logo_color || wedding.motif_color,
                                 borderColor: wedding.logo_color || wedding.motif_color
                             }}
                         >
-                            <span className={`font-serif text-2xl md:text-3xl uppercase tracking-tighter`} style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>
+                            <span className="text-3xl md:text-4xl uppercase tracking-tighter" style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>
                                 {wedding.logo_initials}
                             </span>
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
                 {/* Fallback Heart Icon */}
@@ -247,6 +258,13 @@ function EditorialTemplate({ wedding, gallery, isExpired }: any) {
                         className="absolute inset-0 w-full h-full object-cover -z-10 brightness-[0.6] group-hover:scale-105 transition-transform duration-1000"
                     />
                     <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5, duration: 1 }} className="text-white relative z-10 max-w-6xl">
+                        {wedding.logo_initials && (
+                            <div className="mb-8 p-4 border border-white/20 inline-block backdrop-blur-md bg-white/5">
+                                <span className="text-4xl text-white uppercase tracking-tighter" style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>
+                                    {wedding.logo_initials}
+                                </span>
+                            </div>
+                        )}
                         <span className="inline-block px-4 py-1 bg-primary text-xs font-black uppercase tracking-widest mb-12">Special Invitation</span>
                         <h1 className="text-8xl md:text-[18vw] font-serif leading-[0.75] tracking-tighter mb-16 mix-blend-screen drop-shadow-2xl">
                             {wedding.bride_name.split(' ')[0]} <br />
@@ -298,8 +316,12 @@ function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                     transition={{ duration: 2 }}
                     className="z-10 text-center max-w-6xl px-8 py-24 border-[4px] border-primary/20 m-12 bg-black/40 backdrop-blur-sm relative"
                 >
-                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-[#121212] rounded-full border border-primary/20 flex items-center justify-center">
-                        <Heart className="w-12 h-12 text-primary fill-primary" />
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-[#121212] rounded-full border border-primary/20 flex items-center justify-center overflow-hidden">
+                        {wedding.logo_initials ? (
+                            <span className="text-3xl text-primary uppercase" style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>{wedding.logo_initials}</span>
+                        ) : (
+                            <Heart className="w-12 h-12 text-primary fill-primary" />
+                        )}
                     </div>
 
                     <span className="text-xs uppercase tracking-[1em] font-black opacity-60 mb-12 block">BY ROYAL PROCLAMATION</span>

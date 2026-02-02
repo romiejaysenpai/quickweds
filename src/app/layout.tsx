@@ -5,7 +5,8 @@ import {
   Alex_Brush, Allura, Arizonia, Dancing_Script, Italianno, Pinyon_Script, Sacramento, Tangerine, Parisienne,
   Tenor_Sans, Questrial, Syne, Spectral, Fauna_One,
   Abril_Fatface, Cormorant_Upright, Old_Standard_TT, Josefin_Sans, Libre_Caslon_Text, Quattrocento,
-  Mrs_Saint_Delafield, Monsieur_La_Doulaise, Homemade_Apple, Herr_Von_Muellerhoff
+  Mrs_Saint_Delafield, Monsieur_La_Doulaise, Homemade_Apple, Herr_Von_Muellerhoff,
+  Outfit, Space_Grotesk, Fraunces, Cormorant_SC, Lavishly_Yours
 } from "next/font/google";
 import "./globals.css";
 
@@ -17,6 +18,8 @@ const questrial = Questrial({ variable: "--font-questrial", weight: "400", subse
 const syne = Syne({ variable: "--font-syne", subsets: ["latin"] });
 const faunaOne = Fauna_One({ variable: "--font-fauna", weight: "400", subsets: ["latin"] });
 const josefin = Josefin_Sans({ variable: "--font-josefin", subsets: ["latin"] });
+const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
+const spaceGrotesk = Space_Grotesk({ variable: "--font-space", subsets: ["latin"] });
 
 // --- SERIF & CLASSIC ---
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"] });
@@ -37,6 +40,8 @@ const cormorantUpright = Cormorant_Upright({ variable: "--font-cormorant-upright
 const oldStandard = Old_Standard_TT({ variable: "--font-old-standard", weight: ["400", "700"], subsets: ["latin"] });
 const caslon = Libre_Caslon_Text({ variable: "--font-caslon", weight: ["400", "700"], subsets: ["latin"] });
 const quattrocento = Quattrocento({ variable: "--font-quattrocento", weight: ["400", "700"], subsets: ["latin"] });
+const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"] });
+const cormorantSC = Cormorant_SC({ variable: "--font-cormorant-sc", weight: ["300", "400", "700"], subsets: ["latin"] });
 
 // --- SCRIPT & CALLIGRAPHY ---
 const greatVibes = Great_Vibes({ variable: "--font-script", weight: "400", subsets: ["latin"] });
@@ -53,6 +58,7 @@ const mrsSaint = Mrs_Saint_Delafield({ variable: "--font-mrs-saint", weight: "40
 const monsieur = Monsieur_La_Doulaise({ variable: "--font-monsieur", weight: "400", subsets: ["latin"] });
 const homemade = Homemade_Apple({ variable: "--font-homemade", weight: "400", subsets: ["latin"] });
 const herr = Herr_Von_Muellerhoff({ variable: "--font-herr", weight: "400", subsets: ["latin"] });
+const lavishly = Lavishly_Yours({ variable: "--font-lavishly", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "QuickWeds | Instant Elegant Wedding Landing Pages",
@@ -71,9 +77,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`
-        ${inter.variable} ${montserrat.variable} ${tenorSans.variable} ${questrial.variable} ${syne.variable} ${faunaOne.variable} ${josefin.variable}
-        ${playfair.variable} ${cormorant.variable} ${ebGaramond.variable} ${bodoniModa.variable} ${prata.variable} ${lora.variable} ${cardo.variable} ${libreBaskerville.variable} ${marcellus.variable} ${forum.variable} ${alice.variable} ${spectral.variable} ${cinzel.variable} ${abril.variable} ${cormorantUpright.variable} ${oldStandard.variable} ${caslon.variable} ${quattrocento.variable}
-        ${greatVibes.variable} ${alexBrush.variable} ${allura.variable} ${arizonia.variable} ${dancingScript.variable} ${italianno.variable} ${pinyonScript.variable} ${sacramento.variable} ${tangerine.variable} ${parisienne.variable} ${mrsSaint.variable} ${monsieur.variable} ${homemade.variable} ${herr.variable}
+        ${inter.variable} ${montserrat.variable} ${tenorSans.variable} ${questrial.variable} ${syne.variable} ${faunaOne.variable} ${josefin.variable} ${outfit.variable} ${spaceGrotesk.variable}
+        ${playfair.variable} ${cormorant.variable} ${ebGaramond.variable} ${bodoniModa.variable} ${prata.variable} ${lora.variable} ${cardo.variable} ${libreBaskerville.variable} ${marcellus.variable} ${forum.variable} ${alice.variable} ${spectral.variable} ${cinzel.variable} ${abril.variable} ${cormorantUpright.variable} ${oldStandard.variable} ${caslon.variable} ${quattrocento.variable} ${fraunces.variable} ${cormorantSC.variable}
+        ${greatVibes.variable} ${alexBrush.variable} ${allura.variable} ${arizonia.variable} ${dancingScript.variable} ${italianno.variable} ${pinyonScript.variable} ${sacramento.variable} ${tangerine.variable} ${parisienne.variable} ${mrsSaint.variable} ${monsieur.variable} ${homemade.variable} ${herr.variable} ${lavishly.variable}
         antialiased
       `}>
         <AuthProvider>

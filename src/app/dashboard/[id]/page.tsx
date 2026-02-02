@@ -81,6 +81,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     <Link href="/" className="flex items-center">
                         <img src="/logo.png" alt="QuickWeds Logo" className="h-10 w-auto object-contain hover:scale-105 transition-transform" />
                     </Link>
+                    <Link href={`/builder?edit=${wedding.id}`} className="flex items-center gap-2 px-6 py-2 rounded-xl bg-primary text-white text-sm font-bold shadow-lg shadow-primary/10 hover:bg-primary-hover transition-all">
+                        Edit Design
+                    </Link>
                     <Link href={url} target="_blank" className="flex items-center gap-2 px-6 py-2 rounded-xl bg-neutral text-primary text-sm font-bold border border-border hover:bg-neutral-hover transition-all">
                         View Live Invitation <ExternalLink className="w-4 h-4" />
                     </Link>
