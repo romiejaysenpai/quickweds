@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import GenerationLoading from './GenerationLoading';
 import { useAuth } from '@/context/AuthContext';
+import UpgradeButton from './UpgradeButton';
 
 const STEPS = [
     { id: 'details', title: 'Details', icon: Heart },
@@ -153,6 +154,8 @@ export default function BuilderForm() {
         giftQr: null,
     });
 
+    const [isPremium, setIsPremium] = useState(false);
+
     useEffect(() => {
         if (!authLoading && !user) {
             router.push('/login');
@@ -167,6 +170,9 @@ export default function BuilderForm() {
                     .single();
 
                 if (data && data.user_id === user.id) {
+                    // Set premium status
+                    setIsPremium(data.is_premium || false);
+
                     setFormData({
                         brideName: data.bride_name || '',
                         groomName: data.groom_name || '',
@@ -403,22 +409,54 @@ export default function BuilderForm() {
                 );
             case 1:
                 return (
-                    <div className="space-y-4">
-                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Select Wireframe Style</label>
-                        <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                            {TEMPLATES.map((tmpl) => (
-                                <button key={tmpl.id} type="button" onClick={() => setFormData(prev => ({ ...prev, template: tmpl.id }))} className={`p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-2 ${formData.template === tmpl.id ? 'border-primary bg-primary/5' : 'border-border bg-white hover:border-primary/30'}`}>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-2xl">{tmpl.icon}</span>
-                                        {formData.template === tmpl.id && <CheckCircle2 className="w-4 h-4 text-primary" />}
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-sm text-foreground">{tmpl.name}</p>
-                                        <p className="text-[10px] text-text-secondary leading-tight">{tmpl.desc}</p>
-                                    </div>
-                                </button>
-                            ))}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Select Wireframe Style</label>
+                            {!isPremium && (
+                                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">1 Free / 8 Premium</span>
+                            )}
                         </div>
+                        <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            {TEMPLATES.map((tmpl, index) => {
+                                const isLocked = !isPremium && index > 0;
+                                return (
+                                    <button
+                                        key={tmpl.id}
+                                        type="button"
+                                        onClick={() => !isLocked && setFormData(prev => ({ ...prev, template: tmpl.id }))}
+                                        className={`p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-2 relative ${isLocked ? 'border-border bg-neutral/50 opacity-60 cursor-not-allowed' :
+                                                formData.template === tmpl.id ? 'border-primary bg-primary/5' :
+                                                    'border-border bg-white hover:border-primary/30'
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className={`text-2xl ${isLocked ? 'grayscale' : ''}`}>{tmpl.icon}</span>
+                                            {isLocked ? (
+                                                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                                            ) : (
+                                                formData.template === tmpl.id && <CheckCircle2 className="w-4 h-4 text-primary" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-sm text-foreground">{tmpl.name}</p>
+                                            <p className="text-[10px] text-text-secondary leading-tight">{tmpl.desc}</p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {!isPremium && (
+                            <div className="mt-4 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20">
+                                <div className="flex items-start gap-3">
+                                    <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-sm text-foreground mb-1">Unlock 8 Premium Templates</h4>
+                                        <p className="text-xs text-text-secondary mb-3">Get access to all modern, boho, and editorial styles for $14.99</p>
+                                        <UpgradeButton weddingId={editId || ''} variant="outlined" className="text-xs px-4 py-2" />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             case 2:
@@ -436,13 +474,41 @@ export default function BuilderForm() {
                         <div className="space-y-4">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Typography & Fonts</label>
                             <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                {FONTS.map((font) => (
-                                    <button key={font.id} type="button" onClick={() => setFormData(prev => ({ ...prev, fontStyle: font.id }))} className={`p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-1 ${formData.fontStyle === font.id ? 'border-primary bg-primary/5' : 'border-border bg-white hover:border-primary/30'}`}>
-                                        <p className={`text-lg leading-none ${font.class}`}>{font.name}</p>
-                                        <p className="text-[10px] text-text-secondary/70">{font.desc}</p>
-                                    </button>
-                                ))}
+                                {FONTS.map((font, index) => {
+                                    const isLocked = !isPremium && index >= 10;
+                                    return (
+                                        <button
+                                            key={font.id}
+                                            type="button"
+                                            onClick={() => !isLocked && setFormData(prev => ({ ...prev, fontStyle: font.id }))}
+                                            className={`p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-1 relative ${isLocked ? 'border-border bg-neutral/50 opacity-60 cursor-not-allowed' :
+                                                formData.fontStyle === font.id ? 'border-primary bg-primary/5' :
+                                                    'border-border bg-white hover:border-primary/30'
+                                                }`}
+                                        >
+                                            {isLocked && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-2xl backdrop-blur-[1px]">
+                                                    <Sparkles className="w-5 h-5 text-primary" />
+                                                </div>
+                                            )}
+                                            <p className={`text-lg leading-none ${font.class}`}>{font.name}</p>
+                                            <p className="text-[10px] text-text-secondary/70">{font.desc}</p>
+                                        </button>
+                                    );
+                                })}
                             </div>
+                            {!isPremium && (
+                                <div className="mt-4 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20">
+                                    <div className="flex items-start gap-3">
+                                        <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-sm text-foreground mb-1">Unlock 35 Premium Fonts</h4>
+                                            <p className="text-xs text-text-secondary mb-3">Get access to all premium typography for just $14.99</p>
+                                            <UpgradeButton weddingId={editId || ''} variant="outlined" className="text-xs px-4 py-2" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Quote</label>
@@ -456,76 +522,103 @@ export default function BuilderForm() {
                 );
             case 3:
                 return (
-                    <div className="space-y-6">
-                        <div className="text-center mb-8">
-                            <div
-                                className={`w-32 h-32 mx-auto flex items-center justify-center transition-all duration-500 ${formData.logoShape === 'circle' ? 'rounded-full' :
-                                    formData.logoShape === 'square' ? 'rounded-2xl' : ''
-                                    } ${formData.logoShape !== 'minimal' ? 'border-2 border-primary/20 bg-primary/5' : ''}`}
-                                style={{ color: formData.logoColor || formData.motifColor, borderColor: formData.logoColor || formData.motifColor }}
-                            >
-                                <span className={`font-serif text-4xl uppercase tracking-tighter ${FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'
-                                    }`}>
-                                    {formData.logoInitials || (formData.brideName?.[0] || 'A') + ' & ' + (formData.groomName?.[0] || 'B')}
-                                </span>
-                            </div>
+                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="text-center mb-4">
+                            <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Monogram & Branding</h2>
+                            <p className="text-text-secondary">Create your unique wedding brand identity.</p>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Initials</label>
-                            <input
-                                name="logoInitials"
-                                value={formData.logoInitials}
-                                onChange={handleChange}
-                                placeholder={(formData.brideName?.[0] || 'A') + ' & ' + (formData.groomName?.[0] || 'B')}
-                                className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Minogram Shape</label>
-                                <select
-                                    name="logoShape"
-                                    value={formData.logoShape}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
-                                >
-                                    <option value="minimal">Minimal</option>
-                                    <option value="circle">Circle</option>
-                                    <option value="square">Rounded Square</option>
-                                </select>
+                        {!isPremium ? (
+                            <div className="bg-white rounded-[2rem] p-12 border-2 border-dashed border-primary/10 text-center flex flex-col items-center gap-6 shadow-sm">
+                                <div className="w-20 h-20 rounded-full bg-primary/5 flex items-center justify-center">
+                                    <Sparkles className="w-10 h-10 text-primary/40" />
+                                </div>
+                                <div className="max-w-md mx-auto">
+                                    <h3 className="text-2xl font-serif font-bold text-foreground mb-3">Premium Monogram Maker</h3>
+                                    <p className="text-text-secondary mb-8">
+                                        Unlock our custom monogram logo system to create a unique brand identity that appears throughout your invitation.
+                                    </p>
+                                    <UpgradeButton weddingId={editId || ''} className="scale-110 mb-6" />
+                                    <div className="flex justify-center gap-6 opacity-40 grayscale pointer-events-none">
+                                        <div className="w-16 h-16 rounded-full border-2 border-primary/30 flex items-center justify-center text-primary font-bold text-xl font-serif">A&B</div>
+                                        <div className="w-16 h-16 rounded-xl border-2 border-primary/30 flex items-center justify-center text-primary font-bold text-xl font-serif">A&B</div>
+                                        <div className="w-16 h-16 border-2 border-primary/30 flex items-center justify-center text-primary font-bold text-xl font-serif text-center leading-tight">A<br />&<br />B</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Font</label>
-                                <select
-                                    name="logoFont"
-                                    value={formData.logoFont}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
-                                >
-                                    {FONTS.slice(0, 15).map(f => (
-                                        <option key={f.id} value={f.id}>{f.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
+                        ) : (
+                            <div className="space-y-6">
+                                <div className="text-center mb-8">
+                                    <div
+                                        className={`w-32 h-32 mx-auto flex items-center justify-center transition-all duration-500 ${formData.logoShape === 'circle' ? 'rounded-full' :
+                                            formData.logoShape === 'square' ? 'rounded-2xl' : ''
+                                            } ${formData.logoShape !== 'minimal' ? 'border-2 border-primary/20 bg-primary/5' : ''}`}
+                                        style={{ color: formData.logoColor || formData.motifColor, borderColor: formData.logoColor || formData.motifColor }}
+                                    >
+                                        <span className={`font-serif text-4xl uppercase tracking-tighter ${FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'
+                                            }`}>
+                                            {formData.logoInitials || (formData.brideName?.[0] || 'A') + ' & ' + (formData.groomName?.[0] || 'B')}
+                                        </span>
+                                    </div>
+                                </div>
 
-                        <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Color (Optional)</label>
-                            <div className="flex gap-4">
-                                {['#D16C78', '#F2C1CC', '#D6B87C', '#3A2A2D', '#7A5A61', '#FFF8F4'].map((color) => (
-                                    <button
-                                        key={color}
-                                        type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, logoColor: color }))}
-                                        className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.logoColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral'}`}
-                                        style={{ backgroundColor: color }}
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Initials</label>
+                                    <input
+                                        name="logoInitials"
+                                        value={formData.logoInitials}
+                                        onChange={handleChange}
+                                        placeholder={(formData.brideName?.[0] || 'A') + ' & ' + (formData.groomName?.[0] || 'B')}
+                                        className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
                                     />
-                                ))}
-                                <input type="color" name="logoColor" value={formData.logoColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer" />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Shape</label>
+                                        <select
+                                            name="logoShape"
+                                            value={formData.logoShape}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
+                                        >
+                                            <option value="minimal">Minimal</option>
+                                            <option value="circle">Circle</option>
+                                            <option value="square">Rounded Square</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Font</label>
+                                        <select
+                                            name="logoFont"
+                                            value={formData.logoFont}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
+                                        >
+                                            {FONTS.map(f => (
+                                                <option key={f.id} value={f.id}>{f.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Color (Optional)</label>
+                                    <div className="flex gap-4">
+                                        {['#D16C78', '#F2C1CC', '#D6B87C', '#3A2A2D', '#7A5A61', '#FFF8F4'].map((color) => (
+                                            <button
+                                                key={color}
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, logoColor: color }))}
+                                                className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.logoColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral'}`}
+                                                style={{ backgroundColor: color }}
+                                            />
+                                        ))}
+                                        <input type="color" name="logoColor" value={formData.logoColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer" />
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 );
             case 4:
@@ -549,21 +642,34 @@ export default function BuilderForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Teaser Video (Optional)</label>
-                            <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
-                                {mediaFiles.teaserVideo ? (
-                                    <div className="text-center p-4">
-                                        <Video className="w-8 h-8 text-primary mx-auto mb-2" />
-                                        <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
-                                        <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
+                            {!isPremium ? (
+                                <div className="p-8 rounded-2xl border-2 border-dashed border-primary/20 bg-primary/5 flex flex-col items-center text-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-primary shadow-sm">
+                                        <Video className="w-6 h-6" />
                                     </div>
-                                ) : (
-                                    <div className="text-center group-hover:scale-105 transition-transform">
-                                        <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                        <span className="text-sm text-text-secondary font-medium">Upload Video (Max 50MB)</span>
+                                    <div>
+                                        <h4 className="font-bold text-foreground">Premium Video Upload</h4>
+                                        <p className="text-xs text-text-secondary mb-4">Share your love story with high-definition video uploads.</p>
+                                        <UpgradeButton weddingId={editId || ''} variant="outlined" className="text-xs py-2" />
                                     </div>
-                                )}
-                                <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                            </div>
+                                </div>
+                            ) : (
+                                <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
+                                    {mediaFiles.teaserVideo ? (
+                                        <div className="text-center p-4">
+                                            <Video className="w-8 h-8 text-primary mx-auto mb-2" />
+                                            <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
+                                            <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center group-hover:scale-105 transition-transform">
+                                            <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
+                                            <span className="text-sm text-text-secondary font-medium">Upload Video (Max 50MB)</span>
+                                        </div>
+                                    )}
+                                    <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Gallery</label>

@@ -33,18 +33,18 @@ const FAQS = [
 
 const PRICING_PLANS = [
   {
-    name: "Forever Free",
+    name: "Free",
     price: "$0",
-    desc: "Perfect for checking out the magic.",
-    features: ["Standard Templates", "RSVP Basic", "Gallery (10 photos)", "7-Day Active"],
+    desc: "Try QuickWeds risk-free.",
+    features: ["1 Basic Template", "10 Basic Fonts", "RSVP Tracking", "3 Gallery Photos", "Share Link"],
     cta: "Start for Free",
     popular: false
   },
   {
-    name: "Premium One",
-    price: "$29",
-    desc: "Your complete digital invitation.",
-    features: ["All 25+ Templates", "Advanced RSVP + Export", "Unlimited Photos", "Teaser Video Upload", "Custom Monogram Logo", "Lifetime Access"],
+    name: "Premium",
+    price: "$14.99",
+    desc: "Unlock all features, one-time.",
+    features: ["All 45 Premium Fonts", "Custom Monogram Logo", "All 25+ Templates", "Unlimited Gallery", "Teaser Video Upload", "Lifetime Access"],
     cta: "Go Premium",
     popular: true
   },
