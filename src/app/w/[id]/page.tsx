@@ -586,229 +586,45 @@ function MidnightTemplate({ wedding, gallery, isExpired }: any) {
         </div>
     );
 }
-
 function SakuraTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="bg-[#fff5f7] text-[#d81b60] relative overflow-hidden pb-24">
-            <DecorativeLayer type="sakura" position="top-right" color="#f06292" opacity={0.2} />
-            <DecorativeLayer type="sakura" position="bottom-left" color="#f06292" opacity={0.2} />
+        <div className="bg-[#fff0f5] text-[#8e405a] relative">
+            <div className="fixed inset-0 pointer-events-none opacity-30" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30c-2-2-5-2-7 0-.5.5-.5 1.5 0 2 2 2 5 2 7 0 .5-.5.5-1.5 0-2zm5 5c-2-2-5-2-7 0-.5.5-.5 1.5 0 2 2 2 5 2 7 0 .5-.5.5-1.5 0-2z' fill='%23ffb7c5' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")` }} />
 
-            <section className="min-h-screen py-24 px-6 flex flex-col items-center justify-center text-center relative z-10">
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1 }}>
-                    <h1 className="text-7xl md:text-9xl font-serif mb-8 leading-none tracking-tighter">
-                        {wedding.bride_name} & <br /> {wedding.groom_name}
-                    </h1>
-                    <p className="text-2xl font-serif italic opacity-60 mb-12">Love in Full Bloom</p>
-                    <div className="w-24 h-[1px] bg-[#d81b60]/20 mx-auto mb-12" />
-                    <p className="text-xl tracking-[0.3em] font-bold mb-16">{new Date(wedding.wedding_date).toLocaleDateString()}</p>
-                    <a href="#rsvp" className="px-12 py-4 bg-[#d81b60] text-white rounded-full font-bold uppercase tracking-widest text-xs shadow-xl shadow-[#d81b60]/20">Join Us</a>
-                </motion.div>
-            </section>
+            <section className="min-h-screen py-24 flex flex-col items-center justify-center text-center px-6 relative overflow-hidden">
+                <div className="w-[500px] h-[500px] bg-gradient-to-br from-pink-200/40 to-transparent rounded-full absolute -top-24 -left-24 blur-3xl animate-pulse" />
+                <div className="w-[400px] h-[400px] bg-gradient-to-tl from-pink-300/30 to-transparent rounded-full absolute bottom-0 right-0 blur-3xl" />
 
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} />
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
-            <GiftSection wedding={wedding} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
-        </div>
-    );
-}
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative z-10 bg-white/60 backdrop-blur-sm p-12 lg:p-24 rounded-[3rem] border border-white soft-shadow max-w-4xl">
+                    <div className="absolute top-6 left-6 text-4xl opacity-50">🌸</div>
 
-function VogueTemplate({ wedding, gallery, isExpired }: any) {
-    return (
-        <div className="bg-white text-black relative pb-24 selection:bg-black selection:text-white">
-            <section className="min-h-screen flex flex-col justify-end p-6 md:p-24 relative overflow-hidden">
-                <img src={wedding.hero_image || wedding.couple_photo} className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
-                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="relative z-10">
-                    <h1 className="text-[15vw] font-serif leading-[0.75] tracking-tighter mb-12 border-b-8 border-black pb-12">
-                        {wedding.bride_name.split(' ')[0]} <br />
-                        <span className="italic">{wedding.groom_name.split(' ')[0]}</span>
-                    </h1>
-                    <div className="flex justify-between items-end">
-                        <p className="text-2xl font-serif italic">{new Date(wedding.wedding_date).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</p>
-                        <a href="#rsvp" className="text-4xl font-serif italic border-b-2 border-black">RSVP</a>
-                    </div>
-                </motion.div>
-            </section>
-
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} />
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
-            <GiftSection wedding={wedding} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
-        </div>
-    );
-}
-
-function RusticTemplate({ wedding, gallery, isExpired }: any) {
-    return (
-        <div className="bg-[#fdf9f3] text-[#5d4037] relative pb-24">
-            <div className="fixed inset-0 opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
-            <section className="min-h-screen py-24 px-6 flex flex-col items-center justify-center text-center">
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="max-w-4xl space-y-12">
-                    <div className="w-32 h-32 mx-auto border-4 border-[#5d4037] rounded-full flex items-center justify-center rotate-12">
-                        <span className="text-4xl font-serif">{wedding.bride_name[0]}&{wedding.groom_name[0]}</span>
-                    </div>
-                    <h1 className="text-6xl md:text-8xl font-serif">{wedding.bride_name} & {wedding.groom_name}</h1>
-                    <p className="text-2xl font-serif italic opacity-60">Cordially Invite You to Their Wedding</p>
-                    <div className="pt-12">
-                        <p className="text-xl tracking-widest uppercase font-bold">{new Date(wedding.wedding_date).toLocaleDateString()}</p>
-                    </div>
-                    <a href="#rsvp" className="inline-block px-12 py-4 bg-[#5d4037] text-white font-bold uppercase tracking-widest text-xs hover:bg-[#3e2723] transition-all">Will You Join Us?</a>
-                </motion.div>
-            </section>
-
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} />
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
-            <GiftSection wedding={wedding} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
-        </div>
-    );
-}
-
-function FilmTemplate({ wedding, gallery, isExpired }: any) {
-    return (
-        <div className="bg-black text-white relative pb-24 font-mono selection:bg-white selection:text-black">
-            <section className="min-h-screen flex flex-col justify-center p-6 md:p-24 relative overflow-hidden">
-                <img src={wedding.hero_image || wedding.couple_photo} className="absolute inset-0 w-full h-full object-cover opacity-60 grayscale" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black via-black/20 to-black" />
-                <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1 }} className="relative z-10 space-y-8">
-                    <p className="text-xs uppercase tracking-[0.5em] text-white/40">Scene 1: The Beginning</p>
-                    <h1 className="text-6xl md:text-9xl font-black uppercase tracking-tighter leading-[0.8]">
+                    <p className="font-serif italic text-2xl text-[#8e405a]/60 mb-6">Blossoming Love</p>
+                    <h1 className="text-6xl md:text-8xl font-serif text-[#8e405a] mb-8 leading-none">
                         {wedding.bride_name} <br />
-                        <span className="text-white/20">X</span> <br />
+                        <span className="text-3xl block my-4 font-sans font-light uppercase tracking-widest text-[#8e405a]/40">and</span>
                         {wedding.groom_name}
                     </h1>
-                    <div className="flex gap-12 text-sm opacity-60">
-                        <p>[ DATE: {new Date(wedding.wedding_date).toLocaleDateString()} ]</p>
-                        <p>[ LOC: {wedding.venue_name.slice(0, 15)}... ]</p>
+                    <div className="inline-block border-y border-[#8e405a]/20 py-4 px-12 mb-12">
+                        <p className="font-serif text-xl tracking-widest uppercase">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
                     </div>
-                    <a href="#rsvp" className="inline-block px-12 py-4 border border-white hover:bg-white hover:text-black transition-all uppercase text-xs font-bold tracking-widest">Enroll Now</a>
+
+                    <div className="w-64 h-64 rounded-full overflow-hidden border-4 border-white shadow-lg mx-auto mb-12">
+                        <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover" />
+                    </div>
+
+                    <a href="#rsvp" className="bg-[#ffb7c5] text-white px-10 py-4 rounded-2xl font-bold hover:bg-[#ff9eb0] transition-colors shadow-lg shadow-pink-200">
+                        Join Our Celebration
+                    </a>
                 </motion.div>
             </section>
 
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} invert />
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
-            <GiftSection wedding={wedding} invert />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
-        </div>
-    );
-}
-
-function GlitchTemplate({ wedding, gallery, isExpired }: any) {
-    return (
-        <div className="bg-white text-black relative pb-24 font-black selection:bg-black selection:text-white">
-            <section className="min-h-screen py-24 px-6 flex flex-col items-center justify-center text-center overflow-hidden">
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="space-y-12">
-                    <div className="relative inline-block">
-                        <h1 className="text-7xl md:text-[15vw] uppercase leading-[0.7] tracking-tighter relative z-10">
-                            {wedding.bride_name.split(' ')[0]} <br />
-                            <span className="text-neutral-200">+</span> <br />
-                            {wedding.groom_name.split(' ')[0]}
-                        </h1>
-                        <div className="absolute -top-4 -left-4 w-full h-full bg-red-500/10 -z-10 mix-blend-multiply animate-pulse" />
-                        <div className="absolute -bottom-4 -right-4 w-full h-full bg-blue-500/10 -z-10 mix-blend-multiply animate-pulse delay-75" />
-                    </div>
-                    <div className="flex flex-col md:flex-row justify-center gap-12 text-xl tracking-tighter">
-                        <p>{new Date(wedding.wedding_date).toLocaleDateString()}</p>
-                        <p>@ {wedding.venue_name}</p>
-                    </div>
-                    <a href="#rsvp" className="inline-block px-12 py-4 bg-black text-white hover:bg-neutral-800 transition-all uppercase text-xs font-black tracking-widest">Connect</a>
-                </motion.div>
-            </section>
-
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
-            <TimelineSection timeline={wedding.program_timeline} />
+            <BioSection wedding={wedding} />
             <GallerySection gallery={gallery} />
+            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <GiftSection wedding={wedding} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
-    );
-}
-
-function GardenTemplate({ wedding, gallery, isExpired }: any) {
-    return (
-        <div className="bg-[#f1f8e9] text-[#2e7d32] pb-24 relative overflow-hidden">
-            <DecorativeLayer type="floral" position="top-right" color="#4caf50" opacity={0.15} />
-            <DecorativeLayer type="floral" position="bottom-left" color="#4caf50" opacity={0.15} />
-
-            <section className="min-h-screen py-24 px-6 flex flex-col items-center justify-center text-center relative z-10">
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5 }}>
-                    <div className="w-64 h-64 rounded-full overflow-hidden border-8 border-white shadow-2xl mx-auto mb-12">
-                        <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover scale-110" />
-                    </div>
-                    <h1 className="text-6xl md:text-8xl font-serif mb-8 text-[#1b5e20] leading-tight">
-                        {wedding.bride_name} <br />
-                        <span className="text-2xl md:text-4xl italic opacity-40 font-light italic serif">&</span> <br />
-                        {wedding.groom_name}
-                    </h1>
-                    <p className="text-2xl font-serif italic text-primary/60 mb-12">Under the shade of old oak trees</p>
-                    <div className="w-16 h-[1px] bg-[#2e7d32]/20 mx-auto mb-12" />
-                    <p className="text-xl tracking-[0.3em] font-bold mb-16 uppercase">{new Date(wedding.wedding_date).toLocaleDateString()}</p>
-                    <a href="#rsvp" className="px-12 py-4 bg-[#2e7d32] text-white rounded-full font-bold uppercase tracking-widest text-xs shadow-xl shadow-[#2e7d32]/20">Count Me In</a>
-                </motion.div>
-            </section>
-
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} />
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
-            <GiftSection wedding={wedding} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
-        </div>
-    );
-}
-<div className="bg-[#fff0f5] text-[#8e405a] relative">
-    <div className="fixed inset-0 pointer-events-none opacity-30" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30c-2-2-5-2-7 0-.5.5-.5 1.5 0 2 2 2 5 2 7 0 .5-.5.5-1.5 0-2zm5 5c-2-2-5-2-7 0-.5.5-.5 1.5 0 2 2 2 5 2 7 0 .5-.5.5-1.5 0-2z' fill='%23ffb7c5' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")` }} />
-
-    <section className="min-h-screen py-24 flex flex-col items-center justify-center text-center px-6 relative overflow-hidden">
-        <div className="w-[500px] h-[500px] bg-gradient-to-br from-pink-200/40 to-transparent rounded-full absolute -top-24 -left-24 blur-3xl animate-pulse" />
-        <div className="w-[400px] h-[400px] bg-gradient-to-tl from-pink-300/30 to-transparent rounded-full absolute bottom-0 right-0 blur-3xl" />
-
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative z-10 bg-white/60 backdrop-blur-sm p-12 lg:p-24 rounded-[3rem] border border-white soft-shadow max-w-4xl">
-            <div className="absolute top-6 left-6 text-4xl opacity-50">🌸</div>
-
-            <p className="font-serif italic text-2xl text-[#8e405a]/60 mb-6">Blossoming Love</p>
-            <h1 className="text-6xl md:text-8xl font-serif text-[#8e405a] mb-8 leading-none">
-                {wedding.bride_name} <br />
-                <span className="text-3xl block my-4 font-sans font-light uppercase tracking-widest text-[#8e405a]/40">and</span>
-                {wedding.groom_name}
-            </h1>
-            <div className="inline-block border-y border-[#8e405a]/20 py-4 px-12 mb-12">
-                <p className="font-serif text-xl tracking-widest uppercase">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
-            </div>
-
-            <div className="w-64 h-64 rounded-full overflow-hidden border-4 border-white shadow-lg mx-auto mb-12">
-                <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover" />
-            </div>
-
-            <a href="#rsvp" className="bg-[#ffb7c5] text-white px-10 py-4 rounded-2xl font-bold hover:bg-[#ff9eb0] transition-colors shadow-lg shadow-pink-200">
-                Join Our Celebration
-            </a>
-        </motion.div>
-    </section>
-
-    <DetailsSection wedding={wedding} />
-    <BioSection wedding={wedding} />
-    <GallerySection gallery={gallery} />
-    <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-    <GiftSection wedding={wedding} />
-    <RSVPSection wedding={wedding} isExpired={isExpired} />
-</div>
     );
 }
 
