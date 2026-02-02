@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, Sparkles, Smartphone, Share2, Calendar, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus } from 'lucide-react';
+import { Heart, Sparkles, Smartphone, Share2, Calendar, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle } from 'lucide-react';
 import ExamplesSection from '@/components/ExamplesSection';
 import TemplatesSection from '@/components/TemplatesSection';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -548,6 +548,31 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-4">
+        <motion.a
+          href="https://wa.me/yournumber"
+          target="_blank"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          whileHover={{ scale: 1.1, rotate: 10 }}
+          className="w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl shadow-green-500/40 group cursor-pointer"
+        >
+          <MessageCircle className="w-8 h-8" />
+          <span className="absolute right-full mr-4 px-4 py-2 bg-white text-foreground text-xs font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Chat with us</span>
+        </motion.a>
+
+        <motion.button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          whileHover={{ scale: 1.1 }}
+          className="w-16 h-16 bg-white border border-border text-foreground rounded-full flex items-center justify-center shadow-xl hover:bg-neutral transition-all cursor-pointer"
+        >
+          <ChevronDown className="w-6 h-6 rotate-180" />
+        </motion.button>
+      </div>
     </div>
   );
 }
