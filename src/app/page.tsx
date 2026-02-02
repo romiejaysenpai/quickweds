@@ -36,7 +36,7 @@ const PRICING_PLANS = [
     name: "Free",
     price: "$0",
     desc: "Try QuickWeds risk-free.",
-    features: ["1 Basic Template", "10 Basic Fonts", "RSVP Tracking", "3 Gallery Photos", "Share Link"],
+    features: ["3 Basic Templates", "10 Basic Fonts", "RSVP Tracking", "12 Gallery Photos", "Video Uploads (<50MB)"],
     cta: "Start for Free",
     popular: false
   },
