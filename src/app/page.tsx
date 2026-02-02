@@ -2,11 +2,138 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, Sparkles, Smartphone, Share2, Calendar, ArrowRight, Play, CheckCircle2, Star, Zap } from 'lucide-react';
+import { Heart, Sparkles, Smartphone, Share2, Calendar, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus } from 'lucide-react';
 import ExamplesSection from '@/components/ExamplesSection';
 import TemplatesSection from '@/components/TemplatesSection';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+
+const FAQS = [
+  {
+    question: "How long does it take to create a site?",
+    answer: "With QuickWeds, you can have a professional wedding landing page ready in under 5 minutes. Simply fill in your details, choose a template, and your site is live instantly."
+  },
+  {
+    question: "Can I use my own domain?",
+    answer: "Yes! While we provide a clean quickweds.com/w/your-id URL for free, you can easily map your own custom domain in the dashboard."
+  },
+  {
+    question: "Is the RSVP system automated?",
+    answer: "Absolutely. All guest responses are tracked in real-time. You'll get instant notifications, and you can export your guest list with meal preferences at any time."
+  },
+  {
+    question: "Can I upload high-quality videos?",
+    answer: "Yes, we support high-definition video uploads (up to 50MB) for your wedding teasers and stories, ensuring your memories look stunning on all devices."
+  },
+  {
+    question: "Are the templates mobile-friendly?",
+    answer: "Every single one of our 25+ templates is designed with a mobile-first approach. They look and function perfectly on iPhones, Androids, and tablets."
+  }
+];
+
+const PRICING_PLANS = [
+  {
+    name: "Forever Free",
+    price: "$0",
+    desc: "Perfect for checking out the magic.",
+    features: ["Standard Templates", "RSVP Basic", "Gallery (10 photos)", "7-Day Active"],
+    cta: "Start for Free",
+    popular: false
+  },
+  {
+    name: "Premium One",
+    price: "$29",
+    desc: "Your complete digital invitation.",
+    features: ["All 25+ Templates", "Advanced RSVP + Export", "Unlimited Photos", "Teaser Video Upload", "Custom Monogram Logo", "Lifetime Access"],
+    cta: "Go Premium",
+    popular: true
+  },
+  {
+    name: "Elite",
+    price: "$59",
+    desc: "The ultimate wedding experience.",
+    features: ["Everything in Premium", "Custom Domain Mapping", "Priority Support", "Whitelabel (No Watermark)", "Guest QR Code Check-in"],
+    cta: "Get Elite",
+    popular: false
+  }
+];
+
+const TESTIMONIALS = [
+  {
+    name: "Sarah & Marc",
+    date: "December 2025",
+    text: "QuickWeds made our digital invitations look so premium. Our guests were genuinely impressed by the interactive timeline!",
+    rating: 5,
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah"
+  },
+  {
+    name: "James & Lily",
+    date: "January 2026",
+    text: "The RSVP tracking saved us hours of stressful spreadsheet work. The ability to add our bank details and QR codes for gifts was a lifesaver.",
+    rating: 5,
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily"
+  },
+  {
+    name: "Elena & David",
+    date: "February 2026",
+    text: "We tried other site builders, but nothing was as easy or looked as elegant as QuickWeds. The mobile experience is flawless.",
+    rating: 5,
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David"
+  }
+];
+
+function SectionDivider({ className = "" }: { className?: string }) {
+  return (
+    <div className={`w-full flex justify-center items-center gap-4 py-12 opacity-20 pointer-events-none ${className}`}>
+      <div className="h-[1px] w-24 bg-gradient-to-r from-transparent to-primary" />
+      <Heart className="w-4 h-4 text-primary fill-primary" />
+      <div className="h-[1px] w-24 bg-gradient-to-l from-transparent to-primary" />
+    </div>
+  );
+}
+
+function GridBackground() {
+  return (
+    <div className="absolute inset-0 -z-20 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 40H0V0h40v40zM1 39h38V1H1v38z' fill='%23C08081' fill-rule='evenodd'/%3E%3C/svg%3E")` }} />
+  );
+}
+
+function Glow({ className = "" }: { className?: string }) {
+  return (
+    <div className={`absolute w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] -z-10 animate-pulse ${className}`} />
+  );
+}
+
+function FAQItem({ question, answer }: { question: string, answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="border-b border-border/50 py-6 last:border-0">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex justify-between items-center text-left group"
+      >
+        <h3 className="text-xl font-serif font-bold text-foreground group-hover:text-primary transition-colors">{question}</h3>
+        <div className={`w-8 h-8 rounded-full border border-border flex items-center justify-center transition-all ${isOpen ? 'bg-primary border-primary text-white' : 'text-text-secondary group-hover:border-primary group-hover:text-primary'}`}>
+          {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+        </div>
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <p className="pt-4 text-text-secondary leading-relaxed font-light text-lg">
+              {answer}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function Home() {
   const [isExamplesOpen, setIsExamplesOpen] = useState(false);
@@ -14,9 +141,25 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-neutral selection:bg-primary/20">
-      {/* Background Ornaments */}
-      <div className="absolute top-0 right-0 w-1/2 h-[80vh] bg-gradient-to-bl from-primary/5 via-primary/2 to-transparent rounded-bl-full blur-3xl -z-10" />
-      <div className="absolute bottom-0 left-0 w-1/2 h-[80vh] bg-gradient-to-tr from-secondary/10 via-secondary/5 to-transparent rounded-tr-full blur-3xl -z-10" />
+      {/* Advanced Background Ornaments */}
+      <GridBackground />
+      <Glow className="top-0 -right-48" />
+      <Glow className="bottom-0 -left-48 opacity-50" />
+      <Glow className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30" />
+
+      {/* Parallax Mouse Effect Container */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none -z-10"
+        animate={{
+          background: [
+            "radial-gradient(circle at 50% 50%, rgba(192, 128, 129, 0.05) 0%, transparent 50%)",
+            "radial-gradient(circle at 60% 40%, rgba(192, 128, 129, 0.05) 0%, transparent 50%)",
+            "radial-gradient(circle at 40% 60%, rgba(192, 128, 129, 0.05) 0%, transparent 50%)",
+            "radial-gradient(circle at 50% 50%, rgba(192, 128, 129, 0.05) 0%, transparent 50%)",
+          ]
+        }}
+        transition={{ duration: 10, repeat: Infinity }}
+      />
 
       {/* Floating Sparkles Decoration */}
       <div className="absolute inset-0 pointer-events-none -z-5">
@@ -89,8 +232,8 @@ export default function Home() {
             transition={{ delay: 0.2 }}
             className="text-xl md:text-2xl font-inter text-text-secondary max-w-2xl mx-auto mb-16 leading-relaxed font-light"
           >
-            Create a stunning, interactive wedding landing page in under 5 minutes.
-            No design skills needed—just your beautiful moments.
+            Craft a breathtaking, interactive wedding landing page in under 5 minutes.
+            No code, no stress—just pure, digital enchantment for your most special day.
           </motion.p>
 
           <motion.div
@@ -140,6 +283,10 @@ export default function Home() {
         {/* INTERACTIVE FEATURE CARDS */}
         <section className="bg-neutral/50 py-32 px-6">
           <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-20">
+              <span className="text-xs font-black uppercase tracking-[0.4em] text-primary/60 mb-4 block">Engineered for perfection</span>
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground">Why Couples Love <span className="italic text-primary">QuickWeds</span></h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 {
@@ -163,6 +310,10 @@ export default function Home() {
               ].map((feature, i) => (
                 <motion.div
                   key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
                   whileHover={{ y: -10 }}
                   className={`p-10 rounded-[3rem] bg-white border border-border hover:border-primary/20 transition-all soft-shadow relative overflow-hidden group`}
                 >
@@ -170,9 +321,9 @@ export default function Home() {
                     {feature.icon}
                   </div>
                   <h3 className="text-2xl font-serif font-bold mb-4 text-foreground">{feature.title}</h3>
-                  <p className="text-text-secondary leading-relaxed mb-6">{feature.desc}</p>
-                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
-                    Learn More <ArrowRight className="w-4 h-4" />
+                  <p className="text-text-secondary leading-relaxed mb-6 font-light">{feature.desc}</p>
+                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                    Explore Feature <ArrowRight className="w-4 h-4" />
                   </div>
                 </motion.div>
               ))}
@@ -180,48 +331,219 @@ export default function Home() {
           </div>
         </section>
 
-        {/* TEMPLATES SECTION */}
-        <div id="templates">
-          <TemplatesSection />
-        </div>
+        <SectionDivider />
 
-        {/* TESTIMONIAL / HOOK */}
-        <section className="py-24 px-6 text-center">
-          <div className="max-w-4xl mx-auto bg-primary text-white p-16 md:p-24 rounded-[4rem] relative overflow-hidden shadow-2xl shadow-primary/40">
+        {/* PRICING SECTION */}
+        <section className="py-32 px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-20">
+              <span className="text-xs font-black uppercase tracking-[0.4em] text-primary/60 mb-4 block">Simple & Transparent</span>
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">Plans for every <span className="italic text-primary">Celebration</span></h2>
+              <p className="text-text-secondary max-w-xl mx-auto font-light">Whether it's an intimate ceremony or a grand gala, we have you covered.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+              {PRICING_PLANS.map((plan, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className={`relative p-10 rounded-[3rem] border transition-all duration-500 hover:scale-105 ${plan.popular ? 'bg-primary text-white border-primary shadow-2xl shadow-primary/40 ring-4 ring-primary/10' : 'bg-white text-foreground border-border soft-shadow'}`}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-accent text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">Most Popular</div>
+                  )}
+                  <h3 className="text-xl font-serif font-bold mb-2">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1 mb-6">
+                    <span className="text-5xl font-serif font-bold tracking-tight">{plan.price}</span>
+                    <span className={`text-sm opacity-60 font-light`}>/ Event</span>
+                  </div>
+                  <p className={`text-sm mb-8 font-light ${plan.popular ? 'text-white/80' : 'text-text-secondary'}`}>{plan.desc}</p>
+
+                  <div className="space-y-4 mb-10">
+                    {plan.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-center gap-3">
+                        <CheckCircle2 className={`w-4 h-4 ${plan.popular ? 'text-white' : 'text-primary'}`} />
+                        <span className="text-sm font-light">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Link
+                    href="/builder"
+                    className={`block w-full py-4 rounded-2xl font-bold text-center transition-all ${plan.popular ? 'bg-white text-primary hover:bg-neutral' : 'bg-primary/5 text-primary hover:bg-primary/10'}`}
+                  >
+                    {plan.cta}
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <SectionDivider />
+
+        {/* TESTIMONIALS SECTION */}
+        <section className="py-32 px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-20">
+              <Star className="w-12 h-12 text-primary mx-auto mb-6 opacity-20" />
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground">Trusted by <span className="italic text-primary">Beautiful Souls</span></h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {TESTIMONIALS.map((t, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="bg-white border border-border p-10 rounded-[3rem] soft-shadow relative group hover:border-primary/20 transition-all"
+                >
+                  <div className="flex gap-1 mb-6">
+                    {[...Array(t.rating)].map((_, j) => (
+                      <Star key={j} className="w-4 h-4 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <p className="text-lg font-serif italic text-foreground mb-8 line-clamp-4 leading-relaxed">"{t.text}"</p>
+                  <div className="flex items-center gap-4">
+                    <img src={t.avatar} alt={t.name} className="w-12 h-12 rounded-full border border-border" />
+                    <div>
+                      <p className="font-bold text-sm text-foreground">{t.name}</p>
+                      <p className="text-[10px] uppercase font-black tracking-widest opacity-40">{t.date}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ SECTION */}
+        <section className="py-32 px-6 bg-neutral/30">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-20">
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">Common Questions</h2>
+              <p className="text-text-secondary text-lg font-light">Everything you need to know about creating your dream invitations.</p>
+            </div>
+            <div className="bg-white border border-border p-8 md:p-16 rounded-[4rem] soft-shadow">
+              {FAQS.map((faq, i) => (
+                <FAQItem key={i} question={faq.question} answer={faq.answer} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <SectionDivider />
+
+        {/* NEWSLETTER SECTION */}
+        <section className="py-32 px-6">
+          <div className="max-w-5xl mx-auto px-10 py-20 rounded-[4rem] bg-white border border-border soft-shadow relative overflow-hidden text-center group">
+            <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 transition-transform group-hover:rotate-45 duration-700">
+              <Share2 className="w-32 h-32" />
+            </div>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
+              <span className="text-primary text-xs font-black uppercase tracking-[0.4em] mb-4 block">The Wedding Edit</span>
+              <h2 className="text-4xl font-serif font-bold text-foreground mb-6">Get wedding tips and inspiration</h2>
+              <p className="text-text-secondary mx-auto max-w-lg mb-10 font-light">Join 5,000+ couples receiving our monthly newsletter on trends, planning, and digital etiquette.</p>
+
+              <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="flex-1 px-6 py-4 rounded-2xl bg-neutral border border-border focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-light"
+                />
+                <button className="px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all whitespace-nowrap">
+                  Subscribe
+                </button>
+              </div>
+              <p className="text-[10px] text-text-secondary mt-6 font-light italic">No spam, just love. Unsubscribe any time.</p>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* FINAL HOOK */}
+        <section className="py-32 px-6">
+          <div className="max-w-6xl mx-auto bg-primary text-white p-16 md:p-24 rounded-[4rem] relative overflow-hidden shadow-2xl shadow-primary/40 text-center">
             <div className="absolute top-0 right-0 p-8 opacity-20"><Star className="w-32 h-32 rotate-12" /></div>
             <div className="absolute bottom-0 left-0 p-8 opacity-20"><Heart className="w-32 h-32 -rotate-12" /></div>
 
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-8 relative z-10 leading-tight">
-              "We had our site up and running in minutes, and our guests couldn't stop raving about how beautiful it was!"
+            <h2 className="text-4xl md:text-6xl font-serif font-bold mb-10 relative z-10 leading-[1.1] max-w-2xl mx-auto">
+              Ready to create your <span className="italic font-normal">digital forever</span>?
             </h2>
-            <div className="flex flex-col items-center relative z-10">
-              <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md mb-4 border border-white/30 flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-white" />
-              </div>
-              <p className="font-bold tracking-widest uppercase text-xs">Sarah & Marc, December 2025</p>
-            </div>
+            <p className="text-xl mb-12 opacity-80 font-light max-w-xl mx-auto relative z-10">
+              Join thousands of couples who have chosen QuickWeds to tell their unique love stories.
+            </p>
+            <Link href="/builder" className="inline-flex items-center gap-3 px-12 py-5 bg-white text-primary rounded-2xl font-bold text-lg hover:bg-neutral transition-all relative z-10">
+              Get Started for Free <ArrowRight className="w-5 h-5" />
+            </Link>
           </div>
         </section>
       </main>
 
       <ExamplesSection isOpen={isExamplesOpen} onClose={() => setIsExamplesOpen(false)} />
 
-      <footer className="py-20 bg-white border-t border-border px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <img src="/logo.png" alt="QuickWeds Logo" className="h-8 w-auto grayscale opacity-50" />
-            <p className="text-text-secondary text-sm">© 2026 QuickWeds. Crafting digital forever.</p>
-          </div>
-          <div className="flex gap-12">
-            <div className="flex flex-col gap-4">
-              <p className="font-bold text-xs uppercase tracking-widest text-foreground">Product</p>
-              <Link href="/builder" className="text-text-secondary text-sm hover:text-primary">Builder</Link>
-              <Link href="#templates" className="text-text-secondary text-sm hover:text-primary">Templates</Link>
+      <footer className="py-32 bg-white border-t border-border px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
+            <div className="col-span-1 md:col-span-1">
+              <Link href="/" className="inline-block mb-8">
+                <img src="/logo.png" alt="QuickWeds Logo" className="h-10 w-auto object-contain" />
+              </Link>
+              <p className="text-text-secondary text-sm leading-relaxed font-light mb-8">
+                QuickWeds is the fastest way to create premium, interactive, and mobile-first wedding landing pages.
+              </p>
+              <div className="flex gap-4">
+                <a href="#" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
+                  <Instagram className="w-4 h-4" />
+                </a>
+                <a href="#" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
+                  <Twitter className="w-4 h-4" />
+                </a>
+                <a href="#" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
+                  <Facebook className="w-4 h-4" />
+                </a>
+              </div>
             </div>
-            <div className="flex flex-col gap-4">
-              <p className="font-bold text-xs uppercase tracking-widest text-foreground">Support</p>
-              <Link href="#" className="text-text-secondary text-sm hover:text-primary">Help Center</Link>
-              <Link href="#" className="text-text-secondary text-sm hover:text-primary">Privacy</Link>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 col-span-1 md:col-span-3 gap-12">
+              <div className="flex flex-col gap-6">
+                <p className="font-black text-[10px] uppercase tracking-[0.3em] text-foreground">Platform</p>
+                <div className="flex flex-col gap-4">
+                  <Link href="/builder" className="text-text-secondary text-sm hover:text-primary transition-colors">Builder</Link>
+                  <Link href="#templates" className="text-text-secondary text-sm hover:text-primary transition-colors">Templates</Link>
+                  <button onClick={() => setIsExamplesOpen(true)} className="text-left text-text-secondary text-sm hover:text-primary transition-colors">Examples</button>
+                  <Link href="/login" className="text-text-secondary text-sm hover:text-primary transition-colors">Login</Link>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-6">
+                <p className="font-black text-[10px] uppercase tracking-[0.3em] text-foreground">Support</p>
+                <div className="flex flex-col gap-4">
+                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Help Center</Link>
+                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Guidelines</Link>
+                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Contact</Link>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-6">
+                <p className="font-black text-[10px] uppercase tracking-[0.3em] text-foreground">Legal</p>
+                <div className="flex flex-col gap-4">
+                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Privacy Policy</Link>
+                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Terms of Service</Link>
+                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Cookie Policy</Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-12 border-t border-border flex flex-col md:flex-row justify-between items-center gap-8">
+            <p className="text-text-secondary text-[10px] font-black uppercase tracking-[0.2em]">© 2026 QuickWeds. Crafting digital forever.</p>
+            <div className="flex items-center gap-2 px-4 py-2 bg-neutral rounded-full border border-border">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Systems Operational</span>
             </div>
           </div>
         </div>
