@@ -40,6 +40,7 @@ const PRICING_PLANS = [
     desc: "Experience the magic of QuickWeds with no commitment. Perfect for exploring our platform and starting your journey.",
     features: ["3 Basic Templates", "10 Basic Fonts", "RSVP Tracking", "12 Gallery Photos", "Video Overlays (<50MB)"],
     cta: "Start for Free",
+    href: "/builder",
     popular: false
   },
   {
@@ -49,7 +50,18 @@ const PRICING_PLANS = [
     desc: "Our most loved plan. Unlock the full potential of your wedding website with every premium feature included. Limited time offer for couples who want perfection.",
     features: ["All 45+ Premium Fonts & Monograms", "Full Access to 25+ Designer Templates", "Unlimited High-Res Gallery & Video Uploads", "Custom Domain Mapping Support", "Priority 24/7 Support & No Watermark"],
     cta: "GET 1-Year Access for Only $14.99 Now",
+    href: "/builder",
     popular: true
+  },
+  {
+    name: "Custom Website",
+    price: "Custom",
+    period: "",
+    desc: "Need something truly unique? Our design team will build your dream wedding website from scratch, tailored perfectly to your vision and style.",
+    features: ["Bespoke Designer Consultation", "Fully Custom Layouts & Content", "Advanced Interactive Features", "Concierge Setup & Management", "White-glove Service Start-to-Finish"],
+    cta: "Book a Consultation Now",
+    href: "https://cal.com/romie-jay-bacasmas-4ywlbo/quikweds-costum-wedding-website-discussion",
+    popular: false
   }
 ];
 
@@ -375,7 +387,8 @@ export default function Home() {
                   </div>
 
                   <Link
-                    href="/builder"
+                    href={plan.href}
+                    target={plan.href.startsWith('http') ? '_blank' : undefined}
                     className={`block w-full py-4 rounded-2xl font-bold text-center transition-all ${plan.popular ? 'bg-white text-primary hover:bg-neutral' : 'bg-primary/5 text-primary hover:bg-primary/10'}`}
                   >
                     {plan.cta}
