@@ -44,9 +44,9 @@ const PRICING_PLANS = [
   {
     name: "Premium",
     price: "$14.99",
-    desc: "Unlock all features, one-time.",
-    features: ["All 45 Premium Fonts", "Custom Monogram Logo", "All 25+ Templates", "Unlimited Gallery", "Teaser Video Upload", "Lifetime Access"],
-    cta: "Start Premium Subscription",
+    desc: "Full 1-Year Access (Limited Time Offer). Unlock every premium feature: from exclusive designer templates to custom domain mapping. Create the perfect digital experience for your guests.",
+    features: ["All 45 Premium Fonts & Monograms", "Access to All 25+ Designer Templates", "Unlimited Gallery & Video Uploads", "Custom Domain Support", "Priority Support & No Watermark"],
+    cta: "Get 1-Year Access Now",
     popular: true
   },
   {

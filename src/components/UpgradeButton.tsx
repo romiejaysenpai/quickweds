@@ -13,32 +13,10 @@ interface UpgradeButtonProps {
 export default function UpgradeButton({ weddingId, plan = 'premium', variant = 'primary', className = '' }: UpgradeButtonProps) {
     const [loading, setLoading] = useState(false);
 
-    const handleUpgrade = async () => {
-        try {
-            setLoading(true);
-
-            const response = await fetch('/api/stripe/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ weddingId, plan }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to start upgrade process');
-            }
-
-            if (data.url) {
-                window.location.href = data.url;
-            } else {
-                throw new Error('No checkout URL returned');
-            }
-        } catch (error: any) {
-            console.error('Upgrade error:', error);
-            alert(`Error: ${error.message}`);
-            setLoading(false);
-        }
+    const handleUpgrade = () => {
+        // Direct redirect to Stripe Payment Link with client reference ID
+        // The client_reference_id helps us track which wedding this payment is for
+        window.location.href = `https://pay.call2proposalgenerator.com/b/cNieVd74Wd8ugoU6iD97G00?client_reference_id=${weddingId}`;
     };
 
     const baseStyles = variant === 'primary'
