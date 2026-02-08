@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe, PRICING } from '@/lib/stripe';
 
 export async function POST(req: NextRequest) {
+    console.log('Stripe checkout session initiated');
     try {
         const { weddingId, plan = 'premium' } = await req.json();
 
@@ -9,6 +10,9 @@ export async function POST(req: NextRequest) {
             console.error('STRIPE_SECRET_KEY is missing');
             return NextResponse.json({ error: 'Server configuration error: STRIPE_SECRET_KEY is missing' }, { status: 500 });
         }
+        // Log key prefix for debugging (don't log full key)
+        console.log('Using Stripe Key:', process.env.STRIPE_SECRET_KEY.substring(0, 8) + '...');
+
 
         if (!weddingId) {
             return NextResponse.json({ error: 'Wedding ID is required' }, { status: 400 });
