@@ -36,26 +36,20 @@ const PRICING_PLANS = [
   {
     name: "Free",
     price: "$0",
-    desc: "Try QuickWeds risk-free.",
-    features: ["3 Basic Templates", "10 Basic Fonts", "RSVP Tracking", "12 Gallery Photos", "Video Uploads (<50MB)"],
+    period: "/ Event",
+    desc: "Experience the magic of QuickWeds with no commitment. Perfect for exploring our platform and starting your journey.",
+    features: ["3 Basic Templates", "10 Basic Fonts", "RSVP Tracking", "12 Gallery Photos", "Video Overlays (<50MB)"],
     cta: "Start for Free",
     popular: false
   },
   {
-    name: "Premium",
+    name: "1-Year Access",
     price: "$14.99",
-    desc: "Full 1-Year Access (Limited Time Offer). Unlock every premium feature: from exclusive designer templates to custom domain mapping. Create the perfect digital experience for your guests.",
-    features: ["All 45 Premium Fonts & Monograms", "Access to All 25+ Designer Templates", "Unlimited Gallery & Video Uploads", "Custom Domain Support", "Priority Support & No Watermark"],
-    cta: "Get 1-Year Access Now",
+    period: "/ Year",
+    desc: "Our most loved plan. Unlock the full potential of your wedding website with every premium feature included. Limited time offer for couples who want perfection.",
+    features: ["All 45+ Premium Fonts & Monograms", "Full Access to 25+ Designer Templates", "Unlimited High-Res Gallery & Video Uploads", "Custom Domain Mapping Support", "Priority 24/7 Support & No Watermark"],
+    cta: "GET 1-Year Access for Only $14.99 Now",
     popular: true
-  },
-  {
-    name: "Elite",
-    price: "$59",
-    desc: "The professional choice.",
-    features: ["Everything in Premium", "Custom Domain Mapping", "Priority Support", "Whitelabel (No Watermark)", "Guest QR Code Check-in"],
-    cta: "Start Elite Subscription",
-    popular: false
   }
 ];
 
@@ -367,7 +361,7 @@ export default function Home() {
                   <h3 className="text-xl font-serif font-bold mb-2">{plan.name}</h3>
                   <div className="flex items-baseline gap-1 mb-6">
                     <span className="text-5xl font-serif font-bold tracking-tight">{plan.price}</span>
-                    <span className={`text-sm opacity-60 font-light`}>/ Event</span>
+                    <span className={`text-sm opacity-60 font-light`}>{plan.period}</span>
                   </div>
                   <p className={`text-sm mb-8 font-light ${plan.popular ? 'text-white/80' : 'text-text-secondary'}`}>{plan.desc}</p>
 
