@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Heart, Sparkles, Smartphone, Share2, Calendar, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle } from 'lucide-react';
 import ExamplesSection from '@/components/ExamplesSection';
 import TemplatesSection from '@/components/TemplatesSection';
+import PhoneMockupSection from '@/components/PhoneMockupSection';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 
@@ -330,6 +331,14 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <SectionDivider />
+
+        <PhoneMockupSection />
+
+        <div id="templates">
+          <TemplatesSection />
+        </div>
 
         <SectionDivider />
 

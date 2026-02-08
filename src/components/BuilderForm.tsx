@@ -66,7 +66,7 @@ const FONTS = [
     { id: 'Estate', name: 'Estate Serif', desc: 'Fraunces + Inter', class: 'font-fraunces' }
 ];
 
-const TEMPLATES = [
+export const TEMPLATES = [
     { id: 'classic', name: 'Classic Elegance', desc: 'Timeless, centered layout with elegant serif typography.', icon: '✨' },
     { id: 'minimal', name: 'Modern Minimal', desc: 'Clean lines, high contrast, and bold sans-serif fonts.', icon: '⬛' },
     { id: 'romantic', name: 'Romantic', desc: 'Soft textures, script fonts, and nostalgic framing.', icon: '📜' },
