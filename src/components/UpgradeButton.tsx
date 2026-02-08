@@ -25,14 +25,18 @@ export default function UpgradeButton({ weddingId, plan = 'premium', variant = '
 
             const data = await response.json();
 
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to start upgrade process');
+            }
+
             if (data.url) {
                 window.location.href = data.url;
             } else {
                 throw new Error('No checkout URL returned');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Upgrade error:', error);
-            alert('Failed to start upgrade process. Please try again.');
+            alert(`Error: ${error.message}`);
             setLoading(false);
         }
     };

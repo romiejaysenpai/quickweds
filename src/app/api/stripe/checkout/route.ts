@@ -5,6 +5,11 @@ export async function POST(req: NextRequest) {
     try {
         const { weddingId, plan = 'premium' } = await req.json();
 
+        if (!process.env.STRIPE_SECRET_KEY) {
+            console.error('STRIPE_SECRET_KEY is missing');
+            return NextResponse.json({ error: 'Server configuration error: STRIPE_SECRET_KEY is missing' }, { status: 500 });
+        }
+
         if (!weddingId) {
             return NextResponse.json({ error: 'Wedding ID is required' }, { status: 400 });
         }
