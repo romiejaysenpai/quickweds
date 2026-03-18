@@ -2,33 +2,68 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, CheckCircle2 } from 'lucide-react';
+import { Send, CheckCircle2, Music, Users, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+
+const DIETARY_OPTIONS = [
+    'No Preference',
+    'Vegetarian',
+    'Vegan',
+    'Halal',
+    'Kosher',
+    'Gluten-Free',
+    'Other (see message)',
+];
 
 export default function RSVPForm({ weddingId }: { weddingId: string }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [duplicateError, setDuplicateError] = useState(false);
     const [formData, setFormData] = useState({
         guestName: '',
         attendance: 'Yes',
         numGuests: 1,
         mealPreference: '',
+        dietaryDetails: '',
         message: '',
+        plusOneNames: '',
+        songRequest: '',
+        childrenCount: 0,
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
+        setDuplicateError(false);
+
         try {
+            // Check for duplicate RSVP
+            const { data: existing } = await supabase
+                .from('rsvps')
+                .select('id')
+                .eq('wedding_id', weddingId)
+                .ilike('guest_name', formData.guestName.trim())
+                .limit(1);
+
+            if (existing && existing.length > 0) {
+                setDuplicateError(true);
+                setIsSubmitting(false);
+                return;
+            }
+
             const { error } = await supabase
                 .from('rsvps')
                 .insert({
                     wedding_id: weddingId,
-                    guest_name: formData.guestName,
+                    guest_name: formData.guestName.trim(),
                     attendance: formData.attendance,
                     num_guests: formData.numGuests,
-                    meal_preference: formData.mealPreference,
-                    message: formData.message
+                    meal_preference: formData.mealPreference || 'No Preference',
+                    dietary_details: formData.dietaryDetails || null,
+                    message: formData.message || null,
+                    plus_one_names: formData.plusOneNames || null,
+                    song_request: formData.songRequest || null,
+                    children_count: formData.childrenCount || 0,
                 });
 
             if (error) {
@@ -36,6 +71,21 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                 alert("Failed to submit RSVP. Please try again.");
             } else {
                 setIsSubmitted(true);
+
+                // Trigger email notification to couple (fire and forget)
+                try {
+                    fetch('/api/email/rsvp-notify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            weddingId,
+                            guestName: formData.guestName.trim(),
+                            attendance: formData.attendance,
+                            numGuests: formData.numGuests,
+                            message: formData.message,
+                        }),
+                    });
+                } catch { }
             }
         } catch (err) {
             console.error(err);
@@ -64,9 +114,18 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
     return (
         <div className="p-8 md:p-12 rounded-[2rem] bg-white soft-shadow border border-border">
             <h2 className="text-2xl font-serif font-bold text-primary mb-8 text-center italic">RSVP for our Special Day</h2>
+
+            {duplicateError && (
+                <div className="mb-6 p-4 rounded-2xl bg-error-bg border border-error-text/20 flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-error-text flex-shrink-0" />
+                    <p className="text-sm text-error-text">It looks like you&apos;ve already submitted an RSVP. If you need to update it, please contact the couple.</p>
+                </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6 text-left">
+                {/* Name */}
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-text-secondary ml-1">Guest Full Name</label>
+                    <label className="text-sm font-bold text-text-secondary ml-1">Guest Full Name *</label>
                     <input
                         required
                         placeholder="Enter your full name"
@@ -76,6 +135,7 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                     />
                 </div>
 
+                {/* Attendance + Guests */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-text-secondary ml-1">Will you attend?</label>
@@ -91,26 +151,80 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-text-secondary ml-1">Number of Guests</label>
                         <input
-                            type="number"
-                            min="1"
-                            max="10"
+                            type="number" min="1" max="10"
                             value={formData.numGuests}
-                            onChange={(e) => setFormData(prev => ({ ...prev, numGuests: parseInt(e.target.value) }))}
+                            onChange={(e) => setFormData(prev => ({ ...prev, numGuests: parseInt(e.target.value) || 1 }))}
                             className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground"
                         />
                     </div>
                 </div>
 
+                {/* Plus One Names (shown if numGuests > 1) */}
+                {formData.numGuests > 1 && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
+                        <label className="text-sm font-bold text-text-secondary ml-1 flex items-center gap-2">
+                            <Users className="w-4 h-4" /> Names of Additional Guests
+                        </label>
+                        <input
+                            placeholder="e.g. Jane Doe, John Smith"
+                            value={formData.plusOneNames}
+                            onChange={(e) => setFormData(prev => ({ ...prev, plusOneNames: e.target.value }))}
+                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
+                        />
+                    </motion.div>
+                )}
+
+                {/* Children Count */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-text-secondary ml-1">Children Attending</label>
+                        <input
+                            type="number" min="0" max="10"
+                            value={formData.childrenCount}
+                            onChange={(e) => setFormData(prev => ({ ...prev, childrenCount: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-text-secondary ml-1">Dietary Preference</label>
+                        <select
+                            value={formData.mealPreference}
+                            onChange={(e) => setFormData(prev => ({ ...prev, mealPreference: e.target.value }))}
+                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground"
+                        >
+                            <option value="">Select...</option>
+                            {DIETARY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Dietary Details (if Other) */}
+                {formData.mealPreference === 'Other (see message)' && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
+                        <label className="text-sm font-bold text-text-secondary ml-1">Dietary Details / Allergies</label>
+                        <input
+                            placeholder="Please describe your dietary requirements"
+                            value={formData.dietaryDetails}
+                            onChange={(e) => setFormData(prev => ({ ...prev, dietaryDetails: e.target.value }))}
+                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
+                        />
+                    </motion.div>
+                )}
+
+                {/* Song Request */}
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-text-secondary ml-1">Meal Preference (Optional)</label>
+                    <label className="text-sm font-bold text-text-secondary ml-1 flex items-center gap-2">
+                        <Music className="w-4 h-4" /> Song Request <span className="text-text-secondary/50 font-normal">(What gets you on the dance floor?)</span>
+                    </label>
                     <input
-                        placeholder="Vegetarian, Halal, Allergies, etc."
-                        value={formData.mealPreference}
-                        onChange={(e) => setFormData(prev => ({ ...prev, mealPreference: e.target.value }))}
+                        placeholder="e.g. 'Dancing Queen' by ABBA"
+                        value={formData.songRequest}
+                        onChange={(e) => setFormData(prev => ({ ...prev, songRequest: e.target.value }))}
                         className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
                     />
                 </div>
 
+                {/* Message */}
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-text-secondary ml-1">Message for the Couple</label>
                     <textarea

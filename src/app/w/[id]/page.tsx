@@ -7,6 +7,21 @@ import RSVPForm from '@/components/RSVPForm';
 import DecorativeLayer from '@/components/DecorativeLayer';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import {
+    CountdownTimer,
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    GallerySection,
+    GiftSection,
+    RSVPSection,
+    TimelineSection,
+    GuestBook,
+    WeddingPartySection,
+    VenueMap,
+    MinimalGallery,
+} from '@/components/wedding';
+import type { Wedding, WeddingPartyMember } from '@/types/wedding';
 
 export default function WeddingPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -292,6 +307,7 @@ function EditorialTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -351,6 +367,7 @@ function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                 <div className="relative z-10 bg-[#121212] pt-24"><DetailsSection wedding={wedding} invert /></div>
                 <GallerySection gallery={gallery} />
                 <GiftSection wedding={wedding} invert />
+                <SharedNewSections wedding={wedding} isExpired={isExpired} />
                 <RSVPSection wedding={wedding} isExpired={isExpired} />
             </div>
         </div>
@@ -423,6 +440,7 @@ function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -502,6 +520,7 @@ function UrbanTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -569,6 +588,7 @@ function TropicalTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -604,6 +624,7 @@ function MidnightTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -645,6 +666,7 @@ function SakuraTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -702,6 +724,7 @@ function VogueTemplate({ wedding, gallery, isExpired }: any) {
             <DetailsSection wedding={wedding} />
             <GallerySection gallery={gallery} masonry />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -752,6 +775,7 @@ function RusticTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -793,6 +817,7 @@ function FilmTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <GiftSection wedding={wedding} invert />
             <GallerySection gallery={gallery} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -838,6 +863,7 @@ function GlitchTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <GiftSection wedding={wedding} invert />
             <GallerySection gallery={gallery} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -888,210 +914,59 @@ function GardenTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <GiftSection wedding={wedding} />
             <GallerySection gallery={gallery} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
 
-// --- SHARED COMPONENTS ---
+// --- SHARED COMPONENTS are now imported from @/components/wedding ---
 
-function GiftSection({ wedding, invert = false }: any) {
-    if (!wedding.gift_bank && !wedding.gift_qr_image && !wedding.gift_account_number) return null;
+// Helper: Parse wedding party members from JSON
+function parseWeddingParty(wedding: any): WeddingPartyMember[] {
+    try {
+        if (wedding.wedding_party) return JSON.parse(wedding.wedding_party);
+    } catch { }
+    return [];
+}
 
+// Helper: Common new sections added to all templates
+function SharedNewSections({ wedding, isExpired }: { wedding: any; isExpired: boolean }) {
+    const partyMembers = parseWeddingParty(wedding);
     return (
-        <section className={`py-24 px-6 ${invert ? 'bg-[#1a1a1a] text-white' : 'bg-neutral/50 text-[#4A4444]'}`}>
-            <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-16 items-center">
-                <div className="flex-1 space-y-6 text-center md:text-left">
-                    <h2 className={`text-4xl font-serif mb-4 ${invert ? 'text-white' : 'text-[#4A4444]'}`}>Gift Registry</h2>
-                    <p className={`text-lg leading-relaxed ${invert ? 'text-white/60' : 'text-text-secondary'} font-serif italic`}>
-                        Your presence is the greatest gift of all. However, if you wish to honor us with a gift, a cash contribution towards our future together would be appreciated.
-                    </p>
-                    <div className={`p-8 rounded-3xl ${invert ? 'bg-white/5 border border-white/10' : 'bg-white soft-shadow border border-primary/5'}`}>
-                        <div className="space-y-4">
-                            {wedding.gift_bank && (
-                                <div>
-                                    <p className="text-xs uppercase tracking-widest font-bold opacity-50 mb-1">Bank / App</p>
-                                    <p className="text-xl font-bold">{wedding.gift_bank}</p>
-                                </div>
-                            )}
-                            {wedding.gift_account_name && (
-                                <div>
-                                    <p className="text-xs uppercase tracking-widest font-bold opacity-50 mb-1">Account Name</p>
-                                    <p className="text-xl font-serif">{wedding.gift_account_name}</p>
-                                </div>
-                            )}
-                            {wedding.gift_account_number && (
-                                <div>
-                                    <p className="text-xs uppercase tracking-widest font-bold opacity-50 mb-1">Account Number</p>
-                                    <p className="font-mono text-xl tracking-wider select-all">{wedding.gift_account_number}</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+        <>
+            {wedding.is_thank_you_mode ? (
+                <div className="py-24 px-6 text-center max-w-4xl mx-auto space-y-8 bg-primary/5 rounded-3xl my-12 border border-primary/20 soft-shadow">
+                    <h2 className="text-4xl md:text-5xl font-serif text-primary italic">Thank You!</h2>
+                    <p className="text-xl font-light leading-relaxed text-text-secondary">{wedding.thank_you_message || "Thank you so much for celebrating our special day with us."}</p>
+                    {wedding.photo_album_link && (
+                        <a href={wedding.photo_album_link} target="_blank" rel="noopener noreferrer" className="inline-block px-10 py-4 bg-primary text-white font-bold rounded-full mt-8 shadow-lg hover:shadow-xl transition-all">
+                            View Wedding Album
+                        </a>
+                    )}
                 </div>
-                {wedding.gift_qr_image && (
-                    <div className="w-full md:w-80 shrink-0">
-                        <div className={`p-6 rounded-3xl ${invert ? 'bg-white text-black' : 'bg-white soft-shadow'}`}>
-                            <div className="aspect-square rounded-xl overflow-hidden bg-neutral flex items-center justify-center border border-border">
-                                <img src={wedding.gift_qr_image} alt="Payment QR Code" className="w-full h-full object-contain" />
-                            </div>
-                            <p className="text-center mt-6 text-xs uppercase tracking-widest font-bold opacity-40">Scan to Send Gift</p>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </section>
-    );
-}
-
-function DetailsSection({ wedding, invert = false }: any) {
-    return (
-        <section className={`py-32 ${invert ? 'bg-black/10' : 'bg-white/50'}`}>
-            <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <DetailCard icon={Calendar} title="Date" value={new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} subtitle={wedding.wedding_time} />
-                <DetailCard icon={MapPin} title="Location" value={wedding.venue_name} subtitle={wedding.venue_address} link={wedding.maps_link} />
-                <DetailCard icon={Shirt} title="Attire" value={wedding.dress_code || 'Formal'} subtitle="Dress your best for our special day." />
-                {(wedding.contact_person || wedding.hashtag) && (
-                    <DetailCard
-                        icon={Info}
-                        title="Extras"
-                        value={wedding.hashtag ? `#${wedding.hashtag}` : 'Contact Us'}
-                        subtitle={wedding.contact_person ? `Contact: ${wedding.contact_person}` : 'See you there!'}
-                    />
-                )}
-            </div>
-        </section>
-    );
-}
-
-function DetailCard({ icon: Icon, title, value, subtitle, link }: any) {
-    return (
-        <div className="flex flex-col items-center text-center p-12 rounded-[3.5rem] bg-white soft-shadow hover:-translate-y-2 transition-transform duration-500 border border-primary/5">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 rotate-3">
-                <Icon className="w-7 h-7 text-primary" />
-            </div>
-            <h3 className="text-xl font-bold mb-4 opacity-40 uppercase tracking-widest">{title}</h3>
-            <p className="text-2xl font-serif mb-2 text-[#4A4444]">{value}</p>
-            <p className="text-foreground/50 text-sm mb-6 max-w-[200px]">{subtitle}</p>
-            {link && <a href={link} target="_blank" className="text-primary font-bold border-b border-primary/30 pb-1 hover:border-primary transition-all text-xs uppercase tracking-widest">Get Directions</a>}
-        </div>
-    );
-}
-
-function BioSection({ wedding }: any) {
-    return (
-        <section className="max-w-6xl mx-auto px-6 py-32">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-                <div className="relative">
-                    <div className="aspect-[4/5] rounded-[4rem] overflow-hidden soft-shadow border-[12px] border-white -rotate-2">
-                        <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover" />
-                    </div>
+            ) : (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
+            <WeddingPartySection members={partyMembers} />
+            <VenueMap venueName={wedding.venue_name} venueAddress={wedding.venue_address} mapsLink={wedding.maps_link} />
+            <GuestBook weddingId={wedding.id} />
+            {wedding.spotify_playlist_url && (
+                <div className="fixed bottom-6 left-6 z-50">
+                    <a href={wedding.spotify_playlist_url} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#1DB954] text-white font-bold text-sm shadow-lg hover:scale-105 transition-transform">
+                        <Music className="w-4 h-4" /> Our Playlist
+                    </a>
                 </div>
-                <div>
-                    <span className="text-xs uppercase tracking-[0.3em] font-bold text-primary mb-6 block">Our Love Story</span>
-                    <h2 className="text-6xl font-serif mb-8 text-[#4A4444] leading-tight">Meant to Be</h2>
-                    <p className="text-xl leading-relaxed text-foreground/70 font-serif italic mb-12 italic opacity-80">
-                        {wedding.story || "They say when you know, you know. For us, every moment since we met has been a beautiful step towards this day."}
-                    </p>
-                    <div className="p-10 rounded-[3rem] bg-white border border-primary/5 soft-shadow flex gap-6 items-start text-left">
-                        <Quote className="w-12 h-12 text-primary opacity-20 flex-shrink-0" />
-                        <p className="italic text-primary/80 font-serif text-lg leading-relaxed">
-                            {wedding.quote || "A successful marriage requires falling in love many times, always with the same person."}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
-}
-
-function VideoSection({ video, poster }: any) {
-    if (!video) return null;
-    return (
-        <section className="py-24 bg-[#1a1a1a] text-white overflow-hidden">
-            <div className="max-w-5xl mx-auto px-6 text-center">
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ duration: 1 }}>
-                    <span className="text-xs uppercase tracking-[0.4em] font-black text-primary mb-6 block opacity-60">Sneak Peek</span>
-                    <h2 className="text-4xl md:text-6xl font-serif mb-12">Wedding Teaser</h2>
-                    <div className="aspect-video rounded-[3rem] overflow-hidden soft-shadow relative bg-black/40 p-2 md:p-4 border border-white/10 group">
-                        <video src={video} className="w-full h-full object-cover rounded-[2.5rem]" controls poster={poster} />
-                        <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/20 to-transparent group-hover:opacity-0 transition-opacity" />
-                    </div>
-                </motion.div>
-            </div>
-        </section>
-    );
-}
-
-function TimelineSection({ timeline }: { timeline: string }) {
-    if (!timeline) return null;
-    return (
-        <section className="py-24 bg-white/30 backdrop-blur-sm">
-            <div className="max-w-4xl mx-auto px-6">
-                <div className="text-center mb-16">
-                    <Clock className="w-12 h-12 text-primary mx-auto mb-6 opacity-30" />
-                    <h2 className="text-4xl md:text-5xl font-serif text-[#4A4444]">The Program</h2>
-                </div>
-                <div className="bg-white/50 border border-primary/5 p-8 md:p-12 rounded-[3.5rem] soft-shadow">
-                    <p className="whitespace-pre-wrap font-serif text-xl leading-relaxed text-foreground/70 text-center">
-                        {timeline}
-                    </p>
-                </div>
-            </div>
-        </section>
-    );
-}
-
-function GallerySection({ gallery }: any) {
-    if (!gallery || gallery.length === 0) return null;
-    return (
-        <section className="py-32">
-            <div className="max-w-6xl mx-auto px-6">
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="text-center mb-20"
-                >
-                    <span className="text-xs uppercase tracking-[0.3em] font-bold text-primary mb-4 block">Moments Captured</span>
-                    <h2 className="text-6xl font-serif text-[#4A4444]">Our Gallery</h2>
-                </motion.div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {gallery.map((img: string, i: number) => (
-                        <motion.div
-                            key={i}
-                            initial={{ opacity: 0, y: 50 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1, duration: 0.5 }}
-                            className="aspect-[4/5] rounded-[2.5rem] overflow-hidden soft-shadow bg-white p-3 border border-primary/5 group"
-                        >
-                            <div className="w-full h-full rounded-[2rem] overflow-hidden relative">
-                                <img src={img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
-            </div>
-        </section>
-    );
-}
-
-function RSVPSection({ wedding, isExpired }: any) {
-    return (
-        <section id="rsvp" className="max-w-4xl mx-auto px-6 py-32">
-            <div className="bg-white rounded-[5rem] p-16 md:p-24 soft-shadow text-center relative overflow-hidden ring-1 ring-primary/5">
-                <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-br-full" />
-                <h2 className="text-5xl md:text-7xl font-serif mb-8 text-[#4A4444]">Will You Join Us?</h2>
-                <p className="text-foreground/60 italic mb-12 text-xl max-w-lg mx-auto leading-relaxed">We'd love to have you with us. Please RSVP by <span className="text-primary font-bold not-italic">{new Date(wedding.rsvp_deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span></p>
-                {isExpired ? (
-                    <div className="p-12 rounded-[3rem] bg-neutral/50 border border-primary/10 text-center">
-                        <p className="text-2xl font-serif text-foreground/60">RSVP has closed for this event.</p>
-                    </div>
-                ) : (
-                    <RSVPForm weddingId={wedding.id} />
-                )}
-            </div>
-        </section>
+            )}
+        </>
     );
 }
 
@@ -1106,21 +981,6 @@ function MinimalDetailItem({ icon: Icon, title, value }: any) {
                 <p className="text-xl font-bold tracking-tighter">{value}</p>
             </div>
         </div>
-    );
-}
-
-function MinimalGallery({ gallery }: any) {
-    if (gallery.length === 0) return null;
-    return (
-        <section className="py-24 border-y border-black/5 overflow-hidden">
-            <div className="flex gap-12 px-6 animate-marquee whitespace-nowrap">
-                {gallery.concat(gallery).map((img: string, i: number) => (
-                    <div key={i} className="w-[400px] h-[300px] shrink-0 grayscale hover:grayscale-0 transition-all duration-500">
-                        <img src={img} className="w-full h-full object-cover" />
-                    </div>
-                ))}
-            </div>
-        </section>
     );
 }
 
@@ -1154,6 +1014,7 @@ function RomanticTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1188,6 +1049,7 @@ function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1219,6 +1081,7 @@ function ElopementTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1255,6 +1118,7 @@ function TraditionalTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1288,6 +1152,7 @@ function BohoTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1319,6 +1184,7 @@ function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1350,6 +1216,7 @@ function VintageTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1380,6 +1247,7 @@ function MinimalTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1412,6 +1280,7 @@ function ClassicTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </>
     );
@@ -1434,6 +1303,7 @@ function TimelineTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1459,6 +1329,7 @@ function RSVPFocusTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1482,6 +1353,7 @@ function CinematicTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
             <GallerySection gallery={gallery} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1503,6 +1375,7 @@ function EleganceTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
+            <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
