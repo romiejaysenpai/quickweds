@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, Sparkles, Smartphone, Share2, Calendar, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle } from 'lucide-react';
+import { Heart, Sparkles, Smartphone, Share2, Calendar, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera } from 'lucide-react';
 import ExamplesSection from '@/components/ExamplesSection';
 import TemplatesSection from '@/components/TemplatesSection';
 import PhoneMockupSection from '@/components/PhoneMockupSection';
@@ -20,7 +20,7 @@ const FAQS = [
   },
   {
     question: "Is the RSVP system automated?",
-    answer: "Absolutely. All guest responses are tracked in real-time. You'll get instant notifications, and you can export your guest list with meal preferences at any time."
+    answer: "Absolutely. All guest responses are tracked in real-time on your dashboard analytics. Our integration with Resend automatically fires a confirmation email to your guests, and an instant notification to you with their dietary specifics."
   },
   {
     question: "Can I upload high-quality videos?",
@@ -29,6 +29,10 @@ const FAQS = [
   {
     question: "Are the templates mobile-friendly?",
     answer: "Every single one of our 25+ templates is designed with a mobile-first approach. They look and function perfectly on iPhones, Androids, and tablets."
+  },
+  {
+    question: "What happens after the wedding?",
+    answer: "Activate 'Thank You Mode' to hide the RSVP form and swap it out for a heartfelt thank-you message and a link to your official photo gallery for all guests to relive the memories."
   }
 ];
 
@@ -38,7 +42,7 @@ const PRICING_PLANS = [
     price: "$0",
     period: "/ Event",
     desc: "Experience the magic of QuickWeds with no commitment. Perfect for exploring our platform and starting your journey.",
-    features: ["3 Basic Templates", "10 Basic Fonts", "RSVP Tracking", "12 Gallery Photos", "Video Overlays (<50MB)"],
+    features: ["3 Basic Templates", "RSVP Form & Analytics", "Interactive Timeline", "12 Gallery Photos", "Automated OG SEO Tags"],
     cta: "Start for Free",
     href: "/builder",
     popular: false
@@ -48,7 +52,7 @@ const PRICING_PLANS = [
     price: "$14.99",
     period: "/ Year",
     desc: "Our most loved plan. Unlock the full potential of your wedding website with every premium feature included. Limited time offer for couples who want perfection.",
-    features: ["All 45+ Premium Fonts & Monograms", "Full Access to 25+ Designer Templates", "Unlimited High-Res Gallery & Video Uploads", "Custom Domain Mapping Support", "Priority 24/7 Support & No Watermark"],
+    features: ["All 25+ Designer Templates", "Custom Domain Connect (e.g. yourname.com)", "Two-Way Email Automations", "CSV Guest List Export & Editing", "Post-Wedding 'Thank You' Mode"],
     cta: "GET 1-Year Access for Only $14.99 Now",
     href: "/builder",
     popular: true
@@ -303,15 +307,33 @@ export default function Home() {
                   accent: "bg-primary/5"
                 },
                 {
-                  icon: <Calendar className="w-8 h-8 text-secondary" />,
-                  title: "Smart RSVP",
-                  desc: "Real-time response tracking with automated guest list management and meal preference logs.",
+                  icon: <LayoutDashboard className="w-8 h-8 text-secondary" />,
+                  title: "Live Split-Pane Builder",
+                  desc: "Build your dream site visually. See your edits update instantly side-by-side with no coding required.",
                   accent: "bg-secondary/10"
                 },
                 {
-                  icon: <Share2 className="w-8 h-8 text-accent" />,
-                  title: "One-Tap Sharing",
-                  desc: "Unique URLs and QR codes ready for your invitations. Share via WhatsApp, Email, or Print.",
+                  icon: <Globe className="w-8 h-8 text-accent" />,
+                  title: "Custom Domains",
+                  desc: "Connect your own unique web address (e.g., jackandrose.com) for a truly premium, white-labeled experience.",
+                  accent: "bg-accent/5"
+                },
+                {
+                  icon: <Mail className="w-8 h-8 text-primary" />,
+                  title: "Two-Way Emails",
+                  desc: "Automated Resend integration instantly emails confirmation to your guests and sends you their dietary needs.",
+                  accent: "bg-primary/5"
+                },
+                {
+                  icon: <PieChart className="w-8 h-8 text-secondary" />,
+                  title: "Analytics Dashboard",
+                  desc: "Track attendance via beautiful pie charts, instantly export CSVs, and manage your guest list seamlessly.",
+                  accent: "bg-secondary/10"
+                },
+                {
+                  icon: <Camera className="w-8 h-8 text-accent" />,
+                  title: "Post-Wedding Mode",
+                  desc: "Swap out the RSVP form for a beautiful 'Thank You' banner linking directly to your official photo albums.",
                   accent: "bg-accent/5"
                 }
               ].map((feature, i) => (
