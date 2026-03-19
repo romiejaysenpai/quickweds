@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { sendEmail, rsvpNotificationHtml } from '@/lib/email';
+import { sendEmail, rsvpNotificationHtml, guestConfirmationHtml } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
     try {
-        const { weddingId, guestName, attendance, numGuests, message } = await req.json();
+        const { weddingId, guestName, guestEmail, attendance, numGuests, message, dietaryDetails, songRequest, plusOneNames, childrenCount } = await req.json();
 
         if (!weddingId || !guestName) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
         // Fetch wedding data to get couple email
         const { data: wedding, error } = await supabase
             .from('weddings')
-            .select('bride_name, groom_name, couple_email, user_id')
+            .select('bride_name, groom_name, couple_email, user_id, wedding_date, custom_domain')
             .eq('id', weddingId)
             .single();
 
@@ -38,22 +38,41 @@ export async function POST(req: NextRequest) {
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const dashboardUrl = `${appUrl}/dashboard/${weddingId}`;
+        const finalWeddingUrl = wedding.custom_domain ? `https://${wedding.custom_domain}` : `${appUrl}/w/${weddingId}`;
 
-        const html = rsvpNotificationHtml({
-            guestName,
-            attendance,
-            numGuests,
-            message,
+        // Prepare email bodies
+        const coupleHtml = rsvpNotificationHtml({
+            guestName, guestEmail, attendance, numGuests, message, dietaryDetails, songRequest, plusOneNames, childrenCount,
             weddingUrl: dashboardUrl,
         });
 
-        const result = await sendEmail({
-            to: recipientEmail,
-            subject: `${attendance === 'Yes' ? '🎉' : '📩'} New RSVP from ${guestName} — ${wedding.bride_name} & ${wedding.groom_name}'s Wedding`,
-            html,
-        });
+        const promises = [];
 
-        return NextResponse.json(result);
+        // 1. Send to Couple
+        promises.push(
+            sendEmail({
+                to: recipientEmail,
+                subject: `${attendance === 'Yes' ? '🎉' : '📩'} RSVP Received: ${guestName} — ${wedding.bride_name} & ${wedding.groom_name}`,
+                html: coupleHtml,
+            })
+        );
+
+        // 2. Send to Guest (if email provided)
+        if (guestEmail) {
+            const guestHtml = guestConfirmationHtml({
+                guestName, attendance, numGuests, brideName: wedding.bride_name, groomName: wedding.groom_name, weddingDate: wedding.wedding_date, weddingUrl: finalWeddingUrl
+            });
+            promises.push(
+                sendEmail({
+                    to: guestEmail,
+                    subject: attendance === 'Yes' ? "We can't wait to see you! (RSVP Confirmation)" : "RSVP Confirmation",
+                    html: guestHtml
+                })
+            );
+        }
+
+        const results = await Promise.all(promises);
+        return NextResponse.json({ success: true, results });
     } catch (error: any) {
         console.error('RSVP notify error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

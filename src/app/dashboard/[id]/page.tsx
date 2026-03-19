@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, Globe, AlertCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -19,6 +19,10 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [filterStatus, setFilterStatus] = useState<'all' | 'Yes' | 'No'>('all');
     const [copyToast, setCopyToast] = useState(false);
 
+    const [domainInput, setDomainInput] = useState('');
+    const [domainStatus, setDomainStatus] = useState<any>(null);
+    const [domainLoading, setDomainLoading] = useState(false);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -35,6 +39,56 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         };
         fetchData();
     }, [id]);
+
+    const checkDomainStatus = async (domain: string) => {
+        try {
+            const res = await fetch(`/api/domains?domain=${domain}`);
+            const data = await res.json();
+            setDomainStatus(data);
+        } catch (e) { }
+    }
+
+    useEffect(() => {
+        if (wedding?.custom_domain) {
+            checkDomainStatus(wedding.custom_domain);
+        }
+    }, [wedding?.custom_domain]);
+
+    const handleAddDomain = async () => {
+        if (!domainInput.includes('.')) return alert("Please enter a valid domain (e.g. yourname.com)");
+        setDomainLoading(true);
+        try {
+            const res = await fetch('/api/domains', {
+                method: 'POST', body: JSON.stringify({ domain: domainInput.toLowerCase().trim() })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            await supabase.from('weddings').update({ custom_domain: domainInput.toLowerCase().trim() }).eq('id', wedding.id);
+            setWedding({ ...wedding, custom_domain: domainInput.toLowerCase().trim() });
+            setDomainInput('');
+            checkDomainStatus(domainInput.toLowerCase().trim());
+        } catch (e: any) {
+            alert(e.message);
+        } finally {
+            setDomainLoading(false);
+        }
+    };
+
+    const handleRemoveDomain = async () => {
+        if (!confirm('Are you sure you want to decouple this custom domain?')) return;
+        setDomainLoading(true);
+        try {
+            await fetch(`/api/domains?domain=${wedding.custom_domain}`, { method: 'DELETE' });
+            await supabase.from('weddings').update({ custom_domain: null }).eq('id', wedding.id);
+            setWedding({ ...wedding, custom_domain: null });
+            setDomainStatus(null);
+        } catch (e) {
+            alert("Failed to remove domain");
+        } finally {
+            setDomainLoading(false);
+        }
+    }
 
     // Computed stats
     const stats = useMemo(() => {
@@ -92,8 +146,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     };
 
     // Copy & Share
-    const domain = process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app';
-    const url = wedding ? `${domain}/w/${wedding.id}` : '';
+    const domain = wedding?.custom_domain ? `https://${wedding.custom_domain}` : (process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app');
+    const url = wedding?.custom_domain ? domain : (wedding ? `${domain}/w/${wedding.id}` : '');
 
     const copyLink = () => {
         navigator.clipboard.writeText(url);
@@ -338,6 +392,80 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <span className="text-[10px] font-bold">Email</span>
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Custom Domain Settings */}
+                        <div className="p-8 rounded-3xl bg-white border border-border soft-shadow">
+                            <h3 className="text-xl font-serif font-bold mb-6 text-foreground border-b border-border pb-4 flex items-center gap-2">
+                                <Globe className="w-5 h-5 text-primary" /> Custom Domain
+                            </h3>
+
+                            {!wedding.custom_domain ? (
+                                <div className="space-y-4">
+                                    <p className="text-sm text-text-secondary leading-relaxed">Connect your own domain name (e.g., <span className="font-bold">amyandjohn.com</span>) to make your website truly yours.</p>
+                                    <div className="flex gap-2">
+                                        <input
+                                            placeholder="yourdomain.com"
+                                            value={domainInput}
+                                            onChange={(e) => setDomainInput(e.target.value)}
+                                            className="flex-1 px-4 py-3 rounded-xl border border-border focus:border-primary outline-none text-sm bg-neutral"
+                                        />
+                                        <button
+                                            onClick={handleAddDomain}
+                                            disabled={domainLoading || !domainInput}
+                                            className="px-6 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-hover transition-colors disabled:opacity-50"
+                                        >
+                                            {domainLoading ? 'Adding...' : 'Connect'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/20">
+                                        <div>
+                                            <p className="font-bold text-foreground">{wedding.custom_domain}</p>
+                                            <p className="text-[10px] uppercase tracking-widest text-text-secondary/60 mt-1">
+                                                {domainStatus?.misconfigured === false ? (
+                                                    <span className="text-green-500 font-bold">● Active &amp; Verified</span>
+                                                ) : (
+                                                    <span className="text-yellow-500 font-bold flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Pending DNS Configuration</span>
+                                                )}
+                                            </p>
+                                        </div>
+                                        <button onClick={handleRemoveDomain} disabled={domainLoading} className="text-xs text-red-500 font-bold px-3 py-1 hover:bg-red-50 rounded-lg transition-colors">
+                                            {domainLoading ? 'Removing...' : 'Disconnect'}
+                                        </button>
+                                    </div>
+
+                                    {domainStatus?.misconfigured && (
+                                        <div className="p-5 rounded-2xl bg-neutral space-y-4 border border-border text-sm">
+                                            <p className="font-bold text-foreground">Required DNS Records</p>
+                                            <p className="text-text-secondary text-xs">Login to your domain registrar (GoDaddy, Namecheap, etc.) and add this exact A Record to point your domain to our servers:</p>
+
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
+                                                    <span className="text-text-secondary font-bold text-xs uppercase">Type</span>
+                                                    <span className="font-mono">A</span>
+                                                </div>
+                                                <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
+                                                    <span className="text-text-secondary font-bold text-xs uppercase">Name</span>
+                                                    <span className="font-mono">@</span>
+                                                </div>
+                                                <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
+                                                    <span className="text-text-secondary font-bold text-xs uppercase">Value</span>
+                                                    <span className="font-mono text-primary font-bold">76.76.21.21</span>
+                                                </div>
+                                            </div>
+                                            <div className="pt-2 flex justify-between items-center">
+                                                <p className="text-[10px] text-text-secondary/60">DNS propagation may take up to 24 hours.</p>
+                                                <button onClick={() => checkDomainStatus(wedding.custom_domain)} className="text-xs text-primary font-bold hover:underline">
+                                                    Refresh Status
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Event Details */}

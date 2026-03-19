@@ -14,6 +14,7 @@ export interface Wedding {
     couple_photo?: string;
     teaser_video?: string;
     gallery_images?: string | string[];
+    custom_domain?: string;
     template: string;
     font_style: string;
     motif_color: string;

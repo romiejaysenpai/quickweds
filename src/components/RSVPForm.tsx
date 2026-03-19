@@ -21,6 +21,7 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
     const [duplicateError, setDuplicateError] = useState(false);
     const [formData, setFormData] = useState({
         guestName: '',
+        guestEmail: '',
         attendance: 'Yes',
         numGuests: 1,
         mealPreference: '',
@@ -56,6 +57,7 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                 .insert({
                     wedding_id: weddingId,
                     guest_name: formData.guestName.trim(),
+                    guest_email: formData.guestEmail.trim(),
                     attendance: formData.attendance,
                     num_guests: formData.numGuests,
                     meal_preference: formData.mealPreference || 'No Preference',
@@ -80,9 +82,14 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                         body: JSON.stringify({
                             weddingId,
                             guestName: formData.guestName.trim(),
+                            guestEmail: formData.guestEmail.trim(),
                             attendance: formData.attendance,
                             numGuests: formData.numGuests,
                             message: formData.message,
+                            dietaryDetails: formData.dietaryDetails,
+                            songRequest: formData.songRequest,
+                            plusOneNames: formData.plusOneNames,
+                            childrenCount: formData.childrenCount,
                         }),
                     });
                 } catch { }
@@ -123,16 +130,28 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6 text-left">
-                {/* Name */}
-                <div className="space-y-2">
-                    <label className="text-sm font-bold text-text-secondary ml-1">Guest Full Name *</label>
-                    <input
-                        required
-                        placeholder="Enter your full name"
-                        value={formData.guestName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, guestName: e.target.value }))}
-                        className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-text-secondary ml-1">Guest Full Name *</label>
+                        <input
+                            required
+                            placeholder="Enter your full name"
+                            value={formData.guestName}
+                            onChange={(e) => setFormData(prev => ({ ...prev, guestName: e.target.value }))}
+                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-text-secondary ml-1">Email Address *</label>
+                        <input
+                            required
+                            type="email"
+                            placeholder="For your confirmation"
+                            value={formData.guestEmail}
+                            onChange={(e) => setFormData(prev => ({ ...prev, guestEmail: e.target.value }))}
+                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
+                        />
+                    </div>
                 </div>
 
                 {/* Attendance + Guests */}
