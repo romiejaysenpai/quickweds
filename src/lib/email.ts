@@ -15,26 +15,35 @@ interface SendEmailParams {
 
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
     if (!resend) {
-        console.warn('Resend API key not configured, skipping email');
-        return { success: false, error: 'Email not configured' };
+        console.error('❌ Resend API key MISSING. Check RESEND_API_KEY in environment variables.');
+        return { success: false, error: 'Email configuration missing' };
     }
 
+    const recipientList = Array.isArray(to) ? to : [to];
+    
     try {
+        console.log(`📤 Attempting to send email to: ${recipientList.join(', ')} ...`);
+        
         const { data, error } = await resend.emails.send({
             from: FROM_EMAIL,
-            to: Array.isArray(to) ? to : [to],
+            to: recipientList,
             subject,
             html,
         });
 
         if (error) {
-            console.error('Resend error:', error);
-            return { success: false, error: error.message };
+            console.error('❌ Resend API Error:', error);
+            // Help diagnostic for common issues
+            if (error.name === 'validation_error' && FROM_EMAIL.includes('quickweds.site')) {
+                console.warn('💡 TIP: If you connected a custom Resend account, ensure you verified "quickweds.site" or set RESEND_FROM_EMAIL to a domain you own.');
+            }
+            return { success: false, error: error.message, details: error };
         }
 
+        console.log(`✅ Email sent successfully! ID: ${data?.id}`);
         return { success: true, id: data?.id };
     } catch (err: any) {
-        console.error('Email send error:', err);
+        console.error('💥 Unexpected email send exception:', err);
         return { success: false, error: err.message };
     }
 }

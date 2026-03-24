@@ -86,8 +86,8 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
             // Success!
             setIsSubmitted(true);
             
-            // Trigger email notification background task
-            fetch('/api/email/rsvp-notify', {
+            // Trigger email notification
+            fetch('/api/rsvp-notify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -102,7 +102,16 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                     plusOneNames: formData.plusOneNames,
                     childrenCount: formData.childrenCount
                 }),
-            }).catch(err => console.error("Email notification failed:", err));
+            })
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    console.error("📧 Email delivery issue:", data);
+                } else {
+                    console.log("📧 Emails triggered successfully");
+                }
+            })
+            .catch(err => console.error("📧 Email notification network error:", err));
         } catch (err) {
             console.error(err);
             alert("An unexpected error occurred.");

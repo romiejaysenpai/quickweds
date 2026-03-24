@@ -16,8 +16,19 @@ export const config = {
 
 export async function middleware(req: NextRequest) {
     const url = req.nextUrl;
+    const path = url.pathname;
 
-    // Get hostname of request (e.g. demo.vercel.pub, demo.localhost:3000)
+    // VERY IMPORTANT: Skip API routes and other static assets immediately
+    if (
+        path.startsWith('/api') || 
+        path.startsWith('/_next') || 
+        path.includes('.') || // Static files like favicon.ico, etc.
+        path === '/favicon.ico'
+    ) {
+        return NextResponse.next();
+    }
+
+    // Get hostname...
     let hostname = req.headers
         .get('host')!
         .replace('.localhost:3000', `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site'}`);
