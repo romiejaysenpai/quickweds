@@ -19,6 +19,7 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [duplicateError, setDuplicateError] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         guestName: '',
         guestEmail: '',
@@ -36,6 +37,7 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
         e.preventDefault();
         setIsSubmitting(true);
         setDuplicateError(false);
+        setSubmitError(null);
 
         try {
             // Check for duplicate RSVP
@@ -69,7 +71,7 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
 
             if (error) {
                 console.error("Supabase RSVP error:", error);
-                alert("Failed to submit RSVP. Please try again.");
+                setSubmitError(error.message + (error.details ? `: ${error.details}` : ''));
             } else {
                 setIsSubmitted(true);
 
@@ -125,6 +127,16 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                 <div className="mb-6 p-4 rounded-2xl bg-error-bg border border-error-text/20 flex items-center gap-3">
                     <AlertCircle className="w-5 h-5 text-error-text flex-shrink-0" />
                     <p className="text-sm text-error-text">It looks like you&apos;ve already submitted an RSVP. If you need to update it, please contact the couple.</p>
+                </div>
+            )}
+            
+            {submitError && (
+                <div className="mb-6 p-4 rounded-2xl bg-error-bg border border-error-text/20 flex items-center gap-3 text-left">
+                    <AlertCircle className="w-5 h-5 text-error-text flex-shrink-0" />
+                    <div>
+                        <p className="font-bold text-error-text text-sm">Submission Error</p>
+                        <p className="text-xs text-error-text/70">{submitError}</p>
+                    </div>
                 </div>
             )}
 
