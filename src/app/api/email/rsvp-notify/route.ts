@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { sendEmail, rsvpNotificationHtml, guestConfirmationHtml } from '@/lib/email';
+import { sendEmail, getCoupleNotificationHtml, getGuestConfirmationHtml } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
     try {
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // Fetch wedding data to get couple email
+        // Fetch wedding data to get couple email and invitation details
         const { data: wedding, error } = await supabase
             .from('weddings')
             .select('bride_name, groom_name, couple_email, user_id, wedding_date, wedding_time, venue_name, venue_address, maps_link, custom_domain')
@@ -41,8 +41,11 @@ export async function POST(req: NextRequest) {
         const finalWeddingUrl = wedding.custom_domain ? `https://${wedding.custom_domain}` : `${appUrl}/w/${weddingId}`;
 
         // Prepare email bodies
-        const coupleHtml = rsvpNotificationHtml({
+        const coupleHtml = getCoupleNotificationHtml({
             guestName, guestEmail, attendance, numGuests, message, dietaryDetails, songRequest, plusOneNames, childrenCount,
+            brideName: wedding.bride_name,
+            groomName: wedding.groom_name,
+            weddingDate: wedding.wedding_date,
             weddingUrl: dashboardUrl,
         });
 
@@ -59,7 +62,7 @@ export async function POST(req: NextRequest) {
 
         // 2. Send to Guest (if email provided)
         if (guestEmail) {
-            const guestHtml = guestConfirmationHtml({
+            const guestHtml = getGuestConfirmationHtml({
                 guestName,
                 attendance,
                 numGuests,

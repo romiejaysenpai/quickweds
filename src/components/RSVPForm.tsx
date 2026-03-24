@@ -41,15 +41,20 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
 
         try {
             // Check for duplicate RSVP
-            const { data: existing } = await supabase
+            const { data: existing, error: checkError } = await supabase
                 .from('rsvps')
                 .select('id')
                 .eq('wedding_id', weddingId)
                 .ilike('guest_name', formData.guestName.trim())
                 .limit(1);
 
+            if (checkError) {
+                console.warn("Duplicate check error (ignored):", checkError);
+            }
+
             if (existing && existing.length > 0) {
                 setDuplicateError(true);
+                setSubmitError("You have already RSVP'd for this wedding. If you need to make changes, please contact the couple directly.");
                 setIsSubmitting(false);
                 return;
             }
@@ -61,41 +66,43 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                 num_guests: formData.numGuests || 1,
             };
 
-            if (formData.mealPreference) insertData.meal_preference = formData.mealPreference;
+            // Optional fields - only include if they have values to avoid schema conflicts
+            if (formData.mealPreference && formData.mealPreference !== 'No Preference') insertData.meal_preference = formData.mealPreference;
             if (formData.dietaryDetails) insertData.dietary_details = formData.dietaryDetails;
             if (formData.message) insertData.message = formData.message;
             if (formData.plusOneNames) insertData.plus_one_names = formData.plusOneNames;
             if (formData.songRequest) insertData.song_request = formData.songRequest;
             if (formData.childrenCount > 0) insertData.children_count = formData.childrenCount;
 
-            const { error } = await supabase.from('rsvps').insert(insertData);
+            const { error: insertError } = await supabase.from('rsvps').insert(insertData);
 
-            if (error) {
-                console.error("Supabase RSVP error:", error);
-                setSubmitError(error.message + (error.details ? `: ${error.details}` : ''));
-            } else {
-                setIsSubmitted(true);
-
-                // Trigger email notification to couple (fire and forget)
-                try {
-                    fetch('/api/email/rsvp-notify', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            weddingId,
-                            guestName: formData.guestName.trim(),
-                            guestEmail: formData.guestEmail.trim(),
-                            attendance: formData.attendance,
-                            numGuests: formData.numGuests,
-                            message: formData.message,
-                            dietaryDetails: formData.dietaryDetails,
-                            songRequest: formData.songRequest,
-                            plusOneNames: formData.plusOneNames,
-                            childrenCount: formData.childrenCount,
-                        }),
-                    });
-                } catch { }
+            if (insertError) {
+                console.error("Supabase RSVP error:", insertError);
+                setSubmitError(`Submission failed: ${insertError.message}. Details: ${insertError.details || 'None'}`);
+                setIsSubmitting(false);
+                return;
             }
+
+            // Success!
+            setIsSubmitted(true);
+            
+            // Trigger email notification background task
+            fetch('/api/email/rsvp-notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    weddingId,
+                    guestName: formData.guestName.trim(),
+                    guestEmail: formData.guestEmail.trim(),
+                    attendance: formData.attendance,
+                    numGuests: formData.numGuests,
+                    message: formData.message,
+                    dietaryDetails: formData.dietaryDetails,
+                    songRequest: formData.songRequest,
+                    plusOneNames: formData.plusOneNames,
+                    childrenCount: formData.childrenCount
+                }),
+            }).catch(err => console.error("Email notification failed:", err));
         } catch (err) {
             console.error(err);
             alert("An unexpected error occurred.");
