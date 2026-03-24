@@ -27,6 +27,8 @@ interface EmailTemplateProps {
     songRequest?: string;
     plusOneNames?: string;
     childrenCount?: number;
+    dashboardUrl?: string;
+    weddingTitle?: string;
 }
 
 /**

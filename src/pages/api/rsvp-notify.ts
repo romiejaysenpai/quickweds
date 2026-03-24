@@ -55,6 +55,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             songRequest,
             plusOneNames,
             childrenCount,
+            brideName: wedding.bride_name,
+            groomName: wedding.groom_name,
+            weddingDate: wedding.wedding_date,
+            weddingUrl: `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site'}/dashboard/${weddingId}`,
             dashboardUrl: `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site'}/dashboard/${weddingId}`,
             weddingTitle: `${wedding.bride_name} & ${wedding.groom_name}`
         });
@@ -63,37 +67,80 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // 1. Send to Couple
         console.log(`📧 (Pages) Sending RSVP notification to couple: ${recipientEmail}`);
-        promises.push(
-            sendEmail({
-                to: recipientEmail,
-                subject: `${attendance === 'Yes' ? '🎉' : '📩'} RSVP Received: ${guestName} — ${wedding.bride_name} & ${wedding.groom_name}`,
-                html: coupleHtml,
-            })
-        );
+        
+        const coupleTemplateId = process.env.RESEND_COUPLE_TEMPLATE_ID;
+        const coupleEmailParams: any = {
+            to: recipientEmail,
+            subject: `${attendance === 'Yes' ? '🎉' : '📩'} RSVP Received: ${guestName} — ${wedding.bride_name} & ${wedding.groom_name}`,
+        };
+
+        if (coupleTemplateId) {
+            coupleEmailParams.template = {
+                id: coupleTemplateId,
+                variables: {
+                    guestName,
+                    attendance,
+                    numGuests,
+                    message,
+                    dietaryDetails,
+                    songRequest,
+                    plusOneNames,
+                    childrenCount,
+                    dashboardUrl: `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site'}/dashboard/${weddingId}`,
+                    weddingTitle: `${wedding.bride_name} & ${wedding.groom_name}`
+                }
+            };
+        } else {
+            coupleEmailParams.html = coupleHtml;
+        }
+
+        promises.push(sendEmail(coupleEmailParams));
 
         // 2. Send to Guest (if email provided)
         if (guestEmail) {
             console.log(`📧 (Pages) Sending RSVP confirmation to guest: ${guestEmail}`);
-            const guestHtml = getGuestConfirmationHtml({
-                guestName,
-                attendance,
-                numGuests,
-                brideName: wedding.bride_name,
-                groomName: wedding.groom_name,
-                weddingDate: wedding.wedding_date,
-                weddingTime: wedding.wedding_time,
-                venueName: wedding.venue_name,
-                venueAddress: wedding.venue_address,
-                mapsLink: wedding.maps_link,
-                weddingUrl: finalWeddingUrl
-            });
-            promises.push(
-                sendEmail({
-                    to: guestEmail,
-                    subject: attendance === 'Yes' ? "We can't wait to see you! (RSVP Confirmation)" : "RSVP Confirmation",
-                    html: guestHtml
-                })
-            );
+            
+            const guestTemplateId = process.env.RESEND_GUEST_TEMPLATE_ID;
+            const guestEmailParams: any = {
+                to: guestEmail,
+                subject: attendance === 'Yes' ? "We can't wait to see you! (RSVP Confirmation)" : "RSVP Confirmation",
+            };
+
+            if (guestTemplateId) {
+                guestEmailParams.template = {
+                    id: guestTemplateId,
+                    variables: {
+                        guestName,
+                        attendance,
+                        numGuests,
+                        brideName: wedding.bride_name,
+                        groomName: wedding.groom_name,
+                        weddingDate: wedding.wedding_date,
+                        weddingTime: wedding.wedding_time,
+                        venueName: wedding.venue_name,
+                        venueAddress: wedding.venue_address,
+                        mapsLink: wedding.maps_link,
+                        weddingUrl: finalWeddingUrl
+                    }
+                };
+            } else {
+                const guestHtml = getGuestConfirmationHtml({
+                    guestName,
+                    attendance,
+                    numGuests,
+                    brideName: wedding.bride_name,
+                    groomName: wedding.groom_name,
+                    weddingDate: wedding.wedding_date,
+                    weddingTime: wedding.wedding_time,
+                    venueName: wedding.venue_name,
+                    venueAddress: wedding.venue_address,
+                    mapsLink: wedding.maps_link,
+                    weddingUrl: finalWeddingUrl
+                });
+                guestEmailParams.html = guestHtml;
+            }
+
+            promises.push(sendEmail(guestEmailParams));
         }
 
         const results = await Promise.all(promises);

@@ -10,10 +10,14 @@ const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'QuickWeds <noreply@quickwed
 interface SendEmailParams {
     to: string | string[];
     subject: string;
-    html: string;
+    html?: string; // Optional if using template
+    template?: {
+        id: string;
+        variables: Record<string, any>;
+    };
 }
 
-export async function sendEmail({ to, subject, html }: SendEmailParams) {
+export async function sendEmail({ to, subject, html, template }: SendEmailParams) {
     if (!resend) {
         console.error('❌ Resend API key MISSING. Check RESEND_API_KEY in environment variables.');
         return { success: false, error: 'Email configuration missing' };
@@ -24,12 +28,25 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
     try {
         console.log(`📤 Attempting to send email to: ${recipientList.join(', ')} ...`);
         
-        const { data, error } = await resend.emails.send({
+        const payload: any = {
             from: FROM_EMAIL,
             to: recipientList,
             subject,
-            html,
-        });
+        };
+
+        if (template && template.id) {
+            console.log(`✨ Using Resend Template: ${template.id}`);
+            payload.template = {
+                id: template.id,
+                variables: template.variables,
+            };
+        } else if (html) {
+            payload.html = html;
+        } else {
+            throw new Error('Neither HTML nor Template provided for email');
+        }
+
+        const { data, error } = await resend.emails.send(payload);
 
         if (error) {
             console.error('❌ Resend API Error:', error);
