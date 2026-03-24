@@ -97,7 +97,7 @@ export const TEMPLATES = [
 
 export default function BuilderForm() {
     const router = useRouter();
-    const { user, loading: authLoading } = useAuth();
+    const { user, isAdmin, loading: authLoading } = useAuth();
     const searchParams = useSearchParams();
     const editId = searchParams.get('edit');
     const [currentStep, setCurrentStep] = useState(0);
@@ -163,11 +163,15 @@ export default function BuilderForm() {
         giftQr: null,
     });
 
-    const [isPremium, setIsPremium] = useState(false);
+    const [isPremium, setIsPremium] = useState(isAdmin);
 
     useEffect(() => {
         if (!authLoading && !user) {
             router.push('/login');
+        }
+
+        if (isAdmin) {
+            setIsPremium(true);
         }
 
         if (user && editId) {
@@ -179,8 +183,8 @@ export default function BuilderForm() {
                     .single();
 
                 if (data && data.user_id === user.id) {
-                    // Set premium status
-                    setIsPremium(data.is_premium || false);
+                    // Set premium status (Admin is always premium)
+                    setIsPremium(data.is_premium || isAdmin || false);
 
                     setFormData({
                         brideName: data.bride_name || '',

@@ -6,12 +6,14 @@ import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
     user: User | null;
+    isAdmin: boolean;
     loading: boolean;
     logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
+    isAdmin: false,
     loading: true,
     logout: async () => { },
 });
@@ -40,8 +42,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await supabase.auth.signOut();
     };
 
+    const isAdmin = user?.email === 'romiejaybacasmas@gmail.com';
+
     return (
-        <AuthContext.Provider value={{ user, loading, logout }}>
+        <AuthContext.Provider value={{ user, isAdmin, loading, logout }}>
             {children}
         </AuthContext.Provider>
     );

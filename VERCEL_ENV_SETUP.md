@@ -15,6 +15,19 @@ To ensure your wedding platform works correctly on Vercel, you need to add your 
 4. Add the following keys:
 
 - `NEXT_PUBLIC_SUPABASE_URL`: (Your Project URL)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: (Your anon public API key)
+
+## Step 3: Add Vercel API Keys for Custom Domains
+
+To allow your users to connect their own domains (like via Namecheap), you need to provide your Vercel Project ID and an Access Token:
+
+1. **Vercel Access Token**: Go to **Settings** -> **Tokens** in your Vercel Account. Create a new token and copy it.
+   - Variable name: `VERCEL_TOKEN`
+2. **Vercel Project ID**: Go to your project's **Settings** -> **General** on Vercel. Scroll to find the **Project ID**.
+   - Variable name: `VERCEL_PROJECT_ID`
+
+Add these keys to your Vercel Environment Variables so the domain features work.
+
 ---
 
 ## Step 4: Storage Configuration (Standard Limit)

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Sparkles, Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface UpgradeButtonProps {
     weddingId: string;
@@ -11,7 +12,10 @@ interface UpgradeButtonProps {
 }
 
 export default function UpgradeButton({ weddingId, plan = 'premium', variant = 'primary', className = '' }: UpgradeButtonProps) {
+    const { isAdmin } = useAuth();
     const [loading, setLoading] = useState(false);
+
+    if (isAdmin) return null;
 
     const handleUpgrade = () => {
         // Direct redirect to Stripe Payment Link with client reference ID

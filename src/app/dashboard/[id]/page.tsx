@@ -437,33 +437,41 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </button>
                                     </div>
 
-                                    {domainStatus?.misconfigured && (
-                                        <div className="p-5 rounded-2xl bg-neutral space-y-4 border border-border text-sm">
-                                            <p className="font-bold text-foreground">Required DNS Records</p>
-                                            <p className="text-text-secondary text-xs">Login to your domain registrar (GoDaddy, Namecheap, etc.) and add this exact A Record to point your domain to our servers:</p>
+                                    {domainStatus?.misconfigured && (() => {
+                                        const parts = wedding.custom_domain.split('.');
+                                        const isSubdomain = parts.length > 2 && !['co.uk', 'com.au', 'co.in', 'org.uk'].some(ext => wedding.custom_domain.endsWith(ext));
+                                        const dnsType = isSubdomain ? 'CNAME' : 'A';
+                                        const dnsName = isSubdomain ? parts.slice(0, parts.length - 2).join('.') : '@';
+                                        const dnsValue = isSubdomain ? 'cname.vercel-dns.com' : '76.76.21.21';
 
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
-                                                    <span className="text-text-secondary font-bold text-xs uppercase">Type</span>
-                                                    <span className="font-mono">A</span>
+                                        return (
+                                            <div className="p-5 rounded-2xl bg-neutral space-y-4 border border-border text-sm">
+                                                <p className="font-bold text-foreground">Required DNS Records</p>
+                                                <p className="text-text-secondary text-xs">Login to your domain registrar (GoDaddy, Namecheap, etc.) and add this exact {dnsType} Record to point your domain to our servers:</p>
+
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
+                                                        <span className="text-text-secondary font-bold text-xs uppercase">Type</span>
+                                                        <span className="font-mono">{dnsType}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
+                                                        <span className="text-text-secondary font-bold text-xs uppercase">Name / Host</span>
+                                                        <span className="font-mono">{dnsName}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
+                                                        <span className="text-text-secondary font-bold text-xs uppercase">Value / Target</span>
+                                                        <span className="font-mono text-primary font-bold">{dnsValue}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
-                                                    <span className="text-text-secondary font-bold text-xs uppercase">Name</span>
-                                                    <span className="font-mono">@</span>
-                                                </div>
-                                                <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
-                                                    <span className="text-text-secondary font-bold text-xs uppercase">Value</span>
-                                                    <span className="font-mono text-primary font-bold">76.76.21.21</span>
+                                                <div className="pt-2 flex justify-between items-center">
+                                                    <p className="text-[10px] text-text-secondary/60">DNS propagation may take up to 24 hours.</p>
+                                                    <button onClick={() => checkDomainStatus(wedding.custom_domain)} className="text-xs text-primary font-bold hover:underline">
+                                                        Refresh Status
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="pt-2 flex justify-between items-center">
-                                                <p className="text-[10px] text-text-secondary/60">DNS propagation may take up to 24 hours.</p>
-                                                <button onClick={() => checkDomainStatus(wedding.custom_domain)} className="text-xs text-primary font-bold hover:underline">
-                                                    Refresh Status
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
                                 </div>
                             )}
                         </div>

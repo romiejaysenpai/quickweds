@@ -361,10 +361,9 @@ function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                     <div className="w-24 h-[1px] bg-primary mx-auto" />
                 </div>
                 <BioSection wedding={wedding} />
-
                 <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-
                 <div className="relative z-10 bg-[#121212] pt-24"><DetailsSection wedding={wedding} invert /></div>
+                <TimelineSection timeline={wedding.program_timeline} />
                 <GallerySection gallery={gallery} />
                 <GiftSection wedding={wedding} invert />
                 <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -436,8 +435,10 @@ function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <DetailsSection wedding={wedding} />
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
+            <DetailsSection wedding={wedding} />
+            <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -516,8 +517,10 @@ function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <div className="p-12 lg:p-32"><DetailsSection wedding={wedding} invert /></div>
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
+            <div className="p-12 lg:p-32"><DetailsSection wedding={wedding} invert /></div>
+            <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -584,8 +587,10 @@ function TropicalTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <DetailsSection wedding={wedding} />
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
+            <DetailsSection wedding={wedding} />
+            <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -620,8 +625,10 @@ function MidnightTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <DetailsSection wedding={wedding} invert />
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
+            <DetailsSection wedding={wedding} invert />
+            <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -661,10 +668,11 @@ function SakuraTemplate({ wedding, gallery, isExpired }: any) {
                 </motion.div>
             </section>
 
-            <DetailsSection wedding={wedding} />
-            <BioSection wedding={wedding} />
-            <GallerySection gallery={gallery} />
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
+            <DetailsSection wedding={wedding} />
+            <TimelineSection timeline={wedding.program_timeline} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
@@ -721,7 +729,10 @@ function VogueTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
+            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} masonry />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -771,8 +782,10 @@ function RusticTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <DetailsSection wedding={wedding} />
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
+            <DetailsSection wedding={wedding} />
+            <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -813,8 +826,10 @@ function FilmTemplate({ wedding, gallery, isExpired }: any) {
                 <a href="#rsvp" className="mt-12 px-8 py-3 bg-red-600 text-white rounded-sm font-bold uppercase tracking-widest hover:bg-red-700 transition-colors">Action! (RSVP)</a>
             </section>
 
-            <DetailsSection wedding={wedding} invert />
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
+            <DetailsSection wedding={wedding} invert />
+            <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} invert />
             <GallerySection gallery={gallery} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -859,8 +874,10 @@ function GlitchTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <DetailsSection wedding={wedding} invert />
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
+            <DetailsSection wedding={wedding} invert />
+            <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} invert />
             <GallerySection gallery={gallery} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -910,8 +927,10 @@ function GardenTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <DetailsSection wedding={wedding} />
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
+            <DetailsSection wedding={wedding} />
+            <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} />
             <GallerySection gallery={gallery} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -1352,7 +1371,12 @@ function CinematicTemplate({ wedding, gallery, isExpired }: any) {
                     </div>
                 </div>
             </section>
+            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection wedding={wedding} />
+            <DetailsSection wedding={wedding} invert />
+            <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
+            <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
             <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>

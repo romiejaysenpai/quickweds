@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import UpgradeButton from '@/components/UpgradeButton';
 
 export default function DashboardRedirect() {
-    const { user, loading } = useAuth();
+    const { user, isAdmin, loading } = useAuth();
     const router = useRouter();
     const [weddings, setWeddings] = useState<any[]>([]);
     const [fetching, setFetching] = useState(true);
@@ -132,7 +132,7 @@ export default function DashboardRedirect() {
                                             Manage
                                         </Link>
                                     </div>
-                                    {!wedding.is_premium && (
+                                    {!wedding.is_premium && !isAdmin && (
                                         <UpgradeButton weddingId={wedding.id} className="w-full text-sm py-2.5" />
                                     )}
                                     <Link href={`/builder?edit=${wedding.id}`} className="block w-full text-center py-3 rounded-xl bg-neutral text-primary text-sm font-bold border border-primary/20 hover:bg-neutral-hover transition-all">
