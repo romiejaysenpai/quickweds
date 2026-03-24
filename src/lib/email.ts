@@ -130,36 +130,64 @@ export function rsvpNotificationHtml({
 
 // Template: RSVP Confirmation to Guest
 export function guestConfirmationHtml({
-  guestName, attendance, numGuests, brideName, groomName, weddingDate, weddingUrl
+    guestName, attendance, numGuests, brideName, groomName, weddingDate, weddingTime, venueName, venueAddress, mapsLink, weddingUrl
 }: {
-  guestName: string;
-  attendance: string;
-  numGuests: number;
-  brideName: string;
-  groomName: string;
-  weddingDate: string;
-  weddingUrl: string;
+    guestName: string;
+    attendance: string;
+    numGuests: number;
+    brideName: string;
+    groomName: string;
+    weddingDate: string;
+    weddingTime?: string;
+    venueName?: string;
+    venueAddress?: string;
+    mapsLink?: string;
+    weddingUrl: string;
 }) {
-  const isAttending = attendance === 'Yes';
-  return `
+    const isAttending = attendance === 'Yes';
+    return `
     <!DOCTYPE html>
     <html>
     <head><meta charset="utf-8"></head>
     <body style="font-family: 'Georgia', serif; background: #FFF8F4; margin: 0; padding: 40px 20px;">
       <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 24px; padding: 48px; box-shadow: 0 10px 30px rgba(192,128,129,0.1); text-align: center;">
-        <h1 style="font-size: 28px; color: #D16C78; margin: 0 0 16px;">${isAttending ? "We can't wait to see you!" : "We will miss you!"}</h1>
+        <div style="font-size: 40px; margin-bottom: 24px;">💍</div>
+        <h1 style="font-size: 28px; color: #D16C78; margin: 0 0 8px;">${isAttending ? "We can't wait to see you!" : "We will miss you!"}</h1>
         <p style="font-size: 18px; color: #7A5A61; margin: 0 0 32px;">${brideName} &amp; ${groomName}'s Wedding</p>
         
-        <p style="font-size: 16px; color: #3A2A2D; line-height: 1.6; margin-bottom: 32px;">
-          Hi ${guestName},<br><br>
-          ${isAttending ? `We have successfully received your RSVP for ${numGuests} guest(s). The big day is ${weddingDate}. Save the date!` : `We're sorry you can't make it, but we have successfully received your RSVP. We will celebrate with you in spirit!`}
+        <div style="text-align: left; background: #FFF8F4; border-radius: 16px; padding: 32px; margin-bottom: 32px; border: 1px solid rgba(209,108,120,0.1);">
+          <p style="margin: 0 0 24px; color: #3A2A2D; line-height: 1.6;">
+            Hi <strong>${guestName}</strong>,<br><br>
+            ${isAttending ? `We've successfully received your RSVP for ${numGuests} guest(s). We are so excited to have you celebrate with us!` : `We're sorry you can't make it, but we've received your RSVP. We'll be thinking of you on our special day!`}
+          </p>
+
+          ${isAttending ? `
+          <div style="border-top: 1px solid rgba(209,108,120,0.1); pt-24; margin-top: 24px; padding-top: 24px;">
+            <p style="margin: 0 0 16px; color: #D16C78; font-weight: bold; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">Wedding Details</p>
+            
+            <div style="margin-bottom: 16px;">
+              <p style="margin: 0; color: #7A5A61; font-size: 12px;">Date & Time</p>
+              <p style="margin: 4px 0 0; color: #3A2A2D; font-weight: bold;">${weddingDate} ${weddingTime ? `@ ${weddingTime}` : ''}</p>
+            </div>
+
+            ${venueName ? `
+            <div style="margin-bottom: 16px;">
+              <p style="margin: 0; color: #7A5A61; font-size: 12px;">Venue</p>
+              <p style="margin: 4px 0 0; color: #3A2A2D; font-weight: bold;">${venueName}</p>
+              ${venueAddress ? `<p style="margin: 2px 0 0; color: #7A5A61; font-size: 13px;">${venueAddress}</p>` : ''}
+              ${mapsLink ? `<a href="${mapsLink}" style="display: inline-block; margin-top: 8px; color: #D16C78; font-size: 13px; text-decoration: none; border-bottom: 1px solid #D16C78;">📍 View on Google Maps</a>` : ''}
+            </div>` : ''}
+          </div>` : ''}
+        </div>
+
+        <a href="${weddingUrl}" style="display: inline-block; padding: 16px 40px; background: #D16C78; color: white; text-decoration: none; border-radius: 14px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 12px rgba(209,108,120,0.3);">View Full Invitation</a>
+
+        <p style="margin-top: 40px; color: #7A5A61; font-size: 12px; font-style: italic; opacity: 0.6;">
+          If you need to change your RSVP details later, please visit the invitation link above or contact the couple directly.
         </p>
-
-        <a href="${weddingUrl}" style="display: inline-block; padding: 14px 32px; background: #D16C78; color: white; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 14px;">View Wedding Details</a>
-
-        <p style="margin-top: 32px; color: #7A5A61; font-size: 12px; font-style: italic;">If you need to change your RSVP, please contact the couple directly.</p>
       </div>
+      <p style="text-align: center; color: #7A5A61; font-size: 12px; margin-top: 24px;">Sent with 💕 by QuickWeds</p>
     </body>
     </html>
-  `;
+    `;
 }

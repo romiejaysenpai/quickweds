@@ -54,20 +54,21 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                 return;
             }
 
-            const { error } = await supabase
-                .from('rsvps')
-                .insert({
-                    wedding_id: weddingId,
-                    guest_name: formData.guestName.trim(),
-                    attendance: formData.attendance,
-                    num_guests: formData.numGuests,
-                    meal_preference: formData.mealPreference || 'No Preference',
-                    dietary_details: formData.dietaryDetails || null,
-                    message: formData.message || null,
-                    plus_one_names: formData.plusOneNames || null,
-                    song_request: formData.songRequest || null,
-                    children_count: formData.childrenCount || 0,
-                });
+            const insertData: any = {
+                wedding_id: weddingId,
+                guest_name: formData.guestName.trim(),
+                attendance: formData.attendance,
+                num_guests: formData.numGuests || 1,
+            };
+
+            if (formData.mealPreference) insertData.meal_preference = formData.mealPreference;
+            if (formData.dietaryDetails) insertData.dietary_details = formData.dietaryDetails;
+            if (formData.message) insertData.message = formData.message;
+            if (formData.plusOneNames) insertData.plus_one_names = formData.plusOneNames;
+            if (formData.songRequest) insertData.song_request = formData.songRequest;
+            if (formData.childrenCount > 0) insertData.children_count = formData.childrenCount;
+
+            const { error } = await supabase.from('rsvps').insert(insertData);
 
             if (error) {
                 console.error("Supabase RSVP error:", error);
