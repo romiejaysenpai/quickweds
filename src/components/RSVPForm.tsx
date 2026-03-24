@@ -57,7 +57,6 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                 .insert({
                     wedding_id: weddingId,
                     guest_name: formData.guestName.trim(),
-                    guest_email: formData.guestEmail.trim(),
                     attendance: formData.attendance,
                     num_guests: formData.numGuests,
                     meal_preference: formData.mealPreference || 'No Preference',
