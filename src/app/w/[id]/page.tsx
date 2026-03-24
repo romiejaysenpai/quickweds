@@ -308,7 +308,6 @@ function EditorialTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -367,7 +366,6 @@ function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                 <GallerySection gallery={gallery} />
                 <GiftSection wedding={wedding} invert />
                 <SharedNewSections wedding={wedding} isExpired={isExpired} />
-                <RSVPSection wedding={wedding} isExpired={isExpired} />
             </div>
         </div>
     );
@@ -442,7 +440,6 @@ function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -524,7 +521,6 @@ function UrbanTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -594,7 +590,6 @@ function TropicalTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -632,7 +627,6 @@ function MidnightTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -675,7 +669,6 @@ function SakuraTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -736,7 +729,6 @@ function VogueTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} masonry />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -789,7 +781,6 @@ function RusticTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -833,7 +824,6 @@ function FilmTemplate({ wedding, gallery, isExpired }: any) {
             <GiftSection wedding={wedding} invert />
             <GallerySection gallery={gallery} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -881,7 +871,6 @@ function GlitchTemplate({ wedding, gallery, isExpired }: any) {
             <GiftSection wedding={wedding} invert />
             <GallerySection gallery={gallery} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -934,7 +923,6 @@ function GardenTemplate({ wedding, gallery, isExpired }: any) {
             <GiftSection wedding={wedding} />
             <GallerySection gallery={gallery} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -985,6 +973,7 @@ function SharedNewSections({ wedding, isExpired }: { wedding: any; isExpired: bo
                     </a>
                 </div>
             )}
+            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </>
     );
 }
@@ -1034,7 +1023,6 @@ function RomanticTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1069,7 +1057,6 @@ function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1101,7 +1088,6 @@ function ElopementTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1138,7 +1124,6 @@ function TraditionalTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1172,7 +1157,6 @@ function BohoTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1204,7 +1188,6 @@ function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1236,7 +1219,6 @@ function VintageTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1267,7 +1249,6 @@ function MinimalTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1300,7 +1281,6 @@ function ClassicTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </>
     );
 }
@@ -1323,7 +1303,6 @@ function TimelineTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1349,7 +1328,6 @@ function RSVPFocusTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1378,7 +1356,6 @@ function CinematicTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }
@@ -1400,7 +1377,6 @@ function EleganceTemplate({ wedding, gallery, isExpired }: any) {
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }

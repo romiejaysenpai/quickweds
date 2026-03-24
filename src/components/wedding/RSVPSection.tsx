@@ -9,7 +9,6 @@ interface RSVPSectionProps {
 }
 
 export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
-    if (wedding.is_thank_you_mode) return null;
 
     return (
         <section id="rsvp" className="max-w-4xl mx-auto px-6 py-32">
