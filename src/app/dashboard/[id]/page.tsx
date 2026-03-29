@@ -10,7 +10,7 @@ import { useEffect, useState, use, useMemo } from 'react';
 export default function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const searchParams = useSearchParams();
-    const created = searchParams.get('created');
+    const created = searchParams?.get('created');
 
     const [wedding, setWedding] = useState<any>(null);
     const [rsvps, setRsvps] = useState<any[]>([]);
