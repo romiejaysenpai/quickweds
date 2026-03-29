@@ -384,7 +384,6 @@ export default function BuilderForm() {
                 is_thank_you_mode: formData.isThankYouMode,
                 thank_you_message: formData.thankYouMessage,
                 photo_album_link: formData.photoAlbumLink,
-                couple_email: user.email, // Automatically save the couple's email for notifications
             };
 
             if (mediaFiles.heroImage || editId) payload.hero_image = heroUrl || previews.heroImage;
