@@ -27,20 +27,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Get recipient email (couple)
+        // Fallback Priority: 
+        // 1. wedding.couple_email (if exists)
+        // 2. wedding.contact_person (if it looks like an email)
+        // 3. Admin Email (fallback)
+        const ADMIN_EMAIL = 'romiejaybacasmas@gmail.com';
         let recipientEmail = wedding.couple_email;
-        if (!recipientEmail && wedding.user_id) {
-            const { data: user } = await supabase
-                .from('users')
-                .select('email')
-                .eq('id', wedding.user_id)
-                .single();
-            recipientEmail = user?.email;
+        
+        if (!recipientEmail && wedding.contact_person && wedding.contact_person.includes('@')) {
+            recipientEmail = wedding.contact_person;
+            console.log(`Using contact_person as fallback email: ${recipientEmail}`);
         }
 
         if (!recipientEmail) {
-            console.error('No recipient email found for wedding:', weddingId);
-            return res.status(400).json({ error: 'Recipient email not found' });
+            recipientEmail = ADMIN_EMAIL;
+            console.log(`No recipient email found for wedding: ${weddingId}. Falling back to admin: ${recipientEmail}`);
         }
+
+        const guestRecipientEmail = guestEmail || 'no-email-provided';
 
         const weddingUrl = `${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site'}/w/${weddingId}`;
         const finalWeddingUrl = wedding.custom_domain ? `https://${wedding.custom_domain}` : `https://${weddingUrl}`;

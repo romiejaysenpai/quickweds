@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CalendarHeart, MapPin, Sparkles, Clock } from 'lucide-react';
 
 interface CountdownTimerProps {
     weddingDate: string;
@@ -19,14 +20,13 @@ function generateICS(props: CountdownTimerProps): string {
     const formatDate = (d: Date) =>
         `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
 
-    // Set time if provided
     if (props.weddingTime) {
         const [h, m] = props.weddingTime.split(':').map(Number);
         date.setHours(h || 0, m || 0);
     }
 
     const endDate = new Date(date);
-    endDate.setHours(endDate.getHours() + 4); // 4 hour default event
+    endDate.setHours(endDate.getHours() + 4); 
 
     return [
         'BEGIN:VCALENDAR',
@@ -37,10 +37,10 @@ function generateICS(props: CountdownTimerProps): string {
         `DTEND:${formatDate(endDate)}`,
         `SUMMARY:${props.brideName} & ${props.groomName}'s Wedding`,
         `LOCATION:${props.venueName || ''}${props.venueAddress ? ', ' + props.venueAddress : ''}`,
-        `DESCRIPTION:You are invited to the wedding of ${props.brideName} and ${props.groomName}. We can't wait to celebrate with you!`,
+        `DESCRIPTION:We can't wait to celebrate our special day with you!\\n\\n${props.brideName} & ${props.groomName}`,
         'END:VEVENT',
         'END:VCALENDAR',
-    ].join('\r\n');
+    ].join('\\r\\n');
 }
 
 export default function CountdownTimer({
@@ -54,8 +54,10 @@ export default function CountdownTimer({
 }: CountdownTimerProps) {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
     const [isPast, setIsPast] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
+        setIsMounted(true);
         const target = new Date(weddingDate);
         if (weddingTime) {
             const [h, m] = weddingTime.split(':').map(Number);
@@ -96,72 +98,133 @@ export default function CountdownTimer({
         URL.revokeObjectURL(url);
     };
 
-    const units = [
-        { label: 'Days', value: timeLeft.days },
-        { label: 'Hours', value: timeLeft.hours },
-        { label: 'Minutes', value: timeLeft.minutes },
-        { label: 'Seconds', value: timeLeft.seconds },
-    ];
+    if (!isMounted) return null;
 
     if (isPast) {
         return (
-            <section className={`py-16 px-6 text-center ${className}`}>
+            <section className={`py-12 px-6 w-full ${className} relative overflow-hidden flex justify-center`}>
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
-                    className="max-w-3xl mx-auto"
+                    className="max-w-3xl w-full text-center p-12 rounded-[3rem] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden"
                 >
-                    <h2 className="text-4xl md:text-5xl font-serif mb-4">🎉 Today is the Day!</h2>
-                    <p className="text-xl font-serif italic opacity-70">The celebration has begun.</p>
+                    <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%,100%_100%] animate-[shimmer_5s_infinite]" />
+                    <Sparkles className="w-12 h-12 md:w-16 md:h-16 text-primary mx-auto mb-6 animate-pulse" />
+                    <h2 className="text-4xl md:text-6xl font-serif text-primary/90 leading-tight">Happily Ever After <br/><span className="italic font-light">Has Begun</span></h2>
+                    <p className="text-lg uppercase tracking-widest font-black opacity-30 mt-6 block">We did it!</p>
                 </motion.div>
             </section>
         );
     }
 
+    const units = [
+        { label: 'Days', value: timeLeft.days },
+        { label: 'Hours', value: timeLeft.hours },
+        { label: 'Mins', value: timeLeft.minutes },
+        { label: 'Secs', value: timeLeft.seconds },
+    ];
+
     return (
-        <section className={`py-16 md:py-24 px-6 ${className}`}>
+        <section className={`py-16 md:py-24 px-4 w-full flex justify-center relative ${className}`}>
             <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="max-w-4xl mx-auto text-center"
+                viewport={{ margin: "-100px", once: true }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                className="max-w-5xl w-full"
             >
-                <span className="text-xs uppercase tracking-[0.3em] font-bold text-primary mb-4 block opacity-60">
-                    Counting Down To
-                </span>
-                <h2 className="text-4xl md:text-5xl font-serif mb-12">The Big Day</h2>
-
-                <div className="grid grid-cols-4 gap-4 md:gap-8 mb-12">
-                    {units.map((unit) => (
-                        <div
-                            key={unit.label}
-                            className="p-4 md:p-8 rounded-[2rem] bg-white/80 backdrop-blur-sm soft-shadow border border-primary/5"
-                        >
-                            <motion.span
-                                key={unit.value}
-                                initial={{ y: -10, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                className="text-3xl md:text-5xl font-serif font-bold text-primary block"
+                <div className="relative p-[1px] rounded-[2.5rem] bg-gradient-to-b from-white/60 to-white/10 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.08)] overflow-hidden group">
+                    {/* Atmospheric Glow */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-32 bg-primary/20 blur-[80px] rounded-full pointer-events-none -translate-y-1/2 transition-opacity duration-1000 opacity-50 group-hover:opacity-100" />
+                    
+                    <div className="bg-white/40 backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-16 lg:p-20 relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+                        
+                        {/* Event Details Section */}
+                        <div className="text-center md:text-left flex-1 md:max-w-sm shrink-0">
+                            <motion.div 
+                                initial={{ opacity: 0, x: -20 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="flex items-center justify-center md:justify-start gap-3 mb-6"
                             >
-                                {String(unit.value).padStart(2, '0')}
-                            </motion.span>
-                            <span className="text-[10px] md:text-xs uppercase tracking-widest font-bold opacity-40 mt-2 block">
-                                {unit.label}
-                            </span>
+                                <span className="h-[1px] w-12 bg-primary/30 hidden md:block" />
+                                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-primary/70">The Details</span>
+                                <span className="h-[1px] w-12 bg-primary/30 hidden md:block" />
+                            </motion.div>
+                            
+                            <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-[#333] mb-8 leading-[1.1]">
+                                Counting down <br /> <span className="italic font-light text-primary">to forever</span>
+                            </h2>
+                            
+                            <div className="space-y-4 mb-10">
+                                <div className="flex items-start justify-center md:justify-start gap-4 group/item">
+                                    <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10 group-hover/item:bg-primary/10 transition-colors">
+                                        <CalendarHeart className="w-4 h-4 text-primary" />
+                                    </div>
+                                    <div className="text-left font-serif pt-1.5">
+                                        <p className="text-lg md:text-xl text-[#444] leading-none mb-1">{new Date(weddingDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                                        {weddingTime && <p className="text-xs font-sans font-bold tracking-widest uppercase opacity-40">{weddingTime}</p>}
+                                    </div>
+                                </div>
+                                {venueName && (
+                                    <div className="flex items-start justify-center md:justify-start gap-4 group/item">
+                                        <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10 group-hover/item:bg-primary/10 transition-colors">
+                                            <MapPin className="w-4 h-4 text-primary" />
+                                        </div>
+                                        <div className="text-left font-serif pt-1.5">
+                                            <p className="text-lg md:text-xl text-[#444] leading-tight mb-1">{venueName}</p>
+                                            {venueAddress && <p className="text-xs font-sans font-bold tracking-widest uppercase opacity-40">{venueAddress}</p>}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <motion.button
+                                whileHover={{ scale: 1.02, y: -2 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleAddToCalendar}
+                                className="w-full md:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full bg-primary text-white font-black text-xs uppercase tracking-widest shadow-[0_10px_20px_-10px_var(--primary)] hover:shadow-[0_15px_30px_-10px_var(--primary)] transition-all"
+                            >
+                                <Clock className="w-4 h-4" />
+                                Save Date & Time
+                            </motion.button>
                         </div>
-                    ))}
-                </div>
 
-                <button
-                    onClick={handleAddToCalendar}
-                    className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-all border border-primary/20"
-                >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Add to Calendar
-                </button>
+                        {/* Timer Grid Section */}
+                        <div className="w-[1px] h-32 bg-primary/10 hidden lg:block shrink-0" />
+
+                        <div className="grid grid-cols-2 lg:flex lg:flex-row gap-4 md:gap-6 flex-1 w-full relative z-20">
+                            <AnimatePresence>
+                                {units.map((unit, i) => (
+                                    <motion.div
+                                        key={unit.label}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
+                                        className="relative p-[1px] rounded-3xl bg-gradient-to-br from-white/80 to-white/10 group/box hover:-translate-y-2 transition-transform duration-500 w-full"
+                                    >
+                                        <div className="w-full h-full bg-white/40 backdrop-blur-xl rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden">
+                                            <motion.div
+                                                key={unit.value}
+                                                initial={{ y: -10, opacity: 0, scale: 0.9 }}
+                                                animate={{ y: 0, opacity: 1, scale: 1 }}
+                                                transition={{ type: "spring", damping: 15 }}
+                                            >
+                                                <span className="text-4xl md:text-5xl lg:text-7xl font-serif font-light tracking-tighter text-[#333] drop-shadow-sm mb-2 block">
+                                                    {String(unit.value).padStart(2, '0')}
+                                                </span>
+                                            </motion.div>
+                                            <span className="text-[10px] md:text-xs font-sans font-black uppercase tracking-[0.25em] text-primary/70">
+                                                {unit.label}
+                                            </span>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                </div>
             </motion.div>
         </section>
     );

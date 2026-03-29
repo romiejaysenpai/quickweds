@@ -50,8 +50,7 @@ export interface Wedding {
     is_thank_you_mode?: boolean;
     thank_you_message?: string;
     photo_album_link?: string;
-    // Couple email for notifications
-    couple_email?: string;
+    couple_email?: string; // Notification email for the couple
     // Metadata
     created_at: string;
     updated_at?: string;
@@ -61,6 +60,7 @@ export interface RSVP {
     id: string;
     wedding_id: string;
     guest_name: string;
+    guest_email?: string; // Email for confirmation
     attendance: 'Yes' | 'No';
     num_guests: number;
     meal_preference?: string;

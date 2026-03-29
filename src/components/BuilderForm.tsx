@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import VectorArtGuests from './VectorArtGuests';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import GenerationLoading from './GenerationLoading';
@@ -17,6 +18,7 @@ const STEPS = [
     { id: 'theme', title: 'Style', icon: Palette },
     { id: 'logo', title: 'Monogram', icon: Sparkles },
     { id: 'media', title: 'Media', icon: Camera },
+    { id: 'dresscode', title: 'Dress Code', icon: Shirt },
     { id: 'gifts', title: 'Gifts', icon: Heart },
     { id: 'rsvp', title: 'RSVP', icon: Calendar },
 ];
@@ -116,6 +118,7 @@ export default function BuilderForm() {
         backgroundStyle: 'gradient',
         template: 'classic',
         dressCode: '',
+        dressCodeColor: '#000000',
         programTimeline: '',
         story: '',
         quote: '',
@@ -198,7 +201,8 @@ export default function BuilderForm() {
                         fontStyle: data.font_style || 'Elegant',
                         backgroundStyle: data.background_style || 'gradient',
                         template: data.template || 'classic',
-                        dressCode: data.dress_code || '',
+                        dressCode: data.dress_code ? data.dress_code.split('||')[0] : '',
+                        dressCodeColor: data.dress_code && data.dress_code.includes('||') ? data.dress_code.split('||')[1] : (data.motif_color || '#000000'),
                         programTimeline: data.program_timeline || '',
                         story: data.story || '',
                         quote: data.quote || '',
@@ -358,7 +362,7 @@ export default function BuilderForm() {
                 font_style: formData.fontStyle,
                 background_style: formData.backgroundStyle,
                 template: formData.template,
-                dress_code: formData.dressCode,
+                dress_code: formData.dressCode ? `${formData.dressCode}||${formData.dressCodeColor}` : '',
                 program_timeline: formData.programTimeline,
                 story: formData.story,
                 quote: formData.quote,
@@ -380,6 +384,7 @@ export default function BuilderForm() {
                 is_thank_you_mode: formData.isThankYouMode,
                 thank_you_message: formData.thankYouMessage,
                 photo_album_link: formData.photoAlbumLink,
+                couple_email: user.email, // Automatically save the couple's email for notifications
             };
 
             if (mediaFiles.heroImage || editId) payload.hero_image = heroUrl || previews.heroImage;
@@ -777,6 +782,36 @@ export default function BuilderForm() {
                 );
             case 5:
                 return (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="text-center mb-4">
+                            <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Dress Code</h2>
+                            <p className="text-text-secondary">Let your guests know what to wear.</p>
+                        </div>
+                        <div className="flex flex-col md:flex-row gap-8 items-center bg-white/50 p-6 rounded-[2rem] border border-border">
+                            <div className="flex-1 space-y-6 w-full">
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Attire Type</label>
+                                    <input name="dressCode" value={formData.dressCode} onChange={handleChange} placeholder="e.g. Formal, Black Tie, Casual" className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Attire Color Theme</label>
+                                    <div className="flex flex-wrap gap-4">
+                                        {['#000000', '#1A365D', '#276749', '#744210', '#E53E3E', '#805AD5', '#D6BCFA', '#FBD38D'].map((color) => (
+                                            <button key={color} type="button" onClick={() => setFormData((prev: any) => ({ ...prev, dressCodeColor: color }))} className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.dressCodeColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral shadow-sm'}`} style={{ backgroundColor: color }} />
+                                        ))}
+                                        <input type="color" name="dressCodeColor" value={formData.dressCodeColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer p-0" />
+                                    </div>
+                                    <p className="text-[10px] text-text-secondary ml-1 mt-2">Select a theme color for the vector art guests.</p>
+                                </div>
+                            </div>
+                            <div className="w-full md:w-1/2 flex justify-center items-center relative h-64 bg-neutral rounded-3xl overflow-hidden border-2 border-dashed border-border py-4">
+                                <VectorArtGuests color={formData.dressCodeColor} />
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 6:
+                return (
                     <div className="space-y-6">
                         <h3 className="text-lg font-serif font-bold text-primary mb-4 flex items-center gap-2"><Heart className="w-5 h-5" /> Gift Options</h3>
 
@@ -875,7 +910,7 @@ export default function BuilderForm() {
                         </div>
                     </div>
                 );
-            case 6:
+            case 7:
                 return (
                     <div className="space-y-8">
                         <div className="p-6 rounded-2xl border border-border bg-neutral/30 space-y-4">
@@ -910,10 +945,7 @@ export default function BuilderForm() {
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">RSVP Deadline</label>
                                 <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Dress Code</label>
-                                <input name="dressCode" value={formData.dressCode} onChange={handleChange} placeholder="Formal" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                            </div>
+                            
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Contact Person</label>
                                 <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />

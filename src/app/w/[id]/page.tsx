@@ -192,7 +192,11 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             } as any}
         >
             <div className="noise-overlay" />
-            <div className="fixed inset-0 -z-20 opacity-20 pointer-events-none" style={{ background: `radial-gradient(circle at 20% 30%, ${wedding.motif_color}22 0%, transparent 50%), radial-gradient(circle at 80% 70%, ${wedding.motif_color}22 0%, transparent 50%)` }} />
+            <div className="fixed inset-0 -z-20 pointer-events-none overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[50vh] bg-gradient-to-b from-primary/5 to-transparent" />
+                <motion.div animate={{ opacity: [0.2, 0.4, 0.2], scale: [1, 1.1, 1] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-[10%] -left-[10%] w-[50%] md:w-[40%] aspect-square rounded-full blur-[100px] md:blur-[140px] bg-primary/20" />
+                <motion.div animate={{ opacity: [0.1, 0.3, 0.1], scale: [1, 1.2, 1] }} transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute bottom-[20%] -right-[10%] w-[60%] md:w-[50%] aspect-square rounded-full blur-[120px] md:blur-[160px] bg-primary/20" />
+            </div>
 
             <Suspense fallback={<div className="h-screen flex items-center justify-center font-serif italic text-primary">Refining layout...</div>}>
                 {getTemplateContent()}
@@ -304,6 +308,16 @@ function EditorialTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -362,7 +376,17 @@ function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                 <BioSection wedding={wedding} />
                 <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
                 <div className="relative z-10 bg-[#121212] pt-24"><DetailsSection wedding={wedding} invert /></div>
-                <TimelineSection timeline={wedding.program_timeline} />
+                {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
+            <TimelineSection timeline={wedding.program_timeline} />
                 <GallerySection gallery={gallery} />
                 <GiftSection wedding={wedding} invert />
                 <SharedNewSections wedding={wedding} isExpired={isExpired} />
@@ -436,6 +460,16 @@ function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -517,6 +551,16 @@ function UrbanTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <div className="p-12 lg:p-32"><DetailsSection wedding={wedding} invert /></div>
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
@@ -586,6 +630,16 @@ function TropicalTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -623,6 +677,16 @@ function MidnightTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} invert />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
@@ -665,6 +729,16 @@ function SakuraTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -725,6 +799,16 @@ function VogueTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} masonry />
             <GiftSection wedding={wedding} />
@@ -777,6 +861,16 @@ function RusticTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -820,6 +914,16 @@ function FilmTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} invert />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} invert />
             <GallerySection gallery={gallery} />
@@ -867,6 +971,16 @@ function GlitchTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} invert />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} invert />
             <GallerySection gallery={gallery} />
@@ -919,6 +1033,16 @@ function GardenTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} />
             <GallerySection gallery={gallery} />
@@ -952,16 +1076,7 @@ function SharedNewSections({ wedding, isExpired }: { wedding: any; isExpired: bo
                         </a>
                     )}
                 </div>
-            ) : (
-                <CountdownTimer
-                    weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
-                    brideName={wedding.bride_name}
-                    groomName={wedding.groom_name}
-                    venueName={wedding.venue_name}
-                    venueAddress={wedding.venue_address}
-                />
-            )}
+            ) : null}
             <WeddingPartySection members={partyMembers} />
             <VenueMap venueName={wedding.venue_name} venueAddress={wedding.venue_address} mapsLink={wedding.maps_link} />
             <GuestBook weddingId={wedding.id} />
@@ -1019,6 +1134,16 @@ function RomanticTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -1053,6 +1178,16 @@ function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -1084,6 +1219,16 @@ function ElopementTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -1120,6 +1265,16 @@ function TraditionalTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -1153,6 +1308,16 @@ function BohoTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -1184,6 +1349,16 @@ function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
             <div className="relative z-10 py-16 md:py-32">
                 <DetailsSection wedding={wedding} invert />
             </div>
+            {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
@@ -1215,6 +1390,16 @@ function VintageTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && !isExpired && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -1245,6 +1430,16 @@ function MinimalTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && !isExpired && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -1277,6 +1472,16 @@ function ClassicTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && !isExpired && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -1299,6 +1504,16 @@ function TimelineTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && !isExpired && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -1324,6 +1539,16 @@ function RSVPFocusTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && !isExpired && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
@@ -1352,6 +1577,16 @@ function CinematicTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} invert />
+            {!wedding.is_thank_you_mode && !isExpired && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
@@ -1373,6 +1608,16 @@ function EleganceTemplate({ wedding, gallery, isExpired }: any) {
             <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection wedding={wedding} />
             <DetailsSection wedding={wedding} />
+            {!wedding.is_thank_you_mode && !isExpired && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
