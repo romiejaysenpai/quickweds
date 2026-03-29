@@ -288,7 +288,7 @@ function EditorialTemplate({ wedding, gallery, isExpired }: any) {
                             </div>
                         )}
                         <span className="inline-block px-4 py-1 bg-primary text-xs font-black uppercase tracking-widest mb-12">Special Invitation</span>
-                        <h1 className="text-8xl md:text-[18vw] font-serif leading-[0.75] tracking-tighter mb-16 mix-blend-screen drop-shadow-2xl">
+                        <h1 className="text-5xl md:text-7xl lg:text-8xl md:text-[18vw] font-serif leading-[0.75] tracking-tighter mb-16 mix-blend-screen drop-shadow-2xl">
                             {wedding.bride_name.split(' ')[0]} <br />
                             & <span className="text-primary italic font-light">{wedding.groom_name.split(' ')[0]}</span>
                         </h1>
@@ -298,7 +298,7 @@ function EditorialTemplate({ wedding, gallery, isExpired }: any) {
                                 <p className="text-xs uppercase tracking-[0.5em] font-black opacity-40">Photography by QuickWeds Editorial</p>
                             </div>
                             <div className="shrink-0 flex flex-col items-end">
-                                <p className="text-6xl font-serif border-b-2 border-primary pb-4 mb-12 italic">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}</p>
+                                <p className="text-4xl md:text-6xl font-serif border-b-2 border-primary pb-4 mb-12 italic">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}</p>
                                 <a href="#rsvp" className="text-2xl font-serif italic flex items-center gap-6 hover:gap-12 transition-all">
                                     THE GUEST LIST <span className="w-12 h-[1px] bg-white" />
                                 </a>
@@ -357,7 +357,7 @@ function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                     </div>
 
                     <span className="text-xs uppercase tracking-[1em] font-black opacity-60 mb-12 block">BY ROYAL PROCLAMATION</span>
-                    <h1 className="text-7xl md:text-[8rem] font-serif border-y-2 border-primary/40 py-16 mb-16 leading-tight tracking-[0.05em] uppercase">
+                    <h1 className="text-5xl md:text-7xl md:text-[8rem] font-serif border-y-2 border-primary/40 py-16 mb-16 leading-tight tracking-[0.05em] uppercase">
                         {wedding.bride_name} <br />
                         <span className="text-3xl italic normal-case block my-12 tracking-widest">and</span>
                         {wedding.groom_name}
@@ -432,7 +432,7 @@ function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
                         </div>
                     </div>
 
-                    <h1 className="text-7xl md:text-[12vw] font-serif leading-none tracking-tighter text-[#4A4444] mb-8 drop-shadow-[0_5px_15px_rgba(0,0,0,0.05)]">
+                    <h1 className="text-5xl md:text-7xl md:text-[12vw] font-serif leading-none tracking-tighter text-[#4A4444] mb-8 drop-shadow-[0_5px_15px_rgba(0,0,0,0.05)]">
                         Magic is <br />
                         <span className="text-primary italic">Real</span>
                     </h1>
@@ -450,7 +450,7 @@ function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
             <section className="py-32 bg-white/40 backdrop-blur-md border-y border-primary/10">
                 <div className="max-w-4xl mx-auto px-6 text-center space-y-12">
                     <Stars className="w-12 h-12 text-primary mx-auto opacity-30" />
-                    <h2 className="text-6xl font-serif text-[#4A4444]">The Enchantment</h2>
+                    <h2 className="text-4xl md:text-6xl font-serif text-[#4A4444]">The Enchantment</h2>
                     <p className="text-3xl font-serif leading-relaxed text-primary italic">
                         {wedding.story || "A tale of two souls becoming one, captured in a beauty that never fades."}
                     </p>
@@ -515,7 +515,7 @@ function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                     </div>
 
                     <motion.div initial={{ opacity: 0, x: -100 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1 }}>
-                        <h1 className="text-[15vw] font-black uppercase leading-[0.75] mb-12 tracking-tighter mix-blend-difference">
+                        <h1 className="text-5xl md:text-[12vw] lg:text-[15vw] font-black uppercase leading-[0.75] mb-12 tracking-tighter mix-blend-difference">
                             {wedding.bride_name.split(' ')[0]}<br />
                             <span className="text-primary">+</span><br />
                             {wedding.groom_name.split(' ')[0]}
@@ -537,7 +537,7 @@ function UrbanTemplate({ wedding, gallery, isExpired }: any) {
             <section className="py-32 px-6 relative z-10">
                 <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-24 items-end">
                     <div className="flex-1 space-y-12">
-                        <h2 className="text-8xl font-black uppercase tracking-tighter text-white/10">THE MISSION</h2>
+                        <h2 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter text-white/10">THE MISSION</h2>
                         <p className="text-4xl font-mono uppercase tracking-tighter leading-tight">
                             {wedding.story || "A tale of two souls becoming one, captured in the heart of the city."}
                         </p>
@@ -588,9 +588,9 @@ function TropicalTemplate({ wedding, gallery, isExpired }: any) {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5 }} className="text-center z-10 px-6">
-                    <div className="text-8xl mb-12 animate-float">🏝️</div>
+                    <div className="text-5xl md:text-7xl lg:text-8xl mb-12 animate-float">🏝️</div>
                     <span className="text-xs uppercase tracking-[1em] font-black mb-8 block opacity-40">OUR PARADISE FOUND</span>
-                    <h1 className="text-7xl md:text-[14vw] font-serif mb-12 tracking-tighter leading-[0.7] text-[#004d40]">
+                    <h1 className="text-5xl md:text-7xl md:text-[14vw] font-serif mb-12 tracking-tighter leading-[0.7] text-[#004d40]">
                         {wedding.bride_name.split(' ')[0]} <br />
                         <span className="text-4xl align-middle italic text-primary">&</span> <br />
                         {wedding.groom_name.split(' ')[0]}
@@ -622,7 +622,7 @@ function TropicalTemplate({ wedding, gallery, isExpired }: any) {
                     </div>
                     <div className="w-full md:w-1/2 space-y-12">
                         <Camera className="w-16 h-16 text-primary" />
-                        <h2 className="text-7xl font-serif text-[#004d40] tracking-tighter">Sun, Sand & <br />Our Love</h2>
+                        <h2 className="text-5xl md:text-7xl font-serif text-[#004d40] tracking-tighter">Sun, Sand & <br />Our Love</h2>
                         <p className="text-2xl font-serif leading-relaxed text-[#00695c]/80 italic border-l-4 border-primary pl-12">
                             {wedding.story || "A tale of two souls becoming one, captured in a lifetime of beautiful moments."}
                         </p>
@@ -660,7 +660,7 @@ function MidnightTemplate({ wedding, gallery, isExpired }: any) {
                 <div className="flex flex-col justify-center p-12 lg:p-24 border-r border-[#cfb53b]/10 bg-gradient-to-b from-[#0f0f0f] to-[#151515]">
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
                         <span className="text-xs font-black tracking-[0.5em] uppercase text-[#cfb53b]/60 mb-8 block">The Celebration</span>
-                        <h1 className="text-6xl lg:text-8xl font-serif text-white mb-8 leading-tight">
+                        <h1 className="text-4xl md:text-6xl lg:text-8xl font-serif text-white mb-8 leading-tight">
                             {wedding.bride_name} <br />
                             <span className="text-4xl italic text-[#cfb53b] font-light">&</span><br />
                             {wedding.groom_name}
@@ -710,7 +710,7 @@ function SakuraTemplate({ wedding, gallery, isExpired }: any) {
                     <div className="absolute top-6 left-6 text-4xl opacity-50">🌸</div>
 
                     <p className="font-serif italic text-2xl text-[#8e405a]/60 mb-6">Blossoming Love</p>
-                    <h1 className="text-6xl md:text-8xl font-serif text-[#8e405a] mb-8 leading-none">
+                    <h1 className="text-4xl md:text-6xl md:text-8xl font-serif text-[#8e405a] mb-8 leading-none">
                         {wedding.bride_name} <br />
                         <span className="text-3xl block my-4 font-sans font-light uppercase tracking-widest text-[#8e405a]/40">and</span>
                         {wedding.groom_name}
@@ -765,9 +765,9 @@ function VogueTemplate({ wedding, gallery, isExpired }: any) {
                     </div>
 
                     <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
-                        <h1 className="text-7xl md:text-9xl font-serif leading-[0.85] -ml-2 mb-8 mix-blend-difference">
+                        <h1 className="text-5xl md:text-7xl md:text-9xl font-serif leading-[0.85] -ml-2 mb-8 mix-blend-difference">
                             {wedding.bride_name.split(' ')[0]} <br />
-                            <span className="font-sans font-light italic ml-12 text-6xl opacity-50">&</span> <br />
+                            <span className="font-sans font-light italic ml-12 text-4xl md:text-6xl opacity-50">&</span> <br />
                             {wedding.groom_name.split(' ')[0]}
                         </h1>
 
@@ -834,7 +834,7 @@ function RusticTemplate({ wedding, gallery, isExpired }: any) {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
                     </div>
                     <p className="text-sm uppercase tracking-[0.4em] font-bold mb-6">We're getting married</p>
-                    <h1 className="text-6xl md:text-8xl mb-8 font-black text-[#8d7966] drop-shadow-sm font-handwritten">
+                    <h1 className="text-4xl md:text-6xl md:text-8xl mb-8 font-black text-[#8d7966] drop-shadow-sm font-handwritten">
                         {wedding.bride_name.split(' ')[0]} & {wedding.groom_name.split(' ')[0]}
                     </h1>
                     <div className="inline-flex items-center gap-6 border-y border-[#5e503f]/20 py-6 px-12 bg-white/50 backdrop-blur-sm rounded-lg shadow-sm">
@@ -944,7 +944,7 @@ function GlitchTemplate({ wedding, gallery, isExpired }: any) {
                 <div className="max-w-6xl z-10">
                     <motion.div initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ type: "spring", bounce: 0 }} className="border-l-4 border-green-400 pl-8 mb-12">
                         <p className="text-sm mb-4 typing-effect w-fit">INITIALIZING UNION PROTOCOL...</p>
-                        <h1 className="text-6xl md:text-9xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 mb-4 leading-none tracking-tighter filter hue-rotate-90 animate-pulse">
+                        <h1 className="text-4xl md:text-6xl md:text-9xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 mb-4 leading-none tracking-tighter filter hue-rotate-90 animate-pulse">
                             {wedding.bride_name}<br />{wedding.groom_name}
                         </h1>
                     </motion.div>
@@ -1123,7 +1123,7 @@ function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                             <Heart className="w-8 h-8 fill-current" />
                         </div>
                         <p className="font-serif italic text-xl md:text-2xl text-primary/70 mb-6">We invite you to share in our love</p>
-                        <h1 className="text-6xl md:text-8xl font-serif text-[#4A4444] mb-8 leading-tight tracking-tight">
+                        <h1 className="text-4xl md:text-6xl md:text-8xl font-serif text-[#4A4444] mb-8 leading-tight tracking-tight">
                             {wedding.bride_name} <br />
                             <span className="text-3xl md:text-4xl italic text-primary">&</span> <br />
                             {wedding.groom_name}
@@ -1161,7 +1161,7 @@ function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
             <section className="h-screen relative grid grid-cols-1 md:grid-cols-2">
                 <div className="flex flex-col justify-center p-12 md:p-24 bg-neutral-50">
                     <div className="w-16 h-[2px] bg-black mb-12" />
-                    <h1 className="text-6xl md:text-8xl leading-[0.9] font-light mb-8 uppercase tracking-tight">
+                    <h1 className="text-4xl md:text-6xl md:text-8xl leading-[0.9] font-light mb-8 uppercase tracking-tight">
                         {wedding.bride_name} <br />
                         <span className="font-thin opacity-50">&</span> <br />
                         {wedding.groom_name}
@@ -1296,7 +1296,7 @@ function BohoTemplate({ wedding, gallery, isExpired }: any) {
                 <div className="w-48 h-48 bg-[#d69d78]/20 rounded-full absolute top-24 -left-24 blur-3xl animate-pulse" />
                 <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
                     <p className="font-sans text-xs uppercase tracking-[0.6em] mb-12 opacity-60">Join Our Adventure</p>
-                    <h1 className="text-7xl md:text-9xl font-serif mb-12 leading-none drop-shadow-sm font-light italic">
+                    <h1 className="text-5xl md:text-7xl md:text-9xl font-serif mb-12 leading-none drop-shadow-sm font-light italic">
                         {wedding.bride_name} <br />
                         <span className="text-4xl not-italic opacity-30 tracking-widest font-sans">&</span> <br />
                         {wedding.groom_name}
@@ -1338,7 +1338,7 @@ function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
                 <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="border-4 border-[#c5a059] p-12 md:p-24 relative max-w-5xl w-full text-center bg-black/40 backdrop-blur-sm">
                     <div className="absolute -inset-4 border border-[#c5a059]/30 pointer-events-none" />
                     <span className="text-xs uppercase tracking-[0.8em] font-bold mb-12 block text-white/60">A Grand Celebration</span>
-                    <h1 className="text-6xl md:text-9xl font-serif mb-12 text-white italic tracking-tighter leading-none">
+                    <h1 className="text-4xl md:text-6xl md:text-9xl font-serif mb-12 text-white italic tracking-tighter leading-none">
                         {wedding.bride_name} & <br /> {wedding.groom_name}
                     </h1>
                     <div className="w-24 h-1 bg-[#c5a059] mx-auto mb-12" />
@@ -1378,7 +1378,7 @@ function VintageTemplate({ wedding, gallery, isExpired }: any) {
                 <div className="absolute inset-8 border-[0.5px] border-[#5d544b]/20 pointer-events-none rounded-[2rem]" />
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.2 }}>
                     <p className="uppercase tracking-[0.4em] text-xs font-bold mb-12 opacity-40">Together with their families</p>
-                    <h1 className="text-6xl md:text-9xl mb-12 text-[#433c35] drop-shadow-sm">
+                    <h1 className="text-4xl md:text-6xl md:text-9xl mb-12 text-[#433c35] drop-shadow-sm">
                         {wedding.bride_name} <br />
                         <span className="text-3xl italic font-light opacity-30 my-6 block">&</span>
                         {wedding.groom_name}
@@ -1459,7 +1459,7 @@ function ClassicTemplate({ wedding, gallery, isExpired }: any) {
                 <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
                 <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="relative text-center text-white z-10 px-6">
                     <span className="text-xs uppercase tracking-[0.4em] font-bold mb-6 block opacity-80">The Wedding of</span>
-                    <h1 className="text-6xl md:text-9xl font-serif mb-8 leading-tight">
+                    <h1 className="text-4xl md:text-6xl md:text-9xl font-serif mb-8 leading-tight">
                         {wedding.bride_name} <br />
                         <span className="text-3xl md:text-4xl italic font-light serif text-primary-light">&</span> <br />
                         {wedding.groom_name}
@@ -1499,7 +1499,7 @@ function TimelineTemplate({ wedding, gallery, isExpired }: any) {
             <section className="h-[70vh] flex items-end justify-start p-6 md:p-24 bg-slate-100 relative">
                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
                 <div className="relative z-10">
-                    <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter mb-4">{wedding.bride_name} / {wedding.groom_name}</h1>
+                    <h1 className="text-4xl md:text-6xl md:text-8xl font-black uppercase tracking-tighter mb-4">{wedding.bride_name} / {wedding.groom_name}</h1>
                     <p className="text-xl font-mono opacity-60">{new Date(wedding.wedding_date).toLocaleDateString()}</p>
                 </div>
             </section>
@@ -1570,7 +1570,7 @@ function CinematicTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
                 <div className="relative z-10 space-y-8">
                     <p className="uppercase tracking-[0.5em] text-xs font-bold">A Film By QuickWeds</p>
-                    <h1 className="text-6xl md:text-9xl font-black tracking-tighter uppercase">{wedding.bride_name} <span className="text-red-500">&</span> {wedding.groom_name}</h1>
+                    <h1 className="text-4xl md:text-6xl md:text-9xl font-black tracking-tighter uppercase">{wedding.bride_name} <span className="text-red-500">&</span> {wedding.groom_name}</h1>
                     <p className="uppercase tracking-widest text-xl">{new Date(wedding.wedding_date).toLocaleDateString()}</p>
                     <div className="pt-12">
                         <a href="#rsvp" className="px-12 py-4 border border-white hover:bg-white hover:text-black transition-all uppercase tracking-widest text-xs font-bold">Watch Trailer</a>

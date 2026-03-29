@@ -10,17 +10,33 @@ interface TimelineSectionProps {
 export default function TimelineSection({ timeline }: TimelineSectionProps) {
     if (!timeline) return null;
     return (
-        <section className="py-24 bg-white/30 backdrop-blur-sm">
-            <div className="max-w-4xl mx-auto px-6">
-                <div className="text-center mb-16">
-                    <Clock className="w-12 h-12 text-primary mx-auto mb-6 opacity-30" />
-                    <h2 className="text-4xl md:text-5xl font-serif text-[#4A4444]">The Program</h2>
-                </div>
-                <div className="bg-white/50 border border-primary/5 p-8 md:p-12 rounded-[3.5rem] soft-shadow">
-                    <p className="whitespace-pre-wrap font-serif text-xl leading-relaxed text-foreground/70 text-center">
+        <section className="py-24 md:py-32 relative z-10 overflow-hidden">
+            <div className="max-w-4xl mx-auto px-4 md:px-6 relative">
+                <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.3 }}
+                    className="text-center mb-12 md:mb-16"
+                >
+                    <div className="w-16 h-16 md:w-20 md:h-20 mx-auto bg-white/60 backdrop-blur-xl border border-white/50 rounded-[2rem] flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(var(--primary),0.1)] rotate-3">
+                        <Clock className="w-6 h-6 md:w-8 md:h-8 text-primary" />
+                    </div>
+                    <h2 className="text-5xl md:text-6xl font-serif text-[#4A4444] drop-shadow-sm">The Program</h2>
+                </motion.div>
+
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{ duration: 0.8, type: 'spring' }}
+                    className="relative bg-white/40 backdrop-blur-3xl border border-white/50 p-8 md:p-16 rounded-[2rem] md:rounded-[4rem] shadow-2xl shadow-primary/5"
+                >
+                    <div className="absolute top-10 bottom-10 left-8 md:left-12 w-[3px] bg-gradient-to-b from-primary/0 via-primary/30 to-primary/0" />
+                    
+                    <p className="whitespace-pre-wrap font-serif text-lg md:text-2xl leading-relaxed md:leading-loose text-[#4A4444]/90 relative z-10 pl-6 md:pl-12">
                         {timeline}
                     </p>
-                </div>
+                </motion.div>
             </div>
         </section>
     );
