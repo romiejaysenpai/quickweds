@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, Globe, AlertCircle } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, Globe, AlertCircle, ListTodo } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -181,6 +181,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         <Link href={`/builder?edit=${wedding.id}`} className="flex items-center gap-2 px-6 py-2 rounded-xl bg-primary text-white text-sm font-bold shadow-lg shadow-primary/10 hover:bg-primary-hover transition-all">
                             Edit Design
                         </Link>
+                        <Link href={`/dashboard/${wedding.id}/planner`} className="flex items-center gap-2 px-6 py-2 rounded-xl bg-secondary text-white text-sm font-bold shadow-lg shadow-secondary/10 hover:opacity-90 transition-all">
+                            <ListTodo className="w-4 h-4" /> Planner
+                        </Link>
                         <Link href={url} target="_blank" className="flex items-center gap-2 px-6 py-2 rounded-xl bg-neutral text-primary text-sm font-bold border border-border hover:border-primary/30 transition-all">
                             View Live <ExternalLink className="w-4 h-4" />
                         </Link>
@@ -203,6 +206,19 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
                     <div className="lg:col-span-2 space-y-8">
+                        {/* Planner Promo Card */}
+                        <div className="p-8 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 flex flex-col md:flex-row items-center justify-between gap-6 group soft-shadow">
+                            <div>
+                                <h2 className="text-2xl font-serif font-bold text-foreground mb-2 flex items-center gap-2">
+                                    <ListTodo className="w-6 h-6 text-primary" /> Smart Wedding Planner
+                                </h2>
+                                <p className="text-text-secondary text-sm">Keep everything on track with our new Checklist, Budget Tracker, and Vendor Rolodex.</p>
+                            </div>
+                            <Link href={`/dashboard/${wedding.id}/planner`} className="shrink-0 px-8 py-4 bg-primary text-white rounded-2xl font-bold shadow-xl shadow-primary/20 group-hover:scale-105 transition-transform flex items-center gap-2">
+                                Open Planner
+                            </Link>
+                        </div>
+
                         {/* Stats Cards */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="p-6 rounded-2xl bg-white border border-border soft-shadow text-center">

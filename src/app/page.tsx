@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, Sparkles, Smartphone, Share2, Calendar, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera } from 'lucide-react';
+import { Heart, Sparkles, Smartphone, Share2, Calendar, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera, ListTodo, Users } from 'lucide-react';
 import ExamplesSection from '@/components/ExamplesSection';
 import TemplatesSection from '@/components/TemplatesSection';
 import PhoneMockupSection from '@/components/PhoneMockupSection';
@@ -335,6 +335,18 @@ export default function Home() {
                   title: "Post-Wedding Mode",
                   desc: "Swap out the RSVP form for a beautiful 'Thank You' banner linking directly to your official photo albums.",
                   accent: "bg-accent/5"
+                },
+                {
+                  icon: <ListTodo className="w-8 h-8 text-primary" />,
+                  title: "Smart Planner Ecosystem",
+                  desc: "Manage your big day flawlessly with our interactive checklist, customizable budget tracker, and more.",
+                  accent: "bg-primary/5"
+                },
+                {
+                  icon: <Users className="w-8 h-8 text-secondary" />,
+                  title: "Vendor Rolodex",
+                  desc: "Keep all your hired professionals' contacts, deposit statuses, and custom supplier profiles in one clean place.",
+                  accent: "bg-secondary/10"
                 }
               ].map((feature, i) => (
                 <motion.div
