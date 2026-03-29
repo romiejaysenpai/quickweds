@@ -132,6 +132,11 @@ export default function DashboardRedirect() {
                                             Manage
                                         </Link>
                                     </div>
+                                    <div className="grid grid-cols-1 gap-3 pb-3">
+                                        <Link href={`/dashboard/${wedding.id}/planner`} className="text-center py-3 rounded-xl bg-secondary text-white text-sm font-bold shadow-lg shadow-secondary/10 hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                                            <Heart className="w-4 h-4" /> Planner Toolkit
+                                        </Link>
+                                    </div>
                                     {!wedding.is_premium && !isAdmin && (
                                         <UpgradeButton weddingId={wedding.id} className="w-full text-sm py-2.5" />
                                     )}
