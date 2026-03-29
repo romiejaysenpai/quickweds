@@ -98,7 +98,8 @@ export default function CountdownTimer({
         URL.revokeObjectURL(url);
     };
 
-    if (!isMounted) return null;
+    // Suppress Hydration issue by displaying generic zeros/empty until mounted, allowing the DOM to match the server output
+    if (!isMounted) return <div className="sr-only">Loading timer...</div>;
 
     if (isPast) {
         return (

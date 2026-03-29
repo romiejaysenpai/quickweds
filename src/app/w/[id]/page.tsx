@@ -198,6 +198,9 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
                 <motion.div animate={{ opacity: [0.1, 0.3, 0.1], scale: [1, 1.2, 1] }} transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute bottom-[20%] -right-[10%] w-[60%] md:w-[50%] aspect-square rounded-full blur-[120px] md:blur-[160px] bg-primary/20" />
             </div>
 
+            {/* Premium Global Hero Upgrades */}
+            {!wedding.is_thank_you_mode && <HeroEnhancer wedding={wedding} />}
+
             <Suspense fallback={<div className="h-screen flex items-center justify-center font-serif italic text-primary">Refining layout...</div>}>
                 {getTemplateContent()}
             </Suspense>
