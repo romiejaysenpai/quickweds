@@ -62,7 +62,6 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
             const insertData: any = {
                 wedding_id: weddingId,
                 guest_name: formData.guestName.trim(),
-                guest_email: formData.guestEmail.trim(), // Added to record the guest email
                 attendance: formData.attendance,
                 num_guests: formData.numGuests || 1,
             };
