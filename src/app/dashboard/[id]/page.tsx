@@ -442,9 +442,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             <p className="font-bold text-foreground">{wedding.custom_domain}</p>
                                             <p className="text-[10px] uppercase tracking-widest text-text-secondary/60 mt-1">
                                                 {domainStatus?.misconfigured === false ? (
-                                                    <span className="text-green-500 font-bold">● Active &amp; Verified</span>
+                                                    <span className="text-green-500 font-bold flex items-center gap-1">● Active &amp; Verified</span>
                                                 ) : (
-                                                    <span className="text-yellow-500 font-bold flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Pending DNS Configuration</span>
+                                                    <span className="text-yellow-500 font-bold flex items-center gap-1 animate-pulse"><AlertCircle className="w-3 h-3" /> Pending DNS Configuration</span>
                                                 )}
                                             </p>
                                         </div>
@@ -466,17 +466,32 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                 <p className="text-text-secondary text-xs">Login to your domain registrar (GoDaddy, Namecheap, etc.) and add this exact {dnsType} Record to point your domain to our servers:</p>
 
                                                 <div className="space-y-2">
-                                                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
-                                                        <span className="text-text-secondary font-bold text-xs uppercase">Type</span>
-                                                        <span className="font-mono">{dnsType}</span>
+                                                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-border group/dns">
+                                                        <span className="text-text-secondary font-bold text-[10px] uppercase tracking-widest">Type</span>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="font-mono text-sm">{dnsType}</span>
+                                                            <button onClick={() => { navigator.clipboard.writeText(dnsType); alert('Copied Type'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 hover:bg-neutral rounded">
+                                                                <Copy className="w-3 h-3 text-text-secondary" />
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
-                                                        <span className="text-text-secondary font-bold text-xs uppercase">Name / Host</span>
-                                                        <span className="font-mono">{dnsName}</span>
+                                                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-border group/dns">
+                                                        <span className="text-text-secondary font-bold text-[10px] uppercase tracking-widest">Host</span>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="font-mono text-sm">{dnsName}</span>
+                                                            <button onClick={() => { navigator.clipboard.writeText(dnsName); alert('Copied Host'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 hover:bg-neutral rounded">
+                                                                <Copy className="w-3 h-3 text-text-secondary" />
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-border">
-                                                        <span className="text-text-secondary font-bold text-xs uppercase">Value / Target</span>
-                                                        <span className="font-mono text-primary font-bold">{dnsValue}</span>
+                                                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-border group/dns shadow-sm shadow-primary/5">
+                                                        <span className="text-text-secondary font-bold text-[10px] uppercase tracking-widest">Value</span>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="font-mono text-sm text-primary font-bold">{dnsValue}</span>
+                                                            <button onClick={() => { navigator.clipboard.writeText(dnsValue); alert('Copied Value'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 bg-primary/10 hover:bg-primary/20 rounded">
+                                                                <Copy className="w-3 h-3 text-primary" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="pt-2 flex justify-between items-center">
