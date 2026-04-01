@@ -20,6 +20,8 @@ import {
     WeddingPartySection,
     VenueMap,
     MinimalGallery,
+    HeroEnhancer,
+    PremiumBackgroundLayer,
 } from '@/components/wedding';
 import type { Wedding, WeddingPartyMember } from '@/types/wedding';
 
@@ -192,11 +194,8 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             } as any}
         >
             <div className="noise-overlay" />
-            <div className="fixed inset-0 -z-20 pointer-events-none overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-[50vh] bg-gradient-to-b from-primary/5 to-transparent" />
-                <motion.div animate={{ opacity: [0.2, 0.4, 0.2], scale: [1, 1.1, 1] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-[10%] -left-[10%] w-[50%] md:w-[40%] aspect-square rounded-full blur-[100px] md:blur-[140px] bg-primary/20" />
-                <motion.div animate={{ opacity: [0.1, 0.3, 0.1], scale: [1, 1.2, 1] }} transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute bottom-[20%] -right-[10%] w-[60%] md:w-[50%] aspect-square rounded-full blur-[120px] md:blur-[160px] bg-primary/20" />
-            </div>
+            {/* Premium Dynamic Background Layer */}
+            <PremiumBackgroundLayer wedding={wedding} />
 
             {/* Premium Global Hero Upgrades */}
             {!wedding.is_thank_you_mode && <HeroEnhancer wedding={wedding} />}

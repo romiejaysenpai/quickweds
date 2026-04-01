@@ -9,3 +9,5 @@ export { default as RSVPSection } from './RSVPSection';
 export { default as GuestBook } from './GuestBook';
 export { default as WeddingPartySection } from './WeddingParty';
 export { default as VenueMap } from './VenueMap';
+export { default as HeroEnhancer } from './HeroEnhancer';
+export { default as PremiumBackgroundLayer } from './PremiumBackgroundLayer';
