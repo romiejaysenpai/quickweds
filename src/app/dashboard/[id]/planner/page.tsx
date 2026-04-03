@@ -23,25 +23,34 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
         loadPlannerData();
     }, [weddingId]);
 
-    async function loadPlannerData() {
+    const loadPlannerData = async () => {
         setLoading(true);
         try {
-            const [weddingRes, tasksRes, budgetRes, vendorRes] = await Promise.all([
+            const [tasksRes, budgetsRes, weddingRes, vendorsRes] = await Promise.all([
+                supabase.from('planner_tasks').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
+                supabase.from('planner_budgets').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
                 supabase.from('weddings').select('total_budget, currency').eq('id', weddingId).single(),
-                supabase.from('planner_tasks').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: true }),
-                supabase.from('planner_budgets').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: true }),
-                supabase.from('planner_vendors').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: true })
+                supabase.from('planner_vendors').select('*').eq('wedding_id', weddingId),
             ]);
 
-            if (weddingRes.data) setWedding(weddingRes.data);
             if (tasksRes.data) setTasks(tasksRes.data);
-            if (budgetRes.data) setBudgets(budgetRes.data);
-            if (vendorRes.data) setVendors(vendorRes.data);
-
-        } catch (error) {
-            console.error("Planner database missing or error:", error);
+            if (budgetsRes.data) setBudgets(budgetsRes.data);
+            if (weddingRes.data) setWedding(weddingRes.data);
+            if (vendorsRes.data) setVendors(vendorsRes.data);
+        } catch (err) {
+            console.error("Error loading planner data:", err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    async function updateVendorStatus(id: string, status: string) {
+        try {
+            const { error } = await supabase.from('planner_vendors').update({ payment_status: status }).eq('id', id);
+            if (error) throw error;
+            await loadPlannerData();
+        } catch (err: any) {
+            alert("Failed to update vendor: " + err.message);
         }
     }
 
@@ -88,8 +97,8 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 {/* Main Content Area */}
                 <div className="flex-1">
                     {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} reload={loadPlannerData} />}
-                    {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} wedding={wedding} vendors={vendors} reload={loadPlannerData} />}
-                    {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
+                    {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} wedding={wedding} vendors={vendors} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                    {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
                 </div>
             </div>
         </div>
@@ -199,7 +208,7 @@ function PlannerChecklists({ weddingId, initialTasks, reload }: any) {
     );
 }
 
-function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], reload }: any) {
+function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], reload, updateVendorStatus }: any) {
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({ category: 'Venue', item_name: '', estimated_cost: '' });
 
@@ -298,12 +307,14 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
         }
     }
 
-    const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
-    const totalSpentFromVendors = vendors.filter((v: any) => v.payment_status === 'paid').reduce((acc: number, v: any) => acc + (Number(v.amount) || 0), 0);
+    const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0);
+    const totalSpentFromVendors = vendors
+        .filter((v: any) => v.payment_status?.toLowerCase() === 'paid')
+        .reduce((acc: number, v: any) => acc + (parseFloat(v.amount) || 0), 0);
     
     // Total "Committed/Spent" is both the estimates you added AND what you already paid vendors
     const totalCommitted = totalEst + totalSpentFromVendors;
-    const budgetRemaining = (wedding?.total_budget || 0) - totalCommitted;
+    const budgetRemaining = (parseFloat(wedding?.total_budget) || 0) - totalCommitted;
     const usagePercent = wedding?.total_budget > 0 ? Math.min(100, Math.round((totalCommitted / wedding.total_budget) * 100)) : 0;
 
     // Chart Data
@@ -550,13 +561,18 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                                 {currencySymbol}{Number(vendor.amount || 0).toLocaleString()}
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className={`inline-block px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${
-                                                    vendor.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-600' :
-                                                    vendor.payment_status === 'pending' ? 'bg-amber-100 text-amber-600' :
-                                                    'bg-neutral-200 text-text-secondary'
-                                                }`}>
-                                                    {vendor.payment_status}
-                                                </span>
+                                                <select
+                                                    value={vendor.payment_status}
+                                                    onChange={(e) => updateVendorStatus(vendor.id, e.target.value)}
+                                                    className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border-none outline-none cursor-pointer ${
+                                                        vendor.payment_status?.toLowerCase() === 'paid' ? 'bg-emerald-100 text-emerald-600' :
+                                                        vendor.payment_status?.toLowerCase() === 'pending' ? 'bg-amber-100 text-amber-600' :
+                                                        'bg-neutral-200 text-text-secondary'
+                                                    }`}
+                                                >
+                                                    <option value="pending">Pending</option>
+                                                    <option value="paid">Paid</option>
+                                                </select>
                                             </td>
                                         </tr>
                                     ))
@@ -570,7 +586,7 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
     );
 }
 
-function PlannerVendors({ weddingId, initialVendors, currency, reload }: any) {
+function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVendorStatus }: any) {
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({ 
         role: 'Photographer', 
@@ -623,15 +639,7 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload }: any) {
         }
     }
 
-    async function updateVendorStatus(id: string, field: string, value: string) {
-        try {
-            const { error } = await supabase.from('planner_vendors').update({ [field]: value }).eq('id', id);
-            if (error) throw error;
-            await reload();
-        } catch (err) {
-            console.error("Error updating vendor:", err);
-        }
-    }
+    // updateVendorStatus moved to parent
 
     async function deleteItem(id: string) {
         if (!confirm("Delete this vendor?")) return;

@@ -123,9 +123,11 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         const songs = rsvps.filter(r => r.song_request).map(r => ({ name: r.guest_name, song: r.song_request }));
 
         // Budget stats
-        const totalBudget = wedding?.total_budget || 0;
-        const totalEst = budgets.reduce((acc, b) => acc + Number(b.estimated_cost || 0), 0);
-        const totalSpentFromVendors = vendors.filter(v => v.payment_status === 'paid').reduce((acc, v) => acc + Number(v.amount || 0), 0);
+        const totalBudget = parseFloat(wedding?.total_budget) || 0;
+        const totalEst = budgets.reduce((acc, b) => acc + (parseFloat(b.estimated_cost) || 0), 0);
+        const totalSpentFromVendors = vendors
+            .filter(v => v.payment_status?.toLowerCase() === 'paid')
+            .reduce((acc, v) => acc + (parseFloat(v.amount) || 0), 0);
         
         const totalCommitted = totalEst + totalSpentFromVendors;
         const remainingBudget = totalBudget - totalCommitted;
