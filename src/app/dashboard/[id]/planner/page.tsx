@@ -202,6 +202,17 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({ category: 'Venue', item_name: '', estimated_cost: '' });
 
+    // Local states for inputs to avoid jitter/focus issues
+    const [localBudget, setLocalBudget] = useState(wedding?.total_budget || 0);
+    const [localCurrency, setLocalCurrency] = useState(wedding?.currency || 'USD');
+
+    useEffect(() => {
+        if (wedding) {
+            setLocalBudget(wedding.total_budget || 0);
+            setLocalCurrency(wedding.currency || 'USD');
+        }
+    }, [wedding]);
+
     // Users can use standard categories or type their own custom ones
     const [categories, setCategories] = useState(['Venue', 'Catering', 'Attire', 'Decor', 'Photography', 'Entertainment', 'Other']);
     
@@ -227,20 +238,22 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
             if (error) throw error;
             setNewItem({ category: newItem.category, item_name: '', estimated_cost: '' });
             await reload();
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error adding budget item:", err);
+            alert("Failed to add budget item: " + err.message);
         } finally {
             setPublishing(false);
         }
     }
 
-    async function updateWeddingBudget(field: string, value: any) {
+    async function saveWeddingBudget(field: string, value: any) {
         try {
             const { error } = await supabase.from('weddings').update({ [field]: value }).eq('id', weddingId);
             if (error) throw error;
             await reload();
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error updating wedding budget:", err);
+            alert("Failed to update " + field + ": " + err.message);
         }
     }
 
@@ -269,23 +282,30 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
                 </div>
                 <div className="flex flex-wrap gap-6 items-end">
                     <div className="text-right">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Wedding Budget</p>
+                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Wedding Budget Settings</p>
                         <div className="flex items-center gap-2">
                             <select 
-                                value={currency} 
-                                onChange={e => updateWeddingBudget('currency', e.target.value)}
-                                className="bg-neutral border border-border rounded-lg px-2 py-1 text-xs outline-none focus:ring-primary/20"
+                                value={localCurrency} 
+                                onChange={e => {
+                                    setLocalCurrency(e.target.value);
+                                    saveWeddingBudget('currency', e.target.value);
+                                }}
+                                className="bg-neutral border border-border rounded-lg px-2 py-1 text-xs outline-none focus:ring-primary/20 font-bold"
                             >
                                 <option value="USD">USD ($)</option>
                                 <option value="Yen">Yen (¥)</option>
                                 <option value="Peso">Peso (₱)</option>
                             </select>
-                            <input 
-                                type="number" 
-                                value={wedding?.total_budget || 0}
-                                onChange={e => updateWeddingBudget('total_budget', parseFloat(e.target.value) || 0)}
-                                className="text-2xl font-mono text-primary w-32 bg-transparent border-b border-dashed border-primary/30 outline-none focus:border-primary"
-                            />
+                            <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-primary font-bold text-lg">{currencySymbol}</span>
+                                <input 
+                                    type="number" 
+                                    value={localBudget}
+                                    onChange={e => setLocalBudget(parseFloat(e.target.value) || 0)}
+                                    onBlur={e => saveWeddingBudget('total_budget', parseFloat(e.target.value) || 0)}
+                                    className="text-2xl font-mono text-primary w-40 bg-neutral border border-border rounded-xl pl-8 pr-4 py-2 outline-none focus:ring-primary/20"
+                                />
+                            </div>
                         </div>
                     </div>
                     <div className="text-right">
@@ -301,34 +321,48 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
                 </div>
             </div>
 
-            <form onSubmit={addItem} className="flex flex-col md:flex-row gap-4 mb-10">
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <select 
-                        value={newItem.category} 
-                        onChange={e => e.target.value === 'CUSTOM' ? handleAddCustomCategory() : setNewItem({...newItem, category: e.target.value})}
-                        className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
-                    >
-                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                        <option value="CUSTOM">+ Add Custom Category</option>
-                    </select>
-                    <input 
-                        required
-                        type="text" 
-                        placeholder="Expense Name" 
-                        value={newItem.item_name}
-                        onChange={e => setNewItem({...newItem, item_name: e.target.value})}
-                        className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
-                    />
-                    <input 
-                        required
-                        type="number" 
-                        placeholder={`Est. Cost (${currencySymbol})`} 
-                        value={newItem.estimated_cost}
-                        onChange={e => setNewItem({...newItem, estimated_cost: e.target.value})}
-                        className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20 font-mono"
-                    />
+            <form onSubmit={addItem} className="space-y-6 mb-12 bg-neutral/30 p-6 rounded-[2rem] border border-border/50">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Category</label>
+                        <select 
+                            value={newItem.category} 
+                            onChange={e => e.target.value === 'CUSTOM' ? handleAddCustomCategory() : setNewItem({...newItem, category: e.target.value})}
+                            className="w-full bg-white border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                        >
+                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                            <option value="CUSTOM">+ Add Custom Category</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Expense/Item Title</label>
+                        <input 
+                            required
+                            type="text" 
+                            placeholder="e.g. Venue Rental" 
+                            value={newItem.item_name}
+                            onChange={e => setNewItem({...newItem, item_name: e.target.value})}
+                            className="w-full bg-white border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Estimated Cost ({currencySymbol})</label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm font-bold">{currencySymbol}</span>
+                            <input 
+                                required
+                                type="number" 
+                                placeholder="0.00" 
+                                value={newItem.estimated_cost}
+                                onChange={e => setNewItem({...newItem, estimated_cost: e.target.value})}
+                                className="w-full bg-white border border-border rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-primary/20 font-mono"
+                            />
+                        </div>
+                    </div>
                 </div>
-                <button type="submit" disabled={publishing} className="bg-primary text-white rounded-xl px-6 py-3 font-bold disabled:opacity-50 h-full">Add</button>
+                <button type="submit" disabled={publishing} className="w-full bg-primary text-white rounded-2xl px-6 py-5 font-bold shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all text-lg">
+                    {publishing ? 'Adding to Budget...' : 'Add Expense to Tracker'}
+                </button>
             </form>
 
             <div className="space-y-6">
