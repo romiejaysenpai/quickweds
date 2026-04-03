@@ -257,12 +257,32 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
 
     async function saveWeddingBudget(field: string, value: any) {
         try {
-            const { error } = await supabase.from('weddings').update({ [field]: value }).eq('id', weddingId);
+            console.log(`Saving ${field}:`, value);
+            // 1. Update local states immediately for no-lag feel
+            if (field === 'total_budget') setLocalBudget(value);
+            if (field === 'currency') setLocalCurrency(value);
+
+            // 2. Persist to Supabase
+            const { error, data } = await supabase
+                .from('weddings')
+                .update({ [field]: value })
+                .eq('id', weddingId)
+                .select();
+
             if (error) throw error;
-            await reload();
+            
+            // If data is empty, it means RLS blocked the update
+            if (!data || data.length === 0) {
+                throw new Error("Update blocked by database permissions (RLS). Please run the Permission Fix SQL script.");
+            }
+
+            console.log("Save successful:", data);
+            await reload(); 
         } catch (err: any) {
             console.error("Error updating wedding budget:", err);
             alert("Failed to update " + field + ": " + err.message);
+            // Revert local state on failure by reloading
+            await reload(); 
         }
     }
 
