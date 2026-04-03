@@ -16,6 +16,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [wedding, setWedding] = useState<any>(null);
     const [rsvps, setRsvps] = useState<any[]>([]);
     const [vendors, setVendors] = useState<any[]>([]);
+    const [budgets, setBudgets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'confirmed' | 'declined' | 'pending'>('all');
@@ -43,6 +44,10 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 const { data: vendorsData } = await supabase
                     .from('planner_vendors').select('*').eq('wedding_id', id);
                 setVendors(vendorsData || []);
+
+                const { data: budgetsData } = await supabase
+                    .from('planner_budgets').select('*').eq('wedding_id', id);
+                setBudgets(budgetsData || []);
             } catch (err) { console.error(err); } finally { setLoading(false); }
         };
         fetchData();
@@ -119,9 +124,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
         // Budget stats
         const totalBudget = wedding?.total_budget || 0;
-        const totalSpent = vendors.filter(v => v.payment_status === 'paid').reduce((acc, v) => acc + Number(v.amount || 0), 0);
-        const remainingBudget = totalBudget - totalSpent;
-        const budgetPercent = totalBudget > 0 ? Math.min(100, Math.round((totalSpent / totalBudget) * 100)) : 0;
+        const totalEst = budgets.reduce((acc, b) => acc + Number(b.estimated_cost || 0), 0);
+        const totalSpentFromVendors = vendors.filter(v => v.payment_status === 'paid').reduce((acc, v) => acc + Number(v.amount || 0), 0);
+        
+        const totalCommitted = totalEst + totalSpentFromVendors;
+        const remainingBudget = totalBudget - totalCommitted;
+        const budgetPercent = totalBudget > 0 ? Math.min(100, Math.round((totalCommitted / totalBudget) * 100)) : 0;
 
         return { 
             confirmed: confirmed.length, 
@@ -133,11 +141,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             songs, 
             total: rsvps.length,
             totalBudget,
-            totalSpent,
+            totalSpent: totalCommitted, // Using Committed as "Spent" for the dashboard overview
             remainingBudget,
-            budgetPercent
+            budgetPercent,
+            totalEst,
+            totalSpentFromVendors
         };
-    }, [rsvps, vendors, wedding]);
+    }, [rsvps, vendors, wedding, budgets]);
 
     // Filtered list
     const filteredRsvps = useMemo(() => {
@@ -349,7 +359,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         <p className="text-xl font-mono font-bold text-foreground">{currencySymbol}{stats.totalBudget.toLocaleString()}</p>
                                     </div>
                                     <div className="p-4 rounded-2xl bg-neutral/50 border border-border">
-                                        <p className="text-[10px] uppercase font-bold text-text-secondary mb-1">Spent to Date</p>
+                                        <p className="text-[10px] uppercase font-bold text-text-secondary mb-1">Spent / Committed</p>
                                         <p className="text-xl font-mono font-bold text-primary">{currencySymbol}{stats.totalSpent.toLocaleString()}</p>
                                     </div>
                                     <div className="p-4 rounded-2xl bg-neutral/50 border border-border">
