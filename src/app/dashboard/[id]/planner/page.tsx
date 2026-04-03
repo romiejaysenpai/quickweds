@@ -107,21 +107,39 @@ function PlannerChecklists({ weddingId, initialTasks, reload }: any) {
         e.preventDefault();
         if (!newTask.trim() || publishing) return;
         setPublishing(true);
-        await supabase.from('planner_tasks').insert({ wedding_id: weddingId, title: newTask.trim() });
-        setNewTask("");
-        await reload();
-        setPublishing(false);
+        try {
+            const { error } = await supabase.from('planner_tasks').insert({ wedding_id: weddingId, title: newTask.trim() });
+            if (error) throw error;
+            setNewTask("");
+            await reload();
+        } catch (err) {
+            console.error("Error adding task:", err);
+            alert("Failed to add task. Please try again.");
+        } finally {
+            setPublishing(false);
+        }
     }
 
     async function toggleTask(task: any) {
         const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-        await supabase.from('planner_tasks').update({ status: newStatus }).eq('id', task.id);
-        reload();
+        try {
+            const { error } = await supabase.from('planner_tasks').update({ status: newStatus }).eq('id', task.id);
+            if (error) throw error;
+            await reload();
+        } catch (err) {
+            console.error("Error toggling task:", err);
+        }
     }
 
     async function deleteTask(id: string) {
-        await supabase.from('planner_tasks').delete().eq('id', id);
-        reload();
+        if (!confirm("Are you sure you want to delete this task?")) return;
+        try {
+            const { error } = await supabase.from('planner_tasks').delete().eq('id', id);
+            if (error) throw error;
+            await reload();
+        } catch (err) {
+            console.error("Error deleting task:", err);
+        }
     }
 
     const completedCount = initialTasks.filter((t: any) => t.status === 'completed').length;
@@ -199,25 +217,42 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
         e.preventDefault();
         if (!newItem.item_name || publishing) return;
         setPublishing(true);
-        await supabase.from('planner_budgets').insert({ 
-            wedding_id: weddingId, 
-            category: newItem.category, 
-            item_name: newItem.item_name,
-            estimated_cost: parseFloat(newItem.estimated_cost) || 0
-        });
-        setNewItem({ category: newItem.category, item_name: '', estimated_cost: '' });
-        await reload();
-        setPublishing(false);
+        try {
+            const { error } = await supabase.from('planner_budgets').insert({ 
+                wedding_id: weddingId, 
+                category: newItem.category, 
+                item_name: newItem.item_name,
+                estimated_cost: parseFloat(newItem.estimated_cost) || 0
+            });
+            if (error) throw error;
+            setNewItem({ category: newItem.category, item_name: '', estimated_cost: '' });
+            await reload();
+        } catch (err) {
+            console.error("Error adding budget item:", err);
+        } finally {
+            setPublishing(false);
+        }
     }
 
     async function updateWeddingBudget(field: string, value: any) {
-        await supabase.from('weddings').update({ [field]: value }).eq('id', weddingId);
-        reload();
+        try {
+            const { error } = await supabase.from('weddings').update({ [field]: value }).eq('id', weddingId);
+            if (error) throw error;
+            await reload();
+        } catch (err) {
+            console.error("Error updating wedding budget:", err);
+        }
     }
 
     async function deleteItem(id: string) {
-        await supabase.from('planner_budgets').delete().eq('id', id);
-        reload();
+        if (!confirm("Delete this budget item?")) return;
+        try {
+            const { error } = await supabase.from('planner_budgets').delete().eq('id', id);
+            if (error) throw error;
+            await reload();
+        } catch (err) {
+            console.error("Error deleting budget item:", err);
+        }
     }
 
     const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
@@ -355,35 +390,52 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload }: any) {
         e.preventDefault();
         if (!newItem.name || publishing) return;
         setPublishing(true);
-        await supabase.from('planner_vendors').insert({ 
-            wedding_id: weddingId, 
-            role: newItem.role, 
-            name: newItem.name,
-            phone: newItem.contact,
-            amount: parseFloat(newItem.amount) || 0,
-            payment_status: newItem.payment_status,
-            payment_method: newItem.payment_method
-        });
-        setNewItem({ 
-            role: newItem.role, 
-            name: '', 
-            contact: '', 
-            amount: '', 
-            payment_status: 'not paid', 
-            payment_method: 'cash' 
-        });
-        await reload();
-        setPublishing(false);
+        try {
+            const { error } = await supabase.from('planner_vendors').insert({ 
+                wedding_id: weddingId, 
+                role: newItem.role, 
+                name: newItem.name,
+                phone: newItem.contact,
+                amount: parseFloat(newItem.amount) || 0,
+                payment_status: newItem.payment_status,
+                payment_method: newItem.payment_method
+            });
+            if (error) throw error;
+            setNewItem({ 
+                role: newItem.role, 
+                name: '', 
+                contact: '', 
+                amount: '', 
+                payment_status: 'not paid', 
+                payment_method: 'cash' 
+            });
+            await reload();
+        } catch (err) {
+            console.error("Error adding vendor:", err);
+        } finally {
+            setPublishing(false);
+        }
     }
 
     async function updateVendorStatus(id: string, field: string, value: string) {
-        await supabase.from('planner_vendors').update({ [field]: value }).eq('id', id);
-        reload();
+        try {
+            const { error } = await supabase.from('planner_vendors').update({ [field]: value }).eq('id', id);
+            if (error) throw error;
+            await reload();
+        } catch (err) {
+            console.error("Error updating vendor:", err);
+        }
     }
 
     async function deleteItem(id: string) {
-        await supabase.from('planner_vendors').delete().eq('id', id);
-        reload();
+        if (!confirm("Delete this vendor?")) return;
+        try {
+            const { error } = await supabase.from('planner_vendors').delete().eq('id', id);
+            if (error) throw error;
+            await reload();
+        } catch (err) {
+            console.error("Error deleting vendor:", err);
+        }
     }
 
     return (
@@ -393,65 +445,82 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload }: any) {
                 <p className="text-text-secondary">Keep your crucial suppliers and professionals organized.</p>
             </div>
 
-            <form onSubmit={addItem} className="flex flex-col md:flex-row gap-4 mb-10">
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <select 
-                        value={newItem.role} 
-                        onChange={e => e.target.value === 'CUSTOM' ? handleAddCustomRole() : setNewItem({...newItem, role: e.target.value})}
-                        className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
-                    >
-                        {roles.map(r => <option key={r} value={r}>{r}</option>)}
-                        <option value="CUSTOM">+ Add Custom Supplier</option>
-                    </select>
-                    <input 
-                        required
-                        type="text" 
-                        placeholder="Vendor/Company Name" 
-                        value={newItem.name}
-                        onChange={e => setNewItem({...newItem, name: e.target.value})}
-                        className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
-                    />
-                    <input 
-                        type="text" 
-                        placeholder="Contact (Email or Phone)" 
-                        value={newItem.contact}
-                        onChange={e => setNewItem({...newItem, contact: e.target.value})}
-                        className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
-                    />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm">{currencySymbol}</span>
+            <form onSubmit={addItem} className="space-y-6 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Vendor Type</label>
+                        <select 
+                            value={newItem.role} 
+                            onChange={e => e.target.value === 'CUSTOM' ? handleAddCustomRole() : setNewItem({...newItem, role: e.target.value})}
+                            className="w-full bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                        >
+                            {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                            <option value="CUSTOM">+ Add Custom Supplier</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Business Name</label>
                         <input 
-                            type="number" 
-                            placeholder="Amount" 
-                            value={newItem.amount}
-                            onChange={e => setNewItem({...newItem, amount: e.target.value})}
-                            className="w-full bg-neutral border border-border rounded-xl pl-8 pr-4 py-3 outline-none focus:ring-primary/20 font-mono"
+                            required
+                            type="text" 
+                            placeholder="e.g. Dream Florals Ltd" 
+                            value={newItem.name}
+                            onChange={e => setNewItem({...newItem, name: e.target.value})}
+                            className="w-full bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
                         />
                     </div>
-                    <select 
-                        value={newItem.payment_status}
-                        onChange={e => setNewItem({...newItem, payment_status: e.target.value})}
-                        className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
-                    >
-                        <option value="not paid">Not Paid</option>
-                        <option value="pending">Pending</option>
-                        <option value="paid">Paid</option>
-                    </select>
-                    <select 
-                        value={newItem.payment_method}
-                        onChange={e => setNewItem({...newItem, payment_method: e.target.value})}
-                        className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
-                    >
-                        <option value="cash">Cash</option>
-                        <option value="g-cash">G-Cash</option>
-                        <option value="bank transfer">Bank Transfer</option>
-                        <option value="other">Other</option>
-                    </select>
+                    <div>
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Contact Info</label>
+                        <input 
+                            type="text" 
+                            placeholder="Email or Phone" 
+                            value={newItem.contact}
+                            onChange={e => setNewItem({...newItem, contact: e.target.value})}
+                            className="w-full bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Total Agreed Amount ({currencySymbol})</label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm font-bold">{currencySymbol}</span>
+                            <input 
+                                type="number" 
+                                placeholder="0.00" 
+                                value={newItem.amount}
+                                onChange={e => setNewItem({...newItem, amount: e.target.value})}
+                                className="w-full bg-neutral border border-border rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-primary/20 font-mono"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Payment Status</label>
+                        <select 
+                            value={newItem.payment_status}
+                            onChange={e => setNewItem({...newItem, payment_status: e.target.value})}
+                            className="w-full bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20 font-bold"
+                        >
+                            <option value="not paid">Not Paid</option>
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Payment Method</label>
+                        <select 
+                            value={newItem.payment_method}
+                            onChange={e => setNewItem({...newItem, payment_method: e.target.value})}
+                            className="w-full bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20 capitalize"
+                        >
+                            <option value="cash">Cash</option>
+                            <option value="g-cash">G-Cash</option>
+                            <option value="bank transfer">Bank Transfer</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
                 </div>
-                <button type="submit" disabled={publishing} className="w-full bg-primary text-white rounded-xl px-6 py-4 font-bold disabled:opacity-50 shadow-lg shadow-primary/20 hover:scale-[1.01] transition-transform">Add Supplier</button>
+                <button type="submit" disabled={publishing} className="w-full bg-primary text-white rounded-2xl px-6 py-5 font-bold disabled:opacity-50 shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all text-lg">
+                    {publishing ? 'Adding Supplier...' : 'Add Supplier to My List'}
+                </button>
             </form>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
