@@ -2,7 +2,8 @@
 
 import { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -298,9 +299,20 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
     }
 
     const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
-    const totalSpent = vendors.filter((v: any) => v.payment_status === 'paid').reduce((acc: number, v: any) => acc + (Number(v.amount) || 0), 0);
-    const budgetRemaining = (wedding?.total_budget || 0) - totalSpent;
-    const usagePercent = wedding?.total_budget > 0 ? Math.min(100, Math.round((totalSpent / wedding.total_budget) * 100)) : 0;
+    const totalSpentFromVendors = vendors.filter((v: any) => v.payment_status === 'paid').reduce((acc: number, v: any) => acc + (Number(v.amount) || 0), 0);
+    
+    // Total "Committed/Spent" is both the estimates you added AND what you already paid vendors
+    const totalCommitted = totalEst + totalSpentFromVendors;
+    const budgetRemaining = (wedding?.total_budget || 0) - totalCommitted;
+    const usagePercent = wedding?.total_budget > 0 ? Math.min(100, Math.round((totalCommitted / wedding.total_budget) * 100)) : 0;
+
+    // Chart Data
+    const chartData = [
+        { name: 'Allocated (Budget List)', value: totalEst },
+        { name: 'Paid Vendors', value: totalSpentFromVendors },
+        { name: 'Remaining', value: Math.max(0, budgetRemaining) }
+    ];
+    const COLORS = ['#D16C78', '#CBB26A', '#E5E7EB'];
 
     // Derive symbol from localCurrency for immediate UI feedback
     const currencySymbol = localCurrency === 'USD' ? '$' : localCurrency === 'Yen' ? '¥' : '₱';
@@ -341,29 +353,95 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Spent (Paid)</p>
-                        <p className="text-3xl font-mono text-primary font-bold">{currencySymbol}{totalSpent.toLocaleString()}</p>
+                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Total Dedicated</p>
+                        <p className={`text-3xl font-mono ${totalCommitted > (wedding?.total_budget || 0) ? 'text-red-500' : 'text-primary'} font-bold`}>{currencySymbol}{totalCommitted.toLocaleString()}</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Remaining</p>
-                        <p className={`text-3xl font-mono ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                        <p className="text-[10px] uppercase font-black tracking-widest text-emerald-600 mb-1">Balance Remaining</p>
+                        <p className={`text-3xl font-mono ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'} font-black`}>
                             {currencySymbol}{budgetRemaining.toLocaleString()}
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* Usage Bar */}
-            <div className="mb-10 bg-neutral/50 p-6 rounded-3xl border border-border/50">
-                <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-bold text-text-secondary uppercase tracking-widest">Budget Utilization</span>
-                    <span className={`text-sm font-black ${usagePercent > 90 ? 'text-red-500' : 'text-primary'}`}>{usagePercent}%</span>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+                {/* Visual Usage */}
+                <div className="lg:col-span-2 bg-neutral/30 p-8 rounded-[2rem] border border-border/50 flex flex-col md:flex-row items-center gap-8 shadow-inner">
+                    <div className="w-full md:w-1/2 h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={chartData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip 
+                                    formatter={(value: any) => [`${currencySymbol}${value.toLocaleString()}`, 'Amount']}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div className="w-full md:w-1/2 space-y-4">
+                        <div className="flex justify-between items-end">
+                            <h3 className="text-sm font-black uppercase tracking-widest text-text-secondary">Overall Usage</h3>
+                            <span className={`text-2xl font-black ${usagePercent > 90 ? 'text-red-500' : 'text-primary'}`}>{usagePercent}%</span>
+                        </div>
+                        <div className="w-full h-3 bg-white rounded-full overflow-hidden border border-border/50">
+                            <div className={`h-full transition-all duration-1000 ${usagePercent > 90 ? 'bg-red-500' : 'bg-primary'}`} style={{ width: `${usagePercent}%` }} />
+                        </div>
+                        <div className="grid grid-cols-1 gap-2 pt-4">
+                            {chartData.map((entry, i) => (
+                                <div key={entry.name} className="flex justify-between items-center text-xs">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
+                                        <span className="text-text-secondary font-bold">{entry.name}</span>
+                                    </div>
+                                    <span className="font-mono font-bold">{currencySymbol}{entry.value.toLocaleString()}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
-                <div className="w-full h-4 bg-neutral rounded-full overflow-hidden border border-border/30">
-                    <div 
-                        className={`h-full transition-all duration-1000 ease-out rounded-full ${usagePercent > 90 ? 'bg-red-500' : 'bg-primary'}`}
-                        style={{ width: `${usagePercent}%` }}
-                    />
+
+                {/* Quick Info */}
+                <div className="bg-white border border-border rounded-[2rem] p-8 flex flex-col justify-center gap-6 soft-shadow">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                            <PieChartIcon className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary">Planned Total</p>
+                            <p className="text-xl font-mono font-bold">{currencySymbol}{totalEst.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center">
+                            <Users className="w-6 h-6 text-secondary" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary">Paid to Vendors</p>
+                            <p className="text-xl font-mono font-bold">{currencySymbol}{totalSpentFromVendors.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
+                            <TrendingDown className="w-6 h-6 text-emerald-500" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary">Remaining Cash</p>
+                            <p className="text-xl font-mono font-bold text-emerald-600">{currencySymbol}{Math.max(0, budgetRemaining).toLocaleString()}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
