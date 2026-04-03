@@ -87,7 +87,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 {/* Main Content Area */}
                 <div className="flex-1">
                     {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} reload={loadPlannerData} />}
-                    {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} wedding={wedding} reload={loadPlannerData} />}
+                    {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} wedding={wedding} vendors={vendors} reload={loadPlannerData} />}
                     {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
                 </div>
             </div>
@@ -198,7 +198,7 @@ function PlannerChecklists({ weddingId, initialTasks, reload }: any) {
     );
 }
 
-function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
+function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], reload }: any) {
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({ category: 'Venue', item_name: '', estimated_cost: '' });
 
@@ -213,13 +213,22 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
         }
     }, [wedding]);
 
-    // Users can use standard categories or type their own custom ones
-    const [categories, setCategories] = useState(['Venue', 'Catering', 'Attire', 'Decor', 'Photography', 'Entertainment', 'Other']);
+    // Standard categories plus any custom ones already in the budget
+    const defaultCategories = ['Venue', 'Catering', 'Attire', 'Decor', 'Photography', 'Entertainment', 'Other'];
+    const [categories, setCategories] = useState(defaultCategories);
+
+    useEffect(() => {
+        const customCats = initialBudgets.map((b: any) => b.category).filter((c: string) => !defaultCategories.includes(c));
+        const uniqueCats = Array.from(new Set([...defaultCategories, ...customCats]));
+        setCategories(uniqueCats);
+    }, [initialBudgets]);
     
     const handleAddCustomCategory = () => {
         const cat = prompt("Enter custom budget category:");
-        if (cat && !categories.includes(cat)) {
-            setCategories([...categories, cat]);
+        if (cat) {
+            if (!categories.includes(cat)) {
+                setCategories([...categories, cat]);
+            }
             setNewItem({...newItem, category: cat});
         }
     };
@@ -269,7 +278,10 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
     }
 
     const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
-    const budgetRemaining = (wedding?.total_budget || 0) - totalEst;
+    const totalSpent = vendors.filter((v: any) => v.payment_status === 'paid').reduce((acc: number, v: any) => acc + (Number(v.amount) || 0), 0);
+    const budgetRemaining = (wedding?.total_budget || 0) - totalSpent;
+    const usagePercent = wedding?.total_budget > 0 ? Math.min(100, Math.round((totalSpent / wedding.total_budget) * 100)) : 0;
+
     // Derive symbol from localCurrency for immediate UI feedback
     const currencySymbol = localCurrency === 'USD' ? '$' : localCurrency === 'Yen' ? '¥' : '₱';
 
@@ -309,8 +321,8 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Total Estimated</p>
-                        <p className="text-3xl font-mono text-foreground">{currencySymbol}{totalEst.toLocaleString()}</p>
+                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Spent (Paid)</p>
+                        <p className="text-3xl font-mono text-primary font-bold">{currencySymbol}{totalSpent.toLocaleString()}</p>
                     </div>
                     <div className="text-right">
                         <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Remaining</p>
@@ -318,6 +330,20 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
                             {currencySymbol}{budgetRemaining.toLocaleString()}
                         </p>
                     </div>
+                </div>
+            </div>
+
+            {/* Usage Bar */}
+            <div className="mb-10 bg-neutral/50 p-6 rounded-3xl border border-border/50">
+                <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm font-bold text-text-secondary uppercase tracking-widest">Budget Utilization</span>
+                    <span className={`text-sm font-black ${usagePercent > 90 ? 'text-red-500' : 'text-primary'}`}>{usagePercent}%</span>
+                </div>
+                <div className="w-full h-4 bg-neutral rounded-full overflow-hidden border border-border/30">
+                    <div 
+                        className={`h-full transition-all duration-1000 ease-out rounded-full ${usagePercent > 90 ? 'bg-red-500' : 'bg-primary'}`}
+                        style={{ width: `${usagePercent}%` }}
+                    />
                 </div>
             </div>
 
@@ -365,34 +391,82 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
                 </button>
             </form>
 
-            <div className="space-y-6">
-                {categories.map(category => {
-                    const items = initialBudgets.filter((b: any) => b.category === category);
-                    if (items.length === 0) return null;
-                    const catTotal = items.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
-                    
-                    return (
-                        <div key={category} className="border border-border rounded-2xl overflow-hidden">
-                            <div className="bg-neutral/50 px-6 py-4 flex justify-between items-center border-b border-border">
-                                <h3 className="font-bold text-foreground flex items-center gap-2">
-                                    <Wallet className="w-4 h-4 text-primary" /> {category}
-                                </h3>
-                                <span className="font-mono font-bold text-sm">{currencySymbol}{catTotal.toLocaleString()}</span>
-                            </div>
-                            <div className="divide-y divide-border/50">
-                                {items.map((item: any) => (
-                                    <div key={item.id} className="p-4 px-6 flex justify-between items-center group hover:bg-neutral/20">
-                                        <p className="font-serif text-lg">{item.item_name}</p>
-                                        <div className="flex items-center gap-6">
-                                            <span className="font-mono text-text-secondary">{currencySymbol}{Number(item.estimated_cost).toLocaleString()}</span>
-                                            <button onClick={() => deleteItem(item.id)} className="text-red-400 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Estimates from Budget Table */}
+                <div className="space-y-6">
+                    <h3 className="text-xl font-serif font-bold text-foreground flex items-center gap-2 mb-4">
+                        <ListTodo className="w-5 h-5 text-primary" /> Budget Estimates
+                    </h3>
+                    {categories.map(category => {
+                        const items = initialBudgets.filter((b: any) => b.category === category);
+                        if (items.length === 0) return null;
+                        const catTotal = items.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
+                        
+                        return (
+                            <div key={category} className="border border-border rounded-2xl overflow-hidden bg-white">
+                                <div className="bg-neutral/30 px-6 py-3 flex justify-between items-center border-b border-border">
+                                    <h4 className="font-bold text-sm text-text-secondary uppercase tracking-widest">{category}</h4>
+                                    <span className="font-mono font-bold text-sm">{currencySymbol}{catTotal.toLocaleString()}</span>
+                                </div>
+                                <div className="divide-y divide-border/30">
+                                    {items.map((item: any) => (
+                                        <div key={item.id} className="p-4 px-6 flex justify-between items-center group hover:bg-neutral/10">
+                                            <p className="font-serif text-base">{item.item_name}</p>
+                                            <div className="flex items-center gap-4">
+                                                <span className="font-mono text-text-secondary text-sm">{currencySymbol}{Number(item.estimated_cost).toLocaleString()}</span>
+                                                <button onClick={() => deleteItem(item.id)} className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
+
+                {/* Actual Spending from Vendors */}
+                <div className="space-y-6">
+                    <h3 className="text-xl font-serif font-bold text-foreground flex items-center gap-2 mb-4">
+                        <Users className="w-5 h-5 text-secondary" /> Actual Vendor Spending
+                    </h3>
+                    <div className="bg-white border border-border rounded-[2rem] overflow-hidden soft-shadow">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-neutral/30 border-b border-border">
+                                    <th className="px-6 py-4 text-[10px] uppercase font-black tracking-widest text-text-secondary">Vendor / Role</th>
+                                    <th className="px-6 py-4 text-[10px] uppercase font-black tracking-widest text-text-secondary text-right">Amount</th>
+                                    <th className="px-6 py-4 text-[10px] uppercase font-black tracking-widest text-text-secondary text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/30">
+                                {vendors.length === 0 ? (
+                                    <tr><td colSpan={3} className="px-6 py-12 text-center text-text-secondary italic font-serif">No vendors added yet.</td></tr>
+                                ) : (
+                                    vendors.map((vendor: any) => (
+                                        <tr key={vendor.id} className="hover:bg-neutral/10 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <p className="font-bold text-foreground">{vendor.name}</p>
+                                                <p className="text-[10px] uppercase tracking-widest text-primary font-black opacity-60">{vendor.role}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-mono font-bold">
+                                                {currencySymbol}{Number(vendor.amount || 0).toLocaleString()}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className={`inline-block px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${
+                                                    vendor.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-600' :
+                                                    vendor.payment_status === 'pending' ? 'bg-amber-100 text-amber-600' :
+                                                    'bg-neutral-200 text-text-secondary'
+                                                }`}>
+                                                    {vendor.payment_status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     );
