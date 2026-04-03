@@ -270,8 +270,8 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
 
     const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
     const budgetRemaining = (wedding?.total_budget || 0) - totalEst;
-    const currency = wedding?.currency || 'USD';
-    const currencySymbol = currency === 'USD' ? '$' : currency === 'Yen' ? '¥' : '₱';
+    // Derive symbol from localCurrency for immediate UI feedback
+    const currencySymbol = localCurrency === 'USD' ? '$' : localCurrency === 'Yen' ? '¥' : '₱';
 
     return (
         <div className="bg-white rounded-[2.5rem] p-8 md:p-12 soft-shadow border border-border">
