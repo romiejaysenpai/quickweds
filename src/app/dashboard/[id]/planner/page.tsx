@@ -13,6 +13,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const [loading, setLoading] = useState(true);
 
     // Data States
+    const [wedding, setWedding] = useState<any>(null);
     const [tasks, setTasks] = useState<any[]>([]);
     const [budgets, setBudgets] = useState<any[]>([]);
     const [vendors, setVendors] = useState<any[]>([]);
@@ -24,14 +25,14 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     async function loadPlannerData() {
         setLoading(true);
         try {
-            // Because planner tables might throw an error if the user hasn't run the SQL script yet,
-            // we catch errors independently to prevent screen-crashing.
-            const [tasksRes, budgetRes, vendorRes] = await Promise.all([
+            const [weddingRes, tasksRes, budgetRes, vendorRes] = await Promise.all([
+                supabase.from('weddings').select('total_budget, currency').eq('id', weddingId).single(),
                 supabase.from('planner_tasks').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: true }),
                 supabase.from('planner_budgets').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: true }),
                 supabase.from('planner_vendors').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: true })
             ]);
 
+            if (weddingRes.data) setWedding(weddingRes.data);
             if (tasksRes.data) setTasks(tasksRes.data);
             if (budgetRes.data) setBudgets(budgetRes.data);
             if (vendorRes.data) setVendors(vendorRes.data);
@@ -86,8 +87,8 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 {/* Main Content Area */}
                 <div className="flex-1">
                     {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} reload={loadPlannerData} />}
-                    {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} reload={loadPlannerData} />}
-                    {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} reload={loadPlannerData} />}
+                    {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} wedding={wedding} reload={loadPlannerData} />}
+                    {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
                 </div>
             </div>
         </div>
@@ -179,7 +180,7 @@ function PlannerChecklists({ weddingId, initialTasks, reload }: any) {
     );
 }
 
-function PlannerBudgets({ weddingId, initialBudgets, reload }: any) {
+function PlannerBudgets({ weddingId, initialBudgets, wedding, reload }: any) {
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({ category: 'Venue', item_name: '', estimated_cost: '' });
 
@@ -209,23 +210,59 @@ function PlannerBudgets({ weddingId, initialBudgets, reload }: any) {
         setPublishing(false);
     }
 
+    async function updateWeddingBudget(field: string, value: any) {
+        await supabase.from('weddings').update({ [field]: value }).eq('id', weddingId);
+        reload();
+    }
+
     async function deleteItem(id: string) {
         await supabase.from('planner_budgets').delete().eq('id', id);
         reload();
     }
 
     const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
+    const budgetRemaining = (wedding?.total_budget || 0) - totalEst;
+    const currency = wedding?.currency || 'USD';
+    const currencySymbol = currency === 'USD' ? '$' : currency === 'Yen' ? '¥' : '₱';
 
     return (
         <div className="bg-white rounded-[2.5rem] p-8 md:p-12 soft-shadow border border-border">
-            <div className="flex justify-between items-end mb-8 border-b border-border/50 pb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-border/50 pb-8 gap-6">
                 <div>
                     <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Budget Tracker</h2>
                     <p className="text-text-secondary">Keep your wedding finances clearly mapped out.</p>
                 </div>
-                <div className="text-right">
-                    <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Total Estimated</p>
-                    <p className="text-3xl font-mono text-primary">${totalEst.toLocaleString()}</p>
+                <div className="flex flex-wrap gap-6 items-end">
+                    <div className="text-right">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Wedding Budget</p>
+                        <div className="flex items-center gap-2">
+                            <select 
+                                value={currency} 
+                                onChange={e => updateWeddingBudget('currency', e.target.value)}
+                                className="bg-neutral border border-border rounded-lg px-2 py-1 text-xs outline-none focus:ring-primary/20"
+                            >
+                                <option value="USD">USD ($)</option>
+                                <option value="Yen">Yen (¥)</option>
+                                <option value="Peso">Peso (₱)</option>
+                            </select>
+                            <input 
+                                type="number" 
+                                value={wedding?.total_budget || 0}
+                                onChange={e => updateWeddingBudget('total_budget', parseFloat(e.target.value) || 0)}
+                                className="text-2xl font-mono text-primary w-32 bg-transparent border-b border-dashed border-primary/30 outline-none focus:border-primary"
+                            />
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Total Estimated</p>
+                        <p className="text-3xl font-mono text-foreground">{currencySymbol}{totalEst.toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Remaining</p>
+                        <p className={`text-3xl font-mono ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                            {currencySymbol}{budgetRemaining.toLocaleString()}
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -250,7 +287,7 @@ function PlannerBudgets({ weddingId, initialBudgets, reload }: any) {
                     <input 
                         required
                         type="number" 
-                        placeholder="Est. Cost ($)" 
+                        placeholder={`Est. Cost (${currencySymbol})`} 
                         value={newItem.estimated_cost}
                         onChange={e => setNewItem({...newItem, estimated_cost: e.target.value})}
                         className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20 font-mono"
@@ -271,14 +308,14 @@ function PlannerBudgets({ weddingId, initialBudgets, reload }: any) {
                                 <h3 className="font-bold text-foreground flex items-center gap-2">
                                     <Wallet className="w-4 h-4 text-primary" /> {category}
                                 </h3>
-                                <span className="font-mono font-bold text-sm">${catTotal.toLocaleString()}</span>
+                                <span className="font-mono font-bold text-sm">{currencySymbol}{catTotal.toLocaleString()}</span>
                             </div>
                             <div className="divide-y divide-border/50">
                                 {items.map((item: any) => (
                                     <div key={item.id} className="p-4 px-6 flex justify-between items-center group hover:bg-neutral/20">
                                         <p className="font-serif text-lg">{item.item_name}</p>
                                         <div className="flex items-center gap-6">
-                                            <span className="font-mono text-text-secondary">${Number(item.estimated_cost).toLocaleString()}</span>
+                                            <span className="font-mono text-text-secondary">{currencySymbol}{Number(item.estimated_cost).toLocaleString()}</span>
                                             <button onClick={() => deleteItem(item.id)} className="text-red-400 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                                         </div>
                                     </div>
@@ -292,10 +329,18 @@ function PlannerBudgets({ weddingId, initialBudgets, reload }: any) {
     );
 }
 
-function PlannerVendors({ weddingId, initialVendors, reload }: any) {
+function PlannerVendors({ weddingId, initialVendors, currency, reload }: any) {
     const [publishing, setPublishing] = useState(false);
-    const [newItem, setNewItem] = useState({ role: 'Photographer', name: '', contact: '' });
+    const [newItem, setNewItem] = useState({ 
+        role: 'Photographer', 
+        name: '', 
+        contact: '',
+        amount: '',
+        payment_status: 'not paid',
+        payment_method: 'cash'
+    });
     
+    const currencySymbol = currency === 'USD' ? '$' : currency === 'Yen' ? '¥' : '₱';
     const [roles, setRoles] = useState(['Photographer', 'Videographer', 'Florist', 'Caterer', 'Coordinator', 'DJ/Band', 'Hair & Makeup', 'Supplier']);
     
     const handleAddCustomRole = () => {
@@ -314,11 +359,26 @@ function PlannerVendors({ weddingId, initialVendors, reload }: any) {
             wedding_id: weddingId, 
             role: newItem.role, 
             name: newItem.name,
-            phone: newItem.contact
+            phone: newItem.contact,
+            amount: parseFloat(newItem.amount) || 0,
+            payment_status: newItem.payment_status,
+            payment_method: newItem.payment_method
         });
-        setNewItem({ role: newItem.role, name: '', contact: '' });
+        setNewItem({ 
+            role: newItem.role, 
+            name: '', 
+            contact: '', 
+            amount: '', 
+            payment_status: 'not paid', 
+            payment_method: 'cash' 
+        });
         await reload();
         setPublishing(false);
+    }
+
+    async function updateVendorStatus(id: string, field: string, value: string) {
+        await supabase.from('planner_vendors').update({ [field]: value }).eq('id', id);
+        reload();
     }
 
     async function deleteItem(id: string) {
@@ -359,7 +419,39 @@ function PlannerVendors({ weddingId, initialVendors, reload }: any) {
                         className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
                     />
                 </div>
-                <button type="submit" disabled={publishing} className="bg-primary text-white rounded-xl px-6 py-3 font-bold disabled:opacity-50">Add</button>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm">{currencySymbol}</span>
+                        <input 
+                            type="number" 
+                            placeholder="Amount" 
+                            value={newItem.amount}
+                            onChange={e => setNewItem({...newItem, amount: e.target.value})}
+                            className="w-full bg-neutral border border-border rounded-xl pl-8 pr-4 py-3 outline-none focus:ring-primary/20 font-mono"
+                        />
+                    </div>
+                    <select 
+                        value={newItem.payment_status}
+                        onChange={e => setNewItem({...newItem, payment_status: e.target.value})}
+                        className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                    >
+                        <option value="not paid">Not Paid</option>
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                    </select>
+                    <select 
+                        value={newItem.payment_method}
+                        onChange={e => setNewItem({...newItem, payment_method: e.target.value})}
+                        className="bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                    >
+                        <option value="cash">Cash</option>
+                        <option value="g-cash">G-Cash</option>
+                        <option value="bank transfer">Bank Transfer</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <button type="submit" disabled={publishing} className="w-full bg-primary text-white rounded-xl px-6 py-4 font-bold disabled:opacity-50 shadow-lg shadow-primary/20 hover:scale-[1.01] transition-transform">Add Supplier</button>
             </form>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -367,12 +459,37 @@ function PlannerVendors({ weddingId, initialVendors, reload }: any) {
                     <div className="col-span-full text-center py-12 opacity-50 font-serif italic">No vendors booked yet. Add your first supplier above.</div>
                 ) : (
                     initialVendors.map((vendor: any) => (
-                        <div key={vendor.id} className="border border-border rounded-2xl p-6 group relative">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary block mb-1">{vendor.role}</span>
-                            <h3 className="font-serif text-xl font-bold text-foreground mb-2">{vendor.name}</h3>
-                            <p className="text-sm font-mono text-text-secondary">{vendor.phone || vendor.email || 'No contact provided'}</p>
+                        <div key={vendor.id} className="border border-border rounded-2xl p-6 group relative bg-white hover:border-primary/30 transition-all soft-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary block mb-1">{vendor.role}</span>
+                                    <h3 className="font-serif text-xl font-bold text-foreground">{vendor.name}</h3>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-mono font-bold text-lg text-primary">{currencySymbol}{Number(vendor.amount || 0).toLocaleString()}</p>
+                                    <p className="text-[10px] uppercase tracking-widest text-text-secondary/50 font-bold">{vendor.payment_method}</p>
+                                </div>
+                            </div>
                             
-                            <button onClick={() => deleteItem(vendor.id)} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-red-50 text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100">
+                            <p className="text-sm font-mono text-text-secondary mb-6">{vendor.phone || vendor.email || 'No contact provided'}</p>
+                            
+                            <div className="flex items-center gap-2 pt-4 border-t border-border/50">
+                                <select 
+                                    value={vendor.payment_status}
+                                    onChange={e => updateVendorStatus(vendor.id, 'payment_status', e.target.value)}
+                                    className={`flex-1 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-lg border outline-none transition-colors ${
+                                        vendor.payment_status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                                        vendor.payment_status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                        'bg-neutral text-text-secondary border-border'
+                                    }`}
+                                >
+                                    <option value="not paid">Not Paid</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="paid">Paid</option>
+                                </select>
+                            </div>
+
+                            <button onClick={() => deleteItem(vendor.id)} className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 border border-border shadow-sm">
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
