@@ -759,10 +759,10 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
                             <div className="flex items-center gap-2 pt-4 border-t border-border/50">
                                 <select 
                                     value={vendor.payment_status}
-                                    onChange={e => updateVendorStatus(vendor.id, 'payment_status', e.target.value)}
+                                    onChange={e => updateVendorStatus(vendor.id, e.target.value)}
                                     className={`flex-1 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-lg border outline-none transition-colors ${
-                                        vendor.payment_status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                                        vendor.payment_status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                        vendor.payment_status?.toLowerCase() === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                                        vendor.payment_status?.toLowerCase() === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' :
                                         'bg-neutral text-text-secondary border-border'
                                     }`}
                                 >
