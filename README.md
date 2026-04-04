@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💍 QuickWeds - Premium Wedding Invitation & Planning Platform
 
-## Getting Started
+QuickWeds is a sophisticated, all-in-one platform designed for modern couples to create stunning, personalized wedding invitations and manage their wedding planning journey with ease.
 
-First, run the development server:
+![QuickWeds Dashboard](/src/app/icon.png)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ Key Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 🎨 Premium Wedding Builder
+- **Real-Time Preview**: Design your wedding website with live feedback.
+- **Multiple Templates**: Choose from curated themes (Minimal, Floral, Classic, etc.).
+- **Dynamic Sections**: Add Bios, Photo Galleries, Video Sections, Event Timelines, and Venue Maps.
+- **Customization**: Tailor colors, typography, and content to match your wedding style.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 📋 Smart Wedding Planner
+- **Interactive Checklist**: Stay on top of every task with our organized to-do system.
+- **Advanced Budget Tracker**: 
+    - Real-time deduction logic (Estimates + Actual Vendor Spending).
+    - Visual financial breakdown using interactive charts.
+    - Currency support (USD, PHP, JPY).
+- **Vendor Rolodex**: Manage all your suppliers, contracts, and payment statuses in one place.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 📩 Seamless Guest Management & RSVP
+- **Digital RSVPs**: Guests can respond directly through your wedding website.
+- **Automated Notifications**: Couples receive instant email alerts via Resend when a guest RSVPs.
+- **Guest List Analytics**: Track attendance, meal preferences, child counts, and song requests.
+- **Export to CSV**: Easily export your guest list for seating charts or printing.
 
-## Learn More
+### 🌐 Professional Hosting
+- **Custom Domain Integration**: Connect your own domain (e.g., `amyandjohn.com`) with automated Vercel DNS management.
+- **QR Code Generation**: Every wedding gets a unique QR code for physical invitations.
+- **SSL by Default**: Secure, high-performance hosting on Vercel.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Frontend**: [Next.js 15+](https://nextjs.org/) (App Router), React 19, Tailwind CSS 4.
+- **Backend/Database**: [Supabase](https://supabase.com/) (PostgreSQL + Auth + Edge Functions).
+- **Styling & Assets**: Framer Motion (Animations), Lucide React (Icons), Recharts (Data Viz).
+- **Communication**: [Resend](https://resend.com/) (Transactional Emails).
+- **Deployment**: [Vercel](https://vercel.com/) (Cloud Functions + Static Hosting).
+- **Storage**: Cloudinary (Image management).
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🛠️ Getting Started
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Prerequisites
+- Node.js 20+
+- npm / yarn / pnpm
+
+### Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/romiejaysenpai/quickweds.git
+   cd quickweds
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**:
+   Create a `.env.local` file with the following keys:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+   RESEND_API_KEY=your_resend_key
+   CLOUDINARY_URL=your_cloudinary_url
+   ```
+
+4. **Run for Development**:
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 📖 Documentation
+
+For detailed technical information, including database schema, API endpoints, and deployment guides, please refer to:
+- [TECHNICAL_DOCS.md](./TECHNICAL_DOCS.md)
+- [VERCEL_ENV_SETUP.md](./VERCEL_ENV_SETUP.md)
+
+---
+
+## 🛡️ License
+
+Private Project - All Rights Reserved.
