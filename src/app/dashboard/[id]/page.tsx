@@ -442,15 +442,14 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {/* RSVP List with Search + Filter + CSV */}
                         <div className="bg-white rounded-lg sm:rounded-3xl border border-border soft-shadow overflow-hidden">
                             <div className="p-3 sm:p-4 md:p-6 border-b border-border space-y-3 sm:space-y-4">
-                                    <h3 className="text-lg sm:text-xl font-serif font-bold text-foreground">Guest List ({stats.total})</h3>
-                                    <div className="flex gap-2 w-full sm:w-auto">
-                                        <button onClick={() => setIsAddGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 text-xs font-bold hover:bg-emerald-100 transition-colors min-h-[44px]">
-                                            <Plus className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Add Guest</span>
-                                        </button>
-                                        <button onClick={exportCSV} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-colors min-h-[44px]">
-                                            <Download className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Export CSV</span>
-                                        </button>
-                                    </div>
+                                <h3 className="text-lg sm:text-xl font-serif font-bold text-foreground">Guest List ({stats.total})</h3>
+                                <div className="flex gap-2 w-full sm:w-auto">
+                                    <button onClick={() => setIsAddGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 text-xs font-bold hover:bg-emerald-100 transition-colors min-h-[44px]">
+                                        <Plus className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Add Guest</span>
+                                    </button>
+                                    <button onClick={exportCSV} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-colors min-h-[44px]">
+                                        <Download className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Export CSV</span>
+                                    </button>
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                                     <div className="flex-1 relative">
