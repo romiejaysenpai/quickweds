@@ -64,31 +64,31 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
         <div className="min-h-screen bg-[#fafafa]">
             {/* Top Navigation Bar */}
             <div className="bg-white border-b border-border sticky top-0 z-40">
-                <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => router.push(`/dashboard/${weddingId}`)} className="w-10 h-10 rounded-full hover:bg-neutral flex items-center justify-center transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-text-secondary" />
+                <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                        <button onClick={() => router.push(`/dashboard/${weddingId}`)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-neutral flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]">
+                            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
                         </button>
-                        <div>
-                            <h1 className="text-xl font-serif font-bold text-foreground">Wedding Planner</h1>
+                        <div className="min-w-0">
+                            <h1 className="text-lg sm:text-xl font-serif font-bold text-foreground truncate">Wedding Planner</h1>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
+            <div className="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-12 flex flex-col md:flex-row gap-4 sm:gap-6 md:gap-8">
                 {/* Sidebar */}
                 <div className="w-full md:w-64 shrink-0">
-                    <div className="bg-white rounded-3xl p-6 soft-shadow border border-border sticky top-24">
-                        <div className="space-y-2">
-                            <button onClick={() => setActiveTab('checklist')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'checklist' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
-                                <ListTodo className="w-5 h-5" /> Checklist
+                    <div className="bg-white rounded-lg sm:rounded-3xl p-3 sm:p-6 soft-shadow border border-border sticky top-20 md:top-24">
+                        <div className="space-y-1 sm:space-y-2">
+                            <button onClick={() => setActiveTab('checklist')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'checklist' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
+                                <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Checklist</span>
                             </button>
-                            <button onClick={() => setActiveTab('budget')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'budget' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
-                                <Wallet className="w-5 h-5" /> Budgets
+                            <button onClick={() => setActiveTab('budget')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'budget' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
+                                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Budgets</span>
                             </button>
-                            <button onClick={() => setActiveTab('vendors')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${activeTab === 'vendors' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
-                                <Users className="w-5 h-5" /> Vendors
+                            <button onClick={() => setActiveTab('vendors')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'vendors' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
+                                <Users className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Vendors</span>
                             </button>
                         </div>
                     </div>
@@ -156,48 +156,48 @@ function PlannerChecklists({ weddingId, initialTasks, reload }: any) {
     const progress = initialTasks.length > 0 ? Math.round((completedCount / initialTasks.length) * 100) : 0;
 
     return (
-        <div className="bg-white rounded-[2.5rem] p-8 md:p-12 soft-shadow border border-border">
-            <div className="flex justify-between items-end mb-8 border-b border-border/50 pb-8">
+        <div className="bg-white rounded-lg sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 soft-shadow border border-border">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 sm:gap-0 mb-6 sm:mb-8 border-b border-border/50 pb-4 sm:pb-8">
                 <div>
-                    <h2 className="text-3xl font-serif font-bold text-foreground mb-2">To-Do Checklist</h2>
-                    <p className="text-text-secondary">Keep track of every tiny detail before the big day.</p>
+                    <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground mb-1 sm:mb-2">To-Do Checklist</h2>
+                    <p className="text-xs sm:text-sm text-text-secondary">Keep track of every tiny detail before the big day.</p>
                 </div>
                 <div className="text-right hidden md:block">
-                    <p className="text-3xl font-serif font-bold text-primary mb-1">{progress}%</p>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Completed</p>
+                    <p className="text-2xl sm:text-3xl font-serif font-bold text-primary mb-1">{progress}%</p>
+                    <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-text-secondary">Completed</p>
                 </div>
             </div>
 
-            <form onSubmit={addTask} className="flex gap-4 mb-10">
+            <form onSubmit={addTask} className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-6 sm:mb-10">
                 <input 
                     type="text" 
                     value={newTask} 
                     onChange={e => setNewTask(e.target.value)} 
                     placeholder="E.g. Book the florist..." 
-                    className="flex-1 bg-neutral border border-border rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-primary/20"
+                    className="flex-1 bg-neutral border border-border rounded-lg sm:rounded-2xl px-3 sm:px-6 py-2 sm:py-4 outline-none focus:ring-2 focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
                 />
-                <button type="submit" disabled={publishing || !newTask.trim()} className="bg-primary text-white rounded-2xl px-6 py-4 font-bold disabled:opacity-50">
+                <button type="submit" disabled={publishing || !newTask.trim()} className="bg-primary text-white rounded-lg sm:rounded-2xl px-4 sm:px-6 py-2 sm:py-4 font-bold disabled:opacity-50 text-xs sm:text-base min-h-[44px]">
                     Add
                 </button>
             </form>
 
-            <div className="space-y-3">
+            <div className="space-y-1 sm:space-y-3">
                 {initialTasks.length === 0 ? (
-                    <div className="text-center py-12 opacity-50 font-serif italic">Your checklist is beautifully empty. Add your first task above!</div>
+                    <div className="text-center py-8 sm:py-12 opacity-50 font-serif italic text-xs sm:text-base">Your checklist is beautifully empty. Add your first task above!</div>
                 ) : (
                     initialTasks.map((task: any) => (
-                        <div key={task.id} className="flex items-center justify-between p-4 rounded-xl hover:bg-neutral transition-colors group">
-                            <div className="flex items-center gap-4 flex-1 cursor-pointer" onClick={() => toggleTask(task)}>
+                        <div key={task.id} className="flex items-center justify-between p-2 sm:p-4 rounded-lg sm:rounded-xl hover:bg-neutral transition-colors group gap-2">
+                            <div className="flex items-center gap-2 sm:gap-4 flex-1 cursor-pointer min-w-0" onClick={() => toggleTask(task)}>
                                 {task.status === 'completed' ? (
-                                    <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0" />
+                                    <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 shrink-0" />
                                 ) : (
-                                    <Circle className="w-6 h-6 text-border group-hover:text-primary transition-colors shrink-0" />
+                                    <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-border group-hover:text-primary transition-colors shrink-0" />
                                 )}
-                                <span className={`text-lg font-serif ${task.status === 'completed' ? 'text-text-secondary line-through' : 'text-foreground'}`}>
+                                <span className={`text-sm sm:text-lg font-serif truncate ${task.status === 'completed' ? 'text-text-secondary line-through' : 'text-foreground'}`}>
                                     {task.title}
                                 </span>
                             </div>
-                            <button onClick={() => deleteTask(task.id)} className="w-10 h-10 flex items-center justify-center text-red-400 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-red-50">
+                            <button onClick={() => deleteTask(task.id)} className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-red-400 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-red-50 flex-shrink-0 min-h-[44px] min-w-[44px]">
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
@@ -329,65 +329,65 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
     const currencySymbol = localCurrency === 'USD' ? '$' : localCurrency === 'Yen' ? '¥' : '₱';
 
     return (
-        <div className="bg-white rounded-[2.5rem] p-8 md:p-12 soft-shadow border border-border">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-border/50 pb-8 gap-6">
+        <div className="bg-white rounded-lg sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 soft-shadow border border-border overflow-x-hidden">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 sm:mb-8 border-b border-border/50 pb-4 sm:pb-8 gap-3 sm:gap-6">
                 <div>
-                    <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Budget Tracker</h2>
-                    <p className="text-text-secondary">Keep your wedding finances clearly mapped out.</p>
+                    <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground mb-1 sm:mb-2">Budget Tracker</h2>
+                    <p className="text-xs sm:text-sm text-text-secondary">Keep your wedding finances clearly mapped out.</p>
                 </div>
-                <div className="flex flex-wrap gap-6 items-end">
-                    <div className="text-right">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Wedding Budget Settings</p>
-                        <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 md:gap-6 items-start sm:items-end w-full sm:w-auto">
+                    <div className="text-left sm:text-right">
+                        <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Wedding Budget Settings</p>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                             <select 
                                 value={localCurrency} 
                                 onChange={e => {
                                     setLocalCurrency(e.target.value);
                                     saveWeddingBudget('currency', e.target.value);
                                 }}
-                                className="bg-neutral border border-border rounded-lg px-2 py-1 text-xs outline-none focus:ring-primary/20 font-bold"
+                                className="bg-neutral border border-border rounded-lg px-2 py-1 text-xs outline-none focus:ring-primary/20 font-bold min-h-[44px]"
                             >
                                 <option value="USD">USD ($)</option>
                                 <option value="Yen">Yen (¥)</option>
                                 <option value="Peso">Peso (₱)</option>
                             </select>
-                            <div className="relative">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-primary font-bold text-lg">{currencySymbol}</span>
+                            <div className="relative w-full sm:w-auto">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-primary font-bold text-base sm:text-lg">{currencySymbol}</span>
                                 <input 
                                     type="number" 
                                     value={localBudget}
                                     onChange={e => setLocalBudget(parseFloat(e.target.value) || 0)}
                                     onBlur={e => saveWeddingBudget('total_budget', parseFloat(e.target.value) || 0)}
-                                    className="text-2xl font-mono text-primary w-40 bg-neutral border border-border rounded-xl pl-8 pr-4 py-2 outline-none focus:ring-primary/20"
+                                    className="text-lg sm:text-2xl font-mono text-primary w-full sm:w-40 bg-neutral border border-border rounded-lg sm:rounded-xl pl-8 pr-3 sm:pr-4 py-2 outline-none focus:ring-primary/20 min-h-[44px]"
                                 />
                             </div>
                         </div>
                     </div>
-                    <div className="text-right">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Total Dedicated</p>
-                        <p className={`text-3xl font-mono ${totalCommitted > (wedding?.total_budget || 0) ? 'text-red-500' : 'text-primary'} font-bold`}>{currencySymbol}{totalCommitted.toLocaleString()}</p>
+                    <div className="text-left sm:text-right">
+                        <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Total Dedicated</p>
+                        <p className={`text-xl sm:text-3xl font-mono ${totalCommitted > (wedding?.total_budget || 0) ? 'text-red-500' : 'text-primary'} font-bold`}>{currencySymbol}{totalCommitted.toLocaleString()}</p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-emerald-600 mb-1">Balance Remaining</p>
-                        <p className={`text-3xl font-mono ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'} font-black`}>
+                    <div className="text-left sm:text-right">
+                        <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-emerald-600 mb-1">Balance Remaining</p>
+                        <p className={`text-xl sm:text-3xl font-mono ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'} font-black`}>
                             {currencySymbol}{budgetRemaining.toLocaleString()}
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12">
                 {/* Visual Usage */}
-                <div className="lg:col-span-2 bg-neutral/30 p-8 rounded-[2rem] border border-border/50 flex flex-col md:flex-row items-center gap-8 shadow-inner">
-                    <div className="w-full md:w-1/2 h-[250px]">
+                <div className="lg:col-span-2 bg-neutral/30 p-4 sm:p-6 md:p-8 rounded-lg sm:rounded-[2rem] border border-border/50 flex flex-col md:flex-row items-center gap-4 sm:gap-6 md:gap-8 shadow-inner">
+                    <div className="w-full md:w-1/2 h-[180px] sm:h-[250px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
                                     data={chartData}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
+                                    innerRadius={40}
+                                    outerRadius={60}
                                     paddingAngle={5}
                                     dataKey="value"
                                 >
@@ -402,22 +402,22 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-                    <div className="w-full md:w-1/2 space-y-4">
-                        <div className="flex justify-between items-end">
-                            <h3 className="text-sm font-black uppercase tracking-widest text-text-secondary">Overall Usage</h3>
-                            <span className={`text-2xl font-black ${usagePercent > 90 ? 'text-red-500' : 'text-primary'}`}>{usagePercent}%</span>
+                    <div className="w-full md:w-1/2 space-y-3 sm:space-y-4">
+                        <div className="flex justify-between items-end gap-2">
+                            <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-text-secondary">Overall Usage</h3>
+                            <span className={`text-lg sm:text-2xl font-black ${usagePercent > 90 ? 'text-red-500' : 'text-primary'}`}>{usagePercent}%</span>
                         </div>
-                        <div className="w-full h-3 bg-white rounded-full overflow-hidden border border-border/50">
+                        <div className="w-full h-2 sm:h-3 bg-white rounded-full overflow-hidden border border-border/50">
                             <div className={`h-full transition-all duration-1000 ${usagePercent > 90 ? 'bg-red-500' : 'bg-primary'}`} style={{ width: `${usagePercent}%` }} />
                         </div>
-                        <div className="grid grid-cols-1 gap-2 pt-4">
+                        <div className="grid grid-cols-1 gap-2 pt-2 sm:pt-4">
                             {chartData.map((entry, i) => (
-                                <div key={entry.name} className="flex justify-between items-center text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
-                                        <span className="text-text-secondary font-bold">{entry.name}</span>
+                                <div key={entry.name} className="flex justify-between items-center text-xs gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i] }} />
+                                        <span className="text-text-secondary font-bold truncate">{entry.name}</span>
                                     </div>
-                                    <span className="font-mono font-bold">{currencySymbol}{entry.value.toLocaleString()}</span>
+                                    <span className="font-mono font-bold text-xs flex-shrink-0">{currencySymbol}{entry.value.toLocaleString()}</span>
                                 </div>
                             ))}
                         </div>
@@ -425,86 +425,86 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                 </div>
 
                 {/* Quick Info */}
-                <div className="bg-white border border-border rounded-[2rem] p-8 flex flex-col justify-center gap-6 soft-shadow">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                            <PieChartIcon className="w-6 h-6 text-primary" />
+                <div className="bg-white border border-border rounded-lg sm:rounded-[2rem] p-4 sm:p-6 md:p-8 flex flex-col justify-center gap-3 sm:gap-6 soft-shadow">
+                    <div className="flex items-start sm:items-center gap-2 sm:gap-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 min-h-[44px] min-w-[44px]">
+                            <PieChartIcon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                         </div>
                         <div>
-                            <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary">Planned Total</p>
-                            <p className="text-xl font-mono font-bold">{currencySymbol}{totalEst.toLocaleString()}</p>
+                            <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary">Planned Total</p>
+                            <p className="text-base sm:text-lg md:text-xl font-mono font-bold">{currencySymbol}{totalEst.toLocaleString()}</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center">
-                            <Users className="w-6 h-6 text-secondary" />
+                    <div className="flex items-start sm:items-center gap-2 sm:gap-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-secondary/10 flex items-center justify-center flex-shrink-0 min-h-[44px] min-w-[44px]">
+                            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
                         </div>
                         <div>
-                            <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary">Paid to Vendors</p>
-                            <p className="text-xl font-mono font-bold">{currencySymbol}{totalSpentFromVendors.toLocaleString()}</p>
+                            <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary">Paid to Vendors</p>
+                            <p className="text-base sm:text-lg md:text-xl font-mono font-bold">{currencySymbol}{totalSpentFromVendors.toLocaleString()}</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
-                            <TrendingDown className="w-6 h-6 text-emerald-500" />
+                    <div className="flex items-start sm:items-center gap-2 sm:gap-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-emerald-50 flex items-center justify-center flex-shrink-0 min-h-[44px] min-w-[44px]">
+                            <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" />
                         </div>
                         <div>
-                            <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary">Remaining Cash</p>
-                            <p className="text-xl font-mono font-bold text-emerald-600">{currencySymbol}{Math.max(0, budgetRemaining).toLocaleString()}</p>
+                            <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary">Remaining Cash</p>
+                            <p className="text-base sm:text-lg md:text-xl font-mono font-bold text-emerald-600">{currencySymbol}{Math.max(0, budgetRemaining).toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <form onSubmit={addItem} className="space-y-6 mb-12 bg-neutral/30 p-6 rounded-[2rem] border border-border/50">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <form onSubmit={addItem} className="space-y-4 sm:space-y-6 mb-8 sm:mb-12 bg-neutral/30 p-4 sm:p-6 rounded-lg sm:rounded-[2rem] border border-border/50">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                     <div>
-                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Category</label>
+                        <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Category</label>
                         <select 
                             value={newItem.category} 
                             onChange={e => e.target.value === 'CUSTOM' ? handleAddCustomCategory() : setNewItem({...newItem, category: e.target.value})}
-                            className="w-full bg-white border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                            className="w-full bg-white border border-border rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
                         >
                             {categories.map(c => <option key={c} value={c}>{c}</option>)}
                             <option value="CUSTOM">+ Add Custom Category</option>
                         </select>
                     </div>
                     <div>
-                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Expense/Item Title</label>
+                        <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Expense/Item Title</label>
                         <input 
                             required
                             type="text" 
                             placeholder="e.g. Venue Rental" 
                             value={newItem.item_name}
                             onChange={e => setNewItem({...newItem, item_name: e.target.value})}
-                            className="w-full bg-white border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                            className="w-full bg-white border border-border rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
                         />
                     </div>
                     <div>
-                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Estimated Cost ({currencySymbol})</label>
+                        <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Estimated Cost ({currencySymbol})</label>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm font-bold">{currencySymbol}</span>
+                            <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-text-secondary text-xs sm:text-sm font-bold">{currencySymbol}</span>
                             <input 
                                 required
                                 type="number" 
                                 placeholder="0.00" 
                                 value={newItem.estimated_cost}
                                 onChange={e => setNewItem({...newItem, estimated_cost: e.target.value})}
-                                className="w-full bg-white border border-border rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-primary/20 font-mono"
+                                className="w-full bg-white border border-border rounded-lg sm:rounded-xl pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 outline-none focus:ring-primary/20 font-mono text-xs sm:text-base min-h-[44px]"
                             />
                         </div>
                     </div>
                 </div>
-                <button type="submit" disabled={publishing} className="w-full bg-primary text-white rounded-2xl px-6 py-5 font-bold shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all text-lg">
+                <button type="submit" disabled={publishing} className="w-full bg-primary text-white rounded-lg sm:rounded-2xl px-4 sm:px-6 py-3 sm:py-5 font-bold shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all text-sm sm:text-lg min-h-[44px]">
                     {publishing ? 'Adding to Budget...' : 'Add Expense to Tracker'}
                 </button>
             </form>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                 {/* Estimates from Budget Table */}
-                <div className="space-y-6">
-                    <h3 className="text-xl font-serif font-bold text-foreground flex items-center gap-2 mb-4">
-                        <ListTodo className="w-5 h-5 text-primary" /> Budget Estimates
+                <div className="space-y-4 sm:space-y-6">
+                    <h3 className="text-lg sm:text-xl font-serif font-bold text-foreground flex items-center gap-2 mb-3 sm:mb-4">
+                        <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" /> Budget Estimates
                     </h3>
                     {categories.map(category => {
                         const items = initialBudgets.filter((b: any) => b.category === category);
@@ -512,18 +512,18 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                         const catTotal = items.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
                         
                         return (
-                            <div key={category} className="border border-border rounded-2xl overflow-hidden bg-white">
-                                <div className="bg-neutral/30 px-6 py-3 flex justify-between items-center border-b border-border">
-                                    <h4 className="font-bold text-sm text-text-secondary uppercase tracking-widest">{category}</h4>
-                                    <span className="font-mono font-bold text-sm">{currencySymbol}{catTotal.toLocaleString()}</span>
+                            <div key={category} className="border border-border rounded-lg sm:rounded-2xl overflow-hidden bg-white">
+                                <div className="bg-neutral/30 px-3 sm:px-6 py-2 sm:py-3 flex justify-between items-center border-b border-border gap-2">
+                                    <h4 className="font-bold text-xs sm:text-sm text-text-secondary uppercase tracking-widest">{category}</h4>
+                                    <span className="font-mono font-bold text-xs sm:text-sm whitespace-nowrap">{currencySymbol}{catTotal.toLocaleString()}</span>
                                 </div>
-                                <div className="divide-y divide-border/30">
+                                <div className="divide-y divide-border/30 max-h-[400px] overflow-y-auto">
                                     {items.map((item: any) => (
-                                        <div key={item.id} className="p-4 px-6 flex justify-between items-center group hover:bg-neutral/10">
-                                            <p className="font-serif text-base">{item.item_name}</p>
-                                            <div className="flex items-center gap-4">
-                                                <span className="font-mono text-text-secondary text-sm">{currencySymbol}{Number(item.estimated_cost).toLocaleString()}</span>
-                                                <button onClick={() => deleteItem(item.id)} className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4" /></button>
+                                        <div key={item.id} className="p-3 sm:p-4 md:px-6 flex justify-between items-center group hover:bg-neutral/10 gap-2 text-xs sm:text-base">
+                                            <p className="font-serif truncate">{item.item_name}</p>
+                                            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                                                <span className="font-mono text-text-secondary text-xs sm:text-sm whitespace-nowrap">{currencySymbol}{Number(item.estimated_cost).toLocaleString()}</span>
+                                                <button onClick={() => deleteItem(item.id)} className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity min-h-[44px] min-w-[44px] flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
                                             </div>
                                         </div>
                                     ))}
@@ -534,37 +534,38 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                 </div>
 
                 {/* Actual Spending from Vendors */}
-                <div className="space-y-6">
-                    <h3 className="text-xl font-serif font-bold text-foreground flex items-center gap-2 mb-4">
-                        <Users className="w-5 h-5 text-secondary" /> Actual Vendor Spending
+                <div className="space-y-4 sm:space-y-6">
+                    <h3 className="text-lg sm:text-xl font-serif font-bold text-foreground flex items-center gap-2 mb-3 sm:mb-4">
+                        <Users className="w-4 h-4 sm:w-5 sm:h-5 text-secondary flex-shrink-0" /> Actual Vendor Spending
                     </h3>
-                    <div className="bg-white border border-border rounded-[2rem] overflow-hidden soft-shadow">
-                        <table className="w-full text-left border-collapse">
+                    <div className="bg-white border border-border rounded-lg sm:rounded-[2rem] overflow-hidden soft-shadow">
+                        <div className="overflow-x-auto -mx-4 sm:mx-0">
+                        <table className="w-full text-left border-collapse text-xs sm:text-base px-4 sm:px-0">
                             <thead>
-                                <tr className="bg-neutral/30 border-b border-border">
-                                    <th className="px-6 py-4 text-[10px] uppercase font-black tracking-widest text-text-secondary">Vendor / Role</th>
-                                    <th className="px-6 py-4 text-[10px] uppercase font-black tracking-widest text-text-secondary text-right">Amount</th>
-                                    <th className="px-6 py-4 text-[10px] uppercase font-black tracking-widest text-text-secondary text-center">Status</th>
+                                <tr className="bg-neutral/30 border-b border-border sticky top-0">
+                                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary">Vendor / Role</th>
+                                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary text-right">Amount</th>
+                                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary text-center">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/30">
                                 {vendors.length === 0 ? (
-                                    <tr><td colSpan={3} className="px-6 py-12 text-center text-text-secondary italic font-serif">No vendors added yet.</td></tr>
+                                    <tr><td colSpan={3} className="px-3 sm:px-6 py-8 sm:py-12 text-center text-text-secondary italic font-serif text-xs sm:text-base">No vendors added yet.</td></tr>
                                 ) : (
                                     vendors.map((vendor: any) => (
                                         <tr key={vendor.id} className="hover:bg-neutral/10 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <p className="font-bold text-foreground">{vendor.name}</p>
-                                                <p className="text-[10px] uppercase tracking-widest text-primary font-black opacity-60">{vendor.role}</p>
+                                            <td className="px-3 sm:px-6 py-2 sm:py-4">
+                                                <p className="font-bold text-foreground text-xs sm:text-base line-clamp-1">{vendor.name}</p>
+                                                <p className="text-[7px] sm:text-[10px] uppercase tracking-widest text-primary font-black opacity-60">{vendor.role}</p>
                                             </td>
-                                            <td className="px-6 py-4 text-right font-mono font-bold">
+                                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-right font-mono font-bold text-xs sm:text-base">
                                                 {currencySymbol}{Number(vendor.amount || 0).toLocaleString()}
                                             </td>
-                                            <td className="px-6 py-4 text-center">
+                                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-center">
                                                 <select
                                                     value={vendor.payment_status}
                                                     onChange={(e) => updateVendorStatus(vendor.id, e.target.value)}
-                                                    className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border-none outline-none cursor-pointer ${
+                                                    className={`px-2 py-1 rounded text-[7px] sm:text-[10px] font-black uppercase tracking-widest border-none outline-none cursor-pointer min-h-[44px] ${
                                                         vendor.payment_status?.toLowerCase() === 'paid' ? 'bg-emerald-100 text-emerald-600' :
                                                         vendor.payment_status?.toLowerCase() === 'pending' ? 'bg-amber-100 text-amber-600' :
                                                         'bg-neutral-200 text-text-secondary'
@@ -579,6 +580,7 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                 )}
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
             </div>
