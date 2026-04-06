@@ -675,6 +675,52 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             </div>
                         </div>
                     </div>
+
+                    {/* Right Sidebar - Share & Domain */}
+                    <div className="lg:col-span-1 space-y-6 sm:space-y-8">
+                        {/* Share Section */}
+                        <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow">
+                            <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-3 sm:pb-4">Share Your Wedding</h3>
+                            <div className="space-y-4 sm:space-y-6">
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <input type="text" value={url} className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-white text-xs sm:text-sm text-foreground min-h-[44px] font-mono" readOnly />
+                                    <button onClick={() => { navigator.clipboard.writeText(url); setCopyToast(true); setTimeout(() => setCopyToast(false), 2000); }} className="px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-primary-hover transition-all min-h-[44px] whitespace-nowrap">
+                                        <Copy className="w-4 h-4 inline mr-1" /> Copy
+                                    </button>
+                                </div>
+                                {copyToast && <p className="text-xs text-green-600 font-bold">✓ Copied!</p>}
+                                <div className="bg-neutral rounded-lg sm:rounded-xl p-4 flex items-center justify-center">
+                                    <QRCodeSVG value={url} size={150} level="H" includeMargin={true} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Custom Domain Settings */}
+                        <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow">
+                            <div className="flex items-center gap-2 mb-4 sm:mb-6">
+                                <h3 className="text-lg sm:text-xl font-serif font-bold text-foreground border-b border-border pb-3 sm:pb-4 flex-1 flex items-center gap-2">
+                                    <Globe className="w-5 h-5 text-primary flex-shrink-0" /> Custom Domain
+                                </h3>
+                            </div>
+                            {!wedding.custom_domain ? (
+                                <div className="space-y-3 sm:space-y-4">
+                                    <input type="text" placeholder="yourdomain.com" value={domainInput} onChange={(e) => setDomainInput(e.target.value)} className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border bg-white text-xs sm:text-sm text-foreground min-h-[44px]" />
+                                    <button onClick={() => checkDomainStatus(domainInput)} disabled={domainLoading} className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-primary-hover transition-all disabled:opacity-50 min-h-[44px]">
+                                        {domainLoading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : <Globe className="w-4 h-4 inline mr-2" />}
+                                        {domainLoading ? 'Checking...' : 'Connect Domain'}
+                                    </button>
+                                    {domainStatus && <p className={`text-xs font-bold ${domainStatus.available ? 'text-green-600' : 'text-orange-600'}`}>{domainStatus.message}</p>}
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-success-bg border border-border">
+                                        <p className="text-xs sm:text-sm font-bold text-primary">{wedding.custom_domain}</p>
+                                    </div>
+                                    <p className="text-[8px] sm:text-[10px] text-text-secondary/60">Domain connected successfully!</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </main>
 
