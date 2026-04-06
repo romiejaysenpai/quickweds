@@ -29,27 +29,27 @@ function Lightbox({ images, index, onClose }: { images: string[]; index: number;
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
+                className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 pt-16 sm:pt-0"
                 onClick={onClose}
             >
                 {/* Close */}
-                <button onClick={onClose} className="absolute top-6 right-6 z-10 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-                    <X className="w-6 h-6" />
+                <button onClick={onClose} className="absolute top-4 sm:top-6 right-4 sm:right-6 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
+                    <X className="w-5 sm:w-6 h-5 sm:h-6" />
                 </button>
 
                 {/* Download */}
-                <button onClick={(e) => { e.stopPropagation(); handleDownload(); }} className="absolute top-6 right-20 z-10 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-                    <Download className="w-5 h-5" />
+                <button onClick={(e) => { e.stopPropagation(); handleDownload(); }} className="absolute top-4 sm:top-6 right-16 sm:right-20 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
+                    <Download className="w-5 sm:w-5 h-5 sm:h-5" />
                 </button>
 
                 {/* Prev */}
-                <button onClick={(e) => { e.stopPropagation(); prev(); }} className="absolute left-4 md:left-8 z-10 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-                    <ChevronLeft className="w-6 h-6" />
+                <button onClick={(e) => { e.stopPropagation(); prev(); }} className="absolute left-2 sm:left-4 md:left-8 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
+                    <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6" />
                 </button>
 
                 {/* Next */}
-                <button onClick={(e) => { e.stopPropagation(); next(); }} className="absolute right-4 md:right-8 z-10 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-                    <ChevronRight className="w-6 h-6" />
+                <button onClick={(e) => { e.stopPropagation(); next(); }} className="absolute right-2 sm:right-4 md:right-8 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
+                    <ChevronRight className="w-5 sm:w-6 h-5 sm:h-6" />
                 </button>
 
                 {/* Image */}
@@ -59,12 +59,12 @@ function Lightbox({ images, index, onClose }: { images: string[]; index: number;
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     src={images[current]}
-                    className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl"
+                    className="max-w-[95vw] max-h-[80vh] sm:max-h-[85vh] object-contain rounded-lg sm:rounded-2xl"
                     onClick={(e) => e.stopPropagation()}
                 />
 
                 {/* Counter */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/60 text-sm font-mono">
+                <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 text-white/60 text-xs sm:text-sm font-mono">
                     {current + 1} / {images.length}
                 </div>
             </motion.div>
@@ -79,25 +79,25 @@ export default function GallerySection({ gallery, masonry = false }: GallerySect
 
     return (
         <>
-            <section className="py-32">
-                <div className="max-w-6xl mx-auto px-6">
+            <section className="py-24 sm:py-32">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
-                        className="text-center mb-20"
+                        className="text-center mb-12 sm:mb-20"
                     >
                         <span className="text-xs uppercase tracking-[0.3em] font-bold text-primary mb-4 block">Moments Captured</span>
-                        <h2 className="text-6xl font-serif text-[#4A4444]">Our Gallery</h2>
+                        <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif text-[#4A4444]">Our Gallery</h2>
                     </motion.div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                         {gallery.map((img: string, i: number) => (
                             <motion.div
                                 key={i}
                                 initial={{ opacity: 0, y: 50 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1, duration: 0.5 }}
-                                className="aspect-[4/5] rounded-[2.5rem] overflow-hidden soft-shadow bg-white p-3 border border-primary/5 group cursor-pointer"
+                                className="aspect-[4/5] rounded-2xl sm:rounded-[2.5rem] overflow-hidden soft-shadow bg-white p-2 sm:p-3 border border-primary/5 group cursor-pointer"
                                 onClick={() => setLightboxIndex(i)}
                             >
                                 <div className="w-full h-full rounded-[2rem] overflow-hidden relative">

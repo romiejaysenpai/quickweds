@@ -65,6 +65,14 @@ export const metadata: Metadata = {
   description: "Create a beautiful, mobile-first wedding invitation landing page with an integrated RSVP system in minutes.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
+};
+
 import { AuthProvider } from "@/context/AuthContext";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";

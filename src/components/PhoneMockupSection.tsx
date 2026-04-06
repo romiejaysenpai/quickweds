@@ -117,50 +117,50 @@ export default function PhoneMockupSection() {
     }, []);
 
     return (
-        <section className="py-24 px-6 overflow-hidden relative">
-            <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-16 md:gap-24">
+        <section className="py-16 sm:py-24 px-4 sm:px-6 overflow-hidden relative">
+            <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-8 sm:gap-16 md:gap-24">
 
                 {/* Left Side: Text Content */}
                 <div className="flex-1 text-center md:text-left z-10">
                     <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                         <span className="text-primary font-bold tracking-widest uppercase text-xs mb-4 block">Mobile First Design</span>
-                        <h2 className="text-4xl md:text-6xl font-serif font-bold text-foreground mb-6 leading-tight">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-foreground mb-6 leading-tight">
                             Perfect on <br />
                             <span className="italic text-primary">Every Device</span>
                         </h2>
-                        <p className="text-lg text-text-secondary font-light leading-relaxed mb-8 max-w-lg mx-auto md:mx-0">
+                        <p className="text-base sm:text-lg text-text-secondary font-light leading-relaxed mb-8 max-w-lg mx-auto md:mx-0">
                             Your guests are on their phones. Your wedding invitation should be too.
                             We obsess over every pixel to ensure a flawless experience on iOS and Android.
                         </p>
 
-                        <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                            <div className="px-4 py-2 bg-neutral rounded-lg text-xs font-bold text-text-secondary flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-green-500" /> Fast Loading
+                        <div className="flex flex-wrap gap-3 sm:gap-4 justify-center md:justify-start">
+                            <div className="px-4 py-2 bg-neutral rounded-lg text-xs font-bold text-text-secondary flex items-center gap-2 min-h-[44px] min-w-[44px] sm:min-w-0">
+                                <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" /> <span className="hidden sm:inline">Fast Loading</span>
                             </div>
-                            <div className="px-4 py-2 bg-neutral rounded-lg text-xs font-bold text-text-secondary flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-blue-500" /> Touch Optimized
+                            <div className="px-4 py-2 bg-neutral rounded-lg text-xs font-bold text-text-secondary flex items-center gap-2 min-h-[44px] min-w-[44px] sm:min-w-0">
+                                <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" /> <span className="hidden sm:inline">Touch Optimized</span>
                             </div>
-                            <div className="px-4 py-2 bg-neutral rounded-lg text-xs font-bold text-text-secondary flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-purple-500" /> App-Like Feel
+                            <div className="px-4 py-2 bg-neutral rounded-lg text-xs font-bold text-text-secondary flex items-center gap-2 min-h-[44px] min-w-[44px] sm:min-w-0">
+                                <span className="w-2 h-2 rounded-full bg-purple-500 flex-shrink-0" /> <span className="hidden sm:inline">App-Like Feel</span>
                             </div>
                         </div>
                     </motion.div>
                 </div>
 
                 {/* Right Side: Phone Mockup */}
-                <div className="relative flex-1 flex justify-center items-center">
-                    {/* Decorative Blobs */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] -z-10 animate-pulse" />
+                <div className="relative flex-1 flex justify-center items-center w-full sm:w-auto">
+                    {/* Decorative Blobs - responsive sizing */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] sm:w-[350px] md:w-[500px] h-[250px] sm:h-[350px] md:h-[500px] bg-primary/20 rounded-full blur-[60px] sm:blur-[80px] md:blur-[100px] -z-10 animate-pulse" />
 
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
                         whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8 }}
-                        className="relative w-[300px] h-[600px] bg-gray-900 rounded-[3rem] border-[8px] border-gray-900 shadow-2xl overflow-hidden ring-4 ring-black/10"
+                        className="relative w-[240px] sm:w-[280px] md:w-[300px] h-[480px] sm:h-[560px] md:h-[600px] bg-gray-900 rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border-[6px] sm:border-[8px] border-gray-900 shadow-2xl overflow-hidden ring-4 ring-black/10"
                     >
                         {/* Notch */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-20" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 sm:w-28 md:w-32 h-5 sm:h-6 bg-black rounded-b-xl md:rounded-b-2xl z-20" />
 
                         {/* Screen Content */}
                         <div className="w-full h-full bg-white relative overflow-hidden">
@@ -178,7 +178,7 @@ export default function PhoneMockupSection() {
                             </AnimatePresence>
 
                             {/* Fake UI Elements */}
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-black/20 rounded-full z-20" />
+                            <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2 w-24 sm:w-28 md:w-32 h-1 bg-black/20 rounded-full z-20" />
                         </div>
                     </motion.div>
 
@@ -186,10 +186,10 @@ export default function PhoneMockupSection() {
                     <motion.div
                         animate={{ y: [0, -10, 0] }}
                         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute bottom-20 -left-12 bg-white p-4 rounded-2xl shadow-xl border border-border z-20 md:block hidden"
+                        className="absolute bottom-12 sm:bottom-20 -left-8 sm:-left-12 bg-white p-3 sm:p-4 rounded-lg sm:rounded-2xl shadow-xl border border-border z-20 hidden md:block min-w-[140px]"
                     >
                         <div className="text-xs uppercase font-bold text-text-secondary mb-1">Current Style</div>
-                        <div className="text-lg font-serif font-bold text-primary">
+                        <div className="text-sm sm:text-lg font-serif font-bold text-primary line-clamp-1">
                             {TEMPLATES.find(t => t.id === showcaseTemplates[currentIndex])?.name || 'Custom Design'}
                         </div>
                     </motion.div>

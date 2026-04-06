@@ -111,7 +111,7 @@ function GridBackground() {
 
 function Glow({ className = "" }: { className?: string }) {
   return (
-    <div className={`absolute w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] -z-10 animate-pulse ${className}`} />
+    <div className={`absolute glow-decoration w-[300px] sm:w-[400px] md:w-[500px] h-[300px] sm:h-[400px] md:h-[500px] bg-primary/10 rounded-full blur-[80px] sm:blur-[100px] md:blur-[120px] -z-10 animate-pulse ${className}`} />
   );
 }
 
@@ -194,22 +194,22 @@ export default function Home() {
       </div>
 
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/60 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2 group">
-            <img src="/logo.png" alt="QuickWeds Logo" className="h-10 w-auto object-contain transition-transform group-hover:scale-105" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex justify-between items-center gap-2 sm:gap-4">
+          <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
+            <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105" />
           </Link>
-          <div className="flex items-center gap-8">
-            <Link href="#templates" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Templates</Link>
-            <button onClick={() => setIsExamplesOpen(true)} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Examples</button>
+          <div className="flex items-center gap-2 sm:gap-8 ml-auto">
+            <Link href="#templates" className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Templates</Link>
+            <button onClick={() => setIsExamplesOpen(true)} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Examples</button>
             {user ? (
-              <div className="flex items-center gap-4">
-                <Link href="/dashboard" className="px-6 py-2 rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-all text-sm">Dashboard</Link>
-                <button onClick={logout} className="text-sm font-bold text-text-secondary hover:text-foreground transition-all">Logout</button>
+              <div className="flex items-center gap-2 sm:gap-4">
+                <Link href="/dashboard" className="px-4 sm:px-6 py-2 rounded-lg sm:rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-all text-xs sm:text-sm">Dashboard</Link>
+                <button onClick={logout} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-foreground transition-all hidden sm:block">Logout</button>
               </div>
             ) : (
-              <div className="flex items-center gap-4">
-                <Link href="/login" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Log In</Link>
-                <Link href="/signup" className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all text-sm shadow-lg shadow-primary/20">Get Started</Link>
+              <div className="flex items-center gap-2 sm:gap-4">
+                <Link href="/login" className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden sm:block">Log In</Link>
+                <Link href="/signup" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all text-xs sm:text-sm shadow-lg shadow-primary/20 whitespace-nowrap">Get Started</Link>
               </div>
             )}
           </div>
@@ -218,20 +218,20 @@ export default function Home() {
 
       <main className="pt-32">
         {/* HERO SECTION */}
-        <section className="max-w-6xl mx-auto px-6 pt-20 pb-40 text-center relative">
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 pb-32 sm:pb-40 text-center relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white border border-border soft-shadow text-primary text-xs font-black uppercase tracking-widest mb-10"
+            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full bg-white border border-border soft-shadow text-primary text-xs font-black uppercase tracking-widest mb-8 sm:mb-10"
           >
-            <Zap className="w-3.5 h-3.5 fill-current" /> AI-Powered Elegance
+            <Zap className="w-3 sm:w-3.5 h-3 sm:h-3.5 fill-current" /> AI-Powered Elegance
           </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-6xl md:text-[7rem] font-serif font-bold text-foreground leading-[0.9] mb-12 tracking-tighter"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-[7rem] font-serif font-bold text-foreground leading-[1.1] sm:leading-[0.95] md:leading-[0.9] mb-8 sm:mb-12 tracking-tighter"
           >
             Your Love Story, <br />
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent italic font-normal">Digitally Perfected.</span>
@@ -241,7 +241,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-xl md:text-2xl font-inter text-text-secondary max-w-2xl mx-auto mb-16 leading-relaxed font-light"
+            className="text-base sm:text-lg md:text-xl lg:text-2xl font-inter text-text-secondary max-w-2xl mx-auto mb-12 sm:mb-16 leading-relaxed font-light px-2"
           >
             Craft a breathtaking, interactive wedding landing page in under 5 minutes.
             No code, no stress—just pure, digital enchantment for your most special day.
@@ -251,11 +251,11 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-6 justify-center"
+            className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center px-2"
           >
-            <Link href="/builder" className="group relative px-12 py-6 rounded-2xl bg-primary text-white font-bold text-lg hover:bg-primary-hover transition-all shadow-2xl shadow-primary/30 flex items-center justify-center gap-3">
-              Start Building Now <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              <div className="absolute -inset-1 rounded-2xl bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Link href="/builder" className="group relative px-6 sm:px-12 py-4 sm:py-6 rounded-lg sm:rounded-2xl bg-primary text-white font-bold text-sm sm:text-lg hover:bg-primary-hover transition-all shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 min-h-[44px]">
+              Start Building Now <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 group-hover:translate-x-1 transition-transform" />
+              <div className="absolute -inset-1 rounded-lg sm:rounded-2xl bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
             <button
               onClick={() => setIsExamplesOpen(true)}

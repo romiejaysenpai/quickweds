@@ -60,18 +60,18 @@ export default function HeroEnhancer({ wedding }: { wedding: Wedding }) {
 
             {/* Animated Scroll Prompt */}
             <motion.div 
-                className="absolute bottom-8 lg:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+                className="absolute bottom-4 sm:bottom-8 lg:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 2, duration: 1 }}
             >
-                <span className="text-[9px] uppercase tracking-[0.4em] text-white/70 font-bold backdrop-blur-sm px-3 py-1 rounded-full bg-black/10">Scroll to Explore</span>
+                <span className="text-[10px] sm:text-xs uppercase tracking-[0.4em] text-white/70 font-bold backdrop-blur-sm px-3 py-1 rounded-full bg-black/10">Scroll to Explore</span>
                 <motion.div
                     animate={{ y: [0, 10, 0] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-8 h-12 rounded-full border border-white/30 flex items-start justify-center p-2 bg-black/10 backdrop-blur-md"
+                    className="w-8 h-12 sm:h-14 rounded-full border border-white/30 flex items-start justify-center p-2 bg-black/10 backdrop-blur-md min-h-[44px] min-w-[32px]"
                 >
-                    <ChevronDown className="w-4 h-4 text-white" />
+                    <ChevronDown className="w-4 h-5 sm:w-5 sm:h-6 text-white" />
                 </motion.div>
             </motion.div>
         </div>
