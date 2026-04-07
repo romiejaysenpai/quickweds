@@ -186,7 +186,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
 
     return (
         <div
-            className={`min-h-screen relative selection:bg-primary/20 template-${template}`}
+            className={`min-h-screen relative selection:bg-primary/20 template-${template} overflow-x-hidden`}
             style={{
                 '--primary': wedding.motif_color,
                 backgroundColor: '#FFF8F4',
