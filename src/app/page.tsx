@@ -209,11 +209,9 @@ export default function Home() {
           <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
             <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105" />
           </Link>
-          <div className="hidden md:flex items-center gap-6 sm:gap-8">
-            <Link href="#templates" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Templates</Link>
-            <button onClick={() => setIsExamplesOpen(true)} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Examples</button>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4 ml-auto">
+          <div className="flex items-center gap-4 sm:gap-8 ml-auto">
+            <Link href="#templates" className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Templates</Link>
+            <button onClick={() => setIsExamplesOpen(true)} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Examples</button>
             {user ? (
               <div className="flex items-center gap-2 sm:gap-4">
                 <Link href="/dashboard" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-all text-xs sm:text-sm min-h-[44px] flex items-center">Dashboard</Link>
