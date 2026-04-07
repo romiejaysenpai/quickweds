@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, Smartphone, Share2, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera, ListTodo, Users } from 'lucide-react';
+import { Heart, Smartphone, Share2, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera, ListTodo, Users, Wallet } from 'lucide-react';
 import ExamplesSection from '@/components/ExamplesSection';
 import TemplatesSection from '@/components/TemplatesSection';
 import PhoneMockupSection from '@/components/PhoneMockupSection';
@@ -205,22 +205,24 @@ export default function Home() {
       </div>
 
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/60 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex justify-between items-center gap-2 sm:gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex justify-between items-center gap-4 sm:gap-8">
           <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
             <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105" />
           </Link>
-          <div className="flex items-center gap-2 sm:gap-8 ml-auto">
-            <Link href="#templates" className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Templates</Link>
-            <button onClick={() => setIsExamplesOpen(true)} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Examples</button>
+          <div className="hidden md:flex items-center gap-6 sm:gap-8">
+            <Link href="#templates" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Templates</Link>
+            <button onClick={() => setIsExamplesOpen(true)} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Examples</button>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4 ml-auto">
             {user ? (
               <div className="flex items-center gap-2 sm:gap-4">
-                <Link href="/dashboard" className="px-4 sm:px-6 py-2 rounded-lg sm:rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-all text-xs sm:text-sm">Dashboard</Link>
+                <Link href="/dashboard" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-all text-xs sm:text-sm min-h-[44px] flex items-center">Dashboard</Link>
                 <button onClick={logout} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-foreground transition-all hidden sm:block">Logout</button>
               </div>
             ) : (
               <div className="flex items-center gap-2 sm:gap-4">
                 <Link href="/login" className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden sm:block">Log In</Link>
-                <Link href="/signup" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all text-xs sm:text-sm shadow-lg shadow-primary/20 whitespace-nowrap">Get Started</Link>
+                <Link href="/signup" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all text-xs sm:text-sm shadow-lg shadow-primary/20 whitespace-nowrap min-h-[44px] flex items-center justify-center">Get Started</Link>
               </div>
             )}
           </div>
@@ -352,6 +354,12 @@ export default function Home() {
                   title: "Smart Planner Ecosystem",
                   desc: "Manage your big day flawlessly with our interactive checklist, customizable budget tracker, and more.",
                   accent: "bg-primary/5"
+                },
+                {
+                  icon: <Wallet className="w-8 h-8 text-secondary" />,
+                  title: "Wedding Budget Planner",
+                  desc: "Track every expense from venue to catering. Get real-time budget insights, vendor quotes, and spending breakdowns.",
+                  accent: "bg-secondary/10"
                 },
                 {
                   icon: <Users className="w-8 h-8 text-secondary" />,
