@@ -391,7 +391,135 @@ export default function Home() {
 
         <SectionDivider />
 
-        <PhoneMockupSection />
+        {/* WEDDING BUDGET PLANNER HIGHLIGHT SECTION */}
+        <section className="py-32 sm:py-40 px-6 bg-gradient-to-br from-secondary/5 to-accent/5">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
+              {/* Left: Content */}
+              <motion.div
+                initial={{ opacity: 0, x: -40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-secondary/20 mb-8">
+                  <Wallet className="w-4 h-4 text-secondary" />
+                  <span className="text-xs font-black uppercase tracking-widest text-secondary">Smart Budget Management</span>
+                </div>
+                
+                <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6 leading-tight">
+                  Never Lose <span className="text-secondary italic">Track of Your</span> <span className="text-accent">Wedding Budget</span>
+                </h2>
+                
+                <p className="text-lg text-text-secondary leading-relaxed mb-8 font-light">
+                  From venue deposits to vendor payments, every wedding has countless expenses. Our intelligent budget planner keeps everything organized, transparent, and under control—so you can focus on the details that matter.
+                </p>
+
+                <div className="space-y-4 mb-10">
+                  <div className="flex items-start gap-4">
+                    <div className="w-6 h-6 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                      <CheckCircle2 className="w-4 h-4 text-secondary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground mb-1">Real-Time Expense Tracking</h4>
+                      <p className="text-sm text-text-secondary">Log every expense and watch your budget update instantly.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4">
+                    <div className="w-6 h-6 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                      <CheckCircle2 className="w-4 h-4 text-secondary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground mb-1">Smart Category Organization</h4>
+                      <p className="text-sm text-text-secondary">Automatically categorize expenses by vendor type and event section.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4">
+                    <div className="w-6 h-6 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                      <CheckCircle2 className="w-4 h-4 text-secondary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground mb-1">Visual Analytics & Reports</h4>
+                      <p className="text-sm text-text-secondary">Beautiful charts show spending breakdown and budget health at a glance.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Link 
+                  href="/builder" 
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-secondary text-white font-bold rounded-2xl hover:bg-secondary-hover transition-all shadow-lg shadow-secondary/20 group"
+                >
+                  Explore Budget Planner
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </motion.div>
+
+              {/* Right: Visual */}
+              <motion.div
+                initial={{ opacity: 0, x: 40, scale: 0.95 }}
+                whileInView={{ opacity: 1, x: 0, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="relative"
+              >
+                <div className="relative">
+                  {/* Background Glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-accent/10 rounded-3xl blur-3xl -z-10"></div>
+                  
+                  {/* Card Container */}
+                  <div className="bg-white border border-border rounded-3xl p-8 soft-shadow">
+                    <div className="space-y-6">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xl font-serif font-bold text-foreground">Wedding Budget</h3>
+                        <div className="px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-bold">$45,000</div>
+                      </div>
+
+                      {/* Budget Items */}
+                      <div className="space-y-4">
+                        {[
+                          { name: "Venue & Catering", spent: 15000, budget: 18000, color: "bg-primary" },
+                          { name: "Photography", spent: 3500, budget: 4000, color: "bg-secondary" },
+                          { name: "Florals & Decor", spent: 2800, budget: 3500, color: "bg-accent" },
+                          { name: "Entertainment", spent: 1200, budget: 2000, color: "bg-emerald-500" }
+                        ].map((item, i) => (
+                          <div key={i}>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-semibold text-foreground">{item.name}</span>
+                              <span className="text-xs text-text-secondary">${item.spent.toLocaleString()} / ${item.budget.toLocaleString()}</span>
+                            </div>
+                            <div className="h-2 bg-neutral rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full ${item.color} rounded-full transition-all`}
+                                style={{ width: `${(item.spent / item.budget) * 100}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Summary */}
+                      <div className="border-t border-border pt-4 mt-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold text-foreground">Total Spent</span>
+                          <span className="font-bold text-primary">$22,500</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-foreground">Remaining Budget</span>
+                          <span className="font-bold text-secondary">$22,500</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        <SectionDivider />
 
         <div id="templates">
           <TemplatesSection />
