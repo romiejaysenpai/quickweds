@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, Sparkles, Smartphone, Share2, Calendar, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera, ListTodo, Users } from 'lucide-react';
+import { Heart, Smartphone, Share2, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera, ListTodo, Users } from 'lucide-react';
 import ExamplesSection from '@/components/ExamplesSection';
 import TemplatesSection from '@/components/TemplatesSection';
 import PhoneMockupSection from '@/components/PhoneMockupSection';
@@ -148,7 +148,18 @@ function FAQItem({ question, answer }: { question: string, answer: string }) {
 
 export default function Home() {
   const [isExamplesOpen, setIsExamplesOpen] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
   const { user, logout } = useAuth();
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newsletterEmail) {
+      setNewsletterSubmitted(true);
+      setNewsletterEmail('');
+      setTimeout(() => setNewsletterSubmitted(false), 3000);
+    }
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-neutral selection:bg-primary/20">
@@ -503,13 +514,19 @@ export default function Home() {
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="flex-1 px-6 py-4 rounded-2xl bg-neutral border border-border focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-light"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  className="flex-1 px-6 py-4 rounded-2xl bg-neutral border border-border focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-light min-h-[44px]"
+                  required
                 />
-                <button className="px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all whitespace-nowrap">
-                  Subscribe
+                <button 
+                  onClick={handleNewsletterSubmit}
+                  className="px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all whitespace-nowrap min-h-[44px]"
+                >
+                  {newsletterSubmitted ? '✓ Subscribed!' : 'Subscribe'}
                 </button>
               </div>
-              <p className="text-[10px] text-text-secondary mt-6 font-light italic">No spam, just love. Unsubscribe any time.</p>
+              {newsletterSubmitted && <p className="text-xs text-green-600 font-bold mt-3">✓ Thank you for subscribing!</p>}
             </motion.div>
           </div>
         </section>
@@ -546,13 +563,13 @@ export default function Home() {
                 QuickWeds is the fastest way to create premium, interactive, and mobile-first wedding landing pages.
               </p>
               <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
+                <a href="https://instagram.com/quickweds" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
                   <Instagram className="w-4 h-4" />
                 </a>
-                <a href="#" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
+                <a href="https://twitter.com/quickweds" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
                   <Twitter className="w-4 h-4" />
                 </a>
-                <a href="#" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
+                <a href="https://facebook.com/quickweds" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
                   <Facebook className="w-4 h-4" />
                 </a>
               </div>
@@ -572,18 +589,18 @@ export default function Home() {
               <div className="flex flex-col gap-6">
                 <p className="font-black text-[10px] uppercase tracking-[0.3em] text-foreground">Support</p>
                 <div className="flex flex-col gap-4">
-                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Help Center</Link>
-                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Guidelines</Link>
-                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Contact</Link>
+                  <a href="mailto:support@quickweds.site" className="text-text-secondary text-sm hover:text-primary transition-colors">Help Center</a>
+                  <a href="mailto:support@quickweds.site" className="text-text-secondary text-sm hover:text-primary transition-colors">Guidelines</a>
+                  <a href="mailto:support@quickweds.site" className="text-text-secondary text-sm hover:text-primary transition-colors">Contact</a>
                 </div>
               </div>
 
               <div className="flex flex-col gap-6">
                 <p className="font-black text-[10px] uppercase tracking-[0.3em] text-foreground">Legal</p>
                 <div className="flex flex-col gap-4">
-                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Privacy Policy</Link>
-                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Terms of Service</Link>
-                  <Link href="#" className="text-text-secondary text-sm hover:text-primary transition-colors">Cookie Policy</Link>
+                  <a href="/privacy" className="text-text-secondary text-sm hover:text-primary transition-colors">Privacy Policy</a>
+                  <a href="/terms" className="text-text-secondary text-sm hover:text-primary transition-colors">Terms of Service</a>
+                  <a href="/cookies" className="text-text-secondary text-sm hover:text-primary transition-colors">Cookie Policy</a>
                 </div>
               </div>
             </div>
@@ -602,8 +619,9 @@ export default function Home() {
       {/* Floating Action Buttons */}
       <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-4">
         <motion.a
-          href="https://wa.me/yournumber"
+          href="https://wa.me/919876543210"
           target="_blank"
+          rel="noopener noreferrer"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           whileHover={{ scale: 1.1, rotate: 10 }}
