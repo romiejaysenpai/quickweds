@@ -184,12 +184,22 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
 
     const fontVars = getFontVariables(wedding.font_style);
 
+    const getBgColor = (bgStyle: string | null) => {
+        if (!bgStyle) return '#FFF8F4';
+        const texture = bgStyle.split('||')[0];
+        const bgMap: Record<string, string> = {
+            'white': '#FFFFFF', 'cream': '#FFF8F4', 'satin': '#FDF5E6', 
+            'paper': '#F4F1EA', 'minimal': '#F9F9F9', 'rose': '#FFF5F5', 'linen': '#FAF9F6'
+        };
+        return bgMap[texture] || '#FFF8F4';
+    };
+
     return (
         <div
             className={`min-h-screen relative selection:bg-primary/20 template-${template} overflow-x-hidden`}
             style={{
                 '--primary': wedding.motif_color,
-                backgroundColor: '#FFF8F4',
+                backgroundColor: getBgColor(wedding.background_style),
                 ...fontVars
             } as any}
         >
@@ -198,8 +208,16 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             {/* Premium Signature Design Accents */}
             {wedding.background_style && wedding.background_style.includes('||') && wedding.background_style.split('||')[1] !== 'none' && (
                 <>
-                    <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="top-right" opacity={0.6} className="absolute z-30 pointer-events-none w-48 md:w-80 opacity-40 drop-shadow-[0_20px_20px_rgba(0,0,0,0.1)] mix-blend-multiply" />
-                    <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="bottom-left" opacity={0.5} className="absolute z-30 pointer-events-none w-56 md:w-96 opacity-40 drop-shadow-[0_20px_20px_rgba(0,0,0,0.1)] mix-blend-multiply" />
+                    {/* Primary Corner Accents */}
+                    <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="top-right" className="absolute z-30 pointer-events-none w-48 md:w-80 opacity-40 mix-blend-multiply" />
+                    <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="bottom-left" className="absolute z-30 pointer-events-none w-56 md:w-96 opacity-40 mix-blend-multiply" />
+                    
+                    {/* Middle Page Floating Elements (Subtle) */}
+                    <div className="absolute top-[25%] left-0 w-full h-[50%] pointer-events-none overflow-hidden -z-10">
+                         <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="center" className="absolute top-1/4 -left-20 w-32 md:w-64 opacity-20 blur-sm" />
+                         <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="center" className="absolute top-1/2 -right-20 w-40 md:w-72 opacity-25 blur-[2px]" />
+                         <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="center" className="absolute top-3/4 left-10 w-24 md:w-48 opacity-15" />
+                    </div>
                 </>
             )}
 

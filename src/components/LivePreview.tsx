@@ -24,6 +24,19 @@ const getFontClass = (fontId: string) => {
     return fontMap[fontId] || 'font-serif';
 };
 
+const getBackgroundColor = (id: string) => {
+    const bgMap: Record<string, string> = {
+        'white': '#FFFFFF',
+        'cream': '#FFF8F4',
+        'satin': '#FDF5E6',
+        'paper': '#F4F1EA',
+        'minimal': '#F9F9F9',
+        'rose': '#FFF5F5',
+        'linen': '#FAF9F6'
+    };
+    return bgMap[id] || '#FFFFFF';
+};
+
 export default function LivePreview({ formData, previews }: { formData: any; previews: any }) {
     const headingFont = getFontClass(formData.fontStyle);
     const logoFont = getFontClass(formData.logoFont);
@@ -32,13 +45,18 @@ export default function LivePreview({ formData, previews }: { formData: any; pre
     const bride = formData.brideName || 'Sarah';
     const groom = formData.groomName || 'John';
     const date = formData.weddingDate ? new Date(formData.weddingDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'October 24, 2024';
+    const bgColor = getBackgroundColor(formData.backgroundStyle);
 
     return (
-        <div className="w-full bg-neutral rounded-3xl overflow-hidden border-4 border-white shadow-xl flex flex-col items-center justify-start text-center relative h-[600px] select-none">
+        <div className="w-full rounded-3xl overflow-hidden border-4 border-white shadow-xl flex flex-col items-center justify-start text-center relative h-[600px] select-none" style={{ backgroundColor: bgColor }}>
             {formData.accentStyle && formData.accentStyle !== 'none' && (
                 <>
-                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="top-right" opacity={0.6} className="absolute top-24 -right-10 scale-75 pointer-events-none opacity-40 mix-blend-multiply z-30" />
-                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="bottom-left" opacity={0.5} className="absolute bottom-10 -left-10 scale-75 pointer-events-none opacity-40 mix-blend-multiply z-30" />
+                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="top-right" className="absolute top-24 -right-10 scale-75 pointer-events-none opacity-40 mix-blend-multiply z-30" />
+                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="bottom-left" className="absolute bottom-10 -left-10 scale-75 pointer-events-none opacity-40 mix-blend-multiply z-30" />
+                    
+                    {/* Extra floating bits for the preview frame */}
+                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="center" className="absolute top-1/3 left-0 w-24 opacity-20 blur-[1px] -z-10" />
+                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="center" className="absolute top-2/3 right-0 w-20 opacity-15 -z-10" />
                 </>
             )}
             {/* Template Header / Hero */}

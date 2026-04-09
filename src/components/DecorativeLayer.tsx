@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 
-export type AccentType = 'none' | 'eucalyptus' | 'pampas' | 'ribbon' | 'monstera' | 'sakura' | 'gold-arch';
+export type AccentType = 'none' | 'eucalyptus' | 'pampas' | 'ribbon' | 'monstera' | 'sakura' | 'gold-arch' | 'sparkles' | 'petals' | 'dots';
 
 interface DecorativeLayerProps {
     type: AccentType | string;
@@ -66,6 +66,37 @@ export default function DecorativeLayer({ type, position, color, opacity = 1, cl
                         <path d="M50 200 L50 100 A50 50 0 0 1 150 100 L150 200" fill="none" stroke={color} strokeWidth="2" opacity="0.6"/>
                         <path d="M60 200 L60 100 A40 40 0 0 1 140 100 L140 200" fill="none" stroke={color} strokeWidth="1" opacity="0.4"/>
                         <path d="M100 40 L100 60 M40 100 L60 100 M140 100 L160 100" stroke={color} strokeWidth="1.5" opacity="0.8"/>
+                    </svg>
+                );
+            case 'sparkles': // Magic Dust
+                return (
+                    <svg viewBox="0 0 200 200" className="w-full h-full" fill={color}>
+                        <path d="M100 20 L110 45 L135 55 L110 65 L100 90 L90 65 L65 55 L90 45 Z" opacity="0.8" />
+                        <path d="M40 70 L45 80 L55 85 L45 90 L40 100 L35 90 L25 85 L35 80 Z" opacity="0.5" />
+                        <path d="M160 110 L165 120 L175 125 L165 130 L160 140 L155 130 L145 125 L155 120 Z" opacity="0.6" />
+                        <circle cx="80" cy="140" r="4" opacity="0.4" />
+                        <circle cx="120" cy="30" r="3" opacity="0.3" />
+                    </svg>
+                );
+            case 'petals': // Falling Petals
+                return (
+                    <svg viewBox="0 0 200 200" className="w-full h-full" fill={color}>
+                        <path d="M40 40 Q 60 20 80 40 Q 60 60 40 40" opacity="0.7" transform="rotate(15 60 40)" />
+                        <path d="M140 80 Q 160 60 180 80 Q 160 100 140 80" opacity="0.5" transform="rotate(-20 160 80)" />
+                        <path d="M70 150 Q 90 130 110 150 Q 90 170 70 150" opacity="0.6" transform="rotate(45 90 150)" />
+                        <path d="M120 30 Q 130 20 140 30 Q 130 40 120 30" opacity="0.4" />
+                    </svg>
+                );
+            case 'dots': // Confetti / Dots
+                return (
+                    <svg viewBox="0 0 200 200" className="w-full h-full" fill={color}>
+                        <circle cx="40" cy="40" r="6" opacity="0.6" />
+                        <circle cx="160" cy="60" r="4" opacity="0.4" />
+                        <circle cx="100" cy="110" r="8" opacity="0.5" />
+                        <circle cx="30" cy="160" r="5" opacity="0.7" />
+                        <circle cx="180" cy="170" r="3" opacity="0.3" />
+                        <rect x="120" y="30" width="8" height="8" rx="2" opacity="0.4" transform="rotate(25 124 34)" />
+                        <rect x="70" y="80" width="6" height="6" rx="1" opacity="0.5" transform="rotate(-15 73 83)" />
                     </svg>
                 );
             // Legacy fallbacks mapping

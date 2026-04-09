@@ -562,6 +562,38 @@ export default function BuilderForm() {
                         </div>
 
                         <div className="space-y-4">
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Background Texture</label>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
+                                {[
+                                    { id: 'white', name: 'Clean White', color: '#FFFFFF', icon: '⚪' },
+                                    { id: 'cream', name: 'Soft Cream', color: '#FFF8F4', icon: '🍦' },
+                                    { id: 'satin', name: 'Silk Satin', color: '#FDF5E6', icon: '📜' },
+                                    { id: 'paper', name: 'Art Paper', color: '#F4F1EA', icon: '📝' },
+                                    { id: 'minimal', name: 'Minimalist', color: '#F9F9F9', icon: '☁️' },
+                                    { id: 'rose', name: 'Blush Tint', color: '#FFF5F5', icon: '🌸' },
+                                    { id: 'linen', name: 'Linen', color: '#FAF9F6', icon: '🧵' }
+                                ].map((bg, index) => {
+                                    const isLocked = !isPremium && index > 2;
+                                    return (
+                                        <button
+                                            key={bg.id}
+                                            type="button"
+                                            onClick={() => !isLocked && setFormData((prev: any) => ({ ...prev, backgroundStyle: bg.id }))}
+                                            className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 text-center relative ${
+                                                isLocked ? 'border-border bg-neutral/50 opacity-60 cursor-not-allowed' :
+                                                formData.backgroundStyle === bg.id ? 'border-primary bg-primary/5' :
+                                                'border-border bg-white hover:border-primary/30'
+                                            }`}
+                                        >
+                                            <div className="w-8 h-8 rounded-full border shadow-inner mb-1" style={{ backgroundColor: bg.color }} />
+                                            <p className="text-[10px] font-bold leading-tight">{bg.name}</p>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Design Accents</label>
                             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                 {[
@@ -571,7 +603,10 @@ export default function BuilderForm() {
                                     { id: 'ribbon', name: 'Silk Ribbon', icon: '🎀' },
                                     { id: 'monstera', name: 'Monstera', icon: '🍃' },
                                     { id: 'sakura', name: 'Blossom', icon: '🌸' },
-                                    { id: 'gold-arch', name: 'Gold Arch', icon: '⛩️' }
+                                    { id: 'gold-arch', name: 'Gold Arch', icon: '⛩️' },
+                                    { id: 'sparkles', name: 'Magic Dust', icon: '✨' },
+                                    { id: 'petals', name: 'Falling Petals', icon: '🍂' },
+                                    { id: 'dots', name: 'Confetti', icon: '🎊' }
                                 ].map((accent, index) => {
                                     const isLocked = !isPremium && index > 2;
                                     return (
