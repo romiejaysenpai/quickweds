@@ -96,8 +96,18 @@ export default function DecorativeLayer({ type, position, color, opacity = 1, cl
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.9, rotate: -5 }}
-            animate={{ opacity, scale: 1, rotate: 0 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
+            animate={{ 
+                opacity: opacity, 
+                scale: [1, 1.05, 1], 
+                rotate: [0, 3, -1, 0],
+                y: [0, -10, 0]
+            }}
+            transition={{ 
+                opacity: { duration: 1.2, ease: "easeOut" },
+                scale: { duration: 8, repeat: Infinity, ease: "easeInOut" },
+                rotate: { duration: 12, repeat: Infinity, ease: "easeInOut" },
+                y: { duration: 6, repeat: Infinity, ease: "easeInOut" }
+            }}
             className={`absolute w-40 md:w-56 h-40 md:h-56 pointer-events-none z-0 ${positionClasses[position]} ${className}`}
         >
             {getSVG()}

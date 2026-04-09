@@ -37,8 +37,8 @@ export default function LivePreview({ formData, previews }: { formData: any; pre
         <div className="w-full bg-neutral rounded-3xl overflow-hidden border-4 border-white shadow-xl flex flex-col items-center justify-start text-center relative h-[600px] select-none">
             {formData.accentStyle && formData.accentStyle !== 'none' && (
                 <>
-                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="top-right" opacity={0.8} className="absolute top-24 -right-10 scale-75 z-20" />
-                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="bottom-left" opacity={0.6} className="absolute bottom-10 -left-10 scale-75 z-20" />
+                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="top-right" opacity={0.8} className="absolute top-24 -right-10 scale-75 z-0" />
+                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="bottom-left" opacity={0.6} className="absolute bottom-10 -left-10 scale-75 z-0" />
                 </>
             )}
             {/* Template Header / Hero */}

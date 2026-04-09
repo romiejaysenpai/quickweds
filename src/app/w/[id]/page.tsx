@@ -198,8 +198,8 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             {/* Premium Signature Design Accents */}
             {wedding.background_style && wedding.background_style.includes('||') && wedding.background_style.split('||')[1] !== 'none' && (
                 <>
-                    <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="top-right" opacity={0.6} className="fixed z-20 pointer-events-none w-48 md:w-80 opacity-50 drop-shadow-[0_20px_20px_rgba(0,0,0,0.1)]" />
-                    <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="bottom-left" opacity={0.5} className="fixed z-20 pointer-events-none w-56 md:w-96 opacity-60 drop-shadow-[0_20px_20px_rgba(0,0,0,0.1)]" />
+                    <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="top-right" opacity={0.6} className="absolute z-0 pointer-events-none w-48 md:w-80 opacity-50 drop-shadow-[0_20px_20px_rgba(0,0,0,0.1)]" />
+                    <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="bottom-left" opacity={0.5} className="absolute z-0 pointer-events-none w-56 md:w-96 opacity-60 drop-shadow-[0_20px_20px_rgba(0,0,0,0.1)]" />
                 </>
             )}
 
