@@ -49,6 +49,7 @@ export default function LivePreview({ formData, previews }: { formData: any; pre
 
     return (
         <div className="w-full rounded-3xl overflow-hidden border-4 border-white shadow-xl flex flex-col items-center justify-start text-center relative h-[600px] select-none" style={{ backgroundColor: bgColor }}>
+            <div className={`texture-overlay texture-${formData.backgroundStyle}`} />
             {formData.accentStyle && formData.accentStyle !== 'none' && (
                 <>
                     <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="top-right" className="absolute top-24 -right-10 scale-75 pointer-events-none opacity-40 mix-blend-multiply z-30" />
@@ -84,7 +85,7 @@ export default function LivePreview({ formData, previews }: { formData: any; pre
             </div>
 
             {/* Content Area */}
-            <div className="px-6 py-8 relative w-full flex-1 flex flex-col items-center bg-neutral z-10 -mt-10 rounded-t-3xl">
+            <div className="px-6 py-8 relative w-full flex-1 flex flex-col items-center bg-transparent z-10 -mt-10 rounded-t-3xl">
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 w-full">
 
                     <div>

@@ -204,6 +204,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             } as any}
         >
             <div className="noise-overlay" />
+            <div className={`texture-overlay texture-${wedding.background_style ? wedding.background_style.split('||')[0] : 'white'}`} />
             
             {/* Premium Signature Design Accents */}
             {wedding.background_style && wedding.background_style.includes('||') && wedding.background_style.split('||')[1] !== 'none' && (
@@ -291,7 +292,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
 
 function EditorialTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="bg-white pb-24">
+        <div className="bg-transparent pb-24">
             <section className="min-h-screen py-12 lg:py-0 grid grid-cols-1 lg:grid-cols-12 gap-0 relative overflow-hidden">
                 <div className="col-span-1 hidden lg:flex border-r border-black/5 flex-col items-center justify-between py-12 h-full uppercase text-[10px] font-black tracking-[1.5em] opacity-30">
                     <p className="rotate-90 whitespace-nowrap">EXT. {new Date(wedding.wedding_date).getFullYear()}</p>
@@ -426,7 +427,7 @@ function RoyalTemplate({ wedding, gallery, isExpired }: any) {
 
 function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="bg-[#fff9fc] text-[#e3a6c1] relative overflow-hidden pb-24">
+        <div className="bg-transparent text-[#e3a6c1] relative overflow-hidden pb-24">
             {/* Animated Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
                 {[...Array(30)].map((_, i) => (
@@ -600,7 +601,7 @@ function UrbanTemplate({ wedding, gallery, isExpired }: any) {
 
 function TropicalTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="bg-[#e0f2f1] text-[#00695c] relative pb-24">
+        <div className="bg-transparent text-[#00695c] relative pb-24">
             {/* Sun Glow Overlay - Responsive sizing */}
             <div className="fixed top-0 right-0 w-40 sm:w-56 md:w-72 lg:w-96 h-40 sm:h-56 md:h-72 lg:h-96 bg-yellow-100/30 rounded-full blur-[80px] sm:blur-[100px] md:blur-[120px] pointer-events-none -z-0" />
 
@@ -725,7 +726,7 @@ function MidnightTemplate({ wedding, gallery, isExpired }: any) {
 }
 function SakuraTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="bg-[#fff0f5] text-[#8e405a] relative">
+        <div className="bg-transparent text-[#8e405a] relative">
             <div className="fixed inset-0 pointer-events-none opacity-30" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30c-2-2-5-2-7 0-.5.5-.5 1.5 0 2 2 2 5 2 7 0 .5-.5.5-1.5 0-2zm5 5c-2-2-5-2-7 0-.5.5-.5 1.5 0 2 2 2 5 2 7 0 .5-.5.5-1.5 0-2z' fill='%23ffb7c5' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")` }} />
 
             <section className="min-h-screen py-16 sm:py-20 md:py-24 lg:py-24 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative overflow-hidden">
