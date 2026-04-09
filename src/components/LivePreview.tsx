@@ -52,12 +52,12 @@ export default function LivePreview({ formData, previews }: { formData: any; pre
             <div className={`texture-overlay texture-${formData.backgroundStyle}`} />
             {formData.accentStyle && formData.accentStyle !== 'none' && (
                 <>
-                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="top-right" className="absolute top-24 -right-10 scale-75 pointer-events-none opacity-40 mix-blend-multiply z-30" />
-                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="bottom-left" className="absolute bottom-10 -left-10 scale-75 pointer-events-none opacity-40 mix-blend-multiply z-30" />
+                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="top-right" className="absolute top-16 -right-8 origin-top-right scale-[0.35] pointer-events-none opacity-40 mix-blend-multiply z-30" />
+                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="bottom-left" className="absolute bottom-5 -left-8 origin-bottom-left scale-[0.35] pointer-events-none opacity-40 mix-blend-multiply z-30" />
                     
                     {/* Extra floating bits for the preview frame */}
-                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="center" className="absolute top-1/3 left-0 w-24 opacity-20 blur-[1px] -z-10" />
-                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="center" className="absolute top-2/3 right-0 w-20 opacity-15 -z-10" />
+                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="center" className="absolute top-1/3 -left-4 w-24 opacity-20 blur-[1px] scale-50 -z-10" />
+                    <DecorativeLayer type={formData.accentStyle} color={primaryColor} position="center" className="absolute top-2/3 -right-4 w-20 opacity-15 scale-50 -z-10" />
                 </>
             )}
             {/* Template Header / Hero */}
