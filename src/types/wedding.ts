@@ -23,6 +23,7 @@ export interface Wedding {
     hashtag?: string;
     rsvp_deadline: string;
     program_timeline?: string;
+    invitation_image?: string; // Opt-in image
     // Monogram / Logo
     logo_initials?: string;
     logo_shape?: 'circle' | 'square' | 'minimal';

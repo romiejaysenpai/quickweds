@@ -122,6 +122,32 @@ export default function DetailsSection({ wedding, invert = false }: DetailsSecti
                     isSharp={isSharp} isDark={isDark} isVintage={isVintage}
                 />
             </div>
+
+            {/* Optional Printed Invitation Image */}
+            {wedding.invitation_image && (
+                <div className="max-w-4xl mx-auto px-4 md:px-6 mt-20 md:mt-32">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.2 }}
+                        transition={isSharp ? { duration: 0.8, ease: "easeOut" } : { duration: 1, type: "spring" }}
+                        className={`relative w-full aspect-[3/4] md:aspect-[4/3] overflow-hidden group hover:shadow-3xl transition-shadow ${
+                            isSharp 
+                                ? 'rounded-none border-4 border-white/20' 
+                                : isVintage 
+                                ? 'rounded-md border-[16px] border-[#f4f1e1] shadow-2xl sepia-[0.1]' 
+                                : 'rounded-[2rem] md:rounded-[4rem] border-[8px] md:border-[16px] border-white/60 shadow-2xl backdrop-blur-md'
+                        }`}
+                    >
+                        <img 
+                            src={wedding.invitation_image} 
+                            alt="Wedding Invitation" 
+                            className={`w-full h-full ${isSharp ? 'object-cover' : 'object-contain bg-black/5 backdrop-blur-2xl'} group-hover:scale-105 transition-transform duration-1000`} 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                    </motion.div>
+                </div>
+            )}
         </section>
     );
 }

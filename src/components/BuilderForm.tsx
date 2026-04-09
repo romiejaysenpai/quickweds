@@ -148,12 +148,14 @@ export default function BuilderForm() {
         couplePhoto: File | null;
         teaserVideo: File | null;
         giftQr: File | null;
+        invitationImage: File | null;
         galleryImages: File[];
     }>({
         heroImage: null,
         couplePhoto: null,
         teaserVideo: null,
         giftQr: null,
+        invitationImage: null,
         galleryImages: [],
     });
 
@@ -161,10 +163,12 @@ export default function BuilderForm() {
         heroImage: string | null;
         couplePhoto: string | null;
         giftQr: string | null;
+        invitationImage: string | null;
     }>({
         heroImage: null,
         couplePhoto: null,
         giftQr: null,
+        invitationImage: null,
     });
 
     const [isPremium, setIsPremium] = useState(isAdmin);
@@ -231,6 +235,7 @@ export default function BuilderForm() {
                         heroImage: data.hero_image || null,
                         couplePhoto: data.couple_photo || null,
                         giftQr: data.gift_qr_image || null,
+                        invitationImage: data.invitation_image || null,
                     });
                 }
             };
@@ -286,7 +291,7 @@ export default function BuilderForm() {
 
             setMediaFiles((prev: any) => ({ ...prev, [field]: file }));
 
-            if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'teaserVideo') {
+            if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'invitationImage' || field === 'teaserVideo') {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     setPreviews((prev: any) => ({ ...prev, [field]: reader.result as string }));
@@ -341,13 +346,15 @@ export default function BuilderForm() {
             const heroPromise = mediaFiles.heroImage ? uploadToSupabase(mediaFiles.heroImage, 'hero') : Promise.resolve(null);
             const couplePromise = mediaFiles.couplePhoto ? uploadToSupabase(mediaFiles.couplePhoto, 'couple') : Promise.resolve(null);
             const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
+            const invitationPromise = mediaFiles.invitationImage ? uploadToSupabase(mediaFiles.invitationImage, 'invitation') : Promise.resolve(null);
             const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo, 'teaser') : Promise.resolve(null);
             const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToSupabase(file, `gallery-${i}`));
 
-            const [heroUrl, coupleUrl, giftQrUrl, videoUrl, galleryUrls] = await Promise.all([
+            const [heroUrl, coupleUrl, giftQrUrl, invitationUrl, videoUrl, galleryUrls] = await Promise.all([
                 heroPromise,
                 couplePromise,
                 giftQrPromise,
+                invitationPromise,
                 videoPromise,
                 Promise.all(galleryPromises)
             ]);
@@ -392,6 +399,7 @@ export default function BuilderForm() {
             if (mediaFiles.couplePhoto || editId) payload.couple_photo = coupleUrl || previews.couplePhoto;
             if (mediaFiles.teaserVideo || editId) payload.teaser_video = videoUrl || (formData as any).teaser_video; // Keep existing if edit
             if (mediaFiles.giftQr || editId) payload.gift_qr_image = giftQrUrl || previews.giftQr;
+            if (mediaFiles.invitationImage || editId) payload.invitation_image = invitationUrl || previews.invitationImage;
             if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
 
             if (editId) {
@@ -802,23 +810,38 @@ export default function BuilderForm() {
                                 </div>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Teaser Video (Optional)</label>
-                            <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
-                                {mediaFiles.teaserVideo ? (
-                                    <div className="text-center p-4">
-                                        <Video className="w-8 h-8 text-primary mx-auto mb-2" />
-                                        <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
-                                        <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
-                                    </div>
-                                ) : (
-                                    <div className="text-center group-hover:scale-105 transition-transform">
-                                        <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                        <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
-                                        {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
-                                    </div>
-                                )}
-                                <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Teaser Video (Optional)</label>
+                                <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
+                                    {mediaFiles.teaserVideo ? (
+                                        <div className="text-center p-4">
+                                            <Video className="w-8 h-8 text-primary mx-auto mb-2" />
+                                            <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
+                                            <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center group-hover:scale-105 transition-transform">
+                                            <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
+                                            <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
+                                            {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
+                                        </div>
+                                    )}
+                                    <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Printed Invitation (Optional)</label>
+                                <div className="relative h-48 rounded-2xl border-2 border-dashed border-border bg-neutral flex flex-col items-center justify-center overflow-hidden hover:bg-neutral/80 transition-colors cursor-pointer group">
+                                    {previews.invitationImage ? <img src={previews.invitationImage} className="w-full h-full object-contain" /> : (
+                                        <div className="text-center p-4 group-hover:scale-105 transition-transform">
+                                            <ImageIcon className="w-8 h-8 text-primary/40 mx-auto mb-2" />
+                                            <span className="text-sm text-text-secondary font-medium">Upload Card Image</span>
+                                            <p className="text-[10px] text-primary mt-1 font-bold italic">Display your physical invite</p>
+                                        </div>
+                                    )}
+                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'invitationImage')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                </div>
                             </div>
                         </div>
                         <div className="space-y-2">
