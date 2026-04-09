@@ -116,6 +116,7 @@ export default function BuilderForm() {
         motifColor: '#C08081',
         fontStyle: 'Elegant',
         backgroundStyle: 'gradient',
+        accentStyle: 'none',
         template: 'classic',
         dressCode: '',
         dressCodeColor: '#000000',
@@ -199,7 +200,8 @@ export default function BuilderForm() {
                         mapsLink: data.maps_link || '',
                         motifColor: data.motif_color || '#C08081',
                         fontStyle: data.font_style || 'Elegant',
-                        backgroundStyle: data.background_style || 'gradient',
+                        backgroundStyle: data.background_style ? data.background_style.split('||')[0] : 'gradient',
+                        accentStyle: data.background_style && data.background_style.includes('||') ? data.background_style.split('||')[1] : 'none',
                         template: data.template || 'classic',
                         dressCode: data.dress_code ? data.dress_code.split('||')[0] : '',
                         dressCodeColor: data.dress_code && data.dress_code.includes('||') ? data.dress_code.split('||')[1] : (data.motif_color || '#000000'),
@@ -360,7 +362,7 @@ export default function BuilderForm() {
                 maps_link: formData.mapsLink,
                 motif_color: formData.motifColor,
                 font_style: formData.fontStyle,
-                background_style: formData.backgroundStyle,
+                background_style: `${formData.backgroundStyle}||${formData.accentStyle || 'none'}`,
                 template: formData.template,
                 dress_code: formData.dressCode ? `${formData.dressCode}||${formData.dressCodeColor}` : '',
                 program_timeline: formData.programTimeline,
@@ -558,6 +560,44 @@ export default function BuilderForm() {
                                 <input type="color" name="motifColor" value={formData.motifColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer" />
                             </div>
                         </div>
+
+                        <div className="space-y-4">
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Design Accents</label>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                {[
+                                    { id: 'none', name: 'None', icon: '✨' },
+                                    { id: 'eucalyptus', name: 'Eucalyptus', icon: '🌿' },
+                                    { id: 'pampas', name: 'Pampas', icon: '🌾' },
+                                    { id: 'ribbon', name: 'Silk Ribbon', icon: '🎀' },
+                                    { id: 'monstera', name: 'Monstera', icon: '🍃' },
+                                    { id: 'sakura', name: 'Blossom', icon: '🌸' },
+                                    { id: 'gold-arch', name: 'Gold Arch', icon: '⛩️' }
+                                ].map((accent, index) => {
+                                    const isLocked = !isPremium && index > 2;
+                                    return (
+                                        <button
+                                            key={accent.id}
+                                            type="button"
+                                            onClick={() => !isLocked && setFormData((prev: any) => ({ ...prev, accentStyle: accent.id }))}
+                                            className={`p-3 sm:p-4 rounded-lg sm:rounded-2xl border-2 transition-all flex flex-col items-center gap-1 text-center relative ${
+                                                isLocked ? 'border-border bg-neutral/50 opacity-60 cursor-not-allowed' :
+                                                formData.accentStyle === accent.id ? 'border-primary bg-primary/5' :
+                                                'border-border bg-white hover:border-primary/30'
+                                            }`}
+                                        >
+                                            {isLocked && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-lg sm:rounded-2xl backdrop-blur-[1px]">
+                                                    <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 text-primary" />
+                                                </div>
+                                            )}
+                                            <span className={`text-2xl sm:text-3xl mb-1 ${isLocked ? 'grayscale' : ''}`}>{accent.icon}</span>
+                                            <p className="text-[10px] sm:text-xs font-bold leading-tight">{accent.name}</p>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                         <div className="space-y-4">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Typography & Fonts</label>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
