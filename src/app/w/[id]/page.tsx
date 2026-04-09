@@ -349,7 +349,7 @@ function EditorialTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -417,7 +417,7 @@ function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-                <GallerySection gallery={gallery} />
+                <GallerySection gallery={gallery} wedding={wedding} />
                 <GiftSection wedding={wedding} invert />
                 <SharedNewSections wedding={wedding} isExpired={isExpired} />
             </div>
@@ -501,7 +501,7 @@ function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -592,7 +592,7 @@ function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -671,7 +671,7 @@ function TropicalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -718,7 +718,7 @@ function MidnightTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -770,7 +770,7 @@ function SakuraTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -840,7 +840,7 @@ function VogueTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} masonry />
+            <GallerySection gallery={gallery} wedding={wedding} masonry />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -902,7 +902,7 @@ function RusticTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -956,7 +956,7 @@ function FilmTemplate({ wedding, gallery, isExpired }: any) {
             )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} invert />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1013,7 +1013,7 @@ function GlitchTemplate({ wedding, gallery, isExpired }: any) {
             )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} invert />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1075,7 +1075,7 @@ function GardenTemplate({ wedding, gallery, isExpired }: any) {
             )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1175,7 +1175,7 @@ function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1219,7 +1219,7 @@ function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1260,7 +1260,7 @@ function ElopementTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1306,7 +1306,7 @@ function TraditionalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1349,7 +1349,7 @@ function BohoTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1390,7 +1390,7 @@ function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1431,7 +1431,7 @@ function VintageTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1471,7 +1471,7 @@ function MinimalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1513,7 +1513,7 @@ function ClassicTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </>
@@ -1545,7 +1545,7 @@ function TimelineTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1580,7 +1580,7 @@ function RSVPFocusTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1618,7 +1618,7 @@ function CinematicTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1649,7 +1649,7 @@ function EleganceTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
+            <GallerySection gallery={gallery} wedding={wedding} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
