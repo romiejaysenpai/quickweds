@@ -206,21 +206,34 @@ export default function Home() {
 
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-            <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105" />
+          <Link href="/" className="flex items-center flex-shrink-0">
+            <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain" />
           </Link>
-          <div className="flex items-center gap-3 sm:gap-6 md:gap-8 ml-auto">
+          
+          <div className="flex items-center gap-4 sm:gap-6 md:gap-8">
             <Link href="#templates" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Templates</Link>
             <button onClick={() => setIsExamplesOpen(true)} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Examples</button>
+            
             {user ? (
               <div className="flex items-center gap-3 sm:gap-4">
-                <Link href="/dashboard" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-all text-xs sm:text-sm min-h-[44px] flex items-center">Dashboard</Link>
-                <button onClick={logout} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-foreground transition-all">Logout</button>
+                <Link href="/dashboard" className="px-4 sm:px-6 h-10 sm:h-11 rounded-lg sm:rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-all text-xs sm:text-sm flex items-center justify-center">
+                  Dashboard
+                </Link>
+                <button 
+                  onClick={logout} 
+                  className="h-10 sm:h-11 px-2 text-xs sm:text-sm font-bold text-text-secondary hover:text-foreground transition-all flex items-center justify-center"
+                >
+                  Logout
+                </button>
               </div>
             ) : (
               <div className="flex items-center gap-3 sm:gap-4">
-                <Link href="/login" className="text-xs sm:text-base font-bold text-text-secondary hover:text-primary transition-colors">Log In</Link>
-                <Link href="/signup" className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all text-xs sm:text-sm shadow-lg shadow-primary/20 whitespace-nowrap min-h-[40px] sm:min-h-[44px] flex items-center justify-center">Get Started</Link>
+                <Link href="/login" className="h-10 sm:h-11 px-2 text-xs sm:text-base font-bold text-text-secondary hover:text-primary transition-all flex items-center justify-center">
+                  Log In
+                </Link>
+                <Link href="/signup" className="px-4 sm:px-6 h-10 sm:h-11 rounded-lg sm:rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all text-xs sm:text-sm shadow-lg shadow-primary/20 flex items-center justify-center whitespace-nowrap">
+                  Get Started
+                </Link>
               </div>
             )}
           </div>
