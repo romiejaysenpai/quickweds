@@ -38,7 +38,7 @@ create table if not exists public.wedding_collaborators (
 
 create table if not exists public.wedding_template_presets (
     id uuid primary key default gen_random_uuid(),
-    user_id uuid not null,
+    user_id uuid not null references auth.users(id) on delete cascade,
     name text not null,
     template_id text not null,
     description text,
