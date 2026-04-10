@@ -33,91 +33,149 @@ export default function GiftSection({ wedding, invert = false }: GiftSectionProp
         : `rounded-[2rem] md:rounded-[3rem] ${isDark ? 'bg-white/10 backdrop-blur-2xl border border-white/20' : 'bg-white/60 backdrop-blur-2xl border border-white/50 shadow-2xl shadow-primary/5'}`;
 
     return (
-        <section className={`py-24 md:py-32 px-4 md:px-6 relative z-10 ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>
-            <div className="max-w-5xl mx-auto">
+        <section className={`py-24 md:py-40 px-4 md:px-8 relative z-10 overflow-hidden ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>
+            {/* Background Decoration */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
+            
+            <div className="max-w-6xl mx-auto">
                 <motion.div 
-                    initial={{ opacity: 0, y: isSharp ? 0 : 30 }}
+                    initial={{ opacity: 0, y: 50 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
-                    transition={isSharp ? { duration: 0.8, ease: "easeOut" } : { duration: 1 }}
-                    className="text-center mb-16"
+                    transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="text-center mb-20 md:mb-32"
                 >
-                    <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] font-bold text-primary mb-4 block opacity-80">With Love</span>
-                    <h2 className={`text-5xl md:text-6xl font-serif mb-6 ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>Gift Registry</h2>
-                    <p className={`text-lg md:text-xl leading-relaxed ${isDark ? 'text-white/80' : 'text-[#4A4444]/80'} font-serif italic max-w-2xl mx-auto`}>
-                        Your presence is the greatest gift of all. However, if you wish to honor us with a gift, a contribution towards our future together would be appreciated.
+                    <motion.span 
+                        initial={{ opacity: 0, tracking: '0.1em' }}
+                        whileInView={{ opacity: 0.6, tracking: '0.4em' }}
+                        transition={{ duration: 1, delay: 0.2 }}
+                        className="text-[10px] md:text-xs uppercase font-black text-primary mb-6 block"
+                    >
+                        Foundation for our Future
+                    </motion.span>
+                    <h2 className={`text-5xl md:text-7xl font-serif mb-8 tracking-tight ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>Gift Registry</h2>
+                    <p className={`text-xl md:text-2xl leading-relaxed ${isDark ? 'text-white/70' : 'text-[#4A4444]/70'} font-serif italic max-w-3xl mx-auto opacity-80 underline decoration-primary/20 underline-offset-8`}>
+                        Your presence is our greatest joy. If you wish to celebrate with a gift, our registries and funds are listed below.
                     </p>
                 </motion.div>
 
-                <div className="flex flex-col lg:flex-row gap-10 md:gap-16 items-start">
-                    <div className="flex-1 space-y-6 w-full">
-                        {/* Bank Details */}
+                <div className="flex flex-col lg:flex-row gap-12 md:gap-20 items-start">
+                    <div className="flex-1 space-y-8 md:space-y-12 w-full">
+                        {/* Bank Details Spotlight */}
                         {(wedding.gift_bank || wedding.gift_account_name || wedding.gift_account_number) && (
                             <motion.div 
-                                initial={{ opacity: 0, x: -30 }}
+                                initial={{ opacity: 0, x: -40 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
-                                className={`p-6 md:p-10 ${cardClass}`}
+                                transition={{ duration: 1, delay: 0.1 }}
+                                className={`relative group p-10 md:p-14 ${cardClass}`}
                             >
-                                <div className="space-y-6">
+                                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><path d="M3 21h18M3 10h18M5 10V21M19 10V21M9 10V21M15 10V21M3 10l9-7 9 7" /></svg>
+                                </div>
+                                <div className="space-y-10 relative z-10 text-left">
                                     {wedding.gift_bank && (
                                         <div>
-                                            <p className="text-[10px] md:text-xs uppercase tracking-[0.2em] font-bold opacity-50 mb-1">Bank / App</p>
-                                            <p className="text-xl md:text-2xl font-bold">{wedding.gift_bank}</p>
+                                            <p className="text-[10px] uppercase tracking-[0.3em] font-black opacity-30 mb-2">Financial Institution</p>
+                                            <p className="text-2xl md:text-3xl font-black tracking-tight">{wedding.gift_bank}</p>
                                         </div>
                                     )}
                                     {wedding.gift_account_name && (
                                         <div>
-                                            <p className="text-[10px] md:text-xs uppercase tracking-[0.2em] font-bold opacity-50 mb-1">Account Name</p>
-                                            <p className="text-xl md:text-2xl font-serif">{wedding.gift_account_name}</p>
+                                            <p className="text-[10px] uppercase tracking-[0.3em] font-black opacity-30 mb-2">Account Bearer</p>
+                                            <p className="text-2xl md:text-3xl font-serif italic">{wedding.gift_account_name}</p>
                                         </div>
                                     )}
                                     {wedding.gift_account_number && (
-                                        <div>
-                                            <p className="text-[10px] md:text-xs uppercase tracking-[0.2em] font-bold opacity-50 mb-1">Account Number</p>
-                                            <p className="font-mono text-xl md:text-2xl tracking-wider select-all">{wedding.gift_account_number}</p>
+                                        <div className="bg-primary/[0.03] p-6 rounded-2xl border border-primary/5">
+                                            <p className="text-[10px] uppercase tracking-[0.3em] font-black opacity-30 mb-3">Electronic Transfer Number</p>
+                                            <p className="font-mono text-xl md:text-3xl tracking-[0.1em] select-all font-bold flex items-center justify-between">
+                                                {wedding.gift_account_number}
+                                                <button className="text-[8px] uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full opacity-50 hover:opacity-100 transition-opacity">Copy</button>
+                                            </p>
                                         </div>
                                     )}
                                 </div>
                             </motion.div>
                         )}
 
-                        {/* Registry Links */}
+                        {/* Gift Registry Links with Premium List Style */}
                         {registryLinks.length > 0 && (
                             <motion.div 
-                                initial={{ opacity: 0, x: -30 }}
+                                initial={{ opacity: 0, x: -40 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
-                                className={`p-6 md:p-10 ${cardClass}`}
+                                transition={{ duration: 1, delay: 0.2 }}
+                                className={`p-10 md:p-14 ${cardClass}`}
                             >
-                                <p className="text-[10px] md:text-xs uppercase tracking-[0.2em] font-bold opacity-50 mb-6">Gift Registries</p>
-                                <div className="space-y-3">
+                                <div className="flex items-center justify-between mb-10">
+                                    <p className="text-[10px] uppercase tracking-[0.4em] font-black opacity-30">Selected Registries</p>
+                                    <div className="h-px bg-primary/20 flex-1 ml-6" />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {registryLinks.map((link, i) => (
-                                        <a key={i} href={link.url} target="_blank" rel="noopener noreferrer"
-                                            className={`flex items-center justify-between p-5 ${isSharp ? 'border border-white/20 hover:bg-white/5' : 'bg-primary/10 hover:bg-primary/20 rounded-2xl border border-primary/10'} transition-colors group`}>
-                                            <span className="font-bold text-sm md:text-base">{link.title}</span>
-                                            <span className="text-primary text-[10px] md:text-xs uppercase tracking-widest font-bold opacity-50 group-hover:opacity-100 transition-opacity">Visit &rarr;</span>
-                                        </a>
+                                        <motion.a 
+                                            key={i} 
+                                            href={link.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            whileHover={{ y: -5, scale: 1.02 }}
+                                            className={`flex items-center justify-between p-6 overflow-hidden relative transition-all duration-500 group ${
+                                                isSharp 
+                                                    ? 'border border-primary/20 hover:bg-primary/5 rounded-none' 
+                                                    : 'bg-white/50 backdrop-blur-sm hover:bg-white rounded-3xl border border-primary/5'
+                                            }`}
+                                        >
+                                            <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-[0.03] transition-opacity" />
+                                            <span className="font-black text-sm md:text-base uppercase tracking-wider relative z-10">{link.title}</span>
+                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:bg-primary group-hover:text-white">
+                                                <span className="text-xs">↗</span>
+                                            </div>
+                                        </motion.a>
                                     ))}
                                 </div>
                             </motion.div>
                         )}
                     </div>
 
-                    {/* QR Code Column */}
+                    {/* QR Code Showcase with Glassmorphic Frame */}
                     {wedding.gift_qr_image && (
                         <motion.div 
-                            initial={{ opacity: 0, x: 30 }}
-                            whileInView={{ opacity: 1, x: 0 }}
+                            initial={{ opacity: 0, scale: 0.9, rotate: 5 }}
+                            whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
                             viewport={{ once: true }}
-                            className="w-full lg:w-96 shrink-0"
+                            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                            className="w-full lg:w-[450px] shrink-0 sticky top-32"
                         >
-                            <div className={`p-6 md:p-10 ${cardClass}`}>
-                                <div className={`aspect-square overflow-hidden bg-white/50 flex items-center justify-center border-2 border-white relative group ${isSharp ? 'rounded-none' : 'rounded-3xl'}`}>
-                                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                    <img src={wedding.gift_qr_image} alt="Payment QR Code" className="w-full h-full object-contain mix-blend-multiply" />
+                            <div className={`relative p-8 md:p-12 overflow-hidden ${cardClass}`}>
+                                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-30" />
+                                
+                                <div className={`aspect-square overflow-hidden bg-white/80 p-6 shadow-2xl relative z-10 ${
+                                    isSharp ? 'rounded-none' : 'rounded-[2rem]'
+                                }`}>
+                                    <div className="absolute inset-0 ring-1 ring-inset ring-black/5 pointer-events-none" />
+                                    <img 
+                                        src={wedding.gift_qr_image} 
+                                        alt="Payment QR Code" 
+                                        className="w-full h-full object-contain mix-blend-multiply opacity-80 group-hover:opacity-100 transition-opacity" 
+                                    />
+                                    {/* Glass reflection effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-transparent pointer-events-none" />
                                 </div>
-                                <p className="text-center mt-8 text-[10px] md:text-xs uppercase tracking-[0.2em] font-bold opacity-50">Scan to Send Gift</p>
+                                
+                                <div className="text-center mt-12 relative z-10">
+                                    <p className="text-[10px] uppercase tracking-[0.5em] font-black opacity-30 mb-2">Instant Transfer</p>
+                                    <p className="text-sm font-serif italic text-primary/60">Scan to gift digitally</p>
+                                    
+                                    <div className="flex justify-center gap-2 mt-8 opacity-20">
+                                        <div className="w-8 h-8 rounded-full border border-current" />
+                                        <div className="w-8 h-8 rounded-full border border-current" />
+                                        <div className="w-8 h-8 rounded-full border border-current" />
+                                    </div>
+                                </div>
+
+                                {/* Floating Decorative Element */}
+                                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-[60px] opacity-50" />
                             </div>
                         </motion.div>
                     )}
