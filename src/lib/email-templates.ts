@@ -259,3 +259,85 @@ export function getCoupleNotificationHtml(props: EmailTemplateProps) {
     </html>
     `;
 }
+
+/**
+ * Template: Reminder Email to Guest
+ */
+export function getGuestReminderHtml(props: EmailTemplateProps) {
+    const { 
+        guestName, brideName, groomName, weddingDate, weddingTime, 
+        venueName, venueAddress, mapsLink, weddingUrl, weddingTitle
+    } = props;
+    
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Wedding Reminder</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Georgia', serif; background-color: ${BG_COLOR}; color: ${TEXT_COLOR};">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 20px 40px rgba(209,108,120,0.1);">
+            <!-- Header Image -->
+            <tr>
+                <td align="center" style="padding: 48px 40px 24px; background-color: ${MAIN_COLOR}; color: #ffffff;">
+                    <div style="font-size: 56px; margin-bottom: 20px;">⌛</div>
+                    <h1 style="margin: 0; font-size: 28px; font-weight: normal; letter-spacing: 2px; text-transform: uppercase;">Counting Down!</h1>
+                </td>
+            </tr>
+
+            <!-- Content Body -->
+            <tr>
+                <td style="padding: 48px;">
+                    <h2 style="margin: 0 0 16px; font-size: 24px; font-weight: normal; text-align: center;">Hi ${guestName},</h2>
+                    <p style="margin: 0 0 32px; font-size: 18px; line-height: 1.6; text-align: center; color: ${SECONDARY_TEXT};">
+                        Just a sweet reminder that the big day is almost here! We can't wait to celebrate with you.
+                    </p>
+
+                    <div style="background-color: ${BG_COLOR}; border-radius: 24px; padding: 40px; text-align: center; border: 1px dashed ${MAIN_COLOR};">
+                        <p style="margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: ${MAIN_COLOR}; font-weight: bold;">Wedding of</p>
+                        <h3 style="margin: 8px 0 24px; font-size: 32px; font-weight: normal;">${brideName} & ${groomName}</h3>
+                        
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 24px;">
+                            <tr>
+                                <td style="padding-bottom: 24px;">
+                                    <p style="margin: 0; font-size: 14px; color: ${SECONDARY_TEXT};">When</p>
+                                    <p style="margin: 4px 0 0; font-size: 18px; font-weight: bold;">${weddingDate} ${weddingTime ? `@ ${weddingTime}` : ''}</p>
+                                </td>
+                            </tr>
+                            ${venueName ? `
+                            <tr>
+                                <td>
+                                    <p style="margin: 0; font-size: 14px; color: ${SECONDARY_TEXT};">Where</p>
+                                    <p style="margin: 4px 0 0; font-size: 18px; font-weight: bold;">${venueName}</p>
+                                    ${venueAddress ? `<p style="margin: 4px 0 0; font-size: 15px; color: ${SECONDARY_TEXT}; opacity: 0.8;">${venueAddress}</p>` : ''}
+                                </td>
+                            </tr>` : ''}
+                        </table>
+                    </div>
+                </td>
+            </tr>
+
+            <!-- CTA Button -->
+            <tr>
+                <td align="center" style="padding: 0 48px 64px;">
+                    <a href="${weddingUrl}" style="display: inline-block; padding: 20px 48px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 16px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 20px rgba(209,108,120,0.25);">
+                        View Wedding Details & Map
+                    </a>
+                </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+                <td align="center" style="padding: 32px 40px; background-color: #fafafa; border-top: 1px solid #eeeeee;">
+                    <p style="margin: 0; font-size: 12px; color: #bbbbbb; text-transform: uppercase; letter-spacing: 1px;">
+                        Sent automatically via QuickWeds
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    `;
+}

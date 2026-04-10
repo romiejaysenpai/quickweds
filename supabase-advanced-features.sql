@@ -1,7 +1,12 @@
 -- QuickWeds advanced feature support
 -- Run this in your Supabase SQL editor before using analytics, collaborators, reminders, and template presets.
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
+create extension if not exists "uuid-ossp" with schema extensions;
+
+-- Add missing columns to weddings table
+alter table public.weddings add column if not exists accent_style text default 'none';
+alter table public.weddings add column if not exists invitation_image text;
 
 create table if not exists public.wedding_analytics_events (
     id uuid primary key default gen_random_uuid(),
