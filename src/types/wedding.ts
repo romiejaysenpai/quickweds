@@ -24,6 +24,7 @@ export interface Wedding {
     rsvp_deadline: string;
     program_timeline?: string;
     invitation_image?: string; // Opt-in image
+    accent_style?: string; // Vector design accent style
     // Monogram / Logo
     logo_initials?: string;
     logo_shape?: 'circle' | 'square' | 'minimal';

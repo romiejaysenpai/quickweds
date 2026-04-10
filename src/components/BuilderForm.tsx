@@ -149,6 +149,7 @@ export default function BuilderForm() {
         isThankYouMode: false,
         thankYouMessage: '',
         photoAlbumLink: '',
+        accentStyle: 'none',
     });
 
     const [mediaFiles, setMediaFiles] = useState<{
@@ -156,12 +157,14 @@ export default function BuilderForm() {
         couplePhoto: File | null;
         teaserVideo: File | null;
         giftQr: File | null;
+        invitationImage: File | null;
         galleryImages: File[];
     }>({
         heroImage: null,
         couplePhoto: null,
         teaserVideo: null,
         giftQr: null,
+        invitationImage: null,
         galleryImages: [],
     });
 
@@ -169,10 +172,12 @@ export default function BuilderForm() {
         heroImage: string | null;
         couplePhoto: string | null;
         giftQr: string | null;
+        invitationImage: string | null;
     }>({
         heroImage: null,
         couplePhoto: null,
         giftQr: null,
+        invitationImage: null,
     });
 
     const [isPremium, setIsPremium] = useState(isAdmin);
@@ -234,11 +239,13 @@ export default function BuilderForm() {
                         isThankYouMode: data.is_thank_you_mode || false,
                         thankYouMessage: data.thank_you_message || '',
                         photoAlbumLink: data.photo_album_link || '',
+                        accentStyle: data.accent_style || 'none',
                     });
                     setPreviews({
                         heroImage: data.hero_image || null,
                         couplePhoto: data.couple_photo || null,
                         giftQr: data.gift_qr_image || null,
+                        invitationImage: data.invitation_image || null,
                     });
                 }
             };
@@ -351,7 +358,7 @@ export default function BuilderForm() {
 
             setMediaFiles((prev: any) => ({ ...prev, [field]: file }));
 
-            if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'teaserVideo') {
+            if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'teaserVideo' || field === 'invitationImage') {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     setPreviews((prev: any) => ({ ...prev, [field]: reader.result as string }));
@@ -406,13 +413,15 @@ export default function BuilderForm() {
             const heroPromise = mediaFiles.heroImage ? uploadToSupabase(mediaFiles.heroImage, 'hero') : Promise.resolve(null);
             const couplePromise = mediaFiles.couplePhoto ? uploadToSupabase(mediaFiles.couplePhoto, 'couple') : Promise.resolve(null);
             const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
+            const invitationPromise = mediaFiles.invitationImage ? uploadToSupabase(mediaFiles.invitationImage, 'invitation') : Promise.resolve(null);
             const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo, 'teaser') : Promise.resolve(null);
             const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToSupabase(file, `gallery-${i}`));
 
-            const [heroUrl, coupleUrl, giftQrUrl, videoUrl, galleryUrls] = await Promise.all([
+            const [heroUrl, coupleUrl, giftQrUrl, invitationUrl, videoUrl, galleryUrls] = await Promise.all([
                 heroPromise,
                 couplePromise,
                 giftQrPromise,
+                invitationPromise,
                 videoPromise,
                 Promise.all(galleryPromises)
             ]);
@@ -451,12 +460,14 @@ export default function BuilderForm() {
                 is_thank_you_mode: formData.isThankYouMode,
                 thank_you_message: formData.thankYouMessage,
                 photo_album_link: formData.photoAlbumLink,
+                accent_style: formData.accentStyle,
             };
 
             if (mediaFiles.heroImage || editId) payload.hero_image = heroUrl || previews.heroImage;
             if (mediaFiles.couplePhoto || editId) payload.couple_photo = coupleUrl || previews.couplePhoto;
             if (mediaFiles.teaserVideo || editId) payload.teaser_video = videoUrl || (formData as any).teaser_video; // Keep existing if edit
             if (mediaFiles.giftQr || editId) payload.gift_qr_image = giftQrUrl || previews.giftQr;
+            if (mediaFiles.invitationImage || editId) payload.invitation_image = invitationUrl || previews.invitationImage;
             if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
 
             if (editId) {
@@ -672,6 +683,28 @@ export default function BuilderForm() {
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Our Story</label>
                             <textarea name="story" value={formData.story} onChange={handleChange} placeholder="How we met..." className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none h-32 resize-none" />
                         </div>
+                        <div className="space-y-4 pt-8 border-t border-border">
+                            <div className="flex items-center gap-2 text-primary">
+                                <Sparkles className="w-4 h-4" />
+                                <h3 className="text-sm font-black uppercase tracking-widest text-text-secondary">Decorative Accents</h3>
+                            </div>
+                            <p className="text-xs text-text-secondary/60 ml-6 -mt-2 mb-4">Add elegant vector illustrations to the corners of your invitation.</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                {['none', 'eucalyptus', 'pampas', 'ribbon', 'monstera', 'sakura', 'gold-arch', 'sparkles', 'petals', 'dots'].map((style) => (
+                                    <button
+                                        key={style}
+                                        type="button"
+                                        onClick={() => setFormData((prev: any) => ({ ...prev, accentStyle: style }))}
+                                        className={`px-3 py-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${formData.accentStyle === style ? 'border-primary bg-primary/5 text-primary scale-105' : 'border-border bg-neutral hover:border-primary/50 text-text-secondary'}`}
+                                    >
+                                        <div className="w-8 h-8 flex items-center justify-center opacity-60">
+                                            {style === 'none' ? <X className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                                        </div>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">{style}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 );
             case 3:
@@ -813,6 +846,47 @@ export default function BuilderForm() {
                                 <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
                             </div>
                         </div>
+
+
+                        <div className="p-8 bg-black/5 rounded-[2.5rem] border-2 border-primary/10 space-y-6 mb-8 hover:bg-primary/5 transition-colors">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-primary shadow-lg shadow-primary/20 rounded-full flex items-center justify-center">
+                                    <Camera className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-serif font-bold text-foreground">Invitation Photo / Screenshot</h3>
+                                    <p className="text-[10px] uppercase tracking-widest text-text-secondary font-black opacity-50">Showcase your invitation card</p>
+                                </div>
+                            </div>
+                            
+                            <div className="relative h-72 rounded-3xl border-2 border-dashed border-primary/20 bg-white flex items-center justify-center overflow-hidden hover:border-primary transition-all group group hover:shadow-xl duration-500">
+                                {previews.invitationImage ? (
+                                    <div className="relative w-full h-full">
+                                        <img src={previews.invitationImage} className="w-full h-full object-contain p-6" />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => {
+                                                setMediaFiles(prev => ({ ...prev, invitationImage: null }));
+                                                setPreviews(prev => ({ ...prev, invitationImage: null }));
+                                            }} 
+                                            className="absolute top-6 right-6 w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center group-hover:scale-105 transition-transform duration-700">
+                                        <Camera className="w-12 h-12 text-primary/30 mx-auto mb-4" />
+                                        <span className="text-sm text-text-secondary font-bold uppercase tracking-widest block mb-1">Upload Invitation Media</span>
+                                        <p className="text-xs text-text-secondary/40 font-serif italic">This will appear beautifully on your wedding site</p>
+                                    </div>
+                                )}
+                                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'invitationImage')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                            </div>
+                        </div>
+
+                        </div>
+
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Gallery</label>

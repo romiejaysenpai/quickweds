@@ -216,6 +216,13 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             {/* Premium Dynamic Background Layer */}
             <PremiumBackgroundLayer wedding={wedding} />
 
+            {wedding.accent_style && wedding.accent_style !== 'none' && (
+                <>
+                    <DecorativeLayer type={wedding.accent_style} color={wedding.motif_color} position="top-right" className="fixed top-12 right-0 w-64 h-64 opacity-20 pointer-events-none z-50" />
+                    <DecorativeLayer type={wedding.accent_style} color={wedding.motif_color} position="bottom-left" className="fixed bottom-0 left-0 w-64 h-64 opacity-20 pointer-events-none z-30 rotate-180" />
+                </>
+            )}
+
             {/* Premium Global Hero Upgrades */}
             {!wedding.is_thank_you_mode && <HeroEnhancer wedding={wedding} />}
 
