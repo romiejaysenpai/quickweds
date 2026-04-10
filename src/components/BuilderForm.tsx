@@ -918,238 +918,238 @@ export default function BuilderForm() {
                             </div>
                             <p className="text-[10px] text-text-secondary ml-1">Embed a Spotify playlist for your guests to enjoy.</p>
                         </div>
-                    </div>
+                    </div >
                 );
             case 5:
-                return (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                        <div className="text-center mb-4">
-                            <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Dress Code</h2>
-                            <p className="text-text-secondary">Let your guests know what to wear.</p>
-                        </div>
-                        <div className="flex flex-col md:flex-row gap-8 items-center bg-white/50 p-6 rounded-[2rem] border border-border">
-                            <div className="flex-1 space-y-6 w-full">
-                                <div className="space-y-2">
-                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Attire Type</label>
-                                    <input name="dressCode" value={formData.dressCode} onChange={handleChange} placeholder="e.g. Formal, Black Tie, Casual" className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Attire Color Theme</label>
-                                    <div className="flex flex-wrap gap-4">
-                                        {['#000000', '#1A365D', '#276749', '#744210', '#E53E3E', '#805AD5', '#D6BCFA', '#FBD38D'].map((color) => (
-                                            <button key={color} type="button" onClick={() => setFormData((prev: any) => ({ ...prev, dressCodeColor: color }))} className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.dressCodeColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral shadow-sm'}`} style={{ backgroundColor: color }} />
-                                        ))}
-                                        <input type="color" name="dressCodeColor" value={formData.dressCodeColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer p-0" />
-                                    </div>
-                                    <p className="text-[10px] text-text-secondary ml-1 mt-2">Select a theme color for the vector art guests.</p>
-                                </div>
-                            </div>
-                            <div className="w-full md:w-1/2 flex justify-center items-center relative h-64 bg-neutral rounded-3xl overflow-hidden border-2 border-dashed border-border py-4">
-                                <VectorArtGuests color={formData.dressCodeColor} />
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 6:
-                return (
-                    <div className="space-y-6">
-                        <h3 className="text-lg font-serif font-bold text-primary mb-4 flex items-center gap-2"><Heart className="w-5 h-5" /> Gift Options</h3>
-
-                        {/* Basic Bank Details */}
-                        <div className="p-4 rounded-2xl border border-border bg-neutral/30 space-y-4">
-                            <h4 className="text-sm font-bold text-foreground">Direct Bank Transfer</h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Bank Name</label>
-                                    <input name="giftBank" value={formData.giftBank} onChange={handleChange} placeholder="GCash" className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Number</label>
-                                    <input name="giftAccountNumber" value={formData.giftAccountNumber} onChange={handleChange} placeholder="0917..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Name</label>
-                                <input name="giftAccountName" value={formData.giftAccountName} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Upload QR Code (Optional)</label>
-                                <div className="relative h-32 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-white hover:bg-neutral/50 transition-colors">
-                                    {previews.giftQr ? <img src={previews.giftQr} className="h-full object-contain" /> : <ImageIcon className="w-6 h-6 text-primary/40" />}
-                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'giftQr')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Registry Links */}
-                        <div className="space-y-3 pt-4 border-t border-border">
-                            <div className="flex justify-between items-center">
-                                <h4 className="text-sm font-bold text-foreground">Registry Links</h4>
-                                <button type="button" onClick={() => handleArrayAdd('registryLinks', { title: 'Amazon Registry', url: '' })} className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline uppercase tracking-widest">
-                                    <Plus className="w-3 h-3" /> Add Registry
-                                </button>
-                            </div>
-                            {formData.registryLinks?.map((link: any, i: number) => (
-                                <div key={i} className="flex gap-2">
-                                    <input placeholder="Store Name" value={link.title} onChange={(e) => handleArrayChange('registryLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                                    <div className="relative flex-1">
-                                        <LinkIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary/50" />
-                                        <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('registryLinks', i, 'url', e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                                    </div>
-                                    <button type="button" onClick={() => handleArrayRemove('registryLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Cash Funds */}
-                        <div className="space-y-3 pt-4 border-t border-border">
-                            <div className="flex justify-between items-center">
-                                <h4 className="text-sm font-bold text-foreground">Cash Funds (Honeymoon, House, etc.)</h4>
-                                <button type="button" onClick={() => handleArrayAdd('cashFunds', { title: 'Honeymoon Fund', description: 'Help us travel to Bali!', targetAmount: 5000, currency: '$' })} className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline uppercase tracking-widest">
-                                    <Plus className="w-3 h-3" /> Add Fund
-                                </button>
-                            </div>
-                            {formData.cashFunds?.map((fund: any, i: number) => (
-                                <div key={i} className="p-4 rounded-xl border border-border bg-neutral/50 space-y-3">
-                                    <div className="flex justify-between items-start gap-3">
-                                        <div className="flex-1 space-y-3">
-                                            <input placeholder="Fund Title" value={fund.title} onChange={(e) => handleArrayChange('cashFunds', i, 'title', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
-                                            <input placeholder="Short Description" value={fund.description} onChange={(e) => handleArrayChange('cashFunds', i, 'description', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="relative">
-                                                    <DollarSign className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary/50" />
-                                                    <input type="number" placeholder="Target Amount" value={fund.targetAmount} onChange={(e) => handleArrayChange('cashFunds', i, 'targetAmount', e.target.value)} className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
-                                                </div>
-                                                <input placeholder="Currency (e.g. $, PHP)" value={fund.currency} onChange={(e) => handleArrayChange('cashFunds', i, 'currency', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
-                                            </div>
-                                        </div>
-                                        <button type="button" onClick={() => handleArrayRemove('cashFunds', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Payment Links */}
-                        <div className="space-y-3 pt-4 border-t border-border">
-                            <div className="flex justify-between items-center">
-                                <h4 className="text-sm font-bold text-foreground">Payment Links (PayPal, Venmo)</h4>
-                                <button type="button" onClick={() => handleArrayAdd('paymentLinks', { title: 'PayPal', url: '' })} className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline uppercase tracking-widest">
-                                    <Plus className="w-3 h-3" /> Add Link
-                                </button>
-                            </div>
-                            {formData.paymentLinks?.map((link: any, i: number) => (
-                                <div key={i} className="flex gap-2">
-                                    <input placeholder="Service (e.g. Venmo)" value={link.title} onChange={(e) => handleArrayChange('paymentLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                                    <div className="relative flex-1">
-                                        <LinkIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary/50" />
-                                        <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('paymentLinks', i, 'url', e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                                    </div>
-                                    <button type="button" onClick={() => handleArrayRemove('paymentLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            case 7:
-                return (
-                    <div className="space-y-8">
-                        <div className="p-6 rounded-2xl border border-border bg-neutral/30 space-y-4">
-                            <div className="flex justify-between items-center mb-4">
-                                <div>
-                                    <h4 className="text-sm font-bold text-foreground">Post-Wedding Mode</h4>
-                                    <p className="text-[10px] text-text-secondary">Switch your site to a "Thank You" page after the wedding.</p>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" checked={formData.isThankYouMode} onChange={(e) => setFormData((prev: any) => ({ ...prev, isThankYouMode: e.target.checked }))} className="sr-only peer" />
-                                    <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                </label>
-                            </div>
-
-                            {formData.isThankYouMode && (
-                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 pt-4 border-t border-border">
-                                    <div className="space-y-2">
-                                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Thank You Message</label>
-                                        <textarea name="thankYouMessage" value={formData.thankYouMessage} onChange={handleChange} placeholder="Thank you so much for celebrating with us..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none h-24 resize-none" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Photo Album Link</label>
-                                        <input name="photoAlbumLink" value={formData.photoAlbumLink} onChange={handleChange} placeholder="https://photos.google.com/..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </div>
-
-                        <div className="space-y-6 pt-4 border-t border-border">
-                            <h4 className="text-sm font-bold text-foreground mx-1">RSVP Settings</h4>
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">RSVP Deadline</label>
-                                <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Contact Person</label>
-                                <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                            </div>
-                        </div>
-                    </div>
-                );
-            default:
-                return null;
-        }
-    };
-
     return (
-        <>
-            <AnimatePresence>
-                {isGenerating && <GenerationLoading />}
-            </AnimatePresence>
-
-            <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
-                <div className="w-full lg:w-3/5 bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-8 soft-shadow border border-primary/10 flex-shrink-0">
-                    <div className="flex justify-between items-center mb-8 sm:mb-12 gap-1 sm:gap-2 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-                        {STEPS.map((step, idx) => (
-                            <div key={step.id} className="flex flex-col items-center relative flex-1 min-w-max sm:min-w-0">
-                                <div className={`w-8 sm:w-10 h-8 sm:h-10 rounded-full flex items-center justify-center z-10 flex-shrink-0 text-xs sm:text-base ${idx === currentStep ? 'bg-primary text-white scale-105 sm:scale-110 shadow-lg' : idx < currentStep ? 'bg-secondary text-foreground' : 'bg-neutral text-text-secondary border border-border'}`}>
-                                    {idx < currentStep ? <CheckCircle2 className="w-4 sm:w-5 h-4 sm:h-5" /> : <step.icon className="w-4 sm:w-5 h-4 sm:h-5" />}
-                                </div>
-                                <span className={`text-[7px] sm:text-[9px] uppercase tracking-widest mt-2 sm:mt-3 font-bold text-center leading-tight ${idx === currentStep ? 'text-primary' : 'text-text-secondary'}`}>{step.title}</span>
-                                {idx < STEPS.length - 1 && <div className={`absolute top-4 sm:top-5 left-[60%] w-[80%] h-[2px] -z-0 hidden sm:block ${idx < currentStep ? 'bg-secondary' : 'bg-border'}`} />}
-                            </div>
-                        ))}
+        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="text-center mb-4">
+                <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Dress Code</h2>
+                <p className="text-text-secondary">Let your guests know what to wear.</p>
+            </div>
+            <div className="flex flex-col md:flex-row gap-8 items-center bg-white/50 p-6 rounded-[2rem] border border-border">
+                <div className="flex-1 space-y-6 w-full">
+                    <div className="space-y-2">
+                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Attire Type</label>
+                        <input name="dressCode" value={formData.dressCode} onChange={handleChange} placeholder="e.g. Formal, Black Tie, Casual" className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
                     </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-                        <AnimatePresence mode="wait">
-                            <motion.div key={currentStep} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="min-h-[300px]">
-                                {renderStep()}
-                            </motion.div>
-                        </AnimatePresence>
-
-                        {currentStep === 1 && (
-                            <MarketplacePanel
-                                presets={savedPresets}
-                                onApplyPreset={applyPreset}
-                                onDeletePreset={handleDeletePreset}
-                                onSaveCurrent={handleSaveCurrentPreset}
-                                onApplyBlock={applySectionBlock}
-                            />
-                        )}
-
-                        <div className="flex justify-between items-center pt-6 sm:pt-8 border-t border-border gap-2 sm:gap-4">
-                            <button type="button" onClick={prevStep} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2 rounded-lg sm:rounded-xl text-primary font-bold text-sm sm:text-base min-h-[44px] min-w-[44px] ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'hover:bg-neutral'}`}>
-                                <ArrowLeft className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Back</span>
-                            </button>
-                            <button type="submit" disabled={isSubmitting} className="bg-primary text-white px-6 sm:px-10 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold flex items-center gap-2 hover:bg-primary-hover shadow-lg disabled:opacity-50 text-sm sm:text-base min-h-[44px] transition-all flex-1 sm:flex-none justify-center sm:justify-start">
-                                {isSubmitting ? 'Processing...' : currentStep === STEPS.length - 1 ? <><span className="hidden sm:inline">{editId ? 'Update Invitation' : 'Create Invitation'}</span><span className="sm:hidden">Finish</span> <Send className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></> : <>Next <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></>}
-                            </button>
+                    <div className="space-y-2">
+                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Attire Color Theme</label>
+                        <div className="flex flex-wrap gap-4">
+                            {['#000000', '#1A365D', '#276749', '#744210', '#E53E3E', '#805AD5', '#D6BCFA', '#FBD38D'].map((color) => (
+                                <button key={color} type="button" onClick={() => setFormData((prev: any) => ({ ...prev, dressCodeColor: color }))} className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.dressCodeColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral shadow-sm'}`} style={{ backgroundColor: color }} />
+                            ))}
+                            <input type="color" name="dressCodeColor" value={formData.dressCodeColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer p-0" />
                         </div>
-                    </form>
+                        <p className="text-[10px] text-text-secondary ml-1 mt-2">Select a theme color for the vector art guests.</p>
+                    </div>
                 </div>
-
-                <div className="hidden lg:block w-full lg:w-2/5 sticky top-8">
-                    <LivePreview formData={formData} previews={previews} />
+                <div className="w-full md:w-1/2 flex justify-center items-center relative h-64 bg-neutral rounded-3xl overflow-hidden border-2 border-dashed border-border py-4">
+                    <VectorArtGuests color={formData.dressCodeColor} />
                 </div>
             </div>
-        </>
+        </div>
     );
+            case 6:
+    return (
+        <div className="space-y-6">
+            <h3 className="text-lg font-serif font-bold text-primary mb-4 flex items-center gap-2"><Heart className="w-5 h-5" /> Gift Options</h3>
+
+            {/* Basic Bank Details */}
+            <div className="p-4 rounded-2xl border border-border bg-neutral/30 space-y-4">
+                <h4 className="text-sm font-bold text-foreground">Direct Bank Transfer</h4>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Bank Name</label>
+                        <input name="giftBank" value={formData.giftBank} onChange={handleChange} placeholder="GCash" className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Number</label>
+                        <input name="giftAccountNumber" value={formData.giftAccountNumber} onChange={handleChange} placeholder="0917..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Name</label>
+                    <input name="giftAccountName" value={formData.giftAccountName} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Upload QR Code (Optional)</label>
+                    <div className="relative h-32 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-white hover:bg-neutral/50 transition-colors">
+                        {previews.giftQr ? <img src={previews.giftQr} className="h-full object-contain" /> : <ImageIcon className="w-6 h-6 text-primary/40" />}
+                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'giftQr')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Registry Links */}
+            <div className="space-y-3 pt-4 border-t border-border">
+                <div className="flex justify-between items-center">
+                    <h4 className="text-sm font-bold text-foreground">Registry Links</h4>
+                    <button type="button" onClick={() => handleArrayAdd('registryLinks', { title: 'Amazon Registry', url: '' })} className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline uppercase tracking-widest">
+                        <Plus className="w-3 h-3" /> Add Registry
+                    </button>
+                </div>
+                {formData.registryLinks?.map((link: any, i: number) => (
+                    <div key={i} className="flex gap-2">
+                        <input placeholder="Store Name" value={link.title} onChange={(e) => handleArrayChange('registryLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                        <div className="relative flex-1">
+                            <LinkIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary/50" />
+                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('registryLinks', i, 'url', e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                        </div>
+                        <button type="button" onClick={() => handleArrayRemove('registryLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                ))}
+            </div>
+
+            {/* Cash Funds */}
+            <div className="space-y-3 pt-4 border-t border-border">
+                <div className="flex justify-between items-center">
+                    <h4 className="text-sm font-bold text-foreground">Cash Funds (Honeymoon, House, etc.)</h4>
+                    <button type="button" onClick={() => handleArrayAdd('cashFunds', { title: 'Honeymoon Fund', description: 'Help us travel to Bali!', targetAmount: 5000, currency: '$' })} className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline uppercase tracking-widest">
+                        <Plus className="w-3 h-3" /> Add Fund
+                    </button>
+                </div>
+                {formData.cashFunds?.map((fund: any, i: number) => (
+                    <div key={i} className="p-4 rounded-xl border border-border bg-neutral/50 space-y-3">
+                        <div className="flex justify-between items-start gap-3">
+                            <div className="flex-1 space-y-3">
+                                <input placeholder="Fund Title" value={fund.title} onChange={(e) => handleArrayChange('cashFunds', i, 'title', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
+                                <input placeholder="Short Description" value={fund.description} onChange={(e) => handleArrayChange('cashFunds', i, 'description', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="relative">
+                                        <DollarSign className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary/50" />
+                                        <input type="number" placeholder="Target Amount" value={fund.targetAmount} onChange={(e) => handleArrayChange('cashFunds', i, 'targetAmount', e.target.value)} className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
+                                    </div>
+                                    <input placeholder="Currency (e.g. $, PHP)" value={fund.currency} onChange={(e) => handleArrayChange('cashFunds', i, 'currency', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
+                                </div>
+                            </div>
+                            <button type="button" onClick={() => handleArrayRemove('cashFunds', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Payment Links */}
+            <div className="space-y-3 pt-4 border-t border-border">
+                <div className="flex justify-between items-center">
+                    <h4 className="text-sm font-bold text-foreground">Payment Links (PayPal, Venmo)</h4>
+                    <button type="button" onClick={() => handleArrayAdd('paymentLinks', { title: 'PayPal', url: '' })} className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline uppercase tracking-widest">
+                        <Plus className="w-3 h-3" /> Add Link
+                    </button>
+                </div>
+                {formData.paymentLinks?.map((link: any, i: number) => (
+                    <div key={i} className="flex gap-2">
+                        <input placeholder="Service (e.g. Venmo)" value={link.title} onChange={(e) => handleArrayChange('paymentLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                        <div className="relative flex-1">
+                            <LinkIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary/50" />
+                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('paymentLinks', i, 'url', e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                        </div>
+                        <button type="button" onClick={() => handleArrayRemove('paymentLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+            case 7:
+    return (
+        <div className="space-y-8">
+            <div className="p-6 rounded-2xl border border-border bg-neutral/30 space-y-4">
+                <div className="flex justify-between items-center mb-4">
+                    <div>
+                        <h4 className="text-sm font-bold text-foreground">Post-Wedding Mode</h4>
+                        <p className="text-[10px] text-text-secondary">Switch your site to a "Thank You" page after the wedding.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={formData.isThankYouMode} onChange={(e) => setFormData((prev: any) => ({ ...prev, isThankYouMode: e.target.checked }))} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                </div>
+
+                {formData.isThankYouMode && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 pt-4 border-t border-border">
+                        <div className="space-y-2">
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Thank You Message</label>
+                            <textarea name="thankYouMessage" value={formData.thankYouMessage} onChange={handleChange} placeholder="Thank you so much for celebrating with us..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none h-24 resize-none" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Photo Album Link</label>
+                            <input name="photoAlbumLink" value={formData.photoAlbumLink} onChange={handleChange} placeholder="https://photos.google.com/..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
+                        </div>
+                    </motion.div>
+                )}
+            </div>
+
+            <div className="space-y-6 pt-4 border-t border-border">
+                <h4 className="text-sm font-bold text-foreground mx-1">RSVP Settings</h4>
+                <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">RSVP Deadline</label>
+                    <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Contact Person</label>
+                    <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                </div>
+            </div>
+        </div>
+    );
+            default:
+    return null;
+}
+    };
+
+return (
+    <>
+        <AnimatePresence>
+            {isGenerating && <GenerationLoading />}
+        </AnimatePresence>
+
+        <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
+            <div className="w-full lg:w-3/5 bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-8 soft-shadow border border-primary/10 flex-shrink-0">
+                <div className="flex justify-between items-center mb-8 sm:mb-12 gap-1 sm:gap-2 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+                    {STEPS.map((step, idx) => (
+                        <div key={step.id} className="flex flex-col items-center relative flex-1 min-w-max sm:min-w-0">
+                            <div className={`w-8 sm:w-10 h-8 sm:h-10 rounded-full flex items-center justify-center z-10 flex-shrink-0 text-xs sm:text-base ${idx === currentStep ? 'bg-primary text-white scale-105 sm:scale-110 shadow-lg' : idx < currentStep ? 'bg-secondary text-foreground' : 'bg-neutral text-text-secondary border border-border'}`}>
+                                {idx < currentStep ? <CheckCircle2 className="w-4 sm:w-5 h-4 sm:h-5" /> : <step.icon className="w-4 sm:w-5 h-4 sm:h-5" />}
+                            </div>
+                            <span className={`text-[7px] sm:text-[9px] uppercase tracking-widest mt-2 sm:mt-3 font-bold text-center leading-tight ${idx === currentStep ? 'text-primary' : 'text-text-secondary'}`}>{step.title}</span>
+                            {idx < STEPS.length - 1 && <div className={`absolute top-4 sm:top-5 left-[60%] w-[80%] h-[2px] -z-0 hidden sm:block ${idx < currentStep ? 'bg-secondary' : 'bg-border'}`} />}
+                        </div>
+                    ))}
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                    <AnimatePresence mode="wait">
+                        <motion.div key={currentStep} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="min-h-[300px]">
+                            {renderStep()}
+                        </motion.div>
+                    </AnimatePresence>
+
+                    {currentStep === 1 && (
+                        <MarketplacePanel
+                            presets={savedPresets}
+                            onApplyPreset={applyPreset}
+                            onDeletePreset={handleDeletePreset}
+                            onSaveCurrent={handleSaveCurrentPreset}
+                            onApplyBlock={applySectionBlock}
+                        />
+                    )}
+
+                    <div className="flex justify-between items-center pt-6 sm:pt-8 border-t border-border gap-2 sm:gap-4">
+                        <button type="button" onClick={prevStep} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2 rounded-lg sm:rounded-xl text-primary font-bold text-sm sm:text-base min-h-[44px] min-w-[44px] ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'hover:bg-neutral'}`}>
+                            <ArrowLeft className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Back</span>
+                        </button>
+                        <button type="submit" disabled={isSubmitting} className="bg-primary text-white px-6 sm:px-10 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold flex items-center gap-2 hover:bg-primary-hover shadow-lg disabled:opacity-50 text-sm sm:text-base min-h-[44px] transition-all flex-1 sm:flex-none justify-center sm:justify-start">
+                            {isSubmitting ? 'Processing...' : currentStep === STEPS.length - 1 ? <><span className="hidden sm:inline">{editId ? 'Update Invitation' : 'Create Invitation'}</span><span className="sm:hidden">Finish</span> <Send className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></> : <>Next <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></>}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div className="hidden lg:block w-full lg:w-2/5 sticky top-8">
+                <LivePreview formData={formData} previews={previews} />
+            </div>
+        </div>
+    </>
+);
 }
