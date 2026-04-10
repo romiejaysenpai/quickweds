@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send, CheckCircle2, Music, Users, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { trackWeddingEvent } from '@/lib/wedding-features';
 
 const DIETARY_OPTIONS = [
     'No Preference',
@@ -15,7 +16,10 @@ const DIETARY_OPTIONS = [
     'Other (see message)',
 ];
 
-export default function RSVPForm({ weddingId }: { weddingId: string }) {
+export default function RSVPForm({ weddingId, wedding }: { weddingId: string, wedding?: any }) {
+    const isSharp = wedding?.template === 'editorial' || wedding?.template === 'minimal' || wedding?.template === 'vogue';
+    const isDark = wedding?.template === 'midnight' || wedding?.template === 'royal' || wedding?.template === 'urban';
+    const isVintage = wedding?.template === 'vintage' || wedding?.template === 'film' || wedding?.template === 'rustic';
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [duplicateError, setDuplicateError] = useState(false);
@@ -62,6 +66,7 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
             const insertData: any = {
                 wedding_id: weddingId,
                 guest_name: formData.guestName.trim(),
+                guest_email: formData.guestEmail.trim() || null,
                 attendance: formData.attendance,
                 num_guests: formData.numGuests || 1,
             };
@@ -85,6 +90,10 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
 
             // Success!
             setIsSubmitted(true);
+            void trackWeddingEvent(weddingId, 'rsvp_submitted', {
+                source: 'rsvp_form',
+                attendance: formData.attendance,
+            });
             
             // Trigger email notification
             fetch('/api/rsvp-notify', {
@@ -137,8 +146,15 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
     }
 
     return (
-        <div className="p-8 md:p-12 rounded-[2rem] bg-white soft-shadow border border-border">
-            <h2 className="text-2xl font-serif font-bold text-primary mb-8 text-center italic">RSVP for our Special Day</h2>
+        <div className={`p-8 md:p-12 rounded-[2rem] soft-shadow border transition-colors ${
+            isDark ? 'bg-black/40 border-primary/20 text-white backdrop-blur-md' : 
+            isSharp ? 'bg-white border-black/5 rounded-none' :
+            isVintage ? 'bg-[#fdfbf6] border-[#d4c5b3] rounded-3xl' :
+            'bg-white border-border'
+        }`}>
+            <h2 className={`text-2xl font-serif font-bold mb-8 text-center italic ${isDark ? 'text-primary' : 'text-primary'}`}>
+                RSVP for our Special Day
+            </h2>
 
             {duplicateError && (
                 <div className="mb-6 p-4 rounded-2xl bg-error-bg border border-error-text/20 flex items-center gap-3">
@@ -166,7 +182,12 @@ export default function RSVPForm({ weddingId }: { weddingId: string }) {
                             placeholder="Enter your full name"
                             value={formData.guestName}
                             onChange={(e) => setFormData(prev => ({ ...prev, guestName: e.target.value }))}
-                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
+                            className={`w-full px-6 py-4 rounded-2xl border focus:border-primary outline-none transition-all placeholder:text-text-secondary/30 ${
+                                isDark ? 'bg-white/5 border-white/10 text-white' :
+                                isSharp ? 'bg-neutral/30 border-black/5 rounded-none' :
+                                isVintage ? 'bg-white/50 border-[#d4c5b3] italic' :
+                                'bg-neutral border-border text-foreground'
+                            }`}
                         />
                     </div>
                     <div className="space-y-2">

@@ -72,29 +72,15 @@ function Lightbox({ images, index, onClose }: { images: string[]; index: number;
     );
 }
 
-export default function GallerySection({ gallery, masonry = false, wedding }: GallerySectionProps) {
+export default function GallerySection({ gallery, masonry = false }: GallerySectionProps) {
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
     if (!gallery || gallery.length === 0) return null;
 
-    const template = wedding?.template || 'classic';
-    const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
-    const isDark = ['midnight', 'cinematic', 'royal', 'urban', 'glitch', 'film', 'artdeco'].includes(template);
-    const textColor = isDark ? 'text-white' : 'text-[#4A4444]';
-    
-    // Determine the border and corner rounding for images
-    const imageStyle = isSharp 
-        ? "rounded-none border-0 shadow-none hover:shadow-2xl grayscale hover:grayscale-0 p-0" 
-        : template === 'film' || template === 'vintage'
-        ? "rounded-lg border-[10px] border-[#f4f1e1] shadow-xl p-0 sepia-[0.3]"
-        : "rounded-2xl sm:rounded-[2.5rem] soft-shadow bg-white/40 backdrop-blur-sm p-2 sm:p-3 border border-primary/20";
-        
-    const innerImageClass = isSharp ? "rounded-none" : "rounded-xl sm:rounded-[2rem]";
-
     return (
         <>
-            <section className="py-24 sm:py-32 relative z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <section className="py-24 sm:py-32">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -102,23 +88,22 @@ export default function GallerySection({ gallery, masonry = false, wedding }: Ga
                         className="text-center mb-12 sm:mb-20"
                     >
                         <span className="text-xs uppercase tracking-[0.3em] font-bold text-primary mb-4 block">Moments Captured</span>
-                        <h2 className={`text-4xl sm:text-5xl md:text-6xl font-serif ${textColor}`}>Our Gallery</h2>
+                        <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif text-[#4A4444]">Our Gallery</h2>
                     </motion.div>
-                    
-                    <div className={masonry || isSharp ? "columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                         {gallery.map((img: string, i: number) => (
                             <motion.div
                                 key={i}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: i * 0.05, duration: 0.5 }}
-                                className={`overflow-hidden group cursor-pointer break-inside-avoid ${imageStyle} ${!masonry && !isSharp ? 'aspect-[4/5]' : ''}`}
+                                initial={{ opacity: 0, y: 50 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1, duration: 0.5 }}
+                                className="aspect-[4/5] rounded-2xl sm:rounded-[2.5rem] overflow-hidden soft-shadow bg-white p-2 sm:p-3 border border-primary/5 group cursor-pointer"
                                 onClick={() => setLightboxIndex(i)}
                             >
-                                <div className={`w-full h-full overflow-hidden relative ${innerImageClass}`}>
+                                <div className="w-full h-full rounded-[2rem] overflow-hidden relative">
                                     <img src={img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                        <span className="text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest bg-black/40 px-4 py-2 rounded-full backdrop-blur-md">View</span>
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                        <span className="text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">View</span>
                                     </div>
                                 </div>
                             </motion.div>

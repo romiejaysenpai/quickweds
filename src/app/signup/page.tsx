@@ -38,6 +38,20 @@ export default function SignUpPage() {
         }
     };
 
+    const handleSocialLogin = async (provider: 'google' | 'apple') => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo: `${window.location.origin}/dashboard`
+                }
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message || `Failed to sign up with ${provider}`);
+        }
+    };
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-neutral px-6">
             <div className="noise-overlay" />
@@ -113,6 +127,36 @@ export default function SignUpPage() {
                     >
                         {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Sign Up <ArrowRight className="w-5 h-5" /></>}
                     </button>
+
+                    <div className="relative py-4">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-border"></div>
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white px-4 text-text-secondary font-bold tracking-widest">Or continue with</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            type="button"
+                            onClick={() => handleSocialLogin('google')}
+                            className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-border hover:bg-neutral transition-all font-bold text-sm"
+                        >
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+                            Google
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleSocialLogin('apple')}
+                            className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-black text-white hover:bg-gray-800 transition-all font-bold text-sm"
+                        >
+                            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                <path d="M17.05 20.28c-.96.95-2.05 1.72-3.17 1.72-1.21 0-1.63-.73-3.08-.73-1.47 0-1.94.71-3.08.73-1.08 0-2.31-.89-3.23-1.83C2.59 18.25 1 15.11 1 12.18c0-4.63 3.01-7.07 5.95-7.07 1.56 0 3.04.98 4.02.98.96 0 2.76-1.16 4.67-1.16 2.01 0 3.51.74 4.54 2.22-4.14 2-.96 7.42 2.62 9 a8.5 8.5 0 0 1-1.75 4.13zM12.03 5.09c.04-2.36 1.96-4.22 4.21-4.22.25 0 .5.03.73.08a4.1 4.1 0 0 1-4.94 4.14z"/>
+                            </svg>
+                            Apple
+                        </button>
+                    </div>
                 </form>
 
                 <p className="mt-8 text-center text-text-secondary">

@@ -5,37 +5,164 @@ import { Clock } from 'lucide-react';
 
 interface TimelineSectionProps {
     timeline: string;
+    wedding?: any;
 }
 
-export default function TimelineSection({ timeline }: TimelineSectionProps) {
+interface TimelineItem {
+    time: string;
+    event: string;
+}
+
+/**
+ * Parses a free-text program timeline into structured {time, event} pairs.
+ * Supports formats like:
+ *   "2:00 PM - Guest Arrival"
+ *   "14:00 Ceremony begins"
+ *   "3pm | Reception"
+ *   Plain lines with no time are rendered as-is in the event column.
+ */
+function parseTimeline(raw: string): TimelineItem[] {
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    return lines.map(line => {
+        // Pattern: optional time prefix + delimiter + event name
+        const match = line.match(
+            /^(\d{1,2}(?::\d{2})?(?:\s?[apAP][mM])?)\s*[-–|:•]\s*(.+)$/
+        );
+        if (match) {
+            return { time: match[1].trim(), event: match[2].trim() };
+        }
+        // No time detected — treat full line as event with empty time
+        return { time: '', event: line };
+    });
+}
+
+export default function TimelineSection({ timeline, wedding }: TimelineSectionProps) {
     if (!timeline) return null;
+
+    const items = parseTimeline(timeline);
+    const hasAnyTime = items.some(i => i.time !== '');
+
+    const template = wedding?.template || 'classic';
+    const isSharp = ['editorial', 'urban', 'minimal', 'vogue', 'glitch', 'film'].includes(template);
+    const isDark = ['royal', 'midnight', 'cinematic'].includes(template);
+    const isVintage = ['vintage', 'rustic', 'boho', 'artdeco'].includes(template);
+
+    const containerClass = isSharp
+        ? 'border border-black/10 bg-white p-8 md:p-14'
+        : isDark
+            ? 'bg-white/5 backdrop-blur-xl border border-white/10 p-8 md:p-14'
+            : isVintage
+                ? 'bg-white/70 backdrop-blur-md border border-primary/20 p-8 md:p-14 rounded-[2rem] md:rounded-[4rem]'
+                : 'relative bg-white/40 backdrop-blur-3xl border border-white/50 p-4 sm:p-8 md:p-16 rounded-2xl sm:rounded-[2rem] md:rounded-[4rem] shadow-2xl shadow-primary/5';
+
+    const dotClass = isDark
+        ? 'border-2 border-primary bg-[#121212]'
+        : 'border-2 border-primary bg-white';
+
     return (
         <section className="py-16 sm:py-24 md:py-32 relative z-10 overflow-hidden">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 relative">
-                <motion.div 
+                {/* Section header */}
+                <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
                     className="text-center mb-8 sm:mb-12 md:mb-16"
                 >
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto bg-white/60 backdrop-blur-xl border border-white/50 rounded-2xl sm:rounded-[2rem] flex items-center justify-center mb-4 sm:mb-6 shadow-[0_0_50px_rgba(var(--primary),0.1)] rotate-3 min-h-[44px] min-w-[44px]">
-                        <Clock className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-primary" />
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto flex items-center justify-center mb-4 sm:mb-6 min-h-[44px] min-w-[44px] ${isSharp ? 'border border-black/10 bg-white' : isDark ? 'border border-white/20 bg-white/10 backdrop-blur-xl' : 'bg-white/60 backdrop-blur-xl border border-white/50 rounded-2xl shadow-primary/10 rotate-3'}`}>
+                        <Clock className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-primary' : 'text-primary'}`} />
                     </div>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif text-[#4A4444] drop-shadow-sm">The Program</h2>
+                    <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif drop-shadow-sm ${isDark ? 'text-primary/80' : 'text-[#4A4444]'}`}>
+                        The Program
+                    </h2>
+                    {isVintage && (
+                        <div className="flex items-center justify-center gap-3 mt-4 opacity-40">
+                            <div className="h-px w-16 bg-primary" />
+                            <span className="text-primary text-xs tracking-widest uppercase">✦</span>
+                            <div className="h-px w-16 bg-primary" />
+                        </div>
+                    )}
                 </motion.div>
 
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
+                {/* Timeline body */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.97 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true, amount: 0.2 }}
-                    transition={{ duration: 0.8, type: 'spring' }}
-                    className="relative bg-white/40 backdrop-blur-3xl border border-white/50 p-4 sm:p-8 md:p-16 rounded-2xl sm:rounded-[2rem] md:rounded-[4rem] shadow-2xl shadow-primary/5"
+                    transition={{ duration: 0.7, type: 'spring' }}
+                    className={containerClass}
                 >
-                    <div className="absolute top-10 bottom-10 left-4 sm:left-6 md:left-8 lg:left-12 w-[3px] bg-gradient-to-b from-primary/0 via-primary/30 to-primary/0" />
-                    
-                    <p className="whitespace-pre-wrap font-serif text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed md:leading-loose text-[#4A4444]/90 relative z-10 pl-6 sm:pl-8 md:pl-12">
-                        {timeline}
-                    </p>
+                    {/* Fallback: if no parseable items, render raw text elegantly */}
+                    {!hasAnyTime && items.length > 0 ? (
+                        <div className="space-y-4">
+                            {items.map((item, idx) => (
+                                <motion.div
+                                    key={idx}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: idx * 0.05 }}
+                                    className={`flex items-start gap-4 py-4 border-b last:border-0 ${isDark ? 'border-white/5' : 'border-primary/10'}`}
+                                >
+                                    <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 bg-primary`} />
+                                    <p className={`font-serif text-base sm:text-lg leading-relaxed ${isDark ? 'text-primary/70' : 'text-[#4A4444]/90'}`}>
+                                        {item.event}
+                                    </p>
+                                </motion.div>
+                            ))}
+                        </div>
+                    ) : (
+                        /* Structured timeline with time + vertical line + event */
+                        <div className="relative">
+                            {/* Vertical timeline spine */}
+                            <div
+                                className="absolute top-4 bottom-4 w-px bg-gradient-to-b from-primary/0 via-primary/30 to-primary/0"
+                                style={{ left: hasAnyTime ? '7rem' : '1.5rem' }}
+                            />
+
+                            <div className="space-y-0">
+                                {items.map((item, idx) => (
+                                    <motion.div
+                                        key={idx}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: idx * 0.06 }}
+                                        className={`flex items-start gap-0 group py-5 border-b last:border-0 ${isDark ? 'border-white/5' : 'border-primary/8'}`}
+                                    >
+                                        {/* Time column */}
+                                        {hasAnyTime && (
+                                            <div className="w-28 flex-shrink-0 pr-4 text-right">
+                                                {item.time && (
+                                                    <span
+                                                        className="text-xs font-black uppercase tracking-widest"
+                                                        style={{ color: 'var(--primary)' }}
+                                                    >
+                                                        {item.time}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Dot */}
+                                        <div className="relative flex-shrink-0" style={{ width: '1.5rem' }}>
+                                            <div
+                                                className={`w-3 h-3 rounded-full mt-1.5 mx-auto transition-transform group-hover:scale-125 ${dotClass}`}
+                                                style={{ borderColor: 'var(--primary)' }}
+                                            />
+                                        </div>
+
+                                        {/* Event */}
+                                        <div className="flex-1 pl-4">
+                                            <p className={`font-serif text-base sm:text-lg leading-relaxed ${isDark ? 'text-primary/80' : 'text-[#4A4444]/90'}`}>
+                                                {item.event}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </motion.div>
             </div>
         </section>

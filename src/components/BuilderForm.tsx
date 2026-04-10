@@ -11,6 +11,15 @@ import GenerationLoading from './GenerationLoading';
 import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
+import MarketplacePanel from './builder/MarketplacePanel';
+import {
+    SECTION_BLOCK_LIBRARY,
+    buildPresetPayload,
+    deleteTemplatePreset,
+    listTemplatePresets,
+    saveTemplatePreset,
+    type WeddingTemplatePreset,
+} from '@/lib/wedding-features';
 
 const STEPS = [
     { id: 'details', title: 'Details', icon: Heart },
@@ -116,7 +125,6 @@ export default function BuilderForm() {
         motifColor: '#C08081',
         fontStyle: 'Elegant',
         backgroundStyle: 'gradient',
-        accentStyle: 'none',
         template: 'classic',
         dressCode: '',
         dressCodeColor: '#000000',
@@ -148,14 +156,12 @@ export default function BuilderForm() {
         couplePhoto: File | null;
         teaserVideo: File | null;
         giftQr: File | null;
-        invitationImage: File | null;
         galleryImages: File[];
     }>({
         heroImage: null,
         couplePhoto: null,
         teaserVideo: null,
         giftQr: null,
-        invitationImage: null,
         galleryImages: [],
     });
 
@@ -163,15 +169,14 @@ export default function BuilderForm() {
         heroImage: string | null;
         couplePhoto: string | null;
         giftQr: string | null;
-        invitationImage: string | null;
     }>({
         heroImage: null,
         couplePhoto: null,
         giftQr: null,
-        invitationImage: null,
     });
 
     const [isPremium, setIsPremium] = useState(isAdmin);
+    const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -204,8 +209,7 @@ export default function BuilderForm() {
                         mapsLink: data.maps_link || '',
                         motifColor: data.motif_color || '#C08081',
                         fontStyle: data.font_style || 'Elegant',
-                        backgroundStyle: data.background_style ? data.background_style.split('||')[0] : 'gradient',
-                        accentStyle: data.background_style && data.background_style.includes('||') ? data.background_style.split('||')[1] : 'none',
+                        backgroundStyle: data.background_style || 'gradient',
                         template: data.template || 'classic',
                         dressCode: data.dress_code ? data.dress_code.split('||')[0] : '',
                         dressCodeColor: data.dress_code && data.dress_code.includes('||') ? data.dress_code.split('||')[1] : (data.motif_color || '#000000'),
@@ -235,13 +239,22 @@ export default function BuilderForm() {
                         heroImage: data.hero_image || null,
                         couplePhoto: data.couple_photo || null,
                         giftQr: data.gift_qr_image || null,
-                        invitationImage: data.invitation_image || null,
                     });
                 }
             };
             fetchWedding();
         }
     }, [user, authLoading, router, editId]);
+
+    useEffect(() => {
+        const loadPresets = async () => {
+            if (!user) return;
+            const presets = await listTemplatePresets(user.id);
+            setSavedPresets(presets);
+        };
+
+        void loadPresets();
+    }, [user]);
 
     const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
     const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
@@ -263,6 +276,53 @@ export default function BuilderForm() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData((prev: any) => ({ ...prev, [name]: value }));
+    };
+
+    const applyPreset = (preset: Record<string, any>) => {
+        setFormData((prev: any) => ({
+            ...prev,
+            ...preset,
+        }));
+    };
+
+    const applySectionBlock = (blockId: string) => {
+        const block = SECTION_BLOCK_LIBRARY.find((entry) => entry.id === blockId);
+        if (!block) return;
+
+        const partial = block.apply(formData);
+        setFormData((prev: any) => ({
+            ...prev,
+            ...partial,
+        }));
+    };
+
+    const handleSaveCurrentPreset = async () => {
+        if (!user) return;
+
+        const name = window.prompt('Preset name');
+        if (!name?.trim()) return;
+
+        try {
+            const preset = await saveTemplatePreset({
+                userId: user.id,
+                name: name.trim(),
+                templateId: formData.template,
+                description: `${formData.template} preset saved from builder`,
+                presetData: buildPresetPayload(formData),
+            });
+            setSavedPresets((prev) => [preset, ...prev]);
+        } catch (error: any) {
+            alert(error.message || 'Failed to save preset');
+        }
+    };
+
+    const handleDeletePreset = async (presetId: string) => {
+        try {
+            await deleteTemplatePreset(presetId);
+            setSavedPresets((prev) => prev.filter((preset) => preset.id !== presetId));
+        } catch (error: any) {
+            alert(error.message || 'Failed to delete preset');
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
@@ -291,7 +351,7 @@ export default function BuilderForm() {
 
             setMediaFiles((prev: any) => ({ ...prev, [field]: file }));
 
-            if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'invitationImage' || field === 'teaserVideo') {
+            if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'teaserVideo') {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     setPreviews((prev: any) => ({ ...prev, [field]: reader.result as string }));
@@ -346,15 +406,13 @@ export default function BuilderForm() {
             const heroPromise = mediaFiles.heroImage ? uploadToSupabase(mediaFiles.heroImage, 'hero') : Promise.resolve(null);
             const couplePromise = mediaFiles.couplePhoto ? uploadToSupabase(mediaFiles.couplePhoto, 'couple') : Promise.resolve(null);
             const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
-            const invitationPromise = mediaFiles.invitationImage ? uploadToSupabase(mediaFiles.invitationImage, 'invitation') : Promise.resolve(null);
             const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo, 'teaser') : Promise.resolve(null);
             const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToSupabase(file, `gallery-${i}`));
 
-            const [heroUrl, coupleUrl, giftQrUrl, invitationUrl, videoUrl, galleryUrls] = await Promise.all([
+            const [heroUrl, coupleUrl, giftQrUrl, videoUrl, galleryUrls] = await Promise.all([
                 heroPromise,
                 couplePromise,
                 giftQrPromise,
-                invitationPromise,
                 videoPromise,
                 Promise.all(galleryPromises)
             ]);
@@ -369,7 +427,7 @@ export default function BuilderForm() {
                 maps_link: formData.mapsLink,
                 motif_color: formData.motifColor,
                 font_style: formData.fontStyle,
-                background_style: `${formData.backgroundStyle}||${formData.accentStyle || 'none'}`,
+                background_style: formData.backgroundStyle,
                 template: formData.template,
                 dress_code: formData.dressCode ? `${formData.dressCode}||${formData.dressCodeColor}` : '',
                 program_timeline: formData.programTimeline,
@@ -399,7 +457,6 @@ export default function BuilderForm() {
             if (mediaFiles.couplePhoto || editId) payload.couple_photo = coupleUrl || previews.couplePhoto;
             if (mediaFiles.teaserVideo || editId) payload.teaser_video = videoUrl || (formData as any).teaser_video; // Keep existing if edit
             if (mediaFiles.giftQr || editId) payload.gift_qr_image = giftQrUrl || previews.giftQr;
-            if (mediaFiles.invitationImage || editId) payload.invitation_image = invitationUrl || previews.invitationImage;
             if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
 
             if (editId) {
@@ -568,79 +625,6 @@ export default function BuilderForm() {
                                 <input type="color" name="motifColor" value={formData.motifColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer" />
                             </div>
                         </div>
-
-                        <div className="space-y-4">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Background Texture</label>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-                                {[
-                                    { id: 'white', name: 'Clean White', color: '#FFFFFF', icon: '⚪' },
-                                    { id: 'cream', name: 'Soft Cream', color: '#FFF8F4', icon: '🍦' },
-                                    { id: 'satin', name: 'Silk Satin', color: '#FDF5E6', icon: '📜' },
-                                    { id: 'paper', name: 'Art Paper', color: '#F4F1EA', icon: '📝' },
-                                    { id: 'minimal', name: 'Minimalist', color: '#F9F9F9', icon: '☁️' },
-                                    { id: 'rose', name: 'Blush Tint', color: '#FFF5F5', icon: '🌸' },
-                                    { id: 'linen', name: 'Linen', color: '#FAF9F6', icon: '🧵' }
-                                ].map((bg, index) => {
-                                    const isLocked = !isPremium && index > 2;
-                                    return (
-                                        <button
-                                            key={bg.id}
-                                            type="button"
-                                            onClick={() => !isLocked && setFormData((prev: any) => ({ ...prev, backgroundStyle: bg.id }))}
-                                            className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 text-center relative ${
-                                                isLocked ? 'border-border bg-neutral/50 opacity-60 cursor-not-allowed' :
-                                                formData.backgroundStyle === bg.id ? 'border-primary bg-primary/5' :
-                                                'border-border bg-white hover:border-primary/30'
-                                            }`}
-                                        >
-                                            <div className="w-8 h-8 rounded-full border shadow-inner mb-1" style={{ backgroundColor: bg.color }} />
-                                            <p className="text-[10px] font-bold leading-tight">{bg.name}</p>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Design Accents</label>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                {[
-                                    { id: 'none', name: 'None', icon: '✨' },
-                                    { id: 'eucalyptus', name: 'Eucalyptus', icon: '🌿' },
-                                    { id: 'pampas', name: 'Pampas', icon: '🌾' },
-                                    { id: 'ribbon', name: 'Silk Ribbon', icon: '🎀' },
-                                    { id: 'monstera', name: 'Monstera', icon: '🍃' },
-                                    { id: 'sakura', name: 'Blossom', icon: '🌸' },
-                                    { id: 'gold-arch', name: 'Gold Arch', icon: '⛩️' },
-                                    { id: 'sparkles', name: 'Magic Dust', icon: '✨' },
-                                    { id: 'petals', name: 'Falling Petals', icon: '🍂' },
-                                    { id: 'dots', name: 'Confetti', icon: '🎊' }
-                                ].map((accent, index) => {
-                                    const isLocked = !isPremium && index > 2;
-                                    return (
-                                        <button
-                                            key={accent.id}
-                                            type="button"
-                                            onClick={() => !isLocked && setFormData((prev: any) => ({ ...prev, accentStyle: accent.id }))}
-                                            className={`p-3 sm:p-4 rounded-lg sm:rounded-2xl border-2 transition-all flex flex-col items-center gap-1 text-center relative ${
-                                                isLocked ? 'border-border bg-neutral/50 opacity-60 cursor-not-allowed' :
-                                                formData.accentStyle === accent.id ? 'border-primary bg-primary/5' :
-                                                'border-border bg-white hover:border-primary/30'
-                                            }`}
-                                        >
-                                            {isLocked && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-lg sm:rounded-2xl backdrop-blur-[1px]">
-                                                    <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 text-primary" />
-                                                </div>
-                                            )}
-                                            <span className={`text-2xl sm:text-3xl mb-1 ${isLocked ? 'grayscale' : ''}`}>{accent.icon}</span>
-                                            <p className="text-[10px] sm:text-xs font-bold leading-tight">{accent.name}</p>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
                         <div className="space-y-4">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Typography & Fonts</label>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -810,38 +794,23 @@ export default function BuilderForm() {
                                 </div>
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Teaser Video (Optional)</label>
-                                <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
-                                    {mediaFiles.teaserVideo ? (
-                                        <div className="text-center p-4">
-                                            <Video className="w-8 h-8 text-primary mx-auto mb-2" />
-                                            <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
-                                            <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center group-hover:scale-105 transition-transform">
-                                            <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                            <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
-                                            {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
-                                        </div>
-                                    )}
-                                    <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Printed Invitation (Optional)</label>
-                                <div className="relative h-48 rounded-2xl border-2 border-dashed border-border bg-neutral flex flex-col items-center justify-center overflow-hidden hover:bg-neutral/80 transition-colors cursor-pointer group">
-                                    {previews.invitationImage ? <img src={previews.invitationImage} className="w-full h-full object-contain" /> : (
-                                        <div className="text-center p-4 group-hover:scale-105 transition-transform">
-                                            <ImageIcon className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                            <span className="text-sm text-text-secondary font-medium">Upload Card Image</span>
-                                            <p className="text-[10px] text-primary mt-1 font-bold italic">Display your physical invite</p>
-                                        </div>
-                                    )}
-                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'invitationImage')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                </div>
+                        <div className="space-y-2">
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Teaser Video (Optional)</label>
+                            <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
+                                {mediaFiles.teaserVideo ? (
+                                    <div className="text-center p-4">
+                                        <Video className="w-8 h-8 text-primary mx-auto mb-2" />
+                                        <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
+                                        <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center group-hover:scale-105 transition-transform">
+                                        <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
+                                        <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
+                                        {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
+                                    </div>
+                                )}
+                                <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -1081,6 +1050,16 @@ export default function BuilderForm() {
                                 {renderStep()}
                             </motion.div>
                         </AnimatePresence>
+
+                        {currentStep === 1 && (
+                            <MarketplacePanel
+                                presets={savedPresets}
+                                onApplyPreset={applyPreset}
+                                onDeletePreset={handleDeletePreset}
+                                onSaveCurrent={handleSaveCurrentPreset}
+                                onApplyBlock={applySectionBlock}
+                            />
+                        )}
 
                         <div className="flex justify-between items-center pt-6 sm:pt-8 border-t border-border gap-2 sm:gap-4">
                             <button type="button" onClick={prevStep} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2 rounded-lg sm:rounded-xl text-primary font-bold text-sm sm:text-base min-h-[44px] min-w-[44px] ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'hover:bg-neutral'}`}>

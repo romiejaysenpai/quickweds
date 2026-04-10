@@ -1,16 +1,23 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, Globe, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, Globe, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState, use, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { getWeddingCollaboratorAccess, trackWeddingEvent } from '@/lib/wedding-features';
+import AnalyticsPanel from '@/components/dashboard/AnalyticsPanel';
+import CollaboratorsPanel from '@/components/dashboard/CollaboratorsPanel';
 
 export default function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
     const created = searchParams?.get('created');
 
     const [wedding, setWedding] = useState<any>(null);
@@ -18,6 +25,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [vendors, setVendors] = useState<any[]>([]);
     const [budgets, setBudgets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [accessRole, setAccessRole] = useState<'owner' | 'partner' | 'coordinator' | 'pending' | 'denied'>('denied');
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'confirmed' | 'declined' | 'pending'>('all');
     const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
@@ -29,12 +37,36 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [domainLoading, setDomainLoading] = useState(false);
 
     useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/login');
+            return;
+        }
+
+        if (!user) return;
+
         const fetchData = async () => {
             try {
                 const { data: weddingData, error: weddingError } = await supabase
                     .from('weddings').select('*').eq('id', id).single();
 
                 if (weddingError || !weddingData) { setLoading(false); return; }
+                if (weddingData.user_id === user.id) {
+                    setAccessRole('owner');
+                } else {
+                    const collaboratorAccess = await getWeddingCollaboratorAccess(id, user.email);
+                    if (!collaboratorAccess) {
+                        setAccessRole('denied');
+                        setLoading(false);
+                        return;
+                    }
+
+                    setAccessRole(collaboratorAccess.status === 'accepted' ? collaboratorAccess.role : 'pending');
+                    if (collaboratorAccess.status !== 'accepted') {
+                        setLoading(false);
+                        return;
+                    }
+                }
+
                 setWedding(weddingData);
 
                 const { data: rsvpsData } = await supabase
@@ -51,7 +83,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             } catch (err) { console.error(err); } finally { setLoading(false); }
         };
         fetchData();
-    }, [id]);
+    }, [id, user, authLoading, router]);
 
     const checkDomainStatus = async (domain: string) => {
         try {
@@ -214,11 +246,24 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     // Copy & Share
     const domain = wedding?.custom_domain ? `https://${wedding.custom_domain}` : (process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app');
     const url = wedding?.custom_domain ? domain : (wedding ? `${domain}/w/${wedding.id}` : '');
+    const qrTrackingUrl = `${url}${url.includes('?') ? '&' : '?'}src=qr`;
+    const canManageWorkspace = accessRole === 'owner' || accessRole === 'partner';
 
     const copyLink = () => {
         navigator.clipboard.writeText(url);
+        void trackWeddingEvent(id, 'share_copy', { source: 'dashboard' });
         setCopyToast(true);
         setTimeout(() => setCopyToast(false), 2000);
+    };
+
+    const handleShareWhatsApp = () => {
+        void trackWeddingEvent(id, 'share_whatsapp', { source: 'dashboard' });
+        window.open(`https://wa.me/?text=${encodeURIComponent(`You're invited to our wedding! ðŸ’\n${url}`)}`);
+    };
+
+    const handleShareEmail = () => {
+        void trackWeddingEvent(id, 'share_email', { source: 'dashboard' });
+        window.open(`mailto:?subject=${encodeURIComponent(`You're Invited!`)}&body=${encodeURIComponent(`We'd love for you to join us!\n\n${url}`)}`);
     };
 
     const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`You're invited to our wedding! 💍\n${url}`)}`);
@@ -226,6 +271,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center bg-neutral/30"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
+    }
+    if (accessRole === 'pending') {
+        return <div className="min-h-screen bg-neutral flex items-center justify-center px-6"><div className="max-w-xl w-full bg-white rounded-[2rem] border border-border soft-shadow p-8 text-center space-y-4"><ShieldCheck className="w-12 h-12 text-primary mx-auto" /><h1 className="text-2xl font-serif font-bold text-foreground">Invitation Pending</h1><p className="text-text-secondary">This workspace has been shared with you. Accept the invite from the dashboard home screen first.</p><Link href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all min-h-[44px]">Back to Dashboard <ArrowRight className="w-4 h-4" /></Link></div></div>;
+    }
+    if (accessRole === 'denied') {
+        return <div className="min-h-screen bg-neutral flex items-center justify-center px-6"><div className="max-w-xl w-full bg-white rounded-[2rem] border border-border soft-shadow p-8 text-center space-y-4"><ShieldCheck className="w-12 h-12 text-red-400 mx-auto" /><h1 className="text-2xl font-serif font-bold text-foreground">Access Restricted</h1><p className="text-text-secondary">You do not currently have access to this wedding workspace.</p><Link href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all min-h-[44px]">Back to Dashboard <ArrowRight className="w-4 h-4" /></Link></div></div>;
     }
     if (!wedding) {
         return <div className="p-20 text-center">Wedding not found.</div>;
@@ -252,9 +303,11 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain hover:scale-105 transition-transform" />
                     </Link>
                     <div className="flex gap-2 sm:gap-3">
-                        <Link href={`/builder?edit=${wedding.id}`} className="flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl bg-primary text-white text-xs sm:text-sm font-bold shadow-lg shadow-primary/10 hover:bg-primary-hover transition-all min-h-[44px] whitespace-nowrap">
-                            Edit Design
-                        </Link>
+                        {canManageWorkspace && (
+                            <Link href={`/builder?edit=${wedding.id}`} className="flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl bg-primary text-white text-xs sm:text-sm font-bold shadow-lg shadow-primary/10 hover:bg-primary-hover transition-all min-h-[44px] whitespace-nowrap">
+                                Edit Design
+                            </Link>
+                        )}
                         <Link href={`/dashboard/${wedding.id}/planner`} className="flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl bg-secondary text-white text-xs sm:text-sm font-bold shadow-lg shadow-secondary/10 hover:opacity-90 transition-all min-h-[44px]">
                             <ListTodo className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Planner</span>
                         </Link>
@@ -535,7 +588,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-bold mb-3 sm:mb-4">Share Invitation</h3>
                             <p className="text-white/70 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-4 break-all font-mono text-[10px] sm:text-xs">{url}</p>
                             <div className="bg-white p-3 sm:p-6 rounded-lg sm:rounded-2xl flex justify-center mb-4 sm:mb-6 shadow-inner">
-                                <QRCodeSVG value={url} size={120} fgColor="#D16C78" className="sm:w-[180px] w-[120px]" />
+                                <QRCodeSVG value={qrTrackingUrl} size={120} fgColor="#D16C78" className="sm:w-[180px] w-[120px]" />
                             </div>
 
                             <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -543,22 +596,41 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
                                     <span className="text-[8px] sm:text-[10px] font-bold">{copyToast ? 'Copied!' : 'Copy'}</span>
                                 </button>
-                                <button onClick={shareWhatsApp} className="flex flex-col items-center gap-1 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 transition-colors min-h-[44px]">
+                                <button onClick={handleShareWhatsApp} className="flex flex-col items-center gap-1 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 transition-colors min-h-[44px]">
                                     <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                                     <span className="text-[8px] sm:text-[10px] font-bold">WhatsApp</span>
                                 </button>
-                                <button onClick={shareEmail} className="flex flex-col items-center gap-1 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 transition-colors min-h-[44px]">
+                                <button onClick={handleShareEmail} className="flex flex-col items-center gap-1 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 transition-colors min-h-[44px]">
                                     <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
                                     <span className="text-[8px] sm:text-[10px] font-bold">Email</span>
                                 </button>
                             </div>
                         </div>
 
+                        <AnalyticsPanel
+                            weddingId={id}
+                            rsvpCount={stats.total}
+                            pendingGuestCount={stats.pending}
+                        />
+
+                        <CollaboratorsPanel
+                            weddingId={id}
+                            currentUserId={user?.id}
+                            currentUserEmail={user?.email}
+                            canManage={canManageWorkspace}
+                        />
+
                         {/* Custom Domain Settings */}
                         <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow">
                             <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-3 sm:pb-4 flex items-center gap-2">
                                 <Globe className="w-5 h-5 text-primary flex-shrink-0" /> Custom Domain
                             </h3>
+
+                            {!canManageWorkspace && (
+                                <div className="mb-4 p-3 rounded-xl bg-neutral/50 border border-border text-sm text-text-secondary">
+                                    Custom domain controls are available to the wedding owner or partner role.
+                                </div>
+                            )}
 
                             {!wedding.custom_domain ? (
                                 <div className="space-y-3 sm:space-y-4">
@@ -568,11 +640,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             placeholder="yourdomain.com"
                                             value={domainInput}
                                             onChange={(e) => setDomainInput(e.target.value)}
+                                            disabled={!canManageWorkspace}
                                             className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border focus:border-primary outline-none text-xs sm:text-sm bg-neutral min-h-[44px]"
                                         />
                                         <button
                                             onClick={handleAddDomain}
-                                            disabled={domainLoading || !domainInput}
+                                            disabled={domainLoading || !domainInput || !canManageWorkspace}
                                             className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-primary text-white font-bold text-xs sm:text-sm hover:bg-primary-hover transition-colors disabled:opacity-50 min-h-[44px]"
                                         >
                                             {domainLoading ? 'Adding...' : 'Connect'}
@@ -592,7 +665,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                 )}
                                             </p>
                                         </div>
-                                        <button onClick={handleRemoveDomain} disabled={domainLoading} className="text-xs font-bold px-3 py-2 sm:py-1 text-red-500 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] sm:h-auto whitespace-nowrap">
+                                        <button onClick={handleRemoveDomain} disabled={domainLoading || !canManageWorkspace} className="text-xs font-bold px-3 py-2 sm:py-1 text-red-500 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] sm:h-auto whitespace-nowrap disabled:opacity-50">
                                             {domainLoading ? 'Removing...' : 'Disconnect'}
                                         </button>
                                     </div>

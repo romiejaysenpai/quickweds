@@ -24,6 +24,7 @@ import {
     PremiumBackgroundLayer,
 } from '@/components/wedding';
 import type { Wedding, WeddingPartyMember } from '@/types/wedding';
+import { trackWeddingEvent } from '@/lib/wedding-features';
 
 export default function WeddingPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -53,6 +54,24 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             }
         };
         fetchData();
+    }, [id]);
+
+    useEffect(() => {
+        if (!id || typeof window === 'undefined') return;
+
+        const visitKey = `quickweds_visit_${id}`;
+        if (window.sessionStorage.getItem(visitKey)) return;
+
+        window.sessionStorage.setItem(visitKey, '1');
+
+        const params = new URLSearchParams(window.location.search);
+        const source = params.get('src') || 'direct';
+        const eventType = source === 'qr' ? 'qr_scan' : 'visit';
+
+        void trackWeddingEvent(id, 'visit', { source });
+        if (eventType === 'qr_scan') {
+            void trackWeddingEvent(id, 'qr_scan', { source });
+        }
     }, [id]);
 
     if (loading) return (
@@ -184,44 +203,16 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
 
     const fontVars = getFontVariables(wedding.font_style);
 
-    const getBgColor = (bgStyle: string | null) => {
-        if (!bgStyle) return '#FFF8F4';
-        const texture = bgStyle.split('||')[0];
-        const bgMap: Record<string, string> = {
-            'white': '#FFFFFF', 'cream': '#FFF8F4', 'satin': '#FDF5E6', 
-            'paper': '#F4F1EA', 'minimal': '#F9F9F9', 'rose': '#FFF5F5', 'linen': '#FAF9F6'
-        };
-        return bgMap[texture] || '#FFF8F4';
-    };
-
     return (
         <div
             className={`min-h-screen relative selection:bg-primary/20 template-${template} overflow-x-hidden`}
             style={{
                 '--primary': wedding.motif_color,
-                backgroundColor: getBgColor(wedding.background_style),
+                backgroundColor: '#FFF8F4',
                 ...fontVars
             } as any}
         >
             <div className="noise-overlay" />
-            <div className={`texture-overlay texture-${wedding.background_style ? wedding.background_style.split('||')[0] : 'white'}`} />
-            
-            {/* Premium Signature Design Accents */}
-            {wedding.background_style && wedding.background_style.includes('||') && wedding.background_style.split('||')[1] !== 'none' && (
-                <>
-                    {/* Primary Corner Accents */}
-                    <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="top-right" className="absolute z-30 pointer-events-none w-48 md:w-80 opacity-40 mix-blend-multiply" />
-                    <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="bottom-left" className="absolute z-30 pointer-events-none w-56 md:w-96 opacity-40 mix-blend-multiply" />
-                    
-                    {/* Middle Page Floating Elements (Subtle) */}
-                    <div className="absolute top-[25%] left-0 w-full h-[50%] pointer-events-none overflow-hidden -z-10">
-                         <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="center" className="absolute top-1/4 -left-20 w-32 md:w-64 opacity-20 blur-sm" />
-                         <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="center" className="absolute top-1/2 -right-20 w-40 md:w-72 opacity-25 blur-[2px]" />
-                         <DecorativeLayer type={wedding.background_style.split('||')[1]} color={wedding.motif_color || '#C08081'} position="center" className="absolute top-3/4 left-10 w-24 md:w-48 opacity-15" />
-                    </div>
-                </>
-            )}
-
             {/* Premium Dynamic Background Layer */}
             <PremiumBackgroundLayer wedding={wedding} />
 
@@ -292,7 +283,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
 
 function EditorialTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="bg-transparent pb-24">
+        <div className="bg-white pb-24">
             <section className="min-h-screen py-12 lg:py-0 grid grid-cols-1 lg:grid-cols-12 gap-0 relative overflow-hidden">
                 <div className="col-span-1 hidden lg:flex border-r border-black/5 flex-col items-center justify-between py-12 h-full uppercase text-[10px] font-black tracking-[1.5em] opacity-30">
                     <p className="rotate-90 whitespace-nowrap">EXT. {new Date(wedding.wedding_date).getFullYear()}</p>
@@ -349,7 +340,7 @@ function EditorialTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -417,7 +408,7 @@ function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-                <GallerySection gallery={gallery} wedding={wedding} />
+                <GallerySection gallery={gallery} />
                 <GiftSection wedding={wedding} invert />
                 <SharedNewSections wedding={wedding} isExpired={isExpired} />
             </div>
@@ -427,7 +418,7 @@ function RoyalTemplate({ wedding, gallery, isExpired }: any) {
 
 function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="bg-transparent text-[#e3a6c1] relative overflow-hidden pb-24">
+        <div className="bg-[#fff9fc] text-[#e3a6c1] relative overflow-hidden pb-24">
             {/* Animated Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
                 {[...Array(30)].map((_, i) => (
@@ -501,7 +492,7 @@ function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -592,7 +583,7 @@ function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -601,7 +592,7 @@ function UrbanTemplate({ wedding, gallery, isExpired }: any) {
 
 function TropicalTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="bg-transparent text-[#00695c] relative pb-24">
+        <div className="bg-[#e0f2f1] text-[#00695c] relative pb-24">
             {/* Sun Glow Overlay - Responsive sizing */}
             <div className="fixed top-0 right-0 w-40 sm:w-56 md:w-72 lg:w-96 h-40 sm:h-56 md:h-72 lg:h-96 bg-yellow-100/30 rounded-full blur-[80px] sm:blur-[100px] md:blur-[120px] pointer-events-none -z-0" />
 
@@ -671,7 +662,7 @@ function TropicalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -718,7 +709,7 @@ function MidnightTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -726,7 +717,7 @@ function MidnightTemplate({ wedding, gallery, isExpired }: any) {
 }
 function SakuraTemplate({ wedding, gallery, isExpired }: any) {
     return (
-        <div className="bg-transparent text-[#8e405a] relative">
+        <div className="bg-[#fff0f5] text-[#8e405a] relative">
             <div className="fixed inset-0 pointer-events-none opacity-30" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30c-2-2-5-2-7 0-.5.5-.5 1.5 0 2 2 2 5 2 7 0 .5-.5.5-1.5 0-2zm5 5c-2-2-5-2-7 0-.5.5-.5 1.5 0 2 2 2 5 2 7 0 .5-.5.5-1.5 0-2z' fill='%23ffb7c5' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")` }} />
 
             <section className="min-h-screen py-16 sm:py-20 md:py-24 lg:py-24 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative overflow-hidden">
@@ -770,7 +761,7 @@ function SakuraTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -840,7 +831,7 @@ function VogueTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} masonry />
+            <GallerySection gallery={gallery} masonry />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -902,7 +893,7 @@ function RusticTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -956,7 +947,7 @@ function FilmTemplate({ wedding, gallery, isExpired }: any) {
             )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} invert />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1013,7 +1004,7 @@ function GlitchTemplate({ wedding, gallery, isExpired }: any) {
             )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} invert />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1075,7 +1066,7 @@ function GardenTemplate({ wedding, gallery, isExpired }: any) {
             )}
             <TimelineSection timeline={wedding.program_timeline} />
             <GiftSection wedding={wedding} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
     );
@@ -1175,7 +1166,7 @@ function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1219,7 +1210,7 @@ function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1260,7 +1251,7 @@ function ElopementTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1306,7 +1297,7 @@ function TraditionalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1349,7 +1340,7 @@ function BohoTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1390,7 +1381,7 @@ function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1431,7 +1422,7 @@ function VintageTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1471,7 +1462,7 @@ function MinimalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1513,7 +1504,7 @@ function ClassicTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </>
@@ -1545,7 +1536,7 @@ function TimelineTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1580,7 +1571,7 @@ function RSVPFocusTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1618,7 +1609,7 @@ function CinematicTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
@@ -1649,7 +1640,7 @@ function EleganceTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} wedding={wedding} />
+            <GallerySection gallery={gallery} />
             <GiftSection wedding={wedding} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>

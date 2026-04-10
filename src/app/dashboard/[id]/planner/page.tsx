@@ -6,12 +6,16 @@ import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDash
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { getWeddingCollaboratorAccess } from '@/lib/wedding-features';
 
 export default function PlannerPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: weddingId } = use(params);
     const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
     const [activeTab, setActiveTab] = useState<'checklist' | 'budget' | 'vendors'>('checklist');
     const [loading, setLoading] = useState(true);
+    const [accessRole, setAccessRole] = useState<'owner' | 'partner' | 'coordinator' | 'pending' | 'denied'>('denied');
 
     // Data States
     const [wedding, setWedding] = useState<any>(null);
@@ -20,12 +24,44 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const [vendors, setVendors] = useState<any[]>([]);
 
     useEffect(() => {
-        loadPlannerData();
-    }, [weddingId]);
+        if (!authLoading && !user) {
+            router.push('/login');
+            return;
+        }
+
+        if (user) {
+            void loadPlannerData();
+        }
+    }, [weddingId, user, authLoading, router]);
 
     const loadPlannerData = async () => {
         setLoading(true);
         try {
+            const { data: accessWedding, error: accessWeddingError } = await supabase
+                .from('weddings')
+                .select('id, user_id, total_budget, currency')
+                .eq('id', weddingId)
+                .single();
+
+            if (accessWeddingError || !accessWedding) {
+                setAccessRole('denied');
+                return;
+            }
+
+            if (accessWedding.user_id === user?.id) {
+                setAccessRole('owner');
+            } else {
+                const collaborator = await getWeddingCollaboratorAccess(weddingId, user?.email);
+                if (!collaborator) {
+                    setAccessRole('denied');
+                    return;
+                }
+                setAccessRole(collaborator.status === 'accepted' ? collaborator.role : 'pending');
+                if (collaborator.status !== 'accepted') {
+                    return;
+                }
+            }
+
             const [tasksRes, budgetsRes, weddingRes, vendorsRes] = await Promise.all([
                 supabase.from('planner_tasks').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
                 supabase.from('planner_budgets').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
@@ -58,6 +94,26 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
         return <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
             <Loader2 className="w-12 h-12 text-primary animate-spin" />
         </div>;
+    }
+
+    if (accessRole === 'pending' || accessRole === 'denied') {
+        return (
+            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-6">
+                <div className="max-w-xl w-full bg-white rounded-[2rem] border border-border p-8 text-center soft-shadow space-y-4">
+                    <h1 className="text-2xl font-serif font-bold text-foreground">
+                        {accessRole === 'pending' ? 'Planner Invite Pending' : 'Planner Access Restricted'}
+                    </h1>
+                    <p className="text-text-secondary">
+                        {accessRole === 'pending'
+                            ? 'Accept the wedding workspace invite from your dashboard home screen to use the planner.'
+                            : 'You do not currently have access to this wedding planner.'}
+                    </p>
+                    <Link href="/dashboard" className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-primary text-white font-bold min-h-[44px]">
+                        Back to Dashboard
+                    </Link>
+                </div>
+            </div>
+        );
     }
 
     return (
