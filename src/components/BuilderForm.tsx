@@ -470,18 +470,17 @@ export default function BuilderForm() {
             if (mediaFiles.invitationImage || editId) payload.invitation_image = invitationUrl || previews.invitationImage;
             if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
 
-            if (editId) {
-                const { error: updateError } = await supabase
-                    .from('weddings')
-                    .update(payload)
-                    .eq('id', editId);
-                if (updateError) throw updateError;
-            } else {
-                const { error: insertError } = await supabase
-                    .from('weddings')
-                    .insert({ ...payload, id: weddingId, user_id: user.id });
-                if (insertError) throw insertError;
-            }
+            // Using UPSERT (Update + Insert) for maximum reliability
+            // This prevents "Resource already exists" errors when re-editing and RLS issues on inserts
+            const { error: submitError } = await supabase
+                .from('weddings')
+                .upsert({ 
+                    ...payload, 
+                    id: weddingId, 
+                    user_id: user.id 
+                }, { onConflict: 'id' });
+
+            if (submitError) throw submitError;
 
             // Success
             router.push(`/dashboard/${weddingId}?created=true`);
