@@ -1,3 +1,4 @@
+// Forced Redeploy Trigger: 2026-04-11T03:23:00+09:00
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { sendEmail } from '@/lib/email';
 import { getGuestReminderHtml } from '@/lib/email-templates';
