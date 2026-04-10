@@ -398,7 +398,7 @@ export default function BuilderForm() {
 
                 const { error: uploadError } = await supabase.storage
                     .from('quickweds')
-                    .upload(filePath, file);
+                    .upload(filePath, file, { upsert: true });
 
                 if (uploadError) throw uploadError;
 
