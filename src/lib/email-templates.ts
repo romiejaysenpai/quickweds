@@ -341,3 +341,94 @@ export function getGuestReminderHtml(props: EmailTemplateProps) {
     </html>
     `;
 }
+
+/**
+ * Template: Welcome Email to New User
+ */
+export function getWelcomeEmailHtml(userName: string) {
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Welcome to QuickWeds</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FFF8F4; color: #3A2A2D;">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 20px 40px rgba(209,108,120,0.1);">
+            <!-- Header Image -->
+            <tr>
+                <td align="center" style="padding: 64px 40px; background-color: #D16C78; color: #ffffff;">
+                    <div style="font-size: 64px; margin-bottom: 24px;">✨</div>
+                    <h1 style="margin: 0; font-size: 32px; font-weight: normal; letter-spacing: 1px;">Welcome to QuickWeds!</h1>
+                </td>
+            </tr>
+
+            <!-- Content Body -->
+            <tr>
+                <td style="padding: 48px;">
+                    <h2 style="margin: 0 0 16px; font-size: 24px; font-weight: normal;">Hi ${userName},</h2>
+                    <p style="margin: 0 0 32px; font-size: 18px; line-height: 1.6; color: #7A5A61;">
+                        We're so honored to be part of your wedding journey! QuickWeds was built to make your invitations as beautiful as your love story—without the stress.
+                    </p>
+
+                    <h3 style="margin: 40px 0 24px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; color: #D16C78; border-bottom: 1px solid #FFF8F4; padding-bottom: 12px;">
+                        Getting Started in 4 Simple Steps
+                    </h3>
+
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 40px;">
+                        <tr>
+                            <td width="48" valign="top" style="padding-top: 4px;"><div style="width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; background-color: #FFF8F4; color: #D16C78; font-weight: bold;">1</div></td>
+                            <td style="padding-bottom: 24px;">
+                                <p style="margin: 0; font-size: 16px; font-weight: bold;">Pick Your Vibe</p>
+                                <p style="margin: 4px 0 0; font-size: 14px; color: #7A5A61;">Browse our premium templates—from Vintage to Modern—to match your wedding theme.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="48" valign="top" style="padding-top: 4px;"><div style="width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; background-color: #FFF8F4; color: #D16C78; font-weight: bold;">2</div></td>
+                            <td style="padding-bottom: 24px;">
+                                <p style="margin: 0; font-size: 16px; font-weight: bold;">Tell Your Story</p>
+                                <p style="margin: 4px 0 0; font-size: 14px; color: #7A5A61;">Fill in your details, venue location, and that special date everyone should save.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="48" valign="top" style="padding-top: 4px;"><div style="width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; background-color: #FFF8F4; color: #D16C78; font-weight: bold;">3</div></td>
+                            <td style="padding-bottom: 24px;">
+                                <p style="margin: 0; font-size: 16px; font-weight: bold;">Add the Magic</p>
+                                <p style="margin: 4px 0 0; font-size: 14px; color: #7A5A61;">Upload your photos and choose custom vector accents to make it truly yours.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="48" valign="top" style="padding-top: 4px;"><div style="width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; background-color: #FFF8F4; color: #D16C78; font-weight: bold;">4</div></td>
+                            <td>
+                                <p style="margin: 0; font-size: 16px; font-weight: bold;">Go Live</p>
+                                <p style="margin: 4px 0 0; font-size: 14px; color: #7A5A61;">Preview your page, hit publish, and share your unique wedding link with your guests!</p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <!-- CTA Button -->
+            <tr>
+                <td align="center" style="padding: 0 48px 64px;">
+                    <a href="https://quickweds.site/builder" style="display: inline-block; padding: 20px 48px; background-color: #D16C78; color: #ffffff; text-decoration: none; border-radius: 16px; font-weight: bold; font-size: 18px; box-shadow: 0 10px 20px rgba(209,108,120,0.25);">
+                        Start Building Now
+                    </a>
+                </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+                <td align="center" style="padding: 32px 40px; background-color: #fafafa; border-top: 1px solid #eeeeee;">
+                    <p style="margin: 0; font-size: 13px; color: #7A5A61;">
+                        With love from the <strong style="color: #D16C78;">QuickWeds</strong> Team
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    `;
+}
+

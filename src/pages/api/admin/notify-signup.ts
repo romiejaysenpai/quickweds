@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { sendEmail } from '@/lib/email';
+import { getWelcomeEmailHtml } from '@/lib/email-templates';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // 1. Security Check: Only allow POST requests
@@ -20,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // 3. Send Notification to Admin
-    const result = await sendEmail({
+    const adminEmailPromise = sendEmail({
       to: adminEmail,
       subject: `✨ New Signup on QuickWeds! (${userEmail})`,
       html: `
@@ -40,17 +41,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             <p style="margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #7A5A61;">Signup Time</p>
             <p style="margin: 0; font-size: 16px; color: #3A2A2D;">${signupDate}</p>
           </div>
-          <p style="font-size: 14px; color: #999; text-align: center; margin-top: 40px;">
-            This is an automated notification from your QuickWeds Admin System.
-          </p>
         </div>
       `
     });
 
-    if (result.success) {
-      return res.status(200).json({ success: true, message: 'Admin notified' });
+    // 4. Send Welcome Email to the User
+    const userWelcomePromise = sendEmail({
+      to: userEmail,
+      subject: `Welcome to QuickWeds, ${userName}! ✨`,
+      html: getWelcomeEmailHtml(userName)
+    });
+
+    // Run both emails in parallel for speed
+    const [adminResult, userResult] = await Promise.all([adminEmailPromise, userWelcomePromise]);
+
+    if (adminResult.success && userResult.success) {
+      return res.status(200).json({ success: true, message: 'All notifications sent successfully' });
     } else {
-      return res.status(500).json({ success: false, error: result.error });
+      return res.status(207).json({ 
+        success: false, 
+        admin: adminResult.success, 
+        user: userResult.success,
+        error: 'One or more emails failed to send' 
+      });
     }
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
