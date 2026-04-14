@@ -33,16 +33,25 @@ export default function LoginPage() {
     };
 
     const handleSocialLogin = async (provider: 'google' | 'apple') => {
+        setLoading(true);
+        setError('');
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: `${window.location.origin}/dashboard`
+                    redirectTo: `${window.location.origin}/dashboard`,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'select_account',
+                    },
                 }
             });
             if (error) throw error;
         } catch (err: any) {
-            setError(err.message || `Failed to sign in with ${provider}`);
+            console.error(`${provider} Login Error:`, err);
+            setError(`Failed to sign in with ${provider}. Please try again.`);
+        } finally {
+            setLoading(false);
         }
     };
 
