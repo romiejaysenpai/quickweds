@@ -9,6 +9,15 @@ const SECONDARY_TEXT = '#7A5A61';
 const BG_COLOR = '#FFF8F4';
 const ACCENT_COLOR = '#4A4444';
 
+function escapeHtml(input: string) {
+    return input
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
 interface EmailTemplateProps {
     guestName: string;
     guestEmail?: string;
@@ -25,7 +34,7 @@ interface EmailTemplateProps {
     message?: string;
     dietaryDetails?: string;
     songRequest?: string;
-    plusOneNames?: string;
+    plusOneNames?: string | string[];
     childrenCount?: number;
     dashboardUrl?: string;
     weddingTitle?: string;
@@ -35,11 +44,11 @@ interface EmailTemplateProps {
  * Template: RSVP Confirmation to Guest
  */
 export function getGuestConfirmationHtml(props: EmailTemplateProps) {
-    const { 
-        guestName, brideName, groomName, weddingDate, weddingTime, 
-        venueName, venueAddress, mapsLink, weddingUrl, attendance, numGuests 
+    const {
+        guestName, brideName, groomName, weddingDate, weddingTime,
+        venueName, venueAddress, mapsLink, weddingUrl, attendance, numGuests
     } = props;
-    
+
     const isAttending = attendance === 'Yes';
 
     return `
@@ -73,9 +82,9 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
                             Hi <strong>${guestName}</strong>,
                         </p>
                         <p style="margin: 0 0 24px; font-size: 17px; line-height: 1.6;">
-                            ${isAttending 
-                                ? `Thank you for RSVPing! We've saved a spot for <strong>${numGuests} guest(s)</strong>. We can't wait to celebrate this special day with you.` 
-                                : `Thank you for letting us know. We're sorry you can't make it, but we'll be thinking of you as we celebrate!`}
+                            ${isAttending
+            ? `Thank you for RSVPing! We've saved a spot for <strong>${numGuests} guest(s)</strong>. We can't wait to celebrate this special day with you.`
+            : `Thank you for letting us know. We're sorry you can't make it, but we'll be thinking of you as we celebrate!`}
                         </p>
 
                         ${isAttending ? `
@@ -141,11 +150,11 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
  * Template: RSVP Notification to Couple
  */
 export function getCoupleNotificationHtml(props: EmailTemplateProps) {
-    const { 
-        guestName, guestEmail, attendance, numGuests, message, 
-        dietaryDetails, songRequest, plusOneNames, childrenCount, weddingUrl 
+    const {
+        guestName, guestEmail, attendance, numGuests, message,
+        dietaryDetails, songRequest, plusOneNames, childrenCount, weddingUrl
     } = props;
-    
+
     const isAttending = attendance === 'Yes';
 
     return `
@@ -204,7 +213,7 @@ export function getCoupleNotificationHtml(props: EmailTemplateProps) {
                             ${plusOneNames ? `
                             <tr>
                                 <td width="130" style="color: ${SECONDARY_TEXT};">Plus Ones</td>
-                                <td style="font-weight: bold;">${plusOneNames}</td>
+                                <td style="font-weight: bold;">${Array.isArray(plusOneNames) ? plusOneNames.join(', ') : plusOneNames}</td>
                             </tr>` : ''}
 
                             ${childrenCount ? `
@@ -264,11 +273,11 @@ export function getCoupleNotificationHtml(props: EmailTemplateProps) {
  * Template: Reminder Email to Guest
  */
 export function getGuestReminderHtml(props: EmailTemplateProps) {
-    const { 
-        guestName, brideName, groomName, weddingDate, weddingTime, 
+    const {
+        guestName, brideName, groomName, weddingDate, weddingTime,
         venueName, venueAddress, mapsLink, weddingUrl, weddingTitle
     } = props;
-    
+
     return `
     <!DOCTYPE html>
     <html lang="en">
@@ -424,6 +433,58 @@ export function getWelcomeEmailHtml(userName: string) {
                     <p style="margin: 0; font-size: 13px; color: #7A5A61;">
                         With love from the <strong style="color: #D16C78;">QuickWeds</strong> Team
                     </p>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    `;
+}
+
+export function getThankYouNoteHtml(input: {
+    recipientName: string;
+    brideName: string;
+    groomName: string;
+    weddingDate?: string;
+    personalizedMessage?: string;
+}) {
+    const { recipientName, brideName, groomName, weddingDate, personalizedMessage } = input;
+    const safeRecipientName = escapeHtml(recipientName || 'Guest');
+    const safeBrideName = escapeHtml(brideName || 'Bride');
+    const safeGroomName = escapeHtml(groomName || 'Groom');
+    const safeWeddingDate = weddingDate ? escapeHtml(weddingDate) : '';
+    const safeMessage = personalizedMessage ? escapeHtml(personalizedMessage) : '';
+
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Thank You</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Georgia', serif; background-color: ${BG_COLOR}; color: ${TEXT_COLOR};">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 20px 40px rgba(209,108,120,0.1);">
+            <tr>
+                <td align="center" style="padding: 48px 40px 24px;">
+                    <div style="font-size: 56px; margin-bottom: 16px;">💖</div>
+                    <h1 style="margin: 0; font-size: 30px; font-weight: normal; color: ${MAIN_COLOR};">Thank You</h1>
+                    <p style="margin: 10px 0 0; font-size: 18px; color: ${SECONDARY_TEXT};">${safeBrideName} & ${safeGroomName}</p>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 0 48px 48px;">
+                    <div style="background-color: ${BG_COLOR}; border-radius: 24px; padding: 32px; border: 1px solid rgba(209,108,120,0.15);">
+                        <p style="font-size: 17px; line-height: 1.7; margin: 0 0 16px;">Dear ${safeRecipientName},</p>
+                        <p style="font-size: 17px; line-height: 1.7; margin: 0 0 16px;">
+                            Thank you for celebrating our wedding with us${safeWeddingDate ? ` on <strong>${safeWeddingDate}</strong>` : ''}. Your presence made our day even more meaningful.
+                        </p>
+                        ${safeMessage ? `<p style="font-size: 16px; line-height: 1.7; margin: 0 0 16px; color: ${ACCENT_COLOR};"><em>${safeMessage}</em></p>` : ''}
+                        <p style="font-size: 17px; line-height: 1.7; margin: 0;">
+                            With gratitude and love,<br />
+                            <strong>${safeBrideName} & ${safeGroomName}</strong>
+                        </p>
+                    </div>
                 </td>
             </tr>
         </table>

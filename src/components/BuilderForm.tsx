@@ -110,7 +110,7 @@ export default function BuilderForm() {
     const router = useRouter();
     const { user, isAdmin, loading: authLoading } = useAuth();
     const searchParams = useSearchParams();
-    const editId = searchParams.get('edit');
+    const editId = searchParams?.get('edit');
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);

@@ -1,14 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email';
+import { reminderSchema, validateRequest } from '@/lib/validations';
+import { createRateLimitMiddleware } from '@/lib/rate-limiter';
 
 export async function POST(req: NextRequest) {
-    try {
-        const { weddingId, targetStatus = 'pending' } = await req.json();
+    // Rate limit reminder requests
+    const rateLimit = createRateLimitMiddleware('REMINDER_EMAIL');
+    const forwarded = req.headers.get('x-forwarded-for');
+    const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
+    const result = rateLimit.check(ip);
 
-        if (!weddingId) {
-            return NextResponse.json({ error: 'Wedding ID is required' }, { status: 400 });
+    if (result.limited) {
+        return NextResponse.json(
+            { error: 'Rate limit exceeded. Please try again later.' },
+            { status: 429 }
+        );
+    }
+
+    try {
+        const body = await req.json();
+        const validation = validateRequest(reminderSchema, body);
+
+        if (!validation.success) {
+            return NextResponse.json({ error: validation.errors }, { status: 400 });
         }
+
+        const { weddingId, targetStatus } = validation.data;
 
         const { data: wedding, error: weddingError } = await supabase
             .from('weddings')

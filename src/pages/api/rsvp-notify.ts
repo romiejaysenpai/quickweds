@@ -2,14 +2,37 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email';
 import { getGuestConfirmationHtml, getCoupleNotificationHtml } from '@/lib/email-templates';
+import { rsvpNotifySchema } from '@/lib/validations';
+import { createRateLimitMiddleware } from '@/lib/rate-limiter';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
+    // Rate limit by wedding ID to prevent spam
+    const weddingId = req.body?.weddingId;
+    if (weddingId) {
+        const rateLimit = createRateLimitMiddleware('RSVP_NOTIFY');
+        const result = rateLimit.check(weddingId);
+
+        if (result.limited) {
+            return res.status(429).json({
+                error: result.response instanceof Response ? 'Rate limit exceeded' : 'Rate limit exceeded',
+                message: 'Too many RSVP submissions. Please try again later.',
+            });
+        }
+    }
+
     try {
-        const { weddingId, guestName, guestEmail, attendance, numGuests, message, dietaryDetails, songRequest, plusOneNames, childrenCount } = req.body;
+        const validation = rsvpNotifySchema.safeParse(req.body);
+
+        if (!validation.success) {
+            const errorMessages = validation.error.issues.map(err => err.message).join(', ');
+            return res.status(400).json({ error: errorMessages });
+        }
+
+        const { weddingId, guestName, guestEmail, attendance, numGuests, message, dietaryDetails, songRequest, plusOneNames, childrenCount } = validation.data;
 
         if (!weddingId) {
             return res.status(400).json({ error: 'Wedding ID is required' });
@@ -27,13 +50,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Get recipient email (couple)
-        // Fallback Priority: 
+        // Fallback Priority:
         // 1. wedding.couple_email (if exists)
         // 2. wedding.contact_person (if it looks like an email)
-        // 3. Admin Email (fallback)
-        const ADMIN_EMAIL = 'romiejaybacasmas@gmail.com';
+        // 3. Admin Email (fallback from environment variable)
+        const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@quickweds.com';
         let recipientEmail = wedding.couple_email;
-        
+
         if (!recipientEmail && wedding.contact_person && wedding.contact_person.includes('@')) {
             recipientEmail = wedding.contact_person;
             console.log(`Using contact_person as fallback email: ${recipientEmail}`);
@@ -71,7 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // 1. Send to Couple
         console.log(`📧 (Pages) Sending RSVP notification to couple: ${recipientEmail}`);
-        
+
         const coupleTemplateId = process.env.RESEND_COUPLE_TEMPLATE_ID;
         const coupleEmailParams: any = {
             to: recipientEmail,
@@ -84,7 +107,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // 2. Send to Guest (if email provided)
         if (guestEmail) {
             console.log(`📧 (Pages) Sending RSVP confirmation to guest: ${guestEmail}`);
-            
+
             const guestEmailParams: any = {
                 to: guestEmail,
                 subject: attendance === 'Yes' ? "We can't wait to see you! (RSVP Confirmation)" : "RSVP Confirmation",

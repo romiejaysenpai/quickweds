@@ -26,29 +26,30 @@ export default function GiftSection({ wedding, invert = false }: GiftSectionProp
     const isDark = ['midnight', 'cinematic', 'royal', 'urban', 'glitch', 'film', 'artdeco'].includes(template) || invert;
     const isVintage = ['vintage', 'rustic', 'boho', 'film'].includes(template);
 
-    const cardClass = isSharp 
-        ? `border border-white/20 shadow-none ${isDark ? 'bg-white/5' : 'bg-black/5'} rounded-none` 
+    const cardClass = isSharp
+        ? `border border-white/20 shadow-none ${isDark ? 'bg-white/5' : 'bg-black/5'} rounded-none`
         : isVintage
-        ? `border-[4px] double border-primary/20 bg-white/50 backdrop-blur-2xl shadow-xl rounded-sm`
-        : `rounded-[2rem] md:rounded-[3rem] ${isDark ? 'bg-white/10 backdrop-blur-2xl border border-white/20' : 'bg-white/60 backdrop-blur-2xl border border-white/50 shadow-2xl shadow-primary/5'}`;
+            ? `border-[4px] double border-primary/20 bg-white/50 backdrop-blur-2xl shadow-xl rounded-sm`
+            : `rounded-[2rem] md:rounded-[3rem] ${isDark ? 'bg-white/10 backdrop-blur-2xl border border-white/20' : 'bg-white/60 backdrop-blur-2xl border border-white/50 shadow-2xl shadow-primary/5'}`;
 
     return (
         <section className={`py-24 md:py-40 px-4 md:px-8 relative z-10 overflow-hidden ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>
             {/* Background Decoration */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
-            
+
             <div className="max-w-6xl mx-auto">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                     className="text-center mb-20 md:mb-32"
                 >
-                    <motion.span 
-                        initial={{ opacity: 0, tracking: '0.1em' }}
-                        whileInView={{ opacity: 0.6, tracking: '0.4em' }}
+                    <motion.span
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 0.6 }}
                         transition={{ duration: 1, delay: 0.2 }}
+                        style={{ letterSpacing: '0.4em' }}
                         className="text-[10px] md:text-xs uppercase font-black text-primary mb-6 block"
                     >
                         Foundation for our Future
@@ -63,7 +64,7 @@ export default function GiftSection({ wedding, invert = false }: GiftSectionProp
                     <div className="flex-1 space-y-8 md:space-y-12 w-full">
                         {/* Bank Details Spotlight */}
                         {(wedding.gift_bank || wedding.gift_account_name || wedding.gift_account_number) && (
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, x: -40 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
@@ -101,7 +102,7 @@ export default function GiftSection({ wedding, invert = false }: GiftSectionProp
 
                         {/* Gift Registry Links with Premium List Style */}
                         {registryLinks.length > 0 && (
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, x: -40 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
@@ -114,17 +115,16 @@ export default function GiftSection({ wedding, invert = false }: GiftSectionProp
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {registryLinks.map((link, i) => (
-                                        <motion.a 
-                                            key={i} 
-                                            href={link.url} 
-                                            target="_blank" 
+                                        <motion.a
+                                            key={i}
+                                            href={link.url}
+                                            target="_blank"
                                             rel="noopener noreferrer"
                                             whileHover={{ y: -5, scale: 1.02 }}
-                                            className={`flex items-center justify-between p-6 overflow-hidden relative transition-all duration-500 group ${
-                                                isSharp 
-                                                    ? 'border border-primary/20 hover:bg-primary/5 rounded-none' 
+                                            className={`flex items-center justify-between p-6 overflow-hidden relative transition-all duration-500 group ${isSharp
+                                                    ? 'border border-primary/20 hover:bg-primary/5 rounded-none'
                                                     : 'bg-white/50 backdrop-blur-sm hover:bg-white rounded-3xl border border-primary/5'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-[0.03] transition-opacity" />
                                             <span className="font-black text-sm md:text-base uppercase tracking-wider relative z-10">{link.title}</span>
@@ -140,7 +140,7 @@ export default function GiftSection({ wedding, invert = false }: GiftSectionProp
 
                     {/* QR Code Showcase with Glassmorphic Frame */}
                     {wedding.gift_qr_image && (
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.9, rotate: 5 }}
                             whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
                             viewport={{ once: true }}
@@ -149,24 +149,23 @@ export default function GiftSection({ wedding, invert = false }: GiftSectionProp
                         >
                             <div className={`relative p-8 md:p-12 overflow-hidden ${cardClass}`}>
                                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-30" />
-                                
-                                <div className={`aspect-square overflow-hidden bg-white/80 p-6 shadow-2xl relative z-10 ${
-                                    isSharp ? 'rounded-none' : 'rounded-[2rem]'
-                                }`}>
+
+                                <div className={`aspect-square overflow-hidden bg-white/80 p-6 shadow-2xl relative z-10 ${isSharp ? 'rounded-none' : 'rounded-[2rem]'
+                                    }`}>
                                     <div className="absolute inset-0 ring-1 ring-inset ring-black/5 pointer-events-none" />
-                                    <img 
-                                        src={wedding.gift_qr_image} 
-                                        alt="Payment QR Code" 
-                                        className="w-full h-full object-contain mix-blend-multiply opacity-80 group-hover:opacity-100 transition-opacity" 
+                                    <img
+                                        src={wedding.gift_qr_image}
+                                        alt="Payment QR Code"
+                                        className="w-full h-full object-contain mix-blend-multiply opacity-80 group-hover:opacity-100 transition-opacity"
                                     />
                                     {/* Glass reflection effect */}
                                     <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-transparent to-transparent pointer-events-none" />
                                 </div>
-                                
+
                                 <div className="text-center mt-12 relative z-10">
                                     <p className="text-[10px] uppercase tracking-[0.5em] font-black opacity-30 mb-2">Instant Transfer</p>
                                     <p className="text-sm font-serif italic text-primary/60">Scan to gift digitally</p>
-                                    
+
                                     <div className="flex justify-center gap-2 mt-8 opacity-20">
                                         <div className="w-8 h-8 rounded-full border border-current" />
                                         <div className="w-8 h-8 rounded-full border border-current" />

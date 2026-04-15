@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 
 function CancelContent() {
     const searchParams = useSearchParams();
-    const weddingId = searchParams.get('wedding_id');
+    const weddingId = searchParams?.get('wedding_id');
 
     return (
         <div className="min-h-screen bg-neutral flex items-center justify-center px-6">

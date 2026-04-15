@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { getGuestConfirmationHtml, getCoupleNotificationHtml } from './email-templates';
+import { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtml } from './email-templates';
 
 // Initialize Resend — the API key should be set in env
 const resendKey = process.env.RESEND_API_KEY || '';
@@ -65,4 +65,4 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
     }
 }
 
-export { getGuestConfirmationHtml, getCoupleNotificationHtml };
+export { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtml };

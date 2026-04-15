@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 function SuccessContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const weddingId = searchParams.get('wedding_id');
+    const weddingId = searchParams?.get('wedding_id');
     const [verified, setVerified] = useState(false);
     const [checking, setChecking] = useState(true);
 

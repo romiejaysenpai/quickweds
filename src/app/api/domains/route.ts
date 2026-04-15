@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
+import { domainSchema, validateRequest } from '@/lib/validations';
 
 export async function POST(req: Request) {
     try {
-        const { domain } = await req.json();
+        const body = await req.json();
+        const validation = validateRequest(domainSchema, body);
 
-        if (!domain) {
-            return NextResponse.json({ error: 'Domain is required' }, { status: 400 });
+        if (!validation.success) {
+            return NextResponse.json({ error: validation.errors }, { status: 400 });
         }
+
+        const { domain } = validation.data;
 
         if (!process.env.VERCEL_PROJECT_ID || !process.env.VERCEL_TOKEN) {
             return NextResponse.json({ error: 'Vercel API keys are not configured in environment.' }, { status: 500 });
@@ -38,7 +42,14 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const domain = searchParams.get('domain');
 
-        if (!domain) return NextResponse.json({ error: 'Domain is required' }, { status: 400 });
+        if (!domain) {
+            return NextResponse.json({ error: 'Domain is required' }, { status: 400 });
+        }
+
+        const validation = domainSchema.safeParse({ domain });
+        if (!validation.success) {
+            return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
+        }
 
         if (!process.env.VERCEL_PROJECT_ID || !process.env.VERCEL_TOKEN) {
             return NextResponse.json({ error: 'Vercel API keys not configured.' }, { status: 500 });
@@ -62,7 +73,14 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const domain = searchParams.get('domain');
 
-    if (!domain) return NextResponse.json({ error: 'Domain query param is required' }, { status: 400 });
+    if (!domain) {
+        return NextResponse.json({ error: 'Domain query param is required' }, { status: 400 });
+    }
+
+    const validation = domainSchema.safeParse({ domain });
+    if (!validation.success) {
+        return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
+    }
 
     if (!process.env.VERCEL_PROJECT_ID || !process.env.VERCEL_TOKEN) {
         return NextResponse.json({ error: 'Vercel API keys not configured.' }, { status: 500 });

@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await supabase.auth.signOut();
     };
 
-    const isAdmin = user?.email === 'romiejaybacasmas@gmail.com';
+    const isAdmin = user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
     return (
         <AuthContext.Provider value={{ user, isAdmin, loading, logout }}>
