@@ -2,18 +2,21 @@
 
 import { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getWeddingCollaboratorAccess } from '@/lib/wedding-features';
+import SeatingChartBuilder from '@/components/dashboard/SeatingChartBuilder';
+import PhotoSharingManager from '@/components/dashboard/PhotoSharingManager';
+import ThankYouNoteManager from '@/components/dashboard/ThankYouNoteManager';
 
 export default function PlannerPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: weddingId } = use(params);
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const [activeTab, setActiveTab] = useState<'checklist' | 'budget' | 'vendors'>('checklist');
+    const [activeTab, setActiveTab] = useState<'checklist' | 'budget' | 'vendors' | 'seating' | 'photos' | 'thanks'>('checklist');
     const [loading, setLoading] = useState(true);
     const [accessRole, setAccessRole] = useState<'owner' | 'partner' | 'coordinator' | 'pending' | 'denied'>('denied');
 
@@ -146,6 +149,15 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                             <button onClick={() => setActiveTab('vendors')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'vendors' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
                                 <Users className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Vendors</span>
                             </button>
+                            <button onClick={() => setActiveTab('seating')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'seating' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
+                                <Layout className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Seating</span>
+                            </button>
+                            <button onClick={() => setActiveTab('photos')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'photos' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
+                                <Camera className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Photos</span>
+                            </button>
+                            <button onClick={() => setActiveTab('thanks')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'thanks' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
+                                <Mail className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Thank You</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -155,6 +167,9 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                     {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} reload={loadPlannerData} />}
                     {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} wedding={wedding} vendors={vendors} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
                     {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                    {activeTab === 'seating' && <SeatingChartBuilder weddingId={weddingId} />}
+                    {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} />}
+                    {activeTab === 'thanks' && <ThankYouNoteManager weddingId={weddingId} />}
                 </div>
             </div>
         </div>
