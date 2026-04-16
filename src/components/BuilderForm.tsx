@@ -382,13 +382,20 @@ export default function BuilderForm() {
             return;
         }
 
-        setIsSubmitting(true);
-        setIsGenerating(true);
         if (!user) {
-            setIsGenerating(false);
-            setIsSubmitting(false);
+            const wantToLogin = window.confirm("You need to be signed in to save and generate your wedding page. Would you like to log in now? Your progress will be saved.");
+            if (wantToLogin) {
+                // Save current form data to session storage so we can restore it after login
+                if (typeof window !== 'undefined') {
+                    window.sessionStorage.setItem('pending_wedding_data', JSON.stringify(formData));
+                }
+                router.push('/login?returnTo=builder');
+            }
             return;
         }
+
+        setIsSubmitting(true);
+        setIsGenerating(true);
 
         try {
             const weddingId = editId || uuidv4().slice(0, 8);

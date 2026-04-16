@@ -138,25 +138,69 @@ export default function DashboardRedirect() {
     const [weddings, setWeddings] = useState<any[]>([]);
     const [sharedWeddings, setSharedWeddings] = useState<any[]>([]);
     const [fetching, setFetching] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     const fetchWeddings = useCallback(async () => {
         if (!user) return;
+        setFetching(true);
         try {
             const { data, error } = await supabase
                 .from('weddings')
                 .select('*, rsvps(id)')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
-            if (!error) setWeddings(data || []);
+            
+            if (error) throw error;
+            setWeddings(data || []);
 
             const shared = await listSharedWeddings(user.email);
             setSharedWeddings(shared);
         } catch (err) {
-            console.error(err);
+            console.error("Fetch Error:", err);
         } finally {
             setFetching(false);
         }
     }, [user]);
+
+    const handleClaimWedding = async () => {
+        const weddingId = window.prompt("Enter your 8-character Wedding ID (from your invitation URL):");
+        if (!weddingId || weddingId.length < 5) return;
+
+        setIsSyncing(true);
+        try {
+            // First check if it exists and who it belongs to
+            const { data: wedding, error: fetchError } = await supabase
+                .from('weddings')
+                .select('id, user_id, bride_name, groom_name')
+                .eq('id', weddingId)
+                .single();
+
+            if (fetchError || !wedding) {
+                alert("Wedding not found. Please double-check the ID.");
+                return;
+            }
+
+            if (wedding.user_id && wedding.user_id !== user?.id) {
+                const confirmClaim = window.confirm(`This wedding (${wedding.bride_name} & ${wedding.groom_name}) is already linked to another account. Would you like to link it to your current account?`);
+                if (!confirmClaim) return;
+            }
+
+            // Link it to the current user
+            const { error: updateError } = await supabase
+                .from('weddings')
+                .update({ user_id: user?.id })
+                .eq('id', weddingId);
+
+            if (updateError) throw updateError;
+
+            alert("Wedding successfully linked to your account!");
+            fetchWeddings();
+        } catch (err: any) {
+            alert("Error linking wedding: " + err.message);
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
     useEffect(() => {
         if (!loading && !user) {
@@ -166,10 +210,11 @@ export default function DashboardRedirect() {
         if (user) fetchWeddings();
     }, [user, loading, router, fetchWeddings]);
 
-    if (loading || fetching) {
+    if (loading || (fetching && weddings.length === 0)) {
         return (
-            <div className="mobile-safe-screen flex items-center justify-center bg-neutral/30">
+            <div className="mobile-safe-screen flex flex-col items-center justify-center bg-neutral/30 gap-4">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                <p className="text-text-secondary font-serif italic text-sm">Loading your weddings...</p>
             </div>
         );
     }
@@ -182,27 +227,44 @@ export default function DashboardRedirect() {
                     <Link href="/" className="flex items-center flex-shrink-0">
                         <img src="/logo.png" alt="QuickWeds Logo" className="h-10 sm:h-12 w-auto object-contain hover:scale-105 transition-transform" />
                     </Link>
-                    <Link
-                        href="/builder"
-                        className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-white text-xs sm:text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all flex items-center gap-2 min-h-[44px] whitespace-nowrap"
-                    >
-                        <Plus className="w-4 h-4 flex-shrink-0" />
-                        <span className="hidden sm:inline">Create New Wedding</span>
-                        <span className="sm:hidden">New</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleClaimWedding}
+                            disabled={isSyncing}
+                            className="hidden sm:flex px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-primary/20 text-primary text-xs sm:text-sm font-bold hover:bg-primary/5 transition-all items-center gap-2 min-h-[44px]"
+                        >
+                            {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                            Sync Missing
+                        </button>
+                        <Link
+                            href="/builder"
+                            className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-white text-xs sm:text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all flex items-center gap-2 min-h-[44px] whitespace-nowrap"
+                        >
+                            <Plus className="w-4 h-4 flex-shrink-0" />
+                            <span className="hidden sm:inline">Create New Wedding</span>
+                            <span className="sm:hidden">New</span>
+                        </Link>
+                    </div>
                 </div>
             </div>
 
             <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-6 sm:pt-12">
-                <header className="mb-8 sm:mb-12">
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground mb-1">
-                        Welcome, {user?.user_metadata?.full_name?.split(' ')[0] || 'Bride & Groom'} 👋
-                    </h1>
-                    <p className="text-sm sm:text-base text-text-secondary">
-                        {weddings.length > 0
-                            ? `You have ${weddings.length} wedding${weddings.length > 1 ? 's' : ''} · ${weddings.reduce((a, w) => a + (w.rsvps?.length || 0), 0)} total RSVPs`
-                            : 'Create your first wedding site below'}
-                    </p>
+                <header className="mb-8 sm:mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground mb-1">
+                            Welcome, {user?.user_metadata?.full_name?.split(' ')[0] || 'Bride & Groom'} 👋
+                        </h1>
+                        <p className="text-sm sm:text-base text-text-secondary">
+                            {weddings.length > 0
+                                ? `You have ${weddings.length} wedding${weddings.length > 1 ? 's' : ''} · ${weddings.reduce((a, w) => a + (w.rsvps?.length || 0), 0)} total RSVPs`
+                                : 'Create your first wedding site below'}
+                        </p>
+                    </div>
+                    
+                    <div className="flex flex-col items-start md:items-end gap-1">
+                        <p className="text-[10px] text-text-secondary font-mono opacity-50 uppercase tracking-tighter">ID: {user?.id.slice(0, 12)}...</p>
+                        <p className="text-[10px] text-text-secondary font-bold uppercase tracking-widest">{user?.email}</p>
+                    </div>
                 </header>
 
                 {sharedWeddings.length > 0 && (
@@ -261,12 +323,28 @@ export default function DashboardRedirect() {
                         <p className="text-sm sm:text-base text-text-secondary mb-6 sm:mb-10 max-w-sm mx-auto">
                             Create your first beautiful wedding landing page and invitation in minutes.
                         </p>
-                        <Link
-                            href="/builder"
-                            className="inline-flex items-center gap-2 px-8 sm:px-12 py-4 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all shadow-xl shadow-primary/20 min-h-[44px] text-sm sm:text-base"
-                        >
-                            Create Your First Wedding <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" />
-                        </Link>
+                        
+                        <div className="flex flex-col items-center gap-6">
+                            <Link
+                                href="/builder"
+                                className="inline-flex items-center gap-2 px-8 sm:px-12 py-4 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all shadow-xl shadow-primary/20 min-h-[44px] text-sm sm:text-base"
+                            >
+                                Create Your First Wedding <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" />
+                            </Link>
+                            
+                            <div className="pt-8 border-t border-border w-full max-w-md">
+                                <h3 className="text-sm font-bold text-foreground mb-2">Missing your existing weddings?</h3>
+                                <p className="text-xs text-text-secondary mb-4 leading-relaxed">
+                                    If you created a wedding but don't see it here, you might have signed in with a different account method (Google vs Email).
+                                </p>
+                                <button 
+                                    onClick={handleClaimWedding}
+                                    className="text-primary text-sm font-black uppercase tracking-widest hover:underline flex items-center gap-2 mx-auto"
+                                >
+                                    <Sparkles className="w-4 h-4" /> Sync Missing Wedding
+                                </button>
+                            </div>
+                        </div>
                     </motion.div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
