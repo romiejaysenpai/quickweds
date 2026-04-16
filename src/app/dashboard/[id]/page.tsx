@@ -13,6 +13,30 @@ import { getWeddingCollaboratorAccess, trackWeddingEvent } from '@/lib/wedding-f
 import AnalyticsPanel from '@/components/dashboard/AnalyticsPanel';
 import CollaboratorsPanel from '@/components/dashboard/CollaboratorsPanel';
 
+async function copyText(text: string) {
+    if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+}
+
+function openExternal(url: string) {
+    const opened = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+        window.location.href = url;
+    }
+}
+
 export default function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const searchParams = useSearchParams();
@@ -85,9 +109,21 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         fetchData();
     }, [id, user, authLoading, router]);
 
+    const getAccessToken = async () => {
+        const { data } = await supabase.auth.getSession();
+        return data.session?.access_token || null;
+    };
+
     const checkDomainStatus = async (domain: string) => {
         try {
-            const res = await fetch(`/api/domains?domain=${domain}`);
+            const token = await getAccessToken();
+            if (!token) return;
+
+            const res = await fetch(`/api/domains?domain=${encodeURIComponent(domain)}&weddingId=${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
             const data = await res.json();
             setDomainStatus(data);
         } catch (e) { }
@@ -103,8 +139,16 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         if (!domainInput.includes('.')) return alert("Please enter a valid domain (e.g. yourname.com)");
         setDomainLoading(true);
         try {
+            const token = await getAccessToken();
+            if (!token) throw new Error('Please login again and retry.');
+
             const res = await fetch('/api/domains', {
-                method: 'POST', body: JSON.stringify({ domain: domainInput.toLowerCase().trim() })
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ domain: domainInput.toLowerCase().trim(), weddingId: id })
             });
             const data = await res.json();
             if (data.error) throw new Error(data.error);
@@ -124,12 +168,23 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         if (!confirm('Are you sure you want to decouple this custom domain?')) return;
         setDomainLoading(true);
         try {
-            await fetch(`/api/domains?domain=${wedding.custom_domain}`, { method: 'DELETE' });
+            const token = await getAccessToken();
+            if (!token) throw new Error('Please login again and retry.');
+
+            const response = await fetch(`/api/domains?domain=${encodeURIComponent(wedding.custom_domain)}&weddingId=${id}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+
             await supabase.from('weddings').update({ custom_domain: null }).eq('id', wedding.id);
             setWedding({ ...wedding, custom_domain: null });
             setDomainStatus(null);
-        } catch (e) {
-            alert("Failed to remove domain");
+        } catch (e: any) {
+            alert(e?.message || "Failed to remove domain");
         } finally {
             setDomainLoading(false);
         }
@@ -244,13 +299,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     };
 
     // Copy & Share
-    const domain = wedding?.custom_domain ? `https://${wedding.custom_domain}` : (process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app');
+    const domain = wedding?.custom_domain ? `https://${wedding.custom_domain}` : (process.env.NEXT_PUBLIC_APP_URL || 'https://quickweds.site');
     const url = wedding?.custom_domain ? domain : (wedding ? `${domain}/w/${wedding.id}` : '');
     const qrTrackingUrl = `${url}${url.includes('?') ? '&' : '?'}src=qr`;
     const canManageWorkspace = accessRole === 'owner' || accessRole === 'partner';
 
     const copyLink = () => {
-        navigator.clipboard.writeText(url);
+        void copyText(url);
         void trackWeddingEvent(id, 'share_copy', { source: 'dashboard' });
         setCopyToast(true);
         setTimeout(() => setCopyToast(false), 2000);
@@ -258,25 +313,22 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
     const handleShareWhatsApp = () => {
         void trackWeddingEvent(id, 'share_whatsapp', { source: 'dashboard' });
-        window.open(`https://wa.me/?text=${encodeURIComponent(`You're invited to our wedding! ðŸ’\n${url}`)}`);
+        openExternal(`https://wa.me/?text=${encodeURIComponent(`You're invited to our wedding!\n${url}`)}`);
     };
 
     const handleShareEmail = () => {
         void trackWeddingEvent(id, 'share_email', { source: 'dashboard' });
-        window.open(`mailto:?subject=${encodeURIComponent(`You're Invited!`)}&body=${encodeURIComponent(`We'd love for you to join us!\n\n${url}`)}`);
+        openExternal(`mailto:?subject=${encodeURIComponent(`You're Invited!`)}&body=${encodeURIComponent(`We'd love for you to join us!\n\n${url}`)}`);
     };
 
-    const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`You're invited to our wedding! 💍\n${url}`)}`);
-    const shareEmail = () => window.open(`mailto:?subject=${encodeURIComponent(`You're Invited!`)}&body=${encodeURIComponent(`We'd love for you to join us!\n\n${url}`)}`);
-
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center bg-neutral/30"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
+        return <div className="mobile-safe-screen flex items-center justify-center bg-neutral/30"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
     }
     if (accessRole === 'pending') {
-        return <div className="min-h-screen bg-neutral flex items-center justify-center px-6"><div className="max-w-xl w-full bg-white rounded-[2rem] border border-border soft-shadow p-8 text-center space-y-4"><ShieldCheck className="w-12 h-12 text-primary mx-auto" /><h1 className="text-2xl font-serif font-bold text-foreground">Invitation Pending</h1><p className="text-text-secondary">This workspace has been shared with you. Accept the invite from the dashboard home screen first.</p><Link href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all min-h-[44px]">Back to Dashboard <ArrowRight className="w-4 h-4" /></Link></div></div>;
+        return <div className="mobile-safe-screen bg-neutral flex items-center justify-center px-6"><div className="max-w-xl w-full bg-white rounded-[2rem] border border-border soft-shadow p-8 text-center space-y-4"><ShieldCheck className="w-12 h-12 text-primary mx-auto" /><h1 className="text-2xl font-serif font-bold text-foreground">Invitation Pending</h1><p className="text-text-secondary">This workspace has been shared with you. Accept the invite from the dashboard home screen first.</p><Link href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all min-h-[44px]">Back to Dashboard <ArrowRight className="w-4 h-4" /></Link></div></div>;
     }
     if (accessRole === 'denied') {
-        return <div className="min-h-screen bg-neutral flex items-center justify-center px-6"><div className="max-w-xl w-full bg-white rounded-[2rem] border border-border soft-shadow p-8 text-center space-y-4"><ShieldCheck className="w-12 h-12 text-red-400 mx-auto" /><h1 className="text-2xl font-serif font-bold text-foreground">Access Restricted</h1><p className="text-text-secondary">You do not currently have access to this wedding workspace.</p><Link href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all min-h-[44px]">Back to Dashboard <ArrowRight className="w-4 h-4" /></Link></div></div>;
+        return <div className="mobile-safe-screen bg-neutral flex items-center justify-center px-6"><div className="max-w-xl w-full bg-white rounded-[2rem] border border-border soft-shadow p-8 text-center space-y-4"><ShieldCheck className="w-12 h-12 text-red-400 mx-auto" /><h1 className="text-2xl font-serif font-bold text-foreground">Access Restricted</h1><p className="text-text-secondary">You do not currently have access to this wedding workspace.</p><Link href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all min-h-[44px]">Back to Dashboard <ArrowRight className="w-4 h-4" /></Link></div></div>;
     }
     if (!wedding) {
         return <div className="p-20 text-center">Wedding not found.</div>;
@@ -292,10 +344,10 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         { name: 'Remaining', value: Math.max(0, stats.remainingBudget) }
     ];
     const COLORS = ['#D16C78', '#E5E7EB'];
-    const currencySymbol = wedding?.currency === 'USD' ? '$' : wedding?.currency === 'Yen' ? '¥' : '₱';
+    const currencySymbol = wedding?.currency === 'USD' ? '$' : wedding?.currency === 'JPY' ? '¥' : '₱';
 
     return (
-        <div className="min-h-screen bg-neutral pb-20">
+        <div className="mobile-safe-screen bg-neutral pb-20 mobile-safe-bottom">
             {/* Header */}
             <div className="bg-white border-b border-border p-4 sticky top-0 z-50 backdrop-blur-md bg-white/80">
             <div className="max-w-6xl mx-auto px-3 sm:px-4 flex justify-between items-center gap-2 sm:gap-3">
@@ -687,7 +739,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                         <span className="text-text-secondary font-bold text-[8px] sm:text-[10px] uppercase tracking-widest">Type</span>
                                                         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                                             <span className="font-mono text-xs sm:text-sm flex-1 sm:flex-0">{dnsType}</span>
-                                                            <button onClick={() => { navigator.clipboard.writeText(dnsType); alert('Copied Type'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 hover:bg-neutral rounded">
+                                                            <button onClick={() => { void copyText(dnsType); alert('Copied Type'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 hover:bg-neutral rounded">
                                                                 <Copy className="w-3 h-3 text-text-secondary" />
                                                             </button>
                                                         </div>
@@ -696,7 +748,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                         <span className="text-text-secondary font-bold text-[8px] sm:text-[10px] uppercase tracking-widest">Host</span>
                                                         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                                             <span className="font-mono text-xs sm:text-sm flex-1 sm:flex-0">{dnsName}</span>
-                                                            <button onClick={() => { navigator.clipboard.writeText(dnsName); alert('Copied Host'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 hover:bg-neutral rounded">
+                                                            <button onClick={() => { void copyText(dnsName); alert('Copied Host'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 hover:bg-neutral rounded">
                                                                 <Copy className="w-3 h-3 text-text-secondary" />
                                                             </button>
                                                         </div>
@@ -705,7 +757,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                         <span className="text-text-secondary font-bold text-[8px] sm:text-[10px] uppercase tracking-widest">Value</span>
                                                         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                                             <span className="font-mono text-xs sm:text-sm text-primary font-bold flex-1 sm:flex-0">{dnsValue}</span>
-                                                            <button onClick={() => { navigator.clipboard.writeText(dnsValue); alert('Copied Value'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 bg-primary/10 hover:bg-primary/20 rounded">
+                                                            <button onClick={() => { void copyText(dnsValue); alert('Copied Value'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 bg-primary/10 hover:bg-primary/20 rounded">
                                                                 <Copy className="w-3 h-3 text-primary" />
                                                             </button>
                                                         </div>

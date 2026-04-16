@@ -18,7 +18,6 @@ export async function POST(req: NextRequest) {
             console.error('STRIPE_SECRET_KEY is missing');
             return NextResponse.json({ error: 'Server configuration error: STRIPE_SECRET_KEY is missing' }, { status: 500 });
         }
-        console.log('Using Stripe Key:', process.env.STRIPE_SECRET_KEY.substring(0, 8) + '...');
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -55,10 +54,11 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json({ url: session.url });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to create checkout session';
         console.error('Stripe checkout error:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to create checkout session' },
+            { error: message },
             { status: 500 }
         );
     }

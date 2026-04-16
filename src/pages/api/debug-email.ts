@@ -12,6 +12,10 @@ import { getGuestConfirmationHtml, getCoupleNotificationHtml } from '@/lib/email
  *   2. Couple RSVP Notification (new RSVP received)
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (process.env.NODE_ENV !== 'development') {
+        return res.status(404).json({ error: 'Not found' });
+    }
+
     try {
         const testEmail = req.query.email as string;
         
@@ -32,7 +36,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         console.log(`🧪 Debug email test starting...`);
-        console.log(`📧 RESEND_API_KEY: ${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`);
         console.log(`📧 FROM: ${process.env.RESEND_FROM_EMAIL || 'QuickWeds <noreply@quickweds.site>'}`);
         console.log(`📧 TO: ${testEmail}`);
 
@@ -95,14 +98,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 : '⚠️ Some emails failed — see results for details.',
             sentTo: testEmail,
             fromEmail: process.env.RESEND_FROM_EMAIL || 'QuickWeds <noreply@quickweds.site>',
-            resendKeyPrefix: `${apiKey.substring(0, 8)}...`,
             results,
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown debug email error';
+        const stack = error instanceof Error ? error.stack : undefined;
         console.error('💥 Debug email critical error:', error);
         return res.status(500).json({ 
-            error: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            error: message,
+            stack: process.env.NODE_ENV === 'development' ? stack : undefined
         });
     }
 }

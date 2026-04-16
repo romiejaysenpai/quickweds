@@ -62,13 +62,13 @@ export default function SignUpPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-neutral px-6">
+        <div className="mobile-safe-screen flex items-center justify-center bg-neutral px-4 sm:px-6 mobile-safe-bottom">
             <div className="noise-overlay" />
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="max-w-md w-full bg-white rounded-[2rem] p-10 soft-shadow relative z-10 border border-border"
+                className="max-w-md w-full bg-white rounded-[2rem] p-6 sm:p-10 soft-shadow relative z-10 border border-border"
             >
                 <div className="flex flex-col items-center mb-10">
                     <Link href="/">
@@ -91,6 +91,7 @@ export default function SignUpPage() {
                             <input
                                 type="text"
                                 required
+                                autoComplete="name"
                                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="John Doe"
                                 value={name}
@@ -106,6 +107,11 @@ export default function SignUpPage() {
                             <input
                                 type="email"
                                 required
+                                inputMode="email"
+                                autoComplete="email"
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck={false}
                                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="hello@example.com"
                                 value={email}
@@ -121,6 +127,7 @@ export default function SignUpPage() {
                             <input
                                 type="password"
                                 required
+                                autoComplete="new-password"
                                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="••••••••"
                                 value={password}
@@ -150,7 +157,8 @@ export default function SignUpPage() {
                         <button
                             type="button"
                             onClick={() => handleSocialLogin('google')}
-                            className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-border hover:bg-neutral transition-all font-bold text-sm"
+                            disabled={loading}
+                            className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-border hover:bg-neutral transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
                             Google
@@ -158,7 +166,8 @@ export default function SignUpPage() {
                         <button
                             type="button"
                             onClick={() => handleSocialLogin('apple')}
-                            className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-black text-white hover:bg-gray-800 transition-all font-bold text-sm"
+                            disabled={loading}
+                            className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-black text-white hover:bg-gray-800 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                                 <path d="M17.05 20.28c-.96.95-2.05 1.72-3.17 1.72-1.21 0-1.63-.73-3.08-.73-1.47 0-1.94.71-3.08.73-1.08 0-2.31-.89-3.23-1.83C2.59 18.25 1 15.11 1 12.18c0-4.63 3.01-7.07 5.95-7.07 1.56 0 3.04.98 4.02.98.96 0 2.76-1.16 4.67-1.16 2.01 0 3.51.74 4.54 2.22-4.14 2-.96 7.42 2.62 9 a8.5 8.5 0 0 1-1.75 4.13zM12.03 5.09c.04-2.36 1.96-4.22 4.21-4.22.25 0 .5.03.73.08a4.1 4.1 0 0 1-4.94 4.14z"/>

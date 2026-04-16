@@ -26,6 +26,18 @@ import {
 import type { Wedding, WeddingPartyMember } from '@/types/wedding';
 import { trackWeddingEvent } from '@/lib/wedding-features';
 
+function safeParseArray<T>(value: unknown): T[] {
+    if (Array.isArray(value)) return value as T[];
+    if (typeof value !== 'string') return [];
+
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed as T[] : [];
+    } catch {
+        return [];
+    }
+}
+
 export default function WeddingPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const [wedding, setWedding] = useState<any>(null);
@@ -88,9 +100,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
     }
 
     const isExpired = new Date(wedding.rsvp_deadline) < new Date();
-    const gallery = typeof wedding.gallery_images === 'string'
-        ? JSON.parse(wedding.gallery_images || '[]')
-        : (wedding.gallery_images || []);
+    const gallery = safeParseArray<string>(wedding.gallery_images);
     const template = wedding.template || 'classic';
 
     // Template Specific Styles & Layouts

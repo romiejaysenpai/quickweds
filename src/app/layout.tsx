@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   Inter, Playfair_Display, Cormorant_Garamond, Great_Vibes, Montserrat, Cinzel,
   EB_Garamond, Bodoni_Moda, Prata, Lora, Cardo, Libre_Baskerville, Marcellus, Forum, Alice,
@@ -63,14 +63,21 @@ const lavishly = Lavishly_Yours({ variable: "--font-lavishly", weight: "400", su
 export const metadata: Metadata = {
   title: "QuickWeds | Instant Elegant Wedding Landing Pages",
   description: "Create a beautiful, mobile-first wedding invitation landing page with an integrated RSVP system in minutes.",
+  applicationName: "QuickWeds",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "QuickWeds",
+  },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
   viewportFit: "cover",
+  themeColor: "#FFF8F4",
 };
 
 import { AuthProvider } from "@/context/AuthContext";

@@ -239,6 +239,7 @@ html {
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -249,6 +250,24 @@ body {
   -moz-osx-font-smoothing: grayscale;
   width: 100%;
   overflow-x: hidden;
+  min-height: 100dvh;
+  min-height: 100svh;
+  padding-bottom: var(--safe-area-inset-bottom);
+}
+
+/* Better mobile viewport handling on Safari/Chrome mobile URL bars */
+.mobile-safe-screen {
+  min-height: 100dvh;
+  min-height: 100svh;
+}
+
+.mobile-safe-px {
+  padding-left: max(1rem, var(--safe-area-inset-left));
+  padding-right: max(1rem, var(--safe-area-inset-right));
+}
+
+.mobile-safe-bottom {
+  padding-bottom: max(1rem, var(--safe-area-inset-bottom));
 }
 
 /* Touch-friendly interactive elements */
@@ -266,6 +285,12 @@ input, textarea, select {
 /* Disable tap highlight on mobile */
 a, button {
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Consistent focus visibility across browsers */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 60%, white 40%);
+  outline-offset: 2px;
 }
 
 /* Smooth scrolling on mobile */
@@ -322,6 +347,17 @@ html {
     display: block;
     margin-bottom: 0.5rem;
     font-size: 0.95rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

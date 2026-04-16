@@ -1,13 +1,90 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { domainSchema, validateRequest } from '@/lib/validations';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+
+const weddingIdSchema = z.string().uuid('Invalid wedding ID format');
+
+type AccessCheckResult =
+    | { ok: true; customDomain: string | null }
+    | { ok: false; status: number; error: string };
+
+async function verifyWeddingAccess(req: Request, weddingId: string): Promise<AccessCheckResult> {
+    let supabase: ReturnType<typeof getSupabaseAdminClient>;
+    try {
+        supabase = getSupabaseAdminClient();
+    } catch {
+        return { ok: false, status: 500, error: 'Server configuration error' };
+    }
+    const authHeader = req.headers.get('authorization') || '';
+    const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+
+    if (!accessToken) {
+        return { ok: false, status: 401, error: 'Missing bearer token' };
+    }
+
+    const { data: authUser, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !authUser.user) {
+        return { ok: false, status: 401, error: 'Unauthorized' };
+    }
+
+    const { data: wedding, error: weddingError } = await supabase
+        .from('weddings')
+        .select('id, user_id, custom_domain')
+        .eq('id', weddingId)
+        .single();
+
+    if (weddingError || !wedding) {
+        return { ok: false, status: 404, error: 'Wedding not found' };
+    }
+
+    if (wedding.user_id === authUser.user.id) {
+        return { ok: true, customDomain: wedding.custom_domain || null };
+    }
+
+    const userEmail = authUser.user.email?.toLowerCase();
+    if (!userEmail) {
+        return { ok: false, status: 403, error: 'Forbidden' };
+    }
+
+    const { data: collaborator, error: collaboratorError } = await supabase
+        .from('wedding_collaborators')
+        .select('id')
+        .eq('wedding_id', weddingId)
+        .eq('email', userEmail)
+        .eq('status', 'accepted')
+        .eq('role', 'partner')
+        .maybeSingle();
+
+    if (collaboratorError || !collaborator) {
+        return { ok: false, status: 403, error: 'Forbidden' };
+    }
+
+    return { ok: true, customDomain: wedding.custom_domain || null };
+}
+
+function parseWeddingId(value: string | null) {
+    const parsed = weddingIdSchema.safeParse(value);
+    return parsed.success ? parsed.data : null;
+}
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
         const validation = validateRequest(domainSchema, body);
+        const weddingId = parseWeddingId(typeof body?.weddingId === 'string' ? body.weddingId : null);
 
         if (!validation.success) {
             return NextResponse.json({ error: validation.errors }, { status: 400 });
+        }
+
+        if (!weddingId) {
+            return NextResponse.json({ error: 'Valid weddingId is required' }, { status: 400 });
+        }
+
+        const access = await verifyWeddingAccess(req, weddingId);
+        if (!access.ok) {
+            return NextResponse.json({ error: access.error }, { status: access.status });
         }
 
         const { domain } = validation.data;
@@ -32,7 +109,7 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json(data);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to add domain to Vercel' }, { status: 500 });
     }
 }
@@ -41,14 +118,28 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const domain = searchParams.get('domain');
+        const weddingId = parseWeddingId(searchParams.get('weddingId'));
 
         if (!domain) {
             return NextResponse.json({ error: 'Domain is required' }, { status: 400 });
         }
 
+        if (!weddingId) {
+            return NextResponse.json({ error: 'Valid weddingId is required' }, { status: 400 });
+        }
+
+        const access = await verifyWeddingAccess(req, weddingId);
+        if (!access.ok) {
+            return NextResponse.json({ error: access.error }, { status: access.status });
+        }
+
         const validation = domainSchema.safeParse({ domain });
         if (!validation.success) {
             return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
+        }
+
+        if (access.customDomain && access.customDomain !== domain) {
+            return NextResponse.json({ error: 'Domain does not belong to this wedding' }, { status: 403 });
         }
 
         if (!process.env.VERCEL_PROJECT_ID || !process.env.VERCEL_TOKEN) {
@@ -64,7 +155,7 @@ export async function GET(req: Request) {
 
         const data = await response.json();
         return NextResponse.json(data);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to fetch domain verification status' }, { status: 500 });
     }
 }
@@ -72,14 +163,28 @@ export async function GET(req: Request) {
 export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const domain = searchParams.get('domain');
+    const weddingId = parseWeddingId(searchParams.get('weddingId'));
 
     if (!domain) {
         return NextResponse.json({ error: 'Domain query param is required' }, { status: 400 });
     }
 
+    if (!weddingId) {
+        return NextResponse.json({ error: 'Valid weddingId is required' }, { status: 400 });
+    }
+
+    const access = await verifyWeddingAccess(req, weddingId);
+    if (!access.ok) {
+        return NextResponse.json({ error: access.error }, { status: access.status });
+    }
+
     const validation = domainSchema.safeParse({ domain });
     if (!validation.success) {
         return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
+    }
+
+    if (access.customDomain && access.customDomain !== domain) {
+        return NextResponse.json({ error: 'Domain does not belong to this wedding' }, { status: 403 });
     }
 
     if (!process.env.VERCEL_PROJECT_ID || !process.env.VERCEL_TOKEN) {

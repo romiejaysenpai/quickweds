@@ -3,19 +3,23 @@
 import { motion } from 'framer-motion';
 import { ChevronDown, Sparkles } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 export default function HeroEnhancer({ wedding }: { wedding: Wedding }) {
-    const [isMounted, setIsMounted] = useState(false);
-    
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    if (!isMounted) return null;
+    const particles = useMemo(() => (
+        Array.from({ length: 15 }, (_, i) => ({
+            id: i,
+            top: `${(i * 13 + 9) % 100}%`,
+            left: `${(i * 19 + 5) % 100}%`,
+            driftX: (i % 5) * 10 - 20,
+            peakScale: 0.6 + (i % 4) * 0.2,
+            duration: 10 + (i % 6) * 1.5,
+            delay: (i % 5) * 0.8,
+        }))
+    ), []);
 
     return (
-        <div className="absolute top-0 left-0 w-full h-[100vh] pointer-events-none z-50 overflow-hidden mix-blend-screen">
+        <div className="absolute top-0 left-0 w-full h-[100dvh] pointer-events-none z-50 overflow-hidden mix-blend-screen">
             {/* Cinematic Gradient Overlay */}
             <div 
                 className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-neutral/90" 
@@ -25,24 +29,24 @@ export default function HeroEnhancer({ wedding }: { wedding: Wedding }) {
             />
 
             {/* Floating Magical Particles */}
-            {[...Array(15)].map((_, i) => (
+            {particles.map((particle) => (
                 <motion.div
-                    key={i}
+                    key={particle.id}
                     className="absolute"
                     style={{
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
+                        top: particle.top,
+                        left: particle.left,
                     }}
                     animate={{
                         y: [0, -200, 0],
-                        x: [0, Math.random() * 40 - 20, 0],
+                        x: [0, particle.driftX, 0],
                         opacity: [0, 0.6, 0],
-                        scale: [0.5, Math.random() * 1 + 0.5, 0.5]
+                        scale: [0.5, particle.peakScale, 0.5]
                     }}
                     transition={{
-                        duration: Math.random() * 10 + 10,
+                        duration: particle.duration,
                         repeat: Infinity,
-                        delay: Math.random() * 5,
+                        delay: particle.delay,
                         ease: "easeInOut"
                     }}
                 >

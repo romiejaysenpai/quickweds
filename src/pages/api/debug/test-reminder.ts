@@ -4,6 +4,10 @@ import { sendEmail } from '@/lib/email';
 import { getGuestReminderHtml } from '@/lib/email-templates';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
   const { email } = req.query;
 
   if (!email || typeof email !== 'string') {
@@ -45,7 +49,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         details: result.details
       });
     }
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown reminder debug error';
+    return res.status(500).json({ success: false, error: message });
   }
 }

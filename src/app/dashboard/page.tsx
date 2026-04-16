@@ -10,13 +10,32 @@ import { motion, AnimatePresence } from 'framer-motion';
 import UpgradeButton from '@/components/UpgradeButton';
 import { acceptWeddingInvite, listSharedWeddings } from '@/lib/wedding-features';
 
+async function copyText(text: string) {
+    if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+}
+
 function CopyLinkButton({ id }: { id: string }) {
     const [copied, setCopied] = useState(false);
     const handleCopy = useCallback(() => {
         const url = `${window.location.origin}/w/${id}`;
-        navigator.clipboard?.writeText(url).then(() => {
+        copyText(url).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2500);
+        }).catch(() => {
+            // no-op: keep button responsive even on restricted contexts
         });
     }, [id]);
 
@@ -149,14 +168,14 @@ export default function DashboardRedirect() {
 
     if (loading || fetching) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-neutral/30">
+            <div className="mobile-safe-screen flex items-center justify-center bg-neutral/30">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-neutral pb-16 sm:pb-20">
+        <div className="mobile-safe-screen bg-neutral pb-16 sm:pb-20 mobile-safe-bottom">
             {/* Top nav */}
             <div className="bg-white/80 backdrop-blur-md border-b border-border p-3 sm:p-4 sticky top-0 z-50">
                 <div className="max-w-6xl mx-auto px-2 sm:px-4 flex justify-between items-center gap-2 sm:gap-4">

@@ -1,6 +1,7 @@
+import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export async function POST(req: NextRequest) {
     const body = await req.text();
@@ -11,53 +12,47 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        // Verify webhook signature (skip in development if webhook secret not set)
-        let event;
-        if (process.env.STRIPE_WEBHOOK_SECRET) {
-            event = stripe.webhooks.constructEvent(
-                body,
-                signature,
-                process.env.STRIPE_WEBHOOK_SECRET
-            );
+        const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+        let event: Stripe.Event;
+
+        if (webhookSecret) {
+            event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+        } else if (process.env.NODE_ENV === 'development') {
+            event = JSON.parse(body) as Stripe.Event;
         } else {
-            // For development without webhook secret
-            event = JSON.parse(body);
+            return NextResponse.json(
+                { error: 'STRIPE_WEBHOOK_SECRET is missing in production' },
+                { status: 500 }
+            );
         }
 
-        // Handle the checkout.session.completed event
         if (event.type === 'checkout.session.completed') {
-            const session = event.data.object as any;
+            const session = event.data.object as Stripe.Checkout.Session;
             const weddingId = session.metadata?.weddingId;
             const plan = session.metadata?.plan || 'premium';
 
             if (weddingId) {
-                // Update wedding to premium
+                const supabase = getSupabaseAdminClient();
                 const { error } = await supabase
                     .from('weddings')
                     .update({
                         payment_status: 'paid',
-                        payment_amount: session.amount_total / 100,
-                        stripe_payment_intent_id: session.payment_intent,
+                        payment_amount: (session.amount_total || 0) / 100,
+                        stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
                         is_premium: true,
                         plan_type: plan,
                     })
                     .eq('id', weddingId);
 
                 if (error) {
-                    console.error('Failed to update wedding:', error);
                     throw error;
                 }
-
-                console.log(`Wedding ${weddingId} upgraded to ${plan}`);
             }
         }
 
         return NextResponse.json({ received: true });
-    } catch (error: any) {
-        console.error('Webhook error:', error);
-        return NextResponse.json(
-            { error: error.message || 'Webhook handler failed' },
-            { status: 400 }
-        );
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Webhook handler failed';
+        return NextResponse.json({ error: message }, { status: 400 });
     }
 }

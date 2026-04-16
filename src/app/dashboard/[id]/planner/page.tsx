@@ -670,7 +670,7 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
         payment_method: 'cash'
     });
     
-    const currencySymbol = currency === 'USD' ? '$' : currency === 'Yen' ? '¥' : '₱';
+    const currencySymbol = currency === 'USD' ? '$' : currency === 'JPY' ? '¥' : '₱';
     const [roles, setRoles] = useState(['Photographer', 'Videographer', 'Florist', 'Caterer', 'Coordinator', 'DJ/Band', 'Hair & Makeup', 'Supplier']);
     
     const handleAddCustomRole = () => {

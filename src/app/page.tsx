@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Heart, Smartphone, Share2, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera, ListTodo, Users, Wallet } from 'lucide-react';
 import ExamplesSection from '@/components/ExamplesSection';
 import TemplatesSection from '@/components/TemplatesSection';
 import PhoneMockupSection from '@/components/PhoneMockupSection';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 
 const FAQS = [
@@ -151,6 +151,17 @@ export default function Home() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
   const { user, logout } = useAuth();
+  const reduceMotion = useReducedMotion();
+
+  const sparkleParticles = useMemo(() => (
+    Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      top: `${(i * 17 + 11) % 100}%`,
+      left: `${(i * 23 + 7) % 100}%`,
+      duration: 3 + (i % 5),
+      delay: (i % 4) * 0.6,
+    }))
+  ), []);
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,7 +173,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-neutral selection:bg-primary/20">
+    <div className="relative mobile-safe-screen overflow-hidden bg-neutral selection:bg-primary/20">
       {/* Advanced Background Ornaments */}
       <GridBackground />
       <Glow className="top-0 -right-48" />
@@ -185,20 +196,20 @@ export default function Home() {
 
       {/* Floating Sparkles Decoration */}
       <div className="absolute inset-0 pointer-events-none -z-5">
-        {[...Array(15)].map((_, i) => (
+        {sparkleParticles.map((particle) => (
           <motion.div
-            key={i}
+            key={particle.id}
             className="absolute w-1 h-1 bg-primary/20 rounded-full"
-            style={{ top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%` }}
-            animate={{
+            style={{ top: particle.top, left: particle.left }}
+            animate={reduceMotion ? { opacity: 0.4 } : {
               opacity: [0, 1, 0],
               scale: [0, 1.5, 0],
               y: [0, -20, 0]
             }}
             transition={{
-              duration: 3 + Math.random() * 5,
+              duration: particle.duration,
               repeat: Infinity,
-              delay: Math.random() * 5
+              delay: particle.delay
             }}
           />
         ))}
@@ -227,7 +238,7 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="pt-32">
+      <main className="pt-24 sm:pt-32">
         {/* HERO SECTION */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 pb-32 sm:pb-40 text-center relative">
           <motion.div
@@ -269,8 +280,9 @@ export default function Home() {
               <div className="absolute -inset-1 rounded-lg sm:rounded-2xl bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
             <button
+              type="button"
               onClick={() => setIsExamplesOpen(true)}
-              className="px-12 py-6 rounded-2xl bg-white text-foreground font-bold text-lg hover:bg-neutral transition-all border border-border flex items-center justify-center gap-2 group"
+              className="px-8 sm:px-12 py-4 sm:py-6 rounded-xl sm:rounded-2xl bg-white text-foreground font-bold text-sm sm:text-lg hover:bg-neutral transition-all border border-border flex items-center justify-center gap-2 group min-h-[44px]"
             >
               <Play className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" /> Watch Experience
             </button>
@@ -650,6 +662,10 @@ export default function Home() {
                   placeholder="Enter your email"
                   value={newsletterEmail}
                   onChange={(e) => setNewsletterEmail(e.target.value)}
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   className="flex-1 px-6 py-4 rounded-2xl bg-neutral border border-border focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-light min-h-[44px]"
                   required
                 />
@@ -751,7 +767,7 @@ export default function Home() {
       </footer>
 
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-4">
+      <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100] flex flex-col gap-3 sm:gap-4 mobile-safe-bottom">
         <motion.a
           href="https://wa.me/919876543210"
           target="_blank"
@@ -759,9 +775,9 @@ export default function Home() {
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           whileHover={{ scale: 1.1, rotate: 10 }}
-          className="w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl shadow-green-500/40 group cursor-pointer"
+          className="w-12 h-12 sm:w-16 sm:h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl shadow-green-500/40 group cursor-pointer"
         >
-          <MessageCircle className="w-8 h-8" />
+          <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8" />
           <span className="absolute right-full mr-4 px-4 py-2 bg-white text-foreground text-xs font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Chat with us</span>
         </motion.a>
 
@@ -770,7 +786,7 @@ export default function Home() {
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           whileHover={{ scale: 1.1 }}
-          className="w-16 h-16 bg-white border border-border text-foreground rounded-full flex items-center justify-center shadow-xl hover:bg-neutral transition-all cursor-pointer"
+          className="hidden sm:flex w-16 h-16 bg-white border border-border text-foreground rounded-full items-center justify-center shadow-xl hover:bg-neutral transition-all cursor-pointer"
         >
           <ChevronDown className="w-6 h-6 rotate-180" />
         </motion.button>

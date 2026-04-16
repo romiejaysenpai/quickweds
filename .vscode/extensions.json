@@ -1,6 +1,8 @@
 {
     "recommendations": [
         "anthropic.claude-code",
-        "qwenlm.qwen-code-vscode-ide-companion"
+        "qwenlm.qwen-code-vscode-ide-companion",
+        "openai.chatgpt",
+        "kilocode.kilo-code"
     ]
 }

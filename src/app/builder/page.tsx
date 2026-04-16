@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 
 export default function BuilderPage() {
     return (
-        <div className="min-h-screen py-12 flex flex-col items-center bg-neutral">
+        <div className="mobile-safe-screen py-8 sm:py-12 flex flex-col items-center bg-neutral mobile-safe-bottom">
             <div className="text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-1000 px-6">
                 <div className="flex justify-center mb-6">
                     <Link href="/">

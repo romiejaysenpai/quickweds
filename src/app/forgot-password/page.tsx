@@ -31,13 +31,13 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-neutral px-6">
+        <div className="mobile-safe-screen flex items-center justify-center bg-neutral px-4 sm:px-6 mobile-safe-bottom">
             <div className="noise-overlay" />
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`max-w-md w-full rounded-[2rem] p-10 soft-shadow relative z-10 border border-border ${sent ? 'bg-success-bg' : 'bg-white'}`}
+                className={`max-w-md w-full rounded-[2rem] p-6 sm:p-10 soft-shadow relative z-10 border border-border ${sent ? 'bg-success-bg' : 'bg-white'}`}
             >
                 <div className="flex flex-col items-center mb-10">
                     <Link href="/">
@@ -75,6 +75,11 @@ export default function ForgotPasswordPage() {
                                     <input
                                         type="email"
                                         required
+                                        inputMode="email"
+                                        autoComplete="email"
+                                        autoCapitalize="none"
+                                        autoCorrect="off"
+                                        spellCheck={false}
                                         className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                         placeholder="hello@example.com"
                                         value={email}

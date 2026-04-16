@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Sparkles, Wand2, Stars, Cloud, Music, Camera } from 'lucide-react';
 
@@ -17,6 +17,15 @@ const MESSAGES = [
 
 export default function GenerationLoading() {
     const [messageIndex, setMessageIndex] = useState(0);
+    const ornaments = useMemo(() => (
+        Array.from({ length: 6 }, (_, i) => ({
+            id: i,
+            top: `${(i * 29 + 13) % 100}%`,
+            left: `${(i * 31 + 17) % 100}%`,
+            driftX: (i % 4) * 12 - 18,
+            duration: 8 + (i % 5) * 2,
+        }))
+    ), []);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -34,29 +43,29 @@ export default function GenerationLoading() {
         >
             {/* Dynamic Background Elements */}
             <div className="absolute inset-0 pointer-events-none">
-                {[...Array(6)].map((_, i) => (
+                {ornaments.map((ornament) => (
                     <motion.div
-                        key={i}
+                        key={ornament.id}
                         className="absolute text-primary/10"
                         style={{
-                            top: `${Math.random() * 100}%`,
-                            left: `${Math.random() * 100}%`,
+                            top: ornament.top,
+                            left: ornament.left,
                         }}
                         animate={{
                             y: [0, -50, 0],
-                            x: [0, Math.random() * 40 - 20, 0],
+                            x: [0, ornament.driftX, 0],
                             rotate: [0, 360],
                             scale: [1, 1.5, 1],
                             opacity: [0.1, 0.3, 0.1]
                         }}
                         transition={{
-                            duration: 8 + Math.random() * 10,
+                            duration: ornament.duration,
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}
                     >
-                        {i % 3 === 0 ? <Heart className="w-24 h-24 fill-current" /> :
-                            i % 3 === 1 ? <Sparkles className="w-16 h-16" /> :
+                        {ornament.id % 3 === 0 ? <Heart className="w-24 h-24 fill-current" /> :
+                            ornament.id % 3 === 1 ? <Sparkles className="w-16 h-16" /> :
                                 <Stars className="w-20 h-20" />}
                     </motion.div>
                 ))}
