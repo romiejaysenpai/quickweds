@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
             const plan = session.metadata?.plan || 'premium';
 
             if (weddingId) {
-                const supabase = getSupabaseAdminClient();
+                const supabase: any = getSupabaseAdminClient();
                 const { error } = await supabase
                     .from('weddings')
                     .update({

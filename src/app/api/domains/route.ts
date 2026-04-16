@@ -10,7 +10,7 @@ type AccessCheckResult =
     | { ok: false; status: number; error: string };
 
 async function verifyWeddingAccess(req: Request, weddingId: string): Promise<AccessCheckResult> {
-    let supabase: ReturnType<typeof getSupabaseAdminClient>;
+    let supabase: any;
     try {
         supabase = getSupabaseAdminClient();
     } catch {
@@ -23,8 +23,9 @@ async function verifyWeddingAccess(req: Request, weddingId: string): Promise<Acc
         return { ok: false, status: 401, error: 'Missing bearer token' };
     }
 
-    const { data: authUser, error: authError } = await supabase.auth.getUser(accessToken);
-    if (authError || !authUser.user) {
+    const { data, error: authError } = await supabase.auth.getUser(accessToken);
+    const user = data?.user;
+    if (authError || !user) {
         return { ok: false, status: 401, error: 'Unauthorized' };
     }
 
@@ -38,11 +39,11 @@ async function verifyWeddingAccess(req: Request, weddingId: string): Promise<Acc
         return { ok: false, status: 404, error: 'Wedding not found' };
     }
 
-    if (wedding.user_id === authUser.user.id) {
+    if (wedding.user_id === user.id) {
         return { ok: true, customDomain: wedding.custom_domain || null };
     }
 
-    const userEmail = authUser.user.email?.toLowerCase();
+    const userEmail = user.email?.toLowerCase();
     if (!userEmail) {
         return { ok: false, status: 403, error: 'Forbidden' };
     }
