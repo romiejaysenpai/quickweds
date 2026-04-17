@@ -3,6 +3,8 @@
         "anthropic.claude-code",
         "qwenlm.qwen-code-vscode-ide-companion",
         "openai.chatgpt",
-        "kilocode.kilo-code"
+        "kilocode.kilo-code",
+        "ms-python.python",
+        "moonshot-ai.kimi-code"
     ]
 }

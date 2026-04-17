@@ -93,8 +93,11 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                 setWedding(weddingData);
 
-                const { data: rsvpsData } = await supabase
+                const { data: rsvpsData, error: rsvpsError } = await supabase
                     .from('rsvps').select('*').eq('wedding_id', id).order('created_at', { ascending: false });
+                if (rsvpsError) {
+                    console.error("Error fetching RSVPs:", rsvpsError);
+                }
                 setRsvps(rsvpsData || []);
 
                 const { data: vendorsData } = await supabase
