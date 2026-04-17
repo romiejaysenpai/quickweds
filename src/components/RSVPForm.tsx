@@ -63,12 +63,13 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                 return;
             }
 
-            const insertData: any = {
+const insertData: any = {
                 wedding_id: weddingId,
                 guest_name: formData.guestName.trim(),
                 guest_email: formData.guestEmail.trim() || null,
                 attendance: formData.attendance,
                 num_guests: formData.numGuests || 1,
+                rsvp_status: formData.attendance === 'Yes' ? 'confirmed' : 'declined',
             };
 
             // Optional fields - only include if they have values to avoid schema conflicts
@@ -79,6 +80,8 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
             if (formData.songRequest) insertData.song_request = formData.songRequest;
             if (formData.childrenCount > 0) insertData.children_count = formData.childrenCount;
 
+            console.log("Submitting RSVP with data:", insertData);
+            
             const { error: insertError } = await supabase.from('rsvps').insert(insertData);
 
             if (insertError) {
@@ -88,7 +91,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                 return;
             }
 
-            // Success!
+            console.log("RSVP submitted successfully!");
             setIsSubmitted(true);
             void trackWeddingEvent(weddingId, 'rsvp_submitted', {
                 source: 'rsvp_form',

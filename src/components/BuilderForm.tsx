@@ -192,6 +192,22 @@ export default function BuilderForm() {
             setIsPremium(true);
         }
 
+        // BUG #12 FIX: Restore pending wedding data from sessionStorage after login redirect
+        if (user && !editId && typeof window !== 'undefined') {
+            const pendingData = window.sessionStorage.getItem('pending_wedding_data');
+            if (pendingData) {
+                try {
+                    const restored = JSON.parse(pendingData);
+                    setFormData((prev: any) => ({ ...prev, ...restored }));
+                    window.sessionStorage.removeItem('pending_wedding_data');
+                    console.log('✅ Restored pending wedding form data from session');
+                } catch (e) {
+                    console.warn('Could not restore pending wedding data:', e);
+                    window.sessionStorage.removeItem('pending_wedding_data');
+                }
+            }
+        }
+
         if (user && editId) {
             const fetchWedding = async () => {
                 const { data, error } = await supabase
