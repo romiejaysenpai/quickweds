@@ -278,8 +278,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         await supabase.from('rsvps').delete().eq('id', rsvpId);
         setRsvps(prev => prev.filter(r => r.id !== rsvpId));
     };
-    };
-
 
     const handleAddManualGuest = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -765,9 +763,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                                             <span className="font-mono text-xs sm:text-sm text-primary font-bold flex-1 sm:flex-0">{dnsValue}</span>
                                                             <button onClick={() => { void copyText(dnsValue); alert('Copied Value'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 bg-primary/10 hover:bg-primary/20 rounded">
-                                        onChange={e => setNewGuest({...newGuest, rsvp_status: e.target.value})}
-                                        className="w-full bg-neutral border border-border rounded-lg sm:rounded-2xl px-3 sm:px-6 py-2 sm:py-4 outline-none focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
-                                    >
                                                                 <Copy className="w-3 h-3 text-primary" />
                                                             </button>
                                                         </div>
