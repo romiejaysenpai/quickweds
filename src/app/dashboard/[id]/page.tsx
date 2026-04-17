@@ -53,7 +53,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'confirmed' | 'declined' | 'pending'>('all');
     const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
-    const [newGuest, setNewGuest] = useState({ guest_name: '', rsvp_status: 'pending', num_guests: 1 });
+    const [newGuest, setNewGuest] = useState({ guest_name: '', guest_email: '', rsvp_status: 'pending', num_guests: 1 });
     const [copyToast, setCopyToast] = useState(false);
 
     const [domainInput, setDomainInput] = useState('');
@@ -278,6 +278,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         await supabase.from('rsvps').delete().eq('id', rsvpId);
         setRsvps(prev => prev.filter(r => r.id !== rsvpId));
     };
+    };
+
 
     const handleAddManualGuest = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -286,6 +288,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         const { data, error } = await supabase.from('rsvps').insert({
             wedding_id: id,
             guest_name: newGuest.guest_name,
+            guest_email: newGuest.guest_email || null,
             rsvp_status: newGuest.rsvp_status,
             num_guests: newGuest.num_guests,
             manual_entry: true,
@@ -296,7 +299,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             alert("Error adding guest: " + error.message);
         } else {
             setRsvps([data, ...rsvps]);
-            setNewGuest({ guest_name: '', rsvp_status: 'pending', num_guests: 1 });
+            setNewGuest({ guest_name: '', guest_email: '', rsvp_status: 'pending', num_guests: 1 });
             setIsAddGuestModalOpen(false);
         }
     };
@@ -596,7 +599,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             <tr key={rsvp.id} className="hover:bg-neutral/30 transition-colors">
                                                 <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-4">
                                                     <p className="font-bold text-foreground text-xs sm:text-sm line-clamp-1">{rsvp.guest_name}</p>
-                                                    {rsvp.manual_entry && <span className="text-[7px] sm:text-[8px] bg-neutral px-1 sm:px-1.5 py-0.5 rounded uppercase tracking-widest text-text-secondary font-black">Manual</span>}
+                                                    <p className="text-[10px] text-text-secondary/60 truncate italic">{rsvp.guest_email || 'No email provided'}</p>
+                                                    {rsvp.manual_entry && <span className="text-[7px] sm:text-[8px] bg-neutral px-1 sm:px-1.5 py-0.5 rounded uppercase tracking-widest text-text-secondary font-black mt-1 inline-block">Manual</span>}
                                                     {rsvp.plus_one_names && <p className="text-xs text-text-secondary/50 mt-1 line-clamp-1">+{rsvp.plus_one_names}</p>}
                                                 </td>
                                                 <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-4">
@@ -761,6 +765,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                                             <span className="font-mono text-xs sm:text-sm text-primary font-bold flex-1 sm:flex-0">{dnsValue}</span>
                                                             <button onClick={() => { void copyText(dnsValue); alert('Copied Value'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 bg-primary/10 hover:bg-primary/20 rounded">
+                                        onChange={e => setNewGuest({...newGuest, rsvp_status: e.target.value})}
+                                        className="w-full bg-neutral border border-border rounded-lg sm:rounded-2xl px-3 sm:px-6 py-2 sm:py-4 outline-none focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
+                                    >
                                                                 <Copy className="w-3 h-3 text-primary" />
                                                             </button>
                                                         </div>
@@ -817,16 +824,28 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         </div>
 
                         <form onSubmit={handleAddManualGuest} className="space-y-4 sm:space-y-6">
-                            <div>
-                                <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-2">Guest Name</label>
-                                <input 
-                                    required
-                                    type="text" 
-                                    value={newGuest.guest_name}
-                                    onChange={e => setNewGuest({...newGuest, guest_name: e.target.value})}
-                                    placeholder="Enter guest name..."
-                                    className="w-full bg-neutral border border-border rounded-lg sm:rounded-2xl px-3 sm:px-6 py-2 sm:py-4 outline-none focus:ring-primary/20 text-xs sm:text-lg min-h-[44px]"
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+                                <div>
+                                    <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-2">Guest Name</label>
+                                    <input 
+                                        required
+                                        type="text" 
+                                        value={newGuest.guest_name}
+                                        onChange={e => setNewGuest({...newGuest, guest_name: e.target.value})}
+                                        placeholder="Full name..."
+                                        className="w-full bg-neutral border border-border rounded-lg sm:rounded-2xl px-3 sm:px-6 py-2 sm:py-4 outline-none focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-2">Email Address</label>
+                                    <input 
+                                        type="email" 
+                                        value={newGuest.guest_email}
+                                        onChange={e => setNewGuest({...newGuest, guest_email: e.target.value})}
+                                        placeholder="email@example.com"
+                                        className="w-full bg-neutral border border-border rounded-lg sm:rounded-2xl px-3 sm:px-6 py-2 sm:py-4 outline-none focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
