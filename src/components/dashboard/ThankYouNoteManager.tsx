@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Mail, Plus, Trash2, Send, CheckCircle2, Loader2, 
-    Clock, Save, ArrowRight, Type, Eye, AlertCircle
+    Clock, Save, ArrowRight, Type, Eye, AlertCircle, X
 } from 'lucide-react';
 
 interface Template {
