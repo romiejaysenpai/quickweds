@@ -15,7 +15,7 @@ const envSchema = z.object({
 
     // Required: Resend
     RESEND_API_KEY: z.string().min(10, 'Invalid Resend API key'),
-    RESEND_FROM_EMAIL: z.string().email('Invalid from email'),
+    RESEND_FROM_EMAIL: z.string().min(5, 'Invalid from email'),
 
     // Optional: Cloudinary
     CLOUDINARY_URL: z.string().startsWith('cloudinary://', 'Invalid Cloudinary URL').optional(),

@@ -108,22 +108,39 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
         }
 
         try {
-            const { data, error } = await supabase.from('thank_you_notes').insert({
+            const { data: insertedNote, error } = await supabase.from('thank_you_notes').insert({
                 wedding_id: weddingId,
                 rsvp_id: guest.id,
                 recipient_name: guest.guest_name,
                 recipient_email: guest.guest_email,
                 template_id: template.id,
-                status: 'sent',
-                sent_at: new Date().toISOString()
+                status: 'draft',
+                created_at: new Date().toISOString()
             }).select().single();
 
             if (error) throw error;
-            if (data) setNotes([data, ...notes]);
             
-            // Visual feedback - normally would also trigger actual email send via API here
+            // Actually trigger the API endpoint
+            const session = await supabase.auth.getSession();
+            const token = session.data.session?.access_token;
+            
+            const res = await fetch('/api/weddings/thank-you/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ weddingId })
+            });
+
+            if (!res.ok) throw new Error('API failed to send the email');
+
+            if (insertedNote) {
+                setNotes([{ ...insertedNote, status: 'sent', sent_at: new Date().toISOString() }, ...notes]);
+            }
         } catch (err) {
-            alert("Failed to record thank you note");
+            console.error(err);
+            alert("Failed to record and send thank you note");
         }
     };
 
