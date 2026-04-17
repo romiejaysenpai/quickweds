@@ -43,7 +43,7 @@ export const rsvpNotifySchema = z.object({
     message: z.string().max(2000).optional().default(''),
     dietaryDetails: z.string().max(1000).optional().default(''),
     songRequest: z.string().max(500).optional().default(''),
-    plusOneNames: z.array(z.string().max(200)).optional().default([]),
+    plusOneNames: z.string().max(1000).optional().default(''),
     childrenCount: z.coerce.number().int().min(0).max(20).optional().default(0),
 });
 
@@ -72,7 +72,7 @@ export const rsvpSubmissionSchema = z.object({
     mealPreference: z.string().max(200).optional(),
     dietaryDetails: z.string().max(1000).optional().default(''),
     songRequest: z.string().max(500).optional().default(''),
-    plusOneNames: z.array(z.string().max(200)).optional().default([]),
+    plusOneNames: z.string().max(1000).optional().default(''),
     childrenCount: z.coerce.number().int().min(0).max(20).optional().default(0),
     message: z.string().max(2000).optional().default(''),
 });
