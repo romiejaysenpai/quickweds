@@ -5,7 +5,7 @@ import { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtm
 const resendKey = process.env.RESEND_API_KEY || '';
 const resend = resendKey ? new Resend(resendKey) : null;
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'QuickWeds <noreply@quickweds.site>';
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'QuickWeds <noreply@rsvp.quickweds.site>';
 
 interface SendEmailParams {
     to: string | string[];
