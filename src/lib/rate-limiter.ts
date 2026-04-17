@@ -17,7 +17,7 @@ interface RateLimitConfig {
 // Predefined rate limit configurations
 export const RATE_LIMITS = {
     // Strict limits for email sending (prevent abuse)
-    RSVP_NOTIFY: { maxRequests: 10, windowMs: 60 * 60 * 1000 },      // 10 per hour
+    RSVP_NOTIFY: { maxRequests: 30, windowMs: 60 * 60 * 1000 },      // 30 per hour
     REMINDER_EMAIL: { maxRequests: 5, windowMs: 60 * 60 * 1000 },    // 5 per hour
     
     // Moderate limits for read operations

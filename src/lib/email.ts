@@ -27,6 +27,7 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
     
     try {
         console.log(`📤 Attempting to send email to: ${recipientList.join(', ')} ...`);
+        console.log(`📝 Email Subject: "${subject}" | From: "${FROM_EMAIL}"`);
         
         const payload: any = {
             from: FROM_EMAIL,
@@ -35,13 +36,14 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
         };
 
         if (template && template.id) {
-            console.log(`✨ Using Resend Template: ${template.id}`);
+            console.log(`✨ Using Resend Template ID: ${template.id}`);
             payload.template = {
                 id: template.id,
                 variables: template.variables,
             };
         } else if (html) {
             payload.html = html;
+            console.log(`📄 (HTML Content provided, length: ${html.length})`);
         } else {
             throw new Error('Neither HTML nor Template provided for email');
         }
@@ -49,15 +51,15 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
         const { data, error } = await resend.emails.send(payload);
 
         if (error) {
-            console.error('❌ Resend API Error:', error);
+            console.error('❌ Resend API Error Response:', JSON.stringify(error, null, 2));
             // Help diagnostic for common issues
-            if (error.name === 'validation_error' && FROM_EMAIL.includes('quickweds.site')) {
-                console.warn('💡 TIP: If you connected a custom Resend account, ensure you verified "quickweds.site" or set RESEND_FROM_EMAIL to a domain you own.');
+            if (error.name === 'validation_error' && FROM_EMAIL.includes('quickweds.site') && !FROM_EMAIL.includes('rsvp.quickweds.site')) {
+                console.warn('💡 TIP: The domain "quickweds.site" might not be verified. Use "rsvp.quickweds.site" instead.');
             }
             return { success: false, error: error.message, details: error };
         }
 
-        console.log(`✅ Email sent successfully! ID: ${data?.id}`);
+        console.log(`✅ Email accepted by Resend! ID: ${data?.id}`);
         return { success: true, id: data?.id };
     } catch (err: any) {
         console.error('💥 Unexpected email send exception:', err);

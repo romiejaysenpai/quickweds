@@ -46,31 +46,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             .single();
 
         if (weddingError || !wedding) {
+            console.error(`❌ Wedding not found in Supabase: ${weddingId}`);
             return res.status(404).json({ error: 'Wedding not found' });
         }
 
         // Get recipient email (couple)
-        // Fallback Priority:
-        // 1. wedding.couple_email (if exists)
-        // 2. wedding.contact_person (if it looks like an email)
-        // 3. Admin Email (fallback from environment variable)
         const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@quickweds.com';
         let recipientEmail = wedding.couple_email;
 
+        console.log(`🔍 Resolving notification recipient for wedding: ${weddingId}`);
         if (!recipientEmail && wedding.contact_person && wedding.contact_person.includes('@')) {
             recipientEmail = wedding.contact_person;
-            console.log(`Using contact_person as fallback email: ${recipientEmail}`);
+            console.log(`   - Falling back to contact_person: ${recipientEmail}`);
+        } else if (recipientEmail) {
+            console.log(`   - Using couple_email: ${recipientEmail}`);
         }
 
         if (!recipientEmail) {
             recipientEmail = ADMIN_EMAIL;
-            console.log(`No recipient email found for wedding: ${weddingId}. Falling back to admin: ${recipientEmail}`);
+            console.log(`   - No specific email found. Falling back to Admin: ${recipientEmail}`);
         }
 
         const guestRecipientEmail = guestEmail || 'no-email-provided';
+        console.log(`👥 Guest Email resolved as: ${guestRecipientEmail}`);
 
         const weddingUrl = `${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site'}/w/${weddingId}`;
         const finalWeddingUrl = wedding.custom_domain ? `https://${wedding.custom_domain}` : `https://${weddingUrl}`;
+        console.log(`🔗 Confirmation URL for Guest: ${finalWeddingUrl}`);
 
         // Prepare templates
         const coupleHtml = getCoupleNotificationHtml({
