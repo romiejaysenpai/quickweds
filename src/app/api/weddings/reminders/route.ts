@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email';
 import { reminderSchema, validateRequest } from '@/lib/validations';
-import { createRateLimitMiddleware } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeEmail, sanitizeWeddingId } from '@/lib/rate-limiter';
 
 export async function POST(req: NextRequest) {
-    // Rate limit reminder requests
+    // Rate limit reminder requests by IP
     const rateLimit = createRateLimitMiddleware('REMINDER_EMAIL');
-    const forwarded = req.headers.get('x-forwarded-for');
-    const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
-    const result = rateLimit.check(ip);
+    const clientIP = getClientIP(req);
+    const result = rateLimit.check(clientIP);
 
     if (result.limited) {
         return NextResponse.json(
@@ -20,6 +19,15 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
+        
+        // CRITICAL FIX #2: Sanitize inputs before validation
+        if (body.weddingId) {
+            body.weddingId = sanitizeWeddingId(body.weddingId);
+        }
+        if (body.targetStatus) {
+            body.targetStatus = sanitizeInput(body.targetStatus, { maxLength: 20 });
+        }
+        
         const validation = validateRequest(reminderSchema, body);
 
         if (!validation.success) {
@@ -47,28 +55,40 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: guestError.message }, { status: 500 });
         }
 
+        // CRITICAL FIX #2: Sanitize guest data before sending emails
         const recipients = (guests || []).filter((guest) => {
             const normalizedStatus = guest.rsvp_status || (guest.attendance === 'Yes' ? 'confirmed' : guest.attendance === 'No' ? 'declined' : 'pending');
-            return guest.guest_email && normalizedStatus === targetStatus;
-        });
+            const sanitizedEmail = sanitizeEmail(guest.guest_email || '');
+            return sanitizedEmail && normalizedStatus === targetStatus;
+        }).map(guest => ({
+            ...guest,
+            guest_name: sanitizeInput(guest.guest_name, { maxLength: 200 }),
+            guest_email: sanitizeEmail(guest.guest_email),
+        }));
+
+        // Sanitize wedding data for email
+        const sanitizedBrideName = sanitizeInput(wedding.bride_name, { maxLength: 200 });
+        const sanitizedGroomName = sanitizeInput(wedding.groom_name, { maxLength: 200 });
+        const sanitizedWeddingDate = sanitizeInput(wedding.wedding_date, { maxLength: 50 });
+        const sanitizedRsvpDeadline = sanitizeInput(wedding.rsvp_deadline, { maxLength: 50 });
 
         const weddingUrl = wedding.custom_domain
-            ? `https://${wedding.custom_domain}`
+            ? `https://${sanitizeInput(wedding.custom_domain, { maxLength: 100 })}`
             : `${process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app'}/w/${weddingId}`;
 
         const results = await Promise.all(recipients.map((guest) => sendEmail({
             to: guest.guest_email,
-            subject: `Reminder: ${wedding.bride_name} & ${wedding.groom_name} would love your RSVP`,
+            subject: `Reminder: ${sanitizedBrideName} & ${sanitizedGroomName} would love your RSVP`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #2e2e2e;">
                     <h1 style="font-size: 24px; margin-bottom: 12px;">A quick RSVP reminder</h1>
                     <p style="line-height: 1.6;">Hi ${guest.guest_name},</p>
                     <p style="line-height: 1.6;">
-                        ${wedding.bride_name} and ${wedding.groom_name} are finalizing plans for their wedding and would love your RSVP when you have a moment.
+                        ${sanitizedBrideName} and ${sanitizedGroomName} are finalizing plans for their wedding and would love your RSVP when you have a moment.
                     </p>
                     <p style="line-height: 1.6;">
-                        Event date: <strong>${wedding.wedding_date}</strong><br />
-                        RSVP deadline: <strong>${wedding.rsvp_deadline}</strong>
+                        Event date: <strong>${sanitizedWeddingDate}</strong><br />
+                        RSVP deadline: <strong>${sanitizedRsvpDeadline}</strong>
                     </p>
                     <p style="margin: 24px 0;">
                         <a href="${weddingUrl}" style="display: inline-block; background: #D16C78; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: bold;">

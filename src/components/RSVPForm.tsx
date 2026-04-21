@@ -16,7 +16,37 @@ const DIETARY_OPTIONS = [
     'Other (see message)',
 ];
 
-export default function RSVPForm({ weddingId, wedding }: { weddingId: string, wedding?: any }) {
+function getPrimaryPlusOneName(raw: string) {
+    const [firstName] = raw
+        .split(',')
+        .map((name) => name.trim())
+        .filter(Boolean);
+    return firstName || '';
+}
+
+type WeddingPreview = {
+    template?: string;
+};
+
+type RsvpInsertData = {
+    wedding_id: string;
+    guest_name: string;
+    guest_email: string | null;
+    attendance: string;
+    num_guests: number;
+    rsvp_status: string;
+    plus_one_allowed: boolean;
+    meal_preference?: string;
+    dietary_details?: string;
+    message?: string;
+    plus_one_names?: string;
+    plus_one_name?: string;
+    plus_one_rsvp_status?: string;
+    song_request?: string;
+    children_count?: number;
+};
+
+export default function RSVPForm({ weddingId, wedding }: { weddingId: string, wedding?: WeddingPreview }) {
     const isSharp = wedding?.template === 'editorial' || wedding?.template === 'minimal' || wedding?.template === 'vogue';
     const isDark = wedding?.template === 'midnight' || wedding?.template === 'royal' || wedding?.template === 'urban';
     const isVintage = wedding?.template === 'vintage' || wedding?.template === 'film' || wedding?.template === 'rustic';
@@ -63,20 +93,25 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                 return;
             }
 
-const insertData: any = {
+const insertData: RsvpInsertData = {
                 wedding_id: weddingId,
                 guest_name: formData.guestName.trim(),
                 guest_email: formData.guestEmail.trim() || null,
                 attendance: formData.attendance,
                 num_guests: formData.numGuests || 1,
                 rsvp_status: formData.attendance === 'Yes' ? 'confirmed' : 'declined',
+                plus_one_allowed: formData.numGuests > 1 || Boolean(formData.plusOneNames.trim()),
             };
 
             // Optional fields - only include if they have values to avoid schema conflicts
             if (formData.mealPreference && formData.mealPreference !== 'No Preference') insertData.meal_preference = formData.mealPreference;
             if (formData.dietaryDetails) insertData.dietary_details = formData.dietaryDetails;
             if (formData.message) insertData.message = formData.message;
-            if (formData.plusOneNames) insertData.plus_one_names = formData.plusOneNames;
+            if (formData.plusOneNames) {
+                insertData.plus_one_names = formData.plusOneNames;
+                insertData.plus_one_name = getPrimaryPlusOneName(formData.plusOneNames);
+                insertData.plus_one_rsvp_status = formData.attendance === 'Yes' ? 'confirmed' : 'declined';
+            }
             if (formData.songRequest) insertData.song_request = formData.songRequest;
             if (formData.childrenCount > 0) insertData.children_count = formData.childrenCount;
 

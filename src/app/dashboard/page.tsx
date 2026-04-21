@@ -97,7 +97,10 @@ function DeleteButton({ weddingId, coupleName, onDeleted }: { weddingId: string;
     const handleDelete = async () => {
         setDeleting(true);
         try {
-            const { error } = await supabase.from('weddings').delete().eq('id', weddingId);
+            const { error } = await supabase
+                .from('weddings')
+                .update({ deleted_at: new Date().toISOString() })
+                .eq('id', weddingId);
             if (!error) onDeleted();
         } catch (e) {
             console.error(e);
@@ -148,6 +151,7 @@ export default function DashboardRedirect() {
                 .from('weddings')
                 .select('*, rsvps(id)')
                 .eq('user_id', user.id)
+                .is('deleted_at', null)
                 .order('created_at', { ascending: false });
             
             if (error) throw error;

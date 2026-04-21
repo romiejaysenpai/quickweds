@@ -44,6 +44,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 .from('weddings')
                 .select('id, user_id, total_budget, currency')
                 .eq('id', weddingId)
+                .is('deleted_at', null)
                 .single();
 
             if (accessWeddingError || !accessWedding) {
@@ -68,7 +69,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             const [tasksRes, budgetsRes, weddingRes, vendorsRes] = await Promise.all([
                 supabase.from('planner_tasks').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
                 supabase.from('planner_budgets').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
-                supabase.from('weddings').select('total_budget, currency').eq('id', weddingId).single(),
+                supabase.from('weddings').select('total_budget, currency').eq('id', weddingId).is('deleted_at', null).single(),
                 supabase.from('planner_vendors').select('*').eq('wedding_id', weddingId),
             ]);
 

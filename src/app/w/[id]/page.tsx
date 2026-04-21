@@ -1,9 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useState, use } from 'react';
+import { Suspense, useEffect, useState, use, type CSSProperties } from 'react';
 import { notFound } from 'next/navigation';
-import { Heart, Calendar, MapPin, Clock, Shirt, Info, MessageSquare, Send, Quote, Music, Camera, Sparkles } from 'lucide-react';
-import RSVPForm from '@/components/RSVPForm';
+import { Heart, Quote, Camera, Sparkles } from 'lucide-react';
 import DecorativeLayer from '@/components/DecorativeLayer';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
@@ -14,16 +13,17 @@ import {
     DetailsSection,
     GallerySection,
     GiftSection,
-    RSVPSection,
     TimelineSection,
-    GuestBook,
-    WeddingPartySection,
-    VenueMap,
-    MinimalGallery,
     HeroEnhancer,
     PremiumBackgroundLayer,
 } from '@/components/wedding';
-import type { Wedding, WeddingPartyMember } from '@/types/wedding';
+import {
+    ClassicTemplate,
+    MinimalTemplate,
+    SharedNewSections,
+    VintageTemplate,
+} from '@/components/templates';
+import type { Wedding } from '@/types/wedding';
 import { trackWeddingEvent } from '@/lib/wedding-features';
 
 function safeParseArray<T>(value: unknown): T[] {
@@ -38,9 +38,19 @@ function safeParseArray<T>(value: unknown): T[] {
     }
 }
 
+type ThemeFontVars = Record<'--font-serif' | '--font-sans', string>;
+type WeddingPageStyle = CSSProperties & Record<'--primary', string> & ThemeFontVars;
+const whimsicalParticles = Array.from({ length: 30 }, (_, index) => ({
+    id: index,
+    top: `${(index * 17) % 100}%`,
+    left: `${(index * 29) % 100}%`,
+    driftX: ((index * 13) % 50) - 25,
+    duration: 5 + (index % 6),
+}));
+
 export default function WeddingPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    const [wedding, setWedding] = useState<any>(null);
+    const [wedding, setWedding] = useState<Wedding | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -158,7 +168,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
                 return <ClassicTemplate wedding={wedding} gallery={gallery} isExpired={isExpired} />;
         }
     };
-    const getFontVariables = (style: string) => {
+    const getFontVariables = (style: string): ThemeFontVars => {
         switch (style) {
             case 'Elegant': return { '--font-serif': 'var(--font-playfair)', '--font-sans': 'var(--font-inter)' };
             case 'Classic': return { '--font-serif': 'var(--font-cinzel)', '--font-sans': 'var(--font-cormorant)' };
@@ -212,15 +222,16 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
     };
 
     const fontVars = getFontVariables(wedding.font_style);
+    const pageStyle: WeddingPageStyle = {
+        '--primary': wedding.motif_color,
+        backgroundColor: '#FFF8F4',
+        ...fontVars,
+    };
 
     return (
         <div
             className={`min-h-screen relative selection:bg-primary/20 template-${template} overflow-x-hidden`}
-            style={{
-                '--primary': wedding.motif_color,
-                backgroundColor: '#FFF8F4',
-                ...fontVars
-            } as any}
+            style={pageStyle}
         >
             <div className="noise-overlay" />
             {/* Premium Dynamic Background Layer */}
@@ -438,18 +449,18 @@ function WhimsicalTemplate({ wedding, gallery, isExpired }: any) {
         <div className="bg-[#fff9fc] text-[#e3a6c1] relative overflow-hidden pb-24">
             {/* Animated Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                {[...Array(30)].map((_, i) => (
+                {whimsicalParticles.map((particle) => (
                     <motion.div
-                        key={i}
+                        key={particle.id}
                         className="absolute"
-                        style={{ top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%` }}
+                        style={{ top: particle.top, left: particle.left }}
                         animate={{
                             y: [0, -100, 0],
-                            x: [0, Math.random() * 50 - 25, 0],
+                            x: [0, particle.driftX, 0],
                             rotate: [0, 180, 360],
-                            scale: [1, 1.2, 1]
+                            scale: [1, 1.2, 1],
                         }}
-                        transition={{ duration: Math.random() * 5 + 5, repeat: Infinity }}
+                        transition={{ duration: particle.duration, repeat: Infinity }}
                     >
                         <Sparkles className="w-6 h-6 opacity-20 text-primary" />
                     </motion.div>
@@ -868,7 +879,7 @@ function RusticTemplate({ wedding, gallery, isExpired }: any) {
                     <div className="w-16 sm:w-18 md:w-20 h-16 sm:h-18 md:h-20 mx-auto mb-6 sm:mb-7 md:mb-8 opacity-40">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
                     </div>
-                    <p className="text-xs sm:text-sm uppercase tracking-[0.4em] font-bold mb-4 sm:mb-5 md:mb-6">We're getting married</p>
+                    <p className="text-xs sm:text-sm uppercase tracking-[0.4em] font-bold mb-4 sm:mb-5 md:mb-6">We&apos;re getting married</p>
                     <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-8xl mb-6 sm:mb-7 md:mb-8 font-black text-[#8d7966] drop-shadow-sm font-handwritten">
                         {wedding.bride_name.split(' ')[0]} & {wedding.groom_name.split(' ')[0]}
                     </h1>
@@ -1085,62 +1096,6 @@ function GardenTemplate({ wedding, gallery, isExpired }: any) {
             <GiftSection wedding={wedding} />
             <GallerySection gallery={gallery} />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
-        </div>
-    );
-}
-
-// --- SHARED COMPONENTS are now imported from @/components/wedding ---
-
-// Helper: Parse wedding party members from JSON
-function parseWeddingParty(wedding: any): WeddingPartyMember[] {
-    try {
-        if (wedding.wedding_party) return JSON.parse(wedding.wedding_party);
-    } catch { }
-    return [];
-}
-
-// Helper: Common new sections added to all templates
-function SharedNewSections({ wedding, isExpired }: { wedding: any; isExpired: boolean }) {
-    const partyMembers = parseWeddingParty(wedding);
-    return (
-        <>
-            {wedding.is_thank_you_mode ? (
-                <div className="py-24 px-6 text-center max-w-4xl mx-auto space-y-8 bg-primary/5 rounded-3xl my-12 border border-primary/20 soft-shadow">
-                    <h2 className="text-4xl md:text-5xl font-serif text-primary italic">Thank You!</h2>
-                    <p className="text-xl font-light leading-relaxed text-text-secondary">{wedding.thank_you_message || "Thank you so much for celebrating our special day with us."}</p>
-                    {wedding.photo_album_link && (
-                        <a href={wedding.photo_album_link} target="_blank" rel="noopener noreferrer" className="inline-block px-10 py-4 bg-primary text-white font-bold rounded-full mt-8 shadow-lg hover:shadow-xl transition-all">
-                            View Wedding Album
-                        </a>
-                    )}
-                </div>
-            ) : null}
-            <WeddingPartySection members={partyMembers} />
-            <VenueMap venueName={wedding.venue_name} venueAddress={wedding.venue_address} mapsLink={wedding.maps_link} />
-            <GuestBook weddingId={wedding.id} />
-            {wedding.spotify_playlist_url && (
-                <div className="fixed bottom-6 left-6 z-50">
-                    <a href={wedding.spotify_playlist_url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#1DB954] text-white font-bold text-sm shadow-lg hover:scale-105 transition-transform">
-                        <Music className="w-4 h-4" /> Our Playlist
-                    </a>
-                </div>
-            )}
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
-        </>
-    );
-}
-
-function MinimalDetailItem({ icon: Icon, title, value }: any) {
-    return (
-        <div className="flex gap-6 items-center">
-            <div className="w-12 h-12 bg-primary/5 flex items-center justify-center shrink-0">
-                <Icon className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-                <p className="text-[10px] uppercase tracking-widest font-black opacity-30 mb-1">{title}</p>
-                <p className="text-xl font-bold tracking-tighter">{value}</p>
-            </div>
         </div>
     );
 }
@@ -1402,129 +1357,6 @@ function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
             <GiftSection wedding={wedding} invert />
             <SharedNewSections wedding={wedding} isExpired={isExpired} />
         </div>
-    );
-}
-
-function VintageTemplate({ wedding, gallery, isExpired }: any) {
-    return (
-        <div className="bg-[#fdfbf6] text-[#5d544b] font-serif relative pb-24">
-            <div className="fixed inset-0 pointer-events-none opacity-[0.03] grayscale bg-[url('https://www.transparenttextures.com/patterns/old-map.png')]" />
-            <section className="min-h-screen py-16 sm:py-20 md:py-24 lg:py-24 flex flex-col items-center justify-center px-4 sm:px-6 text-center relative overflow-hidden">
-                <div className="absolute inset-8 border-[0.5px] border-[#5d544b]/20 pointer-events-none rounded-[2rem]" />
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.2 }}>
-                    <p className="uppercase tracking-[0.4em] text-xs font-bold mb-8 sm:mb-10 md:mb-12 opacity-40">Together with their families</p>
-                    <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-9xl mb-8 sm:mb-10 md:mb-12 text-[#433c35] drop-shadow-sm">
-                        {wedding.bride_name} <br />
-                        <span className="text-2xl sm:text-2xl md:text-3xl italic font-light opacity-30 my-4 sm:my-5 md:my-6 block">&</span>
-                        {wedding.groom_name}
-                    </h1>
-                    <div className="inline-block border-y border-[#5d544b]/20 py-6 sm:py-7 md:py-8 px-12 sm:px-14 md:px-16 bg-white/30 backdrop-blur-sm rounded-lg">
-                        <p className="text-lg sm:text-lg md:text-lg tracking-widest lowercase font-light italic mb-1 sm:mb-2">at the sunset of</p>
-                        <p className="text-2xl sm:text-2xl md:text-3xl uppercase tracking-[0.2em] font-bold">{new Date(wedding.wedding_date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                    </div>
-                </motion.div>
-            </section>
-
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} />
-            {!wedding.is_thank_you_mode && !isExpired && (
-                <CountdownTimer
-                    weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
-                    brideName={wedding.bride_name}
-                    groomName={wedding.groom_name}
-                    venueName={wedding.venue_name}
-                    venueAddress={wedding.venue_address}
-                />
-            )}
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
-            <GiftSection wedding={wedding} />
-            <SharedNewSections wedding={wedding} isExpired={isExpired} />
-        </div>
-    );
-}
-
-function MinimalTemplate({ wedding, gallery, isExpired }: any) {
-    return (
-        <div className="bg-white text-neutral-800 pb-24">
-            <section className="min-h-[85vh] flex items-center justify-center px-4 sm:px-6 md:px-24 py-12 sm:py-16 md:py-24 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
-                <div className="max-w-4xl text-center space-y-8 sm:space-y-10 md:space-y-12 z-10">
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.5 }}>
-                        <p className="text-xs uppercase tracking-[0.5em] font-medium text-neutral-400 mb-6 sm:mb-8">Save the Date</p>
-                        <h1 className="text-3xl sm:text-4xl md:text-8xl font-serif leading-tight text-neutral-900 mb-8 sm:mb-10 md:mb-12">
-                            {wedding.bride_name} <br />
-                            <span className="font-light italic serif text-neutral-300 ml-0 sm:ml-2 md:ml-4">&</span> <br />
-                            {wedding.groom_name}
-                        </h1>
-                        <div className="w-12 sm:w-14 md:w-16 h-[1px] bg-neutral-200 mx-auto mb-8 sm:mb-10 md:mb-12" />
-                        <p className="text-lg sm:text-lg md:text-xl font-light tracking-widest uppercase text-neutral-500">{new Date(wedding.wedding_date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                    </motion.div>
-                </div>
-            </section>
-
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} />
-            {!wedding.is_thank_you_mode && !isExpired && (
-                <CountdownTimer
-                    weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
-                    brideName={wedding.bride_name}
-                    groomName={wedding.groom_name}
-                    venueName={wedding.venue_name}
-                    venueAddress={wedding.venue_address}
-                />
-            )}
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
-            <GiftSection wedding={wedding} />
-            <SharedNewSections wedding={wedding} isExpired={isExpired} />
-        </div>
-    );
-}
-
-function ClassicTemplate({ wedding, gallery, isExpired }: any) {
-    return (
-        <>
-            <section className="h-screen relative flex items-center justify-center overflow-hidden">
-                <img src={wedding.hero_image || wedding.couple_photo} className="absolute inset-0 w-full h-full object-cover brightness-75 scale-105" alt="Wedding Hero" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
-                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="relative text-center text-white z-10 px-4 sm:px-6">
-                    <span className="text-xs uppercase tracking-[0.4em] font-bold mb-4 sm:mb-5 md:mb-6 block opacity-80">The Wedding of</span>
-                    <h1 className="text-2xl sm:text-4xl md:text-6xl lg:text-9xl font-serif mb-6 sm:mb-7 md:mb-8 leading-tight">
-                        {wedding.bride_name} <br />
-                        <span className="text-lg sm:text-2xl md:text-4xl italic font-light serif text-primary-light">&</span> <br />
-                        {wedding.groom_name}
-                    </h1>
-                    <div className="w-8 sm:w-10 md:w-12 h-[1px] bg-white/40 mx-auto mb-6 sm:mb-7 md:mb-8" />
-                    <p className="text-lg sm:text-xl md:text-2xl font-serif italic tracking-wide">{new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
-                </motion.div>
-                <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-bounce">
-                    <div className="w-[1px] h-12 bg-white/40" />
-                </div>
-            </section>
-
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} />
-            {!wedding.is_thank_you_mode && !isExpired && (
-                <CountdownTimer
-                    weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
-                    brideName={wedding.bride_name}
-                    groomName={wedding.groom_name}
-                    venueName={wedding.venue_name}
-                    venueAddress={wedding.venue_address}
-                />
-            )}
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
-            <GiftSection wedding={wedding} />
-            <SharedNewSections wedding={wedding} isExpired={isExpired} />
-        </>
     );
 }
 

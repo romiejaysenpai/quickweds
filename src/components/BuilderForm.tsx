@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import VectorArtGuests from './VectorArtGuests';
 import { supabase } from '@/lib/supabase';
@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
 import MarketplacePanel from './builder/MarketplacePanel';
+import { useLocalUndoRedo } from '@/components/UndoRedoProvider';
 import {
     SECTION_BLOCK_LIBRARY,
     buildPresetPayload,
@@ -106,6 +107,45 @@ export const TEMPLATES = [
     { id: 'garden', name: 'Secret Garden', desc: 'Lush greenery, trellis patterns, and botanical elegance.', icon: '🍃' }
 ];
 
+// Initial form data
+const INITIAL_FORM_DATA = {
+    brideName: '',
+    groomName: '',
+    weddingDate: '',
+    weddingTime: '',
+    venueName: '',
+    venueAddress: '',
+    mapsLink: '',
+    motifColor: '#C08081',
+    fontStyle: 'Elegant',
+    backgroundStyle: 'gradient',
+    template: 'classic',
+    dressCode: '',
+    dressCodeColor: '#000000',
+    programTimeline: '',
+    story: '',
+    quote: '',
+    hashtag: '',
+    contactPerson: '',
+    rsvpDeadline: '',
+    giftBank: '',
+    giftAccountName: '',
+    giftAccountNumber: '',
+    logoInitials: '',
+    logoFont: 'Elegant',
+    logoShape: 'minimal',
+    logoColor: '#C08081',
+    spotifyUrl: '',
+    weddingParty: [],
+    registryLinks: [],
+    cashFunds: [],
+    paymentLinks: [],
+    isThankYouMode: false,
+    thankYouMessage: '',
+    photoAlbumLink: '',
+    accentStyle: 'none',
+};
+
 export default function BuilderForm() {
     const router = useRouter();
     const { user, isAdmin, loading: authLoading } = useAuth();
@@ -114,43 +154,42 @@ export default function BuilderForm() {
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [formData, setFormData] = useState<any>({
-        brideName: '',
-        groomName: '',
-        weddingDate: '',
-        weddingTime: '',
-        venueName: '',
-        venueAddress: '',
-        mapsLink: '',
-        motifColor: '#C08081',
-        fontStyle: 'Elegant',
-        backgroundStyle: 'gradient',
-        template: 'classic',
-        dressCode: '',
-        dressCodeColor: '#000000',
-        programTimeline: '',
-        story: '',
-        quote: '',
-        hashtag: '',
-        contactPerson: '',
-        rsvpDeadline: '',
-        giftBank: '',
-        giftAccountName: '',
-        giftAccountNumber: '',
-        logoInitials: '',
-        logoFont: 'Elegant',
-        logoShape: 'minimal',
-        logoColor: '#C08081',
-        spotifyUrl: '',
-        weddingParty: [],
-        registryLinks: [],
-        cashFunds: [],
-        paymentLinks: [],
-        isThankYouMode: false,
-        thankYouMessage: '',
-        photoAlbumLink: '',
-        accentStyle: 'none',
-    });
+    
+    // Undo/Redo functionality
+    const {
+        state: formData,
+        setState: setFormData,
+        undo,
+        redo,
+        canUndo,
+        canRedo,
+    } = useLocalUndoRedo(INITIAL_FORM_DATA, 50);
+
+    // Keyboard shortcuts for undo/redo
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't trigger shortcuts when typing in input fields
+            const target = e.target as HTMLElement;
+            if (
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.contentEditable === 'true'
+            ) {
+                return;
+            }
+
+            if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redo();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [undo, redo]);
 
     const [mediaFiles, setMediaFiles] = useState<{
         heroImage: File | null;
@@ -198,7 +237,7 @@ export default function BuilderForm() {
             if (pendingData) {
                 try {
                     const restored = JSON.parse(pendingData);
-                    setFormData((prev: any) => ({ ...prev, ...restored }));
+                    setFormData({ ...INITIAL_FORM_DATA, ...restored });
                     window.sessionStorage.removeItem('pending_wedding_data');
                     console.log('✅ Restored pending wedding form data from session');
                 } catch (e) {
@@ -1138,6 +1177,35 @@ return (
                             {idx < STEPS.length - 1 && <div className={`absolute top-4 sm:top-5 left-[60%] w-[80%] h-[2px] -z-0 hidden sm:block ${idx < currentStep ? 'bg-secondary' : 'bg-border'}`} />}
                         </div>
                     ))}
+                </div>
+
+                {/* Undo/Redo Controls */}
+                <div className="flex items-center justify-between mb-4 px-1">
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={undo}
+                            disabled={!canUndo}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-text-secondary hover:text-primary hover:bg-neutral disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            title="Undo (Ctrl+Z)"
+                        >
+                            <Undo2 className="w-4 h-4" />
+                            <span className="hidden sm:inline">Undo</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={redo}
+                            disabled={!canRedo}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-text-secondary hover:text-primary hover:bg-neutral disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+                        >
+                            <Redo2 className="w-4 h-4" />
+                            <span className="hidden sm:inline">Redo</span>
+                        </button>
+                    </div>
+                    <div className="text-[10px] text-text-secondary/50">
+                        {canUndo && <span>Press Ctrl+Z to undo</span>}
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">

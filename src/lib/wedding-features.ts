@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { checkRateLimit, sanitizeInput, sanitizeWeddingId, sanitizeEmail, sanitizeUUID } from '@/lib/rate-limiter';
 
 export type CollaboratorRole = 'partner' | 'coordinator';
 export type CollaboratorStatus = 'pending' | 'accepted';
@@ -183,22 +184,88 @@ export const SECTION_BLOCK_LIBRARY: BuilderSectionBlock[] = [
     },
 ];
 
+// In-memory rate limiting for client-side analytics (per session)
+const analyticsRateLimits = new Map<string, { count: number; resetTime: number }>();
+
+/**
+ * Track wedding analytics event with rate limiting and input sanitization
+ * CRITICAL FIX #1: Added rate limiting to prevent spam
+ * CRITICAL FIX #2: Added input sanitization
+ */
 export async function trackWeddingEvent(
     weddingId: string,
     eventType: string,
     metadata: Record<string, unknown> = {}
 ) {
     try {
+        // Sanitize inputs
+        const sanitizedWeddingId = sanitizeWeddingId(weddingId);
+        if (!sanitizedWeddingId) {
+            console.warn('Invalid wedding ID for analytics tracking');
+            return;
+        }
+
+        const sanitizedEventType = sanitizeInput(eventType, { maxLength: 50, allowNewlines: false });
+        if (!sanitizedEventType) {
+            console.warn('Invalid event type for analytics tracking');
+            return;
+        }
+
+        // Client-side rate limiting (per session)
         const sessionId = getAnalyticsSessionId();
-        const source = typeof metadata.source === 'string' ? metadata.source : 'direct';
+        const rateLimitKey = `${sessionId}:${sanitizedWeddingId}`;
+        const now = Date.now();
+        const windowMs = 60 * 1000; // 1 minute window
+        const maxRequests = 20; // Max 20 events per minute per session per wedding
+
+        const existing = analyticsRateLimits.get(rateLimitKey);
+        if (existing) {
+            if (now > existing.resetTime) {
+                // Reset window
+                analyticsRateLimits.set(rateLimitKey, { count: 1, resetTime: now + windowMs });
+            } else if (existing.count >= maxRequests) {
+                // Rate limit exceeded - silently drop the event
+                console.warn(`Analytics rate limit exceeded for session ${sessionId}`);
+                return;
+            } else {
+                // Increment count
+                existing.count += 1;
+            }
+        } else {
+            analyticsRateLimits.set(rateLimitKey, { count: 1, resetTime: now + windowMs });
+        }
+
+        // Sanitize metadata
+        const source = typeof metadata.source === 'string' 
+            ? sanitizeInput(metadata.source, { maxLength: 50 }) 
+            : 'direct';
+        
+        const sanitizedReferrer = typeof document !== 'undefined' && document.referrer
+            ? sanitizeInput(document.referrer, { maxLength: 500 })
+            : null;
+
+        // Sanitize metadata object - only allow primitive values
+        const sanitizedMetadata: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(metadata)) {
+            const sanitizedKey = sanitizeInput(key, { maxLength: 50 });
+            if (!sanitizedKey) continue;
+            
+            // Only allow strings, numbers, and booleans in metadata
+            if (typeof value === 'string') {
+                sanitizedMetadata[sanitizedKey] = sanitizeInput(value, { maxLength: 200 });
+            } else if (typeof value === 'number' || typeof value === 'boolean') {
+                sanitizedMetadata[sanitizedKey] = value;
+            }
+            // Skip objects, arrays, functions, etc.
+        }
 
         await supabase.from('wedding_analytics_events').insert({
-            wedding_id: weddingId,
-            event_type: eventType,
+            wedding_id: sanitizedWeddingId,
+            event_type: sanitizedEventType,
             source,
             session_id: sessionId,
-            referrer: typeof document !== 'undefined' ? document.referrer : null,
-            metadata,
+            referrer: sanitizedReferrer,
+            metadata: sanitizedMetadata,
         });
     } catch (error) {
         console.warn('Analytics tracking unavailable:', error);
@@ -283,16 +350,36 @@ export async function inviteWeddingCollaborator(input: {
     role: CollaboratorRole;
     invitedByUserId: string;
 }) {
-    const normalizedEmail = input.email.trim().toLowerCase();
+    // CRITICAL FIX #2: Input sanitization
+    const sanitizedWeddingId = sanitizeWeddingId(input.weddingId);
+    if (!sanitizedWeddingId) {
+        throw new Error('Invalid wedding ID');
+    }
+
+    const sanitizedEmail = sanitizeEmail(input.email);
+    if (!sanitizedEmail) {
+        throw new Error('Invalid email address');
+    }
+
+    const sanitizedUserId = sanitizeUUID(input.invitedByUserId);
+    if (!sanitizedUserId) {
+        throw new Error('Invalid user ID');
+    }
+
+    // Validate role
+    const validRoles: CollaboratorRole[] = ['partner', 'coordinator'];
+    if (!validRoles.includes(input.role)) {
+        throw new Error('Invalid role');
+    }
 
     const { data, error } = await supabase
         .from('wedding_collaborators')
         .upsert({
-            wedding_id: input.weddingId,
-            email: normalizedEmail,
+            wedding_id: sanitizedWeddingId,
+            email: sanitizedEmail,
             role: input.role,
             status: 'pending',
-            invited_by_user_id: input.invitedByUserId,
+            invited_by_user_id: sanitizedUserId,
         }, {
             onConflict: 'wedding_id,email',
         })
@@ -360,7 +447,8 @@ export async function listSharedWeddings(email?: string | null) {
         const { data: weddings, error: weddingError } = await supabase
             .from('weddings')
             .select('id, bride_name, groom_name, wedding_date, venue_name, hero_image, template')
-            .in('id', weddingIds);
+            .in('id', weddingIds)
+            .is('deleted_at', null);
 
         if (weddingError) throw weddingError;
 

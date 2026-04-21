@@ -1,69 +1,65 @@
 import { Resend } from 'resend';
 import { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtml } from './email-templates';
 
-// Initialize Resend — the API key should be set in env
-const resendKey = process.env.RESEND_API_KEY || '';
-const resend = resendKey ? new Resend(resendKey) : null;
-
+const resendApiKey = process.env.RESEND_API_KEY || '';
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'QuickWeds <noreply@rsvp.quickweds.site>';
 
 interface SendEmailParams {
     to: string | string[];
     subject: string;
-    html?: string; // Optional if using template
+    html?: string;
     template?: {
         id: string;
-        variables: Record<string, any>;
+        variables: Record<string, unknown>;
     };
 }
 
 export async function sendEmail({ to, subject, html, template }: SendEmailParams) {
     if (!resend) {
-        console.error('❌ Resend API key MISSING. Check RESEND_API_KEY in environment variables.');
+        console.error('Email configuration missing. Set RESEND_API_KEY before sending.');
         return { success: false, error: 'Email configuration missing' };
     }
 
     const recipientList = Array.isArray(to) ? to : [to];
-    
+
     try {
-        console.log(`📤 Attempting to send email to: ${recipientList.join(', ')} ...`);
-        console.log(`📝 Email Subject: "${subject}" | From: "${FROM_EMAIL}"`);
-        
-        const payload: any = {
+        console.log(`Attempting to send email via Resend to: ${recipientList.join(', ')}`);
+        console.log(`Email Subject: "${subject}" | From: "${FROM_EMAIL}"`);
+
+        if (template?.id) {
+            console.warn(`Template sending is not configured for Resend in this app yet. Falling back to HTML for template ID ${template.id}.`);
+        }
+
+        if (!html) {
+            throw new Error('HTML content is required for email sending');
+        }
+
+        const { data, error } = await resend.emails.send({
             from: FROM_EMAIL,
             to: recipientList,
             subject,
-        };
-
-        if (template && template.id) {
-            console.log(`✨ Using Resend Template ID: ${template.id}`);
-            payload.template = {
-                id: template.id,
-                variables: template.variables,
-            };
-        } else if (html) {
-            payload.html = html;
-            console.log(`📄 (HTML Content provided, length: ${html.length})`);
-        } else {
-            throw new Error('Neither HTML nor Template provided for email');
-        }
-
-        const { data, error } = await resend.emails.send(payload);
+            html,
+        });
 
         if (error) {
-            console.error('❌ Resend API Error Response:', JSON.stringify(error, null, 2));
-            // Help diagnostic for common issues
-            if (error.name === 'validation_error' && FROM_EMAIL.includes('quickweds.site') && !FROM_EMAIL.includes('rsvp.quickweds.site')) {
-                console.warn('💡 TIP: The domain "quickweds.site" might not be verified. Use "rsvp.quickweds.site" instead.');
-            }
-            return { success: false, error: error.message, details: error };
+            console.error('Resend API error:', error);
+            return {
+                success: false,
+                error: error.message || 'Resend request failed',
+                details: error,
+            };
         }
 
-        console.log(`✅ Email accepted by Resend! ID: ${data?.id}`);
-        return { success: true, id: data?.id };
-    } catch (err: any) {
-        console.error('💥 Unexpected email send exception:', err);
-        return { success: false, error: err.message };
+        console.log(`Resend accepted the email request. ID: ${data?.id || 'n/a'}`);
+        return {
+            success: true,
+            id: data?.id,
+        };
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown email error';
+        console.error('Unexpected Resend email send exception:', err);
+        return { success: false, error: message };
     }
 }
 
