@@ -60,17 +60,33 @@ const homemade = Homemade_Apple({ variable: "--font-homemade", weight: "400", su
 const herr = Herr_Von_Muellerhoff({ variable: "--font-herr", weight: "400", subsets: ["latin"] });
 const lavishly = Lavishly_Yours({ variable: "--font-lavishly", weight: "400", subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "QuickWeds | Instant Elegant Wedding Landing Pages",
-  description: "Create a beautiful, mobile-first wedding invitation landing page with an integrated RSVP system in minutes.",
-};
-
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
   viewportFit: "cover",
+};
+
+export const metadata: Metadata = {
+  title: "QuickWeds | Instant Elegant Wedding Landing Pages",
+  description: "Create a beautiful, mobile-first wedding invitation landing page with an integrated RSVP system in minutes.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "QuickWeds",
+  },
+  icons: {
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+  },
 };
 
 import { AuthProvider } from "@/context/AuthContext";

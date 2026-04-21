@@ -62,13 +62,13 @@ export default function SignUpPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-neutral px-6">
+        <div className="min-h-screen flex items-center justify-center bg-neutral px-4 sm:px-6">
             <div className="noise-overlay" />
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="max-w-md w-full bg-white rounded-[2rem] p-10 soft-shadow relative z-10 border border-border"
+                className="max-w-md w-full bg-white rounded-[2rem] p-6 sm:p-10 soft-shadow relative z-10 border border-border"
             >
                 <div className="flex flex-col items-center mb-10">
                     <Link href="/">
@@ -91,6 +91,7 @@ export default function SignUpPage() {
                             <input
                                 type="text"
                                 required
+                                autoComplete="name"
                                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="John Doe"
                                 value={name}
@@ -106,6 +107,8 @@ export default function SignUpPage() {
                             <input
                                 type="email"
                                 required
+                                autoComplete="email"
+                                inputMode="email"
                                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="hello@example.com"
                                 value={email}
@@ -121,6 +124,7 @@ export default function SignUpPage() {
                             <input
                                 type="password"
                                 required
+                                autoComplete="new-password"
                                 className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="••••••••"
                                 value={password}

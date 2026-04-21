@@ -179,6 +179,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                         <label className="text-sm font-bold text-text-secondary ml-1">Guest Full Name *</label>
                         <input
                             required
+                            autoComplete="name"
                             placeholder="Enter your full name"
                             value={formData.guestName}
                             onChange={(e) => setFormData(prev => ({ ...prev, guestName: e.target.value }))}
@@ -195,6 +196,8 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                         <input
                             required
                             type="email"
+                            autoComplete="email"
+                            inputMode="email"
                             placeholder="For your confirmation"
                             value={formData.guestEmail}
                             onChange={(e) => setFormData(prev => ({ ...prev, guestEmail: e.target.value }))}
