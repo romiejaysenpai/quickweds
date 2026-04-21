@@ -99,41 +99,39 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
             const blobUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = blobUrl;
-            link.download = `quickweds_${filename}_${Date.now()}.jpg`;
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
-            link.remove();
+            document.body.removeChild(link);
             window.URL.revokeObjectURL(blobUrl);
         } catch (err) {
-            console.error("Download failed:", err);
-            // Fallback: open in new tab
-            window.open(url, '_blank');
+            alert("Failed to download photo");
+        }
+    };
+
+    const toggleCode = async (codeId: string, current: boolean) => {
+        try {
+            const { error } = await supabase.from('photo_sharing_codes').update({ is_active: !current }).eq('id', codeId);
+            if (error) throw error;
+            setCodes(codes.map(c => c.id === codeId ? { ...c, is_active: !current } : c));
+        } catch (err) {
+            alert("Failed to update sharing code");
         }
     };
 
     const generateCode = async () => {
-        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         try {
             const { data, error } = await supabase.from('photo_sharing_codes').insert({
                 wedding_id: weddingId,
-                code,
+                code: newCode,
                 is_active: true
             }).select().single();
-
+            
             if (error) throw error;
             if (data) setCodes([...codes, data]);
-        } catch (err: any) {
-            alert("Failed to generate code: " + err.message);
-        }
-    };
-
-    const toggleCode = async (codeId: string, currentStatus: boolean) => {
-        try {
-            const { error } = await supabase.from('photo_sharing_codes').update({ is_active: !currentStatus }).eq('id', codeId);
-            if (error) throw error;
-            setCodes(codes.map(c => c.id === codeId ? { ...c, is_active: !currentStatus } : c));
         } catch (err) {
-            alert("Failed to toggle code");
+            alert("Failed to generate code");
         }
     };
 
@@ -150,7 +148,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] soft-shadow border border-border">
+            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] soft-shadow border border-border">
                 <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
                 <p className="text-text-secondary font-serif italic">Loading photo portal...</p>
             </div>
@@ -161,63 +159,62 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
     const approvedPhotos = photos.filter(p => p.is_approved);
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
             {/* Header & Codes */}
-            <div className="bg-white rounded-[2.5rem] p-6 sm:p-10 soft-shadow border border-border">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-                    <div>
+            <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 md:p-10 soft-shadow border border-border">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 sm:mb-10">
+                    <div className="min-w-0">
                         <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">Photo Sharing Portal</h2>
-                        <p className="text-sm text-text-secondary mt-1">Manage guest uploads and sharing access. Approve photos to display them publicly.</p>
+                        <p className="text-xs sm:text-sm text-text-secondary mt-1 max-w-xl">Manage guest uploads and sharing access. Approve photos to display them publicly.</p>
                     </div>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
                         <a 
                             href={`/w/${weddingId}/photos`} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-neutral text-foreground rounded-2xl font-bold hover:bg-neutral/80 transition-all border border-border hover:shadow-sm"
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 bg-neutral dark:bg-neutral/40 text-foreground text-xs sm:text-sm rounded-xl sm:rounded-2xl font-bold hover:bg-neutral/80 transition-all border border-border min-h-[44px]"
                         >
-                            <ExternalLink className="w-4 h-4" /> Public Guest Portal
+                            <ExternalLink className="w-4 h-4" /> Guest Gallery
                         </a>
                         <button 
                             onClick={generateCode}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all active:translate-y-0"
+                            className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white text-xs sm:text-sm rounded-xl sm:rounded-2xl font-bold hover:shadow-lg transition-all min-h-[44px]"
                         >
-                            <Plus className="w-5 h-5" /> Generate Access Code
+                            <Plus className="w-4 h-4 sm:w-5 sm:h-5" /> New Code
                         </button>
                     </div>
                 </div>
 
                 {/* Access Codes List */}
                 <div className="space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-text-secondary mb-4 flex items-center gap-2">
+                    <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-text-secondary mb-4 flex items-center gap-2">
                         <Key className="w-4 h-4 opacity-70" /> 
                         Active Access Codes
                     </h3>
                     {codes.length === 0 ? (
-                        <div className="p-8 border-2 border-dashed border-border rounded-3xl text-center bg-neutral/30">
+                        <div className="p-8 border-2 border-dashed border-border rounded-2xl sm:rounded-3xl text-center bg-neutral/30 dark:bg-neutral/10">
                             <Shield className="w-10 h-10 text-text-secondary opacity-30 mx-auto mb-3" />
-                            <p className="text-sm text-text-secondary font-medium">No access codes generated yet.</p>
-                            <p className="text-xs text-text-secondary mt-1">Generate a code to let guests upload photos securely.</p>
+                            <p className="text-xs sm:text-sm text-text-secondary font-medium">No access codes generated yet.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                             {codes.map(code => (
-                                <div key={code.id} className="p-4 bg-white rounded-2xl border border-border flex items-center justify-between shadow-sm hover:border-primary/30 transition-colors">
+                                <div key={code.id} className="p-4 bg-white dark:bg-white/5 rounded-xl sm:rounded-2xl border border-border flex items-center justify-between shadow-sm hover:border-primary/30 transition-colors">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${code.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                                        <span className="font-mono font-bold text-lg tracking-wider text-foreground">{code.code}</span>
+                                        <div className={`w-2 h-2 rounded-full ${code.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                                        <span className="font-mono font-bold text-base sm:text-lg tracking-wider text-foreground">{code.code}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <button 
                                             onClick={() => toggleCode(code.id, code.is_active)}
-                                            className={`p-2 rounded-xl transition-colors ${code.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-text-secondary hover:bg-neutral'}`}
-                                            title={code.is_active ? "Currently Active - Click to Pause" : "Paused - Click to Activate"}
+                                            className={`p-2 rounded-lg sm:rounded-xl transition-colors ${code.is_active ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/40'}`}
+                                            title={code.is_active ? "Pause" : "Activate"}
                                         >
-                                            <Shield className="w-4 h-4" />
+                                            {code.is_active ? <Check className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
                                         </button>
                                         <button 
                                             onClick={() => deleteCode(code.id)}
-                                            className="p-2 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"
+                                            className="p-2 text-text-secondary hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg sm:rounded-xl transition-colors"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
@@ -229,213 +226,98 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                 </div>
             </div>
 
-            {/* Photo Moderation */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Pending Approval */}
-                <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 soft-shadow border border-border flex flex-col h-[700px]">
-                    <div className="flex items-center justify-between mb-6 shrink-0">
-                        <div className="flex items-center gap-3">
-                            <h3 className="text-xl font-serif font-bold text-foreground flex items-center gap-2">
-                                <RefreshCw className="w-5 h-5 text-amber-500" />
-                                Pending Approval
-                            </h3>
-                            <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold shadow-sm">
-                                {pendingPhotos.length}
-                            </span>
-                        </div>
-                        {pendingPhotos.length > 1 && (
-                            <button 
-                                onClick={approveAllPending}
-                                className="text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-xl transition-colors"
-                            >
-                                Approve All
-                            </button>
-                        )}
+            {/* Moderation Queue */}
+            <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 md:p-10 soft-shadow border border-border">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-border/50 pb-6">
+                    <div>
+                        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">Photo Queue</h2>
+                        <p className="text-xs sm:text-sm text-text-secondary mt-1">Found {pendingPhotos.length} photos waiting for your approval.</p>
                     </div>
+                    {pendingPhotos.length > 0 && (
+                        <button 
+                            onClick={approveAllPending}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white rounded-xl sm:rounded-2xl font-bold hover:shadow-lg transition-all text-sm min-h-[44px]"
+                        >
+                            <CheckCircle2 className="w-4 h-4" /> Approve All
+                        </button>
+                    )}
+                </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-                        <AnimatePresence mode="popLayout">
-                            {pendingPhotos.length === 0 ? (
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-32 flex flex-col items-center justify-center text-center text-text-secondary">
-                                    <CheckCircle2 className="w-16 h-16 mb-4 text-neutral-300" />
-                                    <p className="font-serif text-lg text-foreground">You're all caught up!</p>
-                                    <p className="text-sm mt-1">No photos waiting for approval.</p>
+                {pendingPhotos.length === 0 ? (
+                    <div className="py-12 sm:py-20 text-center opacity-40 italic font-serif">
+                        <ImageIcon className="w-12 h-12 mx-auto mb-4" />
+                        <p>No pending photos to moderate.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                        <AnimatePresence>
+                            {pendingPhotos.map((photo) => (
+                                <motion.div 
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    key={photo.id} 
+                                    className="group relative aspect-square bg-neutral dark:bg-neutral/20 rounded-2xl overflow-hidden border border-border"
+                                >
+                                    <img src={photo.cloudinary_url} alt="Guest upload" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4">
+                                        <div className="flex gap-2">
+                                            <button onClick={() => approvePhoto(photo.id)} className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:scale-110 transition-transform"><Check className="w-5 h-5" /></button>
+                                            <button onClick={() => deletePhoto(photo.id)} className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:scale-110 transition-transform"><Trash2 className="w-5 h-5" /></button>
+                                        </div>
+                                        <p className="text-[10px] text-white/80 font-bold uppercase tracking-widest text-center mt-2 line-clamp-1">{photo.uploader_name || 'Anonymous'}</p>
+                                    </div>
                                 </motion.div>
-                            ) : (
-                                pendingPhotos.map(photo => (
-                                    <motion.div 
-                                        layout
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.9, height: 0, marginBottom: 0 }}
-                                        key={photo.id} 
-                                        className="flex gap-4 p-4 rounded-2xl border border-border bg-neutral/10 hover:border-primary/20 transition-colors"
-                                    >
-                                        <div 
-                                            className="w-28 h-28 rounded-xl overflow-hidden bg-neutral shrink-0 relative group cursor-pointer"
-                                            onClick={() => setSelectedPhoto(photo)}
-                                        >
-                                            <img src={photo.cloudinary_url} alt="Guest Upload" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <Maximize2 className="w-6 h-6 text-white" />
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 min-w-0 flex flex-col justify-between">
-                                            <div>
-                                                <p className="font-bold text-sm truncate text-foreground">{photo.uploader_name || 'Anonymous Guest'}</p>
-                                                <p className="text-xs text-text-secondary line-clamp-2 mt-1 italic">
-                                                    {photo.caption ? `"${photo.caption}"` : 'No caption provided.'}
-                                                </p>
-                                            </div>
-                                            <div className="flex gap-2 mt-3">
-                                                <button 
-                                                    onClick={() => approvePhoto(photo.id)}
-                                                    className="flex-1 bg-emerald-500 text-white py-2 rounded-xl text-xs font-bold hover:bg-emerald-600 transition-colors shadow-sm"
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button 
-                                                    onClick={() => deletePhoto(photo.id)}
-                                                    className="px-4 bg-red-50 text-red-500 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors"
-                                                    title="Delete permanently"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))
-                            )}
+                            ))}
                         </AnimatePresence>
                     </div>
-                </div>
-
-                {/* Approved Gallery */}
-                <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 soft-shadow border border-border flex flex-col h-[700px]">
-                    <div className="flex items-center justify-between mb-6 shrink-0">
-                        <div className="flex items-center gap-3">
-                            <h3 className="text-xl font-serif font-bold text-foreground flex items-center gap-2">
-                                <ImageIcon className="w-5 h-5 text-primary" />
-                                Live Gallery
-                            </h3>
-                            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold shadow-sm">
-                                {approvedPhotos.length}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 auto-rows-max">
-                            {approvedPhotos.length === 0 ? (
-                                <div className="col-span-full py-32 flex flex-col items-center justify-center text-center text-text-secondary">
-                                    <Camera className="w-16 h-16 mb-4 text-neutral-300" />
-                                    <p className="font-serif text-lg text-foreground">Your gallery is empty</p>
-                                    <p className="text-sm mt-1">Approve photos from guests to build your gallery.</p>
-                                </div>
-                            ) : (
-                                <AnimatePresence>
-                                    {approvedPhotos.map(photo => (
-                                        <motion.div 
-                                            layout
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            key={photo.id} 
-                                            className="aspect-square rounded-2xl overflow-hidden bg-neutral relative group cursor-pointer border border-border/50"
-                                            onClick={() => setSelectedPhoto(photo)}
-                                        >
-                                            <img src={photo.cloudinary_url} alt="Approved Photo" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                            
-                                            {/* Hover Actions */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end pointer-events-none">
-                                                <p className="text-white text-xs font-bold truncate drop-shadow-md">{photo.uploader_name}</p>
-                                            </div>
-
-                                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity translate-y-1 group-hover:translate-y-0">
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); downloadPhoto(photo.cloudinary_url, photo.uploader_name || 'photo'); }}
-                                                    className="p-1.5 bg-white/90 backdrop-blur text-foreground rounded-lg hover:bg-white transition-colors shadow-sm"
-                                                    title="Download High-Res"
-                                                >
-                                                    <Download className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); deletePhoto(photo.id); }}
-                                                    className="p-1.5 bg-red-500/90 backdrop-blur text-white rounded-lg hover:bg-red-500 transition-colors shadow-sm"
-                                                    title="Remove from Gallery"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                )}
             </div>
 
-            {/* FULL SCREEN LIGHTBOX */}
-            <AnimatePresence>
-                {selectedPhoto && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/95 backdrop-blur-md"
-                        onClick={() => setSelectedPhoto(null)}
-                    >
-                        <button 
-                            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-                            onClick={() => setSelectedPhoto(null)}
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
+            {/* Approved Gallery */}
+            <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 md:p-10 soft-shadow border border-border">
+                <div className="mb-8 p-3 bg-neutral/40 dark:bg-neutral/10 rounded-xl sm:rounded-2xl border border-border/50 flex justify-between items-center">
+                    <h3 className="font-bold text-foreground text-xs sm:text-base px-2">Approved Gallery ({approvedPhotos.length})</h3>
+                    <button onClick={loadData} className="p-2 text-text-secondary hover:text-primary transition-colors"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
+                </div>
 
-                        <div className="w-full max-w-5xl h-full flex flex-col md:flex-row items-center justify-center gap-8" onClick={e => e.stopPropagation()}>
-                            <motion.img 
-                                layoutId={`photo-${selectedPhoto.id}`}
-                                src={selectedPhoto.cloudinary_url} 
-                                alt="Expanded view" 
-                                className="max-h-[70vh] md:max-h-[85vh] w-auto max-w-full rounded-xl shadow-2xl object-scale-down"
-                            />
-                            
-                            <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-3xl text-white max-w-sm w-full shrink-0">
-                                <h4 className="text-xs uppercase tracking-widest text-white/50 font-bold mb-1">Uploaded By</h4>
-                                <p className="text-xl font-serif font-bold mb-6">{selectedPhoto.uploader_name || 'Anonymous Guest'}</p>
-                                
-                                {selectedPhoto.caption && (
-                                    <>
-                                        <h4 className="text-xs uppercase tracking-widest text-white/50 font-bold mb-1">Caption</h4>
-                                        <p className="text-sm italic text-white/90 mb-8 leading-relaxed">"{selectedPhoto.caption}"</p>
-                                    </>
-                                )}
-
-                                <div className="space-y-3 pt-6 border-t border-white/10">
-                                    {!selectedPhoto.is_approved && (
-                                        <button 
-                                            onClick={() => { approvePhoto(selectedPhoto.id); setSelectedPhoto(null); }}
-                                            className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-                                        >
-                                            <Check className="w-5 h-5" /> Approve Photo
-                                        </button>
-                                    )}
-                                    <button 
-                                        onClick={() => downloadPhoto(selectedPhoto.cloudinary_url, selectedPhoto.uploader_name || 'photo')}
-                                        className="w-full py-3 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <Download className="w-5 h-5" /> Download Full Res
-                                    </button>
-                                    <button 
-                                        onClick={() => { deletePhoto(selectedPhoto.id); }}
-                                        className="w-full py-3 bg-red-500/20 hover:bg-red-500/40 text-red-300 font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <Trash2 className="w-5 h-5" /> Delete Photo
-                                    </button>
+                {approvedPhotos.length === 0 ? (
+                    <div className="py-12 sm:py-20 text-center opacity-40 italic font-serif">
+                        <p>No photos have been approved yet.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
+                        {approvedPhotos.map((photo) => (
+                            <div key={photo.id} className="group relative aspect-square bg-neutral dark:bg-neutral/20 rounded-lg sm:rounded-xl overflow-hidden cursor-pointer" onClick={() => setSelectedPhoto(photo)}>
+                                <img src={photo.cloudinary_url} alt="Wedding gallery" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Maximize2 className="w-5 h-5 text-white" />
                                 </div>
                             </div>
-                        </div>
-                    </motion.div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Lightbox Modal */}
+            <AnimatePresence>
+                {selectedPhoto && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/95 backdrop-blur-md">
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative max-w-5xl w-full h-full flex flex-col items-center justify-center">
+                            <div className="absolute top-0 right-0 p-4 z-10 flex gap-2">
+                                <button onClick={() => downloadPhoto(selectedPhoto.cloudinary_url, `quickweds-${selectedPhoto.id}.jpg`)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 text-white backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all"><Download className="w-5 h-5" /></button>
+                                <button onClick={() => deletePhoto(selectedPhoto.id)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-500/20 text-red-500 backdrop-blur-md flex items-center justify-center hover:bg-red-500/40 transition-all"><Trash2 className="w-5 h-5" /></button>
+                                <button onClick={() => setSelectedPhoto(null)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 text-white backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all"><X className="w-5 h-5" /></button>
+                            </div>
+                            <img src={selectedPhoto.cloudinary_url} alt="Wedding Gallery Large" className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-lg" />
+                            <div className="mt-6 text-center text-white">
+                                <p className="text-xl font-serif font-bold">{selectedPhoto.uploader_name || 'Anonymous Guest'}</p>
+                                {selectedPhoto.caption && <p className="mt-2 text-white/60 italic">&ldquo;{selectedPhoto.caption}&rdquo;</p>}
+                                <p className="mt-4 text-[10px] uppercase tracking-widest text-white/40">{new Date(selectedPhoto.created_at).toLocaleDateString()}</p>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
         </div>

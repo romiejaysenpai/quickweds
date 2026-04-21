@@ -35,9 +35,9 @@ export interface Wedding {
     gift_account_name?: string;
     gift_account_number?: string;
     gift_qr_image?: string;
-    gift_registry_links?: string | any[];
-    cash_funds?: string | any[];
-    payment_links?: string | any[];
+    gift_registry_links?: string | unknown[];
+    cash_funds?: string | unknown[];
+    payment_links?: string | unknown[];
     // Premium
     is_premium: boolean;
     payment_status?: string;
@@ -45,7 +45,7 @@ export interface Wedding {
     stripe_payment_intent_id?: string;
     plan_type?: string;
     // Wedding party
-    wedding_party?: string | any[];
+    wedding_party?: string | unknown[];
     spotify_playlist_url?: string;
     // Mode
     is_save_the_date?: boolean;
@@ -65,6 +65,24 @@ export interface RSVP {
     guest_email?: string; // Email for confirmation
     attendance: 'Yes' | 'No';
     num_guests: number;
+    rsvp_status?: 'pending' | 'confirmed' | 'declined';
+    guest_group?:
+        | 'bride_family'
+        | 'groom_family'
+        | 'bride_friends'
+        | 'groom_friends'
+        | 'mutual'
+        | 'coworkers'
+        | 'vip'
+        | 'vendors';
+    table_assignment?: string;
+    invitation_sent?: boolean;
+    invitation_sent_at?: string;
+    plus_one_allowed?: boolean;
+    plus_one_name?: string;
+    plus_one_email?: string;
+    plus_one_rsvp_status?: 'not_invited' | 'invited' | 'confirmed' | 'declined';
+    manual_entry?: boolean;
     meal_preference?: string;
     dietary_details?: string;
     message?: string;

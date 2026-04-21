@@ -73,13 +73,13 @@ function StatusBadge({ wedding }: { wedding: any }) {
         colorClass = 'bg-accent/20 text-accent border-accent/30';
     } else if (weddingDate < now) {
         label = 'Completed';
-        colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-200';
+        colorClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
     } else if (rsvpDeadline < now) {
         label = 'RSVP Closed';
         colorClass = 'bg-neutral text-text-secondary border-border';
     } else {
         label = 'Live';
-        colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-200';
+        colorClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
     }
 
     return (
@@ -97,7 +97,10 @@ function DeleteButton({ weddingId, coupleName, onDeleted }: { weddingId: string;
     const handleDelete = async () => {
         setDeleting(true);
         try {
-            const { error } = await supabase.from('weddings').delete().eq('id', weddingId);
+            const { error } = await supabase
+                .from('weddings')
+                .update({ deleted_at: new Date().toISOString() })
+                .eq('id', weddingId);
             if (!error) onDeleted();
         } catch (e) {
             console.error(e);
@@ -148,6 +151,7 @@ export default function DashboardRedirect() {
                 .from('weddings')
                 .select('*, rsvps(id)')
                 .eq('user_id', user.id)
+                .is('deleted_at', null)
                 .order('created_at', { ascending: false });
             
             if (error) throw error;
@@ -212,7 +216,7 @@ export default function DashboardRedirect() {
 
     if (loading || (fetching && weddings.length === 0)) {
         return (
-            <div className="mobile-safe-screen flex flex-col items-center justify-center bg-neutral/30 gap-4">
+            <div className="mobile-safe-screen flex flex-col items-center justify-center bg-background gap-4">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
                 <p className="text-text-secondary font-serif italic text-sm">Loading your weddings...</p>
             </div>
@@ -220,9 +224,9 @@ export default function DashboardRedirect() {
     }
 
     return (
-        <div className="mobile-safe-screen bg-neutral pb-16 sm:pb-20 mobile-safe-bottom">
+        <div className="mobile-safe-screen bg-background pb-16 sm:pb-20 mobile-safe-bottom">
             {/* Top nav */}
-            <div className="bg-white/80 backdrop-blur-md border-b border-border p-3 sm:p-4 sticky top-0 z-50">
+            <div className="bg-white/80 dark:bg-white/90 backdrop-blur-md border-b border-border p-3 sm:p-4 sticky top-0 z-50">
                 <div className="max-w-6xl mx-auto px-2 sm:px-4 flex justify-between items-center gap-2 sm:gap-4">
                     <Link href="/" className="flex items-center flex-shrink-0">
                         <img src="/logo.png" alt="QuickWeds Logo" className="h-10 sm:h-12 w-auto object-contain hover:scale-105 transition-transform" />
@@ -360,7 +364,7 @@ export default function DashboardRedirect() {
                                     className="group bg-white rounded-xl sm:rounded-[2rem] overflow-hidden border border-border soft-shadow hover:shadow-2xl hover:translate-y-[-4px] transition-all duration-300"
                                 >
                                     {/* Hero image */}
-                                    <div className="aspect-[16/10] bg-neutral relative overflow-hidden">
+                                    <div className="aspect-[16/10] bg-neutral dark:bg-neutral/50 relative overflow-hidden">
                                         {wedding.hero_image ? (
                                             <img
                                                 src={wedding.hero_image}
@@ -369,7 +373,7 @@ export default function DashboardRedirect() {
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center">
-                                                <Heart className="w-16 sm:w-20 h-16 sm:h-20 text-primary/10" />
+                                                <Heart className="w-16 sm:w-20 h-16 sm:h-20 text-primary/20 dark:text-primary/10" />
                                             </div>
                                         )}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-3 sm:p-5">

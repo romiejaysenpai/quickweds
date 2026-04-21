@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Heart, Smartphone, Share2, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera, ListTodo, Users, Wallet } from 'lucide-react';
+import { Heart, Smartphone, Share2, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera, ListTodo, Users, Wallet, Sun, Moon } from 'lucide-react';
 import ExamplesSection from '@/components/ExamplesSection';
 import TemplatesSection from '@/components/TemplatesSection';
 import PhoneMockupSection from '@/components/PhoneMockupSection';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 
 const FAQS = [
   {
@@ -151,6 +152,7 @@ export default function Home() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const reduceMotion = useReducedMotion();
 
   const sparkleParticles = useMemo(() => (
@@ -221,12 +223,19 @@ export default function Home() {
             <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105" />
           </Link>
           <div className="flex items-center gap-4 sm:gap-8 ml-auto">
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl bg-neutral border border-border text-text-secondary hover:text-primary hover:border-primary transition-all soft-shadow"
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            </button>
             <Link href="#templates" className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Templates</Link>
             <button onClick={() => setIsExamplesOpen(true)} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Examples</button>
             {user ? (
               <div className="flex items-center gap-2 sm:gap-4">
                 <Link href="/dashboard" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-all text-xs sm:text-sm min-h-[44px] flex items-center">Dashboard</Link>
-                <button onClick={logout} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-foreground transition-all hidden sm:block">Logout</button>
+                <button onClick={logout} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-foreground transition-all">Logout</button>
               </div>
             ) : (
               <div className="flex items-center gap-2 sm:gap-4">
@@ -244,7 +253,7 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full bg-white border border-border soft-shadow text-primary text-xs font-black uppercase tracking-widest mb-8 sm:mb-10"
+            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full bg-white dark:bg-neutral border border-border soft-shadow text-primary dark:text-primary text-xs font-black uppercase tracking-widest mb-8 sm:mb-10"
           >
             <Zap className="w-3 sm:w-3.5 h-3 sm:h-3.5 fill-current" /> AI-Powered Elegance
           </motion.div>
@@ -282,7 +291,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setIsExamplesOpen(true)}
-              className="px-8 sm:px-12 py-4 sm:py-6 rounded-xl sm:rounded-2xl bg-white text-foreground font-bold text-sm sm:text-lg hover:bg-neutral transition-all border border-border flex items-center justify-center gap-2 group min-h-[44px]"
+              className="px-8 sm:px-12 py-4 sm:py-6 rounded-xl sm:rounded-2xl bg-white dark:bg-neutral text-foreground font-bold text-sm sm:text-lg hover:bg-neutral dark:hover:bg-border/30 transition-all border border-border flex items-center justify-center gap-2 group min-h-[44px]"
             >
               <Play className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" /> Watch Experience
             </button>
@@ -385,7 +394,7 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
                   whileHover={{ y: -10 }}
-                  className={`p-10 rounded-[3rem] bg-white border border-border hover:border-primary/20 transition-all soft-shadow relative overflow-hidden group`}
+                  className={`p-10 rounded-[3rem] bg-white dark:bg-neutral border border-border hover:border-primary/20 transition-all soft-shadow relative overflow-hidden group`}
                 >
                   <div className={`w-16 h-16 ${feature.accent} rounded-[1.5rem] flex items-center justify-center mb-8 transition-transform group-hover:scale-110 group-hover:rotate-3`}>
                     {feature.icon}
@@ -414,7 +423,7 @@ export default function Home() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
               >
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-secondary/20 mb-8">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-neutral border border-secondary/20 mb-8">
                   <Wallet className="w-4 h-4 text-secondary" />
                   <span className="text-xs font-black uppercase tracking-widest text-secondary">Smart Budget Management</span>
                 </div>
@@ -481,7 +490,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-accent/10 rounded-3xl blur-3xl -z-10"></div>
                   
                   {/* Card Container */}
-                  <div className="bg-white border border-border rounded-3xl p-8 soft-shadow">
+                  <div className="bg-white dark:bg-neutral border border-border rounded-3xl p-8 soft-shadow">
                     <div className="space-y-6">
                       {/* Header */}
                       <div className="flex items-center justify-between">
@@ -607,14 +616,14 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="bg-white border border-border p-10 rounded-[3rem] soft-shadow relative group hover:border-primary/20 transition-all"
+                  className="bg-white border border-border p-10 rounded-[3rem] soft-shadow relative group hover:border-primary/20 transition-all font-light"
                 >
                   <div className="flex gap-1 mb-6">
                     {[...Array(t.rating)].map((_, j) => (
                       <Star key={j} className="w-4 h-4 fill-primary text-primary" />
                     ))}
                   </div>
-                  <p className="text-lg font-serif italic text-foreground mb-8 line-clamp-4 leading-relaxed">"{t.text}"</p>
+                  <p className="text-lg font-serif italic text-foreground mb-8 line-clamp-4 leading-relaxed font-light">"{t.text}"</p>
                   <div className="flex items-center gap-4">
                     <img src={t.avatar} alt={t.name} className="w-12 h-12 rounded-full border border-border" />
                     <div>

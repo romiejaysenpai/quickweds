@@ -33,6 +33,7 @@ async function verifyWeddingAccess(req: Request, weddingId: string): Promise<Acc
         .from('weddings')
         .select('id, user_id, custom_domain')
         .eq('id', weddingId)
+        .is('deleted_at', null)
         .single();
 
     if (weddingError || !wedding) {

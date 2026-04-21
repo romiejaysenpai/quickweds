@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'No user record provided' });
   }
 
-  const adminEmail = "romiejayabacasmas@gmail.com";
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || "romiejayabacasmas@gmail.com";
   const userEmail = record.email || "Unknown Email";
   const userName = record.full_name || record.display_name || "New User";
   const signupDate = new Date().toLocaleString();
@@ -65,7 +65,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         error: 'One or more emails failed to send' 
       });
     }
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown signup email error';
+    return res.status(500).json({ success: false, error: message });
   }
 }

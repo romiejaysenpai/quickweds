@@ -5,6 +5,7 @@
         "openai.chatgpt",
         "kilocode.kilo-code",
         "ms-python.python",
-        "moonshot-ai.kimi-code"
+        "moonshot-ai.kimi-code",
+        "lirobi.phone-preview"
     ]
 }

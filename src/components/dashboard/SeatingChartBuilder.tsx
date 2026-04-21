@@ -1,19 +1,18 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Users, Plus, Trash2, Loader2, UserPlus, X, Layout, 
-    CheckCircle2, Search, Circle, Square, RectangleHorizontal, Edit2
+import {
+    Users, Plus, Trash2, Loader2, UserPlus, X, Layout,
+    CheckCircle2, Search, Circle, Square, RectangleHorizontal, Edit2,
 } from 'lucide-react';
-
-interface Guest {
-    id: string;
-    guest_name: string;
-    rsvp_status: string;
-    num_guests: number;
-}
+import {
+    GUEST_GROUP_OPTIONS,
+    getGuestGroupLabel,
+    type EnhancedRSVP,
+    type GuestGroup,
+} from '@/lib/guest-list';
 
 interface Table {
     id: string;
@@ -33,40 +32,58 @@ interface Assignment {
 
 export default function SeatingChartBuilder({ weddingId }: { weddingId: string }) {
     const [loading, setLoading] = useState(true);
-    const [guests, setGuests] = useState<Guest[]>([]);
+    const [guests, setGuests] = useState<EnhancedRSVP[]>([]);
     const [tables, setTables] = useState<Table[]>([]);
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [selectedTable, setSelectedTable] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-
-    // Modal state for Add/Edit Table
+    const [groupFilter, setGroupFilter] = useState<'all' | GuestGroup>('all');
     const [isTableModalOpen, setIsTableModalOpen] = useState(false);
     const [editingTableId, setEditingTableId] = useState<string | null>(null);
-    const [tableFormData, setTableFormData] = useState<{name: string, shape: 'round' | 'square' | 'rectangular', capacity: number}>({
-        name: '', shape: 'round', capacity: 8
+    const [tableFormData, setTableFormData] = useState<{ name: string; shape: 'round' | 'square' | 'rectangular'; capacity: number }>({
+        name: '',
+        shape: 'round',
+        capacity: 8,
     });
 
-    useEffect(() => {
-        loadData();
-    }, [weddingId]);
+    const guestMap = useMemo(() => new Map(guests.map((guest) => [guest.id, guest])), [guests]);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const [guestsRes, tablesRes, assignmentsRes] = await Promise.all([
-                supabase.from('rsvps').select('id, guest_name, rsvp_status, num_guests').eq('wedding_id', weddingId).eq('rsvp_status', 'confirmed'),
+                supabase
+                    .from('rsvps')
+                    .select('id, guest_name, guest_group, guest_email, rsvp_status, attendance, num_guests, table_assignment, plus_one_name, plus_one_allowed')
+                    .eq('wedding_id', weddingId)
+                    .or('rsvp_status.eq.confirmed,attendance.eq.Yes')
+                    .order('created_at', { ascending: true }),
                 supabase.from('seating_tables').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: true }),
-                supabase.from('seating_assignments').select('*').eq('wedding_id', weddingId)
+                supabase.from('seating_assignments').select('*').eq('wedding_id', weddingId),
             ]);
 
-            if (guestsRes.data) setGuests(guestsRes.data);
+            if (guestsRes.data) setGuests(guestsRes.data as EnhancedRSVP[]);
             if (tablesRes.data) setTables(tablesRes.data);
             if (assignmentsRes.data) setAssignments(assignmentsRes.data);
         } catch (err) {
-            console.error("Error loading seating data:", err);
+            console.error('Error loading seating data:', err);
         } finally {
             setLoading(false);
         }
+    }, [weddingId]);
+
+    useEffect(() => {
+        void loadData();
+    }, [loadData]);
+
+    const getSeatsUsed = (tableId: string) =>
+        assignments
+            .filter((assignment) => assignment.table_id === tableId)
+            .reduce((total, assignment) => total + (guestMap.get(assignment.rsvp_id)?.num_guests || 1), 0);
+
+    const syncRsvpTableAssignment = async (rsvpId: string, tableName: string | null) => {
+        const { error } = await supabase.from('rsvps').update({ table_assignment: tableName }).eq('id', rsvpId);
+        if (error) throw error;
     };
 
     const openAddTableModal = () => {
@@ -77,109 +94,176 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
 
     const openEditTableModal = (table: Table) => {
         setEditingTableId(table.id);
-        setTableFormData({ name: table.table_name, shape: table.table_shape as any, capacity: table.capacity });
+        setTableFormData({ name: table.table_name, shape: table.table_shape, capacity: table.capacity });
         setIsTableModalOpen(true);
     };
 
     const handleSaveTable = async () => {
-        if (!tableFormData.name.trim()) return alert("Table name is required");
-        if (tableFormData.capacity < 1) return alert("Capacity must be at least 1");
+        if (!tableFormData.name.trim()) return alert('Table name is required');
+        if (tableFormData.capacity < 1) return alert('Capacity must be at least 1');
 
         try {
             if (editingTableId) {
-                // Update
-                const { data, error } = await supabase.from('seating_tables')
+                const existingTable = tables.find((table) => table.id === editingTableId);
+                const { data, error } = await supabase
+                    .from('seating_tables')
                     .update({
                         table_name: tableFormData.name,
                         table_shape: tableFormData.shape,
-                        capacity: tableFormData.capacity
+                        capacity: tableFormData.capacity,
                     })
                     .eq('id', editingTableId)
-                    .select().single();
-                
-                if (error) throw error;
-                setTables(tables.map(t => t.id === editingTableId ? data : t));
-            } else {
-                // Insert
-                const { data, error } = await supabase.from('seating_tables').insert({
-                    wedding_id: weddingId,
-                    table_name: tableFormData.name,
-                    table_shape: tableFormData.shape,
-                    capacity: tableFormData.capacity,
-                    position_x: 50,
-                    position_y: 50
-                }).select().single();
+                    .select()
+                    .single();
 
                 if (error) throw error;
-                if (data) setTables([...tables, data]);
+
+                if (existingTable && existingTable.table_name !== tableFormData.name) {
+                    const assignedRsvpIds = assignments
+                        .filter((assignment) => assignment.table_id === editingTableId)
+                        .map((assignment) => assignment.rsvp_id);
+
+                    if (assignedRsvpIds.length > 0) {
+                        const { error: syncError } = await supabase
+                            .from('rsvps')
+                            .update({ table_assignment: tableFormData.name })
+                            .in('id', assignedRsvpIds);
+                        if (syncError) throw syncError;
+                    }
+                }
+
+                setTables((current) => current.map((table) => (table.id === editingTableId ? data : table)));
+            } else {
+                const { data, error } = await supabase
+                    .from('seating_tables')
+                    .insert({
+                        wedding_id: weddingId,
+                        table_name: tableFormData.name,
+                        table_shape: tableFormData.shape,
+                        capacity: tableFormData.capacity,
+                        position_x: 50,
+                        position_y: 50,
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                if (data) setTables((current) => [...current, data]);
             }
+
             setIsTableModalOpen(false);
-        } catch (err: any) {
-            alert("Failed to save table: " + err.message);
+            await loadData();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown seating save error';
+            alert(`Failed to save table: ${message}`);
         }
     };
 
     const deleteTable = async (tableId: string) => {
-        if (!confirm("Are you sure? All assignments to this table will be removed.")) return;
+        if (!confirm('Are you sure? All assignments to this table will be removed.')) return;
+
         try {
-            await supabase.from('seating_tables').delete().eq('id', tableId);
-            setTables(tables.filter(t => t.id !== tableId));
-            setAssignments(assignments.filter(a => a.table_id !== tableId));
+            const assignedRsvpIds = assignments
+                .filter((assignment) => assignment.table_id === tableId)
+                .map((assignment) => assignment.rsvp_id);
+
+            if (assignedRsvpIds.length > 0) {
+                const { error: clearError } = await supabase.from('rsvps').update({ table_assignment: null }).in('id', assignedRsvpIds);
+                if (clearError) throw clearError;
+
+                const { error: deleteAssignmentsError } = await supabase.from('seating_assignments').delete().eq('table_id', tableId);
+                if (deleteAssignmentsError) throw deleteAssignmentsError;
+            }
+
+            const { error } = await supabase.from('seating_tables').delete().eq('id', tableId);
+            if (error) throw error;
+
             if (selectedTable === tableId) setSelectedTable(null);
-        } catch (err: any) {
-            alert("Failed to delete table: " + err.message);
+            await loadData();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown seating delete error';
+            alert(`Failed to delete table: ${message}`);
         }
     };
 
-    const assignGuest = async (guest: Guest, tableId: string) => {
-        if (assignments.find(a => a.rsvp_id === guest.id)) return alert("Guest is already assigned");
-        const tableAssignments = assignments.filter(a => a.table_id === tableId);
-        const table = tables.find(t => t.id === tableId);
-        if (table && tableAssignments.length >= table.capacity) return alert("Table is at full capacity");
+    const assignGuest = async (guest: EnhancedRSVP, tableId: string) => {
+        if (assignments.find((assignment) => assignment.rsvp_id === guest.id)) {
+            return alert('Guest is already assigned');
+        }
+
+        const table = tables.find((item) => item.id === tableId);
+        const seatsUsed = getSeatsUsed(tableId);
+        if (table && seatsUsed + (guest.num_guests || 1) > table.capacity) {
+            return alert('This table does not have enough remaining seats for that party.');
+        }
 
         try {
-            const { data, error } = await supabase.from('seating_assignments').insert({
-                wedding_id: weddingId,
-                table_id: tableId,
-                rsvp_id: guest.id,
-                guest_name: guest.guest_name
-            }).select().single();
+            const { data, error } = await supabase
+                .from('seating_assignments')
+                .insert({
+                    wedding_id: weddingId,
+                    table_id: tableId,
+                    rsvp_id: guest.id,
+                    guest_name: guest.guest_name,
+                })
+                .select()
+                .single();
 
             if (error) throw error;
-            if (data) setAssignments([...assignments, data]);
-        } catch (err: any) {
-            alert("Failed to assign guest: " + err.message);
+
+            await syncRsvpTableAssignment(guest.id, table?.table_name || null);
+            if (data) setAssignments((current) => [...current, data]);
+            await loadData();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown seating assignment error';
+            alert(`Failed to assign guest: ${message}`);
         }
     };
 
-    const removeAssignment = async (assignmentId: string) => {
+    const removeAssignment = async (assignment: Assignment) => {
         try {
-            await supabase.from('seating_assignments').delete().eq('id', assignmentId);
-            setAssignments(assignments.filter(a => a.id !== assignmentId));
-        } catch (err: any) {
-            alert("Failed to remove assignment: " + err.message);
+            const { error } = await supabase.from('seating_assignments').delete().eq('id', assignment.id);
+            if (error) throw error;
+
+            await syncRsvpTableAssignment(assignment.rsvp_id, null);
+            await loadData();
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown seat removal error';
+            alert(`Failed to remove assignment: ${message}`);
         }
     };
 
     const unassignedGuests = useMemo(() => {
         return guests
-            .filter(g => !assignments.find(a => a.rsvp_id === g.id))
-            .filter(g => g.guest_name.toLowerCase().includes(searchQuery.toLowerCase()));
-    }, [guests, assignments, searchQuery]);
+            .filter((guest) => !assignments.find((assignment) => assignment.rsvp_id === guest.id))
+            .filter((guest) => {
+                const normalizedQuery = searchQuery.toLowerCase();
+                const matchesSearch = [
+                    guest.guest_name,
+                    guest.guest_email,
+                    getGuestGroupLabel(guest.guest_group),
+                    guest.table_assignment,
+                ].some((value) => (value || '').toLowerCase().includes(normalizedQuery));
+                const matchesGroup = groupFilter === 'all' ? true : guest.guest_group === groupFilter;
+                return matchesSearch && matchesGroup;
+            });
+    }, [assignments, guests, groupFilter, searchQuery]);
 
-
-    // CSS Class helpers for table shapes
     const getShapeClasses = (shape: string) => {
         switch (shape) {
-            case 'square': return 'rounded-2xl aspect-square';
-            case 'rectangular': return 'rounded-2xl aspect-video';
-            case 'round': default: return 'rounded-[2rem] min-h-[160px]';
+            case 'square':
+                return 'rounded-2xl aspect-square';
+            case 'rectangular':
+                return 'rounded-2xl aspect-video';
+            case 'round':
+            default:
+                return 'rounded-[2rem] min-h-[160px]';
         }
     };
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] soft-shadow border border-border">
+            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] soft-shadow border border-border">
                 <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
                 <p className="text-text-secondary font-serif italic">Loading seating arrangements...</p>
             </div>
@@ -187,74 +271,59 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
     }
 
     return (
-        <div className="space-y-6 relative">
-            <div className="bg-white rounded-[2.5rem] p-6 sm:p-10 soft-shadow border border-border">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div className="space-y-4 sm:space-y-6 relative">
+            <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 md:p-12 soft-shadow border border-border">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 sm:mb-10">
                     <div>
                         <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">Seating Chart Builder</h2>
-                        <p className="text-sm text-text-secondary mt-1">Design your floor plan and manage guest seating effortlessly.</p>
+                        <p className="text-xs sm:text-sm text-text-secondary mt-1">Design your floor plan and keep every table in sync with the guest list.</p>
                     </div>
-                    <button 
-                        onClick={openAddTableModal}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-bold hover:shadow-lg transition-all active:scale-95"
-                    >
-                        <Plus className="w-5 h-5" /> Customize New Table
+                    <button onClick={openAddTableModal} className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl sm:rounded-2xl font-bold hover:shadow-lg transition-all active:scale-95 min-h-[44px]">
+                        <Plus className="w-5 h-5" /> Add Table
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Tables Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-[#fcfaf9] rounded-[2.5rem] p-6 sm:p-8 border-2 border-dashed border-border/60 min-h-[600px] relative">
+                        <div className="bg-neutral/40 dark:bg-neutral/10 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 border-2 border-dashed border-border min-h-[400px] sm:min-h-[600px] relative">
                             {tables.length === 0 ? (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-text-secondary opacity-50">
                                     <Layout className="w-16 h-16 mb-4" />
                                     <p className="font-serif italic text-lg">No tables defined yet.</p>
-                                    <p className="text-sm mt-2">Click "Customize New Table" to start your floor plan.</p>
+                                    <p className="text-sm mt-2">Click &quot;Customize New Table&quot; to start your floor plan.</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                                     <AnimatePresence>
-                                        {tables.map(table => {
-                                            const tableAssignments = assignments.filter(a => a.table_id === table.id);
+                                        {tables.map((table) => {
+                                            const tableAssignments = assignments.filter((assignment) => assignment.table_id === table.id);
+                                            const seatsUsed = getSeatsUsed(table.id);
                                             const isSelected = selectedTable === table.id;
 
                                             return (
-                                                <motion.div 
+                                                <motion.div
                                                     layout
                                                     initial={{ opacity: 0, scale: 0.9 }}
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     exit={{ opacity: 0, scale: 0.9 }}
                                                     key={table.id}
                                                     onClick={() => setSelectedTable(table.id)}
-                                                    className={`relative p-6 transition-all cursor-pointer bg-white group flex flex-col ${getShapeClasses(table.table_shape)} ${
-                                                        isSelected 
-                                                            ? 'shadow-xl ring-2 ring-primary scale-[1.02] border-transparent' 
-                                                            : 'border-2 border-border hover:border-primary/40 hover:shadow-md'
-                                                    }`}
+                                                    className={`relative p-0 transition-all cursor-pointer bg-white dark:bg-white/10 group flex flex-col ${getShapeClasses(table.table_shape)} ${isSelected ? 'shadow-xl ring-2 ring-primary scale-[1.02] border-transparent' : 'border-2 border-border hover:border-primary/40 hover:shadow-md'}`}
                                                 >
-                                                    <div className="flex justify-between items-start mb-4 z-10 w-full relative bg-white/80 backdrop-blur-sm p-2 rounded-xl -mx-2 -mt-2">
+                                                    <div className="flex justify-between items-start pt-6 px-6 mb-4 z-10 w-full relative">
                                                         <div>
                                                             <h3 className="font-serif font-bold text-lg text-foreground">{table.table_name}</h3>
                                                             <div className="flex items-center gap-2">
-                                                                <p className={`text-xs font-bold ${tableAssignments.length >= table.capacity ? 'text-red-500' : 'text-text-secondary'}`}>
-                                                                    {tableAssignments.length} / {table.capacity} Seats 
-                                                                </p>
+                                                                <p className={`text-xs font-bold ${seatsUsed >= table.capacity ? 'text-red-500' : 'text-text-secondary'}`}>{seatsUsed} / {table.capacity} Seats</p>
                                                                 <span className="text-border px-1">•</span>
                                                                 <p className="text-xs text-text-secondary uppercase">{table.table_shape}</p>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); openEditTableModal(table); }}
-                                                                className="p-2 text-primary hover:bg-primary/10 rounded-full transition-colors"
-                                                            >
+                                                            <button onClick={(event) => { event.stopPropagation(); openEditTableModal(table); }} className="p-2 text-primary hover:bg-primary/10 rounded-full transition-colors">
                                                                 <Edit2 className="w-4 h-4" />
                                                             </button>
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); deleteTable(table.id); }}
-                                                                className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                                                            >
+                                                            <button onClick={(event) => { event.stopPropagation(); void deleteTable(table.id); }} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors">
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
                                                         </div>
@@ -262,24 +331,20 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
 
                                                     <div className="flex-1 flex flex-col justify-center">
                                                         <div className="flex flex-wrap items-center justify-center gap-2">
-                                                            {tableAssignments.map(assign => (
-                                                                <motion.div 
-                                                                    initial={{ scale: 0 }}
-                                                                    animate={{ scale: 1 }}
-                                                                    key={assign.id} 
-                                                                    className="relative z-10 inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral rounded-full text-xs font-medium border border-border group/seat"
-                                                                >
-                                                                    <span className="truncate max-w-[90px]">{assign.guest_name}</span>
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); removeAssignment(assign.id); }}
-                                                                        className="text-text-secondary hover:text-red-500 hover:bg-red-50 p-0.5 rounded-full opacity-0 group-hover/seat:opacity-100 transition-all absolute -top-2 -right-2 bg-white shadow-sm border border-border"
-                                                                    >
-                                                                        <X className="w-3 h-3" />
-                                                                    </button>
-                                                                </motion.div>
-                                                            ))}
-                                                            {Array.from({ length: Math.max(0, table.capacity - tableAssignments.length) }).map((_, i) => (
-                                                                <div key={i} className="w-8 h-8 rounded-full border-2 border-dashed border-border flex items-center justify-center text-border/50 bg-neutral/30">
+                                                            {tableAssignments.map((assignment) => {
+                                                                const guest = guestMap.get(assignment.rsvp_id);
+                                                                return (
+                                                                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} key={assignment.id} className="relative z-10 inline-flex flex-col gap-1 px-3 py-2 bg-neutral dark:bg-neutral/40 rounded-2xl text-xs font-medium border border-border group/seat">
+                                                                        <span className="truncate max-w-[120px] font-bold">{assignment.guest_name}</span>
+                                                                        <span className="text-[10px] text-text-secondary">Party of {guest?.num_guests || 1} · {getGuestGroupLabel(guest?.guest_group)}</span>
+                                                                        <button onClick={(event) => { event.stopPropagation(); void removeAssignment(assignment); }} className="text-text-secondary hover:text-red-500 hover:bg-neutral p-0.5 rounded-full opacity-0 group-hover/seat:opacity-100 transition-all absolute -top-2 -right-2 bg-white shadow-sm border border-border">
+                                                                            <X className="w-3 h-3" />
+                                                                        </button>
+                                                                    </motion.div>
+                                                                );
+                                                            })}
+                                                            {Array.from({ length: Math.max(0, table.capacity - seatsUsed) }).map((_, index) => (
+                                                                <div key={`${table.id}-seat-${index}`} className="w-8 h-8 rounded-full border-2 border-dashed border-border flex items-center justify-center text-border/50 bg-neutral/30">
                                                                     <UserPlus className="w-3 h-3" />
                                                                 </div>
                                                             ))}
@@ -300,77 +365,48 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                         </div>
                     </div>
 
-                    {/* Unassigned Guests Sidebar */}
                     <div className="space-y-6">
-                        <div className="bg-white rounded-[2.5rem] border border-border shadow-sm overflow-hidden flex flex-col h-full max-h-[700px]">
-                            <div className="p-6 border-b border-border bg-neutral/30">
+                        <div className="bg-white dark:bg-white/10 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden flex flex-col h-full max-h-[600px] sm:max-h-[700px]">
+                            <div className="p-4 sm:p-6 border-b border-border bg-neutral/30 dark:bg-neutral/10">
                                 <h3 className="font-serif font-bold text-xl flex items-center gap-2 mb-4">
                                     <Users className="w-5 h-5 text-primary" />
                                     Guest List
                                 </h3>
-                                
-                                <div className="relative">
+                                <div className="relative mb-3">
                                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
-                                    <input 
-                                        type="text"
-                                        placeholder="Search guests..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full bg-white border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
-                                    />
+                                    <input type="text" placeholder="Search guests..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="w-full bg-white border border-border rounded-xl pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors" />
                                 </div>
-
+                                <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value as 'all' | GuestGroup)} className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors">
+                                    <option value="all">All Groups</option>
+                                    {GUEST_GROUP_OPTIONS.map((group) => (
+                                        <option key={group.value} value={group.value}>{group.label}</option>
+                                    ))}
+                                </select>
                                 <div className="mt-4 flex items-center justify-between text-xs">
                                     <span className="text-text-secondary font-bold uppercase tracking-wider">Unassigned</span>
                                     <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">{unassignedGuests.length}</span>
                                 </div>
                             </div>
-                            
                             <div className="flex-1 overflow-y-auto p-4 space-y-2 relative">
                                 {!selectedTable && tables.length > 0 && (
                                     <div className="absolute inset-x-4 top-4 bg-primary/5 border border-primary/20 rounded-2xl p-4 text-center z-10 backdrop-blur-sm">
-                                        <p className="text-xs font-bold text-primary">👈 Select a table first to assign guests</p>
+                                        <p className="text-xs font-bold text-primary">Select a table first to assign guests</p>
                                     </div>
                                 )}
-                                
                                 <AnimatePresence>
                                     {unassignedGuests.length === 0 ? (
                                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10">
-                                            {searchQuery ? (
-                                                <p className="text-sm text-text-secondary italic">No guests match "{searchQuery}"</p>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3 opacity-50" />
-                                                    <p className="text-sm text-text-secondary font-serif italic">All registered guests have seats!</p>
-                                                </>
-                                            )}
+                                            {searchQuery || groupFilter !== 'all' ? <p className="text-sm text-text-secondary italic">No guests match this filter.</p> : <><CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3 opacity-50" /><p className="text-sm text-text-secondary font-serif italic">All confirmed guests have seats!</p></>}
                                         </motion.div>
                                     ) : (
-                                        unassignedGuests.map(guest => (
-                                            <motion.div 
-                                                layout
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, scale: 0.95 }}
-                                                key={guest.id}
-                                                className={`flex items-center justify-between p-4 rounded-2xl border transition-all group ${
-                                                    selectedTable ? 'bg-white border-border hover:border-primary/50 hover:shadow-md' : 'bg-neutral/50 border-transparent opacity-60 grayscale'
-                                                }`}
-                                            >
+                                        unassignedGuests.map((guest) => (
+                                            <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} key={guest.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all group ${selectedTable ? 'bg-white border-border hover:border-primary/50 hover:shadow-md' : 'bg-neutral/50 border-transparent opacity-60 grayscale'}`}>
                                                 <div className="min-w-0 pr-2">
                                                     <p className="font-bold text-sm truncate text-foreground">{guest.guest_name}</p>
-                                                    <p className="text-[11px] text-text-secondary mt-0.5">Party of {guest.num_guests}</p>
+                                                    <p className="text-[11px] text-text-secondary mt-0.5">Party of {guest.num_guests} · {getGuestGroupLabel(guest.guest_group)}</p>
+                                                    {guest.plus_one_allowed && <p className="text-[10px] text-secondary/70 mt-1">Plus-one {guest.plus_one_name ? `for ${guest.plus_one_name}` : 'enabled'}</p>}
                                                 </div>
-                                                <button 
-                                                    disabled={!selectedTable}
-                                                    onClick={() => selectedTable && assignGuest(guest, selectedTable)}
-                                                    className={`p-2.5 rounded-xl transition-all shrink-0 ${
-                                                        selectedTable 
-                                                            ? 'bg-primary/10 text-primary hover:bg-primary hover:text-white hover:scale-105 active:scale-95' 
-                                                            : 'bg-neutral text-border cursor-not-allowed'
-                                                    }`}
-                                                    title={selectedTable ? "Assign to selected table" : "Select a table first"}
-                                                >
+                                                <button disabled={!selectedTable} onClick={() => selectedTable && void assignGuest(guest, selectedTable)} className={`p-2.5 rounded-xl transition-all shrink-0 ${selectedTable ? 'bg-primary/10 text-primary hover:bg-primary hover:text-white hover:scale-105 active:scale-95' : 'bg-neutral text-border cursor-not-allowed'}`} title={selectedTable ? 'Assign to selected table' : 'Select a table first'}>
                                                     <UserPlus className="w-4 h-4" />
                                                 </button>
                                             </motion.div>
@@ -383,82 +419,41 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                 </div>
             </div>
 
-            {/* Modal for Add/Edit Table */}
             <AnimatePresence>
                 {isTableModalOpen && (
                     <>
-                        <motion.div 
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-                            onClick={() => setIsTableModalOpen(false)}
-                        />
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-[2.5rem] p-8 z-50 shadow-2xl border border-border"
-                        >
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => setIsTableModalOpen(false)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-10 z-[60] shadow-2xl border border-border">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-serif font-bold text-2xl">{editingTableId ? 'Edit Table' : 'Customize Table'}</h3>
-                                <button onClick={() => setIsTableModalOpen(false)} className="p-2 hover:bg-neutral rounded-full transition-colors"><X className="w-5 h-5 text-text-secondary" /></button>
+                                <h3 className="font-serif font-bold text-xl sm:text-2xl text-foreground">{editingTableId ? 'Edit Table' : 'Customize Table'}</h3>
+                                <button onClick={() => setIsTableModalOpen(false)} className="p-2 hover:bg-neutral dark:hover:bg-neutral/10 rounded-full transition-colors"><X className="w-5 h-5 text-text-secondary" /></button>
                             </div>
-
                             <div className="space-y-6">
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-2">Table Name</label>
-                                    <input 
-                                        type="text" 
-                                        value={tableFormData.name}
-                                        onChange={(e) => setTableFormData({...tableFormData, name: e.target.value})}
-                                        className="w-full bg-neutral/50 border border-border rounded-xl px-4 py-3 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                                        placeholder="e.g. VIP Table, Table 1"
-                                    />
+                                    <input type="text" value={tableFormData.name} onChange={(event) => setTableFormData({ ...tableFormData, name: event.target.value })} className="w-full bg-neutral/50 border border-border rounded-xl px-4 py-3 font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="e.g. VIP Table, Table 1" />
                                 </div>
-
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-2">Table Shape</label>
                                     <div className="grid grid-cols-3 gap-3">
-                                        {[
-                                            { id: 'round', label: 'Round', icon: Circle },
-                                            { id: 'rectangular', label: 'Rectangle', icon: RectangleHorizontal },
-                                            { id: 'square', label: 'Square', icon: Square },
-                                        ].map(shape => (
-                                            <button
-                                                key={shape.id}
-                                                onClick={() => setTableFormData({...tableFormData, shape: shape.id as any})}
-                                                className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
-                                                    tableFormData.shape === shape.id 
-                                                    ? 'border-primary bg-primary/5 text-primary' 
-                                                    : 'border-border hover:border-primary/30 text-text-secondary hover:bg-neutral'
-                                                }`}
-                                            >
+                                        {[{ id: 'round', label: 'Round', icon: Circle }, { id: 'rectangular', label: 'Rectangle', icon: RectangleHorizontal }, { id: 'square', label: 'Square', icon: Square }].map((shape) => (
+                                            <button key={shape.id} onClick={() => setTableFormData({ ...tableFormData, shape: shape.id as 'round' | 'square' | 'rectangular' })} className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${tableFormData.shape === shape.id ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:border-primary/30 text-text-secondary hover:bg-neutral'}`}>
                                                 <shape.icon className="w-6 h-6 mb-2" strokeWidth={tableFormData.shape === shape.id ? 2.5 : 1.5} />
                                                 <span className="text-xs font-bold">{shape.label}</span>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-2">Number of Seats (Capacity)</label>
                                     <div className="flex items-center gap-4">
-                                        <button 
-                                            onClick={() => setTableFormData(p => ({...p, capacity: Math.max(1, p.capacity - 1)}))}
-                                            className="w-12 h-12 rounded-xl bg-neutral border border-border flex items-center justify-center text-foreground hover:bg-neutral/80 active:scale-95 transition-all"
-                                        >-</button>
-                                        <div className="flex-1 text-center font-serif text-3xl font-bold text-primary">
-                                            {tableFormData.capacity}
-                                        </div>
-                                        <button 
-                                            onClick={() => setTableFormData(p => ({...p, capacity: Math.max(1, p.capacity + 1)}))}
-                                            className="w-12 h-12 rounded-xl bg-neutral border border-border flex items-center justify-center text-foreground hover:bg-neutral/80 active:scale-95 transition-all"
-                                        >+</button>
+                                        <button onClick={() => setTableFormData((current) => ({ ...current, capacity: Math.max(1, current.capacity - 1) }))} className="w-12 h-12 rounded-xl bg-neutral border border-border flex items-center justify-center text-foreground hover:bg-neutral/80 active:scale-95 transition-all">-</button>
+                                        <div className="flex-1 text-center font-serif text-3xl font-bold text-primary">{tableFormData.capacity}</div>
+                                        <button onClick={() => setTableFormData((current) => ({ ...current, capacity: Math.max(1, current.capacity + 1) }))} className="w-12 h-12 rounded-xl bg-neutral border border-border flex items-center justify-center text-foreground hover:bg-neutral/80 active:scale-95 transition-all">+</button>
                                     </div>
                                 </div>
                             </div>
-
-                            <button 
-                                onClick={handleSaveTable}
-                                className="w-full mt-8 bg-primary text-white py-4 rounded-2xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all active:translate-y-0"
-                            >
+                            <button onClick={() => void handleSaveTable()} className="w-full mt-8 bg-primary text-white py-4 rounded-2xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all active:translate-y-0">
                                 {editingTableId ? 'Save Changes' : 'Create Table'}
                             </button>
                         </motion.div>

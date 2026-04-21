@@ -31,6 +31,24 @@
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
 }
 
+[data-theme='dark'],
+.dark {
+  --primary: #E69DA7; /* Softer Rose for dark context */
+  --primary-hover: #D16C78;
+  --primary-disabled: #6A4A4F;
+  --secondary: #EAB2BE;
+  --accent: #E6CD9D; /* Brighter Gold */
+  --neutral: #1A1213; /* Deep Charcoal Rose */
+  --white: #251B1D; /* Soft Dark Background for cards */
+  --foreground: #FFF8F4; /* Warm Ivory Text */
+  --text-secondary: #C0A8AD; /* Muted Rose Beige */
+  --border: #3A2A2D; /* Darker Outline */
+  --background: #121212; /* True Dark Background */
+  --success-bg: #1B2B21;
+  --error-bg: #2B1B1B;
+  --error-text: #E69B9B;
+}
+
 @theme inline {
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
@@ -39,6 +57,7 @@
   --color-secondary-hover: var(--secondary-hover);
   --color-accent: var(--accent);
   --color-neutral: var(--neutral);
+  --color-white: var(--white);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-text-secondary: var(--text-secondary);
@@ -120,8 +139,17 @@ h6 {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+.dark .glass {
+  background: rgba(26, 18, 19, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .soft-shadow {
   box-shadow: 0 10px 30px rgba(192, 128, 129, 0.1);
+}
+
+.dark .soft-shadow {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 @keyframes marquee {
@@ -145,9 +173,29 @@ h6 {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  opacity: 0.03;
+  opacity: 0.05;
   z-index: 9999;
   background-image: url('https://www.transparenttextures.com/patterns/pantry-free-texture.png');
+  mix-blend-mode: multiply;
+}
+
+.paper-texture {
+  position: relative;
+}
+
+.paper-texture::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url('https://www.transparenttextures.com/patterns/cardboard.png');
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.selection-dynamic::selection {
+  background-color: var(--primary);
+  color: white;
 }
 
 .perspective-1000 {
@@ -211,6 +259,12 @@ h6 {
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 8px 32px 0 rgba(192, 128, 129, 0.1);
+}
+
+.dark .glossy {
+  background: rgba(26, 18, 19, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 .custom-scrollbar::-webkit-scrollbar {

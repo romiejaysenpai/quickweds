@@ -81,6 +81,7 @@ export const viewport: Viewport = {
 };
 
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -97,11 +98,13 @@ export default function RootLayout({
         ${greatVibes.variable} ${alexBrush.variable} ${allura.variable} ${arizonia.variable} ${dancingScript.variable} ${italianno.variable} ${pinyonScript.variable} ${sacramento.variable} ${tangerine.variable} ${parisienne.variable} ${mrsSaint.variable} ${monsieur.variable} ${homemade.variable} ${herr.variable} ${lavishly.variable}
         antialiased
       `}>
-        <AuthProvider>
-          {children}
-          <Analytics />
-          <SpeedInsights />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+            <Analytics />
+            <SpeedInsights />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

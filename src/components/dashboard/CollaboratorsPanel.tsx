@@ -107,12 +107,12 @@ export default function CollaboratorsPanel({
                         placeholder="partner@example.com"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
-                        className="px-4 py-3 rounded-xl border border-border bg-neutral text-sm outline-none focus:border-primary min-h-[44px]"
+                        className="px-4 py-3 rounded-xl border border-border bg-neutral dark:bg-neutral/40 text-sm outline-none focus:border-primary min-h-[44px]"
                     />
                     <select
                         value={inviteRole}
                         onChange={(e) => setInviteRole(e.target.value as CollaboratorRole)}
-                        className="px-4 py-3 rounded-xl border border-border bg-neutral text-sm outline-none focus:border-primary min-h-[44px]"
+                        className="px-4 py-3 rounded-xl border border-border bg-neutral dark:bg-neutral/40 text-sm outline-none focus:border-primary min-h-[44px]"
                     >
                         <option value="partner">Partner</option>
                         <option value="coordinator">Coordinator</option>
@@ -140,7 +140,7 @@ export default function CollaboratorsPanel({
                         const isOwnInvite = collaborator.email.toLowerCase() === (currentUserEmail || '').toLowerCase();
 
                         return (
-                            <div key={collaborator.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-neutral/40 border border-border">
+                            <div key={collaborator.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-neutral/40 dark:bg-neutral/30 border border-border">
                                 <div>
                                     <p className="font-bold text-foreground text-sm">{collaborator.email}</p>
                                     <p className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60">

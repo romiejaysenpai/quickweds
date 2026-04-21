@@ -103,7 +103,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {stats.map((stat) => (
-                    <div key={stat.label} className="p-3 sm:p-4 rounded-2xl bg-neutral/50 border border-border">
+                    <div key={stat.label} className="p-3 sm:p-4 rounded-2xl bg-neutral/50 dark:bg-neutral/40 border border-border">
                         <stat.icon className="w-4 h-4 text-primary mb-2" />
                         <p className="text-lg sm:text-xl font-bold text-foreground">{stat.value}</p>
                         <p className="text-[9px] uppercase tracking-widest font-black text-text-secondary/60">{stat.label}</p>
@@ -112,14 +112,14 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-neutral/40 border border-border">
+                <div className="p-4 rounded-2xl bg-neutral/40 dark:bg-neutral/30 border border-border">
                     <h4 className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60 mb-3">Visit Sources</h4>
                     {summary.sourceBreakdown.length > 0 ? (
                         <div className="h-44">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={summary.sourceBreakdown}>
-                                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                                    <Tooltip />
+                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'currentColor' }} />
+                                    <Tooltip contentStyle={{ backgroundColor: 'var(--white)', borderColor: 'var(--border)', borderRadius: '12px' }} />
                                     <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                                         {summary.sourceBreakdown.map((entry, index) => (
                                             <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
@@ -133,7 +133,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                     )}
                 </div>
 
-                <div className="p-4 rounded-2xl bg-neutral/40 border border-border space-y-3">
+                <div className="p-4 rounded-2xl bg-neutral/40 dark:bg-neutral/30 border border-border space-y-3">
                     <h4 className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60">Reminder Performance</h4>
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-text-secondary">Reminder runs</span>

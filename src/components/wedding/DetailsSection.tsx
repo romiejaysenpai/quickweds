@@ -80,14 +80,30 @@ function DetailCard({ icon: Icon, title, value, subtitle, link, children, delay 
                 </div>
 
                 {link && (
-                    <motion.a 
-                        href={link} 
-                        target="_blank" 
-                        whileHover={{ letterSpacing: '0.4em' }}
-                        className="text-primary font-bold border-b-2 border-primary/10 pb-2 hover:border-primary transition-all text-[10px] md:text-xs uppercase tracking-[0.3em] mt-auto font-black"
+                    <motion.button 
+                        onClick={() => {
+                            const address = value + ' ' + (subtitle || '');
+                            const encodedAddress = encodeURIComponent(address);
+                            const iosUrl = `maps://maps.apple.com/?q=${encodedAddress}`;
+                            const androidUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+                            const webUrl = link || androidUrl;
+
+                            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                                window.location.href = iosUrl;
+                                // Fallback to web if app doesn't open
+                                setTimeout(() => window.open(webUrl, '_blank'), 500);
+                            } else if (/Android/i.test(navigator.userAgent)) {
+                                window.location.href = `geo:0,0?q=${encodedAddress}`;
+                                setTimeout(() => window.open(androidUrl, '_blank'), 500);
+                            } else {
+                                window.open(webUrl, '_blank');
+                            }
+                        }}
+                        whileHover={{ letterSpacing: '0.4em', x: 5 }}
+                        className="text-primary font-bold border-b-2 border-primary/10 pb-2 hover:border-primary transition-all text-[10px] md:text-xs uppercase tracking-[0.3em] mt-auto font-black flex items-center gap-2"
                     >
-                        View on Maps
-                    </motion.a>
+                        Get Directions <span className="text-lg">→</span>
+                    </motion.button>
                 )}
             </div>
 

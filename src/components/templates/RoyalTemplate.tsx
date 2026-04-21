@@ -1,0 +1,83 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { Heart } from 'lucide-react';
+import { 
+    VideoSection, 
+    BioSection, 
+    DetailsSection, 
+    CountdownTimer, 
+    TimelineSection, 
+    GallerySection, 
+    GiftSection 
+} from '../wedding';
+import { SharedNewSections } from './shared';
+
+export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
+    return (
+        <div className="bg-[#121212] text-[#f2d0a4] relative overflow-hidden min-h-screen font-serif">
+            <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/damask-wallpaper.png')` }} />
+
+            <section className="min-h-screen py-20 relative overflow-hidden flex items-center justify-center border-b border-primary/20">
+                {wedding.teaser_video ? (
+                    <video src={wedding.teaser_video} className="absolute inset-0 w-full h-full object-cover opacity-30 grayscale contrast-125" autoPlay muted loop />
+                ) : (
+                    <img src={wedding.hero_image || wedding.couple_photo} className="absolute inset-0 w-full h-full object-cover opacity-20 grayscale brightness-50" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-[#121212]" />
+
+                <motion.div
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 2 }}
+                    className="z-10 text-center max-w-6xl px-4 sm:px-6 md:px-8 lg:px-8 py-6 sm:py-12 md:py-16 lg:py-24 border-[4px] border-primary/20 m-4 sm:m-6 md:m-8 lg:m-12 bg-black/40 backdrop-blur-sm relative"
+                >
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-[#121212] rounded-full border border-primary/20 flex items-center justify-center overflow-hidden">
+                        {wedding.logo_initials ? (
+                            <span className="text-3xl text-primary uppercase" style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>{wedding.logo_initials}</span>
+                        ) : (
+                            <Heart className="w-12 h-12 text-primary fill-primary" />
+                        )}
+                    </div>
+
+                    <span className="text-xs uppercase tracking-[1em] font-black opacity-60 mb-12 block">BY ROYAL PROCLAMATION</span>
+                    <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-[8rem] font-serif border-y-2 border-primary/40 py-8 sm:py-12 md:py-16 lg:py-16 mb-8 sm:mb-12 md:mb-16 lg:mb-16 leading-tight tracking-[0.05em] uppercase">
+                        {wedding.bride_name} <br />
+                        <span className="text-2xl sm:text-2xl md:text-3xl italic normal-case block my-4 sm:my-8 md:my-12 lg:my-12 tracking-widest">and</span>
+                        {wedding.groom_name}
+                    </h1>
+                    <p className="text-lg sm:text-xl md:text-2xl font-serif italic mb-8 sm:mb-10 md:mb-12 lg:mb-12 max-w-3xl mx-auto opacity-80">His Majesty & Her Royal Highness cordially invite you to witness the union of two royal houses</p>
+                    <div className="flex gap-4 sm:gap-6 md:gap-8 lg:gap-12 items-center justify-center mb-8 sm:mb-12 md:mb-16 lg:mb-16">
+                        <div className="w-24 h-[1px] bg-primary/40" />
+                        <p className="text-sm uppercase tracking-[1em] font-black">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                        <div className="w-24 h-[1px] bg-primary/40" />
+                    </div>
+                </motion.div>
+            </section>
+
+            <div className="relative z-10 scale-90 md:scale-100 origin-center bg-[#1a1a1a] shadow-[0_0_100px_rgba(0,0,0,1)] pt-24">
+                <div className="text-center mb-24">
+                    <h2 className="text-5xl font-serif text-primary uppercase tracking-[0.3em] mb-4">Official Bio</h2>
+                    <div className="w-24 h-[1px] bg-primary mx-auto" />
+                </div>
+                <BioSection wedding={wedding} />
+                <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
+                <div className="relative z-10 bg-[#121212] pt-24"><DetailsSection wedding={wedding} invert /></div>
+                {!wedding.is_thank_you_mode && (
+                <CountdownTimer
+                    weddingDate={wedding.wedding_date}
+                    weddingTime={wedding.wedding_time}
+                    brideName={wedding.bride_name}
+                    groomName={wedding.groom_name}
+                    venueName={wedding.venue_name}
+                    venueAddress={wedding.venue_address}
+                />
+            )}
+            <TimelineSection timeline={wedding.program_timeline} />
+                <GallerySection gallery={gallery} />
+                <GiftSection wedding={wedding} invert />
+                <SharedNewSections wedding={wedding} isExpired={isExpired} />
+            </div>
+        </div>
+    );
+}

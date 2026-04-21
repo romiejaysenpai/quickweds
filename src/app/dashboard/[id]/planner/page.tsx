@@ -25,6 +25,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const [tasks, setTasks] = useState<any[]>([]);
     const [budgets, setBudgets] = useState<any[]>([]);
     const [vendors, setVendors] = useState<any[]>([]);
+    const [confirmedGuests, setConfirmedGuests] = useState<number>(0);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -44,6 +45,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 .from('weddings')
                 .select('id, user_id, total_budget, currency')
                 .eq('id', weddingId)
+                .is('deleted_at', null)
                 .single();
 
             if (accessWeddingError || !accessWedding) {
@@ -65,17 +67,25 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 }
             }
 
-            const [tasksRes, budgetsRes, weddingRes, vendorsRes] = await Promise.all([
+            const [tasksRes, budgetsRes, weddingRes, vendorsRes, rsvpsRes] = await Promise.all([
                 supabase.from('planner_tasks').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
                 supabase.from('planner_budgets').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
-                supabase.from('weddings').select('total_budget, currency').eq('id', weddingId).single(),
+                supabase.from('weddings').select('total_budget, currency, guest_limit').eq('id', weddingId).is('deleted_at', null).single(),
                 supabase.from('planner_vendors').select('*').eq('wedding_id', weddingId),
+                supabase.from('rsvps').select('num_guests, rsvp_status, attendance').eq('wedding_id', weddingId)
             ]);
 
             if (tasksRes.data) setTasks(tasksRes.data);
             if (budgetsRes.data) setBudgets(budgetsRes.data);
             if (weddingRes.data) setWedding(weddingRes.data);
             if (vendorsRes.data) setVendors(vendorsRes.data);
+            
+            if (rsvpsRes.data) {
+                const count = rsvpsRes.data
+                    .filter(r => r.rsvp_status === 'confirmed' || r.rsvp_status === 'confirmed_manual' || r.attendance === 'Yes')
+                    .reduce((acc, r) => acc + (r.num_guests || 1), 0);
+                setConfirmedGuests(count);
+            }
         } catch (err) {
             console.error("Error loading planner data:", err);
         } finally {
@@ -94,7 +104,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     }
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+        return <div className="min-h-screen flex items-center justify-center bg-background">
             <Loader2 className="w-12 h-12 text-primary animate-spin" />
         </div>;
     }
@@ -120,50 +130,50 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     }
 
     return (
-        <div className="min-h-screen bg-[#fafafa]">
+        <div className="min-h-screen bg-background">
             {/* Top Navigation Bar */}
-            <div className="bg-white border-b border-border sticky top-0 z-40">
-                <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                        <button onClick={() => router.push(`/dashboard/${weddingId}`)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-neutral flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]">
+            <div className="bg-white/80 dark:bg-white/90 backdrop-blur-md border-b border-border sticky top-0 z-40 overflow-hidden">
+                <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+                        <button onClick={() => router.push(`/dashboard/${weddingId}`)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]">
                             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
                         </button>
                         <div className="min-w-0">
-                            <h1 className="text-lg sm:text-xl font-serif font-bold text-foreground truncate">Wedding Planner</h1>
+                            <h1 className="text-base sm:text-lg md:text-xl font-serif font-bold text-foreground truncate">Wedding Planner</h1>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-12 flex flex-col md:flex-row gap-4 sm:gap-6 md:gap-8">
-                {/* Sidebar */}
-                <div className="w-full md:w-64 shrink-0">
-                    <div className="bg-white rounded-lg sm:rounded-3xl p-3 sm:p-6 soft-shadow border border-border sticky top-20 md:top-24">
-                        <div className="space-y-1 sm:space-y-2">
-                            <button onClick={() => setActiveTab('checklist')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'checklist' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
-                                <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Checklist</span>
+            <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-6">
+                {/* Sidebar - Mobile: Grid, Desktop: Vertical stack */}
+                <div className="w-full md:w-56 lg:w-64 shrink-0">
+                    <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl p-2 sm:p-4 md:p-6 soft-shadow border border-border sticky top-20 md:top-24 flex-shrink-0">
+                        <div className="grid grid-cols-3 md:flex md:flex-col gap-2 md:gap-2">
+                            <button onClick={() => setActiveTab('checklist')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'checklist' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
+                                <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Checklist</span>
                             </button>
-                            <button onClick={() => setActiveTab('budget')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'budget' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
-                                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Budgets</span>
+                            <button onClick={() => setActiveTab('budget')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'budget' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
+                                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Budgets</span>
                             </button>
-                            <button onClick={() => setActiveTab('vendors')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'vendors' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
-                                <Users className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Vendors</span>
+                            <button onClick={() => setActiveTab('vendors')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'vendors' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
+                                <Users className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Vendors</span>
                             </button>
-                            <button onClick={() => setActiveTab('seating')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'seating' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
-                                <Layout className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Seating</span>
+                            <button onClick={() => setActiveTab('seating')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'seating' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
+                                <Layout className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Seating</span>
                             </button>
-                            <button onClick={() => setActiveTab('photos')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'photos' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
-                                <Camera className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Photos</span>
+                            <button onClick={() => setActiveTab('photos')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'photos' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
+                                <Camera className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Photos</span>
                             </button>
-                            <button onClick={() => setActiveTab('thanks')} className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'thanks' ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-text-secondary hover:bg-neutral hover:text-foreground'}`}>
-                                <Mail className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-xs sm:text-base">Thank You</span>
+                            <button onClick={() => setActiveTab('thanks')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'thanks' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
+                                <Mail className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Thank You</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0 overflow-x-hidden">
                     {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} reload={loadPlannerData} />}
                     {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} wedding={wedding} vendors={vendors} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
                     {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
@@ -227,7 +237,7 @@ function PlannerChecklists({ weddingId, initialTasks, reload }: any) {
     const progress = initialTasks.length > 0 ? Math.round((completedCount / initialTasks.length) * 100) : 0;
 
     return (
-        <div className="bg-white rounded-lg sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 soft-shadow border border-border">
+        <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 md:p-12 soft-shadow border border-border">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 sm:gap-0 mb-6 sm:mb-8 border-b border-border/50 pb-4 sm:pb-8">
                 <div>
                     <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground mb-1 sm:mb-2">To-Do Checklist</h2>
@@ -257,7 +267,7 @@ function PlannerChecklists({ weddingId, initialTasks, reload }: any) {
                     <div className="text-center py-8 sm:py-12 opacity-50 font-serif italic text-xs sm:text-base">Your checklist is beautifully empty. Add your first task above!</div>
                 ) : (
                     initialTasks.map((task: any) => (
-                        <div key={task.id} className="flex items-center justify-between p-2 sm:p-4 rounded-lg sm:rounded-xl hover:bg-neutral transition-colors group gap-2">
+                        <div key={task.id} className="flex items-center justify-between p-2 sm:p-4 rounded-lg sm:rounded-xl hover:bg-neutral dark:hover:bg-neutral/50 transition-colors group gap-2">
                             <div className="flex items-center gap-2 sm:gap-4 flex-1 cursor-pointer min-w-0" onClick={() => toggleTask(task)}>
                                 {task.status === 'completed' ? (
                                     <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 shrink-0" />
@@ -268,7 +278,7 @@ function PlannerChecklists({ weddingId, initialTasks, reload }: any) {
                                     {task.title}
                                 </span>
                             </div>
-                            <button onClick={() => deleteTask(task.id)} className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-red-400 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-red-50 flex-shrink-0 min-h-[44px] min-w-[44px]">
+                            <button onClick={() => deleteTask(task.id)} className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-red-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-red-500/10 flex-shrink-0 min-h-[44px] min-w-[44px]">
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
@@ -286,11 +296,13 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
     // Local states for inputs to avoid jitter/focus issues
     const [localBudget, setLocalBudget] = useState(wedding?.total_budget || 0);
     const [localCurrency, setLocalCurrency] = useState(wedding?.currency || 'USD');
+    const [localGuestLimit, setLocalGuestLimit] = useState(wedding?.guest_limit || 0);
 
     useEffect(() => {
         if (wedding) {
             setLocalBudget(wedding.total_budget || 0);
             setLocalCurrency(wedding.currency || 'USD');
+            setLocalGuestLimit(wedding.guest_limit || 0);
         }
     }, [wedding]);
 
@@ -394,21 +406,21 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
         { name: 'Paid Vendors', value: totalSpentFromVendors },
         { name: 'Remaining', value: Math.max(0, budgetRemaining) }
     ];
-    const COLORS = ['#D16C78', '#CBB26A', '#E5E7EB'];
+    const COLORS = ['#D16C78', '#CBB26A', '#3A2A2D'];
 
     // Derive symbol from localCurrency for immediate UI feedback
     const currencySymbol = localCurrency === 'USD' ? '$' : localCurrency === 'Yen' ? '¥' : '₱';
 
     return (
-        <div className="bg-white rounded-lg sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 soft-shadow border border-border overflow-x-hidden">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 sm:mb-8 border-b border-border/50 pb-4 sm:pb-8 gap-3 sm:gap-6">
-                <div>
-                    <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground mb-1 sm:mb-2">Budget Tracker</h2>
+        <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-6 md:p-10 soft-shadow border border-border overflow-x-hidden">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 sm:mb-6 md:mb-8 border-b border-border/50 pb-3 sm:pb-5 md:pb-6 gap-3 sm:gap-4 md:gap-5">
+                <div className="min-w-0">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-foreground mb-1">Budget Tracker</h2>
                     <p className="text-xs sm:text-sm text-text-secondary">Keep your wedding finances clearly mapped out.</p>
                 </div>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 md:gap-6 items-start sm:items-end w-full sm:w-auto">
-                    <div className="text-left sm:text-right">
-                        <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Wedding Budget Settings</p>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 md:gap-5 items-start sm:items-end w-full sm:w-auto">
+                    <div className="text-left sm:text-right min-w-0">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Wedding Budget</p>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                             <select 
                                 value={localCurrency} 
@@ -416,31 +428,50 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                     setLocalCurrency(e.target.value);
                                     saveWeddingBudget('currency', e.target.value);
                                 }}
-                                className="bg-neutral border border-border rounded-lg px-2 py-1 text-xs outline-none focus:ring-primary/20 font-bold min-h-[44px]"
+                                className="bg-neutral border border-border rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm outline-none focus:ring-primary/20 font-bold min-h-[40px] sm:min-h-[44px]"
                             >
                                 <option value="USD">USD ($)</option>
                                 <option value="Yen">Yen (¥)</option>
                                 <option value="Peso">Peso (₱)</option>
                             </select>
-                            <div className="relative w-full sm:w-auto">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-primary font-bold text-base sm:text-lg">{currencySymbol}</span>
+                            <div className="relative w-full sm:w-32 md:w-40">
+                                <span className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-primary font-bold text-sm sm:text-base">{currencySymbol}</span>
                                 <input 
                                     type="number" 
                                     value={localBudget}
                                     onChange={e => setLocalBudget(parseFloat(e.target.value) || 0)}
                                     onBlur={e => saveWeddingBudget('total_budget', parseFloat(e.target.value) || 0)}
-                                    className="text-lg sm:text-2xl font-mono text-primary w-full sm:w-40 bg-neutral border border-border rounded-lg sm:rounded-xl pl-8 pr-3 sm:pr-4 py-2 outline-none focus:ring-primary/20 min-h-[44px]"
+                                    className="text-base sm:text-xl font-mono text-primary w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-10 sm:pl-12 pr-2 sm:pr-3 py-2 outline-none focus:ring-primary/20 min-h-[40px] sm:min-h-[44px]"
                                 />
                             </div>
                         </div>
                     </div>
-                    <div className="text-left sm:text-right">
-                        <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Total Dedicated</p>
-                        <p className={`text-xl sm:text-3xl font-mono ${totalCommitted > (wedding?.total_budget || 0) ? 'text-red-500' : 'text-primary'} font-bold`}>{currencySymbol}{totalCommitted.toLocaleString()}</p>
+                    <div className="text-left sm:text-right min-w-0">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Guest Limit</p>
+                        <div className="relative w-full sm:w-24 md:w-32">
+                            <Users className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-primary font-bold w-4 h-4" />
+                            <input 
+                                type="number" 
+                                value={localGuestLimit}
+                                onChange={e => {
+                                    const val = parseInt(e.target.value) || 0;
+                                    setLocalGuestLimit(val);
+                                }}
+                                onBlur={e => {
+                                    const val = parseInt(e.target.value) || 0;
+                                    saveWeddingBudget('guest_limit', val);
+                                }}
+                                className="text-base sm:text-xl font-mono text-primary w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-8 sm:pl-10 pr-2 sm:pr-3 py-2 outline-none focus:ring-primary/20 min-h-[40px] sm:min-h-[44px]"
+                            />
+                        </div>
                     </div>
-                    <div className="text-left sm:text-right">
-                        <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-emerald-600 mb-1">Balance Remaining</p>
-                        <p className={`text-xl sm:text-3xl font-mono ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'} font-black`}>
+                    <div className="text-left sm:text-right min-w-0">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Total Spent</p>
+                        <p className={`text-lg sm:text-2xl md:text-3xl font-mono ${totalCommitted > (wedding?.total_budget || 0) ? 'text-red-500' : 'text-primary'} font-bold`}>{currencySymbol}{totalCommitted.toLocaleString()}</p>
+                    </div>
+                    <div className="text-left sm:text-right min-w-0">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-emerald-600 mb-1">Remaining</p>
+                        <p className={`text-lg sm:text-2xl md:text-3xl font-mono ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'} font-black`}>
                             {currencySymbol}{budgetRemaining.toLocaleString()}
                         </p>
                     </div>
@@ -527,47 +558,47 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                 </div>
             </div>
 
-            <form onSubmit={addItem} className="space-y-4 sm:space-y-6 mb-8 sm:mb-12 bg-neutral/30 p-4 sm:p-6 rounded-lg sm:rounded-[2rem] border border-border/50">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-                    <div>
-                        <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Category</label>
+            <form onSubmit={addItem} className="space-y-3 sm:space-y-5 mb-6 sm:mb-10 bg-neutral/30 p-3 sm:p-5 rounded-xl sm:rounded-2xl border border-border/50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="min-w-0">
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Category</label>
                         <select 
                             value={newItem.category} 
                             onChange={e => e.target.value === 'CUSTOM' ? handleAddCustomCategory() : setNewItem({...newItem, category: e.target.value})}
-                            className="w-full bg-white border border-border rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
+                            className="w-full bg-white border border-border rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-sm min-h-[44px]"
                         >
                             {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                            <option value="CUSTOM">+ Add Custom Category</option>
+                            <option value="CUSTOM">+ Add Custom</option>
                         </select>
                     </div>
-                    <div>
-                        <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Expense/Item Title</label>
+                    <div className="min-w-0">
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Expense</label>
                         <input 
                             required
                             type="text" 
                             placeholder="e.g. Venue Rental" 
                             value={newItem.item_name}
                             onChange={e => setNewItem({...newItem, item_name: e.target.value})}
-                            className="w-full bg-white border border-border rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
+                            className="w-full bg-white border border-border rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-sm min-h-[44px]"
                         />
                     </div>
-                    <div>
-                        <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Estimated Cost ({currencySymbol})</label>
+                    <div className="min-w-0">
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Est. Cost ({currencySymbol})</label>
                         <div className="relative">
-                            <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-text-secondary text-xs sm:text-sm font-bold">{currencySymbol}</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs font-bold">{currencySymbol}</span>
                             <input 
                                 required
                                 type="number" 
                                 placeholder="0.00" 
                                 value={newItem.estimated_cost}
                                 onChange={e => setNewItem({...newItem, estimated_cost: e.target.value})}
-                                className="w-full bg-white border border-border rounded-lg sm:rounded-xl pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 outline-none focus:ring-primary/20 font-mono text-xs sm:text-base min-h-[44px]"
+                                className="w-full bg-white border border-border rounded-lg sm:rounded-xl pl-10 pr-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 font-mono text-xs sm:text-sm min-h-[44px]"
                             />
                         </div>
                     </div>
                 </div>
-                <button type="submit" disabled={publishing} className="w-full bg-primary text-white rounded-lg sm:rounded-2xl px-4 sm:px-6 py-3 sm:py-5 font-bold shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all text-sm sm:text-lg min-h-[44px]">
-                    {publishing ? 'Adding to Budget...' : 'Add Expense to Tracker'}
+                <button type="submit" disabled={publishing} className="w-full bg-primary text-white rounded-xl sm:rounded-2xl px-4 sm:px-6 py-2.5 sm:py-4 font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all text-sm sm:text-base min-h-[44px]">
+                    {publishing ? 'Adding...' : 'Add Expense'}
                 </button>
             </form>
 
@@ -637,9 +668,9 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                                     value={vendor.payment_status}
                                                     onChange={(e) => updateVendorStatus(vendor.id, e.target.value)}
                                                     className={`px-2 py-1 rounded text-[7px] sm:text-[10px] font-black uppercase tracking-widest border-none outline-none cursor-pointer min-h-[44px] ${
-                                                        vendor.payment_status?.toLowerCase() === 'paid' ? 'bg-emerald-100 text-emerald-600' :
-                                                        vendor.payment_status?.toLowerCase() === 'pending' ? 'bg-amber-100 text-amber-600' :
-                                                        'bg-neutral-200 text-text-secondary'
+                                                        vendor.payment_status?.toLowerCase() === 'paid' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+                                                        vendor.payment_status?.toLowerCase() === 'pending' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+                                                        'bg-neutral/50 dark:bg-neutral/20 text-text-secondary'
                                                     }`}
                                                 >
                                                     <option value="pending">Pending</option>
@@ -726,77 +757,77 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
     }
 
     return (
-        <div className="bg-white rounded-[2.5rem] p-8 md:p-12 soft-shadow border border-border">
-            <div className="mb-8 border-b border-border/50 pb-8">
-                <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Vendor Rolodex</h2>
-                <p className="text-text-secondary">Keep your crucial suppliers and professionals organized.</p>
+        <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl p-4 sm:p-8 md:p-10 soft-shadow border border-border overflow-x-hidden">
+            <div className="mb-5 sm:mb-8 border-b border-border/50 pb-4 sm:pb-6">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-foreground mb-1">Vendor Rolodex</h2>
+                <p className="text-xs sm:text-sm text-text-secondary">Keep your suppliers organized.</p>
             </div>
 
-            <form onSubmit={addItem} className="space-y-6 mb-12">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Vendor Type</label>
+            <form onSubmit={addItem} className="space-y-4 sm:space-y-5 mb-6 sm:mb-10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="min-w-0">
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Vendor Type</label>
                         <select 
                             value={newItem.role} 
                             onChange={e => e.target.value === 'CUSTOM' ? handleAddCustomRole() : setNewItem({...newItem, role: e.target.value})}
-                            className="w-full bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                            className="w-full bg-neutral border border-border rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-sm min-h-[44px]"
                         >
                             {roles.map(r => <option key={r} value={r}>{r}</option>)}
-                            <option value="CUSTOM">+ Add Custom Supplier</option>
+                            <option value="CUSTOM">+ Add Custom</option>
                         </select>
                     </div>
-                    <div>
-                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Business Name</label>
+                    <div className="min-w-0">
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Business Name</label>
                         <input 
                             required
                             type="text" 
-                            placeholder="e.g. Dream Florals Ltd" 
+                            placeholder="Name" 
                             value={newItem.name}
                             onChange={e => setNewItem({...newItem, name: e.target.value})}
-                            className="w-full bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                            className="w-full bg-neutral border border-border rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-sm min-h-[44px]"
                         />
                     </div>
-                    <div>
-                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Contact Info</label>
+                    <div className="min-w-0">
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Contact</label>
                         <input 
                             type="text" 
                             placeholder="Email or Phone" 
                             value={newItem.contact}
                             onChange={e => setNewItem({...newItem, contact: e.target.value})}
-                            className="w-full bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20"
+                            className="w-full bg-neutral border border-border rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-sm min-h-[44px]"
                         />
                     </div>
-                    <div>
-                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Total Agreed Amount ({currencySymbol})</label>
+                    <div className="min-w-0">
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Amount ({currencySymbol})</label>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary text-sm font-bold">{currencySymbol}</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs font-bold">{currencySymbol}</span>
                             <input 
                                 type="number" 
                                 placeholder="0.00" 
                                 value={newItem.amount}
                                 onChange={e => setNewItem({...newItem, amount: e.target.value})}
-                                className="w-full bg-neutral border border-border rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-primary/20 font-mono"
+                                className="w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-10 pr-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 font-mono text-xs sm:text-sm min-h-[44px]"
                             />
                         </div>
                     </div>
-                    <div>
-                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Payment Status</label>
+                    <div className="min-w-0">
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Status</label>
                         <select 
                             value={newItem.payment_status}
                             onChange={e => setNewItem({...newItem, payment_status: e.target.value})}
-                            className="w-full bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20 font-bold"
+                            className="w-full bg-neutral border border-border rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-sm font-bold min-h-[44px]"
                         >
                             <option value="not paid">Not Paid</option>
                             <option value="pending">Pending</option>
                             <option value="paid">Paid</option>
                         </select>
                     </div>
-                    <div>
-                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1.5 ml-1">Payment Method</label>
+                    <div className="min-w-0">
+                        <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Method</label>
                         <select 
                             value={newItem.payment_method}
                             onChange={e => setNewItem({...newItem, payment_method: e.target.value})}
-                            className="w-full bg-neutral border border-border rounded-xl px-4 py-3 outline-none focus:ring-primary/20 capitalize"
+                            className="w-full bg-neutral border border-border rounded-lg sm:rounded-xl px-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 text-xs sm:text-sm capitalize min-h-[44px]"
                         >
                             <option value="cash">Cash</option>
                             <option value="g-cash">G-Cash</option>
@@ -805,35 +836,35 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
                         </select>
                     </div>
                 </div>
-                <button type="submit" disabled={publishing} className="w-full bg-primary text-white rounded-2xl px-6 py-5 font-bold disabled:opacity-50 shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all text-lg">
-                    {publishing ? 'Adding Supplier...' : 'Add Supplier to My List'}
+                <button type="submit" disabled={publishing} className="w-full bg-primary text-white rounded-xl sm:rounded-2xl px-4 py-3 sm:py-4 font-bold disabled:opacity-50 shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all text-sm sm:text-base min-h-[44px]">
+                    {publishing ? 'Adding...' : 'Add Vendor'}
                 </button>
             </form>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-5">
                 {initialVendors.length === 0 ? (
-                    <div className="col-span-full text-center py-12 opacity-50 font-serif italic">No vendors booked yet. Add your first supplier above.</div>
+                    <div className="col-span-full text-center py-8 sm:py-12 opacity-50 font-serif italic text-sm sm:text-base">No vendors booked yet. Add your first above.</div>
                 ) : (
                     initialVendors.map((vendor: any) => (
-                        <div key={vendor.id} className="border border-border rounded-2xl p-6 group relative bg-white hover:border-primary/30 transition-all soft-shadow">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary block mb-1">{vendor.role}</span>
-                                    <h3 className="font-serif text-xl font-bold text-foreground">{vendor.name}</h3>
+                        <div key={vendor.id} className="border border-border rounded-xl sm:rounded-2xl p-4 sm:p-5 group relative bg-white hover:border-primary/30 transition-all soft-shadow overflow-hidden">
+                            <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+                                <div className="min-w-0 flex-1">
+                                    <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-primary block mb-0.5 truncate">{vendor.role}</span>
+                                    <h3 className="font-serif text-base sm:text-lg font-bold text-foreground truncate">{vendor.name}</h3>
                                 </div>
-                                <div className="text-right">
-                                    <p className="font-mono font-bold text-lg text-primary">{currencySymbol}{Number(vendor.amount || 0).toLocaleString()}</p>
-                                    <p className="text-[10px] uppercase tracking-widest text-text-secondary/50 font-bold">{vendor.payment_method}</p>
+                                <div className="text-right flex-shrink-0">
+                                    <p className="font-mono font-bold text-sm sm:text-base text-primary">{currencySymbol}{Number(vendor.amount || 0).toLocaleString()}</p>
+                                    <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-text-secondary/50 font-bold">{vendor.payment_method}</p>
                                 </div>
                             </div>
                             
-                            <p className="text-sm font-mono text-text-secondary mb-6">{vendor.phone || vendor.email || 'No contact provided'}</p>
+                            <p className="text-xs sm:text-sm font-mono text-text-secondary mb-3 sm:mb-4 truncate">{vendor.phone || vendor.email || 'No contact'}</p>
                             
-                            <div className="flex items-center gap-2 pt-4 border-t border-border/50">
+                            <div className="flex items-center gap-2 pt-2 sm:pt-3 border-t border-border/50">
                                 <select 
                                     value={vendor.payment_status}
                                     onChange={e => updateVendorStatus(vendor.id, e.target.value)}
-                                    className={`flex-1 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-lg border outline-none transition-colors ${
+                                    className={`flex-1 text-[10px] font-bold uppercase tracking-widest px-2 sm:px-3 py-2 rounded-lg border outline-none transition-colors min-h-[40px] ${
                                         vendor.payment_status?.toLowerCase() === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                                         vendor.payment_status?.toLowerCase() === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' :
                                         'bg-neutral text-text-secondary border-border'
@@ -845,8 +876,8 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
                                 </select>
                             </div>
 
-                            <button onClick={() => deleteItem(vendor.id)} className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 border border-border shadow-sm">
-                                <Trash2 className="w-4 h-4" />
+                            <button onClick={() => deleteItem(vendor.id)} className="absolute -top-1.5 -right-1.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 border border-border shadow-sm">
+                                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </button>
                         </div>
                     ))

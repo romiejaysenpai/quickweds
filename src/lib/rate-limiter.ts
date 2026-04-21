@@ -34,6 +34,10 @@ export const RATE_LIMITS = {
     // Domain management (admin operations)
     DOMAIN_MANAGEMENT: { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
     
+    // Analytics events - strict to prevent spam (CRITICAL FIX #1)
+    ANALYTICS_TRACK: { maxRequests: 50, windowMs: 60 * 1000 },        // 50 per minute per IP
+    ANALYTICS_BATCH: { maxRequests: 10, windowMs: 60 * 1000 },        // 10 batch requests per minute
+    
     // Default limit for unspecified endpoints
     DEFAULT: { maxRequests: 50, windowMs: 15 * 60 * 1000 },          // 50 per 15 minutes
 } as const;
@@ -136,6 +140,173 @@ export function createRateLimitMiddleware(limitKey: RateLimitKey) {
             };
         },
     };
+}
+
+/**
+ * Get client IP from request headers
+ * Works with Vercel, AWS, Cloudflare, and standard proxies
+ */
+export function getClientIP(req: Request): string {
+    // Vercel specific headers
+    const forwarded = req.headers.get('x-forwarded-for');
+    if (forwarded) {
+        // Get the first IP in the chain (original client)
+        return forwarded.split(',')[0].trim();
+    }
+    
+    // Cloudflare
+    const cfConnectingIP = req.headers.get('cf-connecting-ip');
+    if (cfConnectingIP) {
+        return cfConnectingIP;
+    }
+    
+    // AWS ALB/ELB
+    const awsIP = req.headers.get('x-amzn-trace-id');
+    if (awsIP) {
+        // Extract IP from trace ID if present
+        const match = awsIP.match(/Root=.*-([\d\.]+)/);
+        if (match) return match[1];
+    }
+    
+    // Standard remote address (may not work in serverless)
+    // @ts-ignore - some environments have this
+    if (req.socket?.remoteAddress) {
+        // @ts-ignore
+        return req.socket.remoteAddress;
+    }
+    
+    // Fallback to a hash of user agent + timestamp for anonymous tracking
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+    return `anon-${Buffer.from(userAgent).toString('base64').slice(0, 16)}`;
+}
+
+/**
+ * Sanitize string input to prevent injection attacks
+ * CRITICAL FIX #2: Input sanitization
+ */
+export function sanitizeInput(input: string, options: {
+    maxLength?: number;
+    allowHTML?: boolean;
+    allowNewlines?: boolean;
+} = {}): string {
+    const { maxLength = 1000, allowHTML = false, allowNewlines = false } = options;
+    
+    if (!input || typeof input !== 'string') {
+        return '';
+    }
+    
+    let sanitized = input;
+    
+    // Remove or encode HTML tags unless explicitly allowed
+    if (!allowHTML) {
+        sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+        sanitized = sanitized.replace(/<[^>]*>/g, '');
+    }
+    
+    // Handle newlines
+    if (!allowNewlines) {
+        sanitized = sanitized.replace(/[\r\n]+/g, ' ');
+    }
+    
+    // Remove null bytes and other control characters except newlines
+    sanitized = sanitized.replace(/\x00/g, '');
+    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    
+    // Trim whitespace
+    sanitized = sanitized.trim();
+    
+    // Enforce max length
+    if (sanitized.length > maxLength) {
+        sanitized = sanitized.substring(0, maxLength);
+    }
+    
+    return sanitized;
+}
+
+/**
+ * Sanitize email address
+ */
+export function sanitizeEmail(email: string): string {
+    if (!email || typeof email !== 'string') {
+        return '';
+    }
+    
+    // Remove whitespace and convert to lowercase
+    let sanitized = email.trim().toLowerCase();
+    
+    // Basic email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sanitized)) {
+        return '';
+    }
+    
+    // Enforce max length
+    if (sanitized.length > 254) {
+        sanitized = sanitized.substring(0, 254);
+    }
+    
+    return sanitized;
+}
+
+/**
+ * Sanitize UUID
+ */
+export function sanitizeUUID(uuid: string): string {
+    if (!uuid || typeof uuid !== 'string') {
+        return '';
+    }
+    
+    // UUID v4 regex
+    const uuidRegex = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+    const cleaned = uuid.trim().toLowerCase().replace(/[^0-9a-f-]/g, '');
+    
+    if (!uuidRegex.test(cleaned)) {
+        return '';
+    }
+    
+    return cleaned;
+}
+
+/**
+ * Sanitize URL
+ */
+export function sanitizeURL(url: string, allowedProtocols: string[] = ['http:', 'https:']): string {
+    if (!url || typeof url !== 'string') {
+        return '';
+    }
+    
+    try {
+        const parsed = new URL(url.trim());
+        
+        // Check protocol
+        if (!allowedProtocols.includes(parsed.protocol)) {
+            return '';
+        }
+        
+        // Reconstruct URL to prevent injection
+        return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
+    } catch {
+        return '';
+    }
+}
+
+/**
+ * Validate and sanitize wedding ID (8-character alphanumeric)
+ */
+export function sanitizeWeddingId(id: string): string {
+    if (!id || typeof id !== 'string') {
+        return '';
+    }
+    
+    // Wedding IDs are 8-character alphanumeric strings
+    const cleaned = id.trim().replace(/[^a-zA-Z0-9]/g, '');
+    
+    if (cleaned.length < 4 || cleaned.length > 32) {
+        return '';
+    }
+    
+    return cleaned;
 }
 
 /**

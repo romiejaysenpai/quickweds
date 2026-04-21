@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import VectorArtGuests from './VectorArtGuests';
 import { supabase } from '@/lib/supabase';
@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
 import MarketplacePanel from './builder/MarketplacePanel';
+import { useLocalUndoRedo } from '@/components/UndoRedoProvider';
 import {
     SECTION_BLOCK_LIBRARY,
     buildPresetPayload,
@@ -106,6 +107,45 @@ export const TEMPLATES = [
     { id: 'garden', name: 'Secret Garden', desc: 'Lush greenery, trellis patterns, and botanical elegance.', icon: '🍃' }
 ];
 
+// Initial form data
+const INITIAL_FORM_DATA = {
+    brideName: '',
+    groomName: '',
+    weddingDate: '',
+    weddingTime: '',
+    venueName: '',
+    venueAddress: '',
+    mapsLink: '',
+    motifColor: '#C08081',
+    fontStyle: 'Elegant',
+    backgroundStyle: 'gradient',
+    template: 'classic',
+    dressCode: '',
+    dressCodeColor: '#000000',
+    programTimeline: '',
+    story: '',
+    quote: '',
+    hashtag: '',
+    contactPerson: '',
+    rsvpDeadline: '',
+    giftBank: '',
+    giftAccountName: '',
+    giftAccountNumber: '',
+    logoInitials: '',
+    logoFont: 'Elegant',
+    logoShape: 'minimal',
+    logoColor: '#C08081',
+    spotifyUrl: '',
+    weddingParty: [],
+    registryLinks: [],
+    cashFunds: [],
+    paymentLinks: [],
+    isThankYouMode: false,
+    thankYouMessage: '',
+    photoAlbumLink: '',
+    accentStyle: 'none',
+};
+
 export default function BuilderForm() {
     const router = useRouter();
     const { user, isAdmin, loading: authLoading } = useAuth();
@@ -114,43 +154,42 @@ export default function BuilderForm() {
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [formData, setFormData] = useState<any>({
-        brideName: '',
-        groomName: '',
-        weddingDate: '',
-        weddingTime: '',
-        venueName: '',
-        venueAddress: '',
-        mapsLink: '',
-        motifColor: '#C08081',
-        fontStyle: 'Elegant',
-        backgroundStyle: 'gradient',
-        template: 'classic',
-        dressCode: '',
-        dressCodeColor: '#000000',
-        programTimeline: '',
-        story: '',
-        quote: '',
-        hashtag: '',
-        contactPerson: '',
-        rsvpDeadline: '',
-        giftBank: '',
-        giftAccountName: '',
-        giftAccountNumber: '',
-        logoInitials: '',
-        logoFont: 'Elegant',
-        logoShape: 'minimal',
-        logoColor: '#C08081',
-        spotifyUrl: '',
-        weddingParty: [],
-        registryLinks: [],
-        cashFunds: [],
-        paymentLinks: [],
-        isThankYouMode: false,
-        thankYouMessage: '',
-        photoAlbumLink: '',
-        accentStyle: 'none',
-    });
+    
+    // Undo/Redo functionality
+    const {
+        state: formData,
+        setState: setFormData,
+        undo,
+        redo,
+        canUndo,
+        canRedo,
+    } = useLocalUndoRedo(INITIAL_FORM_DATA, 50);
+
+    // Keyboard shortcuts for undo/redo
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't trigger shortcuts when typing in input fields
+            const target = e.target as HTMLElement;
+            if (
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.contentEditable === 'true'
+            ) {
+                return;
+            }
+
+            if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redo();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [undo, redo]);
 
     const [mediaFiles, setMediaFiles] = useState<{
         heroImage: File | null;
@@ -198,7 +237,7 @@ export default function BuilderForm() {
             if (pendingData) {
                 try {
                     const restored = JSON.parse(pendingData);
-                    setFormData((prev: any) => ({ ...prev, ...restored }));
+                    setFormData({ ...INITIAL_FORM_DATA, ...restored });
                     window.sessionStorage.removeItem('pending_wedding_data');
                     console.log('✅ Restored pending wedding form data from session');
                 } catch (e) {
@@ -539,8 +578,8 @@ export default function BuilderForm() {
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Hashtag (Optional)</label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">  #</span>
-                                <input name="hashtag" value={formData.hashtag} onChange={handleChange} placeholder="SarahAndJohn2024" className="w-full pl-8 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">#</span>
+                                <input name="hashtag" value={formData.hashtag} onChange={handleChange} placeholder="SarahAndJohn2024" className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -562,7 +601,7 @@ export default function BuilderForm() {
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Google Maps Link (Optional)</label>
                                 <div className="relative">
                                     <MapPin className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-primary" />
-                                    <input name="mapsLink" value={formData.mapsLink} onChange={handleChange} placeholder="https://maps.app.goo.gl/..." className="w-full pl-10 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                    <input name="mapsLink" value={formData.mapsLink} onChange={handleChange} placeholder="https://maps.app.goo.gl/..." className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                                 </div>
                             </div>
                         </div>
@@ -936,7 +975,7 @@ export default function BuilderForm() {
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Spotify Playlist URL (Optional)</label>
                             <div className="relative">
                                 <Music className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-green-500" />
-                                <input name="spotifyUrl" value={formData.spotifyUrl} onChange={handleChange} placeholder="https://open.spotify.com/playlist/..." className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                                <input name="spotifyUrl" value={formData.spotifyUrl} onChange={handleChange} placeholder="https://open.spotify.com/playlist/..." className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
                             </div>
                             <p className="text-[10px] text-text-secondary ml-1">Embed a Spotify playlist for your guests to enjoy.</p>
                         </div>
@@ -1015,8 +1054,8 @@ export default function BuilderForm() {
                     <div key={i} className="flex gap-2">
                         <input placeholder="Store Name" value={link.title} onChange={(e) => handleArrayChange('registryLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         <div className="relative flex-1">
-                            <LinkIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary/50" />
-                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('registryLinks', i, 'url', e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                            <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/50" />
+                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('registryLinks', i, 'url', e.target.value)} className="w-full pl-12 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
                         </div>
                         <button type="button" onClick={() => handleArrayRemove('registryLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
@@ -1039,8 +1078,8 @@ export default function BuilderForm() {
                                 <input placeholder="Short Description" value={fund.description} onChange={(e) => handleArrayChange('cashFunds', i, 'description', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="relative">
-                                        <DollarSign className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary/50" />
-                                        <input type="number" placeholder="Target Amount" value={fund.targetAmount} onChange={(e) => handleArrayChange('cashFunds', i, 'targetAmount', e.target.value)} className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
+                                        <DollarSign className="w-3 h-3 absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary/50" />
+                                        <input type="number" placeholder="Target Amount" value={fund.targetAmount} onChange={(e) => handleArrayChange('cashFunds', i, 'targetAmount', e.target.value)} className="w-full pl-12 pr-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none min-h-[44px]" />
                                     </div>
                                     <input placeholder="Currency (e.g. $, PHP)" value={fund.currency} onChange={(e) => handleArrayChange('cashFunds', i, 'currency', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
                                 </div>
@@ -1063,8 +1102,8 @@ export default function BuilderForm() {
                     <div key={i} className="flex gap-2">
                         <input placeholder="Service (e.g. Venmo)" value={link.title} onChange={(e) => handleArrayChange('paymentLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         <div className="relative flex-1">
-                            <LinkIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary/50" />
-                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('paymentLinks', i, 'url', e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                            <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/50" />
+                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('paymentLinks', i, 'url', e.target.value)} className="w-full pl-12 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
                         </div>
                         <button type="button" onClick={() => handleArrayRemove('paymentLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
@@ -1138,6 +1177,35 @@ return (
                             {idx < STEPS.length - 1 && <div className={`absolute top-4 sm:top-5 left-[60%] w-[80%] h-[2px] -z-0 hidden sm:block ${idx < currentStep ? 'bg-secondary' : 'bg-border'}`} />}
                         </div>
                     ))}
+                </div>
+
+                {/* Undo/Redo Controls */}
+                <div className="flex items-center justify-between mb-4 px-1">
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={undo}
+                            disabled={!canUndo}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-text-secondary hover:text-primary hover:bg-neutral disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            title="Undo (Ctrl+Z)"
+                        >
+                            <Undo2 className="w-4 h-4" />
+                            <span className="hidden sm:inline">Undo</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={redo}
+                            disabled={!canRedo}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-text-secondary hover:text-primary hover:bg-neutral disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+                        >
+                            <Redo2 className="w-4 h-4" />
+                            <span className="hidden sm:inline">Redo</span>
+                        </button>
+                    </div>
+                    <div className="text-[10px] text-text-secondary/50">
+                        {canUndo && <span>Press Ctrl+Z to undo</span>}
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
