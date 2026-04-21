@@ -52,6 +52,7 @@ export interface Wedding {
     is_thank_you_mode?: boolean;
     thank_you_message?: string;
     photo_album_link?: string;
+    voice_greeting_url?: string;
     couple_email?: string; // Notification email for the couple
     // Metadata
     created_at: string;

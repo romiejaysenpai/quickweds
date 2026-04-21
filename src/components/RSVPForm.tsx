@@ -27,6 +27,7 @@ function getPrimaryPlusOneName(raw: string) {
 
 type WeddingPreview = {
     template?: string;
+    motif_color?: string;
 };
 
 type RsvpInsertData = {

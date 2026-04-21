@@ -1,13 +1,10 @@
 'use client';
 
-import { 
-    DetailsSection,
-    SharedNewSections
-} from './shared';
-// Wait, I should import from '../wedding' for standard sections
+import { SharedNewSections } from './shared';
 import { 
     VideoSection, 
     BioSection, 
+    DetailsSection,
     TimelineSection, 
     GallerySection, 
     GiftSection 

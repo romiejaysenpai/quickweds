@@ -23,9 +23,9 @@ export default function CinematicTemplate({ wedding, gallery, isExpired }: any) 
 
                 <div className="z-10 text-center px-4 sm:px-6 max-w-6xl">
                     <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }} className="text-xs sm:text-sm uppercase tracking-[1em] font-black mb-8 sm:mb-10 md:mb-12 opacity-60">A QUICKWEDS ORIGINAL PRODUCTION</motion.p>
-                    <motion.h1 initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5, duration: 2 }} className="text-4xl sm:text-5xl md:text-8xl lg:text-9xl font-serif leading-none tracking-tighter mb-8 sm:mb-10 md:mb-12 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+                    <h1 className="text-4xl sm:text-5xl md:text-8xl lg:text-9xl font-serif leading-none tracking-tighter mb-8 sm:mb-10 md:mb-12 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
                         {wedding.bride_name} <br />
-                        <span className="text-2xl sm:text-2xl md:text-3xl italic text-primary">&</span> <br />
+                        <span className="text-2xl sm:text-2xl md:text-3xl italic text-primary">&amp;</span> <br />
                         {wedding.groom_name}
                     </h1>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }} className="flex gap-4 sm:gap-6 md:gap-8 justify-center items-center">
