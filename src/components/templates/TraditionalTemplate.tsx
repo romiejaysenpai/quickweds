@@ -24,7 +24,7 @@ export default function TraditionalTemplate({ wedding, gallery, isExpired }: Tem
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
-                    transition={{ duration: 1, ease: 'easeOut' }} 
+                    transition={{ duration: 1 }} 
                     className="z-10 bg-white p-8 sm:p-12 md:p-16 lg:p-24 shadow-sm border border-neutral-100"
                 >
                     <motion.p 
