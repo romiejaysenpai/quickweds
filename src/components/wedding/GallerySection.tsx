@@ -89,6 +89,9 @@ export default function GallerySection({ gallery, masonry = false }: GallerySect
                     >
                         <span className="text-xs uppercase tracking-[0.3em] font-bold text-primary mb-4 block">Moments Captured</span>
                         <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif text-[#4A4444]">Our Gallery</h2>
+                        <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-foreground/55 sm:text-base">
+                            A curated look at the people, places, and details that shaped the celebration.
+                        </p>
                     </motion.div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                         {gallery.map((img: string, i: number) => (
@@ -97,13 +100,23 @@ export default function GallerySection({ gallery, masonry = false }: GallerySect
                                 initial={{ opacity: 0, y: 50 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1, duration: 0.5 }}
-                                className="aspect-[4/5] rounded-2xl sm:rounded-[2.5rem] overflow-hidden soft-shadow bg-white p-2 sm:p-3 border border-primary/5 group cursor-pointer"
+                                className="group cursor-pointer overflow-hidden rounded-[1.8rem] border border-white/60 bg-white/65 p-2.5 shadow-[0_20px_60px_rgba(58,42,45,0.08)] backdrop-blur-sm sm:rounded-[2.5rem] sm:p-3"
                                 onClick={() => setLightboxIndex(i)}
                             >
-                                <div className="w-full h-full rounded-[2rem] overflow-hidden relative">
-                                    <img src={img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                        <span className="text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">View</span>
+                                <div className="relative h-full w-full overflow-hidden rounded-[1.5rem] sm:rounded-[2rem]">
+                                    <img
+                                        src={img}
+                                        alt={`Wedding gallery image ${i + 1}`}
+                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                    />
+                                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,12,12,0.02),rgba(12,12,12,0.22))]" />
+                                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-5">
+                                        <span className="rounded-full border border-white/35 bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-white/85 backdrop-blur-sm">
+                                            Memory {i + 1}
+                                        </span>
+                                        <span className="text-xs font-bold uppercase tracking-[0.24em] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                            View
+                                        </span>
                                     </div>
                                 </div>
                             </motion.div>
@@ -126,7 +139,7 @@ export function MinimalGallery({ gallery }: { gallery: string[] }) {
             <div className="flex gap-12 px-6 animate-marquee whitespace-nowrap">
                 {gallery.concat(gallery).map((img: string, i: number) => (
                     <div key={i} className="w-[400px] h-[300px] shrink-0 grayscale hover:grayscale-0 transition-all duration-500">
-                        <img src={img} className="w-full h-full object-cover" />
+                        <img src={img} alt={`Wedding gallery image ${i + 1}`} className="w-full h-full object-cover" />
                     </div>
                 ))}
             </div>

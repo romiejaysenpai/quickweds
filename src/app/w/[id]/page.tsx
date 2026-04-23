@@ -206,6 +206,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
     const pageStyle: WeddingPageStyle = {
         '--primary': wedding.motif_color,
         backgroundColor: '#FFF8F4',
+        backgroundImage: 'radial-gradient(circle at top, rgba(255,255,255,0.65), transparent 32%), linear-gradient(180deg, #fffaf6 0%, #fff5ef 52%, #f8ece7 100%)',
         ...fontVars,
     };
 
@@ -214,6 +215,12 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             className={`min-h-screen relative selection-dynamic template-${template} overflow-x-hidden`}
             style={pageStyle}
         >
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-40 bg-gradient-to-b from-white/70 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 z-0 opacity-80">
+                <div className="absolute left-[8%] top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+                <div className="absolute bottom-32 right-[8%] h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
+            </div>
+            <div className="pointer-events-none fixed inset-x-6 top-6 bottom-6 z-[1] hidden rounded-[2.5rem] border border-white/35 opacity-50 md:block" />
             <div className="noise-overlay" />
             <div className="paper-texture" />
 
@@ -242,44 +249,56 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
                 {getTemplateContent()}
             </Suspense>
 
-            <footer className="py-12 md:py-24 px-6 text-center border-t border-primary/10 relative z-10 bg-neutral/30 backdrop-blur-sm">
-                {wedding.logo_initials && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.8 }}
-                        className="mb-12"
-                    >
-                        <div
-                            className={`w-20 h-20 md:w-28 md:h-28 mx-auto flex items-center justify-center transition-all ${wedding.logo_shape === 'circle' ? 'rounded-full' :
-                                wedding.logo_shape === 'square' ? 'rounded-[2rem]' : ''
-                                } ${wedding.logo_shape !== 'minimal' ? 'border-2 shadow-xl shadow-primary/5 bg-white/50 backdrop-blur-sm' : ''}`}
-                            style={{
-                                color: wedding.logo_color || wedding.motif_color,
-                                borderColor: wedding.logo_color || wedding.motif_color
-                            }}
+            <footer className="relative z-10 px-6 py-14 md:py-24">
+                <div className="mx-auto max-w-4xl rounded-[2rem] border border-white/45 bg-white/45 px-8 py-12 text-center shadow-[0_24px_80px_rgba(58,42,45,0.10)] backdrop-blur-xl">
+                    {wedding.logo_initials ? (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.8 }}
+                            className="mb-10"
                         >
-                            <span className="text-3xl md:text-4xl uppercase tracking-tighter" style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>
-                                {wedding.logo_initials}
-                            </span>
+                            <div
+                                className={`mx-auto flex h-20 w-20 items-center justify-center transition-all md:h-28 md:w-28 ${
+                                    wedding.logo_shape === 'circle'
+                                        ? 'rounded-full'
+                                        : wedding.logo_shape === 'square'
+                                            ? 'rounded-[2rem]'
+                                            : ''
+                                } ${wedding.logo_shape !== 'minimal' ? 'border-2 bg-white/60 shadow-xl shadow-primary/10 backdrop-blur-sm' : ''}`}
+                                style={{
+                                    color: wedding.logo_color || wedding.motif_color,
+                                    borderColor: wedding.logo_color || wedding.motif_color,
+                                }}
+                            >
+                                <span className="text-3xl uppercase tracking-tighter md:text-4xl" style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>
+                                    {wedding.logo_initials}
+                                </span>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <div className="mx-auto mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                            <Heart className="h-5 w-5 fill-primary text-primary" />
                         </div>
-                    </motion.div>
-                )}
+                    )}
 
-                {!wedding.logo_initials && (
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Heart className="w-5 h-5 text-primary fill-primary" />
-                    </div>
-                )}
-
-                <p className="font-serif text-xl md:text-2xl text-[#4A4444] mb-2">{wedding.bride_name} & {wedding.groom_name}</p>
-                {wedding.hashtag && (
-                    <p className="text-primary font-bold tracking-[0.2em] text-xs uppercase mb-6 drop-shadow-sm">
-                        #{wedding.hashtag}
+                    <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-primary/55">With love</p>
+                    <p className="mt-3 font-serif text-2xl text-[#4A4444] md:text-3xl">
+                        {wedding.bride_name} &amp; {wedding.groom_name}
                     </p>
-                )}
-                <p className="text-primary font-bold tracking-[0.2em] text-[10px] uppercase mb-8">{new Date(wedding.wedding_date).getFullYear()}</p>
-                <p className="text-foreground/30 text-[10px] uppercase tracking-widest">Powered by QuickWeds</p>
+                    {wedding.hashtag && (
+                        <p className="mb-5 mt-4 text-xs font-bold uppercase tracking-[0.24em] text-primary drop-shadow-sm">
+                            #{wedding.hashtag}
+                        </p>
+                    )}
+                    <div className="mx-auto mb-6 mt-6 h-px w-24 bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
+                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-primary/80">
+                        {new Date(wedding.wedding_date).getFullYear()}
+                    </p>
+                    <p className="mt-5 text-[10px] uppercase tracking-[0.24em] text-foreground/30">
+                        Powered by QuickWeds
+                    </p>
+                </div>
             </footer>
         </div>
     );

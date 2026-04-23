@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getPublicRedirectUrl } from '@/lib/site-url';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -39,7 +40,7 @@ export default function LoginPage() {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: getPublicRedirectUrl('/auth/callback'),
                     queryParams: {
                         access_type: 'offline',
                     },

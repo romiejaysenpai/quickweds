@@ -55,9 +55,10 @@ export default function GiftSection({ wedding, invert = false }: GiftSectionProp
                         Foundation for our Future
                     </motion.span>
                     <h2 className={`text-5xl md:text-7xl font-serif mb-8 tracking-tight ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>Gift Registry</h2>
-                    <p className={`text-xl md:text-2xl leading-relaxed ${isDark ? 'text-white/70' : 'text-[#4A4444]/70'} font-serif italic max-w-3xl mx-auto opacity-80 underline decoration-primary/20 underline-offset-8`}>
+                    <p className={`text-xl md:text-2xl leading-relaxed ${isDark ? 'text-white/70' : 'text-[#4A4444]/70'} font-serif italic max-w-3xl mx-auto opacity-80`}>
                         Your presence is our greatest joy. If you wish to celebrate with a gift, our registries and funds are listed below.
                     </p>
+                    <div className="mx-auto mt-6 h-px w-24 bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
                 </motion.div>
 
                 <div className="flex flex-col lg:flex-row gap-12 md:gap-20 items-start">
@@ -90,9 +91,18 @@ export default function GiftSection({ wedding, invert = false }: GiftSectionProp
                                     {wedding.gift_account_number && (
                                         <div className="bg-primary/[0.03] p-6 rounded-2xl border border-primary/5">
                                             <p className="text-[10px] uppercase tracking-[0.3em] font-black opacity-30 mb-3">Electronic Transfer Number</p>
-                                            <p className="font-mono text-xl md:text-3xl tracking-[0.1em] select-all font-bold flex items-center justify-between">
+                                            <p className="font-mono text-xl md:text-3xl tracking-[0.1em] select-all font-bold flex items-center justify-between gap-4">
                                                 {wedding.gift_account_number}
-                                                <button className="text-[8px] uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full opacity-50 hover:opacity-100 transition-opacity">Copy</button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (!wedding.gift_account_number) return;
+                                                        void navigator.clipboard?.writeText(wedding.gift_account_number);
+                                                    }}
+                                                    className="rounded-full bg-primary/10 px-3 py-1 text-[8px] uppercase tracking-widest opacity-70 transition-opacity hover:opacity-100"
+                                                >
+                                                    Copy
+                                                </button>
                                             </p>
                                         </div>
                                     )}

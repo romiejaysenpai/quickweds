@@ -13,6 +13,7 @@ import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
 import MarketplacePanel from './builder/MarketplacePanel';
 import { useLocalUndoRedo } from '@/components/UndoRedoProvider';
+import { FREE_TEMPLATE_IDS, TEMPLATES } from '@/lib/template-catalog';
 import {
     SECTION_BLOCK_LIBRARY,
     buildPresetPayload,
@@ -79,7 +80,7 @@ const FONTS = [
     { id: 'Estate', name: 'Estate Serif', desc: 'Fraunces + Inter', class: 'font-fraunces' }
 ];
 
-export const TEMPLATES = [
+export const LEGACY_TEMPLATES = [
     { id: 'classic', name: 'Classic Elegance', desc: 'Timeless, centered layout with elegant serif typography.', icon: '✨' },
     { id: 'minimal', name: 'Modern Minimal', desc: 'Clean lines, high contrast, and bold sans-serif fonts.', icon: '⬛' },
     { id: 'romantic', name: 'Romantic', desc: 'Soft textures, script fonts, and nostalgic framing.', icon: '📜' },
@@ -639,33 +640,77 @@ export default function BuilderForm() {
                         <div className="flex items-center justify-between">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Select Wireframe Style</label>
                             {!isPremium && (
-                                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">3 Free / 22 Premium</span>
+                                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                                    {FREE_TEMPLATE_IDS.length} Free / {TEMPLATES.length - FREE_TEMPLATE_IDS.length} Premium
+                                </span>
                             )}
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                            {TEMPLATES.map((tmpl, index) => {
-                                const isLocked = !isPremium && !['classic', 'romantic', 'tropical'].includes(tmpl.id);
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 max-h-[460px] overflow-y-auto pr-2 custom-scrollbar">
+                            {TEMPLATES.map((tmpl) => {
+                                const isLocked = !isPremium && !FREE_TEMPLATE_IDS.includes(tmpl.id as typeof FREE_TEMPLATE_IDS[number]);
+                                const isSelected = formData.template === tmpl.id;
                                 return (
                                     <button
                                         key={tmpl.id}
                                         type="button"
                                         onClick={() => !isLocked && setFormData((prev: any) => ({ ...prev, template: tmpl.id }))}
-                                        className={`p-3 sm:p-4 rounded-lg sm:rounded-2xl border-2 transition-all text-left flex flex-col gap-2 relative min-h-[120px] ${isLocked ? 'border-border bg-neutral/50 opacity-60 cursor-not-allowed' :
-                                            formData.template === tmpl.id ? 'border-primary bg-primary/5' :
-                                                'border-border bg-white hover:border-primary/30'
-                                            }`}
+                                        className={`group relative overflow-hidden rounded-[1.75rem] border text-left transition-all duration-300 min-h-[176px] ${
+                                            isLocked
+                                                ? 'border-border/70 bg-neutral/60 opacity-70 cursor-not-allowed'
+                                                : isSelected
+                                                    ? 'border-primary/40 bg-white shadow-[0_24px_80px_rgba(192,128,129,0.18)] -translate-y-1'
+                                                    : 'border-border/70 bg-white hover:border-primary/25 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(58,42,45,0.10)]'
+                                        }`}
+                                        style={{
+                                            backgroundImage: `${tmpl.previewGradient}, linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.98))`,
+                                        }}
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <span className={`text-xl sm:text-2xl ${isLocked ? 'grayscale' : ''}`}>{tmpl.icon}</span>
-                                            {isLocked ? (
-                                                <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-primary flex-shrink-0" />
-                                            ) : (
-                                                formData.template === tmpl.id && <CheckCircle2 className="w-3 sm:w-4 h-3 sm:h-4 text-primary flex-shrink-0" />
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-xs sm:text-sm text-foreground line-clamp-1">{tmpl.name}</p>
-                                            <p className="text-[8px] sm:text-[10px] text-text-secondary leading-tight line-clamp-2">{tmpl.desc}</p>
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.65),transparent_38%)] pointer-events-none" />
+                                        <div className="relative z-10 flex h-full flex-col p-4 sm:p-5">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div>
+                                                    <span className="inline-flex items-center rounded-full border border-white/55 bg-white/75 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.24em] text-foreground/60 backdrop-blur-sm">
+                                                        {tmpl.eyebrow}
+                                                    </span>
+                                                    <div className="mt-3 flex items-center gap-2">
+                                                        <div
+                                                            className="h-2.5 w-2.5 rounded-full shadow-[0_0_0_5px_rgba(255,255,255,0.45)]"
+                                                            style={{ backgroundColor: tmpl.accent }}
+                                                        />
+                                                        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/45">
+                                                            {tmpl.tier === 'free' ? 'Included' : 'Premium'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {isLocked ? (
+                                                    <div className="rounded-full border border-primary/15 bg-white/70 p-2 text-primary shadow-sm">
+                                                        <Sparkles className="h-3.5 w-3.5" />
+                                                    </div>
+                                                ) : isSelected ? (
+                                                    <div className="rounded-full border border-primary/20 bg-white/80 p-2 text-primary shadow-sm">
+                                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                            <div className="mt-auto space-y-2">
+                                                <p className="font-serif text-lg sm:text-xl leading-tight text-foreground">
+                                                    {tmpl.name}
+                                                </p>
+                                                <p className="text-[11px] sm:text-xs leading-relaxed text-foreground/65 line-clamp-2">
+                                                    {tmpl.desc}
+                                                </p>
+                                                <div className="flex items-center justify-between pt-2">
+                                                    <span className="text-[10px] uppercase tracking-[0.24em] text-foreground/40">
+                                                        {tmpl.mood}
+                                                    </span>
+                                                    <div className="h-1.5 w-14 rounded-full bg-black/6">
+                                                        <div
+                                                            className="h-full rounded-full"
+                                                            style={{ width: isSelected ? '100%' : '70%', backgroundColor: tmpl.accent }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </button>
                                 );
@@ -1118,7 +1163,7 @@ export default function BuilderForm() {
                 <div className="flex justify-between items-center mb-4">
                     <div>
                         <h4 className="text-sm font-bold text-foreground">Post-Wedding Mode</h4>
-                        <p className="text-[10px] text-text-secondary">Switch your site to a "Thank You" page after the wedding.</p>
+                        <p className="text-[10px] text-text-secondary">Switch your site to a &quot;Thank You&quot; page after the wedding.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" checked={formData.isThankYouMode} onChange={(e) => setFormData((prev: any) => ({ ...prev, isThankYouMode: e.target.checked }))} className="sr-only peer" />

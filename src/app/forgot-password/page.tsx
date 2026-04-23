@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, Mail, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getPublicRedirectUrl } from '@/lib/site-url';
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
@@ -19,7 +20,7 @@ export default function ForgotPasswordPage() {
         setError('');
         try {
             const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/reset-password`,
+                redirectTo: getPublicRedirectUrl('/reset-password'),
             });
             if (resetError) throw resetError;
             setSent(true);

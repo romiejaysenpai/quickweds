@@ -17,20 +17,20 @@ export default function BioSection({ wedding }: BioSectionProps) {
     const isVintage = ['vintage', 'rustic', 'boho', 'film'].includes(template);
 
     // Apply negative margin to overlap the hero and break the "blocky" rhythm
-    const overlapClass = "md:-mt-24 pb-24"; 
+    const overlapClass = 'md:-mt-24 pb-24';
 
     const imageStyle = isSharp 
-        ? "aspect-[3/4] rounded-none border-4 md:border-8 border-primary/10 shadow-2xl grayscale hover:grayscale-0" 
-        : isVintage 
-        ? "aspect-[4/5] rounded-lg border-[12px] md:border-[24px] border-[#f4f1e1] shadow-xl sepia-[0.2]"
-        : "aspect-[4/5] rounded-[2rem] md:rounded-[4rem] border-[8px] md:border-[16px] border-white/80 shadow-2xl backdrop-blur-sm";
+        ? 'aspect-[3/4] rounded-none border-4 md:border-8 border-primary/10 shadow-2xl grayscale hover:grayscale-0'
+        : isVintage
+            ? 'aspect-[4/5] rounded-lg border-[12px] md:border-[24px] border-[#f4f1e1] shadow-xl sepia-[0.2]'
+            : 'aspect-[4/5] rounded-[2rem] md:rounded-[4rem] border-[8px] md:border-[16px] border-white/80 shadow-2xl backdrop-blur-sm';
 
     const quoteBoxStyle = isSharp
-        ? "p-6 md:p-10 border-l-4 border-primary bg-black/5 md:ml-0 shadow-none flex flex-col md:flex-row gap-6 items-center md:items-start"
-        : "p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] bg-white/60 backdrop-blur-xl border border-white/50 shadow-2xl shadow-primary/5 flex flex-col md:flex-row gap-6 items-center md:items-start";
+        ? 'p-6 md:p-10 border-l-4 border-primary bg-black/5 md:ml-0 shadow-none flex flex-col md:flex-row gap-6 items-center md:items-start'
+        : 'p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] bg-white/70 backdrop-blur-xl border border-white/55 shadow-[0_24px_80px_rgba(58,42,45,0.08)] flex flex-col md:flex-row gap-6 items-center md:items-start';
 
-    const textColorHeading = isDark ? "text-white" : "text-[#4A4444]";
-    const textColorBody = isDark ? "text-white/80" : "text-[#4A4444]/80";
+    const textColorHeading = isDark ? 'text-white' : 'text-[#4A4444]';
+    const textColorBody = isDark ? 'text-white/80' : 'text-[#4A4444]/80';
 
     return (
         <section className={`max-w-6xl mx-auto px-4 md:px-6 relative z-20 ${overlapClass}`}>
@@ -44,7 +44,11 @@ export default function BioSection({ wedding }: BioSectionProps) {
                 >
                     {!isSharp && <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-transparent blur-3xl -z-10 rounded-full" />}
                     <div className={`overflow-hidden group hover:-rotate-1 transition-transform duration-700 ${imageStyle}`}>
-                        <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
+                        <img
+                            src={wedding.couple_photo || wedding.hero_image}
+                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                        />
                     </div>
                 </motion.div>
                 <motion.div 
@@ -56,9 +60,15 @@ export default function BioSection({ wedding }: BioSectionProps) {
                 >
                     <span className="text-[10px] md:text-xs uppercase tracking-[0.4em] font-bold text-primary mb-6 block drop-shadow-sm">Our Story</span>
                     <h2 className={`text-4xl md:text-6xl font-serif mb-8 leading-tight ${textColorHeading}`}>Meant to Be</h2>
-                    <p className={`text-lg md:text-xl leading-relaxed font-serif italic mb-10 md:mb-12 px-4 md:px-0 ${textColorBody}`}>
-                        {wedding.story || "They say when you know, you know. For us, every moment since we met has been a beautiful step towards this day."}
-                    </p>
+                    <div className={`mb-10 md:mb-12 rounded-[2rem] border px-6 py-7 md:px-8 md:py-9 ${
+                        isDark
+                            ? 'border-white/10 bg-white/5 backdrop-blur-md'
+                            : 'border-white/55 bg-white/55 shadow-[0_18px_60px_rgba(58,42,45,0.08)] backdrop-blur-xl'
+                    }`}>
+                        <p className={`text-lg md:text-xl leading-relaxed font-serif italic px-1 md:px-0 ${textColorBody}`}>
+                            {wedding.story || 'They say when you know, you know. For us, every moment since we met has been a beautiful step towards this day.'}
+                        </p>
+                    </div>
                     <motion.div 
                         whileHover={isSharp ? { x: 10 } : { scale: 1.02 }}
                         className={quoteBoxStyle}

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TEMPLATES } from './BuilderForm'; // Import the templates
 import { Heart } from 'lucide-react';
+
+import { SHOWCASE_TEMPLATE_IDS, TEMPLATES } from '@/lib/template-catalog';
 
 // --- Simplified Template Previews (Mimicking the real ones) ---
 // Since the real templates are complex and dependent on wedding data, 
@@ -107,14 +108,14 @@ const TemplatePreview = ({ templateId }: { templateId: string }) => {
 export default function PhoneMockupSection() {
     const [currentIndex, setCurrentIndex] = useState(0);
     // Select a few diverse templates for the carousel
-    const showcaseTemplates = ['classic', 'minimal', 'royal', 'boho', 'urban', 'tropical'];
+    const showcaseTemplates = [...SHOWCASE_TEMPLATE_IDS];
 
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentIndex((prev) => (prev + 1) % showcaseTemplates.length);
         }, 4000); // Change every 4 seconds
         return () => clearInterval(interval);
-    }, []);
+    }, [showcaseTemplates.length]);
 
     return (
         <section className="py-16 sm:py-24 px-4 sm:px-6 overflow-hidden relative">
