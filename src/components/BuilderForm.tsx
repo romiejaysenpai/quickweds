@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2 } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import VectorArtGuests from './VectorArtGuests';
 import { supabase } from '@/lib/supabase';
@@ -22,6 +22,37 @@ import {
     saveTemplatePreset,
     type WeddingTemplatePreset,
 } from '@/lib/wedding-features';
+
+// Helper component for collapsible sections
+const Collapsible = ({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) => (
+    <div className="border border-border rounded-2xl overflow-hidden bg-white/50 mb-3 transition-all duration-300">
+        <button
+            type="button"
+            onClick={onToggle}
+            className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-primary/5 transition-colors"
+        >
+            <div className="flex items-center gap-3">
+                {Icon && <Icon className={`w-4 h-4 ${isOpen ? 'text-primary' : 'text-text-secondary'}`} />}
+                <span className={`text-sm font-bold uppercase tracking-widest ${isOpen ? 'text-primary' : 'text-foreground'}`}>{title}</span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-text-secondary transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        <AnimatePresence initial={false}>
+            {isOpen && (
+                <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                >
+                    <div className="px-5 pb-5 border-t border-border/50 pt-4">
+                        {children}
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    </div>
+);
 
 const STEPS = [
     { id: 'details', title: 'Details', icon: Heart },
@@ -156,6 +187,14 @@ export default function BuilderForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     
+    // Mobile UI state
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+    const toggleSection = (id: string) => {
+        setExpandedSection(prev => prev === id ? null : id);
+    };
+
     // Undo/Redo functionality
     const {
         state: formData,
@@ -733,17 +772,48 @@ export default function BuilderForm() {
             case 2:
                 return (
                     <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Motif Color</label>
-                            <div className="flex gap-4">
-                                {['#D16C78', '#F2C1CC', '#D6B87C', '#3A2A2D', '#7A5A61', '#FFF8F4'].map((color) => (
-                                    <button key={color} type="button" onClick={() => setFormData((prev: any) => ({ ...prev, motifColor: color }))} className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.motifColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral'}`} style={{ backgroundColor: color }} />
-                                ))}
-                                <input type="color" name="motifColor" value={formData.motifColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer" />
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Typography & Fonts</label>
+                         <div className="space-y-4">
+                             <label className="text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/50 mb-2 block">Motif Color</label>
+                             <div className="flex flex-wrap gap-2 mb-3">
+                                 {["#D16C78", "#D6B87C", "#B85C7A", "#3A2A2D", "#7A5A61", "#6B7A62", "#8F6A45", "#C5A059", "#CFB53B", "#537A57", "#8D7BC4", "#0B8F7B", "#A56D52", "#C7704D", "#A0616A", "#FFF8F4", "#F2C1CC", "#F8EEEA", "#EBD4C4"].map((color) => (
+                                     <button
+                                         key={color}
+                                         type="button"
+                                         onClick={() => setFormData((prev: any) => ({ ...prev, motifColor: color }))}
+                                         className={`w-10 h-10 rounded-xl border-2 transition-all ${formData.motifColor === color ? 'border-white ring-2 ring-primary shadow-xl scale-110' : 'border-border/50 hover:border-primary/50'}`}
+                                         style={{ backgroundColor: color }}
+                                         aria-label={`Select color ${color}`}
+                                     />
+                                 ))}
+                             </div>
+                         </div>
+                         <div>
+                             <label className="text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/50 mb-2 block">Custom Color</label>
+                             <div className="flex items-center gap-3">
+                                 <input
+                                     type="color"
+                                     value={formData.motifColor}
+                                     onChange={(e) => setFormData((prev: any) => ({ ...prev, motifColor: e.target.value }))}
+                                     className="w-10 h-10 rounded-xl border border-border p-0 cursor-pointer bg-transparent"
+                                     aria-label="Pick a custom color"
+                                 />
+                                 <input
+                                     type="text"
+                                     value={formData.motifColor}
+                                     onChange={(e) => setFormData((prev: any) => ({ ...prev, motifColor: e.target.value }))}
+                                     placeholder="#HEX"
+                                     className="flex-1 px-3 py-2 rounded-xl border border-border bg-neutral/30 text-sm font-mono outline-none focus:bg-white transition-all"
+                                     pattern="^#[0-9A-Fa-f]{6}$"
+                                 />
+                             </div>
+                         </div>
+                         <div className="flex items-center gap-2 pt-2">
+                             <div className="w-6 h-6 rounded-full border border-border" style={{ backgroundColor: formData.motifColor }} />
+                             <span className="text-[10px] uppercase tracking-[0.15em] text-text-secondary/60">
+                                 Selected: <span className="font-mono text-foreground">{formData.motifColor}</span>
+                             </span>
+                         </div>
+                         <Collapsible title="Typography & Fonts" isOpen={expandedSection === 'fonts'} onToggle={() => toggleSection('fonts')} icon={Layout}>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                 {FONTS.map((font, index) => {
                                     const isLocked = !isPremium && index >= 10;
@@ -779,9 +849,9 @@ export default function BuilderForm() {
                                         </div>
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                        <div className="space-y-2">
+                             )}
+                         </Collapsible>
+                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Quote</label>
                             <input name="quote" value={formData.quote} onChange={handleChange} placeholder="Love is patient..." className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         </div>
