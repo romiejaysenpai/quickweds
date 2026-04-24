@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion';
 import type { Wedding } from '@/types/wedding';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { derivePalette } from '@/lib/theme-engine';
 
 export default function PremiumBackgroundLayer({ wedding }: { wedding: Wedding }) {
     const [isMounted, setIsMounted] = useState(false);
@@ -12,12 +13,23 @@ export default function PremiumBackgroundLayer({ wedding }: { wedding: Wedding }
     }, []);
 
     const motifColor = wedding.motif_color || '#D16C78';
+    const palette = useMemo(() => derivePalette(motifColor), [motifColor]);
     const hasVideo = !!wedding.teaser_video;
+
+    // Generate random but deterministic positions for aurora blobs
+    const blobs = useMemo(() => [
+        { id: 1, color: palette.primary, size: 'w-[80%] h-[80%]', initial: { top: '-10%', left: '-10%' }, animate: { x: [0, 50, 0], y: [0, 30, 0], scale: [1, 1.1, 1] }, duration: 20 },
+        { id: 2, color: palette.secondary, size: 'w-[70%] h-[70%]', initial: { bottom: '10%', right: '-5%' }, animate: { x: [0, -40, 0], y: [0, -60, 0], scale: [1, 1.2, 1] }, duration: 25 },
+        { id: 3, color: `${palette.primary}22`, size: 'w-[60%] h-[60%]', initial: { top: '30%', left: '20%' }, animate: { x: [0, 30, 0], y: [0, 40, 0], rotate: [0, 45, 0] }, duration: 30 },
+    ], [palette]);
 
     if (!isMounted) return <div className="fixed inset-0 -z-50 bg-[#fafafa]" />;
 
     return (
-        <div className="fixed inset-0 -z-[100] overflow-hidden bg-[#fafafa] pointer-events-none">
+        <div className="fixed inset-0 -z-[100] overflow-hidden bg-[#fcfaf7] pointer-events-none">
+            {/* Base Surface Texture (Subtle Grain/Noise) */}
+            <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply z-50" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/natural-paper.png')` }} />
+
             {hasVideo ? (
                 <>
                     {/* Dynamic Blurred Looping Video Background */}
@@ -27,34 +39,39 @@ export default function PremiumBackgroundLayer({ wedding }: { wedding: Wedding }
                         muted 
                         loop 
                         playsInline 
-                        className="absolute inset-0 w-full h-[120%] object-cover scale-125 blur-[60px] md:blur-[100px] opacity-[0.35] mix-blend-multiply" 
+                        className="absolute inset-0 w-full h-[120%] object-cover scale-125 blur-[100px] md:blur-[140px] opacity-[0.25] mix-blend-multiply" 
                     />
                     <div 
-                        className="absolute inset-0 opacity-20 mix-blend-color" 
-                        style={{ backgroundColor: motifColor }} 
+                        className="absolute inset-0 opacity-10 mix-blend-color" 
+                        style={{ backgroundColor: palette.primary }} 
                     />
                 </>
             ) : (
-                <>
-                    <div className="absolute inset-0 opacity-20 mix-blend-multiply" style={{ backgroundColor: `${motifColor}11` }} />
-                    <motion.div 
-                        animate={{ opacity: [0.15, 0.35, 0.15], scale: [1, 1.4, 1], rotate: [0, 90, 0] }} 
-                        transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }} 
-                        className="absolute -top-[20%] -left-[10%] w-[80%] md:w-[60%] aspect-square rounded-full blur-[100px] md:blur-[140px]" 
-                        style={{ backgroundColor: `${motifColor}44` }} 
-                    />
-                    <motion.div 
-                        animate={{ opacity: [0.1, 0.25, 0.1], scale: [1, 1.1, 1] }} 
-                        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1 }} 
-                        className="absolute bottom-[10%] -right-[10%] w-[70%] md:w-[50%] aspect-square rounded-full blur-[120px] md:blur-[150px]" 
-                        style={{ backgroundColor: `${motifColor}33` }} 
-                    />
-                </>
+                <div className="absolute inset-0">
+                    {/* Aurora Mesh Blobs */}
+                    {blobs.map((blob) => (
+                        <motion.div 
+                            key={blob.id}
+                            initial={blob.initial}
+                            animate={blob.animate}
+                            transition={{ duration: blob.duration, repeat: Infinity, ease: "easeInOut" }}
+                            className={`absolute ${blob.size} rounded-full blur-[120px] md:blur-[160px] opacity-20 mix-blend-multiply`}
+                            style={{ backgroundColor: blob.color }} 
+                        />
+                    ))}
+                    
+                    {/* Static Ambient Color wash */}
+                    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundColor: palette.primary }} />
+                </div>
             )}
             
-            {/* Soft vignette framework */}
-            <div className="absolute inset-0 shadow-[inset_0_0_250px_rgba(0,0,0,0.03)] pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/5" />
+            {/* Depth Gradients & Vignette */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/40 via-transparent to-black/[0.02]" />
+            <div className="absolute inset-0 shadow-[inset_0_0_300px_rgba(0,0,0,0.05)]" />
+            
+            {/* Subtle Grid / Structural Overlay for Modern Vibe */}
+            <div className="absolute inset-0 opacity-[0.01] bg-[length:40px_40px] [background-image:linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)]" />
         </div>
     );
 }
+

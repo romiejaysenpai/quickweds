@@ -1,8 +1,8 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, Globe, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, Globe, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode } from 'lucide-react';
+import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -105,6 +105,23 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [domainInput, setDomainInput] = useState('');
     const [domainStatus, setDomainStatus] = useState<any>(null);
     const [domainLoading, setDomainLoading] = useState(false);
+
+    // Download QR Code function
+    const downloadQRCode = () => {
+        const canvas = document.getElementById('qr-canvas') as HTMLCanvasElement;
+        if (!canvas) return;
+        
+        const pngUrl = canvas
+            .toDataURL("image/png")
+            .replace("image/png", "image/octet-stream");
+        
+        const downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = `wedding-qr-${wedding?.bride_name}-${wedding?.groom_name}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    };
 
     // Feature: Confetti state
     const [showConfetti, setShowConfetti] = useState(false);
@@ -382,6 +399,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         setHasMore(filteredRsvps.length > ITEMS_PER_PAGE);
     }, [searchQuery, filterStatus, groupFilter, invitationFilter, filteredRsvps.length]);
 
+    const [activeTab, setActiveTab] = useState<'home' | 'guests' | 'analytics' | 'team' | 'settings'>('home');
+
     // CSV Export
     const exportCSV = () => {
         const headers = [
@@ -430,7 +449,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         ]);
         const csv = [headers.join(','), ...rows.map(r => r.map((c) => escapeCsvCell(c)).join(','))].join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
+        const url = URL.execObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `rsvp-${wedding?.bride_name}-${wedding?.groom_name}.csv`;
@@ -514,13 +533,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const qrTrackingUrl = `${url}${url.includes('?') ? '&' : '?'}src=qr`;
     const canManageWorkspace = accessRole === 'owner' || accessRole === 'partner';
 
-    const copyLink = () => {
-        void copyText(url);
-        void trackWeddingEvent(id, 'share_copy', { source: 'dashboard' });
-        setCopyToast(true);
-        setTimeout(() => setCopyToast(false), 2000);
-    };
-
     const handleShareWhatsApp = () => {
         void trackWeddingEvent(id, 'share_whatsapp', { source: 'dashboard' });
         openExternal(`https://wa.me/?text=${encodeURIComponent(`You're invited to our wedding!\n${url}`)}`);
@@ -562,7 +574,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             <ConfettiCelebration trigger={showConfetti} />
 
             {/* Header */}
-            <div className="bg-white/80 dark:bg-white/90 border-b border-border p-4 sticky top-0 z-50 backdrop-blur-md">
+            <div className="bg-white/80 dark:bg-neutral-900/80 border-b border-border p-4 sticky top-0 z-50 backdrop-blur-md">
                 <div className="max-w-6xl mx-auto px-3 sm:px-4 flex justify-between items-center gap-2 sm:gap-3">
                     <Link href="/" className="flex items-center flex-shrink-0">
                         <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain hover:scale-105 transition-transform" />
@@ -585,544 +597,644 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 </div>
             </div>
 
-            <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-6 sm:pt-12 text-left">
-                {created && (
-                    <div className="mb-8 sm:mb-12 p-4 sm:p-8 rounded-xl sm:rounded-3xl bg-success-bg border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 pointer-events-none" />
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white flex items-center justify-center text-accent shadow-sm flex-shrink-0 relative">
-                            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8" />
-                        </div>
-                        <div className="relative">
-                            <h2 className="text-lg sm:text-xl md:text-2xl font-serif font-bold text-primary mb-1">Your invitation is live! 🎉</h2>
-                            <p className="text-xs sm:text-sm text-text-secondary">Share your special URL below or use the QR code for your physical invitations.</p>
-                        </div>
+            <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-12 text-left">
+                {/* Mobile Tab Navigation (Fixed Bottom) */}
+                <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md border-t border-border z-[100] flex justify-around items-center p-2 pb-safe shadow-2xl">
+                    <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'home' ? 'text-primary' : 'text-text-secondary/50'}`}>
+                        <LayoutDashboard className="w-5 h-5" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Home</span>
+                    </button>
+                    <button onClick={() => setActiveTab('guests')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'guests' ? 'text-primary' : 'text-text-secondary/50'}`}>
+                        <Users className="w-5 h-5" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Guests</span>
+                    </button>
+                    <button onClick={() => setActiveTab('analytics')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'analytics' ? 'text-primary' : 'text-text-secondary/50'}`}>
+                        <PieChartIcon className="w-5 h-5" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Stats</span>
+                    </button>
+                    <button onClick={() => setActiveTab('team')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'team' ? 'text-primary' : 'text-text-secondary/50'}`}>
+                        <Share2 className="w-5 h-5" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Team</span>
+                    </button>
+                    <button onClick={() => setActiveTab('settings')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'settings' ? 'text-primary' : 'text-text-secondary/50'}`}>
+                        <Settings className="w-5 h-5" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Setup</span>
+                    </button>
+                </div>
+
+                {/* Mobile View Switching Header */}
+                <div className="sm:hidden mb-6 flex justify-between items-end">
+                    <div>
+                        <h2 className="text-2xl font-serif font-bold text-foreground">
+                            {activeTab === 'home' ? 'Dashboard' : activeTab === 'guests' ? 'Guest List' : activeTab === 'analytics' ? 'Insights' : activeTab === 'team' ? 'Collaborators' : 'Settings'}
+                        </h2>
+                        <p className="text-[10px] font-bold text-text-secondary/50 uppercase tracking-widest">
+                            {wedding.bride_name} & {wedding.groom_name}
+                        </p>
                     </div>
-                )}
+                    {activeTab !== 'home' && (
+                        <button onClick={() => setActiveTab('home')} className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1">
+                            Home <ArrowRight className="w-3 h-3" />
+                        </button>
+                    )}
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12">
                     <div className="lg:col-span-2 space-y-6 sm:space-y-8">
-                        {/* Planner Promo Card */}
-                        <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/20 dark:to-accent/20 border border-primary/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-6 group soft-shadow relative overflow-hidden">
-                            <div className="absolute inset-0 bg-white/5 dark:bg-black/5 pointer-events-none" />
-                            <div className="relative">
-                                <h2 className="text-lg sm:text-xl md:text-2xl font-serif font-bold text-foreground mb-1 sm:mb-2 flex items-center gap-2">
-                                    <ListTodo className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" /> Smart Wedding Planner
-                                </h2>
-                                <p className="text-xs sm:text-sm text-text-secondary">Keep everything on track with our new Checklist, Budget Tracker, and Vendor Rolodex.</p>
+                        
+                        {/* Mobile Home Hub / Widgets */}
+                        {activeTab === 'home' && (
+                            <div className="grid grid-cols-2 sm:hidden gap-3 mb-2 animate-in fade-in slide-in-from-bottom-2">
+                                <Link 
+                                    href={`/builder?edit=${wedding.id}`}
+                                    className="flex flex-col items-center justify-center p-6 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+                                        <Sparkles className="w-6 h-6" />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Edit Page</span>
+                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-active:opacity-100 transition-opacity" />
+                                </Link>
+                                <Link 
+                                    href={`/dashboard/${wedding.id}/planner`}
+                                    className="flex flex-col items-center justify-center p-6 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-3">
+                                        <ListTodo className="w-6 h-6" />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Planner</span>
+                                    <div className="absolute inset-0 bg-secondary/5 opacity-0 group-active:opacity-100 transition-opacity" />
+                                </Link>
+                                <button 
+                                    onClick={() => setActiveTab('guests')}
+                                    className="flex flex-col items-center justify-center p-6 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-3">
+                                        <Users className="w-6 h-6" />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Guest List</span>
+                                    <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-active:opacity-100 transition-opacity" />
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('analytics')}
+                                    className="flex flex-col items-center justify-center p-6 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 mb-3">
+                                        <PieChartIcon className="w-6 h-6" />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Insights</span>
+                                    <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-active:opacity-100 transition-opacity" />
+                                </button>
                             </div>
-                            <Link href={`/dashboard/${wedding.id}/planner`} className="relative shrink-0 px-4 sm:px-8 py-3 sm:py-4 bg-primary text-white rounded-lg sm:rounded-2xl font-bold shadow-xl shadow-primary/20 group-hover:scale-105 transition-transform flex items-center gap-2 min-h-[44px] text-sm sm:text-base">
-                                Open Planner
-                            </Link>
-                        </div>
+                        )}
 
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-                            <div className="p-3 sm:p-6 rounded-lg sm:rounded-2xl bg-white border border-border soft-shadow text-center">
-                                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary mx-auto mb-1 sm:mb-2" />
-                                <p className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-foreground">{stats.totalGuests}</p>
-                                <p className="text-[8px] sm:text-[10px] uppercase tracking-widest font-bold text-text-secondary/50">Confirmed Guests</p>
-                            </div>
-                            <div className="p-3 sm:p-6 rounded-lg sm:rounded-2xl bg-white border border-border soft-shadow text-center">
-                                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 mx-auto mb-1 sm:mb-2" />
-                                <p className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-foreground">{stats.confirmed}</p>
-                                <p className="text-[8px] sm:text-[10px] uppercase tracking-widest font-bold text-text-secondary/50">Confirmed</p>
-                            </div>
-                            <div className="p-3 sm:p-6 rounded-lg sm:rounded-2xl bg-white border border-border soft-shadow text-center">
-                                <X className="w-5 h-5 sm:w-6 sm:h-6 text-red-400 mx-auto mb-1 sm:mb-2" />
-                                <p className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-foreground">{stats.declined}</p>
-                                <p className="text-[8px] sm:text-[10px] uppercase tracking-widest font-bold text-text-secondary/50">Declined</p>
-                            </div>
-                            <div className="p-3 sm:p-6 rounded-lg sm:rounded-2xl bg-white border border-border soft-shadow text-center">
-                                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 mx-auto mb-1 sm:mb-2" />
-                                <p className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-foreground">{stats.pending}</p>
-                                <p className="text-[8px] sm:text-[10px] uppercase tracking-widest font-bold text-text-secondary/50">Pending</p>
-                            </div>
-                        </div>
-
-                        {/* Budget Visualization */}
-                        <div className="p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 sm:mb-6">
-                                <h2 className="text-lg sm:text-xl font-serif font-bold text-foreground flex items-center gap-2">
-                                    <Wallet className="w-5 h-5 text-primary flex-shrink-0" /> Budget Overview
-                                </h2>
-                                <div className="text-right">
-                                    <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Utilization</p>
-                                    <p className="text-lg sm:text-xl md:text-2xl font-mono font-bold text-primary">{stats.budgetPercent}%</p>
+                        {created && activeTab === 'home' && (
+                            <div className="mb-8 p-4 rounded-xl bg-success-bg border border-border flex flex-row items-center gap-4 relative overflow-hidden sm:hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 pointer-events-none" />
+                                <div className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 flex items-center justify-center text-accent shadow-sm flex-shrink-0 relative">
+                                    <Sparkles className="w-5 h-5" />
                                 </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-4 md:gap-6 items-center">
-                                <div className="h-32 sm:h-40 relative">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={budgetData}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={40}
-                                                outerRadius={60}
-                                                paddingAngle={5}
-                                                dataKey="value"
-                                            >
-                                                {budgetData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip formatter={(value: any) => `${currencySymbol}${Number(value || 0).toLocaleString()}`} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                        <span className="text-[10px] uppercase font-bold text-text-secondary">Spent</span>
-                                        <span className="text-sm sm:text-base font-bold font-mono text-primary">{currencySymbol}{stats.totalSpent.toLocaleString()}</span>
-                                    </div>
-                                </div>
-
-                                <div className="md:col-span-2 grid grid-cols-2 gap-2 sm:gap-3">
-                                    <div className="p-3 sm:p-4 rounded-xl bg-neutral/50 dark:bg-neutral/40 border border-border">
-                                        <p className="text-[10px] uppercase font-bold text-text-secondary mb-1">Total Budget</p>
-                                        <p className="text-sm sm:text-base md:text-lg font-mono font-bold text-foreground">{currencySymbol}{stats.totalBudget.toLocaleString()}</p>
-                                    </div>
-                                    <div className="p-3 sm:p-4 rounded-xl bg-primary/5 dark:bg-primary/10 border-2 border-primary/20 scale-[1.02] shadow-sm">
-                                        <p className="text-[10px] uppercase font-bold text-primary mb-1">Spent / Committed</p>
-                                        <p className="text-lg sm:text-xl md:text-2xl font-mono font-black text-primary">{currencySymbol}{stats.totalSpent.toLocaleString()}</p>
-                                    </div>
-                                    <div className="p-3 sm:p-4 rounded-xl bg-neutral/50 dark:bg-neutral/40 border border-border">
-                                        <p className="text-[10px] uppercase font-bold text-text-secondary mb-1">Remaining</p>
-                                        <p className={`text-sm sm:text-base md:text-lg font-mono font-bold ${stats.remainingBudget < 0 ? 'text-red-500' : 'text-emerald-500 dark:text-emerald-400'}`}>
-                                            {currencySymbol}{stats.remainingBudget.toLocaleString()}
-                                        </p>
-                                    </div>
-                                    <Link href={`/dashboard/${id}/planner?tab=budget`} className="p-3 sm:p-4 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all text-xs sm:text-sm min-h-[44px] flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-                                        Open Planner <ArrowRight className="w-4 h-4" />
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Attendance Breakdown + Meal Summary */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                            {/* Visual Pie Chart */}
-                            <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow">
-                                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-widest text-text-secondary/50 mb-4 sm:mb-6">RSVP Status</h3>
-                                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
-                                    <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full relative flex-shrink-0" style={{
-                                        background: stats.total > 0
-                                            ? `conic-gradient(#22c55e ${attendPct}%, #ef4444 ${attendPct}% ${attendPct + declinePct}%, #f59e0b ${attendPct + declinePct}% ${attendPct + declinePct + pendingPct}%, #3A2A2D ${attendPct + declinePct + pendingPct}% 100%)`
-                                            : '#3A2A2D'
-                                    }}>
-                                        <div className="absolute inset-2 sm:inset-3 bg-white rounded-full flex items-center justify-center">
-                                            <span className="text-sm sm:text-xl font-bold">{stats.total}</span>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
-                                        <div className="flex items-center gap-2"><div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 flex-shrink-0" /><span>Confirmed ({stats.confirmed})</span></div>
-                                        <div className="flex items-center gap-2"><div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-400 flex-shrink-0" /><span>Declined ({stats.declined})</span></div>
-                                        <div className="flex items-center gap-2"><div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-amber-500 flex-shrink-0" /><span>Pending ({stats.pending})</span></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Meal Summary */}
-                            <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow">
-                                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-widest text-text-secondary/50 mb-4 sm:mb-6">Meal Preferences</h3>
-                                <div className="space-y-2 sm:space-y-3">
-                                    {Object.entries(stats.meals).sort((a, b) => b[1] - a[1]).map(([pref, count]) => (
-                                        <div key={pref} className="flex items-center justify-between text-xs sm:text-sm gap-2">
-                                            <span className="truncate">{pref}</span>
-                                            <div className="flex items-center gap-2 flex-shrink-0">
-                                                <div className="h-2 bg-primary/20 rounded-full min-w-[40px] sm:min-w-[80px]" style={{ width: `${Math.min((count / stats.total) * 80, 80)}px` }}>
-                                                    <div className="h-full bg-primary rounded-full" style={{ width: '100%' }} />
-                                                </div>
-                                                <span className="text-xs font-bold text-text-secondary/60 min-w-[20px] text-right">{count}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Song Requests */}
-                        {stats.songs.length > 0 && (
-                            <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow">
-                                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-widest text-text-secondary/50 mb-4 sm:mb-6 flex items-center gap-2">
-                                    <Music className="w-4 h-4 flex-shrink-0" /> Song Requests ({stats.songs.length})
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                                    {stats.songs.map((s, i) => (
-                                        <div key={i} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-neutral/50 dark:bg-neutral/30 border border-border/10">
-                                            <span className="text-base sm:text-lg flex-shrink-0">🎵</span>
-                                            <div className="min-w-0">
-                                                <p className="font-bold text-xs sm:text-sm line-clamp-1">{s.song}</p>
-                                                <p className="text-xs sm:text-xs text-text-secondary/50 line-clamp-1">— {s.name}</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                <div className="relative">
+                                    <h2 className="text-sm font-serif font-bold text-primary">Invitation is live! 🎉</h2>
+                                    <p className="text-[10px] text-text-secondary">Ready to share your special URL.</p>
                                 </div>
                             </div>
                         )}
 
-                        {/* RSVP List with Search + Filter + CSV */}
-                        <div className="bg-white rounded-lg sm:rounded-3xl border border-border soft-shadow overflow-hidden">
-                            <div className="p-3 sm:p-4 md:p-6 border-b border-border space-y-3 sm:space-y-4">
-                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                                    <h3 className="text-lg sm:text-xl font-serif font-bold text-foreground">Guest List ({stats.total})</h3>
-                                    <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-                                        <span className="px-3 py-2 rounded-xl bg-neutral text-text-secondary text-[10px] font-bold uppercase tracking-widest">
-                                            {stats.groupedCount} grouped
-                                        </span>
-                                        <span className="px-3 py-2 rounded-xl bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest">
-                                            {stats.invitedCount} invited
-                                        </span>
-                                        <span className="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest">
-                                            {stats.seatedCount} seated
-                                        </span>
+                        {/* Desktop Only / Mobile Home Hero */}
+                        {(activeTab === 'home') && (
+                            <div className="hidden sm:flex p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/20 dark:to-accent/20 border border-primary/20 flex-col md:flex-row items-start md:items-center justify-between gap-6 group soft-shadow relative overflow-hidden">
+                                <div className="absolute inset-0 bg-white/5 dark:bg-black/5 pointer-events-none" />
+                                
+                                <div className="relative z-10 space-y-2">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                                        <Sparkles className="w-3 h-3" /> Professional Tools
+                                    </div>
+                                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground mb-2 leading-tight">
+                                        Smart Wedding <span className="italic text-primary">Planner</span>
+                                    </h2>
+                                    <p className="text-sm sm:text-base text-text-secondary max-w-md">Our all-in-one workspace handles the stress so you can focus on the magic. Track budgets, vendors, and tasks in real-time.</p>
+                                </div>
+                                
+                                <Link href={`/dashboard/${wedding.id}/planner`} className="relative z-10 shrink-0 px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+                                    Open Planner <ArrowRight className="w-5 h-5" />
+                                </Link>
+                            </div>
+                        )}
+
+                        {/* Mobile Home Quick Stats Summary */}
+                        {activeTab === 'home' && (
+                            <div className="sm:hidden grid grid-cols-2 gap-3 mb-6">
+                                <div className="p-5 rounded-[2rem] bg-white dark:bg-neutral-800 border border-border soft-shadow">
+                                    <p className="text-[8px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Guests</p>
+                                    <p className="text-3xl font-serif font-bold text-primary">{stats.confirmed}</p>
+                                    <p className="text-[8px] font-bold text-text-secondary/40 mt-1 uppercase tracking-widest">Confirmed</p>
+                                </div>
+                                <div className="p-5 rounded-[2rem] bg-white dark:bg-neutral-800 border border-border soft-shadow">
+                                    <p className="text-[8px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Budget</p>
+                                    <p className="text-3xl font-serif font-bold text-secondary">{stats.budgetPercent}%</p>
+                                    <p className="text-[8px] font-bold text-text-secondary/40 mt-1 uppercase tracking-widest">Utilized</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Full Stats Cards - Mobile: Analytics only, Desktop: All */}
+                        {(activeTab === 'analytics' || activeTab === 'home') && (
+                            <div className={`${activeTab === 'home' ? 'hidden sm:grid' : 'grid'} grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 animate-in fade-in`}>
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center hover:border-primary/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                        <Users className="w-5 h-5 text-primary" />
+                                    </div>
+                                    <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.totalGuests}</p>
+                                    <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Total Guests</p>
+                                </div>
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center hover:border-green-500/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-green-500/5 dark:bg-green-500/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                    </div>
+                                    <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.confirmed}</p>
+                                    <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Confirmed</p>
+                                </div>
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center hover:border-red-400/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-red-400/5 dark:bg-red-400/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                        <X className="w-5 h-5 text-red-400" />
+                                    </div>
+                                    <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.declined}</p>
+                                    <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Declined</p>
+                                </div>
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center hover:border-amber-500/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-amber-500/5 dark:bg-amber-500/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                        <AlertCircle className="w-5 h-5 text-amber-500" />
+                                    </div>
+                                    <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.pending}</p>
+                                    <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Pending</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Budget Visualization - Mobile: Analytics only, Desktop: All */}
+                        {(activeTab === 'analytics' || activeTab === 'home') && (
+                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-6 sm:p-10 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow animate-in fade-in`}>
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                                    <div>
+                                        <h2 className="text-xl sm:text-2xl font-serif font-bold text-foreground flex items-center gap-3">
+                                            <Wallet className="w-6 h-6 text-primary flex-shrink-0" /> Financial Health
+                                        </h2>
+                                        <p className="text-xs text-text-secondary mt-1">Real-time overview of your wedding investments.</p>
+                                    </div>
+                                    <div className="text-right bg-neutral/50 dark:bg-neutral/30 px-4 py-2 rounded-2xl border border-border">
+                                        <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Total Utilization</p>
+                                        <p className="text-2xl font-mono font-black text-primary">{stats.budgetPercent}%</p>
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                                    <button onClick={() => setIsAddGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 transition-colors min-h-[44px]">
-                                        <Plus className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Add Guest</span>
-                                    </button>
-                                    <button onClick={() => setIsImportGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-secondary/10 dark:bg-secondary/20 text-secondary text-xs font-bold hover:bg-secondary/20 transition-colors min-h-[44px]">
-                                        <Upload className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">{importingGuests ? 'Importing...' : 'Import CSV'}</span>
-                                    </button>
-                                    <button onClick={exportCSV} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-primary/10 dark:bg-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-colors min-h-[44px]">
-                                        <Download className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Export CSV</span>
-                                    </button>
-                                </div>
-                                <div className="flex flex-col xl:flex-row gap-2 sm:gap-3">
-                                    <div className="flex-1 relative">
-                                        <Search className="w-4 h-4 absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-text-secondary/30" />
-                                        <input
-                                            placeholder="Search guests..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border focus:border-primary outline-none text-xs sm:text-sm bg-neutral min-h-[44px]"
-                                        />
-                                    </div>
-                                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}
-                                        className="px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border text-xs sm:text-sm bg-neutral focus:border-primary outline-none min-h-[44px]">
-                                        <option value="all">All Guests</option>
-                                        <option value="confirmed">Confirmed</option>
-                                        <option value="declined">Declined</option>
-                                        <option value="pending">Pending</option>
-                                    </select>
-                                    <select
-                                        value={groupFilter}
-                                        onChange={(e) => setGroupFilter(e.target.value as 'all' | GuestGroup)}
-                                        className="px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border text-xs sm:text-sm bg-neutral focus:border-primary outline-none min-h-[44px]"
-                                    >
-                                        <option value="all">All Groups</option>
-                                        {GUEST_GROUP_OPTIONS.map((option) => (
-                                            <option key={option.value} value={option.value}>{option.label}</option>
-                                        ))}
-                                    </select>
-                                    <select
-                                        value={invitationFilter}
-                                        onChange={(e) => setInvitationFilter(e.target.value as 'all' | 'sent' | 'not_sent')}
-                                        className="px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border text-xs sm:text-sm bg-neutral focus:border-primary outline-none min-h-[44px]"
-                                    >
-                                        <option value="all">All Invites</option>
-                                        <option value="sent">Invite Sent</option>
-                                        <option value="not_sent">Not Sent</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="overflow-x-hidden">
-                                <table className="w-full text-left text-xs sm:text-sm">
-                                    <thead className="bg-neutral text-text-secondary/60 text-[9px] sm:text-[10px] uppercase tracking-widest font-bold sticky top-0">
-                                        <tr>
-                                            <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3">Guest Name</th>
-                                            <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3">Status</th>
-                                            <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3">Guests</th>
-                                            <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 hidden sm:table-cell">Group</th>
-                                            <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 hidden md:table-cell">Invite</th>
-                                            <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 hidden lg:table-cell">Table</th>
-                                            <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {filteredRsvps.slice(0, visibleCount).map((rsvp) => (
-                                            <tr key={rsvp.id} className="hover:bg-neutral/30 transition-colors">
-                                                <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-4">
-                                                    <p className="font-bold text-foreground text-xs sm:text-sm line-clamp-1">{rsvp.guest_name}</p>
-                                                    <p className="text-[10px] text-text-secondary/60 truncate italic">{rsvp.guest_email || 'No email provided'}</p>
-                                                    {rsvp.manual_entry && <span className="text-[7px] sm:text-[8px] bg-neutral px-1 sm:px-1.5 py-0.5 rounded uppercase tracking-widest text-text-secondary font-black mt-1 inline-block">Manual</span>}
-                                                    {rsvp.plus_one_names && <p className="text-xs text-text-secondary/50 mt-1 line-clamp-1">+{rsvp.plus_one_names}</p>}
-                                                    {rsvp.plus_one_allowed && (
-                                                        <p className="text-[10px] text-secondary/70 mt-1">
-                                                            Plus-one: {rsvp.plus_one_name || getPlusOneStatusLabel(rsvp.plus_one_rsvp_status)}
-                                                        </p>
-                                                    )}
-                                                </td>
-                                                <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-4">
-                                                    <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
-                                                        (rsvp.rsvp_status === 'confirmed' || rsvp.attendance === 'Yes') ? 'bg-green-50 text-green-700' : 
-                                                        (rsvp.rsvp_status === 'declined' || rsvp.attendance === 'No') ? 'bg-red-50 text-red-600' :
-                                                        'bg-amber-50 text-amber-600'
-                                                    }`}>
-                                                        { (rsvp.rsvp_status === 'confirmed' || rsvp.attendance === 'Yes') ? 'Confirmed' : 
-                                                          (rsvp.rsvp_status === 'declined' || rsvp.attendance === 'No') ? 'Declined' : 'Pending' }
-                                                    </span>
-                                                </td>
-                                                <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-4 text-text-secondary font-medium text-xs sm:text-sm">
-                                                    {rsvp.num_guests}{(rsvp.children_count ?? 0) > 0 && <span className="text-xs text-blue-400 ml-1 hidden sm:inline">+{rsvp.children_count}</span>}
-                                                </td>
-                                                <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-4 hidden sm:table-cell">
-                                                    <select
-                                                        value={rsvp.guest_group || ''}
-                                                        onChange={(e) => updateRsvp(rsvp.id, { guest_group: (e.target.value || undefined) as GuestGroup | undefined })}
-                                                        className="w-full min-w-[160px] px-3 py-2 rounded-xl border border-border bg-white text-xs text-foreground"
-                                                    >
-                                                        <option value="">Ungrouped</option>
-                                                        {GUEST_GROUP_OPTIONS.map((option) => (
-                                                            <option key={option.value} value={option.value}>{option.label}</option>
-                                                        ))}
-                                                    </select>
-                                                </td>
-                                                <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-4 hidden md:table-cell">
-                                                    <button
-                                                        onClick={() => updateRsvp(rsvp.id, { invitation_sent: !rsvp.invitation_sent })}
-                                                        className={`px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest ${
-                                                            rsvp.invitation_sent
-                                                                ? 'bg-emerald-50 text-emerald-600'
-                                                                : 'bg-neutral text-text-secondary'
-                                                        }`}
-                                                    >
-                                                        {rsvp.invitation_sent ? 'Sent' : 'Not Sent'}
-                                                    </button>
-                                                    {rsvp.invitation_sent_at && (
-                                                        <p className="text-[10px] text-text-secondary mt-1">{new Date(rsvp.invitation_sent_at).toLocaleDateString()}</p>
-                                                    )}
-                                                </td>
-                                                <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-4 hidden lg:table-cell">
-                                                    <span className="text-text-secondary text-xs sm:text-sm">{rsvp.table_assignment || 'Unseated'}</span>
-                                                </td>
-                                                <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-4">
-                                                    <div className="flex items-center gap-1">
-                                                        <button
-                                                            onClick={() => updateRsvp(rsvp.id, { plus_one_allowed: !rsvp.plus_one_allowed })}
-                                                            className={`px-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest min-h-[44px] ${
-                                                                rsvp.plus_one_allowed
-                                                                    ? 'bg-secondary/10 text-secondary'
-                                                                    : 'bg-neutral text-text-secondary'
-                                                            }`}
-                                                        >
-                                                            +1
-                                                        </button>
-                                                        <button onClick={() => deleteRsvp(rsvp.id)} className="text-text-secondary/30 hover:text-red-500 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {/* Infinite Scroll Sentinel */}
-                                        {filteredRsvps.length > 0 && (
-                                            <tr id="guest-list-sentinel">
-                                                <td colSpan={7} className="py-4">
-                                                    {hasMore && visibleCount < filteredRsvps.length ? (
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                                            <span className="text-xs text-text-secondary">Loading more guests...</span>
-                                                        </div>
-                                                    ) : filteredRsvps.length > ITEMS_PER_PAGE ? (
-                                                        <div className="text-center text-xs text-text-secondary">
-                                                            Showing {visibleCount} of {filteredRsvps.length} guests
-                                                        </div>
-                                                    ) : null}
-                                                </td>
-                                            </tr>
-                                        )}
-                                        {filteredRsvps.length === 0 && (
-                                            <tr>
-                                                <td colSpan={7} className="px-2 sm:px-6 py-8 sm:py-16 text-center text-text-secondary/30 italic font-serif text-sm sm:text-lg">
-                                                    {searchQuery || filterStatus !== 'all' || groupFilter !== 'all' || invitationFilter !== 'all'
-                                                        ? 'No matching guests found.'
-                                                        : 'No responses yet. Share your link to start collecting RSVPs!'}
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Right Sidebar */}
-                    <div className="space-y-4 sm:space-y-6 md:space-y-8">
-                        {/* Share Card */}
-                        <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-primary text-white shadow-xl shadow-primary/20">
-                            <Share2 className="w-6 h-6 sm:w-8 sm:h-8 mb-4 sm:mb-6 text-white/40" />
-                            <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-bold mb-3 sm:mb-4">Share Invitation</h3>
-                            <div className="mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-4">
-                                <p className="text-white/70 break-all font-mono text-[10px] sm:text-xs mb-2">{url}</p>
-                                <CopyButton 
-                                    text={url} 
-                                    label="Copy URL"
-                                    variant="minimal"
-                                    className="text-white/70 hover:text-white"
-                                />
-                            </div>
-                            <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-2xl flex justify-center items-center mb-4 sm:mb-6 shadow-inner aspect-square max-w-[180px] mx-auto">
-                                <QRCodeSVG value={qrTrackingUrl} size={140} fgColor="#D16C78" className="w-full h-auto sm:w-[180px]" />
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                                <CopyButton 
-                                    text={url}
-                                    label="Copy"
-                                    className="flex flex-col items-center justify-center gap-1 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 transition-colors min-h-[44px] border-0 text-white"
-                                />
-                                <button onClick={handleShareWhatsApp} className="flex flex-col items-center justify-center gap-1 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 transition-colors min-h-[44px]">
-                                    <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    <span className="text-[8px] sm:text-[10px] font-bold text-center">WhatsApp</span>
-                                </button>
-                                <button onClick={handleShareEmail} className="flex flex-col items-center justify-center gap-1 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 transition-colors min-h-[44px]">
-                                    <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    <span className="text-[8px] sm:text-[10px] font-bold text-center">Email</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <AnalyticsPanel
-                            weddingId={id}
-                            rsvpCount={stats.total}
-                            pendingGuestCount={stats.pending}
-                        />
-
-                        <CollaboratorsPanel
-                            weddingId={id}
-                            currentUserId={user?.id}
-                            currentUserEmail={user?.email}
-                            canManage={canManageWorkspace}
-                        />
-
-                        {/* Custom Domain Settings */}
-                        <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow">
-                            <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-3 sm:pb-4 flex items-center gap-2">
-                                <Globe className="w-5 h-5 text-primary flex-shrink-0" /> Custom Domain
-                            </h3>
-
-                            {!canManageWorkspace && (
-                                <div className="mb-4 p-3 rounded-xl bg-neutral/50 border border-border text-sm text-text-secondary">
-                                    Custom domain controls are available to the wedding owner or partner role.
-                                </div>
-                            )}
-
-                            {!wedding.custom_domain ? (
-                                <div className="space-y-3 sm:space-y-4">
-                                    <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">Connect your own domain name (e.g., <span className="font-bold">amyandjohn.com</span>) to make your website truly yours.</p>
-                                    <div className="flex flex-col sm:flex-row gap-2">
-                                        <input
-                                            placeholder="yourdomain.com"
-                                            value={domainInput}
-                                            onChange={(e) => setDomainInput(e.target.value)}
-                                            disabled={!canManageWorkspace}
-                                            className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border focus:border-primary outline-none text-xs sm:text-sm bg-neutral min-h-[44px]"
-                                        />
-                                        <button
-                                            onClick={handleAddDomain}
-                                            disabled={domainLoading || !domainInput || !canManageWorkspace}
-                                            className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-primary text-white font-bold text-xs sm:text-sm hover:bg-primary-hover transition-colors disabled:opacity-50 min-h-[44px]"
-                                        >
-                                            {domainLoading ? 'Adding...' : 'Connect'}
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-4 sm:space-y-6">
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 bg-primary/5 rounded-lg sm:rounded-2xl border border-primary/20">
-                                        <div>
-                                            <p className="font-bold text-foreground text-sm sm:text-base">{wedding.custom_domain}</p>
-                                            <p className="text-[8px] sm:text-[10px] uppercase tracking-widest text-text-secondary/60 mt-1">
-                                                {domainStatus?.misconfigured === false ? (
-                                                    <span className="text-green-500 font-bold flex items-center gap-1">● Active &amp; Verified</span>
-                                                ) : (
-                                                    <span className="text-yellow-500 font-bold flex items-center gap-1 animate-pulse"><AlertCircle className="w-3 h-3" /> Pending DNS Configuration</span>
-                                                )}
-                                            </p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                                    <div className="h-44 relative">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={budgetData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={50}
+                                                    outerRadius={70}
+                                                    paddingAngle={8}
+                                                    dataKey="value"
+                                                    stroke="none"
+                                                >
+                                                    {budgetData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="outline-none" />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip 
+                                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                                    formatter={(value: any) => [`${currencySymbol}${Number(value || 0).toLocaleString()}`, 'Amount']} 
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                            <span className="text-[10px] uppercase font-black tracking-widest text-text-secondary/40">Spent</span>
+                                            <span className="text-lg font-black font-mono text-primary">{currencySymbol}{stats.totalSpent.toLocaleString()}</span>
                                         </div>
-                                        <button onClick={handleRemoveDomain} disabled={domainLoading || !canManageWorkspace} className="text-xs font-bold px-3 py-2 sm:py-1 text-red-500 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] sm:h-auto whitespace-nowrap disabled:opacity-50">
-                                            {domainLoading ? 'Removing...' : 'Disconnect'}
-                                        </button>
                                     </div>
 
-                                    {domainStatus?.misconfigured && (() => {
-                                        const parts = wedding.custom_domain.split('.');
-                                        const isSubdomain = parts.length > 2 && !['co.uk', 'com.au', 'co.in', 'org.uk'].some(ext => wedding.custom_domain.endsWith(ext));
-                                        const dnsType = isSubdomain ? 'CNAME' : 'A';
-                                        const dnsName = isSubdomain ? parts.slice(0, parts.length - 2).join('.') : '@';
-                                        const dnsValue = isSubdomain ? 'cname.vercel-dns.com' : '76.76.21.21';
+                                    <div className="md:col-span-2 space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/20 border border-border hover:border-primary/20 transition-all group">
+                                                <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary/50 mb-2">Total Budget</p>
+                                                <p className="text-xl font-mono font-bold text-foreground group-hover:text-primary transition-colors">{currencySymbol}{stats.totalBudget.toLocaleString()}</p>
+                                            </div>
+                                            <div className="p-4 rounded-2xl bg-primary/5 dark:bg-primary/20 border-2 border-primary/10 shadow-sm relative overflow-hidden group">
+                                                <div className="absolute top-0 right-0 w-12 h-12 bg-primary/5 rounded-bl-full" />
+                                                <p className="text-[10px] uppercase font-black tracking-widest text-primary mb-2">Committed</p>
+                                                <p className="text-xl font-mono font-black text-primary">{currencySymbol}{stats.totalSpent.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/20 border border-border">
+                                            <div>
+                                                <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Remaining Balance</p>
+                                                <p className={`text-xl font-mono font-black ${stats.remainingBudget < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                    {currencySymbol}{stats.remainingBudget.toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <Link href={`/dashboard/${id}/planner?tab=budget`} className="px-6 py-3 rounded-xl bg-neutral-900 text-white font-black uppercase tracking-widest text-[10px] hover:bg-black transition-all flex items-center gap-2 shadow-lg">
+                                                Details <ArrowRight className="w-4 h-4" />
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                                        return (
-                                            <div className="p-3 sm:p-5 rounded-lg sm:rounded-2xl bg-neutral space-y-3 sm:space-y-4 border border-border text-xs sm:text-sm">
-                                                <p className="font-bold text-foreground">Required DNS Records</p>
-                                                <p className="text-text-secondary text-[11px] sm:text-xs">Login to your domain registrar (GoDaddy, Namecheap, etc.) and add this exact {dnsType} Record to point your domain to our servers:</p>
-
-                                                <div className="space-y-2">
-                                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-white p-2 sm:p-3 rounded-lg sm:rounded-xl border border-border group/dns">
-                                                        <span className="text-text-secondary font-bold text-[8px] sm:text-[10px] uppercase tracking-widest">Type</span>
-                                                        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                                                            <span className="font-mono text-xs sm:text-sm flex-1 sm:flex-0">{dnsType}</span>
-                                                            <button onClick={() => { void copyText(dnsType); alert('Copied Type'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 hover:bg-neutral rounded">
-                                                                <Copy className="w-3 h-3 text-text-secondary" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-white p-2 sm:p-3 rounded-lg sm:rounded-xl border border-border group/dns">
-                                                        <span className="text-text-secondary font-bold text-[8px] sm:text-[10px] uppercase tracking-widest">Host</span>
-                                                        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                                                            <span className="font-mono text-xs sm:text-sm flex-1 sm:flex-0">{dnsName}</span>
-                                                            <button onClick={() => { void copyText(dnsName); alert('Copied Host'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 hover:bg-neutral rounded">
-                                                                <Copy className="w-3 h-3 text-text-secondary" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-white p-2 sm:p-3 rounded-lg sm:rounded-xl border border-border group/dns shadow-sm shadow-primary/5">
-                                                        <span className="text-text-secondary font-bold text-[8px] sm:text-[10px] uppercase tracking-widest">Value</span>
-                                                        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                                                            <span className="font-mono text-xs sm:text-sm text-primary font-bold flex-1 sm:flex-0">{dnsValue}</span>
-                                                            <button onClick={() => { void copyText(dnsValue); alert('Copied Value'); }} className="opacity-0 group-hover/dns:opacity-100 transition-opacity p-1 bg-primary/10 hover:bg-primary/20 rounded">
-                                                                <Copy className="w-3 h-3 text-primary" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="pt-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
-                                                    <p className="text-[8px] sm:text-[10px] text-text-secondary/60">DNS propagation may take up to 24 hours.</p>
-                                                    <button onClick={() => checkDomainStatus(wedding.custom_domain)} className="text-xs text-primary font-bold hover:underline whitespace-nowrap">
-                                                        Refresh Status
-                                                    </button>
+                        {/* Detailed Charts - Mobile: Analytics only, Desktop: All */}
+                        {(activeTab === 'analytics' || activeTab === 'home') && (
+                            <div className={`${activeTab === 'home' ? 'hidden sm:grid' : 'grid'} grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in fade-in`}>
+                                {/* Attendance Breakdown */}
+                                <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow">
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-secondary/40 mb-8 flex items-center gap-2">
+                                        <PieChartIcon className="w-4 h-4 text-primary" /> RSVP Distribution
+                                    </h3>
+                                    <div className="flex flex-row items-center gap-8">
+                                        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full relative flex-shrink-0 p-1 bg-neutral/10 dark:bg-neutral/80" style={{
+                                            background: stats.total > 0
+                                                ? `conic-gradient(#22c55e ${attendPct}%, #ef4444 ${attendPct}% ${attendPct + declinePct}%, #f59e0b ${attendPct + declinePct}% ${attendPct + declinePct + pendingPct}%, #3A2A2D ${attendPct + declinePct + pendingPct}% 100%)`
+                                                : '#3A2A2D'
+                                        }}>
+                                            <div className="absolute inset-2 sm:inset-4 bg-white dark:bg-neutral-800 rounded-full flex flex-col items-center justify-center shadow-inner">
+                                                <span className="text-xl sm:text-2xl font-black text-foreground">{stats.total}</span>
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-text-secondary/40">Total</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm" />
+                                                <div>
+                                                    <p className="text-xs font-black text-foreground">{stats.confirmed}</p>
+                                                    <p className="text-[8px] font-bold uppercase text-text-secondary/50">Confirmed</p>
                                                 </div>
                                             </div>
-                                        );
-                                    })()}
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-3 h-3 rounded-full bg-red-400 shadow-sm" />
+                                                <div>
+                                                    <p className="text-xs font-black text-foreground">{stats.declined}</p>
+                                                    <p className="text-[8px] font-bold uppercase text-text-secondary/50">Declined</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-3 h-3 rounded-full bg-amber-500 shadow-sm" />
+                                                <div>
+                                                    <p className="text-xs font-black text-foreground">{stats.pending}</p>
+                                                    <p className="text-[8px] font-bold uppercase text-text-secondary/50">Pending</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
 
-                        {/* Event Details */}
-                        <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow">
-                            <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-3 sm:pb-4">Event Details</h3>
-                            <div className="space-y-4 sm:space-y-6 text-xs sm:text-sm">
-                                <div>
-                                    <span className="text-text-secondary/60 block text-[8px] sm:text-[10px] uppercase tracking-widest font-bold pb-2">Date &amp; Time</span>
-                                    <span className="font-bold text-foreground text-sm sm:text-base">{wedding.wedding_date} @ {wedding.wedding_time}</span>
-                                </div>
-                                <div>
-                                    <span className="text-text-secondary/60 block text-[8px] sm:text-[10px] uppercase tracking-widest font-bold pb-2">Venue</span>
-                                    <span className="font-bold text-foreground text-sm sm:text-base line-clamp-2">{wedding.venue_name}</span>
-                                </div>
-                                <div>
-                                    <span className="text-text-secondary/60 block text-[8px] sm:text-[10px] uppercase tracking-widest font-bold pb-2">RSVP Deadline</span>
-                                    <span className="font-bold text-primary text-sm sm:text-base">{wedding.rsvp_deadline}</span>
-                                </div>
-                                <div>
-                                    <span className="text-text-secondary/60 block text-[8px] sm:text-[10px] uppercase tracking-widest font-bold pb-2">Template</span>
-                                    <span className="font-bold text-foreground text-sm sm:text-base capitalize">{wedding.template}</span>
+                                {/* Meal Summary */}
+                                <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow">
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-secondary/40 mb-8 flex items-center gap-2">
+                                        <Smartphone className="w-4 h-4 text-secondary" /> Dining Preferences
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {Object.entries(stats.meals).length > 0 ? Object.entries(stats.meals).sort((a, b) => b[1] - a[1]).map(([pref, count]) => (
+                                            <div key={pref} className="space-y-1">
+                                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="text-text-secondary truncate max-w-[150px]">{pref}</span>
+                                                    <span className="text-primary">{count} guests</span>
+                                                </div>
+                                                <div className="h-1.5 bg-neutral/20 dark:bg-neutral/70 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${(count / stats.total) * 100}%` }} />
+                                                </div>
+                                            </div>
+                                        )) : (
+                                            <div className="flex flex-col items-center justify-center py-8 text-center space-y-2 opacity-30">
+                                                <Smartphone className="w-8 h-8" />
+                                                <p className="text-xs font-bold uppercase tracking-widest italic">Waiting for RSVPs</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* Guest List Section - Mobile: guests only, Desktop: All */}
+                        {(activeTab === 'guests' || activeTab === 'home') && (
+                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} animate-in fade-in`}>
+                                {/* Song Requests */}
+                                {stats.songs.length > 0 && (
+                                    <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow mb-6 sm:mb-8">
+                                        <h3 className="text-xs sm:text-sm font-bold uppercase tracking-widest text-text-secondary/50 mb-4 sm:mb-6 flex items-center gap-2">
+                                            <Music className="w-4 h-4 flex-shrink-0" /> Song Requests ({stats.songs.length})
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                                            {stats.songs.map((s, i) => (
+                                                <div key={i} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-neutral/50 dark:bg-neutral/30 border border-border/10">
+                                                    <span className="text-base sm:text-lg flex-shrink-0">🎵</span>
+                                                    <div className="min-w-0">
+                                                        <p className="font-bold text-xs sm:text-sm line-clamp-1 italic">"{s.song}"</p>
+                                                        <p className="text-xs sm:text-xs text-text-secondary/50 line-clamp-1">— {s.name}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <div className="bg-white rounded-xl sm:rounded-3xl border border-border soft-shadow overflow-hidden">
+                                    <div className="p-4 sm:p-6 md:p-8 border-b border-border space-y-6">
+                                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                            <div>
+                                                <h3 className="text-lg sm:text-xl font-serif font-bold text-foreground">Guest List ({stats.total})</h3>
+                                                <div className="flex flex-wrap gap-2 w-full lg:w-auto mt-2">
+                                                    <span className="px-2 py-1.5 rounded-lg bg-neutral text-text-secondary text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
+                                                        {stats.groupedCount} grouped
+                                                    </span>
+                                                    <span className="px-2 py-1.5 rounded-lg bg-primary/10 text-primary text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
+                                                        {stats.invitedCount} invited
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex flex-wrap gap-2 w-full sm:w-auto overflow-x-auto pb-1 no-scrollbar">
+                                            <button onClick={() => setIsAddGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 transition-colors min-h-[44px]">
+                                                <Plus className="w-4 h-4 flex-shrink-0" /> <span>Add</span>
+                                            </button>
+                                            <button onClick={() => setIsImportGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-secondary/10 dark:bg-secondary/20 text-secondary text-xs font-bold hover:bg-secondary/20 transition-colors min-h-[44px]">
+                                                <Upload className="w-4 h-4 flex-shrink-0" /> <span>Import</span>
+                                            </button>
+                                            <button onClick={exportCSV} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-primary/10 dark:bg-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-colors min-h-[44px] ml-auto">
+                                                <Download className="w-4 h-4 flex-shrink-0" /> <span>Export</span>
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 xl:grid-cols-4 gap-2 sm:gap-3">
+                                            <div className="xl:col-span-2 relative">
+                                                <Search className="w-4 h-4 absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-text-secondary/30" />
+                                                <input
+                                                    placeholder="Search guests..."
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border focus:border-primary outline-none text-xs sm:text-sm bg-neutral min-h-[44px]"
+                                                />
+                                            </div>
+                                            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}
+                                                className="px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border text-xs sm:text-sm bg-neutral focus:border-primary outline-none min-h-[44px]">
+                                                <option value="all">All Status</option>
+                                                <option value="confirmed">Confirmed</option>
+                                                <option value="declined">Declined</option>
+                                                <option value="pending">Pending</option>
+                                            </select>
+                                            <select
+                                                value={groupFilter}
+                                                onChange={(e) => setGroupFilter(e.target.value as 'all' | GuestGroup)}
+                                                className="px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border text-xs sm:text-sm bg-neutral focus:border-primary outline-none min-h-[44px]"
+                                            >
+                                                <option value="all">All Groups</option>
+                                                {GUEST_GROUP_OPTIONS.map((option) => (
+                                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-xs sm:text-sm">
+                                            <thead className="bg-neutral text-text-secondary/60 text-[8px] sm:text-[10px] uppercase tracking-widest font-black sticky top-0">
+                                                <tr>
+                                                    <th className="px-3 sm:px-6 py-2 sm:py-3">Guest</th>
+                                                    <th className="px-3 sm:px-6 py-2 sm:py-3">Status</th>
+                                                    <th className="px-3 sm:px-6 py-2 sm:py-3 hidden sm:table-cell">Details</th>
+                                                    <th className="px-3 sm:px-6 py-2 sm:py-3"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-border/50">
+                                                {filteredRsvps.slice(0, visibleCount).map((rsvp) => (
+                                                    <tr key={rsvp.id} className="hover:bg-neutral/30 transition-colors group/row">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-5">
+                                                            <div className="flex items-center gap-3 sm:gap-4">
+                                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-primary/5 dark:bg-primary/20 flex items-center justify-center text-primary font-black text-[10px] sm:text-xs">
+                                                                    {rsvp.guest_name.charAt(0)}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-foreground text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{rsvp.guest_name}</p>
+                                                                    <p className="text-[10px] text-text-secondary/40 truncate italic max-w-[120px] sm:max-w-none">{rsvp.guest_email || 'No email provided'}</p>
+                                                                    {rsvp.num_guests > 1 && <span className="text-[7px] bg-primary/5 text-primary px-1.5 py-0.5 rounded font-black mt-1 inline-block uppercase tracking-widest">+{rsvp.num_guests - 1} party</span>}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-5">
+                                                            <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter sm:tracking-widest ${
+                                                                (rsvp.rsvp_status === 'confirmed' || rsvp.attendance === 'Yes') ? 'bg-emerald-50 text-emerald-600' : 
+                                                                (rsvp.rsvp_status === 'declined' || rsvp.attendance === 'No') ? 'bg-red-50 text-red-600' :
+                                                                'bg-amber-50 text-amber-600'
+                                                            }`}>
+                                                                { (rsvp.rsvp_status === 'confirmed' || rsvp.attendance === 'Yes') ? 'YES' : 
+                                                                  (rsvp.rsvp_status === 'declined' || rsvp.attendance === 'No') ? 'NO' : '?' }
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-5 hidden sm:table-cell">
+                                                            <div className="text-[10px] text-text-secondary">
+                                                                <p className="font-black uppercase tracking-widest text-[8px] text-text-secondary/60">{getGuestGroupLabel(rsvp.guest_group)}</p>
+                                                                <p className="mt-1">{rsvp.table_assignment || 'No Table'}</p>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-5 text-right">
+                                                            <button onClick={() => deleteRsvp(rsvp.id)} className="text-text-secondary/20 hover:text-red-500 transition-colors">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        {filteredRsvps.length === 0 && (
+                                            <div className="py-20 text-center">
+                                                <Search className="w-8 h-8 text-text-secondary/20 mx-auto mb-4" />
+                                                <p className="text-sm font-bold text-text-secondary/30 uppercase tracking-[0.2em]">No guests found</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div id="guest-list-sentinel" className="h-4" />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-6 sm:space-y-8">
+                        {/* QR & Share Hub */}
+                        {(activeTab === 'home') && (
+                            <div className="p-6 sm:p-10 rounded-[2.5rem] bg-primary text-white shadow-2xl relative overflow-hidden group animate-in fade-in slide-in-from-right-4">
+                                <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-[80px] -mr-24 -mt-24" />
+                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-[60px] -ml-16 -mb-16" />
+                                
+                                <div className="relative z-10 flex flex-col items-center">
+                                    <div className="w-full flex justify-between items-center mb-8">
+                                        <div className="p-3 rounded-2xl bg-white/10 border border-white/20">
+                                            <QrCode className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div className="px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full border border-white/30 text-[10px] font-black uppercase tracking-[0.2em] text-white">
+                                            Invite Hub
+                                        </div>
+                                    </div>
+
+                                    <h3 className="text-2xl sm:text-3xl font-serif font-bold text-center mb-2 leading-tight text-white">Digital & <span className="italic text-white underline decoration-white/30 underline-offset-8">Physical</span></h3>
+                                    <p className="text-xs text-white/70 text-center mb-10 max-w-[220px]">Scan for the website, print on your invitations, or share via chat.</p>
+
+                                    <div className="relative group/qr mb-10">
+                                        <div className="absolute -inset-4 bg-white rounded-[3rem] blur-xl opacity-20 group-hover/qr:opacity-40 transition-opacity duration-700" />
+                                        <div className="relative bg-white p-8 rounded-[2.5rem] shadow-2xl hover:scale-105 transition-transform duration-500 cursor-pointer overflow-hidden border-4 border-white/10">
+                                            <div className="absolute inset-0 bg-primary/90 opacity-0 group-hover/qr:opacity-100 transition-opacity flex flex-col items-center justify-center text-white p-6 text-center">
+                                                <Smartphone className="w-10 h-10 mb-3 animate-bounce" />
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em]">Scan to Preview</p>
+                                            </div>
+                                            
+                                            <QRCodeSVG 
+                                                value={qrTrackingUrl} 
+                                                size={160} 
+                                                fgColor="#D16C78" 
+                                                level="H"
+                                                includeMargin={false}
+                                                className="w-full h-auto"
+                                            />
+                                            <div className="hidden">
+                                                <QRCodeCanvas 
+                                                    id="qr-canvas"
+                                                    value={qrTrackingUrl} 
+                                                    size={1024} 
+                                                    level="H"
+                                                    fgColor="#D16C78"
+                                                    includeMargin={true}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="w-full space-y-4">
+                                        <button 
+                                            onClick={downloadQRCode}
+                                            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-white text-primary font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-neutral-50 active:scale-95 transition-all group/btn"
+                                        >
+                                            <Printer className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" /> Save for Print (PNG)
+                                        </button>
+                                        
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button 
+                                                onClick={handleShareWhatsApp}
+                                                className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 transition-colors group/wa"
+                                            >
+                                                <MessageCircle className="w-5 h-5 text-white group-hover/wa:scale-110 transition-transform" />
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-white/80">WhatsApp</span>
+                                            </button>
+                                            <button 
+                                                onClick={handleShareEmail}
+                                                className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 transition-colors group/email"
+                                            >
+                                                <Mail className="w-5 h-5 text-white group-hover/email:scale-110 transition-transform" />
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-white/80">Email</span>
+                                            </button>
+                                        </div>
+
+                                        <div className="p-4 rounded-2xl bg-white/10 border border-white/5 flex items-center justify-between group/link">
+                                            <p className="text-[10px] font-mono text-white/50 truncate max-w-[120px]">{url}</p>
+                                            <CopyButton 
+                                                text={url} 
+                                                label="Copy"
+                                                variant="minimal"
+                                                className="text-white font-black uppercase tracking-widest text-[10px] hover:scale-110 transition-transform"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'home' && (
+                            <div className="sm:block hidden">
+                                <AnalyticsPanel
+                                    weddingId={id}
+                                    rsvpCount={stats.total}
+                                    pendingGuestCount={stats.pending}
+                                />
+                            </div>
+                        )}
+
+                        {(activeTab === 'team' || activeTab === 'home') && (
+                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} animate-in fade-in`}>
+                                <CollaboratorsPanel
+                                    weddingId={id}
+                                    currentUserId={user?.id}
+                                    currentUserEmail={user?.email}
+                                    canManage={canManageWorkspace}
+                                />
+                            </div>
+                        )}
+
+                        {(activeTab === 'settings' || activeTab === 'home') && (
+                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-4 sm:p-8 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow animate-in fade-in`}>
+                                <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground flex items-center gap-2">
+                                    <Globe className="w-5 h-5 text-primary flex-shrink-0" /> Custom Domain
+                                </h3>
+
+                                {!canManageWorkspace && (
+                                    <div className="mb-4 p-3 rounded-xl bg-neutral/50 border border-border text-[10px] text-text-secondary font-bold uppercase tracking-widest">
+                                        Owner Only Access
+                                    </div>
+                                )}
+
+                                {!wedding.custom_domain ? (
+                                    <div className="space-y-4">
+                                        <p className="text-xs text-text-secondary leading-relaxed font-serif italic">Connect your own domain name (e.g., amyandjohn.com) to make your website truly yours.</p>
+                                        <div className="flex flex-col gap-2">
+                                            <input
+                                                placeholder="yourdomain.com"
+                                                value={domainInput}
+                                                onChange={(e) => setDomainInput(e.target.value)}
+                                                disabled={!canManageWorkspace}
+                                                className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary outline-none text-xs bg-neutral"
+                                            />
+                                            <button
+                                                onClick={handleAddDomain}
+                                                disabled={domainLoading || !domainInput || !canManageWorkspace}
+                                                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-xs uppercase tracking-[0.2em] hover:bg-primary-hover transition-colors disabled:opacity-50"
+                                            >
+                                                {domainLoading ? 'Adding...' : 'Connect'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-primary/5 rounded-2xl border border-primary/20">
+                                            <p className="font-bold text-foreground text-sm">{wedding.custom_domain}</p>
+                                            <button onClick={handleRemoveDomain} disabled={domainLoading || !canManageWorkspace} className="text-[10px] font-black uppercase tracking-widest text-red-500 mt-2 hover:underline">
+                                                {domainLoading ? 'Removing...' : 'Disconnect'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {(activeTab === 'settings' || activeTab === 'home') && (
+                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-4 sm:p-8 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow animate-in fade-in`}>
+                                <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4">Event Details</h3>
+                                <div className="space-y-6">
+                                    <div>
+                                        <span className="text-text-secondary/40 block text-[8px] uppercase tracking-[0.3em] font-black pb-2">Date & Time</span>
+                                        <span className="font-serif italic text-foreground text-sm">{wedding.wedding_date} @ {wedding.wedding_time}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-text-secondary/40 block text-[8px] uppercase tracking-[0.3em] font-black pb-2">Venue</span>
+                                        <span className="font-serif italic text-foreground text-sm line-clamp-1">{wedding.venue_name}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-text-secondary/40 block text-[8px] uppercase tracking-[0.3em] font-black pb-2">Template</span>
+                                        <span className="font-serif italic text-foreground text-sm capitalize">{wedding.template}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>

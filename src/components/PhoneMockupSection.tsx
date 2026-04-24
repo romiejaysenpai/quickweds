@@ -148,7 +148,7 @@ export default function PhoneMockupSection() {
                     </motion.div>
                 </div>
 
-                {/* Right Side: Phone Mockup */}
+                {/* Right Side: Phone Mockup with Live Preview iframe */}
                 <div className="relative flex-1 flex justify-center items-center w-full sm:w-auto">
                     {/* Decorative Blobs - responsive sizing */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] sm:w-[350px] md:w-[500px] h-[250px] sm:h-[350px] md:h-[500px] bg-primary/20 rounded-full blur-[60px] sm:blur-[80px] md:blur-[100px] -z-10 animate-pulse" />
@@ -163,35 +163,29 @@ export default function PhoneMockupSection() {
                         {/* Notch */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 sm:w-28 md:w-32 h-5 sm:h-6 bg-black rounded-b-xl md:rounded-b-2xl z-20" />
 
-                        {/* Screen Content */}
+                        {/* Screen Content - Live iframe of your app */}
                         <div className="w-full h-full bg-white relative overflow-hidden">
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={showcaseTemplates[currentIndex]}
-                                    initial={{ opacity: 0, x: 100 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -100 }}
-                                    transition={{ duration: 0.5, ease: "easeInOut" }}
-                                    className="w-full h-full"
-                                >
-                                    <TemplatePreview templateId={showcaseTemplates[currentIndex]} />
-                                </motion.div>
-                            </AnimatePresence>
+                            {/* Browser URL Bar */}
+                            <div className="h-6 bg-gray-100 border-b border-gray-200 flex items-center px-2 gap-0.5 mx-3 mt-3 rounded-t-lg">
+                                <div className="flex gap-0.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                                </div>
+                                <div className="flex-1 ml-1 bg-white rounded px-1 py-0.5 text-[6px] text-gray-600 font-mono border">
+                                    localhost:3000
+                                </div>
+                            </div>
 
-                            {/* Fake UI Elements */}
-                            <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2 w-24 sm:w-28 md:w-32 h-1 bg-black/20 rounded-full z-20" />
-                        </div>
-                    </motion.div>
-
-                    {/* Floating Design Badge */}
-                    <motion.div
-                        animate={{ y: [0, -10, 0] }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute bottom-12 sm:bottom-20 -left-8 sm:-left-12 bg-white p-3 sm:p-4 rounded-lg sm:rounded-2xl shadow-xl border border-border z-20 hidden md:block min-w-[140px]"
-                    >
-                        <div className="text-xs uppercase font-bold text-text-secondary mb-1">Current Style</div>
-                        <div className="text-sm sm:text-lg font-serif font-bold text-primary line-clamp-1">
-                            {TEMPLATES.find(t => t.id === showcaseTemplates[currentIndex])?.name || 'Custom Design'}
+                            {/* Live iframe showing actual app */}
+                            <div className="h-[calc(100%-2rem)]">
+                                <iframe
+                                    src="http://localhost:3000"
+                                    className="w-full h-full border-0"
+                                    title="QuickWeds Live Preview"
+                                    sandbox="allow-scripts allow-same-origin"
+                                />
+                            </div>
                         </div>
                     </motion.div>
 

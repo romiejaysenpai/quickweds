@@ -111,7 +111,19 @@ export default function LivePreview({ formData, previews }: { formData: any; pre
                     )}
 
                     <div className="relative z-20 flex h-full flex-col">
-                        <div className="flex items-center justify-between px-6 pb-4 pt-5 text-[9px] font-bold uppercase tracking-[0.3em] text-foreground/45">
+                        {/* Browser URL Bar */}
+                        <div className="h-6 bg-gray-100 border-b border-gray-200 flex items-center px-2 gap-0.5 mx-3 mt-3 rounded-t-lg">
+                            <div className="flex gap-0.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                            </div>
+                            <div className="flex-1 ml-1 bg-white rounded px-1 py-0.5 text-[6px] text-gray-600 font-mono border">
+                                localhost:3000
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between px-6 pb-4 pt-2 text-[9px] font-bold uppercase tracking-[0.3em] text-foreground/45">
                             <span>QuickWeds</span>
                             <span>{templateMeta.tier === 'free' ? 'Included' : 'Premium'}</span>
                         </div>

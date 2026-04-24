@@ -4,13 +4,29 @@ import { motion } from 'framer-motion';
 import { Calendar, MapPin, Shirt, Info } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 import VectorArtGuests from '../VectorArtGuests';
+import { derivePalette, getTypography, BENTO_PRESETS } from '@/lib/theme-engine';
 
 interface DetailsSectionProps {
     wedding: Wedding;
     invert?: boolean;
 }
 
-function DetailCard({ icon: Icon, title, value, subtitle, link, children, delay = 0, isSharp, isDark, isVintage, template }: {
+function DetailCard({ 
+    icon: Icon, 
+    title, 
+    value, 
+    subtitle, 
+    link, 
+    children, 
+    delay = 0, 
+    isSharp, 
+    isDark, 
+    isVintage, 
+    template,
+    className = "",
+    palette,
+    typography
+}: {
     icon: React.ElementType;
     title: string;
     value: string;
@@ -22,6 +38,9 @@ function DetailCard({ icon: Icon, title, value, subtitle, link, children, delay 
     isDark?: boolean;
     isVintage?: boolean;
     template?: string;
+    className?: string;
+    palette: any;
+    typography: any;
 }) {
     // Dynamic styling based on template category
     const cardClass = isSharp 
@@ -40,41 +59,39 @@ function DetailCard({ icon: Icon, title, value, subtitle, link, children, delay 
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
             transition={{ duration: 1, delay, ease: [0.16, 1, 0.3, 1] }}
-            className={`flex flex-col items-center text-center p-10 md:p-14 transition-all duration-700 h-full relative overflow-hidden group ${cardClass} hover:shadow-3xl`}
+            className={`flex flex-col items-center text-center p-8 md:p-14 transition-all duration-700 h-full relative overflow-hidden group ${cardClass} hover:shadow-3xl ${className}`}
         >
             {/* Template-specific background decorations */}
             {!isSharp && !isVintage && (
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors duration-700" />
+                <div 
+                    className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-125 transition-transform duration-700" 
+                    style={{ backgroundColor: `${palette.primary}11` }}
+                />
             )}
             
-            <div className="relative z-10 w-full flex flex-col items-center h-full">
+            <div className="relative z-10 w-full flex flex-col items-center h-full justify-center">
                 {/* Icon Container with category-specific treatment */}
-                <div className="mb-10 relative">
+                <div className="mb-8 relative">
                     {children || (
-                        <div className={`w-16 h-16 flex items-center justify-center transition-all duration-700 relative z-10 ${
+                        <div className={`w-14 h-14 md:w-16 md:h-16 flex items-center justify-center transition-all duration-700 relative z-10 ${
                             isSharp 
                                 ? 'bg-primary/10 rounded-none group-hover:bg-primary group-hover:scale-110' 
                                 : isVintage
                                 ? 'bg-transparent border-2 border-primary/20 rounded-full group-hover:border-primary'
                                 : 'bg-white shadow-lg rounded-[1.5rem] rotate-3 group-hover:rotate-0 group-hover:scale-110'
                         }`}>
-                            <Icon className={`w-7 h-7 transition-colors duration-700 ${isSharp ? 'text-primary group-hover:text-white' : 'text-primary'}`} />
+                            <Icon className={`w-6 h-6 md:w-7 md:h-7 transition-colors duration-700 ${isSharp ? 'text-primary group-hover:text-white' : 'text-primary'}`} />
                         </div>
-                    )}
-                    
-                    {/* Shadow/Glow under icon for standard cards */}
-                    {!isSharp && !isVintage && (
-                        <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-50 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                     )}
                 </div>
 
-                <h3 className={`text-xs font-black mb-6 uppercase tracking-[0.3em] ${textColorHeading}`}>{title}</h3>
+                <h3 className={`text-[10px] md:text-xs font-black mb-4 uppercase tracking-[0.3em] ${textColorHeading}`}>{title}</h3>
                 
-                <div className="flex-1 flex flex-col items-center w-full">
-                    <p className={`text-2xl md:text-3xl font-serif mb-3 leading-tight tracking-tight ${textColorValue}`}>
+                <div className="flex-1 flex flex-col items-center w-full justify-center">
+                    <p className={`text-2xl md:text-4xl ${typography.heading} mb-3 leading-tight tracking-tight ${textColorValue}`}>
                         {value}
                     </p>
-                    <p className={`text-sm md:text-base mb-8 max-w-[220px] font-medium leading-relaxed opacity-80 ${textColorSub}`}>
+                    <p className={`text-xs md:text-base mb-6 max-w-[220px] font-medium leading-relaxed opacity-80 ${textColorSub}`}>
                         {subtitle}
                     </p>
                 </div>
@@ -84,20 +101,8 @@ function DetailCard({ icon: Icon, title, value, subtitle, link, children, delay 
                         onClick={() => {
                             const address = value + ' ' + (subtitle || '');
                             const encodedAddress = encodeURIComponent(address);
-                            const iosUrl = `maps://maps.apple.com/?q=${encodedAddress}`;
-                            const androidUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-                            const webUrl = link || androidUrl;
-
-                            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                                window.location.href = iosUrl;
-                                // Fallback to web if app doesn't open
-                                setTimeout(() => window.open(webUrl, '_blank'), 500);
-                            } else if (/Android/i.test(navigator.userAgent)) {
-                                window.location.href = `geo:0,0?q=${encodedAddress}`;
-                                setTimeout(() => window.open(androidUrl, '_blank'), 500);
-                            } else {
-                                window.open(webUrl, '_blank');
-                            }
+                            const webUrl = link || `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+                            window.open(webUrl, '_blank');
                         }}
                         whileHover={{ letterSpacing: '0.4em', x: 5 }}
                         className="text-primary font-bold border-b-2 border-primary/10 pb-2 hover:border-primary transition-all text-[10px] md:text-xs uppercase tracking-[0.3em] mt-auto font-black flex items-center gap-2"
@@ -106,32 +111,33 @@ function DetailCard({ icon: Icon, title, value, subtitle, link, children, delay 
                     </motion.button>
                 )}
             </div>
-
-            {/* Corner styling for Vintage/Editorial */}
-            {isVintage && (
-                <>
-                    <div className="absolute top-2 left-2 w-4 h-4 border-t border-l border-primary/30" />
-                    <div className="absolute bottom-2 right-2 w-4 h-4 border-b border-r border-primary/30" />
-                </>
-            )}
         </motion.div>
     );
 }
 
 export default function DetailsSection({ wedding, invert = false }: DetailsSectionProps) {
+    const template = wedding.template || 'classic';
+    const motifColor = wedding.motif_color || '#D16C78';
+    
+    const palette = derivePalette(motifColor, invert);
+    const typography = getTypography(template);
+    
     const rawDressCode = wedding.dress_code || '';
     const dressCodeData = rawDressCode.split('||');
     const attireText = dressCodeData[0] || 'Formal Attire';
-    const attireColor = dressCodeData[1] || wedding.motif_color || '#D16C78';
+    const attireColor = dressCodeData[1] || motifColor;
 
-    const template = wedding.template || 'classic';
     const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
     const isDark = ['midnight', 'cinematic', 'royal', 'urban', 'glitch', 'film', 'artdeco'].includes(template) || invert;
     const isVintage = ['vintage', 'rustic', 'boho', 'film'].includes(template);
 
+    // Use Bento presets for modern templates
+    const isBento = ['editorial', 'vogue', 'minimal', 'urban', 'boho', 'luxury'].includes(template);
+    const layoutClasses = isBento ? BENTO_PRESETS.details : ["", "", "", ""];
+
     return (
         <section className={`py-24 md:py-40 relative z-10 ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>
-            <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10">
+            <div className={`max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8`}>
                 <DetailCard 
                     delay={0}
                     icon={Calendar} 
@@ -139,6 +145,9 @@ export default function DetailsSection({ wedding, invert = false }: DetailsSecti
                     value={wedding.wedding_date ? new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Setting Date'} 
                     subtitle={wedding.wedding_time || 'Check back soon for exact schedule'} 
                     isSharp={isSharp} isDark={isDark} isVintage={isVintage} template={template}
+                    className={layoutClasses[0]}
+                    palette={palette}
+                    typography={typography}
                 />
                 
                 <DetailCard 
@@ -149,6 +158,9 @@ export default function DetailsSection({ wedding, invert = false }: DetailsSecti
                     subtitle={wedding.venue_address || 'Coming soon to your inbox'} 
                     link={wedding.maps_link} 
                     isSharp={isSharp} isDark={isDark} isVintage={isVintage} template={template}
+                    className={layoutClasses[1]}
+                    palette={palette}
+                    typography={typography}
                 />
                 
                 <DetailCard 
@@ -158,20 +170,23 @@ export default function DetailsSection({ wedding, invert = false }: DetailsSecti
                     value={attireText} 
                     subtitle={dressCodeData[1] ? "Palette inspiration shown" : "Please refer to the attire guidelines"}
                     isSharp={isSharp} isDark={isDark} isVintage={isVintage} template={template}
+                    className={layoutClasses[2]}
+                    palette={palette}
+                    typography={typography}
                 >
                     {dressCodeData[1] ? (
-                        <div className="w-20 h-20 md:w-24 md:h-24 mb-6 shrink-0 -mt-2 group-hover:scale-110 transition-transform duration-700">
+                        <div className="w-16 h-16 md:w-20 md:h-20 mb-6 shrink-0 -mt-2 group-hover:scale-110 transition-transform duration-700">
                             <VectorArtGuests color={attireColor} />
                         </div>
                     ) : (
-                        <div className={`w-16 h-16 flex items-center justify-center transition-all duration-700 ${
+                        <div className={`w-14 h-14 md:w-16 md:h-16 flex items-center justify-center transition-all duration-700 ${
                             isSharp 
                                 ? 'bg-primary/10 rounded-none group-hover:bg-primary group-hover:scale-110' 
                                 : isVintage
                                 ? 'bg-white border-2 border-primary/20 rounded-full group-hover:border-primary shadow-sm'
                                 : 'bg-white shadow-lg rounded-[1.5rem] rotate-3 group-hover:rotate-0 group-hover:scale-110'
                         }`}>
-                            <Shirt className={`w-7 h-7 transition-colors duration-700 ${isSharp ? 'text-primary group-hover:text-white' : 'text-primary'}`} />
+                            <Shirt className={`w-6 h-6 md:w-7 md:h-7 transition-colors duration-700 ${isSharp ? 'text-primary group-hover:text-white' : 'text-primary'}`} />
                         </div>
                     )}
                 </DetailCard>
@@ -183,6 +198,9 @@ export default function DetailsSection({ wedding, invert = false }: DetailsSecti
                     value={wedding.hashtag ? `#${wedding.hashtag}` : 'Final Details'}
                     subtitle={wedding.contact_person ? `RSVP Organizer: ${wedding.contact_person}` : 'Official platform announcements'}
                     isSharp={isSharp} isDark={isDark} isVintage={isVintage} template={template}
+                    className={layoutClasses[3]}
+                    palette={palette}
+                    typography={typography}
                 />
             </div>
 
@@ -204,7 +222,7 @@ export default function DetailsSection({ wedding, invert = false }: DetailsSecti
                             className="mb-12 text-center"
                         >
                             <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-30 block mb-3">Official Invitation</span>
-                            <h2 className={`text-4xl md:text-5xl font-serif ${isDark ? 'text-white/80' : 'text-[#4A4444]/80'}`}>The Invitation</h2>
+                            <h2 className={`text-4xl md:text-5xl ${typography.heading} ${isDark ? 'text-white/80' : 'text-[#4A4444]/80'}`}>The Invitation</h2>
                         </motion.div>
 
                         {/* The Frame and Image */}

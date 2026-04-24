@@ -23,28 +23,38 @@ export default function CopyButton({
 
     const handleCopy = useCallback(async () => {
         try {
+            // Try modern Clipboard API first
             if (navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(text);
+                try {
+                    await navigator.clipboard.writeText(text);
+                } catch (err) {
+                    // Clipboard API exists but is blocked by permissions policy — fall back
+                    throw new Error('Clipboard API blocked');
+                }
             } else {
-                // Fallback for older browsers
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                textarea.setAttribute('readonly', '');
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = '0';
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
+                throw new Error('Clipboard API not available');
             }
-            
-            setCopied(true);
-            onCopy?.();
-            
-            setTimeout(() => setCopied(false), 2000);
         } catch (err) {
-            console.error('Failed to copy:', err);
+            // Fallback for older browsers or blocked Clipboard API
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+            } catch (e) {
+                console.error('Fallback copy failed:', e);
+            }
+            document.body.removeChild(textarea);
         }
+        
+        setCopied(true);
+        onCopy?.();
+        
+        setTimeout(() => setCopied(false), 2000);
     }, [text, onCopy]);
 
     if (variant === 'icon-only') {

@@ -106,10 +106,33 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
     }, [id]);
 
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-neutral">
-            <div className="flex flex-col items-center gap-4">
-                <Heart className="w-12 h-12 text-primary animate-pulse fill-primary/20" />
-                <p className="font-serif italic text-primary/60">Loading your invitation...</p>
+        <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#fffaf6_0%,#fff3ec_48%,#f8e9e4_100%)]">
+            <div className="absolute inset-0">
+                <div className="absolute left-[10%] top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+                <div className="absolute bottom-20 right-[12%] h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
+                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(58,42,45,0.03)_1px,transparent_1px),linear-gradient(rgba(58,42,45,0.03)_1px,transparent_1px)] bg-[size:44px_44px] opacity-40" />
+            </div>
+
+            <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-12">
+                <div className="w-full max-w-xl rounded-[2.5rem] border border-white/60 bg-white/60 p-6 shadow-[0_30px_120px_rgba(58,42,45,0.10)] backdrop-blur-2xl sm:p-8">
+                    <div className="rounded-[2rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(255,248,244,0.74))] px-8 py-12 text-center">
+                        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-primary/15 bg-primary/10 shadow-[0_18px_40px_rgba(192,128,129,0.18)]">
+                            <Heart className="h-8 w-8 animate-pulse fill-primary/20 text-primary" />
+                        </div>
+                        <p className="mt-8 text-[10px] font-bold uppercase tracking-[0.4em] text-primary/55">
+                            Preparing the experience
+                        </p>
+                        <h1 className="mt-4 font-serif text-4xl text-[#4A4444] sm:text-5xl">
+                            Your invitation is unfolding
+                        </h1>
+                        <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-text-secondary sm:text-base">
+                            Arranging the cover, photographs, timeline, and RSVP details for a beautiful first impression.
+                        </p>
+                        <div className="mx-auto mt-8 h-[4px] w-full max-w-[240px] overflow-hidden rounded-full bg-primary/10">
+                            <div className="h-full animate-[pulse_1.8s_ease-in-out_infinite] rounded-full bg-[linear-gradient(90deg,var(--primary)_0%,var(--accent)_100%)]" />
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -225,9 +248,13 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             <div className="paper-texture" />
 
             <EntranceReveal 
+                weddingId={wedding.id}
                 initials={wedding.logo_initials || (`${wedding.bride_name[0]}${wedding.groom_name[0]}`)} 
-                motifColor={wedding.motif_color} 
-                font={wedding.logo_font || 'serif'}
+                motifColor={wedding.motif_color}
+                coupleNames={`${wedding.bride_name} & ${wedding.groom_name}`}
+                weddingDate={wedding.wedding_date}
+                venueName={wedding.venue_name}
+                heroImage={wedding.hero_image || wedding.couple_photo}
             />
 
             <PremiumBackgroundLayer wedding={wedding} />
