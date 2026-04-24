@@ -272,6 +272,12 @@ a, button {
 html {
   scroll-behavior: smooth;
   -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better touch response for interactive elements */
+button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
 }
 
 /* Text selection for mobile */
