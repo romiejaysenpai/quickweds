@@ -123,6 +123,32 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         document.body.removeChild(downloadLink);
     };
 
+    // Share QR Code function (for mobile)
+    const shareQRCode = async () => {
+        const canvas = document.getElementById('qr-canvas') as HTMLCanvasElement;
+        if (!canvas) return;
+
+        try {
+            const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+            if (!blob) return downloadQRCode();
+
+            const file = new File([blob], 'wedding-qr.png', { type: 'image/png' });
+            
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Wedding QR Code',
+                    text: `Scan this to view ${wedding?.bride_name} & ${wedding?.groom_name}'s wedding website!`
+                });
+            } else {
+                downloadQRCode();
+            }
+        } catch (err) {
+            console.error('Error sharing:', err);
+            downloadQRCode();
+        }
+    };
+
     // Feature: Confetti state
     const [showConfetti, setShowConfetti] = useState(false);
 
@@ -1111,13 +1137,23 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </div>
                                     </div>
 
-                                    <div className="w-full space-y-4">
-                                        <button 
-                                            onClick={downloadQRCode}
-                                            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-white text-primary font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-neutral-50 active:scale-95 transition-all group/btn"
-                                        >
-                                            <Printer className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" /> Save for Print (PNG)
-                                        </button>
+                                    <div className="w-full space-y-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <button 
+                                                onClick={downloadQRCode}
+                                                className="flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl bg-white text-primary font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-neutral-50 active:scale-95 transition-all group/btn"
+                                            >
+                                                <Download className="w-4 h-4 group-hover/btn:translate-y-0.5 transition-transform" /> Download PNG
+                                            </button>
+                                            <button 
+                                                onClick={shareQRCode}
+                                                className="flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl bg-white/20 backdrop-blur-md text-white border border-white/30 font-black uppercase tracking-widest text-[10px] hover:bg-white/30 active:scale-95 transition-all group/share"
+                                            >
+                                                <Share2 className="w-4 h-4 group-hover/share:scale-110 transition-transform" /> Share Image
+                                            </button>
+                                        </div>
+                                        
+                                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/40 text-center sm:hidden">Tip: Long press QR code to save to gallery</p>
                                         
                                         <div className="grid grid-cols-2 gap-3">
                                             <button 

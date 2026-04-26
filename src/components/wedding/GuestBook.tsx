@@ -73,7 +73,7 @@ export default function GuestBook({ weddingId }: GuestBookProps) {
     };
 
     return (
-        <section className="py-24 px-6">
+        <section id="guestbook" className="py-24 px-6">
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-16">
                     <MessageSquare className="w-12 h-12 text-primary mx-auto mb-6 opacity-30" />

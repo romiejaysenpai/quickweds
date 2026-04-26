@@ -53,18 +53,18 @@ export default function MilestoneTimeline({ milestones, motifColor }: MilestoneT
                         const isEven = index % 2 === 0;
 
                         return (
-                            <div key={index} className={`relative flex items-center justify-between gap-8 md:gap-24 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}>
+                            <div key={index} className={`relative flex flex-col md:flex-row items-center justify-between gap-8 md:gap-24 ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
                                 {/* Content Card */}
                                 <motion.div 
                                     initial={{ opacity: 0, x: isEven ? -50 : 50 }}
                                     whileInView={{ opacity: 1, x: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ duration: 0.8 }}
-                                    className="w-1/2 flex flex-col items-center"
+                                    className="w-full md:w-1/2 flex flex-col items-center z-20"
                                 >
                                     <div className={`
-                                        p-6 md:p-10 bg-white dark:bg-white/5 border border-border/50 rounded-[2.5rem] soft-shadow 
-                                        text-center max-w-sm relative group
+                                        p-6 md:p-10 bg-white dark:bg-white/5 border border-border/50 rounded-[2rem] md:rounded-[2.5rem] soft-shadow 
+                                        text-center w-full max-w-sm relative group
                                     `}>
                                         {milestone.image && (
                                             <div className="mb-6 rounded-2xl overflow-hidden aspect-video relative">
@@ -75,15 +75,15 @@ export default function MilestoneTimeline({ milestones, motifColor }: MilestoneT
                                         <p className="text-[10px] font-black tracking-widest text-primary uppercase mb-3" style={{ color: motifColor }}>
                                             {milestone.date}
                                         </p>
-                                        <h3 className="text-xl md:text-2xl font-serif text-foreground mb-4">{milestone.title}</h3>
-                                        <p className="text-sm md:text-base text-text-secondary leading-relaxed font-serif italic">
+                                        <h3 className="text-xl md:text-2xl font-serif text-foreground mb-4 break-words">{milestone.title}</h3>
+                                        <p className="text-sm md:text-base text-text-secondary leading-relaxed font-serif italic break-words">
                                             "{milestone.description}"
                                         </p>
                                     </div>
                                 </motion.div>
 
                                 {/* Icon Node */}
-                                <div className="absolute left-1/2 -translate-x-1/2 z-10">
+                                <div className="absolute left-1/2 -translate-x-1/2 z-10 md:block hidden">
                                     <motion.div 
                                         initial={{ scale: 0, rotate: -45 }}
                                         whileInView={{ scale: 1, rotate: 0 }}
@@ -96,7 +96,7 @@ export default function MilestoneTimeline({ milestones, motifColor }: MilestoneT
                                 </div>
 
                                 {/* Placeholder for empty side */}
-                                <div className="w-1/2" />
+                                <div className="hidden md:block md:w-1/2" />
                             </div>
                         );
                     })}

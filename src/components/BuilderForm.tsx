@@ -1006,19 +1006,38 @@ export default function BuilderForm() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Color (Optional)</label>
-                                    <div className="flex gap-4">
-                                        {['#D16C78', '#F2C1CC', '#D6B87C', '#3A2A2D', '#7A5A61', '#FFF8F4'].map((color) => (
+                                <div className="space-y-4">
+                                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/50 mb-2 block">Monogram Color</label>
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {["#D16C78", "#D6B87C", "#B85C7A", "#3A2A2D", "#7A5A61", "#6B7A62", "#8F6A45", "#C5A059", "#CFB53B", "#537A57", "#8D7BC4", "#0B8F7B", "#A56D52", "#C7704D", "#A0616A", "#FFF8F4", "#F2C1CC", "#F8EEEA", "#EBD4C4"].map((color) => (
                                             <button
                                                 key={color}
                                                 type="button"
                                                 onClick={() => setFormData((prev: any) => ({ ...prev, logoColor: color }))}
-                                                className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.logoColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral'}`}
+                                                className={`w-10 h-10 rounded-xl border-2 transition-all ${formData.logoColor === color ? 'border-white ring-2 ring-primary shadow-xl scale-110' : 'border-border/50 hover:border-primary/50'}`}
                                                 style={{ backgroundColor: color }}
+                                                aria-label={`Select monogram color ${color}`}
                                             />
                                         ))}
-                                        <input type="color" name="logoColor" value={formData.logoColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/50 mb-2 block">Custom Monogram Color</label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="color"
+                                                value={formData.logoColor || formData.motifColor}
+                                                onChange={(e) => setFormData((prev: any) => ({ ...prev, logoColor: e.target.value }))}
+                                                className="w-10 h-10 rounded-xl border border-border p-0 cursor-pointer bg-transparent"
+                                                aria-label="Pick a custom monogram color"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={formData.logoColor || ''}
+                                                onChange={(e) => setFormData((prev: any) => ({ ...prev, logoColor: e.target.value }))}
+                                                placeholder="Custom Hex (e.g. #000000)"
+                                                className="flex-1 px-4 py-3 rounded-xl border border-border bg-neutral/30 text-sm font-mono outline-none focus:bg-white transition-all min-h-[44px]"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

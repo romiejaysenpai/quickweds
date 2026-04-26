@@ -91,10 +91,10 @@ function DetailCard({
                 <h3 className={`text-[10px] md:text-xs font-black mb-4 uppercase tracking-[0.3em] ${textColorHeading}`}>{title}</h3>
                 
                 <div className="flex-1 flex flex-col items-center w-full justify-center">
-                    <p className={`text-2xl md:text-4xl ${typography.heading} mb-3 leading-tight tracking-tight ${textColorValue}`}>
+                    <p className={`text-2xl md:text-4xl ${typography.heading} mb-3 leading-tight tracking-tight break-words w-full ${textColorValue}`}>
                         {value}
                     </p>
-                    <p className={`text-xs md:text-base mb-6 max-w-[220px] font-medium leading-relaxed opacity-80 ${textColorSub}`}>
+                    <p className={`text-xs md:text-base mb-6 max-w-[280px] mx-auto font-medium leading-relaxed opacity-80 break-words ${textColorSub}`}>
                         {subtitle}
                     </p>
                 </div>
@@ -146,7 +146,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
     const layoutClasses = isBento ? BENTO_PRESETS.details : ["", "", "", ""];
 
     return (
-        <section className={`py-24 md:py-40 relative z-10 ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>
+        <section id={id} className={`py-24 md:py-40 relative z-10 ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>
             <div className={`max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8`}>
                 <DetailCard 
                     delay={0}

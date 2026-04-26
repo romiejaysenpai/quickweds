@@ -71,7 +71,7 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
         : 'border-2 border-primary bg-white';
 
     return (
-        <section className="py-16 sm:py-24 md:py-32 relative z-10 overflow-hidden">
+        <section id={id} className="py-16 sm:py-24 md:py-32 relative z-10 overflow-hidden">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 relative">
                 {/* Section header */}
                 <motion.div
@@ -143,10 +143,10 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                                     >
                                         {/* Time column */}
                                         {hasAnyTime && (
-                                            <div className="w-28 flex-shrink-0 pr-4 text-right">
+                                            <div className="w-20 sm:w-28 flex-shrink-0 pr-2 sm:pr-4 text-right">
                                                 {item.time && (
                                                     <span
-                                                        className="text-xs font-black uppercase tracking-widest"
+                                                        className="text-[10px] sm:text-xs font-black uppercase tracking-widest break-words block"
                                                         style={{ color: 'var(--primary)' }}
                                                     >
                                                         {item.time}
@@ -156,16 +156,16 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                                         )}
 
                                         {/* Dot */}
-                                        <div className="relative flex-shrink-0" style={{ width: '1.5rem' }}>
+                                        <div className="relative flex-shrink-0" style={{ width: '1.2rem' }}>
                                             <div
-                                                className={`w-3 h-3 rounded-full mt-1.5 mx-auto transition-transform group-hover:scale-125 ${dotClass}`}
+                                                className={`w-2.5 h-2.5 rounded-full mt-1.5 mx-auto transition-transform group-hover:scale-125 ${dotClass}`}
                                                 style={{ borderColor: 'var(--primary)' }}
                                             />
                                         </div>
 
                                         {/* Event */}
-                                        <div className="flex-1 pl-4">
-                                            <p className={`font-serif text-base sm:text-lg leading-relaxed ${isDark ? 'text-primary/80' : 'text-[#4A4444]/90'}`}>
+                                        <div className="flex-1 pl-3 sm:pl-4">
+                                            <p className={`font-serif text-sm sm:text-lg leading-relaxed break-words ${isDark ? 'text-primary/80' : 'text-[#4A4444]/90'}`}>
                                                 {item.event}
                                             </p>
                                         </div>

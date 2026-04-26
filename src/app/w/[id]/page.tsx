@@ -13,6 +13,7 @@ import {
     VoiceGreeting,
     TemplateNavigation,
 } from '@/components/wedding';
+import Header from '@/components/Header';
 import {
     ClassicTemplate,
     MinimalTemplate,
@@ -232,6 +233,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             <div className="pointer-events-none fixed inset-x-6 top-6 bottom-6 z-[1] hidden rounded-[2.5rem] border border-white/35 opacity-50 md:block" />
             <div className="noise-overlay" />
             <div className="paper-texture" />
+            <Header />
 
             <EntranceReveal 
                 weddingId={wedding.id}

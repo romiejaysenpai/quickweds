@@ -220,7 +220,7 @@ export default function EntranceReveal({
                                         initial={{ opacity: 0, y: 14 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.48, duration: 0.7 }}
-                                        className={`mt-8 text-4xl font-serif leading-tight sm:text-6xl ${textColor}`}
+                                        className={`mt-8 text-4xl font-serif leading-tight sm:text-6xl break-words ${textColor}`}
                                     >
                                         {coupleNames}
                                     </motion.h1>
@@ -239,7 +239,7 @@ export default function EntranceReveal({
                                         initial={{ opacity: 0, y: 12 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.82, duration: 0.65 }}
-                                        className={`mt-6 text-sm uppercase tracking-[0.35em] sm:text-[13px] ${textMuted}`}
+                                        className={`mt-6 text-sm uppercase tracking-[0.35em] sm:text-[13px] break-words ${textMuted}`}
                                     >
                                         {formatDateLabel(weddingDate)}
                                     </motion.p>
@@ -248,7 +248,7 @@ export default function EntranceReveal({
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 1, duration: 0.65 }}
-                                        className={`mx-auto mt-4 max-w-lg text-sm leading-relaxed sm:text-base ${isDarkTheme ? 'text-white/58' : 'text-[#4A4444]/70'}`}
+                                        className={`mx-auto mt-4 max-w-lg text-sm leading-relaxed sm:text-base break-words ${isDarkTheme ? 'text-white/58' : 'text-[#4A4444]/70'}`}
                                     >
                                         {venueName || 'A beautifully crafted celebration is about to unfold.'}
                                     </motion.p>

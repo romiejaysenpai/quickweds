@@ -70,12 +70,12 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
                 >
                     <span className="text-[10px] md:text-xs uppercase tracking-[0.4em] font-bold text-primary mb-6 block drop-shadow-sm">Our Story</span>
                     <h2 className={`text-4xl md:text-6xl font-serif mb-8 leading-tight ${textColorHeading}`}>Meant to Be</h2>
-                    <div className={`mb-10 md:mb-12 rounded-[2rem] border px-6 py-7 md:px-8 md:py-9 ${
+                    <div className={`mb-10 md:mb-12 rounded-[2rem] border px-4 py-6 sm:px-6 sm:py-7 md:px-8 md:py-9 ${
                         isDark
                             ? 'border-white/10 bg-white/5 backdrop-blur-md'
                             : 'border-white/55 bg-white/55 shadow-[0_18px_60px_rgba(58,42,45,0.08)] backdrop-blur-xl'
                     }`}>
-                        <p className={`text-lg md:text-xl leading-relaxed font-serif italic px-1 md:px-0 ${textColorBody}`}>
+                        <p className={`text-lg md:text-xl leading-relaxed font-serif italic break-words text-center md:text-left ${textColorBody}`}>
                             {wedding.story || 'They say when you know, you know. For us, every moment since we met has been a beautiful step towards this day.'}
                         </p>
                     </div>

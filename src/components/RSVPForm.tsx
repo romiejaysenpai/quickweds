@@ -95,7 +95,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                 return;
             }
 
-const insertData: RsvpInsertData = {
+            const insertData: RsvpInsertData = {
                 wedding_id: weddingId,
                 guest_name: formData.guestName.trim(),
                 guest_email: formData.guestEmail.trim() || null,
@@ -105,7 +105,7 @@ const insertData: RsvpInsertData = {
                 plus_one_allowed: formData.numGuests > 1 || Boolean(formData.plusOneNames.trim()),
             };
 
-            // Optional fields - only include if they have values to avoid schema conflicts
+            // Optional fields
             if (formData.mealPreference && formData.mealPreference !== 'No Preference') insertData.meal_preference = formData.mealPreference;
             if (formData.dietaryDetails) insertData.dietary_details = formData.dietaryDetails;
             if (formData.message) insertData.message = formData.message;
@@ -117,43 +117,24 @@ const insertData: RsvpInsertData = {
             if (formData.songRequest) insertData.song_request = formData.songRequest;
             if (formData.childrenCount > 0) insertData.children_count = formData.childrenCount;
 
-            console.log("Submitting RSVP with data:", insertData);
-            
             const { error: insertError } = await supabase.from('rsvps').insert(insertData);
 
             if (insertError) {
                 console.error("Supabase RSVP error:", insertError);
-                setSubmitError(`Submission failed: ${insertError.message}. Details: ${insertError.details || 'None'}`);
+                setSubmitError(`Submission failed: ${insertError.message}`);
                 setIsSubmitting(false);
                 return;
             }
 
-            console.log("RSVP submitted successfully!");
             setIsSubmitted(true);
             
-            // Trigger Floral Premium Confetti
+            // Confetti
             const end = Date.now() + 3 * 1000;
             const colors = [wedding?.motif_color || '#D4AF37', '#ffffff', '#ffd700'];
-
             (function frame() {
-                confetti({
-                    particleCount: 2,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0 },
-                    colors: colors
-                });
-                confetti({
-                    particleCount: 2,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1 },
-                    colors: colors
-                });
-
-                if (Date.now() < end) {
-                    requestAnimationFrame(frame);
-                }
+                confetti({ particleCount: 2, angle: 60, spread: 55, origin: { x: 0 }, colors });
+                confetti({ particleCount: 2, angle: 120, spread: 55, origin: { x: 1 }, colors });
+                if (Date.now() < end) requestAnimationFrame(frame);
             }());
 
             void trackWeddingEvent(weddingId, 'rsvp_submitted', {
@@ -161,7 +142,6 @@ const insertData: RsvpInsertData = {
                 attendance: formData.attendance,
             });
             
-            // Trigger email notification
             fetch('/api/rsvp-notify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -177,16 +157,7 @@ const insertData: RsvpInsertData = {
                     plusOneNames: formData.plusOneNames,
                     childrenCount: formData.childrenCount
                 }),
-            })
-            .then(async (res) => {
-                const data = await res.json();
-                if (!res.ok || !data.success) {
-                    console.error("📧 Email delivery issue:", data);
-                } else {
-                    console.log("📧 Emails triggered successfully");
-                }
-            })
-            .catch(err => console.error("📧 Email notification network error:", err));
+            }).catch(err => console.error("Email notification error:", err));
         } catch (err) {
             console.error(err);
             alert("An unexpected error occurred.");
@@ -200,41 +171,41 @@ const insertData: RsvpInsertData = {
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-12 rounded-[2rem] bg-success-bg border border-border text-center soft-shadow"
+                className="p-12 rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 text-center soft-shadow"
             >
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                    <CheckCircle2 className="w-10 h-10 text-accent" />
+                <div className="w-20 h-20 bg-white dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                 </div>
-                <h3 className="text-3xl font-serif mb-2 text-primary">Thank You!</h3>
+                <h3 className="text-3xl font-serif mb-2 text-foreground">Thank You!</h3>
                 <p className="text-text-secondary italic">Your response has been received. We can&apos;t wait to see you!</p>
             </motion.div>
         );
     }
 
     return (
-        <div className={`p-8 md:p-12 rounded-[2rem] soft-shadow border transition-colors ${
+        <div className={`p-5 sm:p-8 md:p-12 rounded-[2rem] soft-shadow border transition-colors ${
             isDark ? 'bg-black/40 border-primary/20 text-white backdrop-blur-md' : 
             isSharp ? 'bg-white border-black/5 rounded-none' :
             isVintage ? 'bg-[#fdfbf6] border-[#d4c5b3] rounded-3xl' :
             'bg-white border-border'
         }`}>
-            <h2 className={`text-2xl font-serif font-bold mb-8 text-center italic ${isDark ? 'text-primary' : 'text-primary'}`}>
+            <h2 className={`text-2xl font-serif font-bold mb-8 text-center italic text-primary`}>
                 RSVP for our Special Day
             </h2>
 
             {duplicateError && (
-                <div className="mb-6 p-4 rounded-2xl bg-error-bg border border-error-text/20 flex items-center gap-3">
-                    <AlertCircle className="w-5 h-5 text-error-text flex-shrink-0" />
-                    <p className="text-sm text-error-text">It looks like you&apos;ve already submitted an RSVP. If you need to update it, please contact the couple.</p>
+                <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                    <p className="text-sm text-red-600">You have already submitted an RSVP for this name.</p>
                 </div>
             )}
             
             {submitError && (
-                <div className="mb-6 p-4 rounded-2xl bg-error-bg border border-error-text/20 flex items-center gap-3 text-left">
-                    <AlertCircle className="w-5 h-5 text-error-text flex-shrink-0" />
+                <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3 text-left">
+                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                     <div>
-                        <p className="font-bold text-error-text text-sm">Submission Error</p>
-                        <p className="text-xs text-error-text/70">{submitError}</p>
+                        <p className="font-bold text-red-600 text-sm">Submission Error</p>
+                        <p className="text-xs text-red-600/70">{submitError}</p>
                     </div>
                 </div>
             )}
@@ -269,7 +240,6 @@ const insertData: RsvpInsertData = {
                     </div>
                 </div>
 
-                {/* Attendance + Guests */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-text-secondary ml-1">Will you attend?</label>
@@ -293,7 +263,6 @@ const insertData: RsvpInsertData = {
                     </div>
                 </div>
 
-                {/* Plus One Names (shown if numGuests > 1) */}
                 {formData.numGuests > 1 && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
                         <label className="text-sm font-bold text-text-secondary ml-1 flex items-center gap-2">
@@ -308,7 +277,6 @@ const insertData: RsvpInsertData = {
                     </motion.div>
                 )}
 
-                {/* Children Count */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-text-secondary ml-1">Children Attending</label>
@@ -332,7 +300,6 @@ const insertData: RsvpInsertData = {
                     </div>
                 </div>
 
-                {/* Dietary Details (if Other) */}
                 {formData.mealPreference === 'Other (see message)' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
                         <label className="text-sm font-bold text-text-secondary ml-1">Dietary Details / Allergies</label>
@@ -345,10 +312,9 @@ const insertData: RsvpInsertData = {
                     </motion.div>
                 )}
 
-                {/* Song Request */}
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-text-secondary ml-1 flex items-center gap-2">
-                        <Music className="w-4 h-4" /> Song Request <span className="text-text-secondary/50 font-normal">(What gets you on the dance floor?)</span>
+                        <Music className="w-4 h-4" /> Song Request
                     </label>
                     <input
                         placeholder="e.g. 'Dancing Queen' by ABBA"
@@ -358,7 +324,6 @@ const insertData: RsvpInsertData = {
                     />
                 </div>
 
-                {/* Message */}
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-text-secondary ml-1">Message for the Couple</label>
                     <textarea
@@ -371,7 +336,7 @@ const insertData: RsvpInsertData = {
 
                 <button
                     disabled={isSubmitting}
-                    className="w-full py-5 rounded-2xl bg-primary text-white font-bold text-lg hover:bg-primary-hover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 group disabled:bg-primary-disabled"
+                    className="w-full py-5 rounded-2xl bg-primary text-white font-bold text-lg hover:bg-primary-hover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 group disabled:opacity-50"
                 >
                     {isSubmitting ? 'Sending...' : (
                         <> Submit RSVP <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /> </>

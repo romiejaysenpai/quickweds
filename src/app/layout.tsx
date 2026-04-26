@@ -104,7 +104,6 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <SectionProvider>
-              <Header />
               {children}
             </SectionProvider>
             <Analytics />
