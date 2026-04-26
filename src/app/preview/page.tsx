@@ -11,7 +11,6 @@ import {
     VoiceGreeting,
     TemplateNavigation,
 } from '@/components/wedding';
-import Header from '@/components/Header';
 import {
     ClassicTemplate,
     MinimalTemplate,
@@ -190,7 +189,6 @@ export default function PreviewPage() {
             
             <div className="noise-overlay" />
             <div className="paper-texture" />
-            <Header />
 
             <EntranceReveal 
                 weddingId={wedding.id}

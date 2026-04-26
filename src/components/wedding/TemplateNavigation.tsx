@@ -81,6 +81,7 @@ export default function TemplateNavigation({ wedding }: TemplateNavigationProps)
     };
 
     const motifColor = wedding.motif_color || 'var(--primary)';
+    const isDark = ['midnight', 'royal', 'urban', 'glitch', 'film', 'artdeco', 'cinematic'].includes(wedding.template?.toLowerCase() || '');
 
     return (
         <AnimatePresence>
@@ -94,8 +95,10 @@ export default function TemplateNavigation({ wedding }: TemplateNavigationProps)
                 >
                     {/* Floating Dock Navigation */}
                     <nav
-                        className="flex items-center gap-1 sm:gap-2 rounded-[2rem] border bg-white/85 p-1.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] backdrop-blur-xl transition-all"
-                        style={{ borderColor: `${motifColor}40` }}
+                        className={`flex items-center gap-1 sm:gap-2 rounded-[2rem] border p-1.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] backdrop-blur-xl transition-all ${
+                            isDark ? 'bg-black/80 border-white/10' : 'bg-white/85 border-black/5'
+                        }`}
+                        style={{ borderColor: isDark ? `${motifColor}20` : `${motifColor}40` }}
                     >
                         {itemsToShow.map((item) => {
                             const isActive = currentSection === item.id;
@@ -104,22 +107,14 @@ export default function TemplateNavigation({ wedding }: TemplateNavigationProps)
                                 <button
                                     key={item.id}
                                     onClick={() => scrollTo(item.id)}
-                                    className={`group relative flex flex-col items-center justify-center gap-1 rounded-[1.5rem] px-4 py-2 sm:px-5 sm:py-2.5 transition-all duration-300 ${
+                                    className={`group relative flex flex-col items-center justify-center gap-1 rounded-[1.5rem] px-4 py-3 sm:px-5 sm:py-3.5 transition-all duration-300 ${
                                         isActive 
                                             ? 'text-white scale-105 shadow-md' 
-                                            : 'text-foreground/60 hover:text-foreground hover:bg-black/5'
+                                            : isDark ? 'text-white/40 hover:text-white hover:bg-white/5' : 'text-foreground/60 hover:text-foreground hover:bg-black/5'
                                     }`}
                                     style={isActive ? { backgroundColor: motifColor, boxShadow: `0 4px 15px ${motifColor}40` } : {}}
                                 >
-                                    <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? 'fill-current opacity-20' : ''}`} />
-                                    
-                                    {/* Absolute tooltip for label, visible only when active or hovered on desktop */}
-                                    <span className={`absolute -top-10 left-1/2 -translate-x-1/2 rounded-lg bg-black/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-md transition-all pointer-events-none whitespace-nowrap
-                                        ${isActive ? 'opacity-100 -top-12' : 'opacity-0 group-hover:opacity-100 group-hover:-top-12 hidden sm:block'}
-                                    `}>
-                                        {item.label}
-                                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/80" />
-                                    </span>
+                                    <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${isActive ? 'fill-current opacity-20' : ''}`} />
                                 </button>
                             );
                         })}
