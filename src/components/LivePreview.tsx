@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { getTemplateMeta } from '@/lib/template-catalog';
 
-export default function LivePreview({ formData, previews }: { formData: any; previews: any }) {
+export default function LivePreview({ formData, previews, isMobileView = false }: { formData: any; previews: any; isMobileView?: boolean }) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const templateMeta = getTemplateMeta(formData.template);
 
@@ -76,22 +76,28 @@ export default function LivePreview({ formData, previews }: { formData: any; pre
     }, [formData, previews]);
 
     return (
-        <div className="relative overflow-hidden rounded-[2rem] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.85),rgba(255,248,244,0.72))] p-4 shadow-[0_30px_90px_rgba(58,42,45,0.12)] backdrop-blur-sm">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-            <div className="absolute -left-12 top-8 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
-            <div className="absolute -right-12 bottom-8 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
+        <div className={`relative overflow-hidden ${isMobileView ? '' : 'rounded-[2rem] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.85),rgba(255,248,244,0.72))] p-4 shadow-[0_30px_90px_rgba(58,42,45,0.12)] backdrop-blur-sm'}`}>
+            {!isMobileView && (
+                <>
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                    <div className="absolute -left-12 top-8 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
+                    <div className="absolute -right-12 bottom-8 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
+                </>
+            )}
 
-            <div className="mb-4 flex items-center justify-between px-1">
-                <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-text-secondary/60">Live Preview</p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">{templateMeta.name}</p>
+            {!isMobileView && (
+                <div className="mb-4 flex items-center justify-between px-1">
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-text-secondary/60">Live Preview</p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">{templateMeta.name}</p>
+                    </div>
+                    <span className="rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-primary shadow-sm">
+                        {templateMeta.eyebrow}
+                    </span>
                 </div>
-                <span className="rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-primary shadow-sm">
-                    {templateMeta.eyebrow}
-                </span>
-            </div>
+            )}
 
-            <div className="relative mx-auto h-[640px] w-full max-w-[360px] overflow-hidden rounded-[2.6rem] border-[10px] border-[#171717] bg-[#111111] shadow-[0_35px_80px_rgba(0,0,0,0.35)]">
+            <div className={`relative mx-auto w-full max-w-[360px] overflow-hidden rounded-[2.6rem] border-[10px] border-[#171717] bg-[#111111] shadow-[0_35px_80px_rgba(0,0,0,0.35)] ${isMobileView ? 'h-[620px]' : 'h-[640px]'}`}>
                 <div className="absolute left-1/2 top-0 z-30 h-7 w-36 -translate-x-1/2 rounded-b-[1.4rem] bg-black" />
                 <div className="absolute inset-[3px] overflow-hidden rounded-[2.1rem] bg-white">
                     <iframe
