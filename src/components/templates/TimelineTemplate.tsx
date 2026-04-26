@@ -55,13 +55,13 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
                 </div>
             </section>
 
-            <TimelineSection timeline={wedding.program_timeline || ''} />
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <GallerySection gallery={gallery} />
-            <DetailsSection wedding={wedding} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection id="bio" wedding={wedding} />
+            <GallerySection id="gallery" gallery={gallery} />
+            <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && !isExpired && (
-                <CountdownTimer
+                <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
                     weddingTime={wedding.wedding_time}
                     brideName={wedding.bride_name}
@@ -70,8 +70,8 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
                     venueAddress={wedding.venue_address}
                 />
             )}
-            <GiftSection wedding={wedding} />
-            <SharedNewSections wedding={wedding} isExpired={isExpired} />
+            <GiftSection id="gift" wedding={wedding} />
+            <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }

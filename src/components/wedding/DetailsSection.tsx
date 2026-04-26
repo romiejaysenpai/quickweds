@@ -5,10 +5,13 @@ import { Calendar, MapPin, Shirt, Info } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 import VectorArtGuests from '../VectorArtGuests';
 import { derivePalette, getTypography, BENTO_PRESETS } from '@/lib/theme-engine';
+import { useSectionContext } from '@/context/SectionContext';
+import { useEffect } from 'react';
 
 interface DetailsSectionProps {
     wedding: Wedding;
     invert?: boolean;
+    id: string;
 }
 
 function DetailCard({ 
@@ -115,7 +118,14 @@ function DetailCard({
     );
 }
 
-export default function DetailsSection({ wedding, invert = false }: DetailsSectionProps) {
+export default function DetailsSection({ wedding, invert = false, id }: DetailsSectionProps) {
+    const { registerSection, unregisterSection } = useSectionContext();
+    
+    useEffect(() => {
+        registerSection(id, 'Details');
+        return () => unregisterSection(id);
+    }, [id, registerSection, unregisterSection]);
+
     const template = wedding.template || 'classic';
     const motifColor = wedding.motif_color || '#D16C78';
     
@@ -210,7 +220,7 @@ export default function DetailsSection({ wedding, invert = false }: DetailsSecti
                     <motion.div
                         initial={{ opacity: 0, y: 50 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, amount: 0.2 }}
+                        viewport={{ once: true, amount: 0.1 }}
                         transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                         className="relative flex flex-col items-center"
                     >
@@ -219,92 +229,105 @@ export default function DetailsSection({ wedding, invert = false }: DetailsSecti
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3, duration: 0.8 }}
-                            className="mb-12 text-center"
+                            className="mb-16 text-center"
                         >
                             <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-30 block mb-3">Official Invitation</span>
                             <h2 className={`text-4xl md:text-5xl ${typography.heading} ${isDark ? 'text-white/80' : 'text-[#4A4444]/80'}`}>The Invitation</h2>
                         </motion.div>
 
-                        {/* The Frame and Image */}
-                        <motion.div
-                            whileHover={{ y: -10, rotateX: 2, rotateY: -2 }}
-                            transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                            className={`relative w-full max-w-[800px] aspect-[4/5] md:aspect-[3/2] group perspective-1000 ${
-                                template === 'royal' 
-                                    ? 'bg-gradient-to-br from-accent/20 to-black/40 p-1 md:p-2' 
-                                    : template === 'glitch'
-                                    ? 'bg-black p-0 border-r-4 border-b-4 border-cyan-500'
-                                    : isSharp 
-                                    ? 'bg-black/20 p-2 border border-white/10' 
-                                    : isVintage 
-                                    ? 'bg-[#EAE4D3] p-4 md:p-8 shadow-inner ring-1 ring-black/5' 
-                                    : 'bg-white/10 backdrop-blur-3xl p-3 md:p-6 rounded-[3rem] shadow-2xl shadow-primary/10'
-                            }`}
-                        >
-                            <motion.div
-                                className={`relative w-full h-full overflow-hidden ${
-                                    template === 'royal'
-                                        ? 'rounded-none border-[12px] md:border-[20px] border-accent/90 shadow-[0_0_60px_rgba(214,184,124,0.3)]'
-                                        : template === 'glitch'
-                                        ? 'rounded-none border-2 border-magenta-500/50 mix-blend-screen'
-                                        : isSharp 
-                                        ? 'rounded-none border-4 border-white/30 shadow-3xl' 
-                                        : isVintage 
-                                        ? 'rounded-sm border-[12px] md:border-[24px] border-white shadow-[0_20px_50px_rgba(0,0,0,0.3)]' 
-                                        : 'rounded-[2rem] md:rounded-[3rem] border-[8px] md:border-[16px] border-white shadow-3xl'
-                                }`}
-                                style={{
-                                    transformStyle: "preserve-3d",
-                                }}
-                            >
-                                {/* Textured overlay for Vintage */}
-                                {isVintage && (
-                                    <div className="absolute inset-0 opacity-[0.05] pointer-events-none z-10 bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
-                                )}
+                        {/* Multi-image display logic */}
+                        <div className="w-full flex flex-col gap-12 md:gap-24 items-center">
+                            {(() => {
+                                let inviteImages: string[] = [];
+                                try {
+                                    if (typeof wedding.invitation_image === 'string' && wedding.invitation_image.startsWith('[')) {
+                                        inviteImages = JSON.parse(wedding.invitation_image);
+                                    } else if (wedding.invitation_image) {
+                                        inviteImages = [wedding.invitation_image as string];
+                                    }
+                                } catch (e) {
+                                    if (wedding.invitation_image) inviteImages = [wedding.invitation_image as string];
+                                }
 
-                                {/* Scanline effect for Glitch */}
-                                {template === 'glitch' && (
-                                    <div className="absolute inset-0 z-10 pointer-events-none opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
-                                )}
+                                return inviteImages.map((src, index) => (
+                                    <motion.div
+                                        key={index}
+                                        initial={{ opacity: 0, y: 40, rotateX: 10 }}
+                                        whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+                                        viewport={{ once: true, amount: 0.2 }}
+                                        transition={{ 
+                                            duration: 1.2, 
+                                            delay: index * 0.2,
+                                            ease: [0.16, 1, 0.3, 1] 
+                                        }}
+                                        whileHover={{ y: -10, rotateX: 2, rotateY: -2 }}
+                                        className={`relative w-full max-w-[800px] group perspective-1000 ${
+                                            template === 'royal' 
+                                                ? 'bg-gradient-to-br from-accent/20 to-black/40 p-1 md:p-2' 
+                                                : template === 'glitch'
+                                                ? 'bg-black p-0 border-r-4 border-b-4 border-cyan-500'
+                                                : isSharp 
+                                                ? 'bg-black/20 p-2 border border-white/10' 
+                                                : isVintage 
+                                                ? 'bg-[#EAE4D3] p-4 md:p-8 shadow-inner ring-1 ring-black/5' 
+                                                : 'bg-white/10 backdrop-blur-3xl p-3 md:p-6 rounded-[2.5rem] md:rounded-[3rem] shadow-2xl shadow-primary/10'
+                                        }`}
+                                    >
+                                        <div
+                                            className={`relative w-full overflow-hidden ${
+                                                template === 'royal'
+                                                    ? 'rounded-none border-[10px] md:border-[18px] border-accent/90 shadow-[0_0_50px_rgba(214,184,124,0.2)]'
+                                                    : template === 'glitch'
+                                                    ? 'rounded-none border-2 border-magenta-500/50 mix-blend-screen'
+                                                    : isSharp 
+                                                    ? 'rounded-none border-4 border-white/30 shadow-3xl' 
+                                                    : isVintage 
+                                                    ? 'rounded-sm border-[10px] md:border-[20px] border-white shadow-[0_15px_40px_rgba(0,0,0,0.25)]' 
+                                                    : 'rounded-[1.8rem] md:rounded-[2.5rem] border-[6px] md:border-[12px] border-white shadow-3xl'
+                                            }`}
+                                        >
+                                            <img 
+                                                src={src} 
+                                                alt={`Invitation Page ${index + 1}`} 
+                                                className={`w-full h-auto ${isSharp || template === 'glitch' ? 'object-cover' : 'object-contain'} group-hover:scale-105 transition-transform duration-[4000ms] ease-out`} 
+                                            />
+                                            
+                                            {/* Page Number Badge */}
+                                            {inviteImages.length > 1 && (
+                                                <div className="absolute top-4 right-4 z-30">
+                                                    <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest backdrop-blur-md ${isDark ? 'bg-white/10 text-white/50' : 'bg-black/5 text-black/40'}`}>
+                                                        Page {index + 1}
+                                                    </div>
+                                                </div>
+                                            )}
 
-                                <img 
-                                    src={wedding.invitation_image} 
-                                    alt="Wedding Invitation" 
-                                    className={`w-full h-full ${isSharp || template === 'glitch' ? 'object-cover' : 'object-contain'} group-hover:scale-110 transition-transform duration-[3000ms] ease-out`} 
-                                />
-
-                                {/* Glass reflect effect for modern/classic */}
-                                {!isSharp && !isVintage && template !== 'glitch' && (
-                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/30 via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none z-10" />
-                                )}
-
-                                {/* Specular highlight moving across on hover */}
-                                <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center overflow-hidden">
-                                    <div className="w-[300%] h-24 bg-white/20 blur-[100px] -rotate-45 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-[2000ms] ease-in-out" />
-                                </div>
-                            </motion.div>
-
-                            {/* Decorative Corner Accents */}
-                            {template === 'royal' && (
-                                <div className="absolute inset-x-0 inset-y-0 border-[2px] border-white/20 m-6 pointer-events-none" />
-                            )}
-                            
-                            {!isSharp && template !== 'glitch' && (
-                                <>
-                                    <div className={`absolute -top-4 -left-4 w-12 h-12 border-t-2 border-l-2 ${isVintage ? 'border-primary/40' : 'border-white/40 opacity-0 group-hover:opacity-100'} transition-opacity duration-500`} />
-                                    <div className={`absolute -bottom-4 -right-4 w-12 h-12 border-b-2 border-r-2 ${isVintage ? 'border-primary/40' : 'border-white/40 opacity-0 group-hover:opacity-100'} transition-opacity duration-500`} />
-                                </>
-                            )}
-                        </motion.div>
+                                            {/* Overlays */}
+                                            {isVintage && (
+                                                <div className="absolute inset-0 opacity-[0.05] pointer-events-none z-10 bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
+                                            )}
+                                            {template === 'glitch' && (
+                                                <div className="absolute inset-0 z-10 pointer-events-none opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
+                                            )}
+                                            {!isSharp && !isVintage && template !== 'glitch' && (
+                                                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none z-10" />
+                                            )}
+                                            <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center overflow-hidden">
+                                                <div className="w-[300%] h-32 bg-white/10 blur-[120px] -rotate-45 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-[2500ms] ease-in-out" />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ));
+                            })()}
+                        </div>
 
                         {/* Interaction Hint */}
                         <motion.p 
                             initial={{ opacity: 0 }}
                             whileInView={{ opacity: 0.4 }}
                             transition={{ delay: 1 }}
-                            className="mt-8 text-[10px] uppercase tracking-[0.2em] font-medium"
+                            className="mt-12 text-[10px] uppercase tracking-[0.2em] font-medium"
                         >
-                            Interact to explore invitation
+                            {wedding.invitation_image?.toString().startsWith('[') && JSON.parse(wedding.invitation_image as string).length > 1 ? 'Scroll to see all pages' : 'Interact to explore invitation'}
                         </motion.p>
                     </motion.div>
                 </div>

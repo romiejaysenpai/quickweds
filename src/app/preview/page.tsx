@@ -1,11 +1,9 @@
 'use client';
 
-import { Suspense, useEffect, useState, use, type CSSProperties } from 'react';
-import { notFound } from 'next/navigation';
+import { Suspense, useEffect, useState, type CSSProperties } from 'react';
 import { Heart } from 'lucide-react';
 import DecorativeLayer from '@/components/DecorativeLayer';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
 import {
     HeroEnhancer,
     PremiumBackgroundLayer,
@@ -41,94 +39,41 @@ import {
     BohoTemplate
 } from '@/components/templates';
 import type { Wedding } from '@/types/wedding';
-import { trackWeddingEvent } from '@/lib/wedding-features';
-
-function safeParseArray<T>(value: unknown): T[] {
-    if (Array.isArray(value)) return value as T[];
-    if (typeof value !== 'string') return [];
-
-    try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed as T[] : [];
-    } catch {
-        return [];
-    }
-}
 
 type ThemeFontVars = Record<'--font-serif' | '--font-sans', string>;
 type WeddingPageStyle = CSSProperties & Record<'--primary', string> & ThemeFontVars;
 
-export default function WeddingPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+export default function PreviewPage() {
     const [wedding, setWedding] = useState<Wedding | null>(null);
-    const [loading, setLoading] = useState(true);
-
+    const [gallery, setGallery] = useState<string[]>([]);
+    
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('weddings')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
-
-                if (error) {
-                    console.error("Supabase error:", error);
-                    setWedding(null);
-                } else {
-                    setWedding(data);
-                }
-            } catch (err) {
-                console.error(err);
-                setWedding(null);
-            } finally {
-                setLoading(false);
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data?.type === 'UPDATE_PREVIEW') {
+                setWedding(event.data.wedding);
+                setGallery(event.data.gallery || []);
             }
         };
-        fetchData();
-    }, [id]);
 
-    useEffect(() => {
-        if (!id || typeof window === 'undefined') return;
-
-        const visitKey = `quickweds_visit_${id}`;
-        if (window.sessionStorage.getItem(visitKey)) return;
-
-        window.sessionStorage.setItem(visitKey, '1');
-
-        const params = new URLSearchParams(window.location.search);
-        const source = params.get('src') || 'direct';
-        const eventType = source === 'qr' ? 'qr_scan' : 'visit';
-
-        void trackWeddingEvent(id, 'visit', { source });
-        if (eventType === 'qr_scan') {
-            void trackWeddingEvent(id, 'qr_scan', { source });
+        window.addEventListener('message', handleMessage);
+        
+        // Notify parent that we are ready to receive data
+        if (window.parent) {
+            window.parent.postMessage({ type: 'PREVIEW_READY' }, '*');
         }
-    }, [id]);
 
-    if (loading) return (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#120f10]">
-            <motion.div
-                animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="flex flex-col items-center gap-5"
-            >
-                <div className="h-14 w-14 rounded-full border border-white/10 flex items-center justify-center bg-white/5 p-3">
-                    <img src="/logo.png" alt="Loading" className="h-full w-full object-contain grayscale invert opacity-70" />
-                </div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-white/40">
-                    Preparing Experience
-                </p>
-            </motion.div>
-        </div>
-    );
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
 
     if (!wedding) {
-        notFound();
+        return (
+            <div className="flex h-screen items-center justify-center bg-[#FFF8F4]">
+                <Heart className="h-8 w-8 animate-pulse text-[#D16C78]" />
+            </div>
+        );
     }
 
-    const isExpired = new Date(wedding.rsvp_deadline) < new Date();
-    const gallery = safeParseArray<string>(wedding.gallery_images);
+    const isExpired = false;
     const template = wedding.template || 'classic';
 
     const getTemplateContent = () => {
@@ -212,10 +157,22 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
     };
 
     const fontVars = getFontVariables(wedding.font_style);
+    
+    const BACKGROUND_COLOR_MAP: Record<string, string> = {
+        white: '#FFFFFF',
+        cream: '#FFF8F4',
+        satin: '#FDF5E6',
+        paper: '#F4F1EA',
+        minimal: '#F9F9F9',
+        rose: '#FFF5F5',
+        linen: '#FAF9F6',
+    };
+    
+    const bgColor = BACKGROUND_COLOR_MAP[(wedding as any).background_style || 'cream'] || '#FFF8F4';
+    
     const pageStyle: WeddingPageStyle = {
         '--primary': wedding.motif_color,
-        backgroundColor: '#FFF8F4',
-        backgroundImage: 'radial-gradient(circle at top, rgba(255,255,255,0.65), transparent 32%), linear-gradient(180deg, #fffaf6 0%, #fff5ef 52%, #f8ece7 100%)',
+        backgroundColor: bgColor,
         ...fontVars,
     };
 
@@ -229,7 +186,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
                 <div className="absolute left-[8%] top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
                 <div className="absolute bottom-32 right-[8%] h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
             </div>
-            <div className="pointer-events-none fixed inset-x-6 top-6 bottom-6 z-[1] hidden rounded-[2.5rem] border border-white/35 opacity-50 md:block" />
+            
             <div className="noise-overlay" />
             <div className="paper-texture" />
 
@@ -245,10 +202,6 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             />
 
             <PremiumBackgroundLayer wedding={wedding} />
-
-            {wedding.voice_greeting_url && (
-                <VoiceGreeting audioUrl={wedding.voice_greeting_url} motifColor={wedding.motif_color} />
-            )}
 
             {wedding.accent_style && wedding.accent_style !== 'none' && (
                 <>
@@ -309,7 +262,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
                     )}
                     <div className="mx-auto mb-6 mt-6 h-px w-24 bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-primary/80">
-                        {new Date(wedding.wedding_date).getFullYear()}
+                        {new Date(wedding.wedding_date || Date.now()).getFullYear()}
                     </p>
                     <div className="mt-8 flex flex-col items-center gap-2 opacity-30 group hover:opacity-60 transition-opacity">
                         <img src="/logo.png" alt="QuickWeds" className="h-6 w-auto grayscale contrast-125" />

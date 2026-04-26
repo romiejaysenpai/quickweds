@@ -85,6 +85,9 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
+import Header from '@/components/Header';
+import { SectionProvider } from '@/context/SectionContext';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -100,7 +103,10 @@ export default function RootLayout({
       `}>
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            <SectionProvider>
+              <Header />
+              {children}
+            </SectionProvider>
             <Analytics />
             <SpeedInsights />
           </AuthProvider>

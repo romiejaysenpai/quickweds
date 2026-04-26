@@ -88,12 +88,12 @@ export default function SignUpPage() {
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Full Name</label>
                         <div className="relative">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/40" />
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/40 pointer-events-none" />
                             <input
                                 type="text"
                                 required
                                 autoComplete="name"
-                                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
+                                className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="John Doe"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
@@ -104,7 +104,7 @@ export default function SignUpPage() {
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Email Address</label>
                         <div className="relative">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/40" />
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/40 pointer-events-none" />
                             <input
                                 type="email"
                                 required
@@ -113,7 +113,7 @@ export default function SignUpPage() {
                                 autoCapitalize="none"
                                 autoCorrect="off"
                                 spellCheck={false}
-                                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
+                                className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="hello@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -124,12 +124,12 @@ export default function SignUpPage() {
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Password</label>
                         <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/40" />
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/40 pointer-events-none" />
                             <input
                                 type="password"
                                 required
                                 autoComplete="new-password"
-                                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
+                                className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}

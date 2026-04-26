@@ -61,11 +61,11 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection id="bio" wedding={wedding} />
+            <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
-                <CountdownTimer
+                <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
                     weddingTime={wedding.wedding_time}
                     brideName={wedding.bride_name}
@@ -74,10 +74,10 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: any) {
                     venueAddress={wedding.venue_address}
                 />
             )}
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} masonry />
-            <GiftSection wedding={wedding} />
-            <SharedNewSections wedding={wedding} isExpired={isExpired} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline} />
+            <GallerySection id="gallery" gallery={gallery} masonry />
+            <GiftSection id="gift" wedding={wedding} />
+            <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }

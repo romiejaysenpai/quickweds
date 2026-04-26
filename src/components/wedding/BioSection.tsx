@@ -3,12 +3,22 @@
 import { motion } from 'framer-motion';
 import { Quote } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
+import { useSectionContext } from '@/context/SectionContext';
+import { useEffect } from 'react';
 
 interface BioSectionProps {
     wedding: Wedding;
+    id: string;
 }
 
-export default function BioSection({ wedding }: BioSectionProps) {
+export default function BioSection({ wedding, id }: BioSectionProps) {
+    const { registerSection, unregisterSection } = useSectionContext();
+    
+    useEffect(() => {
+        registerSection(id, 'Bio');
+        return () => unregisterSection(id);
+    }, [id, registerSection, unregisterSection]);
+
     const template = wedding.template || 'classic';
     
     // Thematic Categorization
@@ -33,7 +43,7 @@ export default function BioSection({ wedding }: BioSectionProps) {
     const textColorBody = isDark ? 'text-white/80' : 'text-[#4A4444]/80';
 
     return (
-        <section className={`max-w-6xl mx-auto px-4 md:px-6 relative z-20 ${overlapClass}`}>
+        <section id={id} className={`max-w-6xl mx-auto px-4 md:px-6 relative z-20 ${overlapClass}`}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-20 items-center">
                 <motion.div 
                     initial={{ opacity: 0, x: -50, rotate: isSharp ? 0 : -5 }}

@@ -69,14 +69,14 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                 </div>
             </section>
 
-            <DetailsSection wedding={wedding} />
-            <BioSection wedding={wedding} />
-            <TimelineSection timeline={wedding.program_timeline || ''} />
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <GallerySection gallery={gallery} />
-            <GiftSection wedding={wedding} />
+            <DetailsSection id="details" wedding={wedding} />
+            <BioSection id="bio" wedding={wedding} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <GallerySection id="gallery" gallery={gallery} />
+            <GiftSection id="gift" wedding={wedding} />
             {!wedding.is_thank_you_mode && !isExpired && (
-                <CountdownTimer
+                <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
                     weddingTime={wedding.wedding_time}
                     brideName={wedding.bride_name}
@@ -85,7 +85,7 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                     venueAddress={wedding.venue_address}
                 />
             )}
-            <SharedNewSections wedding={wedding} isExpired={isExpired} />
+            <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }

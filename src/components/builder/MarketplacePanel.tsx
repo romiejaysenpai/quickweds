@@ -25,7 +25,7 @@ export default function MarketplacePanel({
     return (
         <div className="space-y-6">
             <div className="p-4 sm:p-6 rounded-2xl border border-border bg-neutral/30 space-y-4">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                     <div>
                         <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
                             <Bookmark className="w-4 h-4 text-primary" /> Theme Marketplace
@@ -35,7 +35,7 @@ export default function MarketplacePanel({
                     <button
                         type="button"
                         onClick={onSaveCurrent}
-                        className="px-3 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-all min-h-[44px] inline-flex items-center gap-2"
+                        className="w-full sm:w-auto px-3 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-all min-h-[44px] inline-flex items-center justify-center gap-2"
                     >
                         <Save className="w-4 h-4" />
                         Save Current
@@ -95,16 +95,16 @@ export default function MarketplacePanel({
                 ) : (
                     <div className="space-y-3">
                         {presets.map((preset) => (
-                            <div key={preset.id} className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-border">
-                                <div>
+                            <div key={preset.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-border">
+                                <div className="min-w-0">
                                     <p className="font-bold text-sm text-foreground">{preset.name}</p>
-                                    <p className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60">{preset.template_id}</p>
+                                    <p className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60 break-all">{preset.template_id}</p>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 w-full sm:w-auto">
                                     <button
                                         type="button"
                                         onClick={() => onApplyPreset(preset.preset_data)}
-                                        className="px-3 py-2 rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-all min-h-[44px]"
+                                        className="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-all min-h-[44px]"
                                     >
                                         Apply
                                     </button>

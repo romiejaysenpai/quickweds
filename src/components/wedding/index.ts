@@ -13,3 +13,4 @@ export { default as HeroEnhancer } from './HeroEnhancer';
 export { default as PremiumBackgroundLayer } from './PremiumBackgroundLayer';
 export { default as EntranceReveal } from './EntranceReveal';
 export { default as VoiceGreeting } from './VoiceGreeting';
+export { default as TemplateNavigation } from './TemplateNavigation';

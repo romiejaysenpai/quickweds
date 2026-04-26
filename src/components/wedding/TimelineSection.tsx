@@ -2,10 +2,13 @@
 
 import { motion } from 'framer-motion';
 import { Clock } from 'lucide-react';
+import { useSectionContext } from '@/context/SectionContext';
+import { useEffect } from 'react';
 
 interface TimelineSectionProps {
     timeline: string;
     wedding?: any;
+    id: string;
 }
 
 interface TimelineItem {
@@ -36,7 +39,15 @@ function parseTimeline(raw: string): TimelineItem[] {
     });
 }
 
-export default function TimelineSection({ timeline, wedding }: TimelineSectionProps) {
+export default function TimelineSection({ timeline, wedding, id }: TimelineSectionProps) {
+    const { registerSection, unregisterSection } = useSectionContext();
+    
+    useEffect(() => {
+        registerSection(id, 'Timeline');
+        return () => unregisterSection(id);
+    }, [id, registerSection, unregisterSection]);
+    
+    if (!timeline) return null;
     if (!timeline) return null;
 
     const items = parseTimeline(timeline);

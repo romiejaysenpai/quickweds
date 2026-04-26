@@ -44,11 +44,11 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: any) {
                 <a href="#rsvp" className="mt-8 sm:mt-10 md:mt-12 px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center bg-red-600 text-white rounded-sm font-bold uppercase tracking-widest hover:bg-red-700 transition-colors">Action! (RSVP)</a>
             </section>
 
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} invert />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection id="bio" wedding={wedding} />
+            <DetailsSection id="details" wedding={wedding} invert />
             {!wedding.is_thank_you_mode && (
-                <CountdownTimer
+                <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
                     weddingTime={wedding.wedding_time}
                     brideName={wedding.bride_name}
@@ -57,10 +57,10 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: any) {
                     venueAddress={wedding.venue_address}
                 />
             )}
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GiftSection wedding={wedding} invert />
-            <GallerySection gallery={gallery} />
-            <SharedNewSections wedding={wedding} isExpired={isExpired} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline} />
+            <GiftSection id="gift" wedding={wedding} invert />
+            <GallerySection id="gallery" gallery={gallery} />
+            <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }

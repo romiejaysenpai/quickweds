@@ -1,15 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { derivePalette, getTypography, BENTO_PRESETS } from '@/lib/theme-engine';
+import { useSectionContext } from '@/context/SectionContext';
 
 interface GallerySectionProps {
     gallery: string[];
     masonry?: boolean;
     template?: string;
     motifColor?: string;
+    id: string;
+}
+
+function GalleryImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+    const [isLoaded, setIsLoaded] = useState(false);
+    return (
+        <>
+            <div className={`absolute inset-0 bg-black/5 animate-pulse transition-opacity duration-700 ${isLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} />
+            <img
+                src={src}
+                alt={alt}
+                onLoad={() => setIsLoaded(true)}
+                className={`h-full w-full object-cover transition-all duration-[1200ms] ease-out ${className || ''} ${isLoaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-xl scale-110'}`}
+            />
+        </>
+    );
 }
 
 function Lightbox({ images, index, onClose }: { images: string[]; index: number; onClose: () => void }) {
@@ -75,8 +92,16 @@ function Lightbox({ images, index, onClose }: { images: string[]; index: number;
     );
 }
 
-export default function GallerySection({ gallery, masonry = false, template = 'classic', motifColor = '#D16C78' }: GallerySectionProps) {
+export default function GallerySection({ gallery, masonry = false, template = 'classic', motifColor = '#D16C78', id }: GallerySectionProps) {
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+    const { registerSection, unregisterSection } = useSectionContext();
+
+    useEffect(() => {
+        if (gallery && gallery.length > 0) {
+            registerSection(id, 'Gallery');
+        }
+        return () => unregisterSection(id);
+    }, [id, gallery, registerSection, unregisterSection]);
 
     if (!gallery || gallery.length === 0) return null;
 
@@ -117,10 +142,10 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
                                 onClick={() => setLightboxIndex(i)}
                             >
                                 <div className={`relative h-full w-full overflow-hidden ${isSharp ? 'rounded-none' : 'rounded-[1.8rem]'}`}>
-                                    <img
+                                    <GalleryImage
                                         src={img}
                                         alt={`Wedding gallery image ${i + 1}`}
-                                        className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                        className="group-hover:scale-110"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                     <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-6 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
@@ -151,8 +176,8 @@ export function MinimalGallery({ gallery }: { gallery: string[] }) {
         <section className="py-24 border-y border-black/5 overflow-hidden">
             <div className="flex gap-12 px-6 animate-marquee whitespace-nowrap">
                 {gallery.concat(gallery).map((img: string, i: number) => (
-                    <div key={i} className="w-[400px] h-[300px] shrink-0 grayscale hover:grayscale-0 transition-all duration-500">
-                        <img src={img} alt={`Wedding gallery image ${i + 1}`} className="w-full h-full object-cover" />
+                    <div key={i} className="relative w-[400px] h-[300px] shrink-0 grayscale hover:grayscale-0 transition-all duration-500 overflow-hidden">
+                        <GalleryImage src={img} alt={`Wedding gallery image ${i + 1}`} />
                     </div>
                 ))}
             </div>

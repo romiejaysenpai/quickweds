@@ -28,6 +28,7 @@ function parseWeddingParty(wedding: Wedding): WeddingPartyMember[] {
 interface SharedNewSectionsProps {
     wedding: Wedding;
     isExpired: boolean;
+    id: string;
 }
 
 export function SharedNewSections({ wedding, isExpired }: SharedNewSectionsProps) {

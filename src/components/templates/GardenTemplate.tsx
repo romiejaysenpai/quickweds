@@ -53,11 +53,11 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <DetailsSection wedding={wedding} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection id="bio" wedding={wedding} />
+            <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
-                <CountdownTimer
+                <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
                     weddingTime={wedding.wedding_time}
                     brideName={wedding.bride_name}
@@ -66,10 +66,10 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: any) {
                     venueAddress={wedding.venue_address}
                 />
             )}
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GiftSection wedding={wedding} />
-            <GallerySection gallery={gallery} />
-            <SharedNewSections wedding={wedding} isExpired={isExpired} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline} />
+            <GiftSection id="gift" wedding={wedding} />
+            <GallerySection id="gallery" gallery={gallery} />
+            <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }

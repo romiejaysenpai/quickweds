@@ -1,16 +1,26 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useSectionContext } from '@/context/SectionContext';
+import { useEffect } from 'react';
 
 interface VideoSectionProps {
     video?: string;
     poster?: string;
+    id: string;
 }
 
-export default function VideoSection({ video, poster }: VideoSectionProps) {
+export default function VideoSection({ video, poster, id }: VideoSectionProps) {
+    const { registerSection, unregisterSection } = useSectionContext();
+
+    useEffect(() => {
+        registerSection(id, 'Video');
+        return () => unregisterSection(id);
+    }, [id, registerSection, unregisterSection]);
+
     if (!video) return null;
     return (
-        <section className="py-24 bg-[#1a1a1a] text-white overflow-hidden">
+        <section id={id} className="py-24 bg-[#1a1a1a] text-white overflow-hidden">
             <div className="max-w-5xl mx-auto px-6 text-center">
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ duration: 1 }}>
                     <span className="text-xs uppercase tracking-[0.4em] font-black text-primary mb-6 block opacity-60">Sneak Peek</span>

@@ -74,11 +74,11 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <VideoSection video={wedding.teaser_video} poster={wedding.hero_image} />
-            <BioSection wedding={wedding} />
-            <div className="px-4 sm:px-6 md:px-12 lg:px-32 py-12 sm:py-16 md:py-24 lg:py-32"><DetailsSection wedding={wedding} invert /></div>
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <BioSection id="bio" wedding={wedding} />
+            <div className="px-4 sm:px-6 md:px-12 lg:px-32 py-12 sm:py-16 md:py-24 lg:py-32"><DetailsSection id="details" wedding={wedding} invert /></div>
             {!wedding.is_thank_you_mode && (
-                <CountdownTimer
+                <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
                     weddingTime={wedding.wedding_time}
                     brideName={wedding.bride_name}
@@ -87,10 +87,10 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                     venueAddress={wedding.venue_address}
                 />
             )}
-            <TimelineSection timeline={wedding.program_timeline} />
-            <GallerySection gallery={gallery} />
-            <GiftSection wedding={wedding} invert />
-            <SharedNewSections wedding={wedding} isExpired={isExpired} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline} />
+            <GallerySection id="gallery" gallery={gallery} />
+            <GiftSection id="gift" wedding={wedding} invert />
+            <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }

@@ -373,8 +373,8 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                                     Guest List
                                 </h3>
                                 <div className="relative mb-3">
-                                    <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" />
-                                    <input type="text" placeholder="Search guests..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="w-full bg-white border border-border rounded-xl pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors" />
+                                    <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
+                                    <input type="text" placeholder="Search guests..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="w-full bg-white border border-border rounded-xl pl-14 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors" />
                                 </div>
                                 <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value as 'all' | GuestGroup)} className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors">
                                     <option value="all">All Groups</option>

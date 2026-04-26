@@ -449,7 +449,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         ]);
         const csv = [headers.join(','), ...rows.map(r => r.map((c) => escapeCsvCell(c)).join(','))].join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.execObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `rsvp-${wedding?.bride_name}-${wedding?.groom_name}.csv`;
@@ -972,12 +972,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                                         <div className="grid grid-cols-1 xl:grid-cols-4 gap-2 sm:gap-3">
                                             <div className="xl:col-span-2 relative">
-                                                <Search className="w-4 h-4 absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-text-secondary/30" />
+                                                <Search className="w-4 h-4 absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-text-secondary/30 pointer-events-none" />
                                                 <input
                                                     placeholder="Search guests..."
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                                    className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border focus:border-primary outline-none text-xs sm:text-sm bg-neutral min-h-[44px]"
+                                                    className="w-full pl-11 sm:pl-14 pr-3 sm:pr-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border focus:border-primary outline-none text-xs sm:text-sm bg-neutral min-h-[44px]"
                                                 />
                                             </div>
                                             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}

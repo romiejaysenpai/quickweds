@@ -2,13 +2,22 @@
 
 import { motion } from 'framer-motion';
 import type { Wedding } from '@/types/wedding';
+import { useSectionContext } from '@/context/SectionContext';
+import { useEffect } from 'react';
 
 interface GiftSectionProps {
     wedding: Wedding;
     invert?: boolean;
+    id: string;
 }
 
-export default function GiftSection({ wedding, invert = false }: GiftSectionProps) {
+export default function GiftSection({ wedding, invert = false, id }: GiftSectionProps) {
+    const { registerSection, unregisterSection } = useSectionContext();
+    
+    useEffect(() => {
+        registerSection(id, 'Gift');
+        return () => unregisterSection(id);
+    }, [id, registerSection, unregisterSection]);
     if (!wedding.gift_bank && !wedding.gift_qr_image && !wedding.gift_account_number) return null;
 
     let registryLinks: { title: string; url: string }[] = [];

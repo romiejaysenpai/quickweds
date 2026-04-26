@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Email Address</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/40" />
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/40 pointer-events-none" />
                                     <input
                                         type="email"
                                         required
@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
                                         autoCapitalize="none"
                                         autoCorrect="off"
                                         spellCheck={false}
-                                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
+                                        className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                         placeholder="hello@example.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}

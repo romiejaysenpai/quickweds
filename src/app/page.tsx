@@ -217,15 +217,15 @@ export default function Home() {
         ))}
       </div>
 
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/60 backdrop-blur-xl border-b border-border/50">
+      <nav className="fixed top-0 left-0 right-0 z-[60] bg-white/70 dark:bg-neutral/70 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex justify-between items-center gap-4 sm:gap-8">
           <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-            <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105" />
+            <img src="/logo.png" alt="QuickWeds" className="h-9 sm:h-11 w-auto object-contain transition-transform group-hover:scale-105" />
           </Link>
           <div className="flex items-center gap-4 sm:gap-8 ml-auto">
             <button
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl bg-neutral border border-border text-text-secondary hover:text-primary hover:border-primary transition-all soft-shadow"
+              className="p-2.5 rounded-xl bg-white/50 dark:bg-neutral/50 border border-border text-text-secondary hover:text-primary hover:border-primary transition-all soft-shadow"
               aria-label="Toggle theme"
             >
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
@@ -234,7 +234,7 @@ export default function Home() {
             <button onClick={() => setIsExamplesOpen(true)} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Examples</button>
             {user ? (
               <div className="flex items-center gap-2 sm:gap-4">
-                <Link href="/dashboard" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-all text-xs sm:text-sm min-h-[44px] flex items-center">Dashboard</Link>
+                <Link href="/dashboard" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all text-xs sm:text-sm min-h-[44px] flex items-center shadow-lg shadow-primary/20">Dashboard</Link>
                 <button onClick={logout} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-foreground transition-all">Logout</button>
               </div>
             ) : (
@@ -715,8 +715,8 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
             <div className="col-span-1 md:col-span-1">
-              <Link href="/" className="inline-block mb-8">
-                <img src="/logo.png" alt="QuickWeds Logo" className="h-10 w-auto object-contain" />
+              <Link href="/" className="inline-block mb-8 hover:scale-105 transition-transform">
+                <img src="/logo.png" alt="QuickWeds" className="h-12 w-auto object-contain" />
               </Link>
               <p className="text-text-secondary text-sm leading-relaxed font-light mb-8">
                 QuickWeds is the fastest way to create premium, interactive, and mobile-first wedding landing pages.

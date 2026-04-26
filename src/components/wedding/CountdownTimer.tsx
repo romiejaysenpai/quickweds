@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarHeart, MapPin, Sparkles, Clock } from 'lucide-react';
+import { useSectionContext } from '@/context/SectionContext';
 
 interface CountdownTimerProps {
     weddingDate: string;
@@ -12,6 +13,7 @@ interface CountdownTimerProps {
     venueName?: string;
     venueAddress?: string;
     className?: string;
+    id: string;
 }
 
 function generateICS(props: CountdownTimerProps): string {
@@ -51,10 +53,17 @@ export default function CountdownTimer({
     venueName,
     venueAddress,
     className = '',
+    id,
 }: CountdownTimerProps) {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
     const [isPast, setIsPast] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const { registerSection, unregisterSection } = useSectionContext();
+    
+    useEffect(() => {
+        registerSection(id, 'Countdown');
+        return () => unregisterSection(id);
+    }, [id, registerSection, unregisterSection]);
 
     useEffect(() => {
         setIsMounted(true);
@@ -88,7 +97,7 @@ export default function CountdownTimer({
     }, [weddingDate, weddingTime]);
 
     const handleAddToCalendar = () => {
-        const ics = generateICS({ weddingDate, weddingTime, brideName, groomName, venueName, venueAddress });
+        const ics = generateICS({ weddingDate, weddingTime, brideName, groomName, venueName, venueAddress, id });
         const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

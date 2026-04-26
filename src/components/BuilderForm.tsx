@@ -236,27 +236,31 @@ export default function BuilderForm() {
         couplePhoto: File | null;
         teaserVideo: File | null;
         giftQr: File | null;
-        invitationImage: File | null;
+        invitationImages: File[];
         galleryImages: File[];
     }>({
         heroImage: null,
         couplePhoto: null,
         teaserVideo: null,
         giftQr: null,
-        invitationImage: null,
+        invitationImages: [],
         galleryImages: [],
     });
 
     const [previews, setPreviews] = useState<{
-        heroImage: string | null;
-        couplePhoto: string | null;
-        giftQr: string | null;
-        invitationImage: string | null;
+        heroImage: string;
+        couplePhoto: string;
+        teaserVideo: string;
+        giftQr: string;
+        invitationImages: string[];
+        galleryImages: string[];
     }>({
-        heroImage: null,
-        couplePhoto: null,
-        giftQr: null,
-        invitationImage: null,
+        heroImage: '',
+        couplePhoto: '',
+        teaserVideo: '',
+        giftQr: '',
+        invitationImages: [],
+        galleryImages: [],
     });
 
     const [isPremium, setIsPremium] = useState(isAdmin);
@@ -336,11 +340,24 @@ export default function BuilderForm() {
                         photoAlbumLink: data.photo_album_link || '',
                         accentStyle: data.accent_style || 'none',
                     });
+                    let inviteImages: string[] = [];
+                    try {
+                        if (data.invitation_image && data.invitation_image.startsWith('[')) {
+                            inviteImages = JSON.parse(data.invitation_image);
+                        } else if (data.invitation_image) {
+                            inviteImages = [data.invitation_image];
+                        }
+                    } catch (e) {
+                        if (data.invitation_image) inviteImages = [data.invitation_image];
+                    }
+
                     setPreviews({
-                        heroImage: data.hero_image || null,
-                        couplePhoto: data.couple_photo || null,
-                        giftQr: data.gift_qr_image || null,
-                        invitationImage: data.invitation_image || null,
+                        heroImage: data.hero_image || '',
+                        couplePhoto: data.couple_photo || '',
+                        teaserVideo: (data as any).teaser_video || '',
+                        giftQr: data.gift_qr_image || '',
+                        invitationImages: inviteImages,
+                        galleryImages: data.gallery_images || [],
                     });
                 }
             };
@@ -435,12 +452,26 @@ export default function BuilderForm() {
             const newFiles = Array.from(files);
             if (!isPremium && (mediaFiles.galleryImages.length + newFiles.length) > 12) {
                 alert("Free plan is limited to 12 photos. Please upgrade to Premium for unlimited gallery uploads.");
-                const allowedCount = 12 - mediaFiles.galleryImages.length;
-                if (allowedCount <= 0) return;
-                setMediaFiles((prev: any) => ({ ...prev, galleryImages: [...prev.galleryImages, ...newFiles.slice(0, allowedCount)] }));
-            } else {
-                setMediaFiles((prev: any) => ({ ...prev, galleryImages: [...prev.galleryImages, ...newFiles] }));
+                return;
             }
+            setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...newFiles] }));
+            newFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setPreviews(prev => ({ ...prev, galleryImages: [...prev.galleryImages, reader.result as string] }));
+                };
+                reader.readAsDataURL(file);
+            });
+        } else if (field === 'invitationImages') {
+            const newFiles = Array.from(files);
+            setMediaFiles(prev => ({ ...prev, invitationImages: [...prev.invitationImages, ...newFiles] }));
+            newFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setPreviews(prev => ({ ...prev, invitationImages: [...prev.invitationImages, reader.result as string] }));
+                };
+                reader.readAsDataURL(file);
+            });
         } else {
             const file = files[0];
             if (field === 'teaserVideo') {
@@ -463,11 +494,17 @@ export default function BuilderForm() {
         }
     };
 
-    const removeGalleryImage = (index: number) => {
-        setMediaFiles(prev => ({
-            ...prev,
-            galleryImages: prev.galleryImages.filter((_, i) => i !== index)
-        }));
+    const removeFile = (field: string, index?: number) => {
+        if (field === 'galleryImages' && index !== undefined) {
+            setMediaFiles(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }));
+            setPreviews(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }));
+        } else if (field === 'invitationImages' && index !== undefined) {
+            setMediaFiles(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) }));
+            setPreviews(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) }));
+        } else {
+            setMediaFiles(prev => ({ ...prev, [field]: null }));
+            setPreviews(prev => ({ ...prev, [field]: '' }));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -515,15 +552,15 @@ export default function BuilderForm() {
             const heroPromise = mediaFiles.heroImage ? uploadToSupabase(mediaFiles.heroImage, 'hero') : Promise.resolve(null);
             const couplePromise = mediaFiles.couplePhoto ? uploadToSupabase(mediaFiles.couplePhoto, 'couple') : Promise.resolve(null);
             const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
-            const invitationPromise = mediaFiles.invitationImage ? uploadToSupabase(mediaFiles.invitationImage, 'invitation') : Promise.resolve(null);
+            const invitationPromises = mediaFiles.invitationImages.map((file, i) => uploadToSupabase(file, `invitation-${i}`));
             const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo, 'teaser') : Promise.resolve(null);
             const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToSupabase(file, `gallery-${i}`));
 
-            const [heroUrl, coupleUrl, giftQrUrl, invitationUrl, videoUrl, galleryUrls] = await Promise.all([
+            const [heroUrl, coupleUrl, giftQrUrl, invitationUrls, videoUrl, galleryUrls] = await Promise.all([
                 heroPromise,
                 couplePromise,
                 giftQrPromise,
-                invitationPromise,
+                Promise.all(invitationPromises),
                 videoPromise,
                 Promise.all(galleryPromises)
             ]);
@@ -567,9 +604,13 @@ export default function BuilderForm() {
 
             if (mediaFiles.heroImage || editId) payload.hero_image = heroUrl || previews.heroImage;
             if (mediaFiles.couplePhoto || editId) payload.couple_photo = coupleUrl || previews.couplePhoto;
-            if (mediaFiles.teaserVideo || editId) payload.teaser_video = videoUrl || (formData as any).teaser_video; // Keep existing if edit
+            if (mediaFiles.teaserVideo || editId) payload.teaser_video = videoUrl || (formData as any).teaser_video; 
             if (mediaFiles.giftQr || editId) payload.gift_qr_image = giftQrUrl || previews.giftQr;
-            if (mediaFiles.invitationImage || editId) payload.invitation_image = invitationUrl || previews.invitationImage;
+            
+            // Handle invitation images: merge new uploads with existing previews if editing
+            let finalInvitationImages = invitationUrls.length > 0 ? invitationUrls : previews.invitationImages;
+            payload.invitation_image = JSON.stringify(finalInvitationImages);
+            
             if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
 
             // Using UPSERT (Update + Insert) for maximum reliability
@@ -618,8 +659,8 @@ export default function BuilderForm() {
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Hashtag (Optional)</label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">#</span>
-                                <input name="hashtag" value={formData.hashtag} onChange={handleChange} placeholder="SarahAndJohn2024" className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold pointer-events-none">#</span>
+                                <input name="hashtag" value={formData.hashtag} onChange={handleChange} placeholder="SarahAndJohn2024" className="w-full pl-11 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -640,7 +681,7 @@ export default function BuilderForm() {
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Google Maps Link (Optional)</label>
                                 <div className="relative">
-                                    <MapPin className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-primary" />
+                                    <MapPin className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
                                     <input name="mapsLink" value={formData.mapsLink} onChange={handleChange} placeholder="https://maps.app.goo.gl/..." className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                                 </div>
                             </div>
@@ -1030,34 +1071,33 @@ export default function BuilderForm() {
                                     <Camera className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-serif font-bold text-foreground">Invitation Photo / Screenshot</h3>
-                                    <p className="text-[10px] uppercase tracking-widest text-text-secondary font-black opacity-50">Showcase your invitation card</p>
+                                    <h3 className="text-lg font-serif font-bold text-foreground">Invitation Photos / Screenshots</h3>
+                                    <p className="text-[10px] uppercase tracking-widest text-text-secondary font-black opacity-50">Upload 1 or more pages of your invitation</p>
                                 </div>
                             </div>
                             
-                            <div className="relative h-72 rounded-3xl border-2 border-dashed border-primary/20 bg-white flex items-center justify-center overflow-hidden hover:border-primary transition-all group group hover:shadow-xl duration-500">
-                                {previews.invitationImage ? (
-                                    <div className="relative w-full h-full">
-                                        <img src={previews.invitationImage} className="w-full h-full object-contain p-6" />
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {previews.invitationImages.map((src: string, index: number) => (
+                                    <div key={index} className="relative h-40 rounded-2xl border-2 border-border bg-white flex items-center justify-center overflow-hidden group hover:shadow-lg transition-all">
+                                        <img src={src} className="w-full h-full object-contain p-2" />
                                         <button 
                                             type="button" 
-                                            onClick={() => {
-                                                setMediaFiles(prev => ({ ...prev, invitationImage: null }));
-                                                setPreviews(prev => ({ ...prev, invitationImage: null }));
-                                            }} 
-                                            className="absolute top-6 right-6 w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all"
+                                            onClick={() => removeFile('invitationImages', index)} 
+                                            className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all opacity-0 group-hover:opacity-100"
                                         >
-                                            <X className="w-5 h-5" />
+                                            <X className="w-4 h-4" />
                                         </button>
+                                        <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">
+                                            Page {index + 1}
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="text-center group-hover:scale-105 transition-transform duration-700">
-                                        <Camera className="w-12 h-12 text-primary/30 mx-auto mb-4" />
-                                        <span className="text-sm text-text-secondary font-bold uppercase tracking-widest block mb-1">Upload Invitation Media</span>
-                                        <p className="text-xs text-text-secondary/40 font-serif italic">This will appear beautifully on your wedding site</p>
-                                    </div>
-                                )}
-                                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'invitationImage')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                ))}
+                                
+                                <div className="relative h-40 rounded-2xl border-2 border-dashed border-primary/20 bg-white flex flex-col items-center justify-center overflow-hidden hover:border-primary transition-all group hover:bg-primary/5 cursor-pointer">
+                                    <Plus className="w-8 h-8 text-primary/30 mb-2 group-hover:scale-110 transition-transform" />
+                                    <span className="text-[10px] text-text-secondary font-bold uppercase tracking-widest text-center px-4">Add {previews.invitationImages.length > 0 ? 'Another Page' : 'Invitation Card'}</span>
+                                    <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'invitationImages')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                </div>
                             </div>
                         </div>
 
@@ -1071,10 +1111,10 @@ export default function BuilderForm() {
                                 )}
                             </div>
                             <div className="grid grid-cols-4 gap-4">
-                                {mediaFiles.galleryImages.map((file, i) => (
+                                {previews.galleryImages.map((src: string, i: number) => (
                                     <div key={i} className="relative aspect-square rounded-xl overflow-hidden group border border-border">
-                                        <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
-                                        <button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center hover:bg-red-500 transition-colors">
+                                        <img src={src} className="w-full h-full object-cover" />
+                                        <button type="button" onClick={() => removeFile('galleryImages', i)} className="absolute top-1 right-1 w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center hover:bg-red-500 transition-colors">
                                             <X className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
@@ -1089,7 +1129,7 @@ export default function BuilderForm() {
                         <div className="space-y-2 pt-4 border-t border-border">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Spotify Playlist URL (Optional)</label>
                             <div className="relative">
-                                <Music className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-green-500" />
+                                <Music className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-green-500 pointer-events-none" />
                                 <input name="spotifyUrl" value={formData.spotifyUrl} onChange={handleChange} placeholder="https://open.spotify.com/playlist/..." className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
                             </div>
                             <p className="text-[10px] text-text-secondary ml-1">Embed a Spotify playlist for your guests to enjoy.</p>
@@ -1169,7 +1209,7 @@ export default function BuilderForm() {
                     <div key={i} className="flex gap-2">
                         <input placeholder="Store Name" value={link.title} onChange={(e) => handleArrayChange('registryLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         <div className="relative flex-1">
-                            <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/50" />
+                            <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
                             <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('registryLinks', i, 'url', e.target.value)} className="w-full pl-12 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
                         </div>
                         <button type="button" onClick={() => handleArrayRemove('registryLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -1193,7 +1233,7 @@ export default function BuilderForm() {
                                 <input placeholder="Short Description" value={fund.description} onChange={(e) => handleArrayChange('cashFunds', i, 'description', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="relative">
-                                        <DollarSign className="w-3 h-3 absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary/50" />
+                                        <DollarSign className="w-3 h-3 absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
                                         <input type="number" placeholder="Target Amount" value={fund.targetAmount} onChange={(e) => handleArrayChange('cashFunds', i, 'targetAmount', e.target.value)} className="w-full pl-12 pr-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none min-h-[44px]" />
                                     </div>
                                     <input placeholder="Currency (e.g. $, PHP)" value={fund.currency} onChange={(e) => handleArrayChange('cashFunds', i, 'currency', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
@@ -1217,7 +1257,7 @@ export default function BuilderForm() {
                     <div key={i} className="flex gap-2">
                         <input placeholder="Service (e.g. Venmo)" value={link.title} onChange={(e) => handleArrayChange('paymentLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         <div className="relative flex-1">
-                            <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/50" />
+                            <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
                             <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('paymentLinks', i, 'url', e.target.value)} className="w-full pl-12 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
                         </div>
                         <button type="button" onClick={() => handleArrayRemove('paymentLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -1282,14 +1322,38 @@ return (
 
         <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
             <div className="w-full lg:w-3/5 bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-8 soft-shadow border border-primary/10 flex-shrink-0">
-                <div className="flex justify-between items-center mb-8 sm:mb-12 gap-1 sm:gap-2 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+                {/* Mobile Stepper Header */}
+                <div className="lg:hidden mb-6">
+                    <div className="flex justify-between items-end mb-2">
+                        <div>
+                            <p className="text-[10px] uppercase tracking-[0.2em] font-black text-primary/60">Step {currentStep + 1} of {STEPS.length}</p>
+                            <h2 className="text-xl font-serif font-bold text-foreground">{STEPS[currentStep].title}</h2>
+                        </div>
+                        <div className="flex gap-1">
+                            {STEPS.map((_, idx) => (
+                                <div key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === currentStep ? 'bg-primary w-4' : idx < currentStep ? 'bg-secondary' : 'bg-neutral border border-border'} transition-all duration-300`} />
+                            ))}
+                        </div>
+                    </div>
+                    <div className="w-full h-1 bg-neutral rounded-full overflow-hidden">
+                        <motion.div 
+                            className="h-full bg-primary" 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
+                            transition={{ duration: 0.5, ease: "circOut" }}
+                        />
+                    </div>
+                </div>
+
+                {/* Desktop Stepper */}
+                <div className="hidden lg:flex justify-between items-center mb-12 gap-2">
                     {STEPS.map((step, idx) => (
-                        <div key={step.id} className="flex flex-col items-center relative flex-1 min-w-max sm:min-w-0">
-                            <div className={`w-8 sm:w-10 h-8 sm:h-10 rounded-full flex items-center justify-center z-10 flex-shrink-0 text-xs sm:text-base ${idx === currentStep ? 'bg-primary text-white scale-105 sm:scale-110 shadow-lg' : idx < currentStep ? 'bg-secondary text-foreground' : 'bg-neutral text-text-secondary border border-border'}`}>
-                                {idx < currentStep ? <CheckCircle2 className="w-4 sm:w-5 h-4 sm:h-5" /> : <step.icon className="w-4 sm:w-5 h-4 sm:h-5" />}
+                        <div key={step.id} className="flex flex-col items-center relative flex-1">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 flex-shrink-0 transition-all duration-500 ${idx === currentStep ? 'bg-primary text-white scale-110 shadow-[0_0_20px_rgba(192,128,129,0.3)]' : idx < currentStep ? 'bg-secondary text-foreground' : 'bg-neutral text-text-secondary border border-border'}`}>
+                                {idx < currentStep ? <CheckCircle2 className="w-5 h-5" /> : <step.icon className="w-5 h-5" />}
                             </div>
-                            <span className={`text-[7px] sm:text-[9px] uppercase tracking-widest mt-2 sm:mt-3 font-bold text-center leading-tight ${idx === currentStep ? 'text-primary' : 'text-text-secondary'}`}>{step.title}</span>
-                            {idx < STEPS.length - 1 && <div className={`absolute top-4 sm:top-5 left-[60%] w-[80%] h-[2px] -z-0 hidden sm:block ${idx < currentStep ? 'bg-secondary' : 'bg-border'}`} />}
+                            <span className={`text-[9px] uppercase tracking-widest mt-3 font-bold text-center leading-tight transition-colors duration-500 ${idx === currentStep ? 'text-primary' : 'text-text-secondary'}`}>{step.title}</span>
+                            {idx < STEPS.length - 1 && <div className={`absolute top-5 left-[60%] w-[80%] h-[2px] -z-0 ${idx < currentStep ? 'bg-secondary' : 'bg-border'}`} />}
                         </div>
                     ))}
                 </div>
@@ -1340,19 +1404,61 @@ return (
                         />
                     )}
 
-                    <div className="flex justify-between items-center pt-6 sm:pt-8 border-t border-border gap-2 sm:gap-4">
-                        <button type="button" onClick={prevStep} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2 rounded-lg sm:rounded-xl text-primary font-bold text-sm sm:text-base min-h-[44px] min-w-[44px] ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'hover:bg-neutral'}`}>
+                    <div className="sticky bottom-0 sm:relative bg-white/90 backdrop-blur-md sm:bg-transparent -mx-4 sm:mx-0 px-4 py-4 sm:p-0 border-t sm:border-t-0 border-border z-20 flex justify-between items-center pt-6 sm:pt-8 gap-2 sm:gap-4">
+                        <button type="button" onClick={prevStep} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2 rounded-lg sm:rounded-xl text-primary font-bold text-sm sm:text-base min-h-[44px] min-w-[44px] ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'hover:bg-neutral transition-colors'}`}>
                             <ArrowLeft className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Back</span>
                         </button>
-                        <button type="submit" disabled={isSubmitting} className="bg-primary text-white px-6 sm:px-10 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold flex items-center gap-2 hover:bg-primary-hover shadow-lg disabled:opacity-50 text-sm sm:text-base min-h-[44px] transition-all flex-1 sm:flex-none justify-center sm:justify-start">
+                        <button type="submit" disabled={isSubmitting} className="bg-primary text-white px-6 sm:px-10 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold flex items-center gap-2 hover:bg-primary-hover shadow-lg shadow-primary/20 disabled:opacity-50 text-sm sm:text-base min-h-[44px] transition-all flex-1 sm:flex-none justify-center sm:justify-start">
                             {isSubmitting ? 'Processing...' : currentStep === STEPS.length - 1 ? <><span className="hidden sm:inline">{editId ? 'Update Invitation' : 'Create Invitation'}</span><span className="sm:hidden">Finish</span> <Send className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></> : <>Next <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></>}
                         </button>
                     </div>
                 </form>
             </div>
 
+            {/* Desktop Preview */}
             <div className="hidden lg:block w-full lg:w-2/5 sticky top-8">
                 <LivePreview formData={formData} previews={previews} />
+            </div>
+
+            {/* Mobile Preview Toggle & Modal */}
+            <div className="lg:hidden">
+                <button
+                    type="button"
+                    onClick={() => setIsPreviewModalOpen(true)}
+                    className="fixed bottom-24 right-6 w-14 h-14 bg-white text-primary rounded-full shadow-2xl flex items-center justify-center z-50 border border-primary/20 animate-bounce-slow"
+                >
+                    <Smartphone className="w-6 h-6" />
+                </button>
+
+                <AnimatePresence>
+                    {isPreviewModalOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: '100%' }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: '100%' }}
+                            className="fixed inset-0 z-[100] bg-white flex flex-col"
+                        >
+                            <div className="p-4 border-b border-border flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                                <div>
+                                    <h3 className="font-bold text-foreground">Mobile Preview</h3>
+                                    <p className="text-[10px] uppercase tracking-widest text-text-secondary">Live View</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPreviewModalOpen(false)}
+                                    className="w-10 h-10 rounded-full bg-neutral flex items-center justify-center text-text-secondary"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto bg-neutral p-4">
+                                <div className="max-w-sm mx-auto">
+                                    <LivePreview formData={formData} previews={previews} isMobileView />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     </>

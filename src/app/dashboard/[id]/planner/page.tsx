@@ -435,13 +435,13 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                 <option value="Peso">Peso (₱)</option>
                             </select>
                             <div className="relative w-full sm:w-32 md:w-40">
-                                <span className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-primary font-bold text-sm sm:text-base">{currencySymbol}</span>
+                                <span className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-primary font-bold text-sm sm:text-base pointer-events-none">{currencySymbol}</span>
                                 <input 
                                     type="number" 
                                     value={localBudget}
                                     onChange={e => setLocalBudget(parseFloat(e.target.value) || 0)}
                                     onBlur={e => saveWeddingBudget('total_budget', parseFloat(e.target.value) || 0)}
-                                    className="text-base sm:text-xl font-mono text-primary w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-10 sm:pl-12 pr-2 sm:pr-3 py-2 outline-none focus:ring-primary/20 min-h-[40px] sm:min-h-[44px]"
+                                    className="text-base sm:text-xl font-mono text-primary w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-12 sm:pl-14 pr-2 sm:pr-3 py-2 outline-none focus:ring-primary/20 min-h-[40px] sm:min-h-[44px]"
                                 />
                             </div>
                         </div>
@@ -449,7 +449,7 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                     <div className="text-left sm:text-right min-w-0">
                         <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1">Guest Limit</p>
                         <div className="relative w-full sm:w-24 md:w-32">
-                            <Users className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-primary font-bold w-4 h-4" />
+                            <Users className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-primary font-bold w-4 h-4 pointer-events-none" />
                             <input 
                                 type="number" 
                                 value={localGuestLimit}
@@ -461,7 +461,7 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                     const val = parseInt(e.target.value) || 0;
                                     saveWeddingBudget('guest_limit', val);
                                 }}
-                                className="text-base sm:text-xl font-mono text-primary w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-8 sm:pl-10 pr-2 sm:pr-3 py-2 outline-none focus:ring-primary/20 min-h-[40px] sm:min-h-[44px]"
+                                className="text-base sm:text-xl font-mono text-primary w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-10 sm:pl-12 pr-2 sm:pr-3 py-2 outline-none focus:ring-primary/20 min-h-[40px] sm:min-h-[44px]"
                             />
                         </div>
                     </div>
@@ -585,14 +585,14 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                     <div className="min-w-0">
                         <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Est. Cost ({currencySymbol})</label>
                         <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs font-bold">{currencySymbol}</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs font-bold pointer-events-none">{currencySymbol}</span>
                             <input 
                                 required
                                 type="number" 
                                 placeholder="0.00" 
                                 value={newItem.estimated_cost}
                                 onChange={e => setNewItem({...newItem, estimated_cost: e.target.value})}
-                                className="w-full bg-white border border-border rounded-lg sm:rounded-xl pl-10 pr-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 font-mono text-xs sm:text-sm min-h-[44px]"
+                                className="w-full bg-white border border-border rounded-lg sm:rounded-xl pl-12 pr-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 font-mono text-xs sm:text-sm min-h-[44px]"
                             />
                         </div>
                     </div>
@@ -800,7 +800,7 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
                     <div className="min-w-0">
                         <label className="block text-[10px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Amount ({currencySymbol})</label>
                         <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs font-bold">{currencySymbol}</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs font-bold pointer-events-none">{currencySymbol}</span>
                             <input 
                                 type="number" 
                                 placeholder="0.00" 

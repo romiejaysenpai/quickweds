@@ -86,7 +86,7 @@ export default function TemplatesSection() {
                                                 <span>{template.name.split(' ')[0]}</span>
                                             </div>
                                             <div className="relative z-10 max-w-[75%] text-white drop-shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
-                                                <p className="text-[11px] uppercase tracking-[0.3em] text-white/70">QuickWeds</p>
+                                                <img src="/logo.png" alt="QuickWeds" className="h-3 w-auto grayscale invert brightness-200 opacity-80" />
                                                 <h3 className="mt-3 font-serif text-3xl leading-none">{template.name}</h3>
                                                 <p className="mt-4 text-sm leading-relaxed text-white/80">{template.mood}</p>
                                             </div>
