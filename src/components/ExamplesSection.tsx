@@ -1,189 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, X, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, CheckCircle2, Heart, Sparkles, X } from 'lucide-react';
 
-export const EXAMPLES = [
-    {
-        id: 'ex-1',
-        bride_name: 'Isabella Rossi',
-        groom_name: 'Julian Sterling',
-        wedding_date: '2026-06-15',
-        venue_name: 'The Ritz-Carlton, Paris',
-        story: 'From a chance meeting at a bookstore in the Latin Quarter to a lifetime of shared chapters.',
-        motif_color: '#D4AF37',
-        template: 'ArtDeco',
-        font: 'Classic',
-        hero_image: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop',
-        couple_photo: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=1974&auto=format&fit=crop',
-        quote: 'A celebration in the city of lights.',
-        hashtag: '#SterlingUnion'
-    },
-    {
-        id: 'ex-2',
-        bride_name: 'Amara Okafor',
-        groom_name: 'Kojo Mensah',
-        wedding_date: '2025-09-20',
-        venue_name: 'Zion National Park, Utah',
-        story: 'Bound by a love for adventure and the great outdoors, we chose the desert to say our forever.',
-        motif_color: '#e2725b',
-        template: 'Boho',
-        font: 'Romantic',
-        hero_image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop',
-        couple_photo: 'https://images.unsplash.com/photo-1465495910483-34a1d374bb15?q=80&w=2070&auto=format&fit=crop',
-        quote: 'Wild at heart, together forever.',
-        hashtag: '#AmaraKojoAdventures'
-    },
-    {
-        id: 'ex-3',
-        bride_name: 'Sloane Vanderbilt',
-        groom_name: 'Xavier Knight',
-        wedding_date: '2026-12-31',
-        venue_name: 'The Glass House, NYC',
-        story: 'Modern love in the heart of the city. A New Years Eve to remember.',
-        motif_color: '#000000',
-        template: 'Editorial',
-        font: 'Modern',
-        hero_image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop',
-        couple_photo: 'https://images.unsplash.com/photo-1544120190-275135a1da6b?q=80&w=2070&auto=format&fit=crop',
-        quote: 'The ultimate metropolitan union.',
-        hashtag: '#VogueWedding26'
-    },
-    {
-        id: 'ex-4',
-        bride_name: 'Elena Petrova',
-        groom_name: 'Maximilian Duke',
-        wedding_date: '2026-05-12',
-        venue_name: 'Blenheim Palace, UK',
-        story: 'A fairy tale beginning for two souls destined for a lifetime of grandeur.',
-        motif_color: '#4B0082',
-        template: 'Royal',
-        font: 'Elegant',
-        hero_image: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?q=80&w=2070&auto=format&fit=crop',
-        couple_photo: 'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?q=80&w=2070&auto=format&fit=crop',
-        quote: 'By Royal Proclamation.',
-        hashtag: '#DukePetrovaWedding'
-    },
-    {
-        id: 'ex-5',
-        bride_name: 'Mia Sun-Hee',
-        groom_name: 'Oliver Thorne',
-        wedding_date: '2026-04-05',
-        venue_name: 'The Cherry Blossom Garden',
-        story: 'Our love bloomed like the spring, constant and beautiful.',
-        motif_color: '#ffc0cb',
-        template: 'Whimsical',
-        font: 'Traditional',
-        hero_image: 'https://images.unsplash.com/photo-1523438885200-e635ba2c371e?q=80&w=1974&auto=format&fit=crop',
-        couple_photo: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2069&auto=format&fit=crop',
-        quote: 'Where magic happens.',
-        hashtag: '#BloomWithThorne'
-    },
-    {
-        id: 'ex-6',
-        bride_name: 'Jaxson Reed',
-        groom_name: 'Tatum Brooks',
-        wedding_date: '2025-11-14',
-        venue_name: 'Industry City Loft, Brooklyn',
-        story: 'Late nights, city lights, and a love that redefined everything.',
-        motif_color: '#ff4500',
-        template: 'Urban',
-        font: 'Classic',
-        hero_image: 'https://images.unsplash.com/photo-1519225495810-75178ed4e4ed?q=80&w=2070&auto=format&fit=crop',
-        couple_photo: 'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?q=80&w=2070&auto=format&fit=crop',
-        quote: 'The city belongs to us.',
-        hashtag: '#UrbanVows25'
-    },
-    {
-        id: 'ex-7',
-        bride_name: 'Leilani Kai',
-        groom_name: 'Kai Noa',
-        wedding_date: '2026-07-22',
-        venue_name: 'Wailea Beach, Maui',
-        story: 'The ocean brought us together, and the shore will hear our vows.',
-        motif_color: '#008080',
-        template: 'Tropical',
-        font: 'Romantic',
-        hero_image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=1974&auto=format&fit=crop',
-        couple_photo: 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?q=80&w=2069&auto=format&fit=crop',
-        quote: 'Sun, Sand & Our Soulmate.',
-        hashtag: '#KaiNoaMaui'
-    },
-    {
-        id: 'ex-8',
-        bride_name: 'Charlotte Moore',
-        groom_name: 'William Sterling',
-        wedding_date: '2026-08-08',
-        venue_name: 'St. Pauls Cathedral',
-        story: 'A classic love story, written in the stars and celebrated with tradition.',
-        motif_color: '#f5f5dc',
-        template: 'Classic',
-        font: 'Elegant',
-        hero_image: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop',
-        couple_photo: 'https://images.unsplash.com/photo-1509927083803-4bd519298ac4?q=80&w=2070&auto=format&fit=crop',
-        quote: 'Together with their families.',
-        hashtag: '#MooreSterlingUnion'
-    },
-    {
-        id: 'ex-9',
-        bride_name: 'Iris Chen',
-        groom_name: 'Leo Sato',
-        wedding_date: '2026-10-10',
-        venue_name: 'The Modern Art Museum',
-        story: 'Minimalism at its finest. One love, one life, one perfect day.',
-        motif_color: '#c0c0c0',
-        template: 'Minimal',
-        font: 'Traditional',
-        hero_image: 'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?q=80&w=2070&auto=format&fit=crop',
-        couple_photo: 'https://images.unsplash.com/photo-1510076857177-7470076d4098?q=80&w=2072&auto=format&fit=crop',
-        quote: 'Less is more, but love is everything.',
-        hashtag: '#IrisLeoMinimal'
-    },
-    {
-        id: 'ex-10',
-        bride_name: 'Daisy Meadows',
-        groom_name: 'Arthur Finch',
-        wedding_date: '2025-06-01',
-        venue_name: 'The Old Oak House',
-        story: 'A vintage celebration of a love that has stood the test of time.',
-        motif_color: '#8b4513',
-        template: 'Vintage',
-        font: 'Traditional',
-        hero_image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop',
-        couple_photo: 'https://images.unsplash.com/photo-1519225421980-6e107db58848?q=80&w=2070&auto=format&fit=crop',
-        quote: 'A tale from the archives of love.',
-        hashtag: '#OldOakMeadows'
-    }
-];
+import { TEMPLATES } from '@/lib/template-catalog';
 
-export default function ExamplesSection({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
-    const router = useRouter();
-
-    const handleUseExample = (example: any) => {
-        // Prepare data for the builder
-        const builderData = {
-            step: 1,
-            bride_name: example.bride_name,
-            groom_name: example.groom_name,
-            wedding_date: example.wedding_date,
-            venue_name: example.venue_name,
-            story: example.story,
-            motif_color: example.motif_color,
-            template: example.template,
-            font: example.font,
-            quote: example.quote,
-            hashtag: example.hashtag,
-            // Images need special handling, but common URLs are fine
-            hero_image_preview: example.hero_image,
-            couple_photo_preview: example.couple_photo
-        };
-
-        localStorage.setItem('quickweds_builder_init', JSON.stringify(builderData));
-        router.push('/builder?init=true');
-    };
-
+export default function ExamplesSection({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -191,59 +15,97 @@ export default function ExamplesSection({ isOpen, onClose }: { isOpen: boolean, 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md overflow-y-auto px-6 py-12"
+                    className="fixed inset-0 z-[100] overflow-y-auto bg-black/65 px-4 py-6 backdrop-blur-md sm:px-6 sm:py-10"
                 >
-                    <div className="max-w-7xl mx-auto">
-                        <div className="flex justify-between items-center mb-12">
-                            <div>
-                                <h2 className="text-4xl font-serif text-white mb-2">Inspiration Gallery</h2>
-                                <p className="text-white/60">Choose a starting point or explore our premium designs</p>
+                    <div className="mx-auto max-w-7xl">
+                        <div className="relative mb-8 flex flex-col items-center gap-4 rounded-[1.5rem] border border-white/10 bg-white/10 px-5 py-6 text-center shadow-2xl shadow-black/20 backdrop-blur-xl sm:mb-10 sm:rounded-[2rem] sm:px-8 sm:py-8 md:flex-row md:items-center md:justify-between md:text-left">
+                            <div className="max-w-3xl">
+                                <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-white/70 sm:text-xs sm:tracking-[0.28em]">
+                                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                    Templates
+                                </span>
+                                <h2 className="text-3xl font-serif font-bold leading-tight text-white sm:text-5xl">
+                                    Inspiration <span className="text-primary">Gallery</span>
+                                </h2>
+                                <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-white/65 sm:text-base md:mx-0">
+                                    Browse the real QuickWeds template library, then open any design directly in the builder.
+                                </p>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="w-12 h-12 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all flex items-center justify-center"
+                                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white hover:text-black sm:h-12 sm:w-12 md:static md:shrink-0"
+                                aria-label="Close inspiration gallery"
                             >
-                                <X className="w-6 h-6" />
+                                <X className="h-5 w-5 sm:h-6 sm:w-6" />
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {EXAMPLES.map((example) => (
-                                <motion.div
-                                    key={example.id}
-                                    initial={{ opacity: 0, y: 20 }}
+                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {TEMPLATES.map((template, index) => (
+                                <motion.article
+                                    key={template.id}
+                                    initial={{ opacity: 0, y: 18 }}
                                     whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    className="group relative bg-[#1a1a1a] rounded-3xl overflow-hidden border border-white/5 hover:border-white/20 transition-all"
+                                    viewport={{ once: true, amount: 0.12 }}
+                                    transition={{ delay: Math.min(index * 0.025, 0.2), duration: 0.45 }}
+                                    className="group relative overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#171313] p-3 shadow-xl shadow-black/20 transition hover:-translate-y-1 hover:border-white/25 sm:rounded-[1.75rem]"
                                 >
-                                    <div className="aspect-[16/10] overflow-hidden">
-                                        <img
-                                            src={example.hero_image}
-                                            alt={`${example.bride_name} and ${example.groom_name} Wedding`}
-                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale-[0.5] group-hover:grayscale-0"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/20 to-transparent" />
-                                    </div>
+                                    <div
+                                        className="absolute inset-0 opacity-90 transition-transform duration-700 group-hover:scale-105"
+                                        style={{ backgroundImage: template.previewGradient }}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-white/20" />
 
-                                    <div className="p-8 relative">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40">
-                                                {example.template} Theme
-                                            </span>
-                                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: example.motif_color }} />
+                                    <div className="relative overflow-hidden rounded-[1rem] border border-white/20 bg-white/20 sm:rounded-[1.35rem]">
+                                        <div className="relative aspect-[4/5] overflow-hidden">
+                                            {template.image ? (
+                                                <Image
+                                                    src={template.image}
+                                                    alt={`${template.name} template preview`}
+                                                    fill
+                                                    sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full flex-col justify-between p-5">
+                                                    <div className="flex items-center justify-between rounded-full border border-white/45 bg-white/35 px-3 py-2 text-[9px] font-black uppercase tracking-[0.2em] text-white/85 backdrop-blur-sm">
+                                                        <span>{template.eyebrow}</span>
+                                                        <Heart className="h-3.5 w-3.5" />
+                                                    </div>
+                                                    <div className="max-w-[85%] text-white drop-shadow-[0_14px_28px_rgba(0,0,0,0.3)]">
+                                                        <Image src="/logo.png" alt="QuickWeds" width={120} height={42} className="h-5 w-auto brightness-0 invert" />
+                                                        <h3 className="mt-4 font-serif text-3xl leading-none">{template.name}</h3>
+                                                        <p className="mt-3 text-sm leading-6 text-white/80">{template.mood}</p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-
-                                        <h3 className="text-2xl font-serif text-white mb-2">{example.bride_name.split(' ')[0]} & {example.groom_name.split(' ')[0]}</h3>
-                                        <p className="text-white/40 text-sm line-clamp-2 mb-8 font-serif italic">&quot;{example.story}&quot;</p>
-
-                                        <button
-                                            onClick={() => handleUseExample(example)}
-                                            className="w-full py-4 rounded-2xl bg-white text-black font-bold text-sm tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-primary transition-all group/btn"
-                                        >
-                                            Use This Template <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
-                                        </button>
                                     </div>
-                                </motion.div>
+
+                                    <div className="relative p-4 text-white sm:p-5">
+                                        <div className="mb-4 flex items-center justify-between gap-3">
+                                            <span className="inline-flex min-h-[28px] items-center rounded-full border border-white/15 bg-white/10 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-white/65">
+                                                {template.tier === 'free' ? 'Included' : 'Premium'}
+                                            </span>
+                                            <span className="h-4 w-4 rounded-full shadow-[0_0_0_4px_rgba(255,255,255,0.12)]" style={{ backgroundColor: template.accent }} />
+                                        </div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">{template.eyebrow}</p>
+                                        <h3 className="mt-2 font-serif text-2xl font-bold leading-tight">{template.name}</h3>
+                                        <p className="mt-2 line-clamp-2 min-h-[48px] text-sm leading-6 text-white/58">{template.desc}</p>
+                                        <p className="mt-3 flex gap-2 text-xs font-semibold leading-5 text-white/50">
+                                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-primary" />
+                                            {template.mood}
+                                        </p>
+                                        <Link
+                                            href={`/builder?template=${template.id}`}
+                                            onClick={onClose}
+                                            className="mt-5 flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-black transition hover:bg-primary hover:text-white"
+                                        >
+                                            Open Template
+                                            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                                        </Link>
+                                    </div>
+                                </motion.article>
                             ))}
                         </div>
                     </div>

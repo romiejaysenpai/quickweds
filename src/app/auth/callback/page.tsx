@@ -48,6 +48,23 @@ export default function AuthCallbackPage() {
                 }
 
                 if (data?.session) {
+                    const user = data.session.user;
+                    // Check if this is a new signup (created within the last 30 seconds)
+                    const isNewUser = new Date(user.created_at).getTime() > Date.now() - 30000;
+
+                    if (isNewUser) {
+                        void fetch('/api/admin/notify-signup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                record: {
+                                    email: user.email,
+                                    full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'OAuth User',
+                                }
+                            })
+                        }).catch(err => console.error('OAuth Notification Error:', err));
+                    }
+
                     // Successfully authenticated - redirect to dashboard
                     router.push('/dashboard');
                 } else {

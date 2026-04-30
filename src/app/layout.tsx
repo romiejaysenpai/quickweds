@@ -61,8 +61,8 @@ const herr = Herr_Von_Muellerhoff({ variable: "--font-herr", weight: "400", subs
 const lavishly = Lavishly_Yours({ variable: "--font-lavishly", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "QuickWeds | Instant Elegant Wedding Landing Pages",
-  description: "Create a beautiful, mobile-first wedding invitation landing page with an integrated RSVP system in minutes.",
+  title: "QuickWeds | All-in-One Wedding Planning System",
+  description: "Create your wedding website, manage RSVPs, track guests, organize budgets, coordinate vendors, and plan every detail in one calm dashboard.",
   applicationName: "QuickWeds",
   appleWebApp: {
     capable: true,
@@ -85,7 +85,6 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-import Header from '@/components/Header';
 import { SectionProvider } from '@/context/SectionContext';
 
 export default function RootLayout({

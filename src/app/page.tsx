@@ -1,805 +1,684 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, Smartphone, Share2, ArrowRight, Play, CheckCircle2, Star, Zap, Instagram, Twitter, Facebook, ChevronDown, Plus, Minus, MessageCircle, Globe, Mail, PieChart, LayoutDashboard, Camera, ListTodo, Users, Wallet, Sun, Moon } from 'lucide-react';
+import {
+  ArrowRight,
+  Camera,
+  CheckCircle2,
+  ChevronDown,
+  CircleDollarSign,
+  ClipboardCheck,
+  Heart,
+  LayoutDashboard,
+  LockKeyhole,
+  MailCheck,
+  Menu,
+  MessageCircle,
+  Moon,
+  PartyPopper,
+  Phone,
+  ShieldCheck,
+  Sparkles,
+  Sun,
+  UsersRound,
+  X,
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import DemoSection from '@/components/DemoSection';
 import ExamplesSection from '@/components/ExamplesSection';
-import TemplatesSection from '@/components/TemplatesSection';
-import PhoneMockupSection from '@/components/PhoneMockupSection';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 
-const FAQS = [
+const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/Minimalist%20Neutral%20Multi%20Device%20Computer%20Mockup%20Website%20Launch%20Instagram%20Post.png';
+const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/pc%20vew.png';
+const joySectionMobileImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/sdgsdfgsd.png';
+const navItemClass = 'inline-flex h-10 items-center px-1 text-sm font-bold leading-none text-text-secondary transition hover:text-primary';
+const footerItemClass = 'inline-flex h-9 items-center px-1 leading-none transition hover:text-primary';
+
+const featureCards = [
   {
-    question: "How long does it take to create a site?",
-    answer: "With QuickWeds, you can have a professional wedding landing page ready in under 5 minutes. Simply fill in your details, choose a template, and your site is live instantly."
+    icon: LayoutDashboard,
+    title: 'Wedding Website Builder',
+    body: 'Create a beautiful, personalized wedding site in minutes with all of the details guests need.',
   },
   {
-    question: "Can I use my own domain?",
-    answer: "Yes! While we provide a clean quickweds.com/w/your-id URL for free, you can easily map your own custom domain in the dashboard."
+    icon: MailCheck,
+    title: 'Smart RSVP Management',
+    body: 'Track responses instantly, send automated RSVP emails, get couple notifications, and schedule reminders without chasing guests.',
   },
   {
-    question: "Is the RSVP system automated?",
-    answer: "Absolutely. All guest responses are tracked in real-time on your dashboard analytics. Our integration with Resend automatically fires a confirmation email to your guests, and an instant notification to you with their dietary specifics."
+    icon: UsersRound,
+    title: 'Guest List & Seating Manager',
+    body: 'Organize guests, plus-ones, groups, and seating plans without spreadsheet chaos.',
   },
   {
-    question: "Can I upload high-quality videos?",
-    answer: "Yes, we support high-definition video uploads (up to 50MB) for your wedding teasers and stories, ensuring your memories look stunning on all devices."
+    icon: CircleDollarSign,
+    title: 'Budget Tracker',
+    body: 'Stay in control of deposits, balances, and every wedding expense before surprises happen.',
   },
   {
-    question: "Are the templates mobile-friendly?",
-    answer: "Every single one of our 25+ templates is designed with a mobile-first approach. They look and function perfectly on iPhones, Androids, and tablets."
+    icon: Phone,
+    title: 'Vendor Organizer',
+    body: 'Keep vendor contacts, bookings, notes, and deadlines together in one calm dashboard.',
   },
   {
-    question: "What happens after the wedding?",
-    answer: "Activate 'Thank You Mode' to hide the RSVP form and swap it out for a heartfelt thank-you message and a link to your official photo gallery for all guests to relive the memories."
-  }
+    icon: ClipboardCheck,
+    title: 'Task & Checklist Planner',
+    body: 'Know what is done, what is next, and what needs attention before the big day.',
+  },
+  {
+    icon: Heart,
+    title: 'Collaboration Tools',
+    body: 'Invite your partner, family, or planner so everyone can help without losing context.',
+  },
+  {
+    icon: Camera,
+    title: 'Photo Sharing Portal',
+    body: 'Let guests upload and share wedding memories in one private, easy-to-find place.',
+  },
+  {
+    icon: PartyPopper,
+    title: 'Post-Wedding Tools',
+    body: 'Send thank-you messages, share albums, and stay connected after the celebration.',
+  },
 ];
 
-const PRICING_PLANS = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "/ Event",
-    desc: "Experience the magic of QuickWeds with no commitment. Perfect for exploring our platform and starting your journey.",
-    features: ["3 Basic Templates", "RSVP Form & Analytics", "Interactive Timeline", "12 Gallery Photos", "Automated OG SEO Tags"],
-    cta: "Start for Free",
-    href: "/builder",
-    popular: false
-  },
-  {
-    name: "1-Year Access",
-    price: "$14.99",
-    period: "/ Year",
-    desc: "Our most loved plan. Unlock the full potential of your wedding website with every premium feature included. Limited time offer for couples who want perfection.",
-    features: ["All 25+ Designer Templates", "Custom Domain Connect (e.g. yourname.com)", "Two-Way Email Automations", "CSV Guest List Export & Editing", "Post-Wedding 'Thank You' Mode"],
-    cta: "GET 1-Year Access for Only $14.99 Now",
-    href: "/builder",
-    popular: true
-  },
-  {
-    name: "Custom Website",
-    price: "Custom",
-    period: "",
-    desc: "Need something truly unique? Our design team will build your dream wedding website from scratch, tailored perfectly to your vision and style.",
-    features: ["Bespoke Designer Consultation", "Fully Custom Layouts & Content", "Advanced Interactive Features", "Concierge Setup & Management", "White-glove Service Start-to-Finish"],
-    cta: "Book a Consultation Now",
-    href: "https://cal.com/romie-jay-bacasmas-4ywlbo/quikweds-costum-wedding-website-discussion",
-    popular: false
-  }
+const painPoints = [
+  'Guests replying across texts, emails, DMs, and group chats',
+  'Spreadsheet chaos, duplicate names, and missing information',
+  'Repeated questions about schedule, dress code, venue, and gifts',
+  'Budget surprises that appear too late in the planning process',
+  'Tasks and vendor details scattered across multiple tools',
 ];
 
-const TESTIMONIALS = [
-  {
-    name: "Sarah & Marc",
-    date: "December 2025",
-    text: "QuickWeds made our digital invitations look so premium. Our guests were genuinely impressed by the interactive timeline!",
-    rating: 5,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah"
-  },
-  {
-    name: "James & Lily",
-    date: "January 2026",
-    text: "The RSVP tracking saved us hours of stressful spreadsheet work. The ability to add our bank details and QR codes for gifts was a lifesaver.",
-    rating: 5,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lily"
-  },
-  {
-    name: "Elena & David",
-    date: "February 2026",
-    text: "We tried other site builders, but nothing was as easy or looked as elegant as QuickWeds. The mobile experience is flawless.",
-    rating: 5,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David"
-  }
+const solutionPoints = [
+  'Wedding website plus digital invitations',
+  'RSVP and guest management',
+  'Automated response emails, host notifications, and guest reminders',
+  'Budget and vendor tracking',
+  'Seating arrangement tools',
+  'Task and checklist planner',
+  'Collaborator access for your partner or coordinator',
 ];
 
-function SectionDivider({ className = "" }: { className?: string }) {
+const quickWedsComparison = [
+  ['All-in-one wedding planning system', 'Multiple tools required'],
+  ['Built-in seating and task management', 'No connected seating or task flow'],
+  ['Partner and planner collaboration', 'Limited collaboration'],
+  ['No ads or distractions', 'Cluttered guest experience'],
+  ['Fast, simple setup', 'Manual setup across apps'],
+];
+
+function Accent({ children }: { children: React.ReactNode }) {
+  return <span className="text-primary">{children}</span>;
+}
+
+function PrimaryCta({ children = 'Create Your Free Wedding Site' }: { children?: string }) {
   return (
-    <div className={`w-full flex justify-center items-center gap-4 py-12 opacity-20 pointer-events-none ${className}`}>
-      <div className="h-[1px] w-24 bg-gradient-to-r from-transparent to-primary" />
-      <Heart className="w-4 h-4 text-primary fill-primary" />
-      <div className="h-[1px] w-24 bg-gradient-to-l from-transparent to-primary" />
+    <Link
+      href="/builder"
+      className="group inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-center text-sm font-bold text-white shadow-xl shadow-primary/25 transition hover:bg-primary-hover sm:w-auto sm:px-6 sm:text-base"
+    >
+      {children}
+      <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+    </Link>
+  );
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  accent,
+  afterAccent,
+  body,
+}: {
+  eyebrow?: string;
+  title: string;
+  accent?: string;
+  afterAccent?: string;
+  body?: string;
+}) {
+  return (
+    <div className="mx-auto mb-8 max-w-3xl text-center sm:mb-14">
+      {eyebrow && (
+        <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-primary/70 sm:text-xs sm:tracking-[0.28em]">{eyebrow}</p>
+      )}
+      <h2 className="text-[2rem] font-bold leading-[1.08] text-foreground sm:text-4xl lg:text-5xl">
+        {title} {accent && <Accent>{accent}</Accent>}{afterAccent}
+      </h2>
+      {body && <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-text-secondary sm:text-lg">{body}</p>}
     </div>
   );
 }
 
-function GridBackground() {
+function HeroImagePanel() {
   return (
-    <div className="absolute inset-0 -z-20 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 40H0V0h40v40zM1 39h38V1H1v38z' fill='%23C08081' fill-rule='evenodd'/%3E%3C/svg%3E")` }} />
-  );
-}
-
-function Glow({ className = "" }: { className?: string }) {
-  return (
-    <div className={`absolute glow-decoration w-[300px] sm:w-[400px] md:w-[500px] h-[300px] sm:h-[400px] md:h-[500px] bg-primary/10 rounded-full blur-[80px] sm:blur-[100px] md:blur-[120px] -z-10 animate-pulse ${className}`} />
-  );
-}
-
-function FAQItem({ question, answer }: { question: string, answer: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <div className="border-b border-border/50 py-6 last:border-0">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex justify-between items-center text-left group"
-      >
-        <h3 className="text-xl font-serif font-bold text-foreground group-hover:text-primary transition-colors">{question}</h3>
-        <div className={`w-8 h-8 rounded-full border border-border flex items-center justify-center transition-all ${isOpen ? 'bg-primary border-primary text-white' : 'text-text-secondary group-hover:border-primary group-hover:text-primary'}`}>
-          {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+    <div className="relative mx-auto w-full max-w-[390px] sm:max-w-[580px] lg:max-w-[650px]">
+      <div className="relative flex min-h-[300px] items-center justify-center sm:min-h-[420px] lg:min-h-[520px]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={heroImageUrl}
+          alt="QuickWeds multi-device wedding website and planning dashboard mockup"
+          className="h-auto w-full object-contain drop-shadow-2xl"
+          loading="eager"
+          decoding="async"
+        />
+        <div className="absolute left-1/2 top-3 flex -translate-x-1/2 items-center justify-center rounded-2xl border border-white/70 bg-white/85 px-4 py-2 shadow-xl shadow-primary/10 backdrop-blur-md sm:top-5 sm:px-5 sm:py-3">
+          <Image
+            src="/logo.png"
+            alt="QuickWeds"
+            width={190}
+            height={68}
+            className="h-8 w-auto object-contain sm:h-10"
+            priority
+          />
         </div>
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <p className="pt-4 text-text-secondary leading-relaxed font-light text-lg">
-              {answer}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }
 
 export default function Home() {
   const [isExamplesOpen, setIsExamplesOpen] = useState(false);
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const reduceMotion = useReducedMotion();
 
-  const sparkleParticles = useMemo(() => (
-    Array.from({ length: 15 }, (_, i) => ({
-      id: i,
-      top: `${(i * 17 + 11) % 100}%`,
-      left: `${(i * 23 + 7) % 100}%`,
-      duration: 3 + (i % 5),
-      delay: (i % 4) * 0.6,
-    }))
-  ), []);
-
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newsletterEmail) {
-      setNewsletterSubmitted(true);
-      setNewsletterEmail('');
-      setTimeout(() => setNewsletterSubmitted(false), 3000);
-    }
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+  const openTemplates = () => {
+    setIsExamplesOpen(true);
+    closeMobileMenu();
+  };
+  const openDemo = () => {
+    setIsDemoOpen(true);
+    closeMobileMenu();
   };
 
   return (
-    <div className="relative mobile-safe-screen overflow-hidden bg-neutral selection:bg-primary/20">
-      {/* Advanced Background Ornaments */}
-      <GridBackground />
-      <Glow className="top-0 -right-48" />
-      <Glow className="bottom-0 -left-48 opacity-50" />
-      <Glow className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30" />
-
-      {/* Parallax Mouse Effect Container */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none -z-10"
-        animate={{
-          background: [
-            "radial-gradient(circle at 50% 50%, rgba(192, 128, 129, 0.05) 0%, transparent 50%)",
-            "radial-gradient(circle at 60% 40%, rgba(192, 128, 129, 0.05) 0%, transparent 50%)",
-            "radial-gradient(circle at 40% 60%, rgba(192, 128, 129, 0.05) 0%, transparent 50%)",
-            "radial-gradient(circle at 50% 50%, rgba(192, 128, 129, 0.05) 0%, transparent 50%)",
-          ]
-        }}
-        transition={{ duration: 10, repeat: Infinity }}
-      />
-
-      {/* Floating Sparkles Decoration */}
-      <div className="absolute inset-0 pointer-events-none -z-5">
-        {sparkleParticles.map((particle) => (
-          <motion.div
-            key={particle.id}
-            className="absolute w-1 h-1 bg-primary/20 rounded-full"
-            style={{ top: particle.top, left: particle.left }}
-            animate={reduceMotion ? { opacity: 0.4 } : {
-              opacity: [0, 1, 0],
-              scale: [0, 1.5, 0],
-              y: [0, -20, 0]
-            }}
-            transition={{
-              duration: particle.duration,
-              repeat: Infinity,
-              delay: particle.delay
-            }}
-          />
-        ))}
-      </div>
-
-      <nav className="fixed top-0 left-0 right-0 z-[60] bg-white/70 dark:bg-neutral/70 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex justify-between items-center gap-4 sm:gap-8">
-          <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-            <img src="/logo.png" alt="QuickWeds" className="h-9 sm:h-11 w-auto object-contain transition-transform group-hover:scale-105" />
+    <div className="min-h-screen overflow-hidden bg-neutral pb-20 text-foreground sm:pb-0">
+      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-border/70 bg-white/90 backdrop-blur-xl">
+        <div className="mobile-safe-px mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:h-20 sm:gap-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-8 w-auto object-contain sm:h-11" priority />
           </Link>
-          <div className="flex items-center gap-4 sm:gap-8 ml-auto">
+
+          <div className="hidden items-center gap-7 lg:flex">
+            <a href="#features" className={navItemClass}>Features</a>
+            <a href="#pricing" className={navItemClass}>Pricing</a>
+            <button type="button" onClick={openTemplates} className={navItemClass}>Templates</button>
+            <button type="button" onClick={openDemo} className={navItemClass}>Demo</button>
+            <Link href="/login" className={navItemClass}>Login</Link>
+          </div>
+
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
             <button
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl bg-white/50 dark:bg-neutral/50 border border-border text-text-secondary hover:text-primary hover:border-primary transition-all soft-shadow"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary hover:text-primary sm:h-11 sm:w-11"
               aria-label="Toggle theme"
             >
-              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </button>
-            <Link href="#templates" className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Templates</Link>
-            <button onClick={() => setIsExamplesOpen(true)} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden md:block">Examples</button>
             {user ? (
-              <div className="flex items-center gap-2 sm:gap-4">
-                <Link href="/dashboard" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all text-xs sm:text-sm min-h-[44px] flex items-center shadow-lg shadow-primary/20">Dashboard</Link>
-                <button onClick={logout} className="text-xs sm:text-sm font-bold text-text-secondary hover:text-foreground transition-all">Logout</button>
-              </div>
+              <>
+                <Link href="/dashboard" className="hidden h-10 items-center text-sm font-bold leading-none text-text-secondary transition hover:text-primary sm:inline-flex">
+                  Dashboard
+                </Link>
+                <button type="button" onClick={logout} className="hidden h-10 items-center text-sm font-bold leading-none text-text-secondary transition hover:text-primary sm:inline-flex">
+                  Logout
+                </button>
+              </>
             ) : (
-              <div className="flex items-center gap-2 sm:gap-4">
-                <Link href="/login" className="text-xs sm:text-sm font-bold text-text-secondary hover:text-primary transition-colors hidden sm:block">Log In</Link>
-                <Link href="/signup" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all text-xs sm:text-sm shadow-lg shadow-primary/20 whitespace-nowrap min-h-[44px] flex items-center justify-center">Get Started</Link>
-              </div>
+              <Link href="/login" className="hidden h-10 items-center text-sm font-bold leading-none text-text-secondary transition hover:text-primary sm:inline-flex lg:hidden">
+                Login
+              </Link>
             )}
-          </div>
-        </div>
-      </nav>
-
-      <main className="pt-24 sm:pt-32">
-        {/* HERO SECTION */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 pb-32 sm:pb-40 text-center relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full bg-white dark:bg-neutral border border-border soft-shadow text-primary dark:text-primary text-xs font-black uppercase tracking-widest mb-8 sm:mb-10"
-          >
-            <Zap className="w-3 sm:w-3.5 h-3 sm:h-3.5 fill-current" /> AI-Powered Elegance
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-[7rem] font-serif font-bold text-foreground leading-[1.1] sm:leading-[0.95] md:leading-[0.9] mb-8 sm:mb-12 tracking-tighter"
-          >
-            Your Love Story, <br />
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent italic font-normal">Digitally Perfected.</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-base sm:text-lg md:text-xl lg:text-2xl font-inter text-text-secondary max-w-2xl mx-auto mb-12 sm:mb-16 leading-relaxed font-light px-2"
-          >
-            Craft a breathtaking, interactive wedding landing page in under 5 minutes.
-            No code, no stress—just pure, digital enchantment for your most special day.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center px-2"
-          >
-            <Link href="/builder" className="group relative px-6 sm:px-12 py-4 sm:py-6 rounded-lg sm:rounded-2xl bg-primary text-white font-bold text-sm sm:text-lg hover:bg-primary-hover transition-all shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 min-h-[44px]">
-              Start Building Now <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 group-hover:translate-x-1 transition-transform" />
-              <div className="absolute -inset-1 rounded-lg sm:rounded-2xl bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Link
+              href="/builder"
+              className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover sm:min-h-[44px] sm:px-5 sm:text-sm"
+              onClick={closeMobileMenu}
+            >
+              <span className="sm:hidden">Free Site</span>
+              <span className="hidden sm:inline">Create Free Site</span>
             </Link>
             <button
               type="button"
-              onClick={() => setIsExamplesOpen(true)}
-              className="px-8 sm:px-12 py-4 sm:py-6 rounded-xl sm:rounded-2xl bg-white dark:bg-neutral text-foreground font-bold text-sm sm:text-lg hover:bg-neutral dark:hover:bg-border/30 transition-all border border-border flex items-center justify-center gap-2 group min-h-[44px]"
+              onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary hover:bg-primary/5 hover:text-primary sm:h-11 sm:w-11 lg:hidden"
+              aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="landing-mobile-menu"
             >
-              <Play className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" /> Watch Experience
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-          </motion.div>
-
-          {/* Social Proof / Stats */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mt-24 pt-12 border-t border-border/50 grid grid-cols-2 md:grid-cols-4 gap-8 grayscale opacity-50"
-          >
-            <div className="flex flex-col items-center">
-              <span className="text-3xl font-serif font-bold text-foreground">10k+</span>
-              <span className="text-[10px] uppercase font-black tracking-widest">Happy Couples</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-3xl font-serif font-bold text-foreground">150+</span>
-              <span className="text-[10px] uppercase font-black tracking-widest">Designs</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-3xl font-serif font-bold text-foreground">Instant</span>
-              <span className="text-[10px] uppercase font-black tracking-widest">RSVP Sync</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-3xl font-serif font-bold text-foreground">Unlimited</span>
-              <span className="text-[10px] uppercase font-black tracking-widest">Photo Storage</span>
-            </div>
-          </motion.div>
-        </section>
-
-        {/* INTERACTIVE FEATURE CARDS */}
-        <section className="bg-neutral/50 py-32 px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-20">
-              <span className="text-xs font-black uppercase tracking-[0.4em] text-primary/60 mb-4 block">Engineered for perfection</span>
-              <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground">Why Couples Love <span className="italic text-primary">QuickWeds</span></h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                {
-                  icon: <Smartphone className="w-8 h-8 text-primary" />,
-                  title: "Mobile Mastery",
-                  desc: "Every design is crafted for a perfect smartphone experience, ensuring every guest feels VIP.",
-                  accent: "bg-primary/5"
-                },
-                {
-                  icon: <LayoutDashboard className="w-8 h-8 text-secondary" />,
-                  title: "Live Split-Pane Builder",
-                  desc: "Build your dream site visually. See your edits update instantly side-by-side with no coding required.",
-                  accent: "bg-secondary/10"
-                },
-                {
-                  icon: <Globe className="w-8 h-8 text-accent" />,
-                  title: "Custom Domains",
-                  desc: "Connect your own unique web address (e.g., jackandrose.com) for a truly premium, white-labeled experience.",
-                  accent: "bg-accent/5"
-                },
-                {
-                  icon: <Mail className="w-8 h-8 text-primary" />,
-                  title: "Two-Way Emails",
-                  desc: "Automated Resend integration instantly emails confirmation to your guests and sends you their dietary needs.",
-                  accent: "bg-primary/5"
-                },
-                {
-                  icon: <PieChart className="w-8 h-8 text-secondary" />,
-                  title: "Analytics Dashboard",
-                  desc: "Track attendance via beautiful pie charts, instantly export CSVs, and manage your guest list seamlessly.",
-                  accent: "bg-secondary/10"
-                },
-                {
-                  icon: <Camera className="w-8 h-8 text-accent" />,
-                  title: "Post-Wedding Mode",
-                  desc: "Swap out the RSVP form for a beautiful 'Thank You' banner linking directly to your official photo albums.",
-                  accent: "bg-accent/5"
-                },
-                {
-                  icon: <ListTodo className="w-8 h-8 text-primary" />,
-                  title: "Smart Planner Ecosystem",
-                  desc: "Manage your big day flawlessly with our interactive checklist, customizable budget tracker, and more.",
-                  accent: "bg-primary/5"
-                },
-                {
-                  icon: <Wallet className="w-8 h-8 text-secondary" />,
-                  title: "Wedding Budget Planner",
-                  desc: "Track every expense from venue to catering. Get real-time budget insights, vendor quotes, and spending breakdowns.",
-                  accent: "bg-secondary/10"
-                },
-                {
-                  icon: <Users className="w-8 h-8 text-secondary" />,
-                  title: "Vendor Rolodex",
-                  desc: "Keep all your hired professionals' contacts, deposit statuses, and custom supplier profiles in one clean place.",
-                  accent: "bg-secondary/10"
-                }
-              ].map((feature, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  whileHover={{ y: -10 }}
-                  className={`p-10 rounded-[3rem] bg-white dark:bg-neutral border border-border hover:border-primary/20 transition-all soft-shadow relative overflow-hidden group`}
-                >
-                  <div className={`w-16 h-16 ${feature.accent} rounded-[1.5rem] flex items-center justify-center mb-8 transition-transform group-hover:scale-110 group-hover:rotate-3`}>
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-2xl font-serif font-bold mb-4 text-foreground">{feature.title}</h3>
-                  <p className="text-text-secondary leading-relaxed mb-6 font-light">{feature.desc}</p>
-                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                    Explore Feature <ArrowRight className="w-4 h-4" />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
           </div>
-        </section>
-
-        <SectionDivider />
-
-        {/* WEDDING BUDGET PLANNER HIGHLIGHT SECTION */}
-        <section className="py-32 sm:py-40 px-6 bg-gradient-to-br from-secondary/5 to-accent/5">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
-              {/* Left: Content */}
-              <motion.div
-                initial={{ opacity: 0, x: -40 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-              >
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-neutral border border-secondary/20 mb-8">
-                  <Wallet className="w-4 h-4 text-secondary" />
-                  <span className="text-xs font-black uppercase tracking-widest text-secondary">Smart Budget Management</span>
-                </div>
-                
-                <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6 leading-tight">
-                  Never Lose <span className="text-secondary italic">Track of Your</span> <span className="text-accent">Wedding Budget</span>
-                </h2>
-                
-                <p className="text-lg text-text-secondary leading-relaxed mb-8 font-light">
-                  From venue deposits to vendor payments, every wedding has countless expenses. Our intelligent budget planner keeps everything organized, transparent, and under control—so you can focus on the details that matter.
-                </p>
-
-                <div className="space-y-4 mb-10">
-                  <div className="flex items-start gap-4">
-                    <div className="w-6 h-6 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0 mt-1">
-                      <CheckCircle2 className="w-4 h-4 text-secondary" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-foreground mb-1">Real-Time Expense Tracking</h4>
-                      <p className="text-sm text-text-secondary">Log every expense and watch your budget update instantly.</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-4">
-                    <div className="w-6 h-6 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0 mt-1">
-                      <CheckCircle2 className="w-4 h-4 text-secondary" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-foreground mb-1">Smart Category Organization</h4>
-                      <p className="text-sm text-text-secondary">Automatically categorize expenses by vendor type and event section.</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-4">
-                    <div className="w-6 h-6 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0 mt-1">
-                      <CheckCircle2 className="w-4 h-4 text-secondary" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-foreground mb-1">Visual Analytics & Reports</h4>
-                      <p className="text-sm text-text-secondary">Beautiful charts show spending breakdown and budget health at a glance.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <Link 
-                  href="/builder" 
-                  className="inline-flex items-center gap-3 px-8 py-4 bg-secondary text-white font-bold rounded-2xl hover:bg-secondary-hover transition-all shadow-lg shadow-secondary/20 group"
-                >
-                  Explore Budget Planner
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </motion.div>
-
-              {/* Right: Visual */}
-              <motion.div
-                initial={{ opacity: 0, x: 40, scale: 0.95 }}
-                whileInView={{ opacity: 1, x: 0, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="relative"
-              >
-                <div className="relative">
-                  {/* Background Glow */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-accent/10 rounded-3xl blur-3xl -z-10"></div>
-                  
-                  {/* Card Container */}
-                  <div className="bg-white dark:bg-neutral border border-border rounded-3xl p-8 soft-shadow">
-                    <div className="space-y-6">
-                      {/* Header */}
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xl font-serif font-bold text-foreground">Wedding Budget</h3>
-                        <div className="px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-bold">$45,000</div>
-                      </div>
-
-                      {/* Budget Items */}
-                      <div className="space-y-4">
-                        {[
-                          { name: "Venue & Catering", spent: 15000, budget: 18000, color: "bg-primary" },
-                          { name: "Photography", spent: 3500, budget: 4000, color: "bg-secondary" },
-                          { name: "Florals & Decor", spent: 2800, budget: 3500, color: "bg-accent" },
-                          { name: "Entertainment", spent: 1200, budget: 2000, color: "bg-emerald-500" }
-                        ].map((item, i) => (
-                          <div key={i}>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-semibold text-foreground">{item.name}</span>
-                              <span className="text-xs text-text-secondary">${item.spent.toLocaleString()} / ${item.budget.toLocaleString()}</span>
-                            </div>
-                            <div className="h-2 bg-neutral rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${item.color} rounded-full transition-all`}
-                                style={{ width: `${(item.spent / item.budget) * 100}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Summary */}
-                      <div className="border-t border-border pt-4 mt-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-semibold text-foreground">Total Spent</span>
-                          <span className="font-bold text-primary">$22,500</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-foreground">Remaining Budget</span>
-                          <span className="font-bold text-secondary">$22,500</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-
-        <SectionDivider />
-
-        <div id="templates">
-          <TemplatesSection />
         </div>
-
-        <SectionDivider />
-
-        {/* PRICING SECTION */}
-        <section className="py-32 px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-20">
-              <span className="text-xs font-black uppercase tracking-[0.4em] text-primary/60 mb-4 block">Simple & Transparent</span>
-              <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">Choose Your <span className="italic text-primary">Subscription Plan</span></h2>
-              <p className="text-text-secondary max-w-xl mx-auto font-light">Whether it's an intimate ceremony or a grand gala, we have a plan that fits your needs.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-              {PRICING_PLANS.map((plan, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className={`relative p-10 rounded-[3rem] border transition-all duration-500 hover:scale-105 ${plan.popular ? 'bg-primary text-white border-primary shadow-2xl shadow-primary/40 ring-4 ring-primary/10' : 'bg-white text-foreground border-border soft-shadow'}`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-accent text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">Most Popular</div>
-                  )}
-                  <h3 className="text-xl font-serif font-bold mb-2">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1 mb-6">
-                    <span className="text-5xl font-serif font-bold tracking-tight">{plan.price}</span>
-                    <span className={`text-sm opacity-60 font-light`}>{plan.period}</span>
-                  </div>
-                  <p className={`text-sm mb-8 font-light ${plan.popular ? 'text-white/80' : 'text-text-secondary'}`}>{plan.desc}</p>
-
-                  <div className="space-y-4 mb-10">
-                    {plan.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-3">
-                        <CheckCircle2 className={`w-4 h-4 ${plan.popular ? 'text-white' : 'text-primary'}`} />
-                        <span className="text-sm font-light">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-
+        {isMobileMenuOpen && (
+          <div id="landing-mobile-menu" className="mobile-safe-px border-t border-border/60 bg-white/95 px-4 py-4 shadow-xl shadow-primary/10 backdrop-blur-xl lg:hidden">
+            <div className="mx-auto grid max-w-7xl gap-2">
+              <a
+                href="#features"
+                onClick={closeMobileMenu}
+                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+              >
+                Features
+                <ArrowRight className="h-4 w-4" />
+              </a>
+              <a
+                href="#pricing"
+                onClick={closeMobileMenu}
+                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+              >
+                Pricing
+                <ArrowRight className="h-4 w-4" />
+              </a>
+              <button
+                type="button"
+                onClick={openTemplates}
+                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-left text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+              >
+                Templates
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={openDemo}
+                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-left text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+              >
+                Demo
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <Link
+                href="/user-guide"
+                onClick={closeMobileMenu}
+                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+              >
+                Guide
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              {user ? (
+                <>
                   <Link
-                    href={plan.href}
-                    target={plan.href.startsWith('http') ? '_blank' : undefined}
-                    className={`block w-full py-4 rounded-2xl font-bold text-center transition-all ${plan.popular ? 'bg-white text-primary hover:bg-neutral' : 'bg-primary/5 text-primary hover:bg-primary/10'}`}
+                    href="/dashboard"
+                    onClick={closeMobileMenu}
+                    className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
                   >
-                    {plan.cta}
+                    Dashboard
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <SectionDivider />
-
-        {/* TESTIMONIALS SECTION */}
-        <section className="py-32 px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-20">
-              <Star className="w-12 h-12 text-primary mx-auto mb-6 opacity-20" />
-              <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground">Trusted by <span className="italic text-primary">Beautiful Souls</span></h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {TESTIMONIALS.map((t, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-white border border-border p-10 rounded-[3rem] soft-shadow relative group hover:border-primary/20 transition-all font-light"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMobileMenu();
+                      logout();
+                    }}
+                    className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-left text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+                  >
+                    Logout
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={closeMobileMenu}
+                  className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
                 >
-                  <div className="flex gap-1 mb-6">
-                    {[...Array(t.rating)].map((_, j) => (
-                      <Star key={j} className="w-4 h-4 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <p className="text-lg font-serif italic text-foreground mb-8 line-clamp-4 leading-relaxed font-light">"{t.text}"</p>
-                  <div className="flex items-center gap-4">
-                    <img src={t.avatar} alt={t.name} className="w-12 h-12 rounded-full border border-border" />
-                    <div>
-                      <p className="font-bold text-sm text-foreground">{t.name}</p>
-                      <p className="text-[10px] uppercase font-black tracking-widest opacity-40">{t.date}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                  Login
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
+              <Link
+                href="/builder"
+                onClick={closeMobileMenu}
+                className="mt-2 flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-xl shadow-primary/25 transition hover:bg-primary-hover"
+              >
+                Create Your Free Wedding Site
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
-        </section>
+        )}
+      </nav>
 
-        {/* FAQ SECTION */}
-        <section className="py-32 px-6 bg-neutral/30">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">Common Questions</h2>
-              <p className="text-text-secondary text-lg font-light">Everything you need to know about creating your dream invitations.</p>
-            </div>
-            <div className="bg-white border border-border p-8 md:p-16 rounded-[4rem] soft-shadow">
-              {FAQS.map((faq, i) => (
-                <FAQItem key={i} question={faq.question} answer={faq.answer} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <SectionDivider />
-
-        {/* NEWSLETTER SECTION */}
-        <section className="py-32 px-6">
-          <div className="max-w-5xl mx-auto px-10 py-20 rounded-[4rem] bg-white border border-border soft-shadow relative overflow-hidden text-center group">
-            <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 transition-transform group-hover:rotate-45 duration-700">
-              <Share2 className="w-32 h-32" />
-            </div>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
-              <span className="text-primary text-xs font-black uppercase tracking-[0.4em] mb-4 block">The Wedding Edit</span>
-              <h2 className="text-4xl font-serif font-bold text-foreground mb-6">Get wedding tips and inspiration</h2>
-              <p className="text-text-secondary mx-auto max-w-lg mb-10 font-light">Join 5,000+ couples receiving our monthly newsletter on trends, planning, and digital etiquette.</p>
-
-              <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  className="flex-1 px-6 py-4 rounded-2xl bg-neutral border border-border focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-light min-h-[44px]"
-                  required
-                />
-                <button 
-                  onClick={handleNewsletterSubmit}
-                  className="px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all whitespace-nowrap min-h-[44px]"
+      <main className="pt-16 sm:pt-20">
+        <section className="relative px-4 pb-14 pt-9 sm:px-6 sm:pb-24 sm:pt-16 lg:pb-28">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,rgba(209,108,120,0.13),transparent_30%),radial-gradient(circle_at_85%_12%,rgba(214,184,124,0.16),transparent_26%)]" />
+          <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
+            <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="text-center lg:text-left">
+              <div className="mx-auto mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-white/75 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-primary shadow-sm sm:mb-6 sm:px-4 sm:text-xs sm:tracking-[0.22em] lg:mx-0">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="truncate">Complete wedding planning system</span>
+              </div>
+              <h1 className="mx-auto max-w-3xl text-[2.55rem] font-bold leading-[1.03] tracking-tight text-foreground min-[390px]:text-[2.85rem] sm:text-5xl lg:mx-0 lg:text-7xl">
+                Plan, invite, and manage your <Accent>wedding</Accent> all in one place.
+              </h1>
+              <p className="mx-auto mt-5 max-w-2xl text-[16px] leading-7 text-text-secondary sm:mt-6 sm:text-xl sm:leading-8 lg:mx-0">
+                Create your wedding website, manage RSVPs, track guests, organize budgets, coordinate vendors, and keep every detail together in one calm dashboard.
+              </p>
+              <div className="mt-7 flex flex-col justify-center gap-3 sm:mt-8 sm:flex-row lg:justify-start">
+                <PrimaryCta />
+                <button
+                  type="button"
+                  onClick={openDemo}
+                  className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl border border-border bg-white px-5 py-3 text-sm font-bold text-foreground transition hover:border-primary hover:text-primary sm:w-auto sm:px-6 sm:text-base"
                 >
-                  {newsletterSubmitted ? '✓ Subscribed!' : 'Subscribe'}
+                  View Demo
                 </button>
               </div>
-              {newsletterSubmitted && <p className="text-xs text-green-600 font-bold mt-3">✓ Thank you for subscribing!</p>}
+              <p className="mt-5 flex items-start justify-center gap-2 text-sm font-bold leading-6 text-text-secondary lg:justify-start">
+                <CheckCircle2 className="mt-1 h-4 w-4 flex-none text-primary" />
+                No spreadsheets. No chasing guests. No stress.
+              </p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.55 }}>
+              <HeroImagePanel />
             </motion.div>
           </div>
         </section>
 
-        {/* FINAL HOOK */}
-        <section className="py-32 px-6">
-          <div className="max-w-6xl mx-auto bg-primary text-white p-16 md:p-24 rounded-[4rem] relative overflow-hidden shadow-2xl shadow-primary/40 text-center">
-            <div className="absolute top-0 right-0 p-8 opacity-20"><Star className="w-32 h-32 rotate-12" /></div>
-            <div className="absolute bottom-0 left-0 p-8 opacity-20"><Heart className="w-32 h-32 -rotate-12" /></div>
+        <section className="border-y border-border bg-white px-4 py-5 sm:px-6 sm:py-6">
+          <div className="mx-auto grid max-w-6xl gap-3 text-center sm:grid-cols-3 sm:gap-4">
+            {['Thousands of guests managed', 'RSVPs tracked effortlessly', 'Couples planning smarter weddings'].map((item) => (
+              <p key={item} className="rounded-2xl bg-neutral px-4 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-text-secondary sm:py-4 sm:text-sm sm:tracking-[0.18em]">
+                {item}
+              </p>
+            ))}
+          </div>
+        </section>
 
-            <h2 className="text-4xl md:text-6xl font-serif font-bold mb-10 relative z-10 leading-[1.1] max-w-2xl mx-auto">
-              Ready to create your <span className="italic font-normal">digital forever</span>?
-            </h2>
-            <p className="text-xl mb-12 opacity-80 font-light max-w-xl mx-auto relative z-10">
-              Join thousands of couples who have chosen QuickWeds to tell their unique love stories.
+        <section className="px-4 py-16 sm:px-6 sm:py-28">
+          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div className="text-center lg:text-left">
+              <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-primary/70 sm:text-xs sm:tracking-[0.28em]">The problem</p>
+              <h2 className="text-[2rem] font-bold leading-[1.08] sm:text-5xl">Planning a <Accent>wedding</Accent> should not feel like a full-time job.</h2>
+              <p className="mt-4 text-[15px] leading-7 text-text-secondary sm:mt-5 sm:text-lg sm:leading-8">
+                When every decision lives in a different app, planning starts to feel heavier than the celebration itself.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {painPoints.map((point) => (
+                <div key={point} className="rounded-2xl border border-border bg-white p-4 shadow-sm sm:p-5">
+                  <p className="flex gap-3 text-left text-sm font-semibold leading-6 text-foreground">
+                    <span className="mt-1 h-2 w-2 flex-none rounded-full bg-primary" />
+                    {point}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white px-4 py-16 sm:px-6 sm:py-28">
+          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-center">
+            <div className="rounded-[1.5rem] border border-border bg-neutral p-4 sm:rounded-[2rem] sm:p-8">
+              <div className="rounded-2xl bg-white p-4 shadow-lg shadow-primary/5 sm:rounded-3xl sm:p-5">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">Dashboard</p>
+                    <h3 className="font-serif text-2xl font-bold sm:text-3xl">Everything in sync</h3>
+                  </div>
+                  <ShieldCheck className="h-8 w-8 text-primary" />
+                </div>
+                <div className="space-y-3">
+                  {solutionPoints.map((point) => (
+                    <div key={point} className="flex items-center gap-3 rounded-2xl border border-border bg-white p-3 sm:p-4">
+                      <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
+                      <span className="text-sm font-semibold text-foreground sm:text-base">{point}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="text-center lg:text-left">
+              <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-primary/70 sm:text-xs sm:tracking-[0.28em]">The solution</p>
+              <h2 className="text-[2rem] font-bold leading-[1.08] sm:text-5xl">One simple <Accent>system</Accent> for your entire wedding.</h2>
+              <p className="mt-4 text-[15px] leading-7 text-text-secondary sm:mt-5 sm:text-lg sm:leading-8">
+                QuickWeds brings your guest experience, planning workflow, budget, vendors, seating, tasks, photos, and post-wedding messages into one organized home.
+              </p>
+              <div className="mt-8 flex justify-center lg:justify-start">
+                <PrimaryCta>Start Planning Free</PrimaryCta>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="px-4 py-16 sm:px-6 sm:py-28">
+          <div className="mx-auto max-w-7xl">
+            <SectionHeading
+              eyebrow="Core features"
+              title="Everything you"
+              accent="need."
+              afterAccent=" Nothing you do not."
+              body="From the first invitation to the final thank-you, QuickWeds keeps every planning detail clear, beautiful, and easy to manage."
+            />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {featureCards.map((feature) => {
+                const Icon = feature.icon;
+                return (
+                  <div key={feature.title} className="rounded-2xl border border-border bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 sm:rounded-3xl sm:p-6 sm:text-left">
+                    <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:mx-0 sm:mb-5 sm:h-12 sm:w-12">
+                      <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+                    </div>
+                    <h3 className="mb-2 font-serif text-xl font-bold text-foreground sm:text-2xl">{feature.title}</h3>
+                    <p className="text-sm leading-6 text-text-secondary sm:text-base sm:leading-7">{feature.body}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white px-4 py-16 sm:px-6 sm:py-28">
+          <div className="mx-auto max-w-6xl">
+            <SectionHeading eyebrow="How it works" title="Set everything up in" accent="minutes" />
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                ['1', 'Create your wedding site', 'Choose your look, add your story, schedule, location, and RSVP details.'],
+                ['2', 'Share your link with guests', 'Send one beautiful link instead of scattered messages and repeated updates.'],
+                ['3', 'Manage it all from one dashboard', 'Track RSVPs, guests, seating, budget, vendors, tasks, photos, and thank-you messages.'],
+              ].map(([number, title, body]) => (
+                <div key={number} className="rounded-2xl border border-border bg-neutral p-5 text-center sm:rounded-3xl sm:p-6 md:text-left">
+                  <div className="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-primary font-serif text-xl font-bold text-white sm:mb-6 sm:h-12 sm:w-12 sm:text-2xl md:mx-0">{number}</div>
+                  <h3 className="mb-3 font-serif text-xl font-bold sm:text-2xl">{title}</h3>
+                  <p className="text-sm leading-6 text-text-secondary sm:text-base sm:leading-7">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 py-16 sm:px-6 sm:py-28">
+          <div className="mx-auto max-w-6xl">
+            <SectionHeading eyebrow="Why couples choose QuickWeds" title="Built to replace the planning" accent="mess," afterAccent=" not add another tab." />
+            <div className="space-y-3 sm:hidden">
+              {quickWedsComparison.map(([quickweds, others]) => (
+                <div key={quickweds} className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+                  <div className="flex gap-3 font-semibold text-foreground">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-primary" />
+                    <div>
+                      <p>{quickweds}</p>
+                      <p className="mt-2 border-t border-border pt-2 text-sm font-medium text-text-secondary">Others: {others}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden overflow-hidden rounded-[2rem] border border-border bg-white shadow-xl shadow-primary/5 sm:block">
+              <div className="grid grid-cols-2 bg-neutral text-sm font-black uppercase tracking-[0.18em] text-text-secondary">
+                <div className="border-r border-border p-4 sm:p-6">QuickWeds</div>
+                <div className="p-4 sm:p-6">Other tools</div>
+              </div>
+              {quickWedsComparison.map(([quickweds, others]) => (
+                <div key={quickweds} className="grid grid-cols-2 border-t border-border">
+                  <div className="flex gap-3 border-r border-border p-4 font-semibold text-foreground sm:p-6">
+                    <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
+                    {quickweds}
+                  </div>
+                  <div className="p-4 text-text-secondary sm:p-6">{others}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 py-8 sm:px-6 sm:py-10">
+          <div className="relative mx-auto min-h-[480px] max-w-7xl overflow-hidden rounded-[1.5rem] border border-border bg-foreground sm:min-h-[420px] sm:rounded-[2rem]">
+            <picture>
+              <source media="(min-width: 640px)" srcSet={joySectionDesktopImageUrl} />
+              <img
+                src={joySectionMobileImageUrl}
+                alt="QuickWeds planning experience preview"
+                className="absolute inset-0 h-full w-full object-cover object-center opacity-70 sm:opacity-65"
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
+            <div className="absolute inset-0 bg-gradient-to-t from-foreground/92 via-foreground/55 to-foreground/10 sm:bg-gradient-to-r sm:from-foreground/85 sm:via-foreground/45 sm:to-transparent" />
+            <div className="relative flex min-h-[480px] max-w-2xl flex-col justify-end p-6 text-white sm:min-h-[420px] sm:justify-center sm:p-12 lg:p-16">
+              <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-white/75 sm:mb-4 sm:text-xs sm:tracking-[0.28em]">More joy, less admin</p>
+              <h2 className="text-[2.15rem] font-bold leading-[1.08] sm:text-5xl">Spend less time managing, more time <span className="text-secondary">celebrating.</span></h2>
+              <p className="mt-4 text-[15px] leading-7 text-white/85 sm:mt-5 sm:text-lg sm:leading-8">Focus on moments, not logistics. QuickWeds keeps the details handled so the day feels lighter.</p>
+              <div className="mt-8">
+                <Link href="/builder" className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-neutral sm:w-auto sm:px-6 sm:text-base">
+                  Create Your Free Wedding Site
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="pricing" className="px-4 py-16 sm:px-6 sm:py-28">
+          <div className="mx-auto max-w-5xl">
+            <SectionHeading
+              eyebrow="Simple pricing"
+              title="No surprises. Start"
+              accent="free,"
+              afterAccent=" upgrade anytime."
+              body="One complete planning system with the essential tools couples actually need before, during, and after the wedding."
+            />
+            <div className="mx-auto max-w-2xl rounded-[1.5rem] border border-primary/25 bg-white p-5 shadow-2xl shadow-primary/10 sm:rounded-[2rem] sm:p-8">
+              <div className="flex flex-col gap-6 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">QuickWeds plan</p>
+                  <h3 className="mt-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">Start Free</h3>
+                  <p className="mt-3 text-text-secondary">Upgrade when you are ready for the full planner system.</p>
+                </div>
+                <div className="flex justify-center sm:justify-start">
+                  <PrimaryCta>Start Free</PrimaryCta>
+                </div>
+              </div>
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                {[
+                  'Website + RSVP tools',
+                  'Automated RSVP emails, notifications, and reminders',
+                  'Full wedding planner system',
+                  'Seating + task management',
+                  'Collaboration features',
+                  'Photo sharing portal',
+                  'Post-wedding tools',
+                ].map((item) => (
+                  <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
+                    <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
+                    {item}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white px-4 py-14 sm:px-6 sm:py-20">
+          <div className="mx-auto grid max-w-6xl gap-4 sm:grid-cols-3">
+            {[
+              [LockKeyhole, 'Secure and private', 'Your planning details and guest information stay protected.'],
+              [Phone, 'Mobile-friendly', 'Designed for couples and guests on any screen.'],
+              [Sparkles, 'No technical skills', 'Launch a polished wedding hub without code or setup stress.'],
+            ].map(([Icon, title, body]) => {
+              const TrustIcon = Icon as typeof LockKeyhole;
+              return (
+                <div key={title as string} className="rounded-2xl border border-border bg-neutral p-5 text-center sm:rounded-3xl sm:p-6">
+                  <TrustIcon className="mx-auto mb-4 h-7 w-7 text-primary sm:h-8 sm:w-8" />
+                  <h3 className="font-serif text-xl font-bold sm:text-2xl">{title as string}</h3>
+                  <p className="mt-2 text-sm leading-6 text-text-secondary sm:text-base sm:leading-7">{body as string}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="px-4 py-16 sm:px-6 sm:py-28">
+          <div className="mx-auto max-w-5xl rounded-[1.5rem] bg-primary p-6 text-center text-white shadow-2xl shadow-primary/25 sm:rounded-[2rem] sm:p-14 lg:p-20">
+            <h2 className="mx-auto max-w-3xl text-[2.15rem] font-bold leading-[1.08] sm:text-6xl">Ready to simplify your <span className="text-secondary">wedding planning?</span></h2>
+            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-white/85 sm:mt-5 sm:text-lg sm:leading-8">
+              Build the website your guests see and the planning system you actually need behind it.
             </p>
-            <Link href="/builder" className="inline-flex items-center gap-3 px-12 py-5 bg-white text-primary rounded-2xl font-bold text-lg hover:bg-neutral transition-all relative z-10">
-              Get Started for Free <ArrowRight className="w-5 h-5" />
-            </Link>
+            <div className="mt-8">
+              <Link href="/builder" className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-neutral sm:w-auto sm:px-7 sm:text-base">
+                Create Your Free Wedding Site
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </section>
       </main>
 
-      <ExamplesSection isOpen={isExamplesOpen} onClose={() => setIsExamplesOpen(false)} />
-
-      <footer className="py-32 bg-white border-t border-border px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
-            <div className="col-span-1 md:col-span-1">
-              <Link href="/" className="inline-block mb-8 hover:scale-105 transition-transform">
-                <img src="/logo.png" alt="QuickWeds" className="h-12 w-auto object-contain" />
-              </Link>
-              <p className="text-text-secondary text-sm leading-relaxed font-light mb-8">
-                QuickWeds is the fastest way to create premium, interactive, and mobile-first wedding landing pages.
-              </p>
-              <div className="flex gap-4">
-                <a href="https://instagram.com/quickweds" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
-                  <Instagram className="w-4 h-4" />
-                </a>
-                <a href="https://twitter.com/quickweds" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
-                  <Twitter className="w-4 h-4" />
-                </a>
-                <a href="https://facebook.com/quickweds" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:border-primary hover:text-white transition-all">
-                  <Facebook className="w-4 h-4" />
-                </a>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 col-span-1 md:col-span-3 gap-12">
-              <div className="flex flex-col gap-6">
-                <p className="font-black text-[10px] uppercase tracking-[0.3em] text-foreground">Platform</p>
-                <div className="flex flex-col gap-4">
-                  <Link href="/builder" className="text-text-secondary text-sm hover:text-primary transition-colors">Builder</Link>
-                  <Link href="#templates" className="text-text-secondary text-sm hover:text-primary transition-colors">Templates</Link>
-                  <button onClick={() => setIsExamplesOpen(true)} className="text-left text-text-secondary text-sm hover:text-primary transition-colors">Examples</button>
-                  <Link href="/login" className="text-text-secondary text-sm hover:text-primary transition-colors">Login</Link>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-6">
-                <p className="font-black text-[10px] uppercase tracking-[0.3em] text-foreground">Support</p>
-                <div className="flex flex-col gap-4">
-                  <a href="mailto:support@quickweds.site" className="text-text-secondary text-sm hover:text-primary transition-colors">Help Center</a>
-                  <a href="mailto:support@quickweds.site" className="text-text-secondary text-sm hover:text-primary transition-colors">Guidelines</a>
-                  <a href="mailto:support@quickweds.site" className="text-text-secondary text-sm hover:text-primary transition-colors">Contact</a>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-6">
-                <p className="font-black text-[10px] uppercase tracking-[0.3em] text-foreground">Legal</p>
-                <div className="flex flex-col gap-4">
-                  <a href="/privacy" className="text-text-secondary text-sm hover:text-primary transition-colors">Privacy Policy</a>
-                  <a href="/terms" className="text-text-secondary text-sm hover:text-primary transition-colors">Terms of Service</a>
-                  <a href="/cookies" className="text-text-secondary text-sm hover:text-primary transition-colors">Cookie Policy</a>
-                </div>
-              </div>
-            </div>
+      <footer className="border-t border-border bg-white px-4 py-12 pb-24 sm:px-6 sm:pb-12">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 text-center md:flex-row md:items-center md:justify-between md:text-left">
+          <div>
+            <Link href="/" className="inline-flex justify-center md:justify-start">
+              <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-10 w-auto object-contain" />
+            </Link>
+            <p className="mt-3 max-w-md text-sm leading-6 text-text-secondary">
+              The all-in-one wedding planning system for websites, RSVPs, guests, budgets, vendors, seating, tasks, photos, and thank-you messages.
+            </p>
           </div>
-
-          <div className="pt-12 border-t border-border flex flex-col md:flex-row justify-between items-center gap-8">
-            <p className="text-text-secondary text-[10px] font-black uppercase tracking-[0.2em]">© 2026 QuickWeds. Crafting digital forever.</p>
-            <div className="flex items-center gap-2 px-4 py-2 bg-neutral rounded-full border border-border">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Systems Operational</span>
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-bold text-text-secondary md:justify-end">
+            <a href="#features" className={footerItemClass}>Features</a>
+            <a href="#pricing" className={footerItemClass}>Pricing</a>
+            <button type="button" onClick={openTemplates} className={footerItemClass}>Templates</button>
+            <button type="button" onClick={openDemo} className={footerItemClass}>Demo</button>
+            <a href="mailto:support@quickweds.site" className={footerItemClass}>Contact</a>
+            <Link href="/privacy" className={footerItemClass}>Privacy</Link>
           </div>
         </div>
       </footer>
 
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100] flex flex-col gap-3 sm:gap-4 mobile-safe-bottom">
-        <motion.a
+      <div className="mobile-safe-px mobile-safe-bottom fixed bottom-0 left-0 right-0 z-40 border-t border-border/70 bg-white/90 px-4 py-3 backdrop-blur-xl sm:hidden">
+        <Link
+          href="/builder"
+          className="flex min-h-[50px] items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-2xl shadow-primary/30"
+        >
+          Create Free Site
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+
+      <div className="fixed bottom-6 right-6 z-40 hidden flex-col gap-3 sm:flex">
+        <a
           href="https://wa.me/919876543210"
           target="_blank"
           rel="noopener noreferrer"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          whileHover={{ scale: 1.1, rotate: 10 }}
-          className="w-12 h-12 sm:w-16 sm:h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl shadow-green-500/40 group cursor-pointer"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-xl shadow-green-500/30 transition hover:scale-105"
+          aria-label="Chat with QuickWeds"
         >
-          <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8" />
-          <span className="absolute right-full mr-4 px-4 py-2 bg-white text-foreground text-xs font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Chat with us</span>
-        </motion.a>
-
-        <motion.button
+          <MessageCircle className="h-6 w-6" />
+        </a>
+        <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          whileHover={{ scale: 1.1 }}
-          className="hidden sm:flex w-16 h-16 bg-white border border-border text-foreground rounded-full items-center justify-center shadow-xl hover:bg-neutral transition-all cursor-pointer"
+          className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-white text-foreground shadow-xl transition hover:bg-neutral"
+          aria-label="Back to top"
         >
-          <ChevronDown className="w-6 h-6 rotate-180" />
-        </motion.button>
+          <ChevronDown className="h-6 w-6 rotate-180" />
+        </button>
       </div>
+
+      <DemoSection isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
+      <ExamplesSection isOpen={isExamplesOpen} onClose={() => setIsExamplesOpen(false)} />
     </div>
   );
 }

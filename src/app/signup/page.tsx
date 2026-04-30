@@ -31,6 +31,20 @@ export default function SignUpPage() {
                 },
             });
             if (error) throw error;
+
+            // Trigger admin notification & welcome email manually
+            // We pass the record object to match the expected Supabase webhook format
+            void fetch('/api/admin/notify-signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    record: {
+                        email,
+                        full_name: name,
+                    }
+                })
+            }).catch(err => console.error('Notification Error:', err));
+
             router.push('/builder');
         } catch (err: any) {
             setError(err.message || 'Failed to create account');
@@ -75,7 +89,7 @@ export default function SignUpPage() {
                     <Link href="/">
                         <img src="/logo.png" alt="QuickWeds Logo" className="h-20 w-auto object-contain mb-4 hover:scale-105 transition-transform" />
                     </Link>
-                    <p className="text-text-secondary text-sm italic">Start your forever journey today</p>
+                    <p className="text-text-secondary text-sm italic">Start your <span className="text-primary">forever</span> journey today</p>
                 </div>
 
                 {error && (

@@ -68,7 +68,7 @@ export default function LoginPage() {
                     <Link href="/">
                         <img src="/logo.png" alt="QuickWeds Logo" className="h-20 w-auto object-contain mb-4 hover:scale-105 transition-transform" />
                     </Link>
-                    <p className="text-text-secondary text-sm italic">Continue creating your dream wedding</p>
+                    <p className="text-text-secondary text-sm italic">Continue creating your dream <span className="text-primary">wedding</span></p>
                 </div>
 
                 {error && (
