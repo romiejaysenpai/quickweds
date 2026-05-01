@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Stripe Checkout Validation
 export const checkoutSchema = z.object({
-    weddingId: z.string().uuid('Invalid wedding ID format'),
+    weddingId: z.string().min(1, 'Wedding ID is required'),
     plan: z.enum(['planner_pro', 'premium', 'elite']).default('planner_pro'),
 });
 
@@ -13,7 +13,7 @@ export const webhookSchema = z.object({
         object: z.object({
             id: z.string(),
             metadata: z.object({
-                weddingId: z.string().uuid().optional(),
+                weddingId: z.string().optional(),
                 plan: z.string().optional(),
             }).optional(),
             amount_total: z.number().optional(),
