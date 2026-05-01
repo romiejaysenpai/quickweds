@@ -6,6 +6,33 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 type PlannerAccessRole = 'owner' | 'partner' | 'coordinator' | 'pending' | 'denied';
 
+async function findWeddingById(db: any, weddingId: string) {
+    const baseQuery = () => db
+        .from('weddings')
+        .select('*')
+        .eq('id', weddingId);
+
+    const { data, error } = await baseQuery()
+        .is('deleted_at', null)
+        .maybeSingle();
+
+    if (!error) return { wedding: data, error: null };
+
+    const message = String(error.message || '');
+    const shouldRetryWithoutDeletedAt =
+        message.includes('deleted_at') ||
+        message.includes('schema cache') ||
+        message.includes('column') ||
+        error.code === 'PGRST204';
+
+    if (!shouldRetryWithoutDeletedAt) {
+        return { wedding: null, error };
+    }
+
+    const fallback = await baseQuery().maybeSingle();
+    return { wedding: fallback.data, error: fallback.error };
+}
+
 export async function GET(req: NextRequest) {
     const { user, error } = await getRequestUser(req);
     if (!user) {
@@ -21,17 +48,19 @@ export async function GET(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const { data: wedding, error: weddingError } = await db
-            .from('weddings')
-            .select('id, user_id, total_budget, currency, guest_limit, is_premium, plan_type')
-            .eq('id', weddingId)
-            .is('deleted_at', null)
-            .single();
+        const { wedding, error: weddingError } = await findWeddingById(db, weddingId);
 
         if (weddingError || !wedding) {
-            return NextResponse.json({ error: 'Wedding not found', accessRole: 'denied' }, { status: 404 });
+            return NextResponse.json({
+                error: weddingError?.message || `Wedding not found for ID: ${weddingId}`,
+                code: 'wedding_not_found',
+                accessRole: 'denied',
+                requestedWeddingId: weddingId,
+                supabaseProject: process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '').split('.')[0] || null,
+            }, { status: 404 });
         }
 
+        const resolvedWeddingId = wedding.id;
         const isAdmin = isKnownAdminEmail(user.email);
         let accessRole: PlannerAccessRole = 'denied';
 
@@ -41,7 +70,7 @@ export async function GET(req: NextRequest) {
             const { data: collaborator } = await db
                 .from('wedding_collaborators')
                 .select('status, role')
-                .eq('wedding_id', weddingId)
+                .eq('wedding_id', resolvedWeddingId)
                 .eq('email', user.email.toLowerCase())
                 .maybeSingle();
 
@@ -59,10 +88,10 @@ export async function GET(req: NextRequest) {
         }
 
         const [tasksRes, budgetsRes, vendorsRes, rsvpsRes] = await Promise.all([
-            db.from('planner_tasks').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
-            db.from('planner_budgets').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
-            db.from('planner_vendors').select('*').eq('wedding_id', weddingId),
-            db.from('rsvps').select('num_guests, rsvp_status, attendance').eq('wedding_id', weddingId),
+            db.from('planner_tasks').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }),
+            db.from('planner_budgets').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }),
+            db.from('planner_vendors').select('*').eq('wedding_id', resolvedWeddingId),
+            db.from('rsvps').select('num_guests, rsvp_status, attendance').eq('wedding_id', resolvedWeddingId),
         ]);
 
         if (tasksRes.error) throw tasksRes.error;
@@ -77,6 +106,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             accessRole,
             wedding,
+            requestedWeddingId: weddingId,
+            resolvedWeddingId,
             tasks: tasksRes.data || [],
             budgets: budgetsRes.data || [],
             vendors: vendorsRes.data || [],

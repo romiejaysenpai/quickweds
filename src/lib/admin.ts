@@ -2,7 +2,6 @@ const KNOWN_ADMIN_EMAILS = [
     process.env.ADMIN_EMAIL,
     process.env.NEXT_PUBLIC_ADMIN_EMAIL,
     'romiejaybacasmas@gmail.com',
-    'romeijaybacasmas@gmail.com',
     'romiejaysenpai@gmail.com',
 ]
     .filter(Boolean)
