@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { CheckCircle2, Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -9,7 +9,6 @@ import { supabase } from '@/lib/supabase';
 
 function SuccessContent() {
     const searchParams = useSearchParams();
-    const router = useRouter();
     const weddingId = searchParams?.get('wedding_id');
     const [verified, setVerified] = useState(false);
     const [checking, setChecking] = useState(true);
@@ -18,7 +17,6 @@ function SuccessContent() {
         const verifyPayment = async () => {
             if (!weddingId) return;
 
-            // Check if payment is processed
             const { data } = await supabase
                 .from('weddings')
                 .select('is_premium, payment_status')
@@ -31,10 +29,9 @@ function SuccessContent() {
             setChecking(false);
         };
 
-        verifyPayment();
-        // Poll for updates in case webhook is delayed
+        void verifyPayment();
         const interval = setInterval(verifyPayment, 2000);
-        setTimeout(() => clearInterval(interval), 15000); // Stop after 15s
+        setTimeout(() => clearInterval(interval), 15000);
 
         return () => clearInterval(interval);
     }, [weddingId]);
@@ -56,48 +53,43 @@ function SuccessContent() {
                 </motion.div>
 
                 <h1 className="text-4xl font-serif font-bold text-foreground mb-4">
-                    {checking ? 'Processing Payment...' : verified ? 'Welcome to Premium! 🎉' : 'Payment Successful!'}
+                    {checking ? 'Processing Payment...' : verified ? 'Planner Pro Unlocked!' : 'Payment Successful!'}
                 </h1>
 
                 <p className="text-lg text-text-secondary mb-8">
                     {checking
-                        ? 'We\'re activating your premium features...'
+                        ? "We're activating your Planner Pro workspace..."
                         : verified
-                            ? 'All premium features have been unlocked for your account!'
-                            : 'Your payment was successful. Premium features will be available shortly.'}
+                            ? 'Your complete planning workspace is ready.'
+                            : 'Your payment was successful. Planner Pro will be available shortly.'}
                 </p>
 
                 <div className="bg-neutral rounded-2xl p-6 mb-8 text-left">
                     <h3 className="text-sm uppercase tracking-widest font-bold text-text-secondary mb-4">
-                        ✨ Premium Features Unlocked
+                        Planner Pro includes
                     </h3>
                     <ul className="space-y-3 text-foreground">
-                        <li className="flex items-start gap-3">
-                            <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                            <span>Access to all <strong>45 premium fonts</strong></span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                            <span><strong>Monogram logo</strong> customization</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                            <span>All <strong>premium templates</strong></span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                            <span><strong>Unlimited gallery</strong> images</span>
-                        </li>
+                        {[
+                            'Seating chart and guest placement tools',
+                            'Budget, vendor, and checklist management',
+                            'Collaborator access for your partner or planner',
+                            'Photo sharing and thank-you tools',
+                        ].map((item) => (
+                            <li key={item} className="flex items-start gap-3">
+                                <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                                <span>{item}</span>
+                            </li>
+                        ))}
                     </ul>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     {weddingId ? (
                         <Link
-                            href={`/builder?edit=${weddingId}`}
+                            href={`/dashboard/${weddingId}/planner`}
                             className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all"
                         >
-                            Continue Editing <ArrowRight className="w-5 h-5" />
+                            Open Planner <ArrowRight className="w-5 h-5" />
                         </Link>
                     ) : null}
                     <Link

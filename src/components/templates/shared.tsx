@@ -6,6 +6,7 @@ import {
     VenueMap,
     WeddingPartySection,
 } from '@/components/wedding';
+import { getTemplateVisualProfile } from '@/lib/theme-engine';
 import type { Wedding, WeddingPartyMember } from '@/types/wedding';
 
 function parseWeddingParty(wedding: Wedding): WeddingPartyMember[] {
@@ -33,15 +34,17 @@ interface SharedNewSectionsProps {
 
 export function SharedNewSections({ wedding, isExpired }: SharedNewSectionsProps) {
     const partyMembers = parseWeddingParty(wedding);
+    const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || '#D16C78');
 
     return (
         <>
             {wedding.is_thank_you_mode ? (
-                <section className="px-6 py-8 md:py-14">
-                    <div className="mx-auto max-w-4xl rounded-[2.5rem] border border-white/50 bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(255,248,244,0.7))] px-8 py-14 text-center shadow-[0_24px_80px_rgba(58,42,45,0.10)] backdrop-blur-xl">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-primary/55">After the celebration</p>
-                        <h2 className="mt-4 text-4xl font-serif italic text-primary md:text-5xl">Thank You!</h2>
-                        <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-text-secondary md:text-xl">
+                <section className={`px-6 py-8 md:py-14 ${visual.sectionClass}`} style={visual.sectionStyle}>
+                    <div className={`mx-auto max-w-4xl px-8 py-14 text-center ${visual.cardClass}`}>
+                        <p className={`text-[10px] font-bold uppercase ${visual.eyebrowClass}`}>After the celebration</p>
+                        <h2 className={`mt-4 text-4xl md:text-5xl ${visual.headingClass}`}>Thank You!</h2>
+                        <div className={`mx-auto mt-5 ${visual.dividerClass}`} />
+                        <p className={`mx-auto mt-6 max-w-2xl text-lg leading-relaxed md:text-xl ${visual.bodyClass}`}>
                             {wedding.thank_you_message || 'Thank you so much for celebrating our special day with us.'}
                         </p>
                         {wedding.photo_album_link && (

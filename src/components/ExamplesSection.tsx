@@ -85,7 +85,7 @@ export default function ExamplesSection({ isOpen, onClose }: { isOpen: boolean; 
                                     <div className="relative p-4 text-white sm:p-5">
                                         <div className="mb-4 flex items-center justify-between gap-3">
                                             <span className="inline-flex min-h-[28px] items-center rounded-full border border-white/15 bg-white/10 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-white/65">
-                                                {template.tier === 'free' ? 'Included' : 'Premium'}
+                                                Included
                                             </span>
                                             <span className="h-4 w-4 rounded-full shadow-[0_0_0_4px_rgba(255,255,255,0.12)]" style={{ backgroundColor: template.accent }} />
                                         </div>

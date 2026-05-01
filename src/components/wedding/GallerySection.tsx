@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
-import { derivePalette, getTypography, BENTO_PRESETS } from '@/lib/theme-engine';
+import { getTypography, BENTO_PRESETS, getTemplateVisualProfile } from '@/lib/theme-engine';
 import { useSectionContext } from '@/context/SectionContext';
 
 interface GallerySectionProps {
@@ -105,26 +105,27 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
 
     if (!gallery || gallery.length === 0) return null;
 
-    const palette = derivePalette(motifColor);
     const typography = getTypography(template);
+    const visual = getTemplateVisualProfile(template, motifColor);
     
-    const isSharp = ['editorial', 'vogue', 'urban', 'minimal'].includes(template);
-    const isBento = ['editorial', 'vogue', 'minimal', 'urban', 'boho', 'luxury'].includes(template);
+    const isSharp = visual.isSharp || ['editorial', 'vogue', 'urban', 'minimal'].includes(template);
+    const isBento = masonry || ['editorial', 'vogue', 'minimal', 'urban', 'boho', 'luxury', 'garden', 'tropical', 'sakura'].includes(template);
     const layoutClasses = isBento ? BENTO_PRESETS.gallery : Array(gallery.length).fill("");
 
     return (
         <>
-        <section id={id} className="py-24 sm:py-32">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <section id={id} className={`py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
+                <div className={visual.containerClass}>
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
                         className="text-center mb-12 sm:mb-20"
                     >
-                        <span className="text-xs uppercase tracking-[0.3em] font-bold text-primary mb-4 block">Moments Captured</span>
-                        <h2 className={`text-4xl sm:text-6xl ${typography.heading} text-[#4A4444]`}>Our Gallery</h2>
-                        <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-foreground/55 sm:text-base">
+                        <span className={`text-xs uppercase font-bold mb-4 block ${visual.eyebrowClass}`}>Moments Captured</span>
+                        <h2 className={`text-4xl sm:text-6xl ${typography.heading} ${visual.headingClass}`}>{visual.galleryTitle}</h2>
+                        <div className={`mx-auto mt-6 ${visual.dividerClass}`} />
+                        <p className={`mx-auto mt-5 max-w-2xl text-sm leading-relaxed sm:text-base ${visual.bodyClass}`}>
                             A curated look at the people, places, and details that shaped the celebration.
                         </p>
                     </motion.div>
@@ -136,9 +137,7 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
                                 initial={{ opacity: 0, y: 50 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1, duration: 0.5 }}
-                                className={`group cursor-pointer overflow-hidden border border-white/60 bg-white/65 p-2 shadow-xl backdrop-blur-sm transition-all duration-500 hover:shadow-2xl ${
-                                    isSharp ? 'rounded-none' : 'rounded-[2rem]'
-                                } ${layoutClasses[i % layoutClasses.length]}`}
+                                className={`group cursor-pointer overflow-hidden p-2 transition-all duration-500 hover:-translate-y-1 ${visual.cardClass} ${layoutClasses[i % layoutClasses.length]}`}
                                 onClick={() => setLightboxIndex(i)}
                             >
                                 <div className={`relative h-full w-full overflow-hidden ${isSharp ? 'rounded-none' : 'rounded-[1.8rem]'}`}>

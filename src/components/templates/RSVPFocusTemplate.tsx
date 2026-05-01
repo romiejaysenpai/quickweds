@@ -35,7 +35,7 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                     className="relative text-center z-10 px-4 sm:px-6 md:px-12 max-w-4xl"
                 >
                     <p className="text-xs sm:text-sm uppercase tracking-[0.4em] font-bold mb-8 sm:mb-10" style={{ color: motifColor }}>
-                        You're Invited
+                        You&apos;re Invited
                     </p>
                     <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif text-neutral-900 mb-10 sm:mb-12 md:mb-16 leading-tight">
                         {wedding.bride_name} <br />
@@ -71,9 +71,9 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
 
             <DetailsSection id="details" wedding={wedding} />
             <BioSection id="bio" wedding={wedding} />
-            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
-            <GallerySection id="gallery" gallery={gallery} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} />
             <GiftSection id="gift" wedding={wedding} />
             {!wedding.is_thank_you_mode && !isExpired && (
                 <CountdownTimer id="countdown"

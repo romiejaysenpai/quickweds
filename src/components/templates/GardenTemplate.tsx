@@ -66,9 +66,9 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: any) {
                     venueAddress={wedding.venue_address}
                 />
             )}
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );

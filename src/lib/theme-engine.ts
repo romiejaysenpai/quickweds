@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 /**
  * Theme Engine Utility
  * 
@@ -7,6 +9,16 @@
  */
 
 export type TemplateCategory = 'classic' | 'modern' | 'romantic' | 'boho' | 'urban' | 'vintage';
+export type TemplateMood =
+    | 'classic'
+    | 'romantic'
+    | 'editorial'
+    | 'dark'
+    | 'organic'
+    | 'vintage'
+    | 'destination'
+    | 'cinematic'
+    | 'playful';
 
 export interface ThemePalette {
     primary: string;       // Motif Color
@@ -22,6 +34,29 @@ export interface TypographyPreset {
     body: string;
     letterSpacing: string;
     case: 'uppercase' | 'none' | 'capitalize';
+}
+
+export interface TemplateVisualProfile {
+    mood: TemplateMood;
+    isDark: boolean;
+    isSharp: boolean;
+    isVintage: boolean;
+    isOrganic: boolean;
+    sectionClass: string;
+    sectionStyle?: CSSProperties;
+    containerClass: string;
+    cardClass: string;
+    accentCardClass: string;
+    imageFrameClass: string;
+    eyebrowClass: string;
+    headingClass: string;
+    bodyClass: string;
+    dividerClass: string;
+    ornament: 'none' | 'floral' | 'botanical' | 'geometric' | 'editorial' | 'film' | 'tropical' | 'royal' | 'glitch';
+    galleryTitle: string;
+    detailTitle: string;
+    timelineTitle: string;
+    giftTitle: string;
 }
 
 /**
@@ -42,6 +77,150 @@ export function derivePalette(motifColor: string, isDark: boolean = false): Them
         muted,
         surface: isDark ? '#121212' : '#FFFFFF',
         border
+    };
+}
+
+function normalizeTemplate(template?: string) {
+    return (template || 'classic').toLowerCase();
+}
+
+export function getTemplateMood(template?: string): TemplateMood {
+    const t = normalizeTemplate(template);
+
+    if (['royal', 'midnight', 'artdeco', 'luxury'].includes(t)) return 'dark';
+    if (['cinematic', 'film'].includes(t)) return 'cinematic';
+    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus'].includes(t)) return 'editorial';
+    if (['boho', 'garden', 'rustic', 'sakura'].includes(t)) return 'organic';
+    if (['tropical', 'elopement'].includes(t)) return 'destination';
+    if (['vintage', 'traditional'].includes(t)) return 'vintage';
+    if (['whimsical', 'romantic'].includes(t)) return 'playful';
+
+    return 'classic';
+}
+
+export function getTemplateVisualProfile(template?: string, motifColor = '#D16C78', invert = false): TemplateVisualProfile {
+    const t = normalizeTemplate(template);
+    const mood = getTemplateMood(t);
+    const isDark = invert || mood === 'dark' || mood === 'cinematic' || ['urban', 'glitch'].includes(t);
+    const isSharp = mood === 'editorial' || ['artdeco', 'luxury', 'urban', 'glitch'].includes(t);
+    const isVintage = mood === 'vintage' || ['rustic', 'boho', 'film'].includes(t);
+    const isOrganic = mood === 'organic' || mood === 'destination' || mood === 'playful';
+
+    const base = {
+        mood,
+        isDark,
+        isSharp,
+        isVintage,
+        isOrganic,
+        detailTitle: 'Wedding Details',
+        timelineTitle: 'The Program',
+        giftTitle: 'Gift Registry',
+    };
+
+    if (mood === 'dark') {
+        return {
+            ...base,
+            sectionClass: 'relative overflow-hidden bg-[#101010] text-white',
+            sectionStyle: { backgroundImage: `radial-gradient(circle at 16% 10%, ${motifColor}24, transparent 34%), linear-gradient(180deg, #101010 0%, #17120f 100%)` },
+            containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+            cardClass: 'border border-primary/25 bg-black/35 shadow-[0_28px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl rounded-none',
+            accentCardClass: 'border border-primary/35 bg-primary/10 shadow-[0_24px_70px_rgba(0,0,0,0.35)] rounded-none',
+            imageFrameClass: 'rounded-none border-[10px] border-primary/30 shadow-[0_30px_90px_rgba(0,0,0,0.55)]',
+            eyebrowClass: 'text-primary/70 tracking-[0.42em]',
+            headingClass: 'font-serif uppercase tracking-[0.12em] text-primary',
+            bodyClass: 'text-white/70',
+            dividerClass: 'h-px w-28 bg-gradient-to-r from-transparent via-primary/70 to-transparent',
+            ornament: t === 'artdeco' ? 'geometric' : 'royal',
+            galleryTitle: 'The Gallery',
+        };
+    }
+
+    if (mood === 'editorial') {
+        return {
+            ...base,
+            sectionClass: 'relative overflow-hidden bg-white text-neutral-950',
+            sectionStyle: { backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(180deg, #fff 0%, ${motifColor}0A 100%)`, backgroundSize: '72px 72px, auto' },
+            containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+            cardClass: 'rounded-none border border-black/10 bg-white shadow-none',
+            accentCardClass: 'rounded-none border border-black bg-black text-white shadow-[18px_18px_0_rgba(0,0,0,0.08)]',
+            imageFrameClass: 'rounded-none border border-black/10 grayscale hover:grayscale-0 shadow-[18px_18px_0_rgba(0,0,0,0.06)]',
+            eyebrowClass: 'text-black/45 tracking-[0.5em]',
+            headingClass: 'font-sans font-black uppercase tracking-[-0.04em] text-black',
+            bodyClass: 'text-black/62',
+            dividerClass: 'h-[2px] w-24 bg-black',
+            ornament: t === 'glitch' ? 'glitch' : 'editorial',
+            galleryTitle: 'Photo Edit',
+        };
+    }
+
+    if (mood === 'cinematic') {
+        return {
+            ...base,
+            sectionClass: 'relative overflow-hidden bg-[#17110d] text-white',
+            sectionStyle: { backgroundImage: `radial-gradient(circle at 80% 16%, ${motifColor}2E, transparent 34%), linear-gradient(180deg, #0d0d10 0%, #221711 100%)` },
+            containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+            cardClass: 'rounded-[1.5rem] border border-white/10 bg-white/[0.06] shadow-[0_30px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl',
+            accentCardClass: 'rounded-[1.5rem] border border-primary/30 bg-primary/10 shadow-[0_30px_90px_rgba(0,0,0,0.35)]',
+            imageFrameClass: 'rounded-[1rem] border-[8px] border-black shadow-[0_28px_80px_rgba(0,0,0,0.55)] sepia-[0.12]',
+            eyebrowClass: 'text-primary/70 tracking-[0.42em]',
+            headingClass: 'font-serif tracking-tight text-white',
+            bodyClass: 'text-white/70',
+            dividerClass: 'h-px w-28 bg-gradient-to-r from-transparent via-primary/70 to-transparent',
+            ornament: 'film',
+            galleryTitle: 'Film Stills',
+        };
+    }
+
+    if (mood === 'organic' || mood === 'destination' || mood === 'playful') {
+        return {
+            ...base,
+            sectionClass: 'relative overflow-hidden text-[#4A4444]',
+            sectionStyle: { backgroundImage: `radial-gradient(circle at 8% 8%, ${motifColor}18, transparent 32%), radial-gradient(circle at 92% 20%, ${motifColor}12, transparent 30%), linear-gradient(180deg, #fffaf6 0%, #f8efe8 100%)` },
+            containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+            cardClass: 'rounded-[2rem] md:rounded-[3.25rem] border border-white/70 bg-white/68 shadow-[0_28px_90px_rgba(58,42,45,0.10)] backdrop-blur-xl',
+            accentCardClass: 'rounded-[2rem] md:rounded-[3.25rem] border border-primary/20 bg-white/80 shadow-[0_24px_80px_rgba(58,42,45,0.09)]',
+            imageFrameClass: 'rounded-[2.5rem] md:rounded-[4rem] border-[12px] border-white shadow-[0_30px_90px_rgba(58,42,45,0.16)]',
+            eyebrowClass: 'text-primary/70 tracking-[0.32em]',
+            headingClass: 'font-serif italic tracking-tight text-[#4A4444]',
+            bodyClass: 'text-[#4A4444]/68',
+            dividerClass: 'h-px w-24 bg-gradient-to-r from-transparent via-primary/45 to-transparent',
+            ornament: mood === 'destination' ? 'tropical' : 'botanical',
+            galleryTitle: mood === 'destination' ? 'Paradise Moments' : 'Captured Moments',
+        };
+    }
+
+    if (mood === 'vintage') {
+        return {
+            ...base,
+            sectionClass: 'relative overflow-hidden bg-[#fbf5ea] text-[#4A3A31]',
+            sectionStyle: { backgroundImage: `linear-gradient(180deg, #fbf5ea 0%, #efe1cd 100%)` },
+            containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+            cardClass: 'rounded-sm border-[1px] border-primary/25 bg-[#fffaf0]/80 shadow-[0_24px_70px_rgba(74,58,49,0.14)] ring-4 ring-primary/5',
+            accentCardClass: 'rounded-sm border-[4px] double border-primary/30 bg-[#fffaf0]/90 shadow-[0_24px_80px_rgba(74,58,49,0.16)]',
+            imageFrameClass: 'rounded-sm border-[16px] border-[#f5ead8] shadow-[0_24px_70px_rgba(74,58,49,0.18)] sepia-[0.16]',
+            eyebrowClass: 'text-primary/65 tracking-[0.38em]',
+            headingClass: 'font-serif tracking-tight text-[#4A3A31]',
+            bodyClass: 'text-[#4A3A31]/70',
+            dividerClass: 'h-px w-28 bg-gradient-to-r from-transparent via-primary/55 to-transparent',
+            ornament: 'floral',
+            galleryTitle: 'Keepsake Gallery',
+        };
+    }
+
+    return {
+        ...base,
+        sectionClass: 'relative overflow-hidden text-[#4A4444]',
+        sectionStyle: { backgroundImage: `radial-gradient(circle at 15% 12%, ${motifColor}14, transparent 30%), linear-gradient(180deg, #fffdfb 0%, #f8eeea 100%)` },
+        containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+        cardClass: 'rounded-[2rem] md:rounded-[4rem] border border-white/65 bg-white/62 shadow-[0_28px_90px_rgba(58,42,45,0.10)] backdrop-blur-xl',
+        accentCardClass: 'rounded-[2rem] md:rounded-[4rem] border border-primary/18 bg-white/78 shadow-[0_24px_80px_rgba(58,42,45,0.10)]',
+        imageFrameClass: 'rounded-[2rem] md:rounded-[4rem] border-[12px] border-white shadow-[0_30px_90px_rgba(58,42,45,0.14)]',
+        eyebrowClass: 'text-primary/68 tracking-[0.36em]',
+        headingClass: 'font-serif tracking-tight text-[#4A4444]',
+        bodyClass: 'text-[#4A4444]/68',
+        dividerClass: 'h-px w-24 bg-gradient-to-r from-transparent via-primary/45 to-transparent',
+        ornament: 'floral',
+        galleryTitle: 'Our Gallery',
     };
 }
 

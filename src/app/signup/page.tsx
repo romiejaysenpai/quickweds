@@ -45,7 +45,7 @@ export default function SignUpPage() {
                 })
             }).catch(err => console.error('Notification Error:', err));
 
-            router.push('/builder');
+            router.push('/dashboard');
         } catch (err: any) {
             setError(err.message || 'Failed to create account');
         } finally {

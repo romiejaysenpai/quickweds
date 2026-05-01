@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
+import { getTemplateVisualProfile } from '@/lib/theme-engine';
 
 interface TimelineSectionProps {
     timeline: string;
@@ -48,30 +49,32 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
     }, [id, registerSection, unregisterSection]);
     
     if (!timeline) return null;
-    if (!timeline) return null;
 
     const items = parseTimeline(timeline);
     const hasAnyTime = items.some(i => i.time !== '');
 
     const template = wedding?.template || 'classic';
+    const motifColor = wedding?.motif_color || '#D16C78';
+    const visual = getTemplateVisualProfile(template, motifColor);
     const isSharp = ['editorial', 'urban', 'minimal', 'vogue', 'glitch', 'film'].includes(template);
     const isDark = ['royal', 'midnight', 'cinematic'].includes(template);
     const isVintage = ['vintage', 'rustic', 'boho', 'artdeco'].includes(template);
 
     const containerClass = isSharp
-        ? 'border border-black/10 bg-white p-8 md:p-14'
+        ? `p-8 md:p-14 ${visual.cardClass}`
         : isDark
-            ? 'bg-white/5 backdrop-blur-xl border border-white/10 p-8 md:p-14'
+            ? `p-8 md:p-14 ${visual.cardClass}`
             : isVintage
-                ? 'bg-white/70 backdrop-blur-md border border-primary/20 p-8 md:p-14 rounded-[2rem] md:rounded-[4rem]'
-                : 'relative bg-white/40 backdrop-blur-3xl border border-white/50 p-4 sm:p-8 md:p-16 rounded-2xl sm:rounded-[2rem] md:rounded-[4rem] shadow-2xl shadow-primary/5';
+                ? `p-8 md:p-14 ${visual.cardClass}`
+                : `relative p-4 sm:p-8 md:p-16 ${visual.cardClass}`;
 
     const dotClass = isDark
         ? 'border-2 border-primary bg-[#121212]'
         : 'border-2 border-primary bg-white';
 
     return (
-        <section id={id} className="py-16 sm:py-24 md:py-32 relative z-10 overflow-hidden">
+        <section id={id} className={`py-16 sm:py-24 md:py-32 relative z-10 overflow-hidden ${visual.sectionClass}`} style={visual.sectionStyle}>
+            {visual.ornament === 'film' && <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.12)_0_12px,transparent_12px_26px)]" />}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 relative">
                 {/* Section header */}
                 <motion.div
@@ -83,8 +86,9 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto flex items-center justify-center mb-4 sm:mb-6 min-h-[44px] min-w-[44px] ${isSharp ? 'border border-black/10 bg-white' : isDark ? 'border border-white/20 bg-white/10 backdrop-blur-xl' : 'bg-white/60 backdrop-blur-xl border border-white/50 rounded-2xl shadow-primary/10 rotate-3'}`}>
                         <Clock className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-primary' : 'text-primary'}`} />
                     </div>
-                    <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif drop-shadow-sm ${isDark ? 'text-primary/80' : 'text-[#4A4444]'}`}>
-                        The Program
+                    <p className={`mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>Event flow</p>
+                    <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-sm ${visual.headingClass}`}>
+                        {visual.timelineTitle}
                     </h2>
                     {isVintage && (
                         <div className="flex items-center justify-center gap-3 mt-4 opacity-40">

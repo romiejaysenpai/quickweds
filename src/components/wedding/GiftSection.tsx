@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import type { Wedding } from '@/types/wedding';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
+import { getTemplateVisualProfile } from '@/lib/theme-engine';
 
 interface GiftSectionProps {
     wedding: Wedding;
@@ -31,22 +32,23 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
     } catch { }
 
     const template = wedding.template || 'classic';
+    const motifColor = wedding.motif_color || '#D16C78';
+    const visual = getTemplateVisualProfile(template, motifColor, invert);
     const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
-    const isDark = ['midnight', 'cinematic', 'royal', 'urban', 'glitch', 'film', 'artdeco'].includes(template) || invert;
     const isVintage = ['vintage', 'rustic', 'boho', 'film'].includes(template);
 
     const cardClass = isSharp
-        ? `border border-white/20 shadow-none ${isDark ? 'bg-white/5' : 'bg-black/5'} rounded-none`
+        ? visual.cardClass
         : isVintage
-            ? `border-[4px] double border-primary/20 bg-white/50 backdrop-blur-2xl shadow-xl rounded-sm`
-            : `rounded-[2rem] md:rounded-[3rem] ${isDark ? 'bg-white/10 backdrop-blur-2xl border border-white/20' : 'bg-white/60 backdrop-blur-2xl border border-white/50 shadow-2xl shadow-primary/5'}`;
+            ? visual.cardClass
+            : visual.cardClass;
 
     return (
-        <section id={id} className={`py-24 md:py-40 px-4 md:px-8 relative z-10 overflow-hidden ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>
+        <section id={id} className={`py-24 md:py-40 relative z-10 overflow-hidden ${visual.sectionClass}`} style={visual.sectionStyle}>
             {/* Background Decoration */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
 
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-6xl mx-auto px-4 md:px-8">
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -59,15 +61,15 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                         whileInView={{ opacity: 0.6 }}
                         transition={{ duration: 1, delay: 0.2 }}
                         style={{ letterSpacing: '0.4em' }}
-                        className="text-[10px] md:text-xs uppercase font-black text-primary mb-6 block"
+                        className={`text-[10px] md:text-xs uppercase font-black mb-6 block ${visual.eyebrowClass}`}
                     >
                         Foundation for our Future
                     </motion.span>
-                    <h2 className={`text-5xl md:text-7xl font-serif mb-8 tracking-tight ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>Gift Registry</h2>
-                    <p className={`text-xl md:text-2xl leading-relaxed ${isDark ? 'text-white/70' : 'text-[#4A4444]/70'} font-serif italic max-w-3xl mx-auto opacity-80 break-words px-4`}>
+                    <h2 className={`text-5xl md:text-7xl mb-8 tracking-tight ${visual.headingClass}`}>{visual.giftTitle}</h2>
+                    <p className={`text-xl md:text-2xl leading-relaxed font-serif italic max-w-3xl mx-auto opacity-80 break-words px-4 ${visual.bodyClass}`}>
                         Your presence is our greatest joy. If you wish to celebrate with a gift, our registries and funds are listed below.
                     </p>
-                    <div className="mx-auto mt-6 h-px w-24 bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
+                    <div className={`mx-auto mt-6 ${visual.dividerClass}`} />
                 </motion.div>
 
                 <div className="flex flex-col lg:flex-row gap-12 md:gap-20 items-start">

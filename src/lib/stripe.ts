@@ -9,8 +9,14 @@ export const stripe = new Stripe(stripeKey, {
     apiVersion: '2025-02-24.acacia',
 });
 
+const parsePrice = (value: string | undefined, fallback: number) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
 export const PRICING = {
-    PREMIUM_PRICE: 14.99,
-    ELITE_PRICE: 59.00,
+    PLANNER_PRO_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 29),
+    PREMIUM_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 29),
+    ELITE_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 29),
     CURRENCY: 'usd',
 } as const;

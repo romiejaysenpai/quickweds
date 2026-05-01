@@ -323,23 +323,44 @@ export default function DashboardRedirect() {
                         <div className="w-16 h-16 sm:w-24 sm:h-24 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-8">
                             <Heart className="w-8 h-8 sm:w-12 sm:h-12 text-primary/30" />
                         </div>
-                        <h2 className="text-xl sm:text-3xl font-serif font-bold text-foreground mb-3 sm:mb-4">No weddings yet</h2>
-                        <p className="text-sm sm:text-base text-text-secondary mb-6 sm:mb-10 max-w-sm mx-auto">
-                            Create your first beautiful wedding landing page and invitation in minutes.
+                        <h2 className="text-xl sm:text-3xl font-serif font-bold text-foreground mb-3 sm:mb-4">Start your first wedding site</h2>
+                        <p className="text-sm sm:text-base text-text-secondary mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed">
+                            Create your site, customize the design and wedding details, then share your link so you can manage RSVPs from one dashboard.
                         </p>
+
+                        <div className="grid gap-3 max-w-md mx-auto mb-6 sm:mb-10 text-left">
+                            {[
+                                'Create your wedding site',
+                                'Customize your design, photos, and details',
+                                'Share your link and track RSVPs here',
+                            ].map((step) => (
+                                <div key={step} className="flex items-center gap-3 rounded-2xl bg-neutral px-4 py-3 text-sm font-semibold text-foreground">
+                                    <span className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
+                                    {step}
+                                </div>
+                            ))}
+                        </div>
                         
                         <div className="flex flex-col items-center gap-6">
-                            <Link
-                                href="/builder"
-                                className="inline-flex items-center gap-2 px-8 sm:px-12 py-4 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all shadow-xl shadow-primary/20 min-h-[44px] text-sm sm:text-base"
-                            >
-                                Create Your First Wedding <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" />
-                            </Link>
+                            <div className="flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
+                                <Link
+                                    href="/builder"
+                                    className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-4 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all shadow-xl shadow-primary/20 min-h-[44px] text-sm sm:text-base"
+                                >
+                                    Create Your Free Site <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" />
+                                </Link>
+                                <Link
+                                    href="/user-guide"
+                                    className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-4 rounded-xl border border-primary/20 bg-primary/10 text-primary font-bold hover:bg-primary hover:text-white transition-all min-h-[44px] text-sm sm:text-base"
+                                >
+                                    View User Guide <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" />
+                                </Link>
+                            </div>
                             
                             <div className="pt-8 border-t border-border w-full max-w-md">
                                 <h3 className="text-sm font-bold text-foreground mb-2">Missing your existing weddings?</h3>
                                 <p className="text-xs text-text-secondary mb-4 leading-relaxed">
-                                    If you created a wedding but don't see it here, you might have signed in with a different account method (Google vs Email).
+                                    If you created a wedding but do not see it here, you might have signed in with a different account method (Google vs Email).
                                 </p>
                                 <button 
                                     onClick={handleClaimWedding}
@@ -446,7 +467,7 @@ export default function DashboardRedirect() {
                                                 className="flex-1 text-center py-2.5 rounded-xl bg-secondary/20 text-foreground text-xs sm:text-sm font-bold hover:bg-secondary/30 transition-all flex items-center justify-center gap-1.5 min-h-[44px] border border-secondary/30"
                                             >
                                                 <Heart className="w-3.5 h-3.5 text-primary" />
-                                                Planner
+                                                {wedding.is_premium || isAdmin ? 'Planner' : 'Planner Pro'}
                                             </Link>
                                             <Link
                                                 href={`/builder?edit=${wedding.id}`}
@@ -458,7 +479,7 @@ export default function DashboardRedirect() {
                                             </Link>
                                         </div>
 
-                                        {/* Upgrade prompt */}
+                                        {/* Planner Pro prompt */}
                                         {!wedding.is_premium && !isAdmin && (
                                             <UpgradeButton weddingId={wedding.id} className="w-full text-xs sm:text-sm py-2 sm:py-2.5" />
                                         )}

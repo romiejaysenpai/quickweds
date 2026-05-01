@@ -180,7 +180,7 @@ const INITIAL_FORM_DATA = {
 
 export default function BuilderForm() {
     const router = useRouter();
-    const { user, isAdmin, loading: authLoading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const searchParams = useSearchParams();
     const editId = searchParams?.get('edit');
     const [currentStep, setCurrentStep] = useState(0);
@@ -263,7 +263,7 @@ export default function BuilderForm() {
         galleryImages: [],
     });
 
-    const [isPremium, setIsPremium] = useState(isAdmin);
+    const [isPremium, setIsPremium] = useState(true);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
 
     useEffect(() => {
@@ -271,9 +271,7 @@ export default function BuilderForm() {
             router.push('/login');
         }
 
-        if (isAdmin) {
-            setIsPremium(true);
-        }
+        setIsPremium(true);
 
         // BUG #12 FIX: Restore pending wedding data from sessionStorage after login redirect
         if (user && !editId && typeof window !== 'undefined') {
@@ -300,8 +298,8 @@ export default function BuilderForm() {
                     .single();
 
                 if (data && data.user_id === user.id) {
-                    // Set premium status (Admin is always premium)
-                    setIsPremium(data.is_premium || isAdmin || false);
+                    // Builder features are included on the free plan. Paid status now unlocks Planner Pro.
+                    setIsPremium(true);
 
                     setFormData({
                         brideName: data.bride_name || '',
@@ -608,7 +606,7 @@ export default function BuilderForm() {
             if (mediaFiles.giftQr || editId) payload.gift_qr_image = giftQrUrl || previews.giftQr;
             
             // Handle invitation images: merge new uploads with existing previews if editing
-            let finalInvitationImages = invitationUrls.length > 0 ? invitationUrls : previews.invitationImages;
+            const finalInvitationImages = invitationUrls.length > 0 ? invitationUrls : previews.invitationImages;
             payload.invitation_image = JSON.stringify(finalInvitationImages);
             
             if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
@@ -660,17 +658,17 @@ export default function BuilderForm() {
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Hashtag (Optional)</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold pointer-events-none">#</span>
-                                <input name="hashtag" value={formData.hashtag} onChange={handleChange} placeholder="SarahAndJohn2024" className="w-full pl-11 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
+                                <input name="hashtag" value={formData.hashtag} onChange={handleChange} placeholder="SarahAndJohn2024" className="w-full pl-14 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Date</label>
-                                <input required type="date" name="weddingDate" value={formData.weddingDate} onChange={handleChange} className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                <input required type="date" name="weddingDate" value={formData.weddingDate} onChange={handleChange} className="w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Time</label>
-                                <input required type="time" name="weddingTime" value={formData.weddingTime} onChange={handleChange} className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                <input required type="time" name="weddingTime" value={formData.weddingTime} onChange={handleChange} className="w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -682,7 +680,7 @@ export default function BuilderForm() {
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Google Maps Link (Optional)</label>
                                 <div className="relative">
                                     <MapPin className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
-                                    <input name="mapsLink" value={formData.mapsLink} onChange={handleChange} placeholder="https://maps.app.goo.gl/..." className="w-full pl-12 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                    <input name="mapsLink" value={formData.mapsLink} onChange={handleChange} placeholder="https://maps.app.goo.gl/..." className="w-full pl-14 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                                 </div>
                             </div>
                         </div>
@@ -758,7 +756,7 @@ export default function BuilderForm() {
                                                             style={{ backgroundColor: tmpl.accent }}
                                                         />
                                                         <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/45">
-                                                            {tmpl.tier === 'free' ? 'Included' : 'Premium'}
+                                                            Included
                                                         </span>
                                                     </div>
                                                 </div>
@@ -801,8 +799,8 @@ export default function BuilderForm() {
                                 <div className="flex items-start gap-3">
                                     <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                                     <div className="flex-1">
-                                        <h4 className="font-bold text-sm text-foreground mb-1">Unlock 22 Premium Templates</h4>
-                                        <p className="text-xs text-text-secondary mb-3">Get access to all modern, luxury, and editorial styles for $14.99</p>
+                                        <h4 className="font-bold text-sm text-foreground mb-1">All templates are included</h4>
+                                        <p className="text-xs text-text-secondary mb-3">Choose any modern, luxury, or editorial style for free.</p>
                                         <UpgradeButton weddingId={editId || ''} variant="outlined" className="text-xs px-4 py-2" />
                                     </div>
                                 </div>
@@ -884,8 +882,8 @@ export default function BuilderForm() {
                                     <div className="flex items-start gap-3">
                                         <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                                         <div className="flex-1">
-                                            <h4 className="font-bold text-sm text-foreground mb-1">Unlock 35 Premium Fonts</h4>
-                                            <p className="text-xs text-text-secondary mb-3">Get access to all premium typography for just $14.99</p>
+                                            <h4 className="font-bold text-sm text-foreground mb-1">All fonts are included</h4>
+                                            <p className="text-xs text-text-secondary mb-3">Use every typography option in the builder for free.</p>
                                             <UpgradeButton weddingId={editId || ''} variant="outlined" className="text-xs px-4 py-2" />
                                         </div>
                                     </div>
@@ -1149,7 +1147,7 @@ export default function BuilderForm() {
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Spotify Playlist URL (Optional)</label>
                             <div className="relative">
                                 <Music className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-green-500 pointer-events-none" />
-                                <input name="spotifyUrl" value={formData.spotifyUrl} onChange={handleChange} placeholder="https://open.spotify.com/playlist/..." className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
+                                <input name="spotifyUrl" value={formData.spotifyUrl} onChange={handleChange} placeholder="https://open.spotify.com/playlist/..." className="w-full pl-14 pr-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
                             </div>
                             <p className="text-[10px] text-text-secondary ml-1">Embed a Spotify playlist for your guests to enjoy.</p>
                         </div>
@@ -1160,27 +1158,80 @@ export default function BuilderForm() {
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center mb-4">
                 <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Dress Code</h2>
-                <p className="text-text-secondary">Let your guests know what to wear.</p>
+                <p className="text-text-secondary">Guide your guests with a polished attire note and matching visual palette.</p>
             </div>
-            <div className="flex flex-col md:flex-row gap-8 items-center bg-white/50 p-6 rounded-[2rem] border border-border">
-                <div className="flex-1 space-y-6 w-full">
+            <div className="grid gap-6 rounded-[2rem] border border-border bg-white/70 p-4 shadow-sm sm:p-6 md:grid-cols-[1.05fr_0.95fr] md:items-stretch">
+                <div className="space-y-6 rounded-[1.5rem] bg-white p-4 sm:p-5">
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Attire Type</label>
-                        <input name="dressCode" value={formData.dressCode} onChange={handleChange} placeholder="e.g. Formal, Black Tie, Casual" className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
+                        <input
+                            name="dressCode"
+                            value={formData.dressCode}
+                            onChange={handleChange}
+                            placeholder="e.g. Formal, Black Tie, Garden Chic"
+                            className="w-full rounded-xl border border-border bg-neutral px-4 py-3 outline-none transition-all focus:border-primary focus:bg-white"
+                        />
+                        <p className="text-[10px] leading-relaxed text-text-secondary ml-1">This appears on the invitation so guests know the expected style.</p>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Attire Color Theme</label>
-                        <div className="flex flex-wrap gap-4">
-                            {['#000000', '#1A365D', '#276749', '#744210', '#E53E3E', '#805AD5', '#D6BCFA', '#FBD38D'].map((color) => (
-                                <button key={color} type="button" onClick={() => setFormData((prev: any) => ({ ...prev, dressCodeColor: color }))} className={`w-10 h-10 rounded-full border-4 transition-transform ${formData.dressCodeColor === color ? 'border-white ring-2 ring-primary scale-110' : 'border-neutral shadow-sm'}`} style={{ backgroundColor: color }} />
+                        <div className="grid grid-cols-4 gap-3 sm:grid-cols-6">
+                            {['#111827', '#1A365D', '#276749', '#744210', '#E53E3E', '#805AD5', '#D6BCFA', '#FBD38D', '#D16C78', '#D6B87C', '#6B7A62', '#F8EEEA'].map((color) => (
+                                <button
+                                    key={color}
+                                    type="button"
+                                    onClick={() => setFormData((prev: any) => ({ ...prev, dressCodeColor: color }))}
+                                    className={`relative h-12 rounded-2xl border-2 transition-all ${formData.dressCodeColor === color ? 'border-white ring-2 ring-primary shadow-xl scale-105' : 'border-border/60 shadow-sm hover:border-primary/50'}`}
+                                    style={{ backgroundColor: color }}
+                                    aria-label={`Select attire color ${color}`}
+                                >
+                                    {formData.dressCodeColor === color && (
+                                        <span className="absolute inset-0 flex items-center justify-center">
+                                            <CheckCircle2 className="h-5 w-5 text-white drop-shadow" />
+                                        </span>
+                                    )}
+                                </button>
                             ))}
-                            <input type="color" name="dressCodeColor" value={formData.dressCodeColor} onChange={handleChange} className="w-10 h-10 rounded-full overflow-hidden border-none cursor-pointer p-0" />
                         </div>
-                        <p className="text-[10px] text-text-secondary ml-1 mt-2">Select a theme color for the vector art guests.</p>
+                        <div className="flex items-center gap-3 pt-2">
+                            <input
+                                type="color"
+                                name="dressCodeColor"
+                                value={formData.dressCodeColor}
+                                onChange={handleChange}
+                                className="h-11 w-11 cursor-pointer rounded-2xl border border-border bg-transparent p-0"
+                                aria-label="Pick a custom attire color"
+                            />
+                            <input
+                                type="text"
+                                name="dressCodeColor"
+                                value={formData.dressCodeColor}
+                                onChange={handleChange}
+                                placeholder="#HEX"
+                                className="min-h-[44px] flex-1 rounded-xl border border-border bg-neutral px-4 py-3 font-mono text-sm outline-none transition-all focus:border-primary focus:bg-white"
+                            />
+                        </div>
+                        <p className="text-[10px] text-text-secondary ml-1 mt-2">The selected color updates the dress and accents in the preview art.</p>
                     </div>
                 </div>
-                <div className="w-full md:w-1/2 flex justify-center items-center relative h-64 bg-neutral rounded-3xl overflow-hidden border-2 border-dashed border-border py-4">
-                    <VectorArtGuests color={formData.dressCodeColor} />
+                <div
+                    className="relative flex min-h-[310px] flex-col justify-between overflow-hidden rounded-[1.75rem] border border-border bg-neutral p-5"
+                    style={{ boxShadow: `0 24px 70px ${formData.dressCodeColor}18` }}
+                >
+                    <div className="absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at 50% 28%, ${formData.dressCodeColor}22, transparent 48%)` }} />
+                    <div className="relative flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-text-secondary/60">Live attire preview</p>
+                            <p className="mt-1 font-serif text-2xl font-bold text-foreground">{formData.dressCode || 'Formal Attire'}</p>
+                        </div>
+                        <div className="h-11 w-11 rounded-2xl border border-white/80 shadow-lg" style={{ backgroundColor: formData.dressCodeColor }} />
+                    </div>
+                    <div className="relative flex flex-1 items-center justify-center py-4">
+                        <VectorArtGuests color={formData.dressCodeColor} />
+                    </div>
+                    <div className="relative rounded-2xl border border-white/70 bg-white/75 px-4 py-3 text-center text-xs font-semibold leading-5 text-text-secondary backdrop-blur">
+                        Guests will see the attire note with a color-coordinated illustration on the wedding page.
+                    </div>
                 </div>
             </div>
         </div>
@@ -1229,7 +1280,7 @@ export default function BuilderForm() {
                         <input placeholder="Store Name" value={link.title} onChange={(e) => handleArrayChange('registryLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         <div className="relative flex-1">
                             <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
-                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('registryLinks', i, 'url', e.target.value)} className="w-full pl-12 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
+                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('registryLinks', i, 'url', e.target.value)} className="w-full pl-14 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
                         </div>
                         <button type="button" onClick={() => handleArrayRemove('registryLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
@@ -1253,7 +1304,7 @@ export default function BuilderForm() {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="relative">
                                         <DollarSign className="w-3 h-3 absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
-                                        <input type="number" placeholder="Target Amount" value={fund.targetAmount} onChange={(e) => handleArrayChange('cashFunds', i, 'targetAmount', e.target.value)} className="w-full pl-12 pr-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none min-h-[44px]" />
+                                        <input type="number" placeholder="Target Amount" value={fund.targetAmount} onChange={(e) => handleArrayChange('cashFunds', i, 'targetAmount', e.target.value)} className="w-full pl-14 pr-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none min-h-[44px]" />
                                     </div>
                                     <input placeholder="Currency (e.g. $, PHP)" value={fund.currency} onChange={(e) => handleArrayChange('cashFunds', i, 'currency', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
                                 </div>
@@ -1277,7 +1328,7 @@ export default function BuilderForm() {
                         <input placeholder="Service (e.g. Venmo)" value={link.title} onChange={(e) => handleArrayChange('paymentLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                         <div className="relative flex-1">
                             <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
-                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('paymentLinks', i, 'url', e.target.value)} className="w-full pl-12 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
+                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('paymentLinks', i, 'url', e.target.value)} className="w-full pl-14 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
                         </div>
                         <button type="button" onClick={() => handleArrayRemove('paymentLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
@@ -1318,7 +1369,7 @@ export default function BuilderForm() {
                 <h4 className="text-sm font-bold text-foreground mx-1">RSVP Settings</h4>
                 <div className="space-y-2">
                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">RSVP Deadline</label>
-                    <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                    <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="w-full pl-4 pr-12 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                 </div>
 
                 <div className="space-y-2">

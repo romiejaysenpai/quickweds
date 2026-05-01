@@ -38,7 +38,7 @@ export default function TermsPage() {
               <li>RSVP management and tracking</li>
               <li>Photo and video gallery hosting</li>
               <li>Wedding event timeline displays</li>
-              <li>Custom domain mapping</li>
+              <li>Planner dashboard tools</li>
               <li>Email notifications for wedding events</li>
             </ul>
           </section>
@@ -60,8 +60,8 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-lg font-bold text-text">5. Payment and Subscriptions</h2>
-            <p>Some features of QuickWeds require payment. By subscribing to a paid plan, you agree to pay all fees and charges associated with your subscription. All payments are non-refundable unless otherwise specified.</p>
+            <h2 className="text-lg font-bold text-text">5. Payment</h2>
+            <p>Some features of QuickWeds require a one-time payment. By purchasing a paid feature, you agree to pay all fees and charges shown at checkout. All payments are non-refundable unless otherwise specified.</p>
           </section>
 
           <section className="space-y-2">

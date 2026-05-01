@@ -6,21 +6,39 @@ import { useAuth } from '@/context/AuthContext';
 
 interface UpgradeButtonProps {
     weddingId: string;
-    plan?: 'premium' | 'elite';
+    plan?: 'planner_pro' | 'premium' | 'elite';
     variant?: 'primary' | 'outlined';
     className?: string;
 }
 
-export default function UpgradeButton({ weddingId, plan = 'premium', variant = 'primary', className = '' }: UpgradeButtonProps) {
+export default function UpgradeButton({ weddingId, plan = 'planner_pro', variant = 'primary', className = '' }: UpgradeButtonProps) {
     const { isAdmin } = useAuth();
     const [loading, setLoading] = useState(false);
 
     if (isAdmin) return null;
 
-    const handleUpgrade = () => {
-        // Direct redirect to Stripe Payment Link with client reference ID
-        // The client_reference_id helps us track which wedding this payment is for
-        window.location.href = `https://pay.call2proposalgenerator.com/b/cNieVd74Wd8ugoU6iD97G00?client_reference_id=${weddingId}`;
+    const handleUpgrade = async () => {
+        if (!weddingId || loading) return;
+
+        setLoading(true);
+        try {
+            const response = await fetch('/api/stripe/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ weddingId, plan }),
+            });
+            const data = await response.json();
+
+            if (!response.ok || !data.url) {
+                throw new Error(data.error || 'Unable to start checkout.');
+            }
+
+            window.location.href = data.url;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unable to start checkout.';
+            alert(message);
+            setLoading(false);
+        }
     };
 
     const baseStyles = variant === 'primary'
@@ -30,8 +48,8 @@ export default function UpgradeButton({ weddingId, plan = 'premium', variant = '
     return (
         <button
             onClick={handleUpgrade}
-            disabled={loading}
-            className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${baseStyles} ${className} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={loading || !weddingId}
+            className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${baseStyles} ${className} ${loading || !weddingId ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
             {loading ? (
                 <>
@@ -41,7 +59,7 @@ export default function UpgradeButton({ weddingId, plan = 'premium', variant = '
             ) : (
                 <>
                     <Sparkles className="w-5 h-5" />
-                    Upgrade to Premium
+                    Unlock Planner Pro
                 </>
             )}
         </button>

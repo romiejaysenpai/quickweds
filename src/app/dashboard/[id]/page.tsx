@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, Globe, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode } from 'lucide-react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Link from 'next/link';
@@ -16,6 +16,7 @@ import GuestImportModal from '@/components/dashboard/GuestImportModal';
 import ConfettiCelebration from '@/components/ConfettiCelebration';
 import CopyButton from '@/components/CopyButton';
 import DarkModeToggle from '@/components/DarkModeToggle';
+import UpgradeButton from '@/components/UpgradeButton';
 import {
     GUEST_GROUP_OPTIONS,
     getGuestGroupLabel,
@@ -83,7 +84,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const { id } = use(params);
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { user, loading: authLoading } = useAuth();
+    const { user, isAdmin, loading: authLoading } = useAuth();
     const created = searchParams?.get('created');
 
     const [wedding, setWedding] = useState<any>(null);
@@ -101,10 +102,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [importingGuests, setImportingGuests] = useState(false);
     const [newGuest, setNewGuest] = useState<GuestFormState>(emptyGuestForm);
     const [copyToast, setCopyToast] = useState(false);
-
-    const [domainInput, setDomainInput] = useState('');
-    const [domainStatus, setDomainStatus] = useState<any>(null);
-    const [domainLoading, setDomainLoading] = useState(false);
 
     // Download QR Code function
     const downloadQRCode = () => {
@@ -217,87 +214,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         };
         fetchData();
     }, [id, user, authLoading, router]);
-
-    const getAccessToken = async () => {
-        const { data } = await supabase.auth.getSession();
-        return data.session?.access_token || null;
-    };
-
-    const checkDomainStatus = async (domain: string) => {
-        try {
-            const token = await getAccessToken();
-            if (!token) return;
-
-            const res = await fetch(`/api/domains?domain=${encodeURIComponent(domain)}&weddingId=${id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            const data = await res.json();
-            setDomainStatus(data);
-        } catch (e) { }
-    }
-
-    useEffect(() => {
-        if (wedding?.custom_domain) {
-            checkDomainStatus(wedding.custom_domain);
-        }
-    }, [wedding?.custom_domain]);
-
-    const handleAddDomain = async () => {
-        if (!domainInput.includes('.')) return alert("Please enter a valid domain (e.g. yourname.com)");
-        setDomainLoading(true);
-        try {
-            const token = await getAccessToken();
-            if (!token) throw new Error('Please login again and retry.');
-
-            const res = await fetch('/api/domains', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ domain: domainInput.toLowerCase().trim(), weddingId: id })
-            });
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
-
-            await supabase.from('weddings').update({ custom_domain: domainInput.toLowerCase().trim() }).eq('id', wedding.id);
-            setWedding({ ...wedding, custom_domain: domainInput.toLowerCase().trim() });
-            setDomainInput('');
-            checkDomainStatus(domainInput.toLowerCase().trim());
-        } catch (e: any) {
-            alert(e.message);
-        } finally {
-            setDomainLoading(false);
-        }
-    };
-
-    const handleRemoveDomain = async () => {
-        if (!confirm('Are you sure you want to decouple this custom domain?')) return;
-        setDomainLoading(true);
-        try {
-            const token = await getAccessToken();
-            if (!token) throw new Error('Please login again and retry.');
-
-            const response = await fetch(`/api/domains?domain=${encodeURIComponent(wedding.custom_domain)}&weddingId=${id}`, {
-                method: 'DELETE',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            const data = await response.json();
-            if (data.error) throw new Error(data.error);
-
-            await supabase.from('weddings').update({ custom_domain: null }).eq('id', wedding.id);
-            setWedding({ ...wedding, custom_domain: null });
-            setDomainStatus(null);
-        } catch (e: any) {
-            alert(e?.message || "Failed to remove domain");
-        } finally {
-            setDomainLoading(false);
-        }
-    }
 
     // Computed stats
     const stats = useMemo(() => {
@@ -558,6 +474,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const url = wedding?.custom_domain ? domain : (wedding ? `${domain}/w/${wedding.id}` : '');
     const qrTrackingUrl = `${url}${url.includes('?') ? '&' : '?'}src=qr`;
     const canManageWorkspace = accessRole === 'owner' || accessRole === 'partner';
+    const hasPlannerPro = isAdmin || Boolean(wedding?.is_premium);
 
     const handleShareWhatsApp = () => {
         void trackWeddingEvent(id, 'share_whatsapp', { source: 'dashboard' });
@@ -611,8 +528,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 Edit Design
                             </Link>
                         )}
-                        <Link href={`/dashboard/${wedding.id}/planner`} className="flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl bg-secondary text-white text-xs sm:text-sm font-bold shadow-lg shadow-secondary/10 hover:opacity-90 transition-all min-h-[44px]">
-                            <ListTodo className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Planner</span>
+                        <Link href={`/dashboard/${wedding.id}/planner`} className={`flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-lg transition-all min-h-[44px] ${hasPlannerPro ? 'bg-secondary text-white shadow-secondary/10 hover:opacity-90' : 'bg-white text-primary border border-primary/20 shadow-primary/10 hover:bg-primary/5'}`}>
+                            <ListTodo className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">{hasPlannerPro ? 'Planner' : 'Planner Pro'}</span>
                         </Link>
                         <Link href={url} target="_blank" className="flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl bg-neutral dark:bg-neutral/30 text-primary text-xs sm:text-sm font-bold border border-border hover:border-primary/30 transition-all min-h-[44px]">
                             View <ExternalLink className="w-4 h-4 flex-shrink-0" />
@@ -688,7 +605,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-3">
                                         <ListTodo className="w-6 h-6" />
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Planner</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">{hasPlannerPro ? 'Planner' : 'Planner Pro'}</span>
                                     <div className="absolute inset-0 bg-secondary/5 opacity-0 group-active:opacity-100 transition-opacity" />
                                 </Link>
                                 <button 
@@ -734,17 +651,25 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 
                                 <div className="relative z-10 space-y-2">
                                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                                        <Sparkles className="w-3 h-3" /> Professional Tools
+                                        <Sparkles className="w-3 h-3" /> Planner Pro
                                     </div>
                                     <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground mb-2 leading-tight">
                                         Smart Wedding <span className="italic text-primary">Planner</span>
                                     </h2>
-                                    <p className="text-sm sm:text-base text-text-secondary max-w-md">Our all-in-one workspace handles the stress so you can focus on the magic. Track budgets, vendors, and tasks in real-time.</p>
+                                    <p className="text-sm sm:text-base text-text-secondary max-w-md">
+                                        {hasPlannerPro
+                                            ? 'Track budgets, vendors, seating, tasks, collaborators, and post-wedding details in one workspace.'
+                                            : 'Your website builder is free. Unlock Planner Pro once for budgets, vendors, seating, tasks, collaborators, and thank-you tools.'}
+                                    </p>
                                 </div>
                                 
-                                <Link href={`/dashboard/${wedding.id}/planner`} className="relative z-10 shrink-0 px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
-                                    Open Planner <ArrowRight className="w-5 h-5" />
-                                </Link>
+                                {hasPlannerPro ? (
+                                    <Link href={`/dashboard/${wedding.id}/planner`} className="relative z-10 shrink-0 px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+                                        Open Planner <ArrowRight className="w-5 h-5" />
+                                    </Link>
+                                ) : (
+                                    <UpgradeButton weddingId={wedding.id} className="relative z-10 shrink-0 justify-center px-8 py-4 rounded-2xl text-sm uppercase tracking-widest" />
+                                )}
                             </div>
                         )}
 
@@ -959,7 +884,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                 <div key={i} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-neutral/50 dark:bg-neutral/30 border border-border/10">
                                                     <span className="text-base sm:text-lg flex-shrink-0">🎵</span>
                                                     <div className="min-w-0">
-                                                        <p className="font-bold text-xs sm:text-sm line-clamp-1 italic">"{s.song}"</p>
+                                                        <p className="font-bold text-xs sm:text-sm line-clamp-1 italic">&quot;{s.song}&quot;</p>
                                                         <p className="text-xs sm:text-xs text-text-secondary/50 line-clamp-1">— {s.name}</p>
                                                     </div>
                                                 </div>
@@ -1003,7 +928,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                     placeholder="Search guests..."
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                                    className="w-full pl-11 sm:pl-14 pr-3 sm:pr-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border focus:border-primary outline-none text-xs sm:text-sm bg-neutral min-h-[44px]"
+                                                    className="w-full pl-14 sm:pl-16 pr-3 sm:pr-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-border focus:border-primary outline-none text-xs sm:text-sm bg-neutral min-h-[44px]"
                                                 />
                                             </div>
                                             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)}
@@ -1204,51 +1129,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     currentUserEmail={user?.email}
                                     canManage={canManageWorkspace}
                                 />
-                            </div>
-                        )}
-
-                        {(activeTab === 'settings' || activeTab === 'home') && (
-                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-4 sm:p-8 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow animate-in fade-in`}>
-                                <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground flex items-center gap-2">
-                                    <Globe className="w-5 h-5 text-primary flex-shrink-0" /> Custom Domain
-                                </h3>
-
-                                {!canManageWorkspace && (
-                                    <div className="mb-4 p-3 rounded-xl bg-neutral/50 border border-border text-[10px] text-text-secondary font-bold uppercase tracking-widest">
-                                        Owner Only Access
-                                    </div>
-                                )}
-
-                                {!wedding.custom_domain ? (
-                                    <div className="space-y-4">
-                                        <p className="text-xs text-text-secondary leading-relaxed font-serif italic">Connect your own domain name (e.g., amyandjohn.com) to make your website truly yours.</p>
-                                        <div className="flex flex-col gap-2">
-                                            <input
-                                                placeholder="yourdomain.com"
-                                                value={domainInput}
-                                                onChange={(e) => setDomainInput(e.target.value)}
-                                                disabled={!canManageWorkspace}
-                                                className="w-full px-4 py-3 rounded-xl border border-border focus:border-primary outline-none text-xs bg-neutral"
-                                            />
-                                            <button
-                                                onClick={handleAddDomain}
-                                                disabled={domainLoading || !domainInput || !canManageWorkspace}
-                                                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-xs uppercase tracking-[0.2em] hover:bg-primary-hover transition-colors disabled:opacity-50"
-                                            >
-                                                {domainLoading ? 'Adding...' : 'Connect'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="p-4 bg-primary/5 rounded-2xl border border-primary/20">
-                                            <p className="font-bold text-foreground text-sm">{wedding.custom_domain}</p>
-                                            <button onClick={handleRemoveDomain} disabled={domainLoading || !canManageWorkspace} className="text-[10px] font-black uppercase tracking-widest text-red-500 mt-2 hover:underline">
-                                                {domainLoading ? 'Removing...' : 'Disconnect'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )}
 

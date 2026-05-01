@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Calendar, MapPin, Shirt, Info } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 import VectorArtGuests from '../VectorArtGuests';
-import { derivePalette, getTypography, BENTO_PRESETS } from '@/lib/theme-engine';
+import { derivePalette, getTypography, BENTO_PRESETS, getTemplateVisualProfile, type TemplateVisualProfile } from '@/lib/theme-engine';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
 
@@ -25,10 +25,10 @@ function DetailCard({
     isSharp, 
     isDark, 
     isVintage, 
-    template,
     className = "",
     palette,
-    typography
+    typography,
+    visual
 }: {
     icon: React.ElementType;
     title: string;
@@ -40,17 +40,13 @@ function DetailCard({
     isSharp?: boolean;
     isDark?: boolean;
     isVintage?: boolean;
-    template?: string;
     className?: string;
     palette: any;
     typography: any;
+    visual: TemplateVisualProfile;
 }) {
     // Dynamic styling based on template category
-    const cardClass = isSharp 
-        ? `border border-white/10 shadow-none ${isDark ? 'bg-white/5 backdrop-blur-md' : 'bg-black/[0.02]'} rounded-none` 
-        : isVintage
-        ? `border-[1px] border-primary/20 bg-[#FFFDF9] shadow-lg rounded-sm ring-4 ring-primary/5 ring-offset-0`
-        : `rounded-[2.5rem] md:rounded-[4rem] bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl shadow-primary/5`;
+    const cardClass = visual.cardClass;
         
     const textColorHeading = isDark ? "text-white/30" : "text-[#4A4444]/30";
     const textColorValue = isDark ? "text-white" : "text-[#4A4444]";
@@ -62,7 +58,7 @@ function DetailCard({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
             transition={{ duration: 1, delay, ease: [0.16, 1, 0.3, 1] }}
-            className={`flex flex-col items-center text-center p-8 md:p-14 transition-all duration-700 h-full relative overflow-hidden group ${cardClass} hover:shadow-3xl ${className}`}
+            className={`flex flex-col items-center text-center p-8 md:p-14 transition-all duration-700 h-full relative overflow-hidden group ${cardClass} hover:-translate-y-1 ${className}`}
         >
             {/* Template-specific background decorations */}
             {!isSharp && !isVintage && (
@@ -131,6 +127,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
     
     const palette = derivePalette(motifColor, invert);
     const typography = getTypography(template);
+    const visual = getTemplateVisualProfile(template, motifColor, invert);
     
     const rawDressCode = wedding.dress_code || '';
     const dressCodeData = rawDressCode.split('||');
@@ -146,18 +143,31 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
     const layoutClasses = isBento ? BENTO_PRESETS.details : ["", "", "", ""];
 
     return (
-        <section id={id} className={`py-24 md:py-40 relative z-10 ${isDark ? 'text-white' : 'text-[#4A4444]'}`}>
-            <div className={`max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8`}>
+        <section id={id} className={`py-24 md:py-40 relative z-10 ${visual.sectionClass}`} style={visual.sectionStyle}>
+            <div className={visual.containerClass}>
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.3 }}
+                    className="mb-12 text-center"
+                >
+                    <p className={`mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>The essentials</p>
+                    <h2 className={`text-4xl md:text-6xl ${visual.headingClass}`}>{visual.detailTitle}</h2>
+                    <div className={`mx-auto mt-6 ${visual.dividerClass}`} />
+                </motion.div>
+            </div>
+            <div className={`${visual.containerClass} grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8`}>
                 <DetailCard 
                     delay={0}
                     icon={Calendar} 
                     title="The Date" 
                     value={wedding.wedding_date ? new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Setting Date'} 
                     subtitle={wedding.wedding_time || 'Check back soon for exact schedule'} 
-                    isSharp={isSharp} isDark={isDark} isVintage={isVintage} template={template}
+                    isSharp={isSharp} isDark={isDark} isVintage={isVintage}
                     className={layoutClasses[0]}
                     palette={palette}
                     typography={typography}
+                    visual={visual}
                 />
                 
                 <DetailCard 
@@ -167,10 +177,11 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                     value={wedding.venue_name || 'Destination TBD'} 
                     subtitle={wedding.venue_address || 'Coming soon to your inbox'} 
                     link={wedding.maps_link} 
-                    isSharp={isSharp} isDark={isDark} isVintage={isVintage} template={template}
+                    isSharp={isSharp} isDark={isDark} isVintage={isVintage}
                     className={layoutClasses[1]}
                     palette={palette}
                     typography={typography}
+                    visual={visual}
                 />
                 
                 <DetailCard 
@@ -179,10 +190,11 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                     title="Dress Code" 
                     value={attireText} 
                     subtitle={dressCodeData[1] ? "Palette inspiration shown" : "Please refer to the attire guidelines"}
-                    isSharp={isSharp} isDark={isDark} isVintage={isVintage} template={template}
+                    isSharp={isSharp} isDark={isDark} isVintage={isVintage}
                     className={layoutClasses[2]}
                     palette={palette}
                     typography={typography}
+                    visual={visual}
                 >
                     {dressCodeData[1] ? (
                         <div className="w-16 h-16 md:w-20 md:h-20 mb-6 shrink-0 -mt-2 group-hover:scale-110 transition-transform duration-700">
@@ -207,10 +219,11 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                     title="Socials"
                     value={wedding.hashtag ? `#${wedding.hashtag}` : 'Final Details'}
                     subtitle={wedding.contact_person ? `RSVP Organizer: ${wedding.contact_person}` : 'Official platform announcements'}
-                    isSharp={isSharp} isDark={isDark} isVintage={isVintage} template={template}
+                    isSharp={isSharp} isDark={isDark} isVintage={isVintage}
                     className={layoutClasses[3]}
                     palette={palette}
                     typography={typography}
+                    visual={visual}
                 />
             </div>
 

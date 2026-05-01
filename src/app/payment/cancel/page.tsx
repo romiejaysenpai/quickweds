@@ -31,29 +31,29 @@ function CancelContent() {
                 </h1>
 
                 <p className="text-lg text-text-secondary mb-8">
-                    No charges were made. You can upgrade to premium anytime to unlock all features!
+                    No charges were made. Your wedding site, templates, RSVP tools, and builder are still free to use.
                 </p>
 
                 <div className="bg-neutral rounded-2xl p-6 mb-8 text-left">
                     <h3 className="text-sm uppercase tracking-widest font-bold text-text-secondary mb-3">
-                        💡 What You're Missing
+                        Planner Pro unlocks
                     </h3>
                     <ul className="space-y-2 text-sm text-text-secondary">
-                        <li>• 45 premium font combinations</li>
-                        <li>• Custom monogram logo maker</li>
-                        <li>• All premium templates</li>
-                        <li>• Unlimited gallery images</li>
+                        <li>Seating chart and guest placement</li>
+                        <li>Budget, vendor, and checklist tools</li>
+                        <li>Collaborator access</li>
+                        <li>Photo sharing and thank-you tools</li>
                     </ul>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     {weddingId ? (
                         <Link
-                            href={`/builder?edit=${weddingId}`}
+                            href={`/dashboard/${weddingId}`}
                             className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all"
                         >
                             <ArrowLeft className="w-5 h-5" />
-                            Back to Builder
+                            Back to Dashboard
                         </Link>
                     ) : null}
                     <Link

@@ -87,8 +87,8 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                     venueAddress={wedding.venue_address}
                 />
             )}
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} />
-            <GallerySection id="gallery" gallery={gallery} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} />
             <GiftSection id="gift" wedding={wedding} invert />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

@@ -249,6 +249,20 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
             });
     }, [assignments, guests, groupFilter, searchQuery]);
 
+    const seatingSummary = useMemo(() => {
+        const totalGuests = guests.reduce((total, guest) => total + (guest.num_guests || 1), 0);
+        const seatedGuests = assignments.reduce((total, assignment) => total + (guestMap.get(assignment.rsvp_id)?.num_guests || 1), 0);
+        const totalSeats = tables.reduce((total, table) => total + table.capacity, 0);
+
+        return {
+            totalGuests,
+            seatedGuests,
+            unassignedParties: Math.max(0, guests.length - assignments.length),
+            totalSeats,
+            remainingSeats: totalSeats - seatedGuests,
+        };
+    }, [assignments, guestMap, guests, tables]);
+
     const getShapeClasses = (shape: string) => {
         switch (shape) {
             case 'square':
@@ -283,6 +297,20 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                     </button>
                 </div>
 
+                <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[
+                        ['Seated Guests', `${seatingSummary.seatedGuests}/${seatingSummary.totalGuests}`],
+                        ['Unassigned Parties', seatingSummary.unassignedParties],
+                        ['Total Tables', tables.length],
+                        ['Open Seats', seatingSummary.remainingSeats],
+                    ].map(([label, value]) => (
+                        <div key={label} className="rounded-2xl border border-border bg-neutral/50 p-4 text-center sm:text-left">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">{label}</p>
+                            <p className={`mt-2 font-serif text-2xl font-bold ${label === 'Open Seats' && Number(value) < 0 ? 'text-red-500' : 'text-foreground'}`}>{value}</p>
+                        </div>
+                    ))}
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-neutral/40 dark:bg-neutral/10 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 border-2 border-dashed border-border min-h-[400px] sm:min-h-[600px] relative">
@@ -290,7 +318,7 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-text-secondary opacity-50">
                                     <Layout className="w-16 h-16 mb-4" />
                                     <p className="font-serif italic text-lg">No tables defined yet.</p>
-                                    <p className="text-sm mt-2">Click &quot;Customize New Table&quot; to start your floor plan.</p>
+                                    <p className="text-sm mt-2">Click &quot;Add Table&quot; to start your floor plan.</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
@@ -299,6 +327,9 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                                             const tableAssignments = assignments.filter((assignment) => assignment.table_id === table.id);
                                             const seatsUsed = getSeatsUsed(table.id);
                                             const isSelected = selectedTable === table.id;
+                                            const seatsRemaining = table.capacity - seatsUsed;
+                                            const isFull = seatsRemaining === 0;
+                                            const isOverbooked = seatsRemaining < 0;
 
                                             return (
                                                 <motion.div
@@ -314,10 +345,13 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                                                         <div>
                                                             <h3 className="font-serif font-bold text-lg text-foreground">{table.table_name}</h3>
                                                             <div className="flex items-center gap-2">
-                                                                <p className={`text-xs font-bold ${seatsUsed >= table.capacity ? 'text-red-500' : 'text-text-secondary'}`}>{seatsUsed} / {table.capacity} Seats</p>
+                                                                <p className={`text-xs font-bold ${isOverbooked ? 'text-red-500' : isFull ? 'text-amber-600' : 'text-text-secondary'}`}>{seatsUsed} / {table.capacity} Seats</p>
                                                                 <span className="text-border px-1">•</span>
                                                                 <p className="text-xs text-text-secondary uppercase">{table.table_shape}</p>
                                                             </div>
+                                                            <p className={`mt-1 text-[10px] font-black uppercase tracking-wider ${isOverbooked ? 'text-red-500' : isFull ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                                {isOverbooked ? `${Math.abs(seatsRemaining)} over capacity` : isFull ? 'Table full' : `${seatsRemaining} seats open`}
+                                                            </p>
                                                         </div>
                                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <button onClick={(event) => { event.stopPropagation(); openEditTableModal(table); }} className="p-2 text-primary hover:bg-primary/10 rounded-full transition-colors">
@@ -446,10 +480,22 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-2">Number of Seats (Capacity)</label>
+                                    <div className="mb-3 grid grid-cols-4 gap-2">
+                                        {[6, 8, 10, 12].map((capacity) => (
+                                            <button
+                                                key={capacity}
+                                                type="button"
+                                                onClick={() => setTableFormData((current) => ({ ...current, capacity }))}
+                                                className={`rounded-xl border px-3 py-2 text-xs font-black transition-all ${tableFormData.capacity === capacity ? 'border-primary bg-primary text-white' : 'border-border bg-neutral text-text-secondary hover:border-primary hover:text-primary'}`}
+                                            >
+                                                {capacity}
+                                            </button>
+                                        ))}
+                                    </div>
                                     <div className="flex items-center gap-4">
-                                        <button onClick={() => setTableFormData((current) => ({ ...current, capacity: Math.max(1, current.capacity - 1) }))} className="w-12 h-12 rounded-xl bg-neutral border border-border flex items-center justify-center text-foreground hover:bg-neutral/80 active:scale-95 transition-all">-</button>
+                                        <button type="button" onClick={() => setTableFormData((current) => ({ ...current, capacity: Math.max(1, current.capacity - 1) }))} className="w-12 h-12 rounded-xl bg-neutral border border-border flex items-center justify-center text-foreground hover:bg-neutral/80 active:scale-95 transition-all">-</button>
                                         <div className="flex-1 text-center font-serif text-3xl font-bold text-primary">{tableFormData.capacity}</div>
-                                        <button onClick={() => setTableFormData((current) => ({ ...current, capacity: Math.max(1, current.capacity + 1) }))} className="w-12 h-12 rounded-xl bg-neutral border border-border flex items-center justify-center text-foreground hover:bg-neutral/80 active:scale-95 transition-all">+</button>
+                                        <button type="button" onClick={() => setTableFormData((current) => ({ ...current, capacity: Math.max(1, current.capacity + 1) }))} className="w-12 h-12 rounded-xl bg-neutral border border-border flex items-center justify-center text-foreground hover:bg-neutral/80 active:scale-95 transition-all">+</button>
                                     </div>
                                 </div>
                             </div>

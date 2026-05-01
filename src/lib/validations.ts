@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Stripe Checkout Validation
 export const checkoutSchema = z.object({
     weddingId: z.string().uuid('Invalid wedding ID format'),
-    plan: z.enum(['premium', 'elite']).default('premium'),
+    plan: z.enum(['planner_pro', 'premium', 'elite']).default('planner_pro'),
 });
 
 // Stripe Webhook - raw body validation for signature verification

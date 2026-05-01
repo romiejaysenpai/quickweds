@@ -4,13 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2, ShieldCheck, UserPlus, X } from 'lucide-react';
 import {
     acceptWeddingInvite,
-    inviteWeddingCollaborator,
     listWeddingCollaborators,
     removeWeddingCollaborator,
     type CollaboratorRole,
     type CollaboratorStatus,
     type WeddingCollaborator,
 } from '@/lib/wedding-features';
+import { supabase } from '@/lib/supabase';
 
 interface CollaboratorsPanelProps {
     weddingId: string;
@@ -40,6 +40,7 @@ export default function CollaboratorsPanel({
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState<CollaboratorRole>('partner');
     const [submitting, setSubmitting] = useState(false);
+    const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     const loadCollaborators = useCallback(async () => {
         setLoading(true);
@@ -57,17 +58,38 @@ export default function CollaboratorsPanel({
         if (!currentUserId || !inviteEmail.trim()) return;
 
         setSubmitting(true);
+        setNotice(null);
         try {
-            await inviteWeddingCollaborator({
-                weddingId,
-                email: inviteEmail,
-                role: inviteRole,
-                invitedByUserId: currentUserId,
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            if (!token) throw new Error('Please login again and retry.');
+
+            const response = await fetch('/api/collaborators/invite', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    weddingId,
+                    email: inviteEmail,
+                    role: inviteRole,
+                }),
             });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Failed to invite collaborator');
+
             setInviteEmail('');
+            setNotice({
+                type: 'success',
+                message: result.emailSent
+                    ? 'Invite added and email sent.'
+                    : 'Invite added, but the email could not be sent. Check Resend configuration.',
+            });
             await loadCollaborators();
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Failed to invite collaborator');
+            setNotice({ type: 'error', message: error instanceof Error ? error.message : 'Failed to invite collaborator' });
         } finally {
             setSubmitting(false);
         }
@@ -101,31 +123,38 @@ export default function CollaboratorsPanel({
             </div>
 
             {canManage && (
-                <form onSubmit={submitInvite} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
-                    <input
-                        type="email"
-                        placeholder="partner@example.com"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        className="px-4 py-3 rounded-xl border border-border bg-neutral dark:bg-neutral/40 text-sm outline-none focus:border-primary min-h-[44px]"
-                    />
-                    <select
-                        value={inviteRole}
-                        onChange={(e) => setInviteRole(e.target.value as CollaboratorRole)}
-                        className="px-4 py-3 rounded-xl border border-border bg-neutral dark:bg-neutral/40 text-sm outline-none focus:border-primary min-h-[44px]"
-                    >
-                        <option value="partner">Partner</option>
-                        <option value="coordinator">Coordinator</option>
-                    </select>
-                    <button
-                        type="submit"
-                        disabled={submitting || !inviteEmail.trim()}
-                        className="px-4 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-hover transition-all disabled:opacity-50 min-h-[44px] inline-flex items-center justify-center gap-2"
-                    >
-                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                        Invite
-                    </button>
-                </form>
+                <div className="space-y-3">
+                    <form onSubmit={submitInvite} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
+                        <input
+                            type="email"
+                            placeholder="partner@example.com"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            className="px-4 py-3 rounded-xl border border-border bg-neutral dark:bg-neutral/40 text-sm outline-none focus:border-primary min-h-[44px]"
+                        />
+                        <select
+                            value={inviteRole}
+                            onChange={(e) => setInviteRole(e.target.value as CollaboratorRole)}
+                            className="px-4 py-3 rounded-xl border border-border bg-neutral dark:bg-neutral/40 text-sm outline-none focus:border-primary min-h-[44px]"
+                        >
+                            <option value="partner">Partner</option>
+                            <option value="coordinator">Coordinator</option>
+                        </select>
+                        <button
+                            type="submit"
+                            disabled={submitting || !inviteEmail.trim()}
+                            className="px-4 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-hover transition-all disabled:opacity-50 min-h-[44px] inline-flex items-center justify-center gap-2"
+                        >
+                            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                            Invite
+                        </button>
+                    </form>
+                    {notice && (
+                        <p className={`rounded-xl border px-4 py-3 text-xs font-bold ${notice.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-600'}`}>
+                            {notice.message}
+                        </p>
+                    )}
+                </div>
             )}
 
             {loading ? (

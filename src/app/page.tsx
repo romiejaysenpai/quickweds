@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -19,17 +19,21 @@ import {
   Moon,
   PartyPopper,
   Phone,
+  Quote,
   ShieldCheck,
   Sparkles,
+  Star,
   Sun,
   UsersRound,
   X,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import DemoSection from '@/components/DemoSection';
 import ExamplesSection from '@/components/ExamplesSection';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { supabase } from '@/lib/supabase';
 
 const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/Minimalist%20Neutral%20Multi%20Device%20Computer%20Mockup%20Website%20Launch%20Instagram%20Post.png';
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/pc%20vew.png';
@@ -111,6 +115,51 @@ const quickWedsComparison = [
   ['Fast, simple setup', 'Manual setup across apps'],
 ];
 
+const testimonials = [
+  {
+    names: 'Mia & Carlo',
+    detail: 'Planned a 120-guest wedding',
+    quote: 'QuickWeds made our RSVPs feel effortless. We finally had one place for guest answers, questions, budget notes, and the planning checklist.',
+  },
+  {
+    names: 'Sofia & Daniel',
+    detail: 'Shared planning with family',
+    quote: 'The dashboard helped us stop jumping between chats and spreadsheets. Our guests had the website, and we had the calm planning view.',
+  },
+  {
+    names: 'Ari & James',
+    detail: 'Built their site in one evening',
+    quote: 'We wanted something elegant without hiring a designer. QuickWeds gave us a beautiful site and the tools to manage everything behind it.',
+  },
+];
+
+const faqs = [
+  {
+    question: 'Is QuickWeds only a wedding website builder?',
+    answer: 'No. QuickWeds includes your wedding website, RSVP tracking, guest list, seating tools, budget tracker, vendor notes, task planning, photo sharing, collaborator access, and post-wedding messaging.',
+  },
+  {
+    question: 'Can guests RSVP from their phones?',
+    answer: 'Yes. Your wedding website and RSVP flow are mobile-friendly, so guests can view details and respond from iPhone, Android, tablets, or desktop.',
+  },
+  {
+    question: 'Will I get notifications when someone RSVPs?',
+    answer: 'Yes. QuickWeds supports RSVP response emails, host notifications, and reminders so you can keep guests moving without manually chasing every reply.',
+  },
+  {
+    question: 'Can my partner or planner help manage the wedding?',
+    answer: 'Yes. You can invite collaborators so your partner, family member, or wedding planner can help manage planning details from the dashboard.',
+  },
+  {
+    question: 'Do I need technical skills to launch my site?',
+    answer: 'No. Choose a design, add your details and photos, then share your wedding link. QuickWeds handles the polished layout and mobile experience for you.',
+  },
+  {
+    question: 'Can I start free?',
+    answer: 'Yes. All templates, the builder, your wedding website, RSVP tools, and guest tracking are free. Planner Pro is a one-time upgrade for seating, budgets, vendors, tasks, collaborators, photo sharing, and thank-you tools.',
+  },
+];
+
 function Accent({ children }: { children: React.ReactNode }) {
   return <span className="text-primary">{children}</span>;
 }
@@ -184,8 +233,48 @@ export default function Home() {
   const [isExamplesOpen, setIsExamplesOpen] = useState(false);
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hasWeddingSite, setHasWeddingSite] = useState(false);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
+  const showDashboardLink = Boolean(user && hasWeddingSite);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const phoneView = window.matchMedia('(max-width: 639px)');
+    if (phoneView.matches) {
+      router.replace('/dashboard');
+    }
+  }, [router, user]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkWeddingSite = async () => {
+      if (!user) {
+        setHasWeddingSite(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('weddings')
+        .select('id')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
+        .limit(1);
+
+      if (isMounted) {
+        setHasWeddingSite(!error && Boolean(data?.length));
+      }
+    };
+
+    void checkWeddingSite();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
   const openTemplates = () => {
@@ -210,7 +299,7 @@ export default function Home() {
             <a href="#pricing" className={navItemClass}>Pricing</a>
             <button type="button" onClick={openTemplates} className={navItemClass}>Templates</button>
             <button type="button" onClick={openDemo} className={navItemClass}>Demo</button>
-            <Link href="/login" className={navItemClass}>Login</Link>
+            {!user && <Link href="/login" className={navItemClass}>Login</Link>}
           </div>
 
           <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
@@ -223,9 +312,11 @@ export default function Home() {
             </button>
             {user ? (
               <>
-                <Link href="/dashboard" className="hidden h-10 items-center text-sm font-bold leading-none text-text-secondary transition hover:text-primary sm:inline-flex">
-                  Dashboard
-                </Link>
+                {showDashboardLink && (
+                  <Link href="/dashboard" className="hidden min-h-[40px] items-center rounded-xl border border-primary/20 bg-primary/10 px-4 text-sm font-bold leading-none text-primary transition hover:border-primary/40 hover:bg-primary hover:text-white sm:inline-flex">
+                    Dashboard
+                  </Link>
+                )}
                 <button type="button" onClick={logout} className="hidden h-10 items-center text-sm font-bold leading-none text-text-secondary transition hover:text-primary sm:inline-flex">
                   Logout
                 </button>
@@ -298,16 +389,26 @@ export default function Home() {
                 Guide
                 <ArrowRight className="h-4 w-4" />
               </Link>
+              <a
+                href="#faq"
+                onClick={closeMobileMenu}
+                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+              >
+                FAQ
+                <ArrowRight className="h-4 w-4" />
+              </a>
               {user ? (
                 <>
-                  <Link
-                    href="/dashboard"
-                    onClick={closeMobileMenu}
-                    className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
-                  >
-                    Dashboard
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+                  {showDashboardLink && (
+                    <Link
+                      href="/dashboard"
+                      onClick={closeMobileMenu}
+                      className="flex min-h-[48px] items-center justify-between rounded-2xl bg-primary/10 px-4 text-sm font-bold text-primary transition hover:bg-primary hover:text-white"
+                    >
+                      Dashboard
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
@@ -556,37 +657,55 @@ export default function Home() {
           <div className="mx-auto max-w-5xl">
             <SectionHeading
               eyebrow="Simple pricing"
-              title="No surprises. Start"
-              accent="free,"
-              afterAccent=" upgrade anytime."
-              body="One complete planning system with the essential tools couples actually need before, during, and after the wedding."
+              title="Build free. Unlock"
+              accent="Planner Pro"
+              afterAccent=" once."
+              body="Start with every template and the full wedding website builder free. Upgrade only when you want the complete planning workspace."
             />
-            <div className="mx-auto max-w-2xl rounded-[1.5rem] border border-primary/25 bg-white p-5 shadow-2xl shadow-primary/10 sm:rounded-[2rem] sm:p-8">
-              <div className="flex flex-col gap-6 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">QuickWeds plan</p>
-                  <h3 className="mt-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">Start Free</h3>
-                  <p className="mt-3 text-text-secondary">Upgrade when you are ready for the full planner system.</p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-[1.5rem] border border-border bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8">
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">Free forever</p>
+                <h3 className="mt-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">Wedding Site</h3>
+                <p className="mt-3 text-text-secondary">Launch a polished wedding website with RSVP tools and guest tracking.</p>
+                <div className="mt-6">
+                  <PrimaryCta>Create Free Site</PrimaryCta>
                 </div>
-                <div className="flex justify-center sm:justify-start">
-                  <PrimaryCta>Start Free</PrimaryCta>
+                <div className="mt-8 grid gap-3">
+                  {[
+                    'All templates included',
+                    'Website builder and design tools',
+                    'RSVP form and guest tracking',
+                    'Automated RSVP emails and host notifications',
+                  ].map((item) => (
+                    <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
+                      <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
+                      {item}
+                    </p>
+                  ))}
                 </div>
               </div>
-              <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                {[
-                  'Website + RSVP tools',
-                  'Automated RSVP emails, notifications, and reminders',
-                  'Full wedding planner system',
-                  'Seating + task management',
-                  'Collaboration features',
-                  'Photo sharing portal',
-                  'Post-wedding tools',
-                ].map((item) => (
-                  <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
-                    <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
-                    {item}
-                  </p>
-                ))}
+              <div className="rounded-[1.5rem] border border-primary/25 bg-white p-5 shadow-2xl shadow-primary/10 sm:rounded-[2rem] sm:p-8">
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">One-time upgrade</p>
+                <div className="mt-2 flex flex-col gap-2 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
+                  <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Planner Pro</h3>
+                  <p className="font-serif text-3xl font-bold text-primary">$29</p>
+                </div>
+                <p className="mt-3 text-text-secondary">Unlock the planning workspace when you are ready for deeper coordination.</p>
+                <div className="mt-8 grid gap-3">
+                  {[
+                    'Seating chart and guest placement',
+                    'Budget, vendor, and task management',
+                    'Collaborator access',
+                    'RSVP reminders and planning notifications',
+                    'Photo sharing and post-wedding thank-you tools',
+                  ].map((item) => (
+                    <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
+                      <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
+                      {item}
+                    </p>
+                  ))}
+                </div>
+                <p className="mt-6 text-center text-xs font-bold uppercase tracking-[0.18em] text-text-secondary sm:text-left">No subscription. No surprises.</p>
               </div>
             </div>
           </div>
@@ -608,6 +727,59 @@ export default function Home() {
                 </div>
               );
             })}
+          </div>
+        </section>
+
+        <section className="px-4 py-16 sm:px-6 sm:py-28">
+          <div className="mx-auto max-w-7xl">
+            <SectionHeading
+              eyebrow="Couple stories"
+              title="Planning feels lighter when everything is"
+              accent="together."
+              body="QuickWeds is built for couples who want a beautiful guest experience and a calm planning dashboard behind it."
+            />
+            <div className="grid gap-4 md:grid-cols-3">
+              {testimonials.map((testimonial) => (
+                <div key={testimonial.names} className="rounded-2xl border border-border bg-white p-5 text-center shadow-sm sm:rounded-3xl sm:p-6 md:text-left">
+                  <div className="mb-5 flex items-center justify-center gap-1 text-secondary md:justify-start">
+                    {[0, 1, 2, 3, 4].map((star) => (
+                      <Star key={star} className="h-4 w-4 fill-current" />
+                    ))}
+                  </div>
+                  <Quote className="mx-auto mb-4 h-8 w-8 text-primary/25 md:mx-0" />
+                  <p className="text-[15px] font-semibold leading-7 text-foreground sm:text-base sm:leading-8">&quot;{testimonial.quote}&quot;</p>
+                  <div className="mt-6 border-t border-border pt-4">
+                    <p className="font-serif text-xl font-bold text-foreground">{testimonial.names}</p>
+                    <p className="mt-1 text-xs font-black uppercase tracking-[0.18em] text-primary/70">{testimonial.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="bg-white px-4 py-16 sm:px-6 sm:py-28">
+          <div className="mx-auto max-w-4xl">
+            <SectionHeading
+              eyebrow="FAQ"
+              title="Questions before you start"
+              accent="planning?"
+              body="Here are the answers couples usually need before creating their QuickWeds site."
+            />
+            <div className="space-y-3">
+              {faqs.map((faq) => (
+                <details key={faq.question} className="group rounded-2xl border border-border bg-neutral p-4 shadow-sm open:border-primary/25 open:bg-white sm:rounded-3xl sm:p-5">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left font-serif text-lg font-bold text-foreground sm:text-xl">
+                    <span>{faq.question}</span>
+                    <ChevronDown className="h-5 w-5 flex-none text-primary transition group-open:rotate-180" />
+                  </summary>
+                  <p className="mt-4 border-t border-border pt-4 text-sm leading-7 text-text-secondary sm:text-base sm:leading-8">{faq.answer}</p>
+                </details>
+              ))}
+            </div>
+            <div className="mt-8 flex justify-center">
+              <PrimaryCta>Start Your Free Site</PrimaryCta>
+            </div>
           </div>
         </section>
 
@@ -642,6 +814,7 @@ export default function Home() {
             <a href="#pricing" className={footerItemClass}>Pricing</a>
             <button type="button" onClick={openTemplates} className={footerItemClass}>Templates</button>
             <button type="button" onClick={openDemo} className={footerItemClass}>Demo</button>
+            <a href="#faq" className={footerItemClass}>FAQ</a>
             <a href="mailto:support@quickweds.site" className={footerItemClass}>Contact</a>
             <Link href="/privacy" className={footerItemClass}>Privacy</Link>
           </div>

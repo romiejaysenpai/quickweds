@@ -390,7 +390,7 @@ export function getWelcomeEmailHtml(userName: string) {
                             <td width="48" valign="top" style="padding-top: 4px;"><div style="width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; background-color: #FFF8F4; color: #D16C78; font-weight: bold;">1</div></td>
                             <td style="padding-bottom: 24px;">
                                 <p style="margin: 0; font-size: 16px; font-weight: bold;">Pick Your Vibe</p>
-                                <p style="margin: 4px 0 0; font-size: 14px; color: #7A5A61;">Browse our premium templates—from Vintage to Modern—to match your wedding theme.</p>
+                                <p style="margin: 4px 0 0; font-size: 14px; color: #7A5A61;">Browse our designer templates—from Vintage to Modern—to match your wedding theme.</p>
                             </td>
                         </tr>
                         <tr>
@@ -493,3 +493,75 @@ export function getThankYouNoteHtml(input: {
     `;
 }
 
+export function getCollaboratorInviteHtml(input: {
+    inviteeEmail: string;
+    inviterEmail?: string;
+    role: string;
+    brideName: string;
+    groomName: string;
+    weddingDate?: string;
+    venueName?: string;
+    dashboardUrl: string;
+}) {
+    const safeInviteeEmail = escapeHtml(input.inviteeEmail);
+    const safeInviterEmail = input.inviterEmail ? escapeHtml(input.inviterEmail) : 'A QuickWeds user';
+    const safeRole = escapeHtml(input.role);
+    const safeBrideName = escapeHtml(input.brideName || 'Bride');
+    const safeGroomName = escapeHtml(input.groomName || 'Groom');
+    const safeWeddingDate = input.weddingDate ? escapeHtml(input.weddingDate) : '';
+    const safeVenueName = input.venueName ? escapeHtml(input.venueName) : '';
+    const safeDashboardUrl = escapeHtml(input.dashboardUrl);
+
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>QuickWeds Collaboration Invite</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: ${BG_COLOR}; color: ${TEXT_COLOR};">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 20px 40px rgba(209,108,120,0.12);">
+            <tr>
+                <td align="center" style="padding: 56px 40px 32px; background-color: ${MAIN_COLOR}; color: #ffffff;">
+                    <div style="font-size: 56px; margin-bottom: 20px;">&#128140;</div>
+                    <h1 style="margin: 0; font-size: 30px; font-weight: 700;">You have been invited to QuickWeds</h1>
+                    <p style="margin: 12px 0 0; font-size: 16px; opacity: 0.86;">Collaborate on ${safeBrideName} &amp; ${safeGroomName}'s wedding workspace.</p>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 44px 48px 32px;">
+                    <p style="margin: 0 0 18px; font-size: 17px; line-height: 1.6;">Hi ${safeInviteeEmail},</p>
+                    <p style="margin: 0 0 24px; font-size: 17px; line-height: 1.6; color: ${SECONDARY_TEXT};">
+                        ${safeInviterEmail} invited you as a <strong style="color: ${TEXT_COLOR};">${safeRole}</strong> so you can help manage wedding planning details in QuickWeds.
+                    </p>
+                    <div style="background-color: ${BG_COLOR}; border: 1px solid rgba(209,108,120,0.16); border-radius: 24px; padding: 28px;">
+                        <p style="margin: 0 0 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.8px; color: ${MAIN_COLOR};">Wedding Workspace</p>
+                        <h2 style="margin: 0 0 12px; font-size: 24px; color: ${TEXT_COLOR};">${safeBrideName} &amp; ${safeGroomName}</h2>
+                        ${safeWeddingDate ? `<p style="margin: 0 0 8px; font-size: 15px; color: ${SECONDARY_TEXT};"><strong>Date:</strong> ${safeWeddingDate}</p>` : ''}
+                        ${safeVenueName ? `<p style="margin: 0; font-size: 15px; color: ${SECONDARY_TEXT};"><strong>Venue:</strong> ${safeVenueName}</p>` : ''}
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" style="padding: 0 48px 48px;">
+                    <a href="${safeDashboardUrl}" style="display: inline-block; padding: 18px 40px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 16px; font-weight: 700; font-size: 16px; box-shadow: 0 10px 20px rgba(209,108,120,0.25);">
+                        Open QuickWeds Workspace
+                    </a>
+                    <p style="margin: 24px 0 0; font-size: 13px; color: ${SECONDARY_TEXT}; line-height: 1.6;">
+                        Sign in with this email address to see and accept the shared wedding workspace.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" style="padding: 30px 40px; background-color: #fafafa; border-top: 1px solid #eeeeee;">
+                    <p style="margin: 0; font-size: 13px; color: ${SECONDARY_TEXT};">
+                        Sent automatically by <strong style="color: ${MAIN_COLOR};">QuickWeds</strong>
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    `;
+}

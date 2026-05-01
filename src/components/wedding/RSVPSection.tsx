@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import RSVPForm from '@/components/RSVPForm';
 import type { Wedding } from '@/types/wedding';
+import { getTemplateVisualProfile } from '@/lib/theme-engine';
 
 interface RSVPSectionProps {
     wedding: Wedding;
@@ -11,11 +12,10 @@ interface RSVPSectionProps {
 
 export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     const template = wedding.template || 'classic';
-    const isSharp = ['editorial', 'urban', 'minimal', 'vogue', 'glitch', 'film'].includes(template);
-    const isDark = ['royal', 'midnight', 'cinematic'].includes(template);
-    const isVintage = ['vintage', 'rustic', 'boho', 'artdeco', 'sakura', 'garden'].includes(template);
-    const isRomantic = ['romantic', 'whimsical', 'elopement', 'classic'].includes(template);
-
+    const visual = getTemplateVisualProfile(template, wedding.motif_color || '#D16C78');
+    const isSharp = visual.isSharp || ['editorial', 'urban', 'minimal', 'vogue', 'glitch', 'film'].includes(template);
+    const isDark = visual.isDark || ['royal', 'midnight', 'cinematic'].includes(template);
+    const isVintage = visual.isVintage || ['vintage', 'rustic', 'boho', 'artdeco', 'sakura', 'garden'].includes(template);
     const deadline = new Date(wedding.rsvp_deadline).toLocaleDateString('en-US', {
         month: 'long', day: 'numeric', year: 'numeric'
     });
@@ -23,12 +23,12 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     // ── DARK templates: Royal / Midnight / Cinematic ──────────────────────────
     if (isDark) {
         return (
-            <section id="rsvp" className="max-w-4xl mx-auto px-4 sm:px-6 py-24 sm:py-32">
+            <section id="rsvp" className={`px-4 sm:px-6 py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="border border-primary/20 bg-black/40 backdrop-blur-xl p-8 sm:p-12 md:p-16 relative overflow-hidden"
+                    className={`relative mx-auto max-w-4xl overflow-hidden p-8 sm:p-12 md:p-16 ${visual.cardClass}`}
                 >
                     {/* Corner accents */}
                     <div className="absolute top-0 left-0 w-8 h-8 border-t border-l border-primary/40" />
@@ -63,12 +63,12 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     // ── SHARP / EDITORIAL templates ───────────────────────────────────────────
     if (isSharp) {
         return (
-            <section id="rsvp" className="max-w-5xl mx-auto px-4 sm:px-6 py-24 sm:py-32">
+            <section id="rsvp" className={`px-4 sm:px-6 py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="border border-black/10 bg-white"
+                    className={`mx-auto max-w-5xl ${visual.cardClass}`}
                 >
                     {/* Header bar */}
                     <div className="border-b border-black/10 px-8 sm:px-14 py-8 sm:py-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -104,12 +104,12 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     // ── VINTAGE / BOHO / RUSTIC templates ─────────────────────────────────────
     if (isVintage) {
         return (
-            <section id="rsvp" className="max-w-4xl mx-auto px-4 sm:px-6 py-24 sm:py-32">
+            <section id="rsvp" className={`px-4 sm:px-6 py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="bg-white/70 backdrop-blur-md border-2 border-primary/20 p-8 sm:p-14 relative text-center"
+                    className={`relative mx-auto max-w-4xl p-8 text-center sm:p-14 ${visual.cardClass}`}
                     style={{ borderRadius: '2px' }}
                 >
                     {/* Vintage corner ornaments */}
@@ -156,12 +156,12 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
 
     // ── DEFAULT: Classic / Romantic / Luxury / Everything else ────────────────
     return (
-        <section id="rsvp" className="max-w-4xl mx-auto px-4 sm:px-6 py-24 sm:py-32">
+        <section id="rsvp" className={`px-4 sm:px-6 py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-3xl sm:rounded-[5rem] px-4 sm:px-8 md:px-16 py-8 sm:py-16 md:py-24 soft-shadow text-center relative overflow-hidden ring-1 ring-primary/5"
+                className={`relative mx-auto max-w-4xl overflow-hidden px-4 py-8 text-center sm:px-8 sm:py-16 md:px-16 md:py-24 ${visual.cardClass}`}
             >
                 {/* Background flourish */}
                 <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-br-full" />

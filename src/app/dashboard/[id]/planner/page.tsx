@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,11 +11,12 @@ import { getWeddingCollaboratorAccess } from '@/lib/wedding-features';
 import SeatingChartBuilder from '@/components/dashboard/SeatingChartBuilder';
 import PhotoSharingManager from '@/components/dashboard/PhotoSharingManager';
 import ThankYouNoteManager from '@/components/dashboard/ThankYouNoteManager';
+import UpgradeButton from '@/components/UpgradeButton';
 
 export default function PlannerPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: weddingId } = use(params);
     const router = useRouter();
-    const { user, loading: authLoading } = useAuth();
+    const { user, isAdmin, loading: authLoading } = useAuth();
     const [activeTab, setActiveTab] = useState<'checklist' | 'budget' | 'vendors' | 'seating' | 'photos' | 'thanks'>('checklist');
     const [loading, setLoading] = useState(true);
     const [accessRole, setAccessRole] = useState<'owner' | 'partner' | 'coordinator' | 'pending' | 'denied'>('denied');
@@ -36,14 +37,14 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
         if (user) {
             void loadPlannerData();
         }
-    }, [weddingId, user, authLoading, router]);
+    }, [weddingId, user, authLoading, isAdmin, router]);
 
     const loadPlannerData = async () => {
         setLoading(true);
         try {
             const { data: accessWedding, error: accessWeddingError } = await supabase
                 .from('weddings')
-                .select('id, user_id, total_budget, currency')
+                .select('id, user_id, total_budget, currency, guest_limit, is_premium, plan_type')
                 .eq('id', weddingId)
                 .is('deleted_at', null)
                 .single();
@@ -67,10 +68,16 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 }
             }
 
+            setWedding(accessWedding);
+
+            if (!isAdmin && !accessWedding.is_premium) {
+                return;
+            }
+
             const [tasksRes, budgetsRes, weddingRes, vendorsRes, rsvpsRes] = await Promise.all([
                 supabase.from('planner_tasks').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
                 supabase.from('planner_budgets').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
-                supabase.from('weddings').select('total_budget, currency, guest_limit').eq('id', weddingId).is('deleted_at', null).single(),
+                supabase.from('weddings').select('total_budget, currency, guest_limit, is_premium, plan_type').eq('id', weddingId).is('deleted_at', null).single(),
                 supabase.from('planner_vendors').select('*').eq('wedding_id', weddingId),
                 supabase.from('rsvps').select('num_guests, rsvp_status, attendance').eq('wedding_id', weddingId)
             ]);
@@ -124,6 +131,61 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                     <Link href="/dashboard" className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-primary text-white font-bold min-h-[44px]">
                         Back to Dashboard
                     </Link>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isAdmin && !wedding?.is_premium) {
+        return (
+            <div className="min-h-screen bg-background px-4 py-10 sm:px-6">
+                <div className="mx-auto max-w-3xl">
+                    <Link href={`/dashboard/${weddingId}`} className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-primary">
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to dashboard
+                    </Link>
+
+                    <div className="overflow-hidden rounded-[2rem] border border-primary/15 bg-white shadow-2xl shadow-primary/10 sm:rounded-[2.5rem]">
+                        <div className="bg-gradient-to-br from-primary/12 via-secondary/10 to-white p-6 text-center sm:p-10">
+                            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-white text-primary shadow-xl shadow-primary/10">
+                                <LockKeyhole className="h-7 w-7" />
+                            </div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">Planner Pro</p>
+                            <h1 className="mt-3 font-serif text-3xl font-bold leading-tight text-foreground sm:text-5xl">
+                                Unlock the complete wedding planner.
+                            </h1>
+                            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-text-secondary sm:text-base">
+                                Your wedding website, templates, RSVP tools, and builder stay free. Planner Pro is a one-time upgrade for the deeper planning workspace.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-8">
+                            {[
+                                'Seating chart and guest placement',
+                                'Budget tracker with vendor spending',
+                                'Checklist and task planning',
+                                'Vendor organizer',
+                                'Collaborator access for your partner or planner',
+                                'Photo sharing and thank-you tools',
+                            ].map((feature) => (
+                                <div key={feature} className="flex items-start gap-3 rounded-2xl bg-neutral p-4 text-sm font-semibold text-foreground">
+                                    <Sparkles className="mt-0.5 h-4 w-4 flex-none text-primary" />
+                                    {feature}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-col items-center gap-3 border-t border-border p-5 text-center sm:p-8">
+                            {accessRole === 'owner' ? (
+                                <UpgradeButton weddingId={weddingId} className="justify-center" />
+                            ) : (
+                                <p className="max-w-md text-sm text-text-secondary">
+                                    Ask the wedding owner to unlock Planner Pro for this workspace.
+                                </p>
+                            )}
+                            <p className="text-xs text-text-secondary">One-time payment. No subscription.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -441,7 +503,7 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                     value={localBudget}
                                     onChange={e => setLocalBudget(parseFloat(e.target.value) || 0)}
                                     onBlur={e => saveWeddingBudget('total_budget', parseFloat(e.target.value) || 0)}
-                                    className="text-base sm:text-xl font-mono text-primary w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-12 sm:pl-14 pr-2 sm:pr-3 py-2 outline-none focus:ring-primary/20 min-h-[40px] sm:min-h-[44px]"
+                                    className="text-base sm:text-xl font-mono text-primary w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-16 sm:pl-16 pr-3 sm:pr-4 py-2 outline-none focus:ring-primary/20 min-h-[40px] sm:min-h-[44px]"
                                 />
                             </div>
                         </div>
@@ -461,7 +523,7 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                     const val = parseInt(e.target.value) || 0;
                                     saveWeddingBudget('guest_limit', val);
                                 }}
-                                className="text-base sm:text-xl font-mono text-primary w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-10 sm:pl-12 pr-2 sm:pr-3 py-2 outline-none focus:ring-primary/20 min-h-[40px] sm:min-h-[44px]"
+                                className="text-base sm:text-xl font-mono text-primary w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-14 sm:pl-14 pr-3 sm:pr-4 py-2 outline-none focus:ring-primary/20 min-h-[40px] sm:min-h-[44px]"
                             />
                         </div>
                     </div>
@@ -592,7 +654,7 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                 placeholder="0.00" 
                                 value={newItem.estimated_cost}
                                 onChange={e => setNewItem({...newItem, estimated_cost: e.target.value})}
-                                className="w-full bg-white border border-border rounded-lg sm:rounded-xl pl-12 pr-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 font-mono text-xs sm:text-sm min-h-[44px]"
+                                className="w-full bg-white border border-border rounded-lg sm:rounded-xl pl-14 pr-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 font-mono text-xs sm:text-sm min-h-[44px]"
                             />
                         </div>
                     </div>
@@ -806,7 +868,7 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
                                 placeholder="0.00" 
                                 value={newItem.amount}
                                 onChange={e => setNewItem({...newItem, amount: e.target.value})}
-                                className="w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-10 pr-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 font-mono text-xs sm:text-sm min-h-[44px]"
+                                className="w-full bg-neutral border border-border rounded-lg sm:rounded-xl pl-14 pr-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 font-mono text-xs sm:text-sm min-h-[44px]"
                             />
                         </div>
                     </div>

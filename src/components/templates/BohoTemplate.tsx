@@ -123,7 +123,7 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
                         <h2 className="text-5xl sm:text-6xl font-serif italic text-[#5d2e0a] mb-8">A Journey of Souls</h2>
                         <div className="w-24 h-[1px] bg-[#8b4513]/20 mx-auto mb-10" />
                         <p className="text-xl sm:text-2xl md:text-3xl leading-relaxed text-[#8b4513]/80 italic max-w-3xl mx-auto">
-                            "{wedding.story || "A tale of two souls becoming one, captured in a beauty that never fades."}"
+                            &quot;{wedding.story || 'A tale of two souls becoming one, captured in a beauty that never fades.'}&quot;
                         </p>
                         <div className="w-24 h-[1px] bg-[#8b4513]/20 mx-auto mt-10" />
                     </motion.div>

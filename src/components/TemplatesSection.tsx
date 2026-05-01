@@ -30,7 +30,7 @@ export default function TemplatesSection() {
                         <span className="italic text-primary"> worthy of the day</span>
                     </h2>
                     <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-text-secondary md:text-lg">
-                        Every template now leans more editorial, more tactile, and more premium. Start with a direction,
+                        Every template now leans more editorial, more tactile, and more polished. Start with a direction,
                         then personalize the colors, fonts, media, and story until it feels unmistakably yours.
                     </p>
                 </div>
@@ -63,7 +63,7 @@ export default function TemplatesSection() {
                                                 style={{ backgroundColor: template.accent }}
                                             />
                                             <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-foreground/45">
-                                                {template.tier === 'free' ? 'Included' : 'Premium'}
+                                                Included
                                             </span>
                                         </div>
                                     </div>

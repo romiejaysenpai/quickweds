@@ -12,7 +12,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: validation.errors }, { status: 400 });
         }
 
-        const { weddingId, plan } = validation.data;
+        const { weddingId } = validation.data;
+        const plan = 'planner_pro';
 
         if (!process.env.STRIPE_SECRET_KEY) {
             console.error('STRIPE_SECRET_KEY is missing');
@@ -21,11 +22,9 @@ export async function POST(req: NextRequest) {
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-        const price = plan === 'elite' ? PRICING.ELITE_PRICE : PRICING.PREMIUM_PRICE;
-        const planName = plan === 'elite' ? 'QuickWeds Elite' : 'QuickWeds Premium';
-        const planDesc = plan === 'elite'
-            ? 'Unlimited Everything: 25+ Templates, 45 Fonts, Monogram, HD Video, Custom Domain Mapping, Priority Support'
-            : 'Unlock Premium Features: All Templates, 45 Fonts, Monogram Logo, Teaser Video Upload';
+        const price = PRICING.PLANNER_PRO_PRICE;
+        const planName = 'QuickWeds Planner Pro';
+        const planDesc = 'One-time unlock for seating, budgets, vendors, tasks, collaborators, reminders, photo sharing, and thank-you tools.';
 
         // Create Stripe checkout session
         const session = await stripe.checkout.sessions.create({

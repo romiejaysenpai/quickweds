@@ -55,10 +55,10 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
                 </div>
             </section>
 
-            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection id="bio" wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && !isExpired && (
                 <CountdownTimer id="countdown"

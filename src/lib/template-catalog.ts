@@ -10,7 +10,33 @@ export type TemplateCatalogItem = {
     previewGradient: string;
 };
 
-export const FREE_TEMPLATE_IDS = ['classic', 'romantic', 'tropical'] as const;
+export const FREE_TEMPLATE_IDS = [
+    'classic',
+    'minimal',
+    'romantic',
+    'luxury',
+    'elopement',
+    'traditional',
+    'timeline',
+    'rsvpfocus',
+    'cinematic',
+    'elegance',
+    'artdeco',
+    'boho',
+    'whimsical',
+    'urban',
+    'tropical',
+    'midnight',
+    'sakura',
+    'vogue',
+    'rustic',
+    'film',
+    'glitch',
+    'vintage',
+    'editorial',
+    'royal',
+    'garden',
+] as const;
 export const LANDING_TEMPLATE_IDS = ['classic', 'minimal', 'boho', 'royal', 'midnight', 'tropical'] as const;
 export const SHOWCASE_TEMPLATE_IDS = ['classic', 'minimal', 'royal', 'boho', 'urban', 'tropical'] as const;
 
@@ -34,7 +60,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         eyebrow: 'Clean Editorial',
         mood: 'Quiet contrast and gallery-grade whitespace',
         image: '/templates/minimal.png',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(145deg, #ffffff 0%, #f4f2ef 48%, #e7dfda 100%)',
     },
     {
@@ -54,7 +80,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#C5A059',
         eyebrow: 'Fashion House',
         mood: 'Black lacquer and brushed gold',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #080808 0%, #18130f 50%, #382914 100%)',
     },
     {
@@ -64,7 +90,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#6B7A62',
         eyebrow: 'Quiet Escape',
         mood: 'Alpine light and understated intimacy',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(140deg, #f7f4ee 0%, #dfe6d7 50%, #bcc9b2 100%)',
     },
     {
@@ -74,7 +100,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#8F6A45',
         eyebrow: 'Grand Ceremony',
         mood: 'Ceremonial warmth and polished heritage',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #fff7ed 0%, #ecd9c4 55%, #caa783 100%)',
     },
     {
@@ -84,7 +110,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#4D5B7C',
         eyebrow: 'Structured Flow',
         mood: 'Architectural rhythm with calm precision',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 52%, #c9d4e7 100%)',
     },
     {
@@ -94,7 +120,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#A0616A',
         eyebrow: 'Guest Forward',
         mood: 'High-conversion clarity with elegance',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #fff9f7 0%, #f3e4e4 52%, #dfc4c8 100%)',
     },
     {
@@ -104,7 +130,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#C7704D',
         eyebrow: 'Cinema Frame',
         mood: 'Moody amber light and widescreen drama',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #0f1116 0%, #241b17 50%, #533427 100%)',
     },
     {
@@ -114,7 +140,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#9B7A5E',
         eyebrow: 'Quiet Luxe',
         mood: 'Soft taupe and couture spacing',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #fffcf8 0%, #f0e6dc 55%, #dcc9b6 100%)',
     },
     {
@@ -124,7 +150,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#C5A059',
         eyebrow: 'Gilded Geometry',
         mood: 'Jazz-era glamour and symmetry',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #121212 0%, #241d15 50%, #5d4520 100%)',
     },
     {
@@ -135,7 +161,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         eyebrow: 'Earthy Poetry',
         mood: 'Clay, linen, and artisanal warmth',
         image: '/templates/boho.png',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #fff7ef 0%, #edd8c6 50%, #d4a27e 100%)',
     },
     {
@@ -145,7 +171,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#8D7BC4',
         eyebrow: 'Storybook Bloom',
         mood: 'Petal mist and playful detail',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #fff9fd 0%, #ebdef8 50%, #cdb9f3 100%)',
     },
     {
@@ -155,7 +181,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#FF4D5A',
         eyebrow: 'City After Dark',
         mood: 'Concrete, chrome, and neon tension',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #090909 0%, #202020 55%, #4f171d 100%)',
     },
     {
@@ -177,7 +203,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         eyebrow: 'After-Hours Luxe',
         mood: 'Champagne glow over black velvet',
         image: '/templates/midnight.png',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #05060a 0%, #12192d 48%, #3d3416 100%)',
     },
     {
@@ -187,7 +213,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#D88DA9',
         eyebrow: 'Bloom Season',
         mood: 'Petal pink and spring air',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #fff8fb 0%, #f7e4ee 55%, #edbfd3 100%)',
     },
     {
@@ -197,7 +223,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#111111',
         eyebrow: 'Runway Edit',
         mood: 'Monochrome confidence with couture pacing',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #ffffff 0%, #efefef 52%, #d7d7d7 100%)',
     },
     {
@@ -207,7 +233,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#8C6446',
         eyebrow: 'Barn Glow',
         mood: 'Honey wood and candlelit comfort',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #fff8ee 0%, #ead9c4 52%, #bb8e60 100%)',
     },
     {
@@ -217,7 +243,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#B4875C',
         eyebrow: 'Analog Memory',
         mood: 'Warm grain and silver halide softness',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #1b1815 0%, #5b4734 52%, #c49c74 100%)',
     },
     {
@@ -227,7 +253,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#4EF2E0',
         eyebrow: 'Neo Signal',
         mood: 'Cyan, magenta, and digital pulse',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #05070f 0%, #11182c 48%, #2a0f3d 100%)',
     },
     {
@@ -237,7 +263,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#A67C52',
         eyebrow: 'Keepsake Paper',
         mood: 'Faded parchment and heirloom stamps',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #fcf7ef 0%, #e7d8c4 55%, #c4a179 100%)',
     },
     {
@@ -247,7 +273,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#1E1E1E',
         eyebrow: 'Magazine Cover',
         mood: 'Hero photography and stark elegance',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #fefefe 0%, #ececec 50%, #d7d0cb 100%)',
     },
     {
@@ -258,7 +284,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         eyebrow: 'Regal Drama',
         mood: 'Velvet halls and ceremonial gold',
         image: '/templates/royal.png',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #0c0c0c 0%, #181818 44%, #49351d 100%)',
     },
     {
@@ -268,7 +294,7 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         accent: '#537A57',
         eyebrow: 'Botanical Estate',
         mood: 'Green canopies and conservatory light',
-        tier: 'premium',
+        tier: 'free',
         previewGradient: 'linear-gradient(135deg, #f8fbf5 0%, #d8e7d1 52%, #9fba94 100%)',
     },
 ];

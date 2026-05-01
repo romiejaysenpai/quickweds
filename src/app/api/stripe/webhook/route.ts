@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object as Stripe.Checkout.Session;
             const weddingId = session.metadata?.weddingId;
-            const plan = session.metadata?.plan || 'premium';
+            const plan = session.metadata?.plan || 'planner_pro';
 
             if (weddingId) {
                 const supabase: any = getSupabaseAdminClient();

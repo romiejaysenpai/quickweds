@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtml } from './email-templates';
+import { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtml, getCollaboratorInviteHtml } from './email-templates';
 
 const resendApiKey = process.env.RESEND_API_KEY || '';
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
@@ -63,4 +63,4 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
     }
 }
 
-export { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtml };
+export { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtml, getCollaboratorInviteHtml };
