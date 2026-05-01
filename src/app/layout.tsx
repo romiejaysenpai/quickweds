@@ -61,64 +61,9 @@ const herr = Herr_Von_Muellerhoff({ variable: "--font-herr", weight: "400", subs
 const lavishly = Lavishly_Yours({ variable: "--font-lavishly", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://quickweds.site"),
-  title: {
-    default: "QuickWeds | Complete Wedding Planning System",
-    template: "%s | QuickWeds",
-  },
-  description: "Plan, invite, and manage your wedding all in one place. Create your wedding website, manage RSVPs, track guests, organize budgets, coordinate vendors, and keep every detail together in one calm dashboard.",
+  title: "QuickWeds | Instant Elegant Wedding Landing Pages",
+  description: "Create a beautiful, mobile-first wedding invitation landing page with an integrated RSVP system in minutes.",
   applicationName: "QuickWeds",
-  keywords: [
-    "QuickWeds",
-    "wedding planning system",
-    "wedding website builder",
-    "RSVP management",
-    "guest list manager",
-    "wedding budget tracker",
-    "vendor organizer",
-    "seating chart planner",
-    "wedding checklist",
-    "digital wedding invitations",
-  ],
-  authors: [{ name: "QuickWeds" }],
-  creator: "QuickWeds",
-  publisher: "QuickWeds",
-  category: "Wedding Planning Software",
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    url: "/",
-    siteName: "QuickWeds",
-    title: "QuickWeds | Complete Wedding Planning System",
-    description: "Plan, invite, and manage your wedding all in one place. Create your wedding website, manage RSVPs, track guests, organize budgets, coordinate vendors, and keep every detail together in one calm dashboard.",
-    images: [
-      {
-        url: "/logo.png",
-        width: 1200,
-        height: 630,
-        alt: "QuickWeds complete wedding planning system",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "QuickWeds | Complete Wedding Planning System",
-    description: "Plan, invite, and manage your wedding all in one place. Create your wedding website, manage RSVPs, track guests, budgets, vendors, seating, and tasks.",
-    images: ["/logo.png"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
-    },
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
