@@ -17,28 +17,27 @@ export async function POST(req: NextRequest) {
 
         if (!process.env.STRIPE_SECRET_KEY) {
             console.error('STRIPE_SECRET_KEY is missing');
-            return NextResponse.json({ error: 'Server configuration error: STRIPE_SECRET_KEY is missing' }, { status: 500 });
+            return NextResponse.json(
+                { error: 'Server configuration error: STRIPE_SECRET_KEY is missing' },
+                { status: 500 }
+            );
         }
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
         const price = PRICING.PLANNER_PRO_PRICE;
-        const planName = 'QuickWeds Planner Pro';
-        const planDesc = 'One-time unlock for seating, budgets, vendors, tasks, collaborators, reminders, photo sharing, and thank-you tools.';
 
-        // Create Stripe checkout session
-        const session = await stripe.checkout.sessions.create({
+        const sessionParams: Record<string, unknown> = {
             payment_method_types: ['card'],
             line_items: [
                 {
                     price_data: {
                         currency: PRICING.CURRENCY,
                         product_data: {
-                            name: planName,
-                            description: planDesc,
+                            name: 'QuickWeds Planner Pro',
+                            description: 'One-time unlock for seating, budgets, vendors, tasks, collaborators, reminders, photo sharing, and thank-you tools.',
                             images: [`${appUrl}/logo.png`],
                         },
-                        unit_amount: Math.round(price * 100), // Convert to cents
+                        unit_amount: Math.round(price * 100),
                     },
                     quantity: 1,
                 },
@@ -50,15 +49,21 @@ export async function POST(req: NextRequest) {
                 weddingId,
                 plan,
             },
-        });
+        };
+
+        // Support brand color for newer Stripe API versions (cast safely)
+        try {
+            sessionParams.branding = { primary: '#D16C78' };
+        } catch {
+            // branding not supported in this API version
+        }
+
+        const session = await stripe.checkout.sessions.create(sessionParams as any);
 
         return NextResponse.json({ url: session.url });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Failed to create checkout session';
         console.error('Stripe checkout error:', error);
-        return NextResponse.json(
-            { error: message },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
