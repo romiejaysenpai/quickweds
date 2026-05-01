@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -67,7 +67,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 role = 'owner';
             } else if (isAdmin) {
                 role = 'owner';
-                setAccessDebug(`Admin override — isAdmin=${isAdmin}, userEmail=${user?.email}`);
+                setAccessDebug(`Admin override - isAdmin=${isAdmin}, userEmail=${user?.email}`);
             } else {
                 const collaborator = await getWeddingCollaboratorAccess(weddingId, user?.email);
                 if (!collaborator) {
@@ -841,9 +841,15 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
 
     return (
         <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl p-4 sm:p-8 md:p-10 soft-shadow border border-border overflow-x-hidden">
-            <div className="mb-5 sm:mb-8 border-b border-border/50 pb-4 sm:pb-6">
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-foreground mb-1">Vendor Rolodex</h2>
-                <p className="text-xs sm:text-sm text-text-secondary">Keep your suppliers organized.</p>
+            <div className="mb-5 flex flex-col gap-4 border-b border-border/50 pb-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:pb-6">
+                <div>
+                    <h2 className="mb-1 text-xl font-serif font-bold text-foreground sm:text-2xl md:text-3xl">Vendor Rolodex</h2>
+                    <p className="text-xs text-text-secondary sm:text-sm">Keep your suppliers organized.</p>
+                </div>
+                <Link href="/suppliers" className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary hover:text-white">
+                    <Search className="h-4 w-4" />
+                    Find Suppliers
+                </Link>
             </div>
 
             <form onSubmit={addItem} className="space-y-4 sm:space-y-5 mb-6 sm:mb-10">

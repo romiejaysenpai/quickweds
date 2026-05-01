@@ -15,6 +15,20 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
+    const getSafeNextPath = () => {
+        if (typeof window === 'undefined') return '/dashboard';
+        const nextPath = new URLSearchParams(window.location.search).get('next');
+        return nextPath?.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard';
+    };
+
+    const rememberNextPath = () => {
+        const nextPath = getSafeNextPath();
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem('quickweds_auth_next', nextPath);
+        }
+        return nextPath;
+    };
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -25,7 +39,7 @@ export default function LoginPage() {
                 password,
             });
             if (error) throw error;
-            router.replace('/dashboard');
+            router.replace(getSafeNextPath());
         } catch (err: any) {
             setError(err.message || 'Failed to login');
         } finally {
@@ -37,6 +51,7 @@ export default function LoginPage() {
         setLoading(true);
         setError('');
         try {
+            rememberNextPath();
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {

@@ -297,6 +297,7 @@ export default function Home() {
 
           <div className="hidden items-center gap-7 lg:flex">
             <a href="#features" className={navItemClass}>Features</a>
+            <Link href="/suppliers" className={navItemClass}>Suppliers</Link>
             <a href="#pricing" className={navItemClass}>Pricing</a>
             <button type="button" onClick={openTemplates} className={navItemClass}>Templates</button>
             <button type="button" onClick={openDemo} className={navItemClass}>Demo</button>
@@ -366,6 +367,14 @@ export default function Home() {
                 Pricing
                 <ArrowRight className="h-4 w-4" />
               </a>
+              <Link
+                href="/suppliers"
+                onClick={closeMobileMenu}
+                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+              >
+                Find Suppliers
+                <ArrowRight className="h-4 w-4" />
+              </Link>
               <button
                 type="button"
                 onClick={openTemplates}
@@ -570,6 +579,32 @@ export default function Home() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white px-4 py-16 sm:px-6 sm:py-24">
+          <div className="mx-auto grid max-w-6xl gap-8 rounded-[1.5rem] border border-border bg-neutral p-5 shadow-sm sm:rounded-[2rem] sm:p-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div className="text-center lg:text-left">
+              <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-primary/70 sm:text-xs sm:tracking-[0.28em]">Supplier directory</p>
+              <h2 className="text-[2rem] font-bold leading-[1.08] sm:text-5xl">Find trusted <Accent>wedding suppliers</Accent> near you.</h2>
+              <p className="mt-4 text-[15px] leading-7 text-text-secondary sm:mt-5 sm:text-lg sm:leading-8">
+                Browse Philippines-focused venues, photographers, coordinators, caterers, stylists, and more. Contact suppliers directly, then save favorites into Planner Pro when you are ready.
+              </p>
+              <div className="mt-8 flex justify-center lg:justify-start">
+                <Link href="/suppliers" className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover sm:w-auto sm:px-6 sm:text-base">
+                  Find Wedding Suppliers
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {['Venues', 'Photography', 'Coordination', 'Catering', 'Styling', 'Hair & Makeup'].map((item) => (
+                <div key={item} className="rounded-2xl border border-border bg-white p-4 text-center shadow-sm sm:p-5">
+                  <p className="font-serif text-xl font-bold text-foreground">{item}</p>
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-primary">Browse free</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -831,6 +866,7 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-bold text-text-secondary md:justify-end">
             <a href="#features" className={footerItemClass}>Features</a>
+            <Link href="/suppliers" className={footerItemClass}>Find Wedding Suppliers</Link>
             <a href="#pricing" className={footerItemClass}>Pricing</a>
             <button type="button" onClick={openTemplates} className={footerItemClass}>Templates</button>
             <button type="button" onClick={openDemo} className={footerItemClass}>Demo</button>

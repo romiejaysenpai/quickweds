@@ -336,6 +336,29 @@ input, textarea, select {
   font-size: 16px; /* Prevents zoom on iOS focus */
 }
 
+.supplier-input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--neutral);
+  color: var(--foreground);
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.supplier-input::placeholder {
+  color: color-mix(in srgb, var(--text-secondary) 55%, transparent);
+}
+
+.supplier-input:focus {
+  border-color: var(--primary);
+  background: var(--white);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
 /* Disable tap highlight on mobile */
 a, button {
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);

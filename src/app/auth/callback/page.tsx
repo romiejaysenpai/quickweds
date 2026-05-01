@@ -4,21 +4,88 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
+import type { User } from '@supabase/supabase-js';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
     const [error, setError] = useState<string | null>(null);
     const [debug, setDebug] = useState<string>('');
 
+    const getSafeNextPath = (value: string | null) => {
+        return value?.startsWith('/') && !value.startsWith('//') ? value : '/dashboard';
+    };
+
     useEffect(() => {
+        let cleanupListener: (() => void) | null = null;
+
+        const getNextPath = (url: URL) => {
+            const queryNext = getSafeNextPath(url.searchParams.get('next'));
+            if (url.searchParams.get('next')) return queryNext;
+
+            const storedNext = window.localStorage.getItem('quickweds_auth_next');
+            return getSafeNextPath(storedNext);
+        };
+
+        const notifyNewOAuthUser = (user: User) => {
+            const isNewUser = new Date(user.created_at).getTime() > Date.now() - 30000;
+
+            if (!isNewUser) return;
+
+            void fetch('/api/admin/notify-signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    record: {
+                        email: user.email,
+                        full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'OAuth User',
+                    }
+                })
+            }).catch(err => console.error('OAuth Notification Error:', err));
+        };
+
+        const finishSignIn = (user: User, nextPath: string) => {
+            console.log('User authenticated:', user.email);
+            notifyNewOAuthUser(user);
+            window.localStorage.removeItem('quickweds_auth_next');
+            router.replace(nextPath);
+        };
+
+        const waitForSession = (nextPath: string) => {
+            console.log('Waiting for Supabase auth state from OAuth callback...');
+            setDebug('No authorization code found. Waiting for Supabase to finish the OAuth session.');
+
+            let subscription: { unsubscribe: () => void } | null = null;
+            const timeout = window.setTimeout(() => {
+                subscription?.unsubscribe();
+                window.localStorage.removeItem('quickweds_auth_next');
+                setError('Could not complete Google sign in. Please try again.');
+                setDebug('No code or active session was found after waiting for auth state.');
+                setTimeout(() => router.replace('/login?error=oauth-session-missing'), 2000);
+            }, 6000);
+
+            const authListener = supabase.auth.onAuthStateChange((_event, session) => {
+                if (!session?.user) return;
+                window.clearTimeout(timeout);
+                subscription?.unsubscribe();
+                finishSignIn(session.user, nextPath);
+            });
+
+            subscription = authListener.data.subscription;
+            cleanupListener = () => {
+                window.clearTimeout(timeout);
+                subscription?.unsubscribe();
+            };
+        };
+
         const handleCallback = async () => {
             try {
                 const url = new URL(window.location.href);
                 const code = url.searchParams.get('code');
                 const errorParam = url.searchParams.get('error');
                 const errorDescription = url.searchParams.get('error_description');
+                const nextPath = getNextPath(url);
 
-                setDebug(`Path: ${url.pathname}?${url.searchParams.toString()}`);
+                setDebug(`Path: ${url.pathname}?${url.searchParams.toString()}${url.hash ? '#...' : ''}`);
 
                 if (errorParam) {
                     console.error('OAuth error from provider:', errorParam, errorDescription);
@@ -27,88 +94,50 @@ export default function AuthCallbackPage() {
                     return;
                 }
 
-                if (!code) {
-                    setError('No authorization code in URL');
-                    setDebug('Expected ?code=... but got none');
-                    setTimeout(() => router.push('/login?error=no-code'), 2000);
-                    return;
+                if (code) {
+                    // Exchange the authorization code for a session when Supabase uses PKCE/code flow.
+                    const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+                    if (exchangeError) {
+                        console.error('Code exchange error:', exchangeError);
+                        setError(`Code exchange failed: ${exchangeError.message}`);
+                        setDebug(`Error details: ${JSON.stringify(exchangeError)}`);
+                        setTimeout(() => router.replace('/login?error=exchange-failed'), 2000);
+                        return;
+                    }
+
+                    console.log('Exchange successful:', exchangeData);
                 }
 
-                // Exchange the authorization code for a session
-                const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-                
-                if (exchangeError) {
-                    console.error('Code exchange error:', exchangeError);
-                    setError(`Code exchange failed: ${exchangeError.message}`);
-                    setDebug(`Error details: ${JSON.stringify(exchangeError)}`);
-                    setTimeout(() => router.push('/login?error=exchange-failed'), 2000);
-                    return;
-                }
-
-                console.log('Exchange successful:', exchangeData);
-
-                // Double-check session
+                // Double-check session. This also handles implicit/hash OAuth callbacks where no code is present.
                 const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
                 if (sessionError) {
                     console.error('Session error:', sessionError);
                     setError(`Session error: ${sessionError.message}`);
-                    setTimeout(() => router.push('/login?error=session-failed'), 2000);
+                    setTimeout(() => router.replace('/login?error=session-failed'), 2000);
                     return;
                 }
 
-                if (sessionData?.session) {
-                    const user = sessionData.session.user;
-                    console.log('User authenticated:', user.email);
-                    
-                    const isNewUser = new Date(user.created_at).getTime() > Date.now() - 30000;
-
-                    if (isNewUser) {
-                        void fetch('/api/admin/notify-signup', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                record: {
-                                    email: user.email,
-                                    full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'OAuth User',
-                                }
-                            })
-                        }).catch(err => console.error('OAuth Notification Error:', err));
-                    }
-
-                    router.push('/dashboard');
-                } else {
-                    // Fallback: wait for onAuthStateChange
-                    console.log('No immediate session, waiting for onAuthStateChange...');
-                    const timeout = setTimeout(() => {
-                        router.push('/login');
-                    }, 5000);
-
-                    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-                        (event, session) => {
-                            console.log('Auth state change:', event, session?.user?.email);
-                            if (session) {
-                                clearTimeout(timeout);
-                                subscription.unsubscribe();
-                                router.push('/dashboard');
-                            }
-                        }
-                    );
-
-                    return () => {
-                        clearTimeout(timeout);
-                        subscription.unsubscribe();
-                    };
+                if (sessionData.session?.user) {
+                    finishSignIn(sessionData.session.user, nextPath);
+                    return;
                 }
+
+                waitForSession(nextPath);
             } catch (err: any) {
                 console.error('Auth callback unexpected error:', err);
                 setError(`Unexpected error: ${err.message}`);
                 setDebug(`Stack: ${err.stack?.split('\n')[0]}`);
-                setTimeout(() => router.push('/login?error=unexpected'), 2000);
+                setTimeout(() => router.replace('/login?error=unexpected'), 2000);
             }
         };
 
         void handleCallback();
+
+        return () => {
+            cleanupListener?.();
+        };
     }, [router]);
 
     return (
