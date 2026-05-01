@@ -34,6 +34,7 @@ import ExamplesSection from '@/components/ExamplesSection';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
+import UpgradeButton from '@/components/UpgradeButton';
 
 const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/Minimalist%20Neutral%20Multi%20Device%20Computer%20Mockup%20Website%20Launch%20Instagram%20Post.png';
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/pc%20vew.png';
@@ -234,10 +235,30 @@ export default function Home() {
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasWeddingSite, setHasWeddingSite] = useState(false);
+  const [firstWeddingId, setFirstWeddingId] = useState<string | null>(null);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const showDashboardLink = Boolean(user && hasWeddingSite);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchFirstWedding = async () => {
+      const { data } = await supabase
+        .from('weddings')
+        .select('id')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
+        .limit(1);
+
+      if (data && data.length > 0) {
+        setFirstWeddingId(data[0].id);
+      }
+    };
+
+    void fetchFirstWedding();
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -684,29 +705,48 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <div className="rounded-[1.5rem] border border-primary/25 bg-white p-5 shadow-2xl shadow-primary/10 sm:rounded-[2rem] sm:p-8">
-                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">One-time upgrade</p>
-                <div className="mt-2 flex flex-col gap-2 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
-                  <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Planner Pro</h3>
-                  <p className="font-serif text-3xl font-bold text-primary">$29</p>
+                <div className="rounded-[1.5rem] border border-primary/25 bg-white p-5 shadow-2xl shadow-primary/10 sm:rounded-[2rem] sm:p-8 relative">
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">One-time upgrade</p>
+                  <div className="mt-2 flex flex-col gap-2 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
+                    <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Planner Pro</h3>
+                    <p className="font-serif text-3xl font-bold text-primary">$29</p>
+                  </div>
+                  <p className="mt-3 text-text-secondary">Unlock the planning workspace when you are ready for deeper coordination.</p>
+                  <div className="mt-8 grid gap-3">
+                    {[
+                      'Seating chart and guest placement',
+                      'Budget, vendor, and task management',
+                      'Collaborator access',
+                      'RSVP reminders and planning notifications',
+                      'Photo sharing and post-wedding thank-you tools',
+                    ].map((item) => (
+                      <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
+                        <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
+                        {item}
+                      </p>
+                    ))}
+                  </div>
+                  <p className="mt-6 text-center text-xs font-bold uppercase tracking-[0.18em] text-text-secondary sm:text-left">No subscription. No surprises.</p>
+                  <div className="mt-8 flex justify-center sm:justify-start">
+                    {user && firstWeddingId ? (
+                      <UpgradeButton weddingId={firstWeddingId} variant="primary" className="px-8 py-4 text-base" />
+                    ) : user ? (
+                      <Link
+                        href="/dashboard"
+                        className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all"
+                      >
+                        Go to Dashboard to Upgrade
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/login"
+                        className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all"
+                      >
+                        Sign Up to Upgrade
+                      </Link>
+                    )}
+                  </div>
                 </div>
-                <p className="mt-3 text-text-secondary">Unlock the planning workspace when you are ready for deeper coordination.</p>
-                <div className="mt-8 grid gap-3">
-                  {[
-                    'Seating chart and guest placement',
-                    'Budget, vendor, and task management',
-                    'Collaborator access',
-                    'RSVP reminders and planning notifications',
-                    'Photo sharing and post-wedding thank-you tools',
-                  ].map((item) => (
-                    <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
-                      <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
-                      {item}
-                    </p>
-                  ))}
-                </div>
-                <p className="mt-6 text-center text-xs font-bold uppercase tracking-[0.18em] text-text-secondary sm:text-left">No subscription. No surprises.</p>
-              </div>
             </div>
           </div>
         </section>

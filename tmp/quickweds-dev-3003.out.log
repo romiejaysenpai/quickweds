@@ -725,3 +725,57 @@ Stripe checkout session initiated
  POST /api/stripe/checkout 400 in 8ms (next.js: 2ms, application-code: 6ms)
  GET /dashboard/b9226848/planner 200 in 45ms (next.js: 13ms, proxy.ts: 4ms, application-code: 28ms)
  GET /dashboard 200 in 33ms (next.js: 5ms, proxy.ts: 5ms, application-code: 24ms)
+ GET / 200 in 102ms (next.js: 3ms, proxy.ts: 4ms, application-code: 95ms)
+ GET /dashboard 200 in 116ms (next.js: 15ms, proxy.ts: 11ms, application-code: 90ms)
+ GET /dashboard 200 in 63ms (next.js: 13ms, proxy.ts: 9ms, application-code: 40ms)
+ GET /api/auth/check-admin 200 in 992ms (next.js: 5ms, application-code: 986ms)
+ GET /api/auth/check-admin 200 in 216ms (next.js: 3ms, application-code: 213ms)
+ GET /dashboard/b9226848/planner 200 in 54ms (next.js: 16ms, proxy.ts: 5ms, application-code: 33ms)
+ GET /dashboard 200 in 34ms (next.js: 4ms, proxy.ts: 4ms, application-code: 26ms)
+Stripe checkout session initiated
+ POST /api/stripe/checkout 400 in 8ms (next.js: 3ms, application-code: 6ms)
+Stripe checkout session initiated
+ POST /api/stripe/checkout 400 in 9ms (next.js: 3ms, application-code: 6ms)
+Stripe checkout session initiated
+ POST /api/stripe/checkout 400 in 10ms (next.js: 3ms, application-code: 7ms)
+Stripe checkout session initiated
+ POST /api/stripe/checkout 400 in 14ms (next.js: 4ms, application-code: 10ms)
+✓ Compiled in 233ms
+ GET / 500 in 138ms (next.js: 23ms, proxy.ts: 98ms, application-code: 18ms)
+ GET / 500 in 34ms (next.js: 13ms, proxy.ts: 9ms, application-code: 12ms)
+ GET / 500 in 143ms (next.js: 24ms, proxy.ts: 105ms, application-code: 13ms)
+ GET / 500 in 148ms (next.js: 21ms, proxy.ts: 108ms, application-code: 19ms)
+ GET / 500 in 43ms (next.js: 22ms, proxy.ts: 6ms, application-code: 15ms)
+ GET / 500 in 94ms (next.js: 30ms, proxy.ts: 17ms, application-code: 48ms)
+✓ Compiled in 203ms
+ GET / 200 in 1109ms (next.js: 304ms, proxy.ts: 11ms, application-code: 794ms)
+ GET / 200 in 399ms (next.js: 24ms, proxy.ts: 113ms, application-code: 263ms)
+ GET /dashboard 200 in 642ms (next.js: 464ms, proxy.ts: 10ms, application-code: 169ms)
+ GET /dashboard 200 in 116ms (next.js: 30ms, proxy.ts: 22ms, application-code: 64ms)
+ GET /api/auth/check-admin 200 in 774ms (next.js: 156ms, application-code: 618ms)
+ GET /api/auth/check-admin 200 in 237ms (next.js: 5ms, application-code: 232ms)
+ GET /api/auth/check-admin 200 in 216ms (next.js: 8ms, application-code: 208ms)
+ GET /api/auth/check-admin 200 in 201ms (next.js: 4ms, application-code: 197ms)
+ GET /api/auth/check-admin 200 in 207ms (next.js: 4ms, application-code: 203ms)
+Stripe checkout session initiated
+ POST /api/stripe/checkout 400 in 69ms (next.js: 62ms, application-code: 7ms)
+Stripe checkout session initiated
+ POST /api/stripe/checkout 400 in 9ms (next.js: 3ms, application-code: 6ms)
+Stripe checkout session initiated
+ POST /api/stripe/checkout 400 in 8ms (next.js: 3ms, application-code: 5ms)
+Stripe checkout session initiated
+ POST /api/stripe/checkout 400 in 12ms (next.js: 4ms, application-code: 7ms)
+Stripe checkout session initiated
+ POST /api/stripe/checkout 400 in 9ms (next.js: 4ms, application-code: 6ms)
+ GET /dashboard/b9226848/planner 200 in 160ms (next.js: 114ms, proxy.ts: 4ms, application-code: 42ms)
+ GET /dashboard 200 in 49ms (next.js: 5ms, proxy.ts: 6ms, application-code: 39ms)
+ GET / 200 in 27ms (next.js: 3ms, proxy.ts: 5ms, application-code: 19ms)
+ GET /dashboard 200 in 47ms (next.js: 5ms, proxy.ts: 6ms, application-code: 36ms)
+ GET /dashboard 200 in 51ms (next.js: 6ms, proxy.ts: 7ms, application-code: 39ms)
+✓ Compiled in 375ms
+ GET / 200 in 374ms (next.js: 137ms, proxy.ts: 116ms, application-code: 121ms)
+ GET / 200 in 119ms (next.js: 6ms, proxy.ts: 7ms, application-code: 105ms)
+ GET / 200 in 110ms (next.js: 7ms, proxy.ts: 10ms, application-code: 92ms)
+ GET / 200 in 107ms (next.js: 8ms, proxy.ts: 7ms, application-code: 92ms)
+ GET / 200 in 102ms (next.js: 5ms, proxy.ts: 10ms, application-code: 87ms)
+ GET / 200 in 51ms (next.js: 6ms, proxy.ts: 8ms, application-code: 36ms)

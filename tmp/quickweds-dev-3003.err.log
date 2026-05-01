@@ -24414,3 +24414,935 @@ https://nextjs.org/docs/messages/module-not-found
   hint: [1mnull[22m,
   message: [32m'permission denied for table users'[39m
 } (src/lib/wedding-features.ts:460:17)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[browser] Shared weddings unavailable: {
+  code: [32m'42501'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m'permission denied for table users'[39m
+} (src/lib/wedding-features.ts:460:17)
+[browser] Shared weddings unavailable: {
+  code: [32m'42501'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m'permission denied for table users'[39m
+} (src/lib/wedding-features.ts:460:17)
+[browser] Shared weddings unavailable: {
+  code: [32m'42501'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m'permission denied for table users'[39m
+} (src/lib/wedding-features.ts:460:17)
+[browser] Shared weddings unavailable: {
+  code: [32m'42501'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m'permission denied for table users'[39m
+} (src/lib/wedding-features.ts:460:17)
+⨯ ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m          [31m[1m^^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+
+./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m                     [31m[1m^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+⨯ ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m          [31m[1m^^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+
+./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m                     [31m[1m^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+[browser] Uncaught Error: ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+    at <unknown> (Error: ./src/app/page.tsx:38:10)
+    at <unknown> (Error: (./src/app/page.tsx:38:10)
+⨯ ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m          [31m[1m^^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+
+./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m                     [31m[1m^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+[browser] Uncaught Error: ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+    at <unknown> (Error: ./src/app/page.tsx:38:10)
+    at <unknown> (Error: (./src/app/page.tsx:38:10)
+⨯ ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m          [31m[1m^^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+
+./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m                     [31m[1m^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+[browser] Uncaught Error: ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+    at <unknown> (Error: ./src/app/page.tsx:38:10)
+    at <unknown> (Error: (./src/app/page.tsx:38:10)
+⨯ ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m          [31m[1m^^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+
+./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m                     [31m[1m^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+[browser] Uncaught Error: ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+    at <unknown> (Error: ./src/app/page.tsx:38:10)
+    at <unknown> (Error: (./src/app/page.tsx:38:10)
+⨯ ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m          [31m[1m^^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+
+./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  [90m36 |[0m [36mimport[0m { supabase } [36mfrom[0m [32m'@/lib/supabase'[0m;
+  [90m37 |[0m [36mimport[0m [33mUpgradeButton[0m [36mfrom[0m [32m'@/components/UpgradeButton'[0m;
+[31m[1m>[0m [90m38 |[0m [36mimport[0m { useEffect, useState } [36mfrom[0m [32m'react'[0m;
+  [90m   |[0m                     [31m[1m^^^^^^^^[0m
+  [90m39 |[0m
+  [90m40 |[0m [36mconst[0m heroImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...[0m
+  [90m41 |[0m [36mconst[0m joySectionDesktopImageUrl = [32m'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...[0m
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+[browser] Uncaught Error: ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+    at <unknown> (Error: ./src/app/page.tsx:38:10)
+    at <unknown> (Error: (./src/app/page.tsx:38:10)
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:10
+the name `useEffect` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |          ^^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] ./src/app/page.tsx:38:21
+the name `useState` is defined multiple times
+  36 | import { supabase } from '@/lib/supabase';
+  37 | import UpgradeButton from '@/components/UpgradeButton';
+> 38 | import { useEffect, useState } from 'react';
+     |                     ^^^^^^^^
+  39 |
+  40 | const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/qu...
+  41 | const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/obj...
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component] 
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[browser] Shared weddings unavailable: {
+  code: [32m'42501'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m'permission denied for table users'[39m
+} (src/lib/wedding-features.ts:460:17)
+[browser] Shared weddings unavailable: {
+  code: [32m'42501'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m'permission denied for table users'[39m
+} (src/lib/wedding-features.ts:460:17)
+[browser] Shared weddings unavailable: {
+  code: [32m'42501'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m'permission denied for table users'[39m
+} (src/lib/wedding-features.ts:460:17)
+[browser] Shared weddings unavailable: {
+  code: [32m'42501'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m'permission denied for table users'[39m
+} (src/lib/wedding-features.ts:460:17)
+[browser] Shared weddings unavailable: {
+  code: [32m'42501'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m'permission denied for table users'[39m
+} (src/lib/wedding-features.ts:460:17)
+[browser] Shared weddings unavailable: {
+  code: [32m'42501'[39m,
+  details: [1mnull[22m,
+  hint: [1mnull[22m,
+  message: [32m'permission denied for table users'[39m
+} (src/lib/wedding-features.ts:460:17)
