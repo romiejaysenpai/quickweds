@@ -56,6 +56,9 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
             if (accessWedding.user_id === user?.id) {
                 setAccessRole('owner');
+            } else if (isAdmin) {
+                // Admins have full access to all weddings
+                setAccessRole('owner');
             } else {
                 const collaborator = await getWeddingCollaboratorAccess(weddingId, user?.email);
                 if (!collaborator) {

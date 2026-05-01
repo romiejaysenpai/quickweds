@@ -25346,3 +25346,27 @@ Import traces:
   hint: [1mnull[22m,
   message: [32m'permission denied for table users'[39m
 } (src/lib/wedding-features.ts:460:17)
+[browser] Uncaught Error: ./src/app/dashboard/[id]/page.tsx:222:15
+Expected a semicolon
+  220 |                     .from('planner_budgets').select('*').eq('wedding_id', id);
+  221 |                 setBudgets(budgetsData || []);
+> 222 |             } catch (err) { console.error(err); } finally { setLoading(false); }
+      |               ^^^^^
+  223 |         };
+  224 |         fetchData();
+  225 |     }, [id, user, authLoading, router]);
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./src/app/dashboard/[id]/page.tsx [Client Component Browser]
+    ./src/app/dashboard/[id]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/dashboard/[id]/page.tsx [Client Component SSR]
+    ./src/app/dashboard/[id]/page.tsx [Server Component]
+
+
+    at <unknown> (Error: ./src/app/dashboard/[id]/page.tsx:222:15)
+    at <unknown> (Error: (./src/app/dashboard/[id]/page.tsx:222:15)

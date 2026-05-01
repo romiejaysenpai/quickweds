@@ -179,6 +179,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 if (weddingError || !weddingData) { setLoading(false); return; }
                 if (weddingData.user_id === user.id) {
                     setAccessRole('owner');
+                } else if (isAdmin) {
+                    // Admins have full access to all weddings
+                    setAccessRole('owner');
                 } else {
                     const collaboratorAccess = await getWeddingCollaboratorAccess(id, user.email);
                     if (!collaboratorAccess) {
@@ -186,7 +189,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         setLoading(false);
                         return;
                     }
-
                     setAccessRole(collaboratorAccess.status === 'accepted' ? collaboratorAccess.role : 'pending');
                     if (collaboratorAccess.status !== 'accepted') {
                         setLoading(false);

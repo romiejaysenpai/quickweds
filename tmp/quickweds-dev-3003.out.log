@@ -803,3 +803,9 @@ Stripe checkout session initiated
   Reload env: .env.local
  GET / 200 in 327ms (next.js: 158ms, proxy.ts: 110ms, application-code: 58ms)
  GET / 200 in 324ms (next.js: 149ms, proxy.ts: 119ms, application-code: 56ms)
+ GET / 200 in 354ms (next.js: 162ms, proxy.ts: 114ms, application-code: 78ms)
+ GET / 500 in 149ms (next.js: 14ms, proxy.ts: 96ms, application-code: 40ms)
+ GET / 500 in 232ms (next.js: 85ms, proxy.ts: 57ms, application-code: 90ms)
+ GET / 500 in 201ms (next.js: 78ms, proxy.ts: 39ms, application-code: 84ms)
+✓ Compiled in 191ms
+ GET / 200 in 758ms (next.js: 185ms, proxy.ts: 9ms, application-code: 565ms)
