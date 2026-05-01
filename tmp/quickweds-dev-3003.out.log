@@ -791,3 +791,5 @@ Stripe checkout session initiated
  GET / 200 in 347ms (next.js: 175ms, proxy.ts: 107ms, application-code: 65ms)
  GET / 200 in 280ms (next.js: 121ms, proxy.ts: 88ms, application-code: 71ms)
  GET / 200 in 320ms (next.js: 136ms, proxy.ts: 98ms, application-code: 85ms)
+ GET / 200 in 383ms (next.js: 187ms, proxy.ts: 127ms, application-code: 69ms)
+ GET / 200 in 323ms (next.js: 150ms, proxy.ts: 115ms, application-code: 58ms)

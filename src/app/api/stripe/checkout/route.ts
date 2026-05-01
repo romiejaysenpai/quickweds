@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const price = PRICING.PLANNER_PRO_PRICE;
 
-        const sessionParams: Record<string, unknown> = {
+        // Create Stripe checkout session
+        const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [
                 {
@@ -49,16 +50,7 @@ export async function POST(req: NextRequest) {
                 weddingId,
                 plan,
             },
-        };
-
-        // Support brand color for newer Stripe API versions (cast safely)
-        try {
-            sessionParams.branding = { primary: '#D16C78' };
-        } catch {
-            // branding not supported in this API version
-        }
-
-        const session = await stripe.checkout.sessions.create(sessionParams as any);
+        });
 
         return NextResponse.json({ url: session.url });
     } catch (error: unknown) {
