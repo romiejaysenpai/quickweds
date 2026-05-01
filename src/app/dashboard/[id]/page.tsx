@@ -84,7 +84,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const { id } = use(params);
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { user, isAdmin, loading: authLoading } = useAuth();
+    const { user, isAdmin, adminChecked, loading: authLoading } = useAuth();
     const created = searchParams?.get('created');
 
     const [wedding, setWedding] = useState<any>(null);
@@ -93,6 +93,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [budgets, setBudgets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [accessRole, setAccessRole] = useState<'owner' | 'partner' | 'coordinator' | 'pending' | 'denied'>('denied');
+    const [accessDebug, setAccessDebug] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'confirmed' | 'declined' | 'pending'>('all');
     const [groupFilter, setGroupFilter] = useState<'all' | GuestGroup>('all');
@@ -167,6 +168,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
         if (!user) return;
 
+        // Wait for admin check to complete before fetching data
+        if (!adminChecked) return;
+
         const fetchData = async () => {
             try {
                 const { data: weddingData, error: weddingError } = await supabase
@@ -176,46 +180,63 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     .is('deleted_at', null)
                     .single();
 
-                if (weddingError || !weddingData) { setLoading(false); return; }
+                if (weddingError || !weddingData) {
+                    setLoading(false);
+                    return;
+                }
+
+                // Deterministic access check — no timing issues
+                let role: 'owner' | 'partner' | 'coordinator' | 'pending' | 'denied';
                 if (weddingData.user_id === user.id) {
-                    setAccessRole('owner');
+                    role = 'owner';
                 } else if (isAdmin) {
-                    // Admins have full access to all weddings
-                    setAccessRole('owner');
+                    // Admins automatically get owner access
+                    role = 'owner';
+                    setAccessDebug(`Admin override — isAdmin=${isAdmin}, user=${user.email}`);
                 } else {
                     const collaboratorAccess = await getWeddingCollaboratorAccess(id, user.email);
                     if (!collaboratorAccess) {
-                        setAccessRole('denied');
-                        setLoading(false);
-                        return;
-                    }
-                    setAccessRole(collaboratorAccess.status === 'accepted' ? collaboratorAccess.role : 'pending');
-                    if (collaboratorAccess.status !== 'accepted') {
-                        setLoading(false);
-                        return;
+                        role = 'denied';
+                    } else {
+                        role = collaboratorAccess.status === 'accepted' ? collaboratorAccess.role : 'pending';
+                        if (collaboratorAccess.status !== 'accepted') {
+                            setAccessRole(role);
+                            setLoading(false);
+                            return;
+                        }
                     }
                 }
 
+                setAccessRole(role);
                 setWedding(weddingData);
 
-                const { data: rsvpsData, error: rsvpsError } = await supabase
-                    .from('rsvps').select('*').eq('wedding_id', id).order('created_at', { ascending: false });
-                if (rsvpsError) {
-                    console.error("Error fetching RSVPs:", rsvpsError);
+                if (role !== 'owner') {
+                    setLoading(false);
+                    return;
                 }
-                setRsvps(rsvpsData || []);
 
-                const { data: vendorsData } = await supabase
-                    .from('planner_vendors').select('*').eq('wedding_id', id);
-                setVendors(vendorsData || []);
+                if (role !== 'owner') {
+                    setLoading(false);
+                    return;
+                }
 
-                const { data: budgetsData } = await supabase
-                    .from('planner_budgets').select('*').eq('wedding_id', id);
-                setBudgets(budgetsData || []);
-            } catch (err) { console.error(err); } finally { setLoading(false); }
+                const [rsvpsRes, vendorsRes, budgetsRes] = await Promise.all([
+                    supabase.from('rsvps').select('*').eq('wedding_id', id).order('created_at', { ascending: false }),
+                    supabase.from('planner_vendors').select('*').eq('wedding_id', id),
+                    supabase.from('planner_budgets').select('*').eq('wedding_id', id),
+                ]);
+
+                if (rsvpsRes.data) setRsvps(rsvpsRes.data);
+                if (vendorsRes.data) setVendors(vendorsRes.data);
+                if (budgetsRes.data) setBudgets(budgetsRes.data);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchData();
-    }, [id, user, authLoading, router]);
+    }, [id, user, authLoading, isAdmin, adminChecked, router]);
 
     // Computed stats
     const stats = useMemo(() => {
@@ -491,6 +512,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     if (loading) {
         return <div className="mobile-safe-screen flex items-center justify-center bg-neutral/30"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
     }
+
+    // DEBUG: Show access info in development
+    if (process.env.NODE_ENV === 'development' && accessDebug) {
+        console.log('Dashboard render:', { accessRole, isAdmin, accessDebug });
+    }
+
     if (accessRole === 'pending') {
         return <div className="mobile-safe-screen bg-neutral flex items-center justify-center px-6"><div className="max-w-xl w-full bg-white rounded-[2rem] border border-border soft-shadow p-8 text-center space-y-4"><ShieldCheck className="w-12 h-12 text-primary mx-auto" /><h1 className="text-2xl font-serif font-bold text-foreground">Invitation Pending</h1><p className="text-text-secondary">This workspace has been shared with you. Accept the invite from the dashboard home screen first.</p><Link href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all min-h-[44px]">Back to Dashboard <ArrowRight className="w-4 h-4" /></Link></div></div>;
     }
@@ -515,6 +542,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
     return (
         <div className="mobile-safe-screen bg-background pb-20 mobile-safe-bottom">
+            {/* Dev debug banner */}
+            {process.env.NODE_ENV === 'development' && accessDebug && (
+                <div className="fixed top-0 left-0 right-0 z-50 bg-accent text-white p-2 text-xs text-center">
+                    {accessDebug}
+                </div>
+            )}
+
             {/* Confetti Celebration */}
             <ConfettiCelebration trigger={showConfetti} />
 

@@ -16,10 +16,11 @@ import UpgradeButton from '@/components/UpgradeButton';
 export default function PlannerPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: weddingId } = use(params);
     const router = useRouter();
-    const { user, isAdmin, loading: authLoading } = useAuth();
+    const { user, isAdmin, adminChecked, loading: authLoading } = useAuth();
     const [activeTab, setActiveTab] = useState<'checklist' | 'budget' | 'vendors' | 'seating' | 'photos' | 'thanks'>('checklist');
     const [loading, setLoading] = useState(true);
     const [accessRole, setAccessRole] = useState<'owner' | 'partner' | 'coordinator' | 'pending' | 'denied'>('denied');
+    const [accessDebug, setAccessDebug] = useState<string>('');
 
     // Data States
     const [wedding, setWedding] = useState<any>(null);
@@ -34,10 +35,15 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             return;
         }
 
+        if (!user) return;
+
+        // Wait for admin check to complete before loading planner data
+        if (!adminChecked) return;
+
         if (user) {
             void loadPlannerData();
         }
-    }, [weddingId, user, authLoading, isAdmin, router]);
+    }, [weddingId, user, authLoading, isAdmin, adminChecked, router]);
 
     const loadPlannerData = async () => {
         setLoading(true);
@@ -51,29 +57,36 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
             if (accessWeddingError || !accessWedding) {
                 setAccessRole('denied');
+                setLoading(false);
                 return;
             }
 
+            // Deterministic access check
+            let role: 'owner' | 'partner' | 'coordinator' | 'pending' | 'denied';
             if (accessWedding.user_id === user?.id) {
-                setAccessRole('owner');
+                role = 'owner';
             } else if (isAdmin) {
-                // Admins have full access to all weddings
-                setAccessRole('owner');
+                role = 'owner';
+                setAccessDebug(`Admin override — isAdmin=${isAdmin}, userEmail=${user?.email}`);
             } else {
                 const collaborator = await getWeddingCollaboratorAccess(weddingId, user?.email);
                 if (!collaborator) {
-                    setAccessRole('denied');
-                    return;
-                }
-                setAccessRole(collaborator.status === 'accepted' ? collaborator.role : 'pending');
-                if (collaborator.status !== 'accepted') {
-                    return;
+                    role = 'denied';
+                } else {
+                    role = collaborator.status === 'accepted' ? collaborator.role : 'pending';
+                    if (collaborator.status !== 'accepted') {
+                        setAccessRole(role);
+                        setLoading(false);
+                        return;
+                    }
                 }
             }
 
+            setAccessRole(role);
             setWedding(accessWedding);
 
-            if (!isAdmin && !accessWedding.is_premium) {
+            if (role !== 'owner') {
+                setLoading(false);
                 return;
             }
 
@@ -89,7 +102,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             if (budgetsRes.data) setBudgets(budgetsRes.data);
             if (weddingRes.data) setWedding(weddingRes.data);
             if (vendorsRes.data) setVendors(vendorsRes.data);
-            
+
             if (rsvpsRes.data) {
                 const count = rsvpsRes.data
                     .filter(r => r.rsvp_status === 'confirmed' || r.rsvp_status === 'confirmed_manual' || r.attendance === 'Yes')
@@ -117,6 +130,11 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
         return <div className="min-h-screen flex items-center justify-center bg-background">
             <Loader2 className="w-12 h-12 text-primary animate-spin" />
         </div>;
+    }
+
+    // Dev debug logging
+    if (process.env.NODE_ENV === 'development') {
+        console.log('Planner render:', { accessRole, isAdmin, weddingId });
     }
 
     if (accessRole === 'pending' || accessRole === 'denied') {

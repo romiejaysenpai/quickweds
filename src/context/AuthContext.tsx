@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 interface AuthContextType {
     user: User | null;
     isAdmin: boolean;
+    adminChecked: boolean;
     loading: boolean;
     logout: () => Promise<void>;
 }
@@ -14,6 +15,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
     user: null,
     isAdmin: false,
+    adminChecked: false,
     loading: true,
     logout: async () => { },
 });
@@ -21,12 +23,14 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [adminChecked, setAdminChecked] = useState(false);
     const [loading, setLoading] = useState(true);
 
     // CRITICAL FIX #2: Check admin status server-side
     const checkAdminStatus = async (user: User | null) => {
         if (!user) {
             setIsAdmin(false);
+            setAdminChecked(true);
             return;
         }
 
@@ -34,6 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session?.access_token) {
                 setIsAdmin(false);
+                setAdminChecked(true);
                 return;
             }
 
@@ -47,7 +52,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const data = await response.json();
                 setIsAdmin(data.isAdmin);
 
-                // If not admin from server check, fallback to env comparison (development safety net)
+                // If not admin from server check, fallback to direct env comparison (development safety net)
                 if (!data.isAdmin && process.env.NODE_ENV === 'development') {
                     const devAdminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL;
                     if (devAdminEmail && user.email?.toLowerCase() === devAdminEmail.toLowerCase()) {
@@ -61,6 +66,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
             console.error('Error checking admin status:', error);
             setIsAdmin(false);
+        } finally {
+            setAdminChecked(true);
         }
     };
 
@@ -87,10 +94,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = async () => {
         await supabase.auth.signOut();
         setIsAdmin(false);
+        setAdminChecked(false);
     };
 
     return (
-        <AuthContext.Provider value={{ user, isAdmin, loading, logout }}>
+        <AuthContext.Provider value={{ user, isAdmin, adminChecked, loading, logout }}>
             {children}
         </AuthContext.Provider>
     );
