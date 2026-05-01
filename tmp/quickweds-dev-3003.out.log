@@ -793,3 +793,13 @@ Stripe checkout session initiated
  GET / 200 in 320ms (next.js: 136ms, proxy.ts: 98ms, application-code: 85ms)
  GET / 200 in 383ms (next.js: 187ms, proxy.ts: 127ms, application-code: 69ms)
  GET / 200 in 323ms (next.js: 150ms, proxy.ts: 115ms, application-code: 58ms)
+  Reload env: .env.local
+✓ Compiled in 646ms
+ GET / 200 in 664ms (next.js: 246ms, proxy.ts: 185ms, application-code: 234ms)
+ GET / 200 in 228ms (next.js: 8ms, proxy.ts: 128ms, application-code: 92ms)
+ GET / 200 in 102ms (next.js: 5ms, proxy.ts: 7ms, application-code: 90ms)
+ GET / 200 in 103ms (next.js: 6ms, proxy.ts: 6ms, application-code: 91ms)
+ GET / 200 in 54ms (next.js: 12ms, proxy.ts: 8ms, application-code: 35ms)
+  Reload env: .env.local
+ GET / 200 in 327ms (next.js: 158ms, proxy.ts: 110ms, application-code: 58ms)
+ GET / 200 in 324ms (next.js: 149ms, proxy.ts: 119ms, application-code: 56ms)

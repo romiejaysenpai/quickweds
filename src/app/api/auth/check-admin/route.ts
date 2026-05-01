@@ -4,27 +4,33 @@ import { supabase } from '@/lib/supabase';
 /**
  * GET /api/auth/check-admin
  * Secure server-side admin check
- * CRITICAL FIX #2: Admin check moved to server-side only
  */
 export async function GET(req: NextRequest) {
     try {
-        // Get the authorization header
         const authHeader = req.headers.get('authorization');
         if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json({ isAdmin: false }, { status: 401 });
         }
 
         const token = authHeader.slice(7);
-        
-        // Verify the user with Supabase
+
         const { data: { user }, error } = await supabase.auth.getUser(token);
-        
+
         if (error || !user?.email) {
+            console.log('Admin check failed — no user or email:', error?.message);
             return NextResponse.json({ isAdmin: false }, { status: 401 });
         }
 
-        // Check against server-side environment variable (NOT exposed to client)
         const adminEmail = process.env.ADMIN_EMAIL;
+        const publicAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
+        // Debug log (remove in production if needed)
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Admin check — user email:', user.email);
+            console.log('Admin check — ADMIN_EMAIL env:', adminEmail);
+            console.log('Admin check — NEXT_PUBLIC_ADMIN_EMAIL env:', publicAdminEmail);
+        }
+
         const isAdmin = adminEmail ? user.email.toLowerCase() === adminEmail.toLowerCase() : false;
 
         return NextResponse.json({ isAdmin });
