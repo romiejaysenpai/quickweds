@@ -7,7 +7,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { getWeddingCollaboratorAccess } from '@/lib/wedding-features';
 import SeatingChartBuilder from '@/components/dashboard/SeatingChartBuilder';
 import PhotoSharingManager from '@/components/dashboard/PhotoSharingManager';
 import ThankYouNoteManager from '@/components/dashboard/ThankYouNoteManager';
@@ -48,69 +47,35 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const loadPlannerData = async () => {
         setLoading(true);
         try {
-            const { data: accessWedding, error: accessWeddingError } = await supabase
-                .from('weddings')
-                .select('id, user_id, total_budget, currency, guest_limit, is_premium, plan_type')
-                .eq('id', weddingId)
-                .is('deleted_at', null)
-                .single();
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData.session?.access_token;
 
-            if (accessWeddingError || !accessWedding) {
+            if (!token) {
                 setAccessRole('denied');
-                setLoading(false);
                 return;
             }
 
-            // Deterministic access check
-            let role: 'owner' | 'partner' | 'coordinator' | 'pending' | 'denied';
-            if (accessWedding.user_id === user?.id) {
-                role = 'owner';
-            } else if (isAdmin) {
-                role = 'owner';
+            const response = await fetch(`/api/planner/load?weddingId=${encodeURIComponent(weddingId)}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await response.json();
+
+            setAccessRole(data.accessRole || 'denied');
+            setWedding(data.wedding || null);
+
+            if (data.accessRole !== 'owner') return;
+
+            if (isAdmin) {
                 setAccessDebug(`Admin override - isAdmin=${isAdmin}, userEmail=${user?.email}`);
-            } else {
-                const collaborator = await getWeddingCollaboratorAccess(weddingId, user?.email);
-                if (!collaborator) {
-                    role = 'denied';
-                } else {
-                    role = collaborator.status === 'accepted' ? collaborator.role : 'pending';
-                    if (collaborator.status !== 'accepted') {
-                        setAccessRole(role);
-                        setLoading(false);
-                        return;
-                    }
-                }
             }
 
-            setAccessRole(role);
-            setWedding(accessWedding);
-
-            if (role !== 'owner') {
-                setLoading(false);
-                return;
-            }
-
-            const [tasksRes, budgetsRes, weddingRes, vendorsRes, rsvpsRes] = await Promise.all([
-                supabase.from('planner_tasks').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
-                supabase.from('planner_budgets').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
-                supabase.from('weddings').select('total_budget, currency, guest_limit, is_premium, plan_type').eq('id', weddingId).is('deleted_at', null).single(),
-                supabase.from('planner_vendors').select('*').eq('wedding_id', weddingId),
-                supabase.from('rsvps').select('num_guests, rsvp_status, attendance').eq('wedding_id', weddingId)
-            ]);
-
-            if (tasksRes.data) setTasks(tasksRes.data);
-            if (budgetsRes.data) setBudgets(budgetsRes.data);
-            if (weddingRes.data) setWedding(weddingRes.data);
-            if (vendorsRes.data) setVendors(vendorsRes.data);
-
-            if (rsvpsRes.data) {
-                const count = rsvpsRes.data
-                    .filter(r => r.rsvp_status === 'confirmed' || r.rsvp_status === 'confirmed_manual' || r.attendance === 'Yes')
-                    .reduce((acc, r) => acc + (r.num_guests || 1), 0);
-                setConfirmedGuests(count);
-            }
+            setTasks(data.tasks || []);
+            setBudgets(data.budgets || []);
+            setVendors(data.vendors || []);
+            setConfirmedGuests(data.confirmedGuests || 0);
         } catch (err) {
             console.error("Error loading planner data:", err);
+            setAccessRole('denied');
         } finally {
             setLoading(false);
         }

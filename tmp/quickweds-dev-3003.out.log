@@ -956,3 +956,33 @@ Admin check — NEXT_PUBLIC_ADMIN_EMAIL: romiejaysenpai@gmail.com
 ✓ Compiled in 180ms
  GET / 200 in 299ms (next.js: 242ms, proxy.ts: 10ms, application-code: 47ms)
  GET /dashboard/b9226848/planner 200 in 431ms (next.js: 161ms, proxy.ts: 124ms, application-code: 146ms)
+ GET /dashboard 200 in 50ms (next.js: 16ms, proxy.ts: 5ms, application-code: 29ms)
+ GET /dashboard/b9226848/planner 200 in 52ms (next.js: 15ms, proxy.ts: 4ms, application-code: 33ms)
+ GET /dashboard 200 in 27ms (next.js: 4ms, proxy.ts: 5ms, application-code: 18ms)
+ GET / 200 in 320ms (next.js: 8ms, proxy.ts: 8ms, application-code: 305ms)
+ GET /dashboard 200 in 176ms (next.js: 122ms, proxy.ts: 8ms, application-code: 46ms)
+ GET /dashboard 200 in 51ms (next.js: 14ms, proxy.ts: 9ms, application-code: 28ms)
+Admin check — user email: romiejaybacasmas@gmail.com
+Admin check — ADMIN_EMAIL: romiejaybacasmas@gmail.com
+Admin check — NEXT_PUBLIC_ADMIN_EMAIL: romiejaysenpai@gmail.com
+ GET /api/auth/check-admin 200 in 835ms (next.js: 105ms, application-code: 731ms)
+Admin check — user email: romiejaybacasmas@gmail.com
+Admin check — ADMIN_EMAIL: romiejaybacasmas@gmail.com
+Admin check — NEXT_PUBLIC_ADMIN_EMAIL: romiejaysenpai@gmail.com
+ GET /api/auth/check-admin 200 in 211ms (next.js: 2ms, application-code: 209ms)
+ GET /dashboard/b9226848/planner 200 in 59ms (next.js: 16ms, proxy.ts: 9ms, application-code: 34ms)
+ GET /dashboard 200 in 32ms (next.js: 5ms, proxy.ts: 6ms, application-code: 21ms)
+ GET / 200 in 30ms (next.js: 4ms, proxy.ts: 5ms, application-code: 21ms)
+ GET /dashboard 200 in 52ms (next.js: 5ms, proxy.ts: 6ms, application-code: 41ms)
+ GET /dashboard 200 in 42ms (next.js: 7ms, proxy.ts: 5ms, application-code: 30ms)
+ GET / 200 in 27ms (next.js: 4ms, proxy.ts: 4ms, application-code: 19ms)
+ GET /dashboard 200 in 46ms (next.js: 5ms, proxy.ts: 5ms, application-code: 36ms)
+ GET /dashboard 200 in 46ms (next.js: 6ms, proxy.ts: 6ms, application-code: 33ms)
+ GET / 200 in 27ms (next.js: 5ms, proxy.ts: 4ms, application-code: 17ms)
+ GET /dashboard 200 in 43ms (next.js: 5ms, proxy.ts: 5ms, application-code: 33ms)
+ GET /dashboard 200 in 38ms (next.js: 6ms, proxy.ts: 7ms, application-code: 25ms)
+ GET / 200 in 28ms (next.js: 4ms, proxy.ts: 5ms, application-code: 19ms)
+ GET /dashboard 200 in 38ms (next.js: 5ms, proxy.ts: 4ms, application-code: 29ms)
+ GET /dashboard 200 in 30ms (next.js: 4ms, proxy.ts: 5ms, application-code: 21ms)
+ GET / 200 in 540ms (next.js: 213ms, proxy.ts: 172ms, application-code: 155ms)
+ GET / 200 in 74ms (next.js: 8ms, proxy.ts: 9ms, application-code: 57ms)
