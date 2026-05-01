@@ -46,6 +46,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (response.ok) {
                 const data = await response.json();
                 setIsAdmin(data.isAdmin);
+
+                // If not admin from server check, fallback to env comparison (development safety net)
+                if (!data.isAdmin && process.env.NODE_ENV === 'development') {
+                    const devAdminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+                    if (devAdminEmail && user.email?.toLowerCase() === devAdminEmail.toLowerCase()) {
+                        console.log('Dev fallback: granting admin access based on env check');
+                        setIsAdmin(true);
+                    }
+                }
             } else {
                 setIsAdmin(false);
             }

@@ -25370,3 +25370,4 @@ Import traces:
 
     at <unknown> (Error: ./src/app/dashboard/[id]/page.tsx:222:15)
     at <unknown> (Error: (./src/app/dashboard/[id]/page.tsx:222:15)
+⚠ Fast Refresh had to perform a full reload when ./src/context/AuthContext.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
