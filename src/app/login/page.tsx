@@ -21,11 +21,11 @@ export default function LoginPage() {
         setError('');
         try {
             const { error } = await supabase.auth.signInWithPassword({
-                email,
+                email: email.trim().toLowerCase(),
                 password,
             });
             if (error) throw error;
-            router.push('/dashboard');
+            router.replace('/dashboard');
         } catch (err: any) {
             setError(err.message || 'Failed to login');
         } finally {
@@ -43,6 +43,7 @@ export default function LoginPage() {
                     redirectTo: getPublicRedirectUrl('/auth/callback'),
                     queryParams: {
                         access_type: 'offline',
+                        prompt: 'select_account',
                     },
                 }
             });
@@ -110,7 +111,7 @@ export default function LoginPage() {
                                 required
                                 autoComplete="current-password"
                                 className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
-                                placeholder="••••••••"
+                                placeholder="********"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />

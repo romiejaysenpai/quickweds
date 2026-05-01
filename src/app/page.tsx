@@ -235,30 +235,10 @@ export default function Home() {
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasWeddingSite, setHasWeddingSite] = useState(false);
-  const [firstWeddingId, setFirstWeddingId] = useState<string | null>(null);
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const showDashboardLink = Boolean(user && hasWeddingSite);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchFirstWedding = async () => {
-      const { data } = await supabase
-        .from('weddings')
-        .select('id')
-        .eq('user_id', user.id)
-        .is('deleted_at', null)
-        .limit(1);
-
-      if (data && data.length > 0) {
-        setFirstWeddingId(data[0].id);
-      }
-    };
-
-    void fetchFirstWedding();
-  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -728,18 +708,18 @@ export default function Home() {
                   </div>
                   <p className="mt-6 text-center text-xs font-bold uppercase tracking-[0.18em] text-text-secondary sm:text-left">No subscription. No surprises.</p>
                   <div className="mt-8 flex justify-center sm:justify-start">
-                    {user && firstWeddingId ? (
-                      <UpgradeButton weddingId={firstWeddingId} variant="primary" className="px-8 py-4 text-base" />
-                    ) : user ? (
+                    {user && isAdmin ? (
                       <Link
                         href="/dashboard"
                         className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all"
                       >
-                        Go to Dashboard to Upgrade
+                        Open Dashboard
                       </Link>
+                    ) : user ? (
+                      <UpgradeButton variant="primary" className="px-8 py-4 text-base" />
                     ) : (
                       <Link
-                        href="/login"
+                        href="/signup"
                         className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all"
                       >
                         Sign Up to Upgrade

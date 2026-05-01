@@ -15,6 +15,11 @@ export function getPublicAppUrl() {
 export function getPublicRedirectUrl(path: string) {
     const baseUrl = getPublicAppUrl();
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-
-    return `${baseUrl}${normalizedPath}`;
+    const fullUrl = `${baseUrl}${normalizedPath}`;
+    
+    if (process.env.NODE_ENV === 'development') {
+        console.log('Redirect URL:', fullUrl);
+    }
+    
+    return fullUrl;
 }

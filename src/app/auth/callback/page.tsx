@@ -8,48 +8,59 @@ import { Loader2 } from 'lucide-react';
 export default function AuthCallbackPage() {
     const router = useRouter();
     const [error, setError] = useState<string | null>(null);
+    const [debug, setDebug] = useState<string>('');
 
     useEffect(() => {
         const handleCallback = async () => {
             try {
-                // For OAuth (Google, Apple), Supabase uses PKCE flow with code in URL params
-                // The Supabase client automatically detects the code in the URL and exchanges it
                 const url = new URL(window.location.href);
                 const code = url.searchParams.get('code');
                 const errorParam = url.searchParams.get('error');
                 const errorDescription = url.searchParams.get('error_description');
 
+                setDebug(`Path: ${url.pathname}?${url.searchParams.toString()}`);
+
                 if (errorParam) {
-                    console.error('OAuth error:', errorParam, errorDescription);
-                    setError(errorDescription || errorParam);
-                    setTimeout(() => router.push('/login?error=auth-callback-failed'), 2000);
+                    console.error('OAuth error from provider:', errorParam, errorDescription);
+                    setError(`${errorParam}: ${errorDescription || 'No description'}`);
+                    setTimeout(() => router.push('/login?error=oauth-failed'), 2000);
                     return;
                 }
 
-                if (code) {
-                    // Exchange the authorization code for a session
-                    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-                    if (exchangeError) {
-                        console.error('Code exchange error:', exchangeError);
-                        setError(exchangeError.message);
-                        setTimeout(() => router.push('/login?error=auth-callback-failed'), 2000);
-                        return;
-                    }
+                if (!code) {
+                    setError('No authorization code in URL');
+                    setDebug('Expected ?code=... but got none');
+                    setTimeout(() => router.push('/login?error=no-code'), 2000);
+                    return;
                 }
 
-                // Check if we now have a valid session
-                const { data, error: sessionError } = await supabase.auth.getSession();
+                // Exchange the authorization code for a session
+                const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+                
+                if (exchangeError) {
+                    console.error('Code exchange error:', exchangeError);
+                    setError(`Code exchange failed: ${exchangeError.message}`);
+                    setDebug(`Error details: ${JSON.stringify(exchangeError)}`);
+                    setTimeout(() => router.push('/login?error=exchange-failed'), 2000);
+                    return;
+                }
+
+                console.log('Exchange successful:', exchangeData);
+
+                // Double-check session
+                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
                 if (sessionError) {
                     console.error('Session error:', sessionError);
-                    setError(sessionError.message);
-                    setTimeout(() => router.push('/login?error=auth-callback-failed'), 2000);
+                    setError(`Session error: ${sessionError.message}`);
+                    setTimeout(() => router.push('/login?error=session-failed'), 2000);
                     return;
                 }
 
-                if (data?.session) {
-                    const user = data.session.user;
-                    // Check if this is a new signup (created within the last 30 seconds)
+                if (sessionData?.session) {
+                    const user = sessionData.session.user;
+                    console.log('User authenticated:', user.email);
+                    
                     const isNewUser = new Date(user.created_at).getTime() > Date.now() - 30000;
 
                     if (isNewUser) {
@@ -65,18 +76,17 @@ export default function AuthCallbackPage() {
                         }).catch(err => console.error('OAuth Notification Error:', err));
                     }
 
-                    // Successfully authenticated - redirect to dashboard
                     router.push('/dashboard');
                 } else {
-                    // No session found - might be a hash-based redirect (implicit flow)
-                    // Wait briefly for onAuthStateChange to pick up the session
+                    // Fallback: wait for onAuthStateChange
+                    console.log('No immediate session, waiting for onAuthStateChange...');
                     const timeout = setTimeout(() => {
                         router.push('/login');
-                    }, 3000);
+                    }, 5000);
 
-                    // Listen for auth state changes
                     const { data: { subscription } } = supabase.auth.onAuthStateChange(
                         (event, session) => {
+                            console.log('Auth state change:', event, session?.user?.email);
                             if (session) {
                                 clearTimeout(timeout);
                                 subscription.unsubscribe();
@@ -92,8 +102,9 @@ export default function AuthCallbackPage() {
                 }
             } catch (err: any) {
                 console.error('Auth callback unexpected error:', err);
-                setError(err.message || 'Authentication failed');
-                setTimeout(() => router.push('/login?error=auth-callback-failed'), 2000);
+                setError(`Unexpected error: ${err.message}`);
+                setDebug(`Stack: ${err.stack?.split('\n')[0]}`);
+                setTimeout(() => router.push('/login?error=unexpected'), 2000);
             }
         };
 
@@ -104,13 +115,19 @@ export default function AuthCallbackPage() {
         <div className="mobile-safe-screen flex flex-col items-center justify-center bg-neutral px-4 text-center mobile-safe-bottom">
             <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
             {error ? (
-                <div className="space-y-2">
+                <div className="space-y-2 max-w-md">
                     <p className="text-error-text font-bold text-sm">Authentication Error</p>
                     <p className="text-text-secondary text-xs">{error}</p>
                     <p className="text-text-secondary font-serif italic text-xs">Redirecting to login...</p>
                 </div>
             ) : (
                 <p className="text-text-secondary font-serif italic">Completing secure sign in...</p>
+            )}
+            {process.env.NODE_ENV === 'development' && debug && (
+                <div className="mt-6 p-3 bg-neutral rounded-lg text-left max-w-md w-full">
+                    <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1">Debug Info</p>
+                    <p className="text-[10px] font-mono text-text-secondary break-all">{debug}</p>
+                </div>
             )}
         </div>
     );

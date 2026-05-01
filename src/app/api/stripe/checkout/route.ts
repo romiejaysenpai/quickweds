@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '');
+        const appUrl = configuredAppUrl || req.nextUrl.origin;
         const price = PRICING.PLANNER_PRO_PRICE;
 
         // Create Stripe checkout session

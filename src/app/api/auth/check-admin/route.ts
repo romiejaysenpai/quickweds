@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { isKnownAdminEmail } from '@/lib/admin';
 
 /**
  * GET /api/auth/check-admin
@@ -32,23 +33,7 @@ export async function GET(req: NextRequest) {
             console.log('Admin check — NEXT_PUBLIC_ADMIN_EMAIL:', publicAdminEmail);
         }
 
-        // Check against ADMIN_EMAIL (server-side only)
-        let isAdmin = adminEmail ? userEmail === adminEmail : false;
-
-        // Development fallback: also check hardcoded known emails
-        if (!isAdmin && process.env.NODE_ENV === 'development') {
-            const possibleAdmins = [
-                process.env.ADMIN_EMAIL,
-                process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-                'romiejaybacasmas@gmail.com',
-                'romiejaysenpai@gmail.com',
-            ].filter(Boolean).map(e => e!.toLowerCase());
-
-            if (possibleAdmins.includes(userEmail)) {
-                console.log('Dev fallback: granting admin based on env check for:', userEmail);
-                isAdmin = true;
-            }
-        }
+        const isAdmin = isKnownAdminEmail(userEmail);
 
         return NextResponse.json({ isAdmin, userEmail, adminEmail });
     } catch (error) {

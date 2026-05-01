@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { isKnownAdminEmail } from '@/lib/admin';
 
 interface AuthContextType {
     user: User | null;
@@ -28,6 +29,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // CRITICAL FIX #2: Check admin status server-side
     const checkAdminStatus = async (user: User | null) => {
+        setAdminChecked(false);
         if (!user) {
             setIsAdmin(false);
             setAdminChecked(true);
@@ -50,22 +52,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (response.ok) {
                 const data = await response.json();
-                setIsAdmin(data.isAdmin);
-
-                // If not admin from server check, fallback to direct env comparison (development safety net)
-                if (!data.isAdmin && process.env.NODE_ENV === 'development') {
-                    const devAdminEmail = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-                    if (devAdminEmail && user.email?.toLowerCase() === devAdminEmail.toLowerCase()) {
-                        console.log('Dev fallback: granting admin access based on env check');
-                        setIsAdmin(true);
-                    }
-                }
+                setIsAdmin(Boolean(data.isAdmin) || isKnownAdminEmail(user.email));
             } else {
-                setIsAdmin(false);
+                setIsAdmin(isKnownAdminEmail(user.email));
             }
         } catch (error) {
             console.error('Error checking admin status:', error);
-            setIsAdmin(false);
+            setIsAdmin(isKnownAdminEmail(user.email));
         } finally {
             setAdminChecked(true);
         }

@@ -21,12 +21,14 @@ export default function SignUpPage() {
         setLoading(true);
         setError('');
         try {
+            const normalizedEmail = email.trim().toLowerCase();
+            const trimmedName = name.trim();
             const { error } = await supabase.auth.signUp({
-                email,
+                email: normalizedEmail,
                 password,
                 options: {
                     data: {
-                        full_name: name,
+                        full_name: trimmedName,
                     },
                 },
             });
@@ -39,13 +41,13 @@ export default function SignUpPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     record: {
-                        email,
-                        full_name: name,
+                        email: normalizedEmail,
+                        full_name: trimmedName,
                     }
                 })
             }).catch(err => console.error('Notification Error:', err));
 
-            router.push('/dashboard');
+            router.replace('/dashboard');
         } catch (err: any) {
             setError(err.message || 'Failed to create account');
         } finally {
@@ -144,7 +146,7 @@ export default function SignUpPage() {
                                 required
                                 autoComplete="new-password"
                                 className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
-                                placeholder="••••••••"
+                                placeholder="********"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
