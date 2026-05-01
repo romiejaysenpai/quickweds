@@ -20,6 +20,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const [loading, setLoading] = useState(true);
     const [accessRole, setAccessRole] = useState<'owner' | 'partner' | 'coordinator' | 'pending' | 'denied'>('denied');
     const [accessDebug, setAccessDebug] = useState<string>('');
+    const [plannerError, setPlannerError] = useState('');
 
     // Data States
     const [wedding, setWedding] = useState<any>(null);
@@ -46,12 +47,14 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
     const loadPlannerData = async () => {
         setLoading(true);
+        setPlannerError('');
         try {
             const { data: sessionData } = await supabase.auth.getSession();
             const token = sessionData.session?.access_token;
 
             if (!token) {
                 setAccessRole('denied');
+                setPlannerError('Your login session was not available. Please sign out and sign in again.');
                 return;
             }
 
@@ -62,6 +65,10 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
             setAccessRole(data.accessRole || 'denied');
             setWedding(data.wedding || null);
+
+            if (!response.ok) {
+                setPlannerError(data.error || 'Unable to verify planner access.');
+            }
 
             if (data.accessRole !== 'owner') return;
 
@@ -75,6 +82,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             setConfirmedGuests(data.confirmedGuests || 0);
         } catch (err) {
             console.error("Error loading planner data:", err);
+            setPlannerError(err instanceof Error ? err.message : 'Unable to verify planner access.');
             setAccessRole('denied');
         } finally {
             setLoading(false);
@@ -112,8 +120,21 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                     <p className="text-text-secondary">
                         {accessRole === 'pending'
                             ? 'Accept the wedding workspace invite from your dashboard home screen to use the planner.'
-                            : 'You do not currently have access to this wedding planner.'}
+                            : isAdmin && plannerError.includes('Missing Supabase admin configuration')
+                                ? 'Your admin email is recognized, but the server is missing the Supabase service role key required to load planner data for admin accounts.'
+                                : 'You do not currently have access to this wedding planner.'}
                     </p>
+                    {plannerError && (
+                        <div className="rounded-2xl border border-border bg-neutral p-4 text-left">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Access diagnostic</p>
+                            <p className="mt-2 break-words text-xs leading-6 text-text-secondary">{plannerError}</p>
+                            {isAdmin && (
+                                <p className="mt-2 text-xs leading-6 text-text-secondary">
+                                    Admin user: {user?.email || 'unknown'}
+                                </p>
+                            )}
+                        </div>
+                    )}
                     <Link href="/dashboard" className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-primary text-white font-bold min-h-[44px]">
                         Back to Dashboard
                     </Link>

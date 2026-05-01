@@ -84,6 +84,10 @@ export async function GET(req: NextRequest) {
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to load planner data';
-        return NextResponse.json({ error: message, accessRole: 'denied' }, { status: 500 });
+        const code = message.includes('Missing Supabase admin configuration')
+            ? 'server_config_missing'
+            : 'planner_load_failed';
+
+        return NextResponse.json({ error: message, code, accessRole: 'denied' }, { status: 500 });
     }
 }
