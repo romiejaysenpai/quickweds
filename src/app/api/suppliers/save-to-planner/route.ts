@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
         if (!isAdmin && !wedding.is_premium) {
             return NextResponse.json(
                 {
-                    error: 'Planner Pro is required to save suppliers.',
+                    error: 'Planner Pro is required to add suppliers to your Suppliers/Vendors list.',
                     code: 'planner_pro_required',
                     weddingId: wedding.id,
                 },
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
         if (insertError) throw insertError;
         return NextResponse.json({ vendorId: vendor.id, weddingId: wedding.id, alreadySaved: false });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unable to save supplier to planner';
+        const message = err instanceof Error ? err.message : 'Unable to add supplier to Suppliers/Vendors';
         return NextResponse.json({ error: message, code: 'save_failed' }, { status: 500 });
     }
 }

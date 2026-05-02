@@ -48,9 +48,9 @@ export default function SupplierSaveButton({
 
     if (state === 'saved') {
         return (
-            <Link href={plannerWeddingId ? `/dashboard/${plannerWeddingId}/planner` : '/dashboard'} className={`inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 ${className}`}>
+            <Link href={plannerWeddingId ? `/dashboard/${plannerWeddingId}/planner?tab=vendors` : '/dashboard'} className={`inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 ${className}`}>
                 <CheckCircle2 className="h-4 w-4" />
-                Saved to Planner
+                View Suppliers/Vendors
             </Link>
         );
     }
@@ -81,7 +81,7 @@ export default function SupplierSaveButton({
         if (response.ok) {
             setPlannerWeddingId(data.weddingId || weddingId || null);
             setState('saved');
-            setMessage(data.alreadySaved ? 'This supplier was already in your planner.' : 'Supplier saved to your planner.');
+            setMessage(data.alreadySaved ? 'This supplier is already in your Suppliers/Vendors list.' : 'Supplier added to your Suppliers/Vendors list.');
             return;
         }
 
@@ -118,7 +118,7 @@ export default function SupplierSaveButton({
                 ) : (
                     <>
                         <Plus className="h-4 w-4" />
-                        Save to Planner
+                        Add to Suppliers/Vendors
                     </>
                 )}
             </button>

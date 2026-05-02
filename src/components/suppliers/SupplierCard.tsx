@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, MapPin, Sparkles } from 'lucide-react';
 import type { SupplierProfile } from '@/lib/suppliers';
 import { getSupplierDisplayLocation } from '@/lib/suppliers';
+import SupplierSaveButton from '@/components/suppliers/SupplierSaveButton';
 
 export default function SupplierCard({ supplier }: { supplier: SupplierProfile }) {
     return (
@@ -45,7 +46,8 @@ export default function SupplierCard({ supplier }: { supplier: SupplierProfile }
                     {supplier.summary || supplier.description || 'A QuickWeds supplier profile ready for your wedding plans.'}
                 </p>
 
-                <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+                <div className="flex flex-col gap-3 border-t border-border pt-4">
+                    <div className="flex items-center justify-between gap-3">
                     <span className="rounded-full bg-neutral px-3 py-1 text-xs font-bold text-text-secondary">
                         {supplier.price_band || 'Custom quote'}
                     </span>
@@ -53,6 +55,8 @@ export default function SupplierCard({ supplier }: { supplier: SupplierProfile }
                         View
                         <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                     </Link>
+                    </div>
+                    <SupplierSaveButton supplierId={supplier.id} className="w-full px-4 py-2.5 text-xs" />
                 </div>
             </div>
         </article>

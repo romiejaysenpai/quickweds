@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
 
 interface Section {
   id: string;
@@ -30,20 +30,28 @@ interface SectionProviderProps {
 export const SectionProvider = ({ children }: SectionProviderProps) => {
   const [sections, setSections] = useState<Section[]>([]);
 
-  const registerSection = (id: string, title: string) => {
+  const registerSection = useCallback((id: string, title: string) => {
     setSections(prev => {
       // Avoid duplicate registrations
       if (prev.some(section => section.id === id)) return prev;
       return [...prev, { id, title }];
     });
-  };
+  }, []);
 
-  const unregisterSection = (id: string) => {
-    setSections(prev => prev.filter(section => section.id !== id));
-  };
+  const unregisterSection = useCallback((id: string) => {
+    setSections(prev => {
+      if (!prev.some(section => section.id === id)) return prev;
+      return prev.filter(section => section.id !== id);
+    });
+  }, []);
+
+  const value = useMemo(
+    () => ({ sections, registerSection, unregisterSection }),
+    [sections, registerSection, unregisterSection]
+  );
 
   return (
-    <SectionContext.Provider value={{ sections, registerSection, unregisterSection }}>
+    <SectionContext.Provider value={value}>
       {children}
     </SectionContext.Provider>
   );

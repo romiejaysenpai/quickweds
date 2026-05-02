@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, Image as ImageIcon, Gift, Clock, BookOpen, Send, Menu, X } from 'lucide-react';
+import { Heart, Calendar, Image as ImageIcon, Gift, Clock, BookOpen, Send, HelpCircle, Shirt } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 
 interface TemplateNavigationProps {
@@ -12,9 +12,11 @@ interface TemplateNavigationProps {
 const NAV_ITEMS = [
     { id: 'bio', label: 'Story', icon: Heart },
     { id: 'details', label: 'Details', icon: Calendar },
+    { id: 'attire', label: 'Attire', icon: Shirt },
     { id: 'timeline', label: 'Timeline', icon: Clock },
     { id: 'gallery', label: 'Gallery', icon: ImageIcon },
     { id: 'gift', label: 'Registry', icon: Gift },
+    { id: 'faq', label: 'FAQs', icon: HelpCircle },
     { id: 'rsvp', label: 'RSVP', icon: Send },
     { id: 'guestbook', label: 'Notes', icon: BookOpen },
 ];

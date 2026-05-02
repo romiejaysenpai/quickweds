@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
@@ -9,6 +10,36 @@ import {
     type SupplierProfile,
     type SupplierProfileStatus,
 } from '@/lib/suppliers';
+
+function getSupplierAdminClientOrNull() {
+    try {
+        return getSupabaseAdminClient() as any;
+    } catch {
+        return null;
+    }
+}
+
+function getSupplierUserClient(req: NextRequest) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const authorization = req.headers.get('authorization') || '';
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Missing Supabase public configuration');
+    }
+
+    return createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+        },
+        global: {
+            headers: {
+                Authorization: authorization,
+            },
+        },
+    }) as any;
+}
 
 async function getUniqueSupplierSlug(db: any, baseSlug: string, existingId?: string) {
     let slug = baseSlug;
@@ -32,7 +63,8 @@ export async function GET(req: NextRequest) {
     if (!user) return NextResponse.json({ error }, { status: 401 });
 
     try {
-        const db = getSupabaseAdminClient() as any;
+        const adminDb = getSupplierAdminClientOrNull();
+        const db = adminDb || getSupplierUserClient(req);
         const isAdmin = isKnownAdminEmail(user.email);
 
         const { data: profile, error: profileError } = await db
@@ -46,7 +78,7 @@ export async function GET(req: NextRequest) {
         if (profileError) throw profileError;
 
         let reviewQueue: SupplierProfile[] = [];
-        if (isAdmin) {
+        if (isAdmin && adminDb) {
             const { data, error: queueError } = await db
                 .from('supplier_profiles')
                 .select('*')
@@ -81,7 +113,8 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const db = getSupabaseAdminClient() as any;
+        const adminDb = getSupplierAdminClientOrNull();
+        const db = adminDb || getSupplierUserClient(req);
         const requestedId = body.profile?.id || body.id;
 
         let existing: SupplierProfile | null = null;
@@ -111,7 +144,9 @@ export async function POST(req: NextRequest) {
         }
 
         const baseSlug = buildSupplierSlug(input);
-        const slug = await getUniqueSupplierSlug(db, baseSlug, existing?.id);
+        const slug = adminDb
+            ? await getUniqueSupplierSlug(db, baseSlug, existing?.id)
+            : `${baseSlug}-${user.id.slice(0, 8)}`;
         const status: SupplierProfileStatus = intent === 'submit' ? 'pending_review' : 'draft';
         const updatePayload = {
             ...input,

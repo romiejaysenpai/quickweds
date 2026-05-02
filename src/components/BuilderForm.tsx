@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import VectorArtGuests from './VectorArtGuests';
 import { supabase } from '@/lib/supabase';
@@ -12,6 +12,8 @@ import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
 import MarketplacePanel from './builder/MarketplacePanel';
+import { MONOGRAM_SHAPES, MonogramMark } from './MonogramMark';
+import DecorativeLayer from './DecorativeLayer';
 import { useLocalUndoRedo } from '@/components/UndoRedoProvider';
 import { FREE_TEMPLATE_IDS, TEMPLATES } from '@/lib/template-catalog';
 import {
@@ -54,6 +56,43 @@ const Collapsible = ({ title, children, isOpen, onToggle, icon: Icon }: { title:
     </div>
 );
 
+function AutoResizeTextarea({
+    value,
+    onChange,
+    className = '',
+    ...props
+}: Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'> & {
+    value: string;
+    onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+}) {
+    const ref = useRef<HTMLTextAreaElement>(null);
+
+    const resize = useCallback(() => {
+        const element = ref.current;
+        if (!element) return;
+        element.style.height = 'auto';
+        element.style.height = `${element.scrollHeight}px`;
+    }, []);
+
+    useEffect(() => {
+        resize();
+    }, [value, resize]);
+
+    return (
+        <textarea
+            {...props}
+            ref={ref}
+            value={value}
+            onChange={(event) => {
+                onChange(event);
+                requestAnimationFrame(resize);
+            }}
+            onInput={resize}
+            className={`${className} overflow-hidden`}
+        />
+    );
+}
+
 const STEPS = [
     { id: 'details', title: 'Details', icon: Heart },
     { id: 'templates', title: 'Layout', icon: Layout },
@@ -63,6 +102,21 @@ const STEPS = [
     { id: 'dresscode', title: 'Dress Code', icon: Shirt },
     { id: 'gifts', title: 'Gifts', icon: Heart },
     { id: 'rsvp', title: 'RSVP', icon: Calendar },
+    { id: 'timeline', title: 'Timeline', icon: Clock },
+    { id: 'faq', title: 'FAQs', icon: HelpCircle },
+];
+
+const ACCENT_STYLES = [
+    { id: 'none', name: 'None', desc: 'Clean layout' },
+    { id: 'eucalyptus', name: 'Eucalyptus', desc: 'Soft botanical leaves' },
+    { id: 'pampas', name: 'Pampas', desc: 'Boho grass lines' },
+    { id: 'ribbon', name: 'Ribbon', desc: 'Silk movement' },
+    { id: 'monstera', name: 'Monstera', desc: 'Tropical leaf' },
+    { id: 'sakura', name: 'Sakura', desc: 'Cherry blossom' },
+    { id: 'gold-arch', name: 'Gold Arch', desc: 'Minimal ceremony arch' },
+    { id: 'sparkles', name: 'Sparkles', desc: 'Light dust accents' },
+    { id: 'petals', name: 'Petals', desc: 'Floating floral pieces' },
+    { id: 'dots', name: 'Dots', desc: 'Confetti texture' },
 ];
 
 const FONTS = [
@@ -155,6 +209,7 @@ const INITIAL_FORM_DATA = {
     dressCode: '',
     dressCodeColor: '#000000',
     programTimeline: '',
+    faqItems: [] as any[],
     story: '',
     quote: '',
     hashtag: '',
@@ -168,15 +223,45 @@ const INITIAL_FORM_DATA = {
     logoShape: 'minimal',
     logoColor: '#C08081',
     spotifyUrl: '',
-    weddingParty: [],
-    registryLinks: [],
-    cashFunds: [],
-    paymentLinks: [],
+    weddingParty: [] as any[],
+    registryLinks: [] as any[],
+    cashFunds: [] as any[],
+    paymentLinks: [] as any[],
     isThankYouMode: false,
     thankYouMessage: '',
     photoAlbumLink: '',
     accentStyle: 'none',
 };
+
+function readArrayField(value: unknown) {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string' || !value.trim()) return [];
+
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function getErrorMessage(error: unknown) {
+    if (!error) return 'Unknown error';
+    if (error instanceof Error && error.message) return error.message;
+    if (typeof error === 'string') return error;
+    if (typeof error === 'object') {
+        const record = error as Record<string, unknown>;
+        return String(record.message || record.error_description || record.details || record.hint || record.code || JSON.stringify(record));
+    }
+    return String(error);
+}
+
+function isMissingFaqColumnError(error: unknown) {
+    if (!error || typeof error !== 'object') return false;
+    const record = error as Record<string, unknown>;
+    const text = `${record.code || ''} ${record.message || ''} ${record.details || ''}`.toLowerCase();
+    return text.includes('faq_items') && (text.includes('column') || text.includes('schema cache') || text.includes('pgrst204'));
+}
 
 export default function BuilderForm() {
     const router = useRouter();
@@ -316,6 +401,7 @@ export default function BuilderForm() {
                         dressCode: data.dress_code ? data.dress_code.split('||')[0] : '',
                         dressCodeColor: data.dress_code && data.dress_code.includes('||') ? data.dress_code.split('||')[1] : (data.motif_color || '#000000'),
                         programTimeline: data.program_timeline || '',
+                        faqItems: readArrayField(data.faq_items),
                         story: data.story || '',
                         quote: data.quote || '',
                         hashtag: data.hashtag || '',
@@ -377,14 +463,14 @@ export default function BuilderForm() {
     const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
     const handleArrayAdd = (field: string, item: any) => {
-        setFormData((prev: any) => ({ ...prev, [field]: [...prev[field], item] }));
+        setFormData((prev: any) => ({ ...prev, [field]: [...(prev[field] || []), item] }));
     };
     const handleArrayRemove = (field: string, index: number) => {
-        setFormData((prev: any) => ({ ...prev, [field]: prev[field].filter((_: any, i: number) => i !== index) }));
+        setFormData((prev: any) => ({ ...prev, [field]: (prev[field] || []).filter((_: any, i: number) => i !== index) }));
     };
     const handleArrayChange = (field: string, index: number, key: string, value: string) => {
         setFormData((prev: any) => {
-            const newArr = [...prev[field]];
+            const newArr = [...(prev[field] || [])];
             newArr[index] = { ...newArr[index], [key]: value };
             return { ...prev, [field]: newArr };
         });
@@ -577,6 +663,7 @@ export default function BuilderForm() {
                 template: formData.template,
                 dress_code: formData.dressCode ? `${formData.dressCode}||${formData.dressCodeColor}` : '',
                 program_timeline: formData.programTimeline,
+                faq_items: formData.faqItems,
                 story: formData.story,
                 quote: formData.quote,
                 hashtag: formData.hashtag,
@@ -621,18 +708,36 @@ export default function BuilderForm() {
                     user_id: user.id 
                 }, { onConflict: 'id' });
 
-            if (submitError) throw submitError;
+            if (submitError) {
+                if (isMissingFaqColumnError(submitError)) {
+                    const fallbackPayload = { ...payload };
+                    delete fallbackPayload.faq_items;
+
+                    const { error: fallbackError } = await supabase
+                        .from('weddings')
+                        .upsert({
+                            ...fallbackPayload,
+                            id: weddingId,
+                            user_id: user.id,
+                        }, { onConflict: 'id' });
+
+                    if (fallbackError) throw fallbackError;
+                } else {
+                    throw submitError;
+                }
+            }
 
             // Success
             router.push(`/dashboard/${weddingId}?created=true`);
 
         } catch (err: any) {
-            console.error('Submission error:', err);
+            const errorMessage = getErrorMessage(err);
+            console.error('Submission error:', err, errorMessage);
             setIsGenerating(false);
-            if (err.message?.includes('exceeded the maximum allowed size')) {
+            if (errorMessage.includes('exceeded the maximum allowed size')) {
                 alert('Storage Limit Error: Your Supabase bucket has a 50MB default limit. Please compress your files or go to your Supabase Dashboard to check your storage settings.');
             } else {
-                alert('Error creating invitation: ' + err.message);
+                alert('Error creating invitation: ' + errorMessage);
             }
         } finally {
             setIsSubmitting(false);
@@ -686,7 +791,7 @@ export default function BuilderForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Venue Address</label>
-                            <textarea required name="venueAddress" value={formData.venueAddress} onChange={handleChange} placeholder="123 Wedding Lane..." className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none h-20 sm:h-24 resize-none text-base" />
+                            <AutoResizeTextarea required name="venueAddress" value={formData.venueAddress} onChange={handleChange} placeholder="123 Wedding Lane..." className="w-full min-h-[96px] resize-none rounded-lg border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white sm:rounded-xl sm:py-4" />
                         </div>
 
                         <div className="space-y-2 pt-4 border-t border-border">
@@ -723,7 +828,7 @@ export default function BuilderForm() {
                                 </span>
                             )}
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 max-h-[460px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                             {TEMPLATES.map((tmpl) => {
                                 const isLocked = !isPremium && !FREE_TEMPLATE_IDS.includes(tmpl.id as typeof FREE_TEMPLATE_IDS[number]);
                                 const isSelected = formData.template === tmpl.id;
@@ -896,26 +1001,41 @@ export default function BuilderForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Our Story</label>
-                            <textarea name="story" value={formData.story} onChange={handleChange} placeholder="How we met..." className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none h-32 resize-none" />
+                            <AutoResizeTextarea name="story" value={formData.story} onChange={handleChange} placeholder="How we met..." className="w-full min-h-[140px] resize-none rounded-xl border border-border bg-neutral px-4 py-3 outline-none transition-all focus:border-primary focus:bg-white" />
                         </div>
                         <div className="space-y-4 pt-8 border-t border-border">
                             <div className="flex items-center gap-2 text-primary">
                                 <Sparkles className="w-4 h-4" />
                                 <h3 className="text-sm font-black uppercase tracking-widest text-text-secondary">Decorative Accents</h3>
                             </div>
-                            <p className="text-xs text-text-secondary/60 ml-6 -mt-2 mb-4">Add elegant vector illustrations to the corners of your invitation.</p>
-                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                                {['none', 'eucalyptus', 'pampas', 'ribbon', 'monstera', 'sakura', 'gold-arch', 'sparkles', 'petals', 'dots'].map((style) => (
+                            <p className="text-xs text-text-secondary/60 ml-6 -mt-2 mb-4">Add elegant vector illustrations that automatically tuck into the edges on phone screens.</p>
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                                {ACCENT_STYLES.map((style) => (
                                     <button
-                                        key={style}
+                                        key={style.id}
                                         type="button"
-                                        onClick={() => setFormData((prev: any) => ({ ...prev, accentStyle: style }))}
-                                        className={`px-3 py-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${formData.accentStyle === style ? 'border-primary bg-primary/5 text-primary scale-105' : 'border-border bg-neutral hover:border-primary/50 text-text-secondary'}`}
+                                        onClick={() => setFormData((prev: any) => ({ ...prev, accentStyle: style.id }))}
+                                        className={`group rounded-2xl border-2 p-3 text-left transition-all ${formData.accentStyle === style.id ? 'scale-[1.02] border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10' : 'border-border bg-neutral hover:border-primary/50 hover:bg-white text-text-secondary'}`}
                                     >
-                                        <div className="w-8 h-8 flex items-center justify-center opacity-60">
-                                            {style === 'none' ? <X className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                                        <div className="relative mb-3 h-16 overflow-hidden rounded-xl border border-white/70 bg-white shadow-inner">
+                                            {style.id === 'none' ? (
+                                                <div className="flex h-full items-center justify-center">
+                                                    <X className="h-5 w-5 opacity-50" />
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <DecorativeLayer
+                                                        type={style.id}
+                                                        color={formData.motifColor}
+                                                        position="center"
+                                                        className="absolute left-1/2 top-1/2 h-16 w-16 opacity-70"
+                                                    />
+                                                    <span className="absolute inset-x-3 bottom-2 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+                                                </>
+                                            )}
                                         </div>
-                                        <span className="text-[10px] font-bold uppercase tracking-widest">{style}</span>
+                                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-foreground">{style.name}</span>
+                                        <span className="mt-1 block text-[10px] leading-4 text-text-secondary">{style.desc}</span>
                                     </button>
                                 ))}
                             </div>
@@ -950,18 +1070,23 @@ export default function BuilderForm() {
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                <div className="text-center mb-8">
-                                    <div
-                                        className={`w-32 h-32 mx-auto flex items-center justify-center transition-all duration-500 ${formData.logoShape === 'circle' ? 'rounded-full' :
-                                            formData.logoShape === 'square' ? 'rounded-2xl' : ''
-                                            } ${formData.logoShape !== 'minimal' ? 'border-2 border-primary/20 bg-primary/5' : ''}`}
-                                        style={{ color: formData.logoColor || formData.motifColor, borderColor: formData.logoColor || formData.motifColor }}
-                                    >
-                                        <span className={`font-serif text-4xl uppercase tracking-tighter ${FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'
-                                            }`}>
-                                            {formData.logoInitials || (formData.brideName?.[0] || 'A') + ' & ' + (formData.groomName?.[0] || 'B')}
-                                        </span>
-                                    </div>
+                                <div className="overflow-hidden rounded-[2rem] border border-primary/10 bg-[radial-gradient(circle_at_top,rgba(192,128,129,0.14),transparent_48%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,248,244,0.78))] p-5 text-center shadow-xl shadow-primary/10 sm:p-8">
+                                    <p className="mb-4 text-[10px] font-black uppercase tracking-[0.28em] text-primary/60">Live Monogram</p>
+                                    <MonogramMark
+                                        initials={formData.logoInitials}
+                                        brideName={formData.brideName}
+                                        groomName={formData.groomName}
+                                        shape={formData.logoShape}
+                                        color={formData.logoColor}
+                                        motifColor={formData.motifColor}
+                                        fontClassName={FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'}
+                                        size="lg"
+                                        className="mx-auto"
+                                    />
+                                    <div className="mx-auto mt-6 h-px w-28 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                                    <p className="mt-4 text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary/70">
+                                        {formData.brideName || 'Bride'} & {formData.groomName || 'Groom'}
+                                    </p>
                                 </div>
 
                                 <div className="space-y-2">
@@ -975,21 +1100,35 @@ export default function BuilderForm() {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Shape</label>
-                                        <select
-                                            name="logoShape"
-                                            value={formData.logoShape}
-                                            onChange={handleChange}
-                                            className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
-                                        >
-                                            <option value="minimal">Minimal</option>
-                                            <option value="circle">Circle</option>
-                                            <option value="square">Rounded Square</option>
-                                        </select>
+                                <div className="space-y-3">
+                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Style</label>
+                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                        {MONOGRAM_SHAPES.map((shape) => (
+                                            <button
+                                                key={shape.id}
+                                                type="button"
+                                                onClick={() => setFormData((prev: any) => ({ ...prev, logoShape: shape.id }))}
+                                                className={`rounded-2xl border p-3 text-left transition-all ${formData.logoShape === shape.id ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' : 'border-border bg-neutral/60 hover:border-primary/40 hover:bg-white'}`}
+                                            >
+                                                <MonogramMark
+                                                    initials={formData.logoInitials}
+                                                    brideName={formData.brideName}
+                                                    groomName={formData.groomName}
+                                                    shape={shape.id}
+                                                    color={formData.logoColor}
+                                                    motifColor={formData.motifColor}
+                                                    fontClassName={FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'}
+                                                    size="sm"
+                                                    className="mx-auto mb-3"
+                                                />
+                                                <span className="block text-[11px] font-black uppercase tracking-[0.16em] text-foreground">{shape.name}</span>
+                                                <span className="mt-1 block text-[10px] leading-4 text-text-secondary">{shape.desc}</span>
+                                            </button>
+                                        ))}
                                     </div>
-                                    <div className="space-y-2">
+                                </div>
+
+                                <div className="space-y-2">
                                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Font</label>
                                         <select
                                             name="logoFont"
@@ -1001,7 +1140,6 @@ export default function BuilderForm() {
                                                 <option key={f.id} value={f.id}>{f.name}</option>
                                             ))}
                                         </select>
-                                    </div>
                                 </div>
 
                                 <div className="space-y-4">
@@ -1376,6 +1514,135 @@ export default function BuilderForm() {
                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Contact Person</label>
                     <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                 </div>
+            </div>
+        </div>
+    );
+            case 8:
+    return (
+        <div className="space-y-6">
+            <div className="rounded-[1.75rem] border border-primary/15 bg-gradient-to-br from-primary/10 via-white to-neutral p-5 sm:p-6">
+                <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
+                        <Clock className="h-6 w-6 stroke-[1.6]" />
+                    </div>
+                    <div>
+                        <h3 className="font-serif text-2xl font-bold text-foreground">Wedding Timeline</h3>
+                        <p className="mt-2 text-sm leading-6 text-text-secondary">
+                            Add one event per line. Guests will see this as an alternating vertical infographic with monoline icons.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Event Flow</label>
+                    <button
+                        type="button"
+                        onClick={() => setFormData((prev: any) => ({
+                            ...prev,
+                            programTimeline: prev.programTimeline || '2:00 PM - Guest Arrival\n3:00 PM - Ceremony\n4:00 PM - Cocktail Hour\n6:00 PM - Dinner & Toasts\n8:00 PM - First Dance\n9:00 PM - Party & Send-off',
+                        }))}
+                        className="rounded-full border border-primary/20 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-primary hover:bg-primary hover:text-white"
+                    >
+                        Use Sample
+                    </button>
+                </div>
+                <AutoResizeTextarea
+                    name="programTimeline"
+                    value={formData.programTimeline}
+                    onChange={handleChange}
+                    placeholder={'2:00 PM - Guest Arrival\n3:00 PM - Ceremony\n4:00 PM - Cocktail Hour\n6:00 PM - Dinner & Toasts\n8:00 PM - First Dance'}
+                    className="min-h-[260px] w-full resize-none rounded-2xl border border-border bg-neutral px-4 py-4 font-mono text-sm leading-7 outline-none transition-all focus:border-primary focus:bg-white"
+                />
+                <p className="text-[10px] leading-relaxed text-text-secondary ml-1">
+                    Recommended format: time, dash, event name. The landing page also shows guest reminders below the timeline: Be on Time, Finish the Event, Enjoy and Have Fun.
+                </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+                {['Thin line icons', 'Alternating layout', 'Guest reminders'].map((item) => (
+                    <div key={item} className="rounded-2xl border border-border bg-white p-4 text-center shadow-sm">
+                        <Sparkles className="mx-auto mb-3 h-5 w-5 text-primary" />
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-secondary">{item}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+            case 9:
+    return (
+        <div className="space-y-6">
+            <div className="rounded-[1.75rem] border border-primary/15 bg-white p-5 shadow-sm sm:p-6">
+                <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <HelpCircle className="h-6 w-6 stroke-[1.6]" />
+                    </div>
+                    <div>
+                        <h3 className="font-serif text-2xl font-bold text-foreground">Optional FAQs</h3>
+                        <p className="mt-2 text-sm leading-6 text-text-secondary">
+                            Recommended style: a clean two-column accordion with soft cards, question icons, and airy spacing. It only appears on the landing page when you add completed questions and answers.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+                <h4 className="text-sm font-bold text-foreground">Guest Questions</h4>
+                <button
+                    type="button"
+                    onClick={() => handleArrayAdd('faqItems', { question: '', answer: '' })}
+                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-primary/20"
+                >
+                    <Plus className="h-4 w-4" /> Add FAQ
+                </button>
+            </div>
+
+            {formData.faqItems?.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-border bg-neutral/50 p-8 text-center">
+                    <p className="font-serif text-lg italic text-text-secondary">No FAQs yet. Leave this empty to hide the FAQ section.</p>
+                    <button
+                        type="button"
+                        onClick={() => setFormData((prev: any) => ({
+                            ...prev,
+                            faqItems: [
+                                { question: 'What time should guests arrive?', answer: 'Please arrive 20 to 30 minutes before the ceremony so everyone can be seated comfortably.' },
+                                { question: 'Is there parking at the venue?', answer: 'Yes, parking is available at the venue. Follow the signs near the main entrance.' },
+                                { question: 'Can we bring children?', answer: 'Please check your invitation details or contact our RSVP person for guest-specific arrangements.' },
+                            ],
+                        }))}
+                        className="mt-5 rounded-full border border-primary/20 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-primary hover:bg-primary hover:text-white"
+                    >
+                        Add Suggested FAQs
+                    </button>
+                </div>
+            )}
+
+            <div className="space-y-3">
+                {formData.faqItems?.map((item: any, i: number) => (
+                    <div key={i} className="rounded-2xl border border-border bg-neutral/40 p-4">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Question {i + 1}</span>
+                            <button type="button" onClick={() => handleArrayRemove('faqItems', i)} className="flex h-9 w-9 items-center justify-center rounded-xl text-red-500 hover:bg-red-50">
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            <input
+                                placeholder="Question"
+                                value={item.question}
+                                onChange={(e) => handleArrayChange('faqItems', i, 'question', e.target.value)}
+                                className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none focus:border-primary"
+                            />
+                            <AutoResizeTextarea
+                                placeholder="Answer"
+                                value={item.answer}
+                                onChange={(e) => handleArrayChange('faqItems', i, 'answer', e.target.value)}
+                                className="min-h-[112px] w-full resize-none rounded-xl border border-border bg-white px-4 py-3 text-sm leading-6 outline-none transition-all focus:border-primary"
+                            />
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );

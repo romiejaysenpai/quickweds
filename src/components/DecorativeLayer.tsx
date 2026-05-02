@@ -126,6 +126,7 @@ export default function DecorativeLayer({ type, position, color, opacity = 1, cl
 
     return (
         <motion.div
+            aria-hidden="true"
             initial={{ opacity: 0, scale: 0.9, rotate: -5 }}
             animate={{ 
                 opacity: opacity, 
@@ -139,7 +140,7 @@ export default function DecorativeLayer({ type, position, color, opacity = 1, cl
                 rotate: { duration: 12, repeat: Infinity, ease: "easeInOut" },
                 y: { duration: 6, repeat: Infinity, ease: "easeInOut" }
             }}
-            className={`absolute w-40 md:w-56 h-40 md:h-56 pointer-events-none z-0 ${positionClasses[position]} ${className}`}
+            className={`absolute h-32 w-32 pointer-events-none z-0 overflow-visible sm:h-40 sm:w-40 md:h-56 md:w-56 ${positionClasses[position]} ${className}`}
         >
             {getSVG()}
         </motion.div>

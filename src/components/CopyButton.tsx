@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Copy, CheckCheck, Link2 } from 'lucide-react';
+import { copyToClipboard } from '@/lib/client-clipboard';
 
 interface CopyButtonProps {
     text: string;
@@ -12,48 +13,24 @@ interface CopyButtonProps {
     onCopy?: () => void;
 }
 
-export default function CopyButton({ 
-    text, 
-    label = 'Copy', 
+export default function CopyButton({
+    text,
+    label = 'Copy',
     className = '',
     variant = 'default',
-    onCopy 
+    onCopy,
 }: CopyButtonProps) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = useCallback(async () => {
         try {
-            // Try modern Clipboard API first
-            if (navigator.clipboard?.writeText) {
-                try {
-                    await navigator.clipboard.writeText(text);
-                } catch (err) {
-                    // Clipboard API exists but is blocked by permissions policy — fall back
-                    throw new Error('Clipboard API blocked');
-                }
-            } else {
-                throw new Error('Clipboard API not available');
-            }
-        } catch (err) {
-            // Fallback for older browsers or blocked Clipboard API
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.setAttribute('readonly', '');
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-            } catch (e) {
-                console.error('Fallback copy failed:', e);
-            }
-            document.body.removeChild(textarea);
+            await copyToClipboard(text);
+        } catch {
+            return;
         }
-        
+
         setCopied(true);
         onCopy?.();
-        
         setTimeout(() => setCopied(false), 2000);
     }, [text, onCopy]);
 
@@ -95,8 +72,8 @@ export default function CopyButton({
             <button
                 onClick={handleCopy}
                 className={`inline-flex items-center gap-1.5 text-xs font-medium transition-colors ${
-                    copied 
-                        ? 'text-green-600' 
+                    copied
+                        ? 'text-green-600'
                         : 'text-text-secondary hover:text-primary'
                 } ${className}`}
             >
@@ -133,8 +110,8 @@ export default function CopyButton({
         <button
             onClick={handleCopy}
             className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                copied 
-                    ? 'bg-green-50 text-green-600 border border-green-200' 
+                copied
+                    ? 'bg-green-50 text-green-600 border border-green-200'
                     : 'bg-neutral text-text-secondary hover:text-primary hover:bg-neutral/80 border border-border'
             } ${className}`}
         >

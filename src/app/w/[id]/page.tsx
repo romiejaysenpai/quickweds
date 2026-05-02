@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, use, type CSSProperties } from 'react';
 import { notFound } from 'next/navigation';
 import { Heart } from 'lucide-react';
 import DecorativeLayer from '@/components/DecorativeLayer';
+import { MonogramMark } from '@/components/MonogramMark';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import {
@@ -12,6 +13,8 @@ import {
     EntranceReveal,
     VoiceGreeting,
     TemplateNavigation,
+    AttireSection,
+    FAQSection,
 } from '@/components/wedding';
 import {
     ClassicTemplate,
@@ -252,8 +255,18 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
 
             {wedding.accent_style && wedding.accent_style !== 'none' && (
                 <>
-                    <DecorativeLayer type={wedding.accent_style} color={wedding.motif_color} position="top-right" className="fixed top-12 right-0 w-64 h-64 opacity-20 pointer-events-none z-50" />
-                    <DecorativeLayer type={wedding.accent_style} color={wedding.motif_color} position="bottom-left" className="fixed bottom-0 left-0 w-64 h-64 opacity-20 pointer-events-none z-30 rotate-180" />
+                    <DecorativeLayer
+                        type={wedding.accent_style}
+                        color={wedding.motif_color}
+                        position="top-right"
+                        className="fixed -right-10 top-8 h-32 w-32 opacity-15 sm:right-0 sm:top-12 sm:h-52 sm:w-52 sm:opacity-20 lg:h-64 lg:w-64"
+                    />
+                    <DecorativeLayer
+                        type={wedding.accent_style}
+                        color={wedding.motif_color}
+                        position="bottom-left"
+                        className="fixed -bottom-8 -left-10 h-32 w-32 rotate-180 opacity-[0.12] sm:bottom-0 sm:left-0 sm:h-52 sm:w-52 sm:opacity-20 lg:h-64 lg:w-64"
+                    />
                 </>
             )}
 
@@ -262,6 +275,10 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
             <Suspense fallback={<div className="h-screen flex items-center justify-center font-serif italic text-primary">Refining layout...</div>}>
                 {getTemplateContent()}
             </Suspense>
+
+            <AttireSection id="attire" wedding={wedding} />
+
+            <FAQSection id="faq" faqItems={wedding.faq_items} wedding={wedding} />
 
             <TemplateNavigation wedding={wedding} />
 
@@ -274,23 +291,17 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
                             transition={{ duration: 0.8 }}
                             className="mb-10"
                         >
-                            <div
-                                className={`mx-auto flex h-20 w-20 items-center justify-center transition-all md:h-28 md:w-28 ${
-                                    wedding.logo_shape === 'circle'
-                                        ? 'rounded-full'
-                                        : wedding.logo_shape === 'square'
-                                            ? 'rounded-[2rem]'
-                                            : ''
-                                } ${wedding.logo_shape !== 'minimal' ? 'border-2 bg-white/60 shadow-xl shadow-primary/10 backdrop-blur-sm' : ''}`}
-                                style={{
-                                    color: wedding.logo_color || wedding.motif_color,
-                                    borderColor: wedding.logo_color || wedding.motif_color,
-                                }}
-                            >
-                                <span className="text-3xl uppercase tracking-tighter md:text-4xl" style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>
-                                    {wedding.logo_initials}
-                                </span>
-                            </div>
+                            <MonogramMark
+                                initials={wedding.logo_initials}
+                                brideName={wedding.bride_name}
+                                groomName={wedding.groom_name}
+                                shape={wedding.logo_shape}
+                                color={wedding.logo_color}
+                                motifColor={wedding.motif_color}
+                                fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
+                                size="md"
+                                className="mx-auto"
+                            />
                         </motion.div>
                     ) : (
                         <div className="mx-auto mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">

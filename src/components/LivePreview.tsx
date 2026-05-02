@@ -26,6 +26,7 @@ export default function LivePreview({ formData, previews, isMobileView = false }
                 template: formData.template || 'classic',
                 dress_code: formData.dressCode ? `${formData.dressCode}||${formData.dressCodeColor}` : '',
                 program_timeline: formData.programTimeline,
+                faq_items: formData.faqItems,
                 story: formData.story,
                 quote: formData.quote,
                 hashtag: formData.hashtag,
@@ -103,6 +104,7 @@ export default function LivePreview({ formData, previews, isMobileView = false }
                     <iframe
                         ref={iframeRef}
                         src="/preview"
+                        allow="clipboard-write; clipboard-read"
                         className="w-full h-full border-0 rounded-[2.1rem]"
                         title="Live Preview"
                     />

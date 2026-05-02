@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { getClientAccountProfile, getRoleAwareRedirect } from '@/lib/account';
 import {
     PHILIPPINE_SUPPLIER_LOCATIONS,
     SUPPLIER_CATEGORIES,
@@ -81,7 +82,7 @@ function profileToForm(profile?: SupplierProfile | null): SupplierFormState {
 }
 
 export default function SupplierProfileDashboard() {
-    const { user, isAdmin, loading: authLoading } = useAuth();
+    const { user, isAdmin, adminChecked, loading: authLoading } = useAuth();
     const router = useRouter();
     const [form, setForm] = useState<SupplierFormState>(emptyForm);
     const [reviewQueue, setReviewQueue] = useState<SupplierProfile[]>([]);
@@ -99,6 +100,7 @@ export default function SupplierProfileDashboard() {
         }
 
         if (!user) return;
+        if (!adminChecked) return;
 
         const loadProfile = async () => {
             setLoading(true);
@@ -109,6 +111,20 @@ export default function SupplierProfileDashboard() {
                 setError('Please sign in again to manage your supplier profile.');
                 setLoading(false);
                 return;
+            }
+
+            if (!isAdmin) {
+                try {
+                    const accountProfile = await getClientAccountProfile(token);
+                    if (accountProfile?.account_type !== 'supplier') {
+                        router.replace(getRoleAwareRedirect(accountProfile?.account_type, '/supplier/dashboard'));
+                        return;
+                    }
+                } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Unable to load account profile.');
+                    setLoading(false);
+                    return;
+                }
             }
 
             const response = await fetch('/api/suppliers/profile', {
@@ -128,7 +144,7 @@ export default function SupplierProfileDashboard() {
         };
 
         void loadProfile();
-    }, [authLoading, router, user]);
+    }, [adminChecked, authLoading, isAdmin, router, user]);
 
     const updateField = (field: keyof SupplierFormState, value: string) => {
         setForm((current) => ({ ...current, [field]: value }));

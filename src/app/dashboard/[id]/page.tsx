@@ -1,13 +1,13 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut } from 'lucide-react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState, use, useMemo, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getWeddingCollaboratorAccess, trackWeddingEvent } from '@/lib/wedding-features';
 import AnalyticsPanel from '@/components/dashboard/AnalyticsPanel';
@@ -17,6 +17,8 @@ import ConfettiCelebration from '@/components/ConfettiCelebration';
 import CopyButton from '@/components/CopyButton';
 import DarkModeToggle from '@/components/DarkModeToggle';
 import UpgradeButton from '@/components/UpgradeButton';
+import { getClientAccountProfile, getRoleAwareRedirect } from '@/lib/account';
+import { copyToClipboard } from '@/lib/client-clipboard';
 import {
     GUEST_GROUP_OPTIONS,
     getGuestGroupLabel,
@@ -29,20 +31,7 @@ import {
 } from '@/lib/guest-list';
 
 async function copyText(text: string) {
-    if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return;
-    }
-
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.setAttribute('readonly', '');
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
+    await copyToClipboard(text);
 }
 
 function openExternal(url: string) {
@@ -84,7 +73,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const { id } = use(params);
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { user, isAdmin, adminChecked, loading: authLoading } = useAuth();
+    const { user, isAdmin, adminChecked, loading: authLoading, logout } = useAuth();
     const created = searchParams?.get('created');
 
     const [wedding, setWedding] = useState<any>(null);
@@ -103,6 +92,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [importingGuests, setImportingGuests] = useState(false);
     const [newGuest, setNewGuest] = useState<GuestFormState>(emptyGuestForm);
     const [copyToast, setCopyToast] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [checkingRole, setCheckingRole] = useState(true);
 
     // Download QR Code function
     const downloadQRCode = () => {
@@ -160,8 +151,14 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         }
     }, [created]);
 
+    const handleLogout = async () => {
+        setIsLoggingOut(true);
+        await logout();
+        router.replace('/');
+    };
+
     useEffect(() => {
-        if (!authLoading && !user) {
+        if (!authLoading && !user && !isLoggingOut) {
             router.push('/login');
             return;
         }
@@ -173,6 +170,25 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
         const fetchData = async () => {
             try {
+                setCheckingRole(true);
+                const { data: sessionData } = await supabase.auth.getSession();
+                const token = sessionData.session?.access_token;
+
+                if (!token) {
+                    router.push('/login');
+                    return;
+                }
+
+                if (!isAdmin) {
+                    const accountProfile = await getClientAccountProfile(token);
+                    if (accountProfile?.account_type !== 'couple') {
+                        router.replace(getRoleAwareRedirect(accountProfile?.account_type, `/dashboard/${id}`));
+                        return;
+                    }
+                }
+
+                setCheckingRole(false);
+
                 const { data: weddingData, error: weddingError } = await supabase
                     .from('weddings')
                     .select('*')
@@ -231,12 +247,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 if (budgetsRes.data) setBudgets(budgetsRes.data);
             } catch (err) {
                 console.error(err);
+                setCheckingRole(false);
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
-    }, [id, user, authLoading, isAdmin, adminChecked, router]);
+    }, [id, user, authLoading, isAdmin, adminChecked, router, isLoggingOut]);
 
     // Computed stats
     const stats = useMemo(() => {
@@ -509,7 +526,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         openExternal(`mailto:?subject=${encodeURIComponent(`You're Invited!`)}&body=${encodeURIComponent(`We'd love for you to join us!\n\n${url}`)}`);
     };
 
-    if (loading) {
+    if (checkingRole || loading) {
         return <div className="mobile-safe-screen flex items-center justify-center bg-neutral/30"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
     }
 
@@ -553,25 +570,36 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             <ConfettiCelebration trigger={showConfetti} />
 
             {/* Header */}
-            <div className="bg-white/80 dark:bg-neutral-900/80 border-b border-border p-4 sticky top-0 z-50 backdrop-blur-md">
-                <div className="max-w-6xl mx-auto px-3 sm:px-4 flex justify-between items-center gap-2 sm:gap-3">
-                    <Link href="/" className="flex items-center flex-shrink-0">
+            <div className="bg-white/80 dark:bg-neutral-900/80 border-b border-border px-3 py-3 sm:p-4 sticky top-0 z-50 backdrop-blur-md">
+                <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 sm:gap-3 sm:px-4">
+                    <Link href="/" className="flex min-w-[96px] flex-shrink-0 items-center" aria-label="QuickWeds">
                         <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain hover:scale-105 transition-transform" />
                     </Link>
-                    <div className="flex gap-2 sm:gap-3 items-center">
+                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto pb-1 pl-2 sm:w-auto sm:flex-none sm:overflow-visible sm:pb-0 sm:pl-0 sm:gap-3">
                         {canManageWorkspace && (
-                            <Link href={`/builder?edit=${wedding.id}`} className="flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl bg-primary text-white text-xs sm:text-sm font-bold shadow-lg shadow-primary/10 hover:bg-primary-hover transition-all min-h-[44px] whitespace-nowrap">
+                            <Link href={`/builder?edit=${wedding.id}`} className="flex min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/10 transition-all hover:bg-primary-hover sm:rounded-xl sm:px-6 sm:text-sm">
                                 Edit Design
                             </Link>
                         )}
-                        <Link href={`/dashboard/${wedding.id}/planner`} className={`flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-lg transition-all min-h-[44px] ${hasPlannerPro ? 'bg-secondary text-white shadow-secondary/10 hover:opacity-90' : 'bg-white text-primary border border-primary/20 shadow-primary/10 hover:bg-primary/5'}`}>
+                        <Link href={`/dashboard/${wedding.id}/planner`} className={`flex min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold shadow-lg transition-all sm:rounded-xl sm:px-6 sm:text-sm ${hasPlannerPro ? 'bg-secondary text-white shadow-secondary/10 hover:opacity-90' : 'bg-white text-primary border border-primary/20 shadow-primary/10 hover:bg-primary/5'}`}>
                             <ListTodo className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">{hasPlannerPro ? 'Planner' : 'Planner Pro'}</span>
                         </Link>
-                        <Link href={url} target="_blank" className="flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg sm:rounded-xl bg-neutral dark:bg-neutral/30 text-primary text-xs sm:text-sm font-bold border border-border hover:border-primary/30 transition-all min-h-[44px]">
+                        <Link href={url} target="_blank" className="flex min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-neutral px-3 py-2 text-xs font-bold text-primary transition-all hover:border-primary/30 dark:bg-neutral/30 sm:rounded-xl sm:px-6 sm:text-sm">
                             View <ExternalLink className="w-4 h-4 flex-shrink-0" />
                         </Link>
                         {/* Dark Mode Toggle */}
                         <DarkModeToggle variant="minimal" />
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            disabled={isLoggingOut}
+                            className="inline-flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded-lg border border-border bg-white px-3 text-text-secondary transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary disabled:opacity-60 sm:rounded-xl sm:px-4"
+                            aria-label="Log out"
+                            title="Log out"
+                        >
+                            {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                            <span className="ml-2 hidden text-xs font-bold md:inline">Logout</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -581,7 +609,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md border-t border-border z-[100] flex justify-around items-center p-2 pb-safe shadow-2xl">
                     <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'home' ? 'text-primary' : 'text-text-secondary/50'}`}>
                         <LayoutDashboard className="w-5 h-5" />
-                        <span className="text-[8px] font-black uppercase tracking-widest">Home</span>
+                        <span className="text-[8px] font-black uppercase tracking-widest">Overview</span>
                     </button>
                     <button onClick={() => setActiveTab('guests')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'guests' ? 'text-primary' : 'text-text-secondary/50'}`}>
                         <Users className="w-5 h-5" />
@@ -613,7 +641,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     </div>
                     {activeTab !== 'home' && (
                         <button onClick={() => setActiveTab('home')} className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1">
-                            Home <ArrowRight className="w-3 h-3" />
+                            Overview <ArrowRight className="w-3 h-3" />
                         </button>
                     )}
                 </div>

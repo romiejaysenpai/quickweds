@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { MonogramMark } from '../MonogramMark';
 import { 
     VideoSection, 
     BioSection, 
@@ -30,11 +31,18 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                     />
                     <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5, duration: 1 }} className="text-white relative z-10 max-w-6xl">
                         {wedding.logo_initials && (
-                            <div className="mb-8 p-4 border border-white/20 inline-block backdrop-blur-md bg-white/5">
-                                <span className="text-4xl text-white uppercase tracking-tighter" style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>
-                                    {wedding.logo_initials}
-                                </span>
-                            </div>
+                            <MonogramMark
+                                initials={wedding.logo_initials}
+                                brideName={wedding.bride_name}
+                                groomName={wedding.groom_name}
+                                shape={wedding.logo_shape || 'editorial'}
+                                color="#ffffff"
+                                motifColor={wedding.motif_color}
+                                fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
+                                size="md"
+                                className="mb-8"
+                                inverted
+                            />
                         )}
                         <span className="inline-block px-4 py-1 bg-primary text-xs font-black uppercase tracking-widest mb-12">Special Invitation</span>
                         <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl lg:text-[18vw] font-serif leading-[0.75] tracking-tighter mb-16 mix-blend-screen drop-shadow-2xl">

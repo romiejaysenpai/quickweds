@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
+import { getClientAccountProfile, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
+import { isKnownAdminEmail } from '@/lib/admin';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
     const [error, setError] = useState<string | null>(null);
     const [debug, setDebug] = useState<string>('');
 
-    const getSafeNextPath = (value: string | null) => {
-        return value?.startsWith('/') && !value.startsWith('//') ? value : '/dashboard';
-    };
+    const getSafeNextPath = (value: string | null) => getSafeAppPath(value, '/dashboard');
 
     useEffect(() => {
         let cleanupListener: (() => void) | null = null;
@@ -43,11 +43,21 @@ export default function AuthCallbackPage() {
             }).catch(err => console.error('OAuth Notification Error:', err));
         };
 
-        const finishSignIn = (user: User, nextPath: string) => {
+        const resolvePostAuthPath = async (token: string, nextPath: string, userEmail?: string | null) => {
+            if (isKnownAdminEmail(userEmail)) {
+                const safeNext = getSafeAppPath(nextPath, '/dashboard');
+                return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
+            }
+
+            const profile = await getClientAccountProfile(token);
+            return getRoleAwareRedirect(profile?.account_type, nextPath);
+        };
+
+        const finishSignIn = async (user: User, token: string, nextPath: string) => {
             console.log('User authenticated:', user.email);
             notifyNewOAuthUser(user);
             window.localStorage.removeItem('quickweds_auth_next');
-            router.replace(nextPath);
+            router.replace(await resolvePostAuthPath(token, nextPath, user.email));
         };
 
         const waitForSession = (nextPath: string) => {
@@ -64,10 +74,10 @@ export default function AuthCallbackPage() {
             }, 6000);
 
             const authListener = supabase.auth.onAuthStateChange((_event, session) => {
-                if (!session?.user) return;
+                if (!session?.user || !session.access_token) return;
                 window.clearTimeout(timeout);
                 subscription?.unsubscribe();
-                finishSignIn(session.user, nextPath);
+                void finishSignIn(session.user, session.access_token, nextPath);
             });
 
             subscription = authListener.data.subscription;
@@ -119,8 +129,8 @@ export default function AuthCallbackPage() {
                     return;
                 }
 
-                if (sessionData.session?.user) {
-                    finishSignIn(sessionData.session.user, nextPath);
+                if (sessionData.session?.user && sessionData.session.access_token) {
+                    await finishSignIn(sessionData.session.user, sessionData.session.access_token, nextPath);
                     return;
                 }
 

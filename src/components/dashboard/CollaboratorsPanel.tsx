@@ -81,11 +81,12 @@ export default function CollaboratorsPanel({
             if (!response.ok) throw new Error(result.error || 'Failed to invite collaborator');
 
             setInviteEmail('');
+            const emailError = typeof result.emailError === 'string' ? result.emailError : '';
             setNotice({
                 type: 'success',
                 message: result.emailSent
                     ? 'Invite added and email sent.'
-                    : 'Invite added, but the email could not be sent. Check Resend configuration.',
+                    : `Invite added, but the email could not be sent.${emailError ? ` Email service said: ${emailError}` : ' Check Resend configuration.'}`,
             });
             await loadCollaborators();
         } catch (error) {

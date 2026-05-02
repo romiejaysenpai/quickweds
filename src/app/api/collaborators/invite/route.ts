@@ -21,7 +21,8 @@ const inviteSchema = z.object({
 });
 
 function getAppUrl() {
-    return process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.site';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.site';
+    return appUrl.replace(/\/+$/, '');
 }
 
 export async function POST(req: Request) {

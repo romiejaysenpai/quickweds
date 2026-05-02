@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
+import { MonogramMark } from '../MonogramMark';
 import { 
     VideoSection, 
     BioSection, 
@@ -34,7 +35,17 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                 >
                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-[#121212] rounded-full border border-primary/20 flex items-center justify-center overflow-hidden">
                         {wedding.logo_initials ? (
-                            <span className="text-3xl text-primary uppercase" style={{ fontFamily: `var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})` }}>{wedding.logo_initials}</span>
+                            <MonogramMark
+                                initials={wedding.logo_initials}
+                                brideName={wedding.bride_name}
+                                groomName={wedding.groom_name}
+                                shape={wedding.logo_shape || 'crest'}
+                                color={wedding.logo_color || wedding.motif_color}
+                                motifColor={wedding.motif_color}
+                                fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
+                                size="sm"
+                                inverted
+                            />
                         ) : (
                             <Heart className="w-12 h-12 text-primary fill-primary" />
                         )}

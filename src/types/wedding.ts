@@ -23,6 +23,7 @@ export interface Wedding {
     hashtag?: string;
     rsvp_deadline: string;
     program_timeline?: string;
+    faq_items?: string | unknown[];
     invitation_image?: string; // Opt-in image
     accent_style?: string; // Vector design accent style
     // Monogram / Logo

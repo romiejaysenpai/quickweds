@@ -5,6 +5,7 @@ import type { Wedding } from '@/types/wedding';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
 import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { copyToClipboard } from '@/lib/client-clipboard';
 
 interface GiftSectionProps {
     wedding: Wedding;
@@ -108,7 +109,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                                                     type="button"
                                                     onClick={() => {
                                                         if (!wedding.gift_account_number) return;
-                                                        void navigator.clipboard?.writeText(wedding.gift_account_number);
+                                                        void copyToClipboard(wedding.gift_account_number);
                                                     }}
                                                     className="rounded-full bg-primary/10 px-3 py-1 text-[8px] uppercase tracking-widest opacity-70 transition-opacity hover:opacity-100"
                                                 >

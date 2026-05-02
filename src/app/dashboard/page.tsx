@@ -4,27 +4,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Heart, Plus, Calendar, MapPin, ArrowRight, Loader2, Copy, CheckCheck, ExternalLink, Pencil, Trash2, Settings, Sparkles } from 'lucide-react';
+import { Heart, Plus, Calendar, MapPin, ArrowRight, Loader2, Copy, CheckCheck, ExternalLink, Pencil, Trash2, Settings, Sparkles, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import UpgradeButton from '@/components/UpgradeButton';
 import { acceptWeddingInvite, listSharedWeddings } from '@/lib/wedding-features';
+import { getClientAccountProfile, getRoleAwareRedirect } from '@/lib/account';
+import { copyToClipboard } from '@/lib/client-clipboard';
 
 async function copyText(text: string) {
-    if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return;
-    }
-
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.setAttribute('readonly', '');
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
+    await copyToClipboard(text);
 }
 
 function CopyLinkButton({ id }: { id: string }) {
@@ -136,12 +125,14 @@ function DeleteButton({ weddingId, coupleName, onDeleted }: { weddingId: string;
 }
 
 export default function DashboardRedirect() {
-    const { user, isAdmin, loading } = useAuth();
+    const { user, isAdmin, adminChecked, loading, logout } = useAuth();
     const router = useRouter();
     const [weddings, setWeddings] = useState<any[]>([]);
     const [sharedWeddings, setSharedWeddings] = useState<any[]>([]);
     const [fetching, setFetching] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [checkingRole, setCheckingRole] = useState(true);
 
     const fetchWeddings = useCallback(async () => {
         if (!user) return;
@@ -206,15 +197,56 @@ export default function DashboardRedirect() {
         }
     };
 
+    const handleLogout = async () => {
+        setIsLoggingOut(true);
+        await logout();
+        router.replace('/');
+    };
+
     useEffect(() => {
-        if (!loading && !user) {
+        if (!loading && !user && !isLoggingOut) {
             router.push('/login');
             return;
         }
-        if (user) fetchWeddings();
-    }, [user, loading, router, fetchWeddings]);
+        if (!user) return;
+        if (!adminChecked) return;
 
-    if (loading || (fetching && weddings.length === 0)) {
+        const guardAndFetch = async () => {
+            setCheckingRole(true);
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+
+            if (!token) {
+                router.push('/login');
+                return;
+            }
+
+            try {
+                if (isAdmin) {
+                    setCheckingRole(false);
+                    await fetchWeddings();
+                    return;
+                }
+
+                const profile = await getClientAccountProfile(token);
+
+                if (profile?.account_type !== 'couple') {
+                    router.replace(getRoleAwareRedirect(profile?.account_type, '/dashboard'));
+                    return;
+                }
+
+                setCheckingRole(false);
+                await fetchWeddings();
+            } catch (err) {
+                console.error('Account role check failed:', err);
+                router.replace(getRoleAwareRedirect(null, '/dashboard'));
+            }
+        };
+
+        void guardAndFetch();
+    }, [user, loading, adminChecked, isAdmin, router, fetchWeddings, isLoggingOut]);
+
+    if (loading || checkingRole || (fetching && weddings.length === 0)) {
         return (
             <div className="mobile-safe-screen flex flex-col items-center justify-center bg-background gap-4">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
@@ -226,12 +258,12 @@ export default function DashboardRedirect() {
     return (
         <div className="mobile-safe-screen bg-background pb-16 sm:pb-20 mobile-safe-bottom">
             {/* Top nav */}
-            <div className="bg-white/80 dark:bg-white/90 backdrop-blur-md border-b border-border p-3 sm:p-4 sticky top-0 z-50">
-                <div className="max-w-6xl mx-auto px-2 sm:px-4 flex justify-between items-center gap-2 sm:gap-4">
-                    <Link href="/" className="flex items-center flex-shrink-0">
-                        <img src="/logo.png" alt="QuickWeds Logo" className="h-10 sm:h-12 w-auto object-contain hover:scale-105 transition-transform" />
+            <div className="bg-white/80 dark:bg-white/90 backdrop-blur-md border-b border-border px-3 py-3 sm:p-4 sticky top-0 z-50">
+                <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 sm:gap-4 sm:px-4">
+                    <Link href="/" className="flex min-w-[104px] flex-shrink-0 items-center" aria-label="QuickWeds">
+                        <img src="/logo.png" alt="QuickWeds Logo" className="h-9 sm:h-12 w-auto object-contain hover:scale-105 transition-transform" />
                     </Link>
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto pb-1 pl-2 sm:w-auto sm:flex-none sm:overflow-visible sm:pb-0 sm:pl-0">
                         <button
                             onClick={handleClaimWedding}
                             disabled={isSyncing}
@@ -242,12 +274,23 @@ export default function DashboardRedirect() {
                         </button>
                         <Link
                             href="/builder"
-                            className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-white text-xs sm:text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all flex items-center gap-2 min-h-[44px] whitespace-nowrap"
+                            className="flex min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
                         >
                             <Plus className="w-4 h-4 flex-shrink-0" />
                             <span className="hidden sm:inline">Create New Wedding</span>
                             <span className="sm:hidden">New</span>
                         </Link>
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            disabled={isLoggingOut}
+                            className="inline-flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded-lg border border-border bg-white px-3 text-text-secondary transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary disabled:opacity-60 sm:rounded-xl sm:px-4"
+                            aria-label="Log out"
+                            title="Log out"
+                        >
+                            {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                            <span className="ml-2 hidden text-xs font-bold sm:inline">Logout</span>
+                        </button>
                     </div>
                 </div>
             </div>
