@@ -6,7 +6,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 const weddingIdSchema = z.string().uuid('Invalid wedding ID format');
 
 type AccessCheckResult =
-    | { ok: true; customDomain: string | null }
+    | { ok: true; customDomain: string | null; isPremium: boolean }
     | { ok: false; status: number; error: string };
 
 async function verifyWeddingAccess(req: Request, weddingId: string): Promise<AccessCheckResult> {
@@ -31,7 +31,7 @@ async function verifyWeddingAccess(req: Request, weddingId: string): Promise<Acc
 
     const { data: wedding, error: weddingError } = await supabase
         .from('weddings')
-        .select('id, user_id, custom_domain')
+        .select('id, user_id, custom_domain, is_premium')
         .eq('id', weddingId)
         .is('deleted_at', null)
         .single();
@@ -41,7 +41,7 @@ async function verifyWeddingAccess(req: Request, weddingId: string): Promise<Acc
     }
 
     if (wedding.user_id === user.id) {
-        return { ok: true, customDomain: wedding.custom_domain || null };
+        return { ok: true, customDomain: wedding.custom_domain || null, isPremium: Boolean(wedding.is_premium) };
     }
 
     const userEmail = user.email?.toLowerCase();
@@ -62,7 +62,7 @@ async function verifyWeddingAccess(req: Request, weddingId: string): Promise<Acc
         return { ok: false, status: 403, error: 'Forbidden' };
     }
 
-    return { ok: true, customDomain: wedding.custom_domain || null };
+    return { ok: true, customDomain: wedding.custom_domain || null, isPremium: Boolean(wedding.is_premium) };
 }
 
 function parseWeddingId(value: string | null) {
@@ -87,6 +87,13 @@ export async function POST(req: Request) {
         const access = await verifyWeddingAccess(req, weddingId);
         if (!access.ok) {
             return NextResponse.json({ error: access.error }, { status: access.status });
+        }
+
+        if (!access.isPremium) {
+            return NextResponse.json(
+                { error: 'Planner Pro is required to connect a custom domain.' },
+                { status: 402 }
+            );
         }
 
         const { domain } = validation.data;

@@ -15,8 +15,8 @@ type WeddingInviteContext = {
 };
 
 const inviteSchema = z.object({
-    weddingId: z.string().uuid(),
-    email: z.string().email(),
+    weddingId: z.string().min(4).max(32).regex(/^[a-zA-Z0-9]+$/, 'Invalid wedding ID'),
+    email: z.string().trim().email(),
     role: z.enum(['partner', 'coordinator']),
 });
 

@@ -60,6 +60,7 @@ export default function CollaboratorsPanel({
         setSubmitting(true);
         setNotice(null);
         try {
+            const invitedAddress = inviteEmail.trim().toLowerCase();
             const { data } = await supabase.auth.getSession();
             const token = data.session?.access_token;
             if (!token) throw new Error('Please login again and retry.');
@@ -72,7 +73,7 @@ export default function CollaboratorsPanel({
                 },
                 body: JSON.stringify({
                     weddingId,
-                    email: inviteEmail,
+                    email: invitedAddress,
                     role: inviteRole,
                 }),
             });
@@ -85,8 +86,8 @@ export default function CollaboratorsPanel({
             setNotice({
                 type: 'success',
                 message: result.emailSent
-                    ? 'Invite added and email sent.'
-                    : `Invite added, but the email could not be sent.${emailError ? ` Email service said: ${emailError}` : ' Check Resend configuration.'}`,
+                    ? `Invite added and email sent to ${invitedAddress}. They can sign in with that email and accept it from their dashboard.`
+                    : `Invite added for ${invitedAddress}, but the email could not be sent.${emailError ? ` Email service said: ${emailError}` : ' Check Resend configuration.'} They can still sign in with that email and accept it from their dashboard.`,
             });
             await loadCollaborators();
         } catch (error) {

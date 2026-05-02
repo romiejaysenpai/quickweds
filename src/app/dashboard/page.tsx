@@ -524,7 +524,13 @@ export default function DashboardRedirect() {
 
                                         {/* Planner Pro prompt */}
                                         {!wedding.is_premium && !isAdmin && (
-                                            <UpgradeButton weddingId={wedding.id} className="w-full text-xs sm:text-sm py-2 sm:py-2.5" />
+                                            <div className="rounded-2xl border border-primary/15 bg-primary/5 p-3">
+                                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Ready to plan deeper?</p>
+                                                <p className="mt-1 text-xs leading-5 text-text-secondary">
+                                                    Unlock budgets, suppliers, seating, tasks, collaborators, reminders, photos, and thank-you tools.
+                                                </p>
+                                                <UpgradeButton weddingId={wedding.id} className="mt-3 w-full justify-center text-xs sm:text-sm py-2 sm:py-2.5" />
+                                            </div>
                                         )}
                                     </div>
                                 </motion.div>

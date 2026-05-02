@@ -723,7 +723,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <p className="text-sm sm:text-base text-text-secondary max-w-md">
                                         {hasPlannerPro
                                             ? 'Track budgets, vendors, seating, tasks, collaborators, and post-wedding details in one workspace.'
-                                            : 'Your website builder is free. Unlock Planner Pro once for budgets, vendors, seating, tasks, collaborators, and thank-you tools.'}
+                                            : 'Your website builder and RSVP flow are free. Upgrade when you are ready to organize budgets, vendors, seating, tasks, collaborators, reminders, photos, and thank-you tools.'}
                                     </p>
                                 </div>
                                 

@@ -137,7 +137,7 @@ const testimonials = [
 const faqs = [
   {
     question: 'Is QuickWeds only a wedding website builder?',
-    answer: 'No. QuickWeds includes your wedding website, RSVP tracking, guest list, seating tools, budget tracker, vendor notes, task planning, photo sharing, collaborator access, and post-wedding messaging.',
+    answer: 'No. You can build and publish a free wedding website with RSVP tracking and guest responses. Planner Pro is the one-time upgrade for seating, budgets, vendor notes, tasks, collaborators, reminders, photo sharing, and post-wedding messaging.',
   },
   {
     question: 'Can guests RSVP from their phones?',
@@ -145,11 +145,11 @@ const faqs = [
   },
   {
     question: 'Will I get notifications when someone RSVPs?',
-    answer: 'Yes. QuickWeds supports RSVP response emails, host notifications, and reminders so you can keep guests moving without manually chasing every reply.',
+    answer: 'Yes. Free wedding sites include RSVP response emails and host notifications. Planner Pro adds reminder workflows for pending guests when you need help getting final answers.',
   },
   {
     question: 'Can my partner or planner help manage the wedding?',
-    answer: 'Yes. You can invite collaborators so your partner, family member, or wedding planner can help manage planning details from the dashboard.',
+    answer: 'Yes. Collaborator access is part of Planner Pro, so your partner, family member, or wedding planner can help manage budgets, vendors, tasks, seating, and post-wedding details from the dashboard.',
   },
   {
     question: 'Do I need technical skills to launch my site?',
@@ -710,8 +710,9 @@ export default function Home() {
                   {[
                     'All templates included',
                     'Website builder and design tools',
+                    'Timeline, FAQs, dress code, venue, gifts, and gallery sections',
                     'RSVP form and guest tracking',
-                    'Automated RSVP emails and host notifications',
+                    'RSVP emails and host notifications',
                   ].map((item) => (
                     <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
                       <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
@@ -726,14 +727,14 @@ export default function Home() {
                     <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Planner Pro</h3>
                     <p className="font-serif text-3xl font-bold text-primary">$29</p>
                   </div>
-                  <p className="mt-3 text-text-secondary">Unlock the planning workspace when you are ready for deeper coordination.</p>
+                  <p className="mt-3 text-text-secondary">Unlock the planning workspace when RSVPs, vendors, budgets, and seating start needing one calm home.</p>
                   <div className="mt-8 grid gap-3">
                     {[
                       'Seating chart and guest placement',
                       'Budget, vendor, and task management',
                       'Collaborator access',
                       'RSVP reminders and planning notifications',
-                      'Photo sharing and post-wedding thank-you tools',
+                      'Photo sharing, custom domains, and post-wedding thank-you tools',
                     ].map((item) => (
                       <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
                         <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
