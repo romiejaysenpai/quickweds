@@ -559,22 +559,22 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             <ConfettiCelebration trigger={showConfetti} />
 
             {/* Header */}
-            <div className="bg-white/80 dark:bg-neutral-900/80 border-b border-border px-3 py-3 sm:p-4 sticky top-0 z-50 backdrop-blur-md">
-                <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 sm:gap-3 sm:px-4">
-                    <Link href="/" className="flex min-w-[96px] flex-shrink-0 items-center" aria-label="QuickWeds">
-                        <img src="/logo.png" alt="QuickWeds Logo" className="h-8 sm:h-10 w-auto object-contain hover:scale-105 transition-transform" />
+            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-neutral-900/85 sm:p-4">
+                <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 sm:gap-3 sm:px-4">
+                    <Link href="/" className="flex min-w-[88px] flex-shrink-0 items-center sm:min-w-[96px]" aria-label="QuickWeds">
+                        <img src="/logo.png" alt="QuickWeds Logo" className="h-8 w-auto object-contain transition-transform hover:scale-105 sm:h-10" />
                     </Link>
-                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto pb-1 pl-2 sm:w-auto sm:flex-none sm:overflow-visible sm:pb-0 sm:pl-0 sm:gap-3">
+                    <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 overflow-hidden pl-1 sm:w-auto sm:flex-none sm:overflow-visible sm:pl-0 sm:gap-3">
                         {canManageWorkspace && (
-                            <Link href={`/builder?edit=${wedding.id}`} className="flex min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/10 transition-all hover:bg-primary-hover sm:rounded-xl sm:px-6 sm:text-sm">
+                            <Link href={`/builder?edit=${wedding.id}`} className="hidden min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/10 transition-all hover:bg-primary-hover sm:flex sm:rounded-xl sm:px-6 sm:text-sm">
                                 Edit Design
                             </Link>
                         )}
-                        <Link href={`/dashboard/${wedding.id}/planner`} className={`flex min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold shadow-lg transition-all sm:rounded-xl sm:px-6 sm:text-sm ${hasPlannerPro ? 'bg-secondary text-white shadow-secondary/10 hover:opacity-90' : 'bg-white text-primary border border-primary/20 shadow-primary/10 hover:bg-primary/5'}`}>
+                        <Link href={`/dashboard/${wedding.id}/planner`} className={`hidden min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold shadow-lg transition-all sm:flex sm:rounded-xl sm:px-6 sm:text-sm ${hasPlannerPro ? 'bg-secondary text-white shadow-secondary/10 hover:opacity-90' : 'bg-white text-primary border border-primary/20 shadow-primary/10 hover:bg-primary/5'}`}>
                             <ListTodo className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">{hasPlannerPro ? 'Planner' : 'Planner Pro'}</span>
                         </Link>
-                        <Link href={url} target="_blank" className="flex min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-neutral px-3 py-2 text-xs font-bold text-primary transition-all hover:border-primary/30 dark:bg-neutral/30 sm:rounded-xl sm:px-6 sm:text-sm">
-                            View <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                        <Link href={url} target="_blank" className="flex min-h-[40px] min-w-[40px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border bg-neutral px-2 py-2 text-xs font-bold text-primary transition-all hover:border-primary/30 dark:bg-neutral/30 sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:text-sm">
+                            <span className="hidden sm:inline">View</span> <ExternalLink className="w-4 h-4 flex-shrink-0" />
                         </Link>
                         {/* Dark Mode Toggle */}
                         <DarkModeToggle variant="minimal" />
@@ -582,7 +582,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             type="button"
                             onClick={handleLogout}
                             disabled={isLoggingOut}
-                            className="inline-flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded-lg border border-border bg-white px-3 text-text-secondary transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary disabled:opacity-60 sm:rounded-xl sm:px-4"
+                            className="inline-flex min-h-[40px] min-w-[40px] flex-shrink-0 items-center justify-center rounded-lg border border-border bg-white px-2 text-text-secondary transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary disabled:opacity-60 sm:min-h-[44px] sm:min-w-[44px] sm:rounded-xl sm:px-4"
                             aria-label="Log out"
                             title="Log out"
                         >

@@ -1,12 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Shirt, Info } from 'lucide-react';
+import { Calendar, MapPin, Info } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
-import VectorArtGuests from '../VectorArtGuests';
-import { derivePalette, getTypography, BENTO_PRESETS, getTemplateVisualProfile, type TemplateVisualProfile } from '@/lib/theme-engine';
+import { derivePalette, getTypography, getTemplateVisualProfile, type TemplateVisualProfile } from '@/lib/theme-engine';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
+import AttireSection from './AttireSection';
 
 interface DetailsSectionProps {
     wedding: Wedding;
@@ -58,7 +58,7 @@ function DetailCard({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
             transition={{ duration: 1, delay, ease: [0.16, 1, 0.3, 1] }}
-            className={`flex flex-col items-center text-center p-8 md:p-14 transition-all duration-700 h-full relative overflow-hidden group ${cardClass} hover:-translate-y-1 ${className}`}
+            className={`flex flex-col items-center text-center p-7 md:p-10 transition-all duration-700 h-full relative overflow-hidden group ${cardClass} hover:-translate-y-1 ${className}`}
         >
             {/* Template-specific background decorations */}
             {!isSharp && !isVintage && (
@@ -87,7 +87,7 @@ function DetailCard({
                 <h3 className={`text-[10px] md:text-xs font-black mb-4 uppercase tracking-[0.3em] ${textColorHeading}`}>{title}</h3>
                 
                 <div className="flex-1 flex flex-col items-center w-full justify-center">
-                    <p className={`text-2xl md:text-4xl ${typography.heading} mb-3 leading-tight tracking-tight break-words w-full ${textColorValue}`}>
+                    <p className={`text-2xl md:text-3xl ${typography.heading} mb-3 leading-tight tracking-tight break-words w-full ${textColorValue}`}>
                         {value}
                     </p>
                     <p className={`text-xs md:text-base mb-6 max-w-[280px] mx-auto font-medium leading-relaxed opacity-80 break-words ${textColorSub}`}>
@@ -129,18 +129,9 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
     const typography = getTypography(template);
     const visual = getTemplateVisualProfile(template, motifColor, invert);
     
-    const rawDressCode = wedding.dress_code || '';
-    const dressCodeData = rawDressCode.split('||');
-    const attireText = dressCodeData[0] || 'Formal Attire';
-    const attireColor = dressCodeData[1] || motifColor;
-
     const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
     const isDark = ['midnight', 'cinematic', 'royal', 'urban', 'glitch', 'film', 'artdeco'].includes(template) || invert;
     const isVintage = ['vintage', 'rustic', 'boho', 'film'].includes(template);
-
-    // Use Bento presets for modern templates
-    const isBento = ['editorial', 'vogue', 'minimal', 'urban', 'boho', 'luxury'].includes(template);
-    const layoutClasses = isBento ? BENTO_PRESETS.details : ["", "", "", ""];
 
     return (
         <section id={id} className={`py-24 md:py-40 relative z-10 ${visual.sectionClass}`} style={visual.sectionStyle}>
@@ -156,75 +147,48 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                     <div className={`mx-auto mt-6 ${visual.dividerClass}`} />
                 </motion.div>
             </div>
-            <div className={`${visual.containerClass} grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8`}>
-                <DetailCard 
-                    delay={0}
-                    icon={Calendar} 
-                    title="The Date" 
-                    value={wedding.wedding_date ? new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Setting Date'} 
-                    subtitle={wedding.wedding_time || 'Check back soon for exact schedule'} 
-                    isSharp={isSharp} isDark={isDark} isVintage={isVintage}
-                    className={layoutClasses[0]}
-                    palette={palette}
-                    typography={typography}
-                    visual={visual}
-                />
-                
-                <DetailCard 
-                    delay={0.1}
-                    icon={MapPin} 
-                    title="The Venue" 
-                    value={wedding.venue_name || 'Destination TBD'} 
-                    subtitle={wedding.venue_address || 'Coming soon to your inbox'} 
-                    link={wedding.maps_link} 
-                    isSharp={isSharp} isDark={isDark} isVintage={isVintage}
-                    className={layoutClasses[1]}
-                    palette={palette}
-                    typography={typography}
-                    visual={visual}
-                />
-                
-                <DetailCard 
-                    delay={0.2}
-                    icon={Shirt} 
-                    title="Dress Code" 
-                    value={attireText} 
-                    subtitle={dressCodeData[1] ? "Palette inspiration shown" : "Please refer to the attire guidelines"}
-                    isSharp={isSharp} isDark={isDark} isVintage={isVintage}
-                    className={layoutClasses[2]}
-                    palette={palette}
-                    typography={typography}
-                    visual={visual}
-                >
-                    {dressCodeData[1] ? (
-                        <div className="w-16 h-16 md:w-20 md:h-20 mb-6 shrink-0 -mt-2 group-hover:scale-110 transition-transform duration-700">
-                            <VectorArtGuests color={attireColor} />
-                        </div>
-                    ) : (
-                        <div className={`w-14 h-14 md:w-16 md:h-16 flex items-center justify-center transition-all duration-700 ${
-                            isSharp 
-                                ? 'bg-primary/10 rounded-none group-hover:bg-primary group-hover:scale-110' 
-                                : isVintage
-                                ? 'bg-white border-2 border-primary/20 rounded-full group-hover:border-primary shadow-sm'
-                                : 'bg-white shadow-lg rounded-[1.5rem] rotate-3 group-hover:rotate-0 group-hover:scale-110'
-                        }`}>
-                            <Shirt className={`w-6 h-6 md:w-7 md:h-7 transition-colors duration-700 ${isSharp ? 'text-primary group-hover:text-white' : 'text-primary'}`} />
-                        </div>
-                    )}
-                </DetailCard>
+            <div className={`${visual.containerClass} grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] md:gap-8`}>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:gap-6">
+                    <DetailCard
+                        delay={0}
+                        icon={Calendar}
+                        title="The Date"
+                        value={wedding.wedding_date ? new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Setting Date'}
+                        subtitle={wedding.wedding_time || 'Check back soon for exact schedule'}
+                        isSharp={isSharp} isDark={isDark} isVintage={isVintage}
+                        className="sm:col-span-2"
+                        palette={palette}
+                        typography={typography}
+                        visual={visual}
+                    />
 
-                <DetailCard
-                    delay={0.3}
-                    icon={Info}
-                    title="Socials"
-                    value={wedding.hashtag ? `#${wedding.hashtag}` : 'Final Details'}
-                    subtitle={wedding.contact_person ? `RSVP Organizer: ${wedding.contact_person}` : 'Official platform announcements'}
-                    isSharp={isSharp} isDark={isDark} isVintage={isVintage}
-                    className={layoutClasses[3]}
-                    palette={palette}
-                    typography={typography}
-                    visual={visual}
-                />
+                    <DetailCard
+                        delay={0.1}
+                        icon={MapPin}
+                        title="The Venue"
+                        value={wedding.venue_name || 'Destination TBD'}
+                        subtitle={wedding.venue_address || 'Coming soon to your inbox'}
+                        link={wedding.maps_link}
+                        isSharp={isSharp} isDark={isDark} isVintage={isVintage}
+                        palette={palette}
+                        typography={typography}
+                        visual={visual}
+                    />
+
+                    <DetailCard
+                        delay={0.2}
+                        icon={Info}
+                        title="Helpful Notes"
+                        value={wedding.hashtag ? `#${wedding.hashtag}` : 'Final Details'}
+                        subtitle={wedding.contact_person ? `RSVP Organizer: ${wedding.contact_person}` : 'Watch this space for official announcements'}
+                        isSharp={isSharp} isDark={isDark} isVintage={isVintage}
+                        palette={palette}
+                        typography={typography}
+                        visual={visual}
+                    />
+                </div>
+
+                <AttireSection id="attire" wedding={wedding} embedded />
             </div>
 
             {/* Invitation Card Spotlight Section */}

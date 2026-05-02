@@ -11,7 +11,6 @@ import {
     EntranceReveal,
     VoiceGreeting,
     TemplateNavigation,
-    AttireSection,
     FAQSection,
 } from '@/components/wedding';
 import {
@@ -228,8 +227,6 @@ export default function PreviewPage() {
             <Suspense fallback={<div className="h-screen flex items-center justify-center font-serif italic text-primary">Refining layout...</div>}>
                 {getTemplateContent()}
             </Suspense>
-
-            <AttireSection id="attire" wedding={wedding} />
 
             <FAQSection id="faq" faqItems={wedding.faq_items} wedding={wedding} />
 

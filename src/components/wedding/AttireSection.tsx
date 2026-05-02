@@ -78,7 +78,7 @@ function AttireCharacters({ color, group }: { color: string; group: 'sponsors' |
     );
 }
 
-export default function AttireSection({ wedding, id = 'attire' }: { wedding: Wedding; id?: string }) {
+export default function AttireSection({ wedding, id = 'attire', embedded = false }: { wedding: Wedding; id?: string; embedded?: boolean }) {
     const { registerSection, unregisterSection } = useSectionContext();
 
     useEffect(() => {
@@ -96,6 +96,59 @@ export default function AttireSection({ wedding, id = 'attire' }: { wedding: Wed
         mixColor(color, '#ffffff', 0.7),
         mixColor(color, '#2f2527', 0.35),
     ];
+
+    if (embedded) {
+        return (
+            <motion.div
+                id={id}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                className={`h-full overflow-hidden rounded-[2rem] border p-5 shadow-sm backdrop-blur sm:p-7 ${isDark ? 'border-white/10 bg-white/5' : 'border-primary/10 bg-white/80'}`}
+            >
+                <div className="mb-6 flex items-start gap-4">
+                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${isDark ? 'border-white/15 bg-white/10' : 'border-primary/15 bg-white'} shadow-sm`}>
+                        <Shirt className="h-6 w-6 stroke-[1.6] text-primary" />
+                    </div>
+                    <div>
+                        <p className={`mb-2 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>Dress code</p>
+                        <h3 className={`font-serif text-3xl leading-tight sm:text-4xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>Wedding Attire</h3>
+                        <p className={`mt-3 text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>
+                            We Kindly invite you to celebrate with us by dressing in attire that reflects our wedding colors.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="mb-7 flex flex-wrap gap-2">
+                    {palette.slice(0, 5).map((swatch, index) => (
+                        <span
+                            key={`${swatch}-${index}`}
+                            className="h-9 w-9 rounded-full border-[3px] border-white shadow-md"
+                            style={{ backgroundColor: swatch }}
+                            aria-label={`Wedding color ${index + 1}`}
+                        />
+                    ))}
+                </div>
+
+                <div className="grid gap-4">
+                    <div className={`rounded-3xl border p-4 ${isDark ? 'border-white/10 bg-black/10' : 'border-primary/10 bg-white/70'}`}>
+                        <AttireCharacters color={color} group="sponsors" />
+                        <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-primary">Principal Sponsors</p>
+                        <h4 className={`mt-2 font-serif text-xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>Formal wedding attire</h4>
+                    </div>
+
+                    <div className={`rounded-3xl border p-4 ${isDark ? 'border-white/10 bg-black/10' : 'border-primary/10 bg-white/70'}`}>
+                        <AttireCharacters color={color} group="guests" />
+                        <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-primary">For Guests</p>
+                        <h4 className={`mt-2 font-serif text-xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>{attire}</h4>
+                        <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>
+                            Semi-formal attire that complements our wedding colors is warmly encouraged.
+                        </p>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <section id={id} className={`relative z-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
