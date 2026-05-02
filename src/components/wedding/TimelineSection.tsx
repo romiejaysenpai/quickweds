@@ -603,7 +603,7 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                 >
                     <TimelineOrnament type={design.ornament} color={motifColor} />
                     <div className="relative">
-                        <div className={`absolute left-5 top-5 bottom-5 w-px md:left-1/2 md:-translate-x-1/2 ${design.spineClass}`} />
+                        <div className={`absolute left-1/2 top-5 bottom-5 w-px -translate-x-1/2 ${design.spineClass}`} />
                         <div className="space-y-6 sm:space-y-8">
                             {items.map((item, idx) => {
                                 const Icon = timelineIcons[idx % timelineIcons.length];
@@ -616,23 +616,23 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                                         whileInView={{ opacity: 1, y: 0 }}
                                         viewport={{ once: true }}
                                         transition={{ delay: idx * 0.06 }}
-                                        className="relative grid gap-4 pl-14 md:grid-cols-[1fr_5rem_1fr] md:items-center md:gap-5 md:pl-0"
+                                        className="relative grid grid-cols-[minmax(0,1fr)_2.75rem_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_3.25rem_minmax(0,1fr)] sm:gap-4 md:grid-cols-[1fr_5rem_1fr] md:gap-5"
                                     >
-                                        <div className={`${isLeft ? 'md:order-1 md:text-right' : 'md:order-3'} p-4 backdrop-blur ${design.cardClass}`}>
-                                            <p className={`text-[10px] font-black uppercase tracking-[0.28em] ${design.timeClass}`}>
+                                        <div className={`min-w-0 ${isLeft ? 'order-1 text-right' : 'order-3 text-left'} p-3 backdrop-blur sm:p-4 ${design.cardClass}`}>
+                                            <p className={`text-[9px] font-black uppercase tracking-[0.16em] sm:text-[10px] sm:tracking-[0.28em] ${design.timeClass}`}>
                                                 {item.time || (hasAnyTime ? 'Soon' : `Part ${idx + 1}`)}
                                             </p>
-                                            <p className={`mt-2 font-serif text-lg leading-snug sm:text-xl ${design.eventClass}`}>
+                                            <p className={`mt-2 break-words font-serif text-sm leading-snug sm:text-lg md:text-xl ${design.eventClass}`}>
                                                 {item.event}
                                             </p>
                                         </div>
 
-                                        <div className={`absolute left-0 top-3 flex h-10 w-10 items-center justify-center md:static md:order-2 md:mx-auto md:h-16 md:w-16 ${design.iconFrameClass}`} style={{ borderColor: `${motifColor}55`, color: motifColor }}>
-                                            <Icon className={`h-5 w-5 stroke-[1.6] md:h-7 md:w-7 ${template === 'artdeco' ? '-rotate-45' : ''}`} />
+                                        <div className={`relative z-10 order-2 mx-auto flex h-11 w-11 items-center justify-center sm:h-12 sm:w-12 md:h-16 md:w-16 ${design.iconFrameClass}`} style={{ borderColor: `${motifColor}55`, color: motifColor }}>
+                                            <Icon className={`h-5 w-5 stroke-[1.6] sm:h-6 sm:w-6 md:h-7 md:w-7 ${template === 'artdeco' ? '-rotate-45' : ''}`} />
                                         </div>
 
-                                        <div className={`${isLeft ? 'hidden md:order-3 md:block' : 'hidden md:order-1 md:block'}`}>
-                                            <div className={`mx-auto h-px w-16 ${design.connectorClass}`} />
+                                        <div className={`${isLeft ? 'order-3' : 'order-1'} flex items-center justify-center`}>
+                                            <div className={`h-px w-8 sm:w-12 md:w-16 ${design.connectorClass}`} />
                                         </div>
                                     </motion.div>
                                 );
