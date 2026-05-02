@@ -100,6 +100,21 @@ create table if not exists public.wedding_collaborators (
     unique (wedding_id, email)
 );
 
+alter table public.wedding_collaborators
+add column if not exists invited_by_user_id uuid;
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'wedding_collaborators_wedding_id_email_key'
+    ) then
+        alter table public.wedding_collaborators
+        add constraint wedding_collaborators_wedding_id_email_key unique (wedding_id, email);
+    end if;
+end $$;
+
 create table if not exists public.wedding_template_presets (
     id uuid primary key default gen_random_uuid(),
     user_id uuid not null references auth.users(id) on delete cascade,

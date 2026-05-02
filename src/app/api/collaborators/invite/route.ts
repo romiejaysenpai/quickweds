@@ -14,6 +14,14 @@ type WeddingInviteContext = {
     venue_name: string | null;
 };
 
+type CollaboratorInvitePayload = {
+    wedding_id: string;
+    email: string;
+    role: 'partner' | 'coordinator';
+    status: 'pending';
+    invited_by_user_id?: string;
+};
+
 const inviteSchema = z.object({
     weddingId: z.string().min(4).max(32).regex(/^[a-zA-Z0-9]+$/, 'Invalid wedding ID'),
     email: z.string().trim().email(),
@@ -23,6 +31,58 @@ const inviteSchema = z.object({
 function getAppUrl() {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.site';
     return appUrl.replace(/\/+$/, '');
+}
+
+function isMissingInvitedByColumn(error: unknown) {
+    return error instanceof Error
+        ? error.message.includes('invited_by_user_id')
+        : typeof (error as { message?: unknown })?.message === 'string'
+            && (error as { message: string }).message.includes('invited_by_user_id');
+}
+
+async function saveCollaboratorInvite(
+    supabase: SupabaseAdminClient,
+    payload: CollaboratorInvitePayload,
+) {
+    const save = async (includeInviter: boolean) => {
+        const writePayload = includeInviter
+            ? payload
+            : (({ invited_by_user_id: _invitedByUserId, ...rest }) => rest)(payload);
+
+        const { data: existing, error: lookupError } = await (supabase as any)
+            .from('wedding_collaborators')
+            .select('id')
+            .eq('wedding_id', payload.wedding_id)
+            .eq('email', payload.email)
+            .limit(1)
+            .maybeSingle();
+
+        if (lookupError) {
+            return { data: null, error: lookupError };
+        }
+
+        if (existing?.id) {
+            return (supabase as any)
+                .from('wedding_collaborators')
+                .update(writePayload)
+                .eq('id', existing.id)
+                .select()
+                .single();
+        }
+
+        return (supabase as any)
+            .from('wedding_collaborators')
+            .insert(writePayload)
+            .select()
+            .single();
+    };
+
+    const result = await save(true);
+    if (result.error && isMissingInvitedByColumn(result.error)) {
+        return save(false);
+    }
+
+    return result;
 }
 
 export async function POST(req: Request) {
@@ -89,19 +149,13 @@ export async function POST(req: Request) {
             }
         }
 
-        const { data: invite, error: inviteError } = await (supabase as any)
-            .from('wedding_collaborators')
-            .upsert({
-                wedding_id: weddingId,
-                email: inviteEmail,
-                role,
-                status: 'pending',
-                invited_by_user_id: user.id,
-            }, {
-                onConflict: 'wedding_id,email',
-            })
-            .select()
-            .single();
+        const { data: invite, error: inviteError } = await saveCollaboratorInvite(supabase, {
+            wedding_id: weddingId,
+            email: inviteEmail,
+            role,
+            status: 'pending',
+            invited_by_user_id: user.id,
+        });
 
         if (inviteError) {
             return NextResponse.json({ error: inviteError.message }, { status: 500 });

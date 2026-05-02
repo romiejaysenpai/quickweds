@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState, use, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getWeddingCollaboratorAccess, trackWeddingEvent } from '@/lib/wedding-features';
+import { trackWeddingEvent } from '@/lib/wedding-features';
 import AnalyticsPanel from '@/components/dashboard/AnalyticsPanel';
 import CollaboratorsPanel from '@/components/dashboard/CollaboratorsPanel';
 import GuestImportModal from '@/components/dashboard/GuestImportModal';
@@ -189,52 +189,41 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                 setCheckingRole(false);
 
-                const { data: weddingData, error: weddingError } = await supabase
-                    .from('weddings')
-                    .select('*')
-                    .eq('id', id)
-                    .is('deleted_at', null)
-                    .single();
+                const workspaceResponse = await fetch(`/api/planner/load?weddingId=${encodeURIComponent(id)}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                const workspaceResult = await workspaceResponse.json().catch(() => ({}));
+                const weddingData = workspaceResult.wedding;
 
-                if (weddingError || !weddingData) {
+                if (!weddingData) {
                     setLoading(false);
                     return;
                 }
 
                 // Deterministic access check — no timing issues
                 let role: 'owner' | 'partner' | 'coordinator' | 'pending' | 'denied';
-                if (weddingData.user_id === user.id) {
+                if (workspaceResult.accessRole === 'owner' || workspaceResult.accessRole === 'partner' || workspaceResult.accessRole === 'coordinator' || workspaceResult.accessRole === 'pending') {
+                    role = workspaceResult.accessRole;
+                } else if (weddingData.user_id === user.id) {
                     role = 'owner';
                 } else if (isAdmin) {
                     // Admins automatically get owner access
                     role = 'owner';
                     setAccessDebug(`Admin override — isAdmin=${isAdmin}, user=${user.email}`);
                 } else {
-                    const collaboratorAccess = await getWeddingCollaboratorAccess(id, user.email);
-                    if (!collaboratorAccess) {
-                        role = 'denied';
-                    } else {
-                        role = collaboratorAccess.status === 'accepted' ? collaboratorAccess.role : 'pending';
-                        if (collaboratorAccess.status !== 'accepted') {
-                            setAccessRole(role);
-                            setLoading(false);
-                            return;
-                        }
-                    }
+                    role = 'denied';
+                }
+
+                if (role === 'pending' || role === 'denied') {
+                    setAccessRole(role);
+                    setLoading(false);
+                    return;
                 }
 
                 setAccessRole(role);
                 setWedding(weddingData);
-
-                if (role !== 'owner') {
-                    setLoading(false);
-                    return;
-                }
-
-                if (role !== 'owner') {
-                    setLoading(false);
-                    return;
-                }
 
                 const [rsvpsRes, vendorsRes, budgetsRes] = await Promise.all([
                     supabase.from('rsvps').select('*').eq('wedding_id', id).order('created_at', { ascending: false }),

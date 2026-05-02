@@ -372,25 +372,71 @@ export async function inviteWeddingCollaborator(input: {
         throw new Error('Invalid role');
     }
 
-    const { data, error } = await supabase
+    const { data: existing, error: lookupError } = await supabase
         .from('wedding_collaborators')
-        .upsert({
-            wedding_id: sanitizedWeddingId,
-            email: sanitizedEmail,
-            role: input.role,
-            status: 'pending',
-            invited_by_user_id: sanitizedUserId,
-        }, {
-            onConflict: 'wedding_id,email',
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('wedding_id', sanitizedWeddingId)
+        .eq('email', sanitizedEmail)
+        .limit(1)
+        .maybeSingle();
+
+    if (lookupError) throw lookupError;
+
+    const invitePayload = {
+        wedding_id: sanitizedWeddingId,
+        email: sanitizedEmail,
+        role: input.role,
+        status: 'pending' as const,
+        invited_by_user_id: sanitizedUserId,
+    };
+
+    const saveInvite = async (payload: Omit<typeof invitePayload, 'invited_by_user_id'> | typeof invitePayload) => (
+        existing?.id
+            ? supabase
+                .from('wedding_collaborators')
+                .update(payload)
+                .eq('id', existing.id)
+                .select()
+                .single()
+            : supabase
+                .from('wedding_collaborators')
+                .insert(payload)
+                .select()
+                .single()
+    );
+
+    let { data, error } = await saveInvite(invitePayload);
+    if (error?.message?.includes('invited_by_user_id')) {
+        const { invited_by_user_id: _invitedByUserId, ...fallbackPayload } = invitePayload;
+        ({ data, error } = await saveInvite(fallbackPayload));
+    }
 
     if (error) throw error;
     return data;
 }
 
 export async function acceptWeddingInvite(collaboratorId: string) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    if (token) {
+        const response = await fetch('/api/collaborators/accept', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ collaboratorId }),
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to accept invite');
+        }
+
+        return result.collaborator;
+    }
+
     const { data, error } = await supabase
         .from('wedding_collaborators')
         .update({ status: 'accepted' })
@@ -434,6 +480,24 @@ export async function listSharedWeddings(email?: string | null) {
     if (!email) return [];
 
     try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+
+        if (token) {
+            const response = await fetch('/api/collaborators/shared', {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(result.error || 'Unable to load shared weddings');
+            }
+
+            return result.sharedWeddings || [];
+        }
+
         const { data: invites, error: inviteError } = await supabase
             .from('wedding_collaborators')
             .select('*')

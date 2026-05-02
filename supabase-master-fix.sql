@@ -39,6 +39,21 @@ CREATE TABLE IF NOT EXISTS wedding_collaborators (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+ALTER TABLE wedding_collaborators
+ADD COLUMN IF NOT EXISTS invited_by_user_id UUID;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'wedding_collaborators_wedding_id_email_key'
+    ) THEN
+        ALTER TABLE wedding_collaborators
+        ADD CONSTRAINT wedding_collaborators_wedding_id_email_key UNIQUE (wedding_id, email);
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS wedding_template_presets (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,

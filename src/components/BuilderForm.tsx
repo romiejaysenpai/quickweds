@@ -271,6 +271,7 @@ export default function BuilderForm() {
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [weddingOwnerId, setWeddingOwnerId] = useState<string | null>(null);
     
     // Mobile UI state
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -376,15 +377,22 @@ export default function BuilderForm() {
 
         if (user && editId) {
             const fetchWedding = async () => {
-                const { data, error } = await supabase
-                    .from('weddings')
-                    .select('*')
-                    .eq('id', editId)
-                    .single();
+                const { data: sessionData } = await supabase.auth.getSession();
+                const token = sessionData.session?.access_token;
+                if (!token) return;
 
-                if (data && data.user_id === user.id) {
+                const response = await fetch(`/api/planner/load?weddingId=${encodeURIComponent(editId)}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                const result = await response.json().catch(() => ({}));
+                const data = result.wedding;
+
+                if (data && (result.accessRole === 'owner' || result.accessRole === 'partner')) {
                     // Builder features are included on the free plan. Paid status now unlocks Planner Pro.
                     setIsPremium(true);
+                    setWeddingOwnerId(data.user_id || user.id);
 
                     setFormData({
                         brideName: data.bride_name || '',
@@ -705,7 +713,7 @@ export default function BuilderForm() {
                 .upsert({ 
                     ...payload, 
                     id: weddingId, 
-                    user_id: user.id 
+                    user_id: editId && weddingOwnerId ? weddingOwnerId : user.id 
                 }, { onConflict: 'id' });
 
             if (submitError) {
@@ -718,7 +726,7 @@ export default function BuilderForm() {
                         .upsert({
                             ...fallbackPayload,
                             id: weddingId,
-                            user_id: user.id,
+                            user_id: editId && weddingOwnerId ? weddingOwnerId : user.id,
                         }, { onConflict: 'id' });
 
                     if (fallbackError) throw fallbackError;
