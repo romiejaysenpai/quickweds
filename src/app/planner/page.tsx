@@ -44,7 +44,7 @@ export default function PlannerGatewayPage() {
           </div>
 
           <div className="mb-10 flex justify-center">
-             <UpgradeButton userEmail={user?.email || ''} />
+             <UpgradeButton />
           </div>
 
           <div className="pt-6 border-t border-border">
