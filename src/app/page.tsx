@@ -29,6 +29,7 @@ import {
   Instagram,
   Twitter,
   Facebook,
+  Loader2,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -342,7 +343,7 @@ function ContactSection() {
                     <textarea required id="message" name="message" rows={4} className="w-full rounded-xl border border-border bg-neutral px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none" placeholder="Tell us more about your inquiry..."></textarea>
                   </div>
                   <button type="submit" disabled={loading} className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:bg-primary-hover disabled:opacity-70">
-                    {loading ? <LoaderIcon className="h-4 w-4 animate-spin" /> : null}
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     Send Message
                   </button>
                 </form>
