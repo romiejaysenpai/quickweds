@@ -4,6 +4,9 @@ import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 type PlannerAccessRole = 'owner' | 'partner' | 'coordinator' | 'pending' | 'denied';
 
 async function findWeddingById(db: any, weddingId: string) {

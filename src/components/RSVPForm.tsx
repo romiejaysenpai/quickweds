@@ -255,11 +255,13 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-text-secondary ml-1">Number of Guests</label>
                         <input
-                            type="number" min="1" max="10"
-                            value={formData.numGuests}
-                            onChange={(e) => setFormData(prev => ({ ...prev, numGuests: parseInt(e.target.value) || 1 }))}
-                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground"
-                        />
+                                    type="number" min="1" max="100"
+                                    inputMode="numeric"
+                                    placeholder="0"
+                                    value={formData.numGuests === 0 ? '' : formData.numGuests}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, numGuests: e.target.value === '' ? 0 : parseInt(e.target.value) }))}
+                                    className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
                     </div>
                 </div>
 
@@ -281,10 +283,12 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-text-secondary ml-1">Children Attending</label>
                         <input
-                            type="number" min="0" max="10"
-                            value={formData.childrenCount}
-                            onChange={(e) => setFormData(prev => ({ ...prev, childrenCount: parseInt(e.target.value) || 0 }))}
-                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground"
+                            type="number" min="0" max="100"
+                            inputMode="numeric"
+                            placeholder="0"
+                            value={formData.childrenCount === 0 ? '' : formData.childrenCount}
+                            onChange={(e) => setFormData(prev => ({ ...prev, childrenCount: e.target.value === '' ? 0 : parseInt(e.target.value) }))}
+                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                     </div>
                     <div className="space-y-2">

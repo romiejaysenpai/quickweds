@@ -330,6 +330,25 @@ export async function getWeddingAnalyticsSummary(weddingId: string, rsvpCount: n
 
 export async function listWeddingCollaborators(weddingId: string): Promise<WeddingCollaborator[]> {
     try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+
+        if (token) {
+            const response = await fetch(`/api/collaborators/list?weddingId=${encodeURIComponent(weddingId)}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) return [];
+                throw new Error(result.error || 'Unable to load collaborators');
+            }
+
+            return result.collaborators || [];
+        }
+
         const { data, error } = await supabase
             .from('wedding_collaborators')
             .select('*')
@@ -492,6 +511,7 @@ export async function listSharedWeddings(email?: string | null) {
 
             const result = await response.json().catch(() => ({}));
             if (!response.ok) {
+                if (response.status === 401 || response.status === 403) return [];
                 throw new Error(result.error || 'Unable to load shared weddings');
             }
 

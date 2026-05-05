@@ -26,6 +26,9 @@ import {
   Sun,
   UsersRound,
   X,
+  Instagram,
+  Twitter,
+  Facebook,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -35,6 +38,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import UpgradeButton from '@/components/UpgradeButton';
+import { submitInquiry } from '@/app/actions/support';
 
 const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/Minimalist%20Neutral%20Multi%20Device%20Computer%20Mockup%20Website%20Launch%20Instagram%20Post.png';
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/pc%20vew.png';
@@ -161,6 +165,29 @@ const faqs = [
   },
 ];
 
+const weddingTips = [
+  {
+    title: 'Finalize Your Guest Count Early',
+    body: 'Knowing your exact guest count helps with budget precision and venue capacity planning.',
+    icon: UsersRound,
+  },
+  {
+    title: 'Automate Your RSVP Flow',
+    body: 'Stop chasing guests manually. Use automated reminders to get responses 3 weeks before your deadline.',
+    icon: MailCheck,
+  },
+  {
+    title: 'Keep a "Buffer" in Your Budget',
+    body: 'Unexpected costs always arise. Set aside 10% of your total budget for small surprises.',
+    icon: CircleDollarSign,
+  },
+  {
+    title: 'Prioritize Your "Must-Haves"',
+    body: 'Focus your spending on the 3 things that matter most to you as a couple, and be flexible on the rest.',
+    icon: Heart,
+  },
+];
+
 function Accent({ children }: { children: React.ReactNode }) {
   return <span className="text-primary">{children}</span>;
 }
@@ -198,8 +225,133 @@ function SectionHeading({
       <h2 className="text-[2rem] font-bold leading-[1.08] text-foreground sm:text-4xl lg:text-5xl">
         {title} {accent && <Accent>{accent}</Accent>}{afterAccent}
       </h2>
-      {body && <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-text-secondary sm:text-lg">{body}</p>}
+      {body && (
+        <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-text-secondary sm:mt-5 sm:text-lg sm:leading-8">{body}</p>
+      )}
     </div>
+  );
+}
+
+function WeddingTipsSection() {
+  return (
+    <section id="tips" className="px-4 py-16 sm:px-6 sm:py-28 bg-neutral/30">
+      <div className="mx-auto max-w-7xl">
+        <SectionHeading
+          eyebrow="Wedding Tips"
+          title="Plan your big day with"
+          accent="confidence."
+          body="Expert advice to help you navigate the planning process without the stress."
+        />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {weddingTips.map((tip) => (
+            <div key={tip.title} className="group rounded-3xl border border-border bg-white p-6 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/5 text-primary group-hover:scale-110 transition-transform">
+                <tip.icon className="h-6 w-6" />
+              </div>
+              <h3 className="font-serif text-lg font-bold text-foreground">{tip.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-text-secondary">{tip.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContactSection() {
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    await submitInquiry(formData);
+    setLoading(false);
+    setSent(true);
+  };
+
+  return (
+    <section id="contact" className="px-4 py-16 sm:px-6 sm:py-28">
+      <div className="mx-auto max-w-4xl">
+        <SectionHeading
+          eyebrow="Contact Us"
+          title="Have a question or need"
+          accent="help?"
+          body="Our team is here to support you. Send us a message and we'll get back to you shortly."
+        />
+        
+        <div className="overflow-hidden rounded-[2rem] border border-border bg-white shadow-2xl shadow-primary/5">
+          <div className="grid md:grid-cols-5">
+            <div className="bg-primary p-8 text-white md:col-span-2">
+              <h3 className="font-serif text-2xl font-bold">Get in touch</h3>
+              <p className="mt-4 text-sm leading-7 text-white/80">
+                Whether you're just starting or finalizing your details, we're here to help make your wedding planning journey a success.
+              </p>
+              
+              <div className="mt-10 space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
+                    <MailCheck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-white/50">Email</p>
+                    <p className="font-bold">support@quickweds.site</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
+                    <MessageCircle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-white/50">Chat</p>
+                    <p className="font-bold">Available via WhatsApp</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-8 md:col-span-3">
+              {sent ? (
+                <div className="flex h-full flex-col items-center justify-center text-center py-10">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
+                    <CheckCircle2 className="h-8 w-8" />
+                  </div>
+                  <h3 className="font-serif text-2xl font-bold text-foreground">Message Sent!</h3>
+                  <p className="mt-2 text-text-secondary">We've received your inquiry and will respond to you as soon as possible.</p>
+                  <button onClick={() => setSent(false)} className="mt-6 text-sm font-bold text-primary hover:underline">Send another message</button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="name" className="block text-xs font-black uppercase tracking-widest text-text-secondary/60 mb-2">Full Name</label>
+                      <input required type="text" id="name" name="name" className="w-full rounded-xl border border-border bg-neutral px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" placeholder="Your name" />
+                    </div>
+                    <div>
+                      <label htmlFor="userEmail" className="block text-xs font-black uppercase tracking-widest text-text-secondary/60 mb-2">Email Address</label>
+                      <input required type="email" id="userEmail" name="userEmail" className="w-full rounded-xl border border-border bg-neutral px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" placeholder="you@example.com" />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="subject" className="block text-xs font-black uppercase tracking-widest text-text-secondary/60 mb-2">Subject</label>
+                    <input required type="text" id="subject" name="subject" className="w-full rounded-xl border border-border bg-neutral px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" placeholder="How can we help?" />
+                  </div>
+                  <div>
+                    <label htmlFor="message" className="block text-xs font-black uppercase tracking-widest text-text-secondary/60 mb-2">Message</label>
+                    <textarea required id="message" name="message" rows={4} className="w-full rounded-xl border border-border bg-neutral px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none" placeholder="Tell us more about your inquiry..."></textarea>
+                  </div>
+                  <button type="submit" disabled={loading} className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:bg-primary-hover disabled:opacity-70">
+                    {loading ? <LoaderIcon className="h-4 w-4 animate-spin" /> : null}
+                    Send Message
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -297,11 +449,11 @@ export default function Home() {
 
           <div className="hidden items-center gap-7 lg:flex">
             <a href="#features" className={navItemClass}>Features</a>
-            <Link href="/suppliers" className={navItemClass}>Suppliers</Link>
-            <a href="#pricing" className={navItemClass}>Pricing</a>
-            <button type="button" onClick={openTemplates} className={navItemClass}>Templates</button>
+            <Link href="/suppliers" className={navItemClass}>Directory</Link>
+            <a href="#tips" className={navItemClass}>Wedding Tips</a>
             <button type="button" onClick={openDemo} className={navItemClass}>Demo</button>
-            {!user && <Link href="/login" className={navItemClass}>Login</Link>}
+            <a href="#pricing" className={navItemClass}>Pricing</a>
+            <a href="#contact" className={navItemClass}>Contact</a>
           </div>
 
           <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
@@ -372,9 +524,17 @@ export default function Home() {
                 onClick={closeMobileMenu}
                 className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
               >
-                Find Suppliers
+                Directory
                 <ArrowRight className="h-4 w-4" />
               </Link>
+              <a
+                href="#tips"
+                onClick={closeMobileMenu}
+                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+              >
+                Wedding Tips
+                <ArrowRight className="h-4 w-4" />
+              </a>
               <button
                 type="button"
                 onClick={openTemplates}
@@ -405,6 +565,14 @@ export default function Home() {
                 className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
               >
                 FAQ
+                <ArrowRight className="h-4 w-4" />
+              </a>
+              <a
+                href="#contact"
+                onClick={closeMobileMenu}
+                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-primary/5 px-4 text-sm font-bold text-primary transition hover:bg-primary/10 border border-primary/10"
+              >
+                Contact Support
                 <ArrowRight className="h-4 w-4" />
               </a>
               {user ? (
@@ -839,41 +1007,116 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="px-4 py-16 sm:px-6 sm:py-28">
-          <div className="mx-auto max-w-5xl rounded-[1.5rem] bg-primary p-6 text-center text-white shadow-2xl shadow-primary/25 sm:rounded-[2rem] sm:p-14 lg:p-20">
-            <h2 className="mx-auto max-w-3xl text-[2.15rem] font-bold leading-[1.08] sm:text-6xl">Ready to simplify your <span className="text-secondary">wedding planning?</span></h2>
-            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-white/85 sm:mt-5 sm:text-lg sm:leading-8">
-              Build the website your guests see and the planning system you actually need behind it.
-            </p>
-            <div className="mt-8">
-              <Link href="/builder" className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-neutral sm:w-auto sm:px-7 sm:text-base">
-                Create Your Free Wedding Site
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+        <section className="px-4 py-16 sm:px-6 sm:py-28 overflow-hidden">
+          <div className="mx-auto max-w-4xl relative isolate overflow-hidden rounded-[2rem] bg-primary shadow-2xl shadow-primary/25 sm:rounded-[2.5rem]">
+            {/* Wave effect like the dashboard hero */}
+            <div className="absolute inset-x-[-10%] top-[-50%] h-[150%] w-[120%] opacity-10 bg-white/10 blur-3xl pointer-events-none" />
+            <div 
+                className="absolute inset-x-[-20%] bottom-[-80%] h-[120%] bg-white/5 pointer-events-none" 
+                style={{ borderRadius: '50% 50% 0 0 / 100% 100% 0 0' }}
+            />
+
+            <div className="relative z-10 grid gap-6 lg:grid-cols-2 items-center p-6 sm:p-10 lg:p-12">
+              <div className="text-center lg:text-left">
+                <h2 className="text-[2rem] font-bold leading-[1.1] text-white sm:text-4xl lg:text-5xl">
+                  Ready to simplify your <span className="text-secondary">wedding planning?</span>
+                </h2>
+                <p className="mt-4 text-[14px] leading-6 text-white/80 sm:text-base sm:leading-7">
+                  Build the website your guests see and the planning system you actually need behind it.
+                </p>
+                <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center lg:justify-start">
+                  <Link href="/builder" className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-black text-primary transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-black/10 active:scale-95">
+                    Create Your Free Wedding Site
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+
+              <div className="relative flex justify-center lg:justify-end">
+                {/* Decorative glow behind bird */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-white/20 blur-[60px] rounded-full" />
+                
+                <img 
+                  src="https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/computer%20quicky.png" 
+                  alt="QuickWeds Mascot" 
+                  className="relative z-20 h-[240px] sm:h-[320px] lg:h-[400px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-transform duration-500 hover:scale-[1.05]"
+                />
+              </div>
             </div>
           </div>
         </section>
+
+        <WeddingTipsSection />
+        
+        <ContactSection />
       </main>
 
-      <footer className="border-t border-border bg-white px-4 py-12 pb-24 sm:px-6 sm:pb-12">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 text-center md:flex-row md:items-center md:justify-between md:text-left">
-          <div>
-            <Link href="/" className="inline-flex justify-center md:justify-start">
-              <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-10 w-auto object-contain" />
-            </Link>
-            <p className="mt-3 max-w-md text-sm leading-6 text-text-secondary">
-              The all-in-one wedding planning system for websites, RSVPs, guests, budgets, vendors, seating, tasks, photos, and thank-you messages.
-            </p>
+      <footer className="border-t border-border bg-white pt-16 pb-24 sm:pt-24 sm:pb-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4 lg:gap-8 text-center md:text-left">
+            {/* Brand Column */}
+            <div className="space-y-6">
+              <Link href="/" className="inline-block">
+                <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-10 w-auto object-contain" />
+              </Link>
+              <p className="max-w-xs mx-auto md:mx-0 text-sm leading-7 text-text-secondary">
+                The all-in-one wedding planning system for websites, RSVPs, guests, budgets, vendors, and more. Simplifying your journey to "I do".
+              </p>
+              <div className="flex justify-center md:justify-start gap-4">
+                <a href="#" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">
+                  <Instagram className="h-5 w-5" />
+                </a>
+                <a href="#" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">
+                  <Twitter className="h-5 w-5" />
+                </a>
+                <a href="https://www.facebook.com/profile.php?id=61587661715324" target="_blank" rel="noopener noreferrer" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">
+                  <Facebook className="h-5 w-5" />
+                </a>
+              </div>
+            </div>
+
+            {/* Product Column */}
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Product</h4>
+              <ul className="space-y-4">
+                <li><button type="button" onClick={openTemplates} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Wedding Templates</button></li>
+                <li><button type="button" onClick={openDemo} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">View Live Demo</button></li>
+                <li><a href="#pricing" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Pricing & Features</a></li>
+                <li><Link href="/suppliers" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Vendor Directory</Link></li>
+              </ul>
+            </div>
+
+            {/* Resources Column */}
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Resources</h4>
+              <ul className="space-y-4">
+                <li><a href="#tips" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Wedding Tips</a></li>
+                <li><Link href="/user-guide" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Planning Guide</Link></li>
+                <li><a href="#faq" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">FAQ</a></li>
+                <li><Link href="/privacy" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Privacy Policy</Link></li>
+              </ul>
+            </div>
+
+            {/* Contact Column */}
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Support</h4>
+              <ul className="space-y-4">
+                <li><a href="#contact" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Contact Support</a></li>
+                <li><a href="mailto:support@quickweds.site" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">support@quickweds.site</a></li>
+                <li><a href="https://wa.me/639454602270" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Chat on WhatsApp</a></li>
+              </ul>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-bold text-text-secondary md:justify-end">
-            <a href="#features" className={footerItemClass}>Features</a>
-            <Link href="/suppliers" className={footerItemClass}>Find Wedding Suppliers</Link>
-            <a href="#pricing" className={footerItemClass}>Pricing</a>
-            <button type="button" onClick={openTemplates} className={footerItemClass}>Templates</button>
-            <button type="button" onClick={openDemo} className={footerItemClass}>Demo</button>
-            <a href="#faq" className={footerItemClass}>FAQ</a>
-            <a href="mailto:support@quickweds.site" className={footerItemClass}>Contact</a>
-            <Link href="/privacy" className={footerItemClass}>Privacy</Link>
+
+          <div className="mt-16 pt-8 border-t border-border flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <p className="text-xs font-bold text-text-secondary/60">
+              © {new Date().getFullYear()} QuickWeds. All rights reserved.
+            </p>
+            <div className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2">
+              <Link href="/privacy" className="text-xs font-bold text-text-secondary/60 hover:text-primary transition-colors">Privacy</Link>
+              <Link href="/terms" className="text-xs font-bold text-text-secondary/60 hover:text-primary transition-colors">Terms</Link>
+              <Link href="/cookies" className="text-xs font-bold text-text-secondary/60 hover:text-primary transition-colors">Cookies</Link>
+            </div>
           </div>
         </div>
       </footer>
@@ -890,7 +1133,7 @@ export default function Home() {
 
       <div className="fixed bottom-6 right-6 z-40 hidden flex-col gap-3 sm:flex">
         <a
-          href="https://wa.me/919876543210"
+          href="https://wa.me/639454602270"
           target="_blank"
           rel="noopener noreferrer"
           className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-xl shadow-green-500/30 transition hover:scale-105"

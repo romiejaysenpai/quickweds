@@ -358,9 +358,9 @@ export default function SupplierProfileDashboard() {
                                                 <p className="text-xs text-text-secondary">{supplier.category} - {supplier.city}, {supplier.province}</p>
                                                 <p className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary">{supplierStatusLabel(supplier.status)}</p>
                                             </div>
-                                            {supplier.slug && (
+                                            {supplier.slug && supplier.status === 'approved' && supplier.is_active && (
                                                 <Link href={`/suppliers/${supplier.slug}`} className="text-xs font-bold text-primary">
-                                                    View
+                                                    Public
                                                 </Link>
                                             )}
                                         </div>

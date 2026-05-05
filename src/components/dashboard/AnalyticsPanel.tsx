@@ -83,36 +83,38 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
     }
 
     return (
-        <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                    <h3 className="text-lg sm:text-xl font-serif font-bold text-foreground flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5 text-primary" /> Wedding Analytics
+        <div className="overflow-hidden rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-3xl sm:p-6 md:p-8">
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                <div className="min-w-0">
+                    <h3 className="flex items-center gap-2 text-lg font-serif font-bold text-foreground sm:text-xl">
+                        <BarChart3 className="h-5 w-5 flex-shrink-0 text-primary" /> Wedding Analytics
                     </h3>
                     <p className="text-xs sm:text-sm text-text-secondary">Traffic, QR performance, RSVP conversion, and reminder follow-through.</p>
                 </div>
                 <button
                     onClick={sendReminder}
                     disabled={sendingReminder || pendingGuestCount === 0}
-                    className="px-4 py-3 rounded-xl bg-primary text-white font-bold text-xs sm:text-sm hover:bg-primary-hover transition-all disabled:opacity-50 min-h-[44px] inline-flex items-center gap-2"
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-primary px-4 text-xs font-bold text-white transition-all hover:bg-primary-hover disabled:opacity-50 sm:w-auto sm:text-sm"
                 >
                     {sendingReminder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                     Send RSVP Reminder
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {stats.map((stat) => (
-                    <div key={stat.label} className="p-3 sm:p-4 rounded-2xl bg-neutral/50 dark:bg-neutral/40 border border-border">
-                        <stat.icon className="w-4 h-4 text-primary mb-2" />
-                        <p className="text-lg sm:text-xl font-bold text-foreground">{stat.value}</p>
-                        <p className="text-[9px] uppercase tracking-widest font-black text-text-secondary/60">{stat.label}</p>
+                    <div key={stat.label} className="flex min-h-[118px] min-w-0 flex-col items-center justify-between rounded-2xl border border-border bg-neutral/50 p-3 text-center dark:bg-neutral/40 sm:p-4">
+                        <stat.icon className="mb-2 h-4 w-4 flex-shrink-0 text-primary" />
+                        <div className="min-w-0">
+                            <p className="truncate text-xl font-black leading-none text-foreground sm:text-2xl">{stat.value}</p>
+                            <p className="mt-2 min-h-[28px] max-w-full text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-text-secondary/60 [overflow-wrap:anywhere]">{stat.label}</p>
+                        </div>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-neutral/40 dark:bg-neutral/30 border border-border">
+            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="min-w-0 rounded-2xl border border-border bg-neutral/40 p-4 dark:bg-neutral/30">
                     <h4 className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60 mb-3">Visit Sources</h4>
                     {summary.sourceBreakdown.length > 0 ? (
                         <div className="h-44">
@@ -133,7 +135,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                     )}
                 </div>
 
-                <div className="p-4 rounded-2xl bg-neutral/40 dark:bg-neutral/30 border border-border space-y-3">
+                <div className="min-w-0 space-y-3 rounded-2xl border border-border bg-neutral/40 p-4 dark:bg-neutral/30">
                     <h4 className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60">Reminder Performance</h4>
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-text-secondary">Reminder runs</span>

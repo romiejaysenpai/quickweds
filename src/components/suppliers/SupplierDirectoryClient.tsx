@@ -1,20 +1,93 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Search, SlidersHorizontal, Sparkles } from 'lucide-react';
 import SupplierCard from '@/components/suppliers/SupplierCard';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { getClientAccountProfile, type AccountType } from '@/lib/account';
 import {
     PHILIPPINE_SUPPLIER_LOCATIONS,
     SUPPLIER_CATEGORIES,
     type SupplierProfile,
 } from '@/lib/suppliers';
 
+function normalizeText(value?: string | null) {
+    return (value || '').toLowerCase().trim();
+}
+
+function getPreferredLocationFromWedding(wedding?: { venue_name?: string | null; venue_address?: string | null } | null) {
+    const locationText = normalizeText(`${wedding?.venue_name || ''} ${wedding?.venue_address || ''}`);
+    if (!locationText) return '';
+
+    return PHILIPPINE_SUPPLIER_LOCATIONS.find((item) => locationText.includes(item.toLowerCase())) || '';
+}
+
+function getSupplierLocationScore(supplier: SupplierProfile, preferredLocation: string) {
+    if (!preferredLocation) return 0;
+
+    const preferred = preferredLocation.toLowerCase();
+    const city = normalizeText(supplier.city);
+    const province = normalizeText(supplier.province);
+    const serviceAreas = (supplier.service_areas || []).map((area) => area.toLowerCase());
+
+    if (city === preferred || province === preferred) return 100;
+    if (serviceAreas.some((area) => area === preferred)) return 90;
+    if (city.includes(preferred) || province.includes(preferred)) return 80;
+    if (serviceAreas.some((area) => area.includes(preferred) || preferred.includes(area))) return 70;
+
+    return 0;
+}
+
 export default function SupplierDirectoryClient({ suppliers }: { suppliers: SupplierProfile[] }) {
+    const { user } = useAuth();
     const [query, setQuery] = useState('');
     const [category, setCategory] = useState('All');
     const [location, setLocation] = useState('All');
     const [featuredOnly, setFeaturedOnly] = useState(false);
+    const [accountType, setAccountType] = useState<AccountType | null>(null);
+    const [preferredLocation, setPreferredLocation] = useState('');
+
+    useEffect(() => {
+        const loadAccountContext = async () => {
+            if (!user) {
+                setAccountType(null);
+                setPreferredLocation('');
+                return;
+            }
+
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData.session?.access_token;
+            if (!token) return;
+
+            try {
+                const profile = await getClientAccountProfile(token);
+                setAccountType(profile?.account_type || null);
+
+                if (profile?.account_type !== 'couple') {
+                    setPreferredLocation('');
+                    return;
+                }
+
+                const { data: wedding } = await supabase
+                    .from('weddings')
+                    .select('venue_name, venue_address')
+                    .eq('user_id', user.id)
+                    .is('deleted_at', null)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                setPreferredLocation(getPreferredLocationFromWedding(wedding));
+            } catch {
+                setAccountType(null);
+                setPreferredLocation('');
+            }
+        };
+
+        void loadAccountContext();
+    }, [user]);
 
     const filteredSuppliers = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase();
@@ -38,8 +111,18 @@ export default function SupplierDirectoryClient({ suppliers }: { suppliers: Supp
             const matchesFeatured = !featuredOnly || supplier.is_featured;
 
             return matchesQuery && matchesCategory && matchesLocation && matchesFeatured;
+        }).sort((a, b) => {
+            const locationScore = getSupplierLocationScore(b, preferredLocation) - getSupplierLocationScore(a, preferredLocation);
+            if (locationScore !== 0 && location === 'All') return locationScore;
+
+            const featuredScore = Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured));
+            if (featuredScore !== 0) return featuredScore;
+
+            return a.business_name.localeCompare(b.business_name);
         });
-    }, [category, featuredOnly, location, query, suppliers]);
+    }, [category, featuredOnly, location, preferredLocation, query, suppliers]);
+
+    const isSupplierAccount = accountType === 'supplier';
 
     return (
         <div className="min-h-screen bg-neutral text-foreground">
@@ -52,8 +135,8 @@ export default function SupplierDirectoryClient({ suppliers }: { suppliers: Supp
                         <Link href="/supplier/signup" className="hidden rounded-xl border border-primary/20 px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary/5 sm:inline-flex">
                             List Your Business
                         </Link>
-                        <Link href="/builder" className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover">
-                            Create Site
+                        <Link href={isSupplierAccount ? '/supplier/dashboard' : '/builder'} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover">
+                            {isSupplierAccount ? 'Manage Listing' : 'Create Site'}
                         </Link>
                     </div>
                 </div>
@@ -79,8 +162,8 @@ export default function SupplierDirectoryClient({ suppliers }: { suppliers: Supp
                                     List Your Business
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
-                                <Link href="/dashboard" className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-6 py-3 text-sm font-bold text-primary transition hover:bg-primary/5">
-                                    Open Planner
+                                <Link href={isSupplierAccount ? '/supplier/dashboard' : '/dashboard'} className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-6 py-3 text-sm font-bold text-primary transition hover:bg-primary/5">
+                                    {isSupplierAccount ? 'Manage Listing' : 'Open Planner'}
                                 </Link>
                             </div>
                         </div>
@@ -108,7 +191,7 @@ export default function SupplierDirectoryClient({ suppliers }: { suppliers: Supp
                                         value={query}
                                         onChange={(event) => setQuery(event.target.value)}
                                         placeholder="Search supplier name, city, service..."
-                                        className="min-h-[46px] w-full rounded-xl border border-border bg-neutral px-4 py-3 pl-11 text-sm outline-none transition focus:border-primary focus:bg-white"
+                                        className="icon-field-left-compact min-h-[46px] w-full rounded-xl border border-border bg-neutral px-4 py-3 pl-11 text-sm outline-none transition focus:border-primary focus:bg-white"
                                     />
                                 </label>
                                 <select value={category} onChange={(event) => setCategory(event.target.value)} className="min-h-[46px] rounded-xl border border-border bg-neutral px-4 py-3 text-sm font-bold outline-none focus:border-primary">
@@ -135,9 +218,16 @@ export default function SupplierDirectoryClient({ suppliers }: { suppliers: Supp
                         </div>
 
                         <div className="mt-8 flex items-center justify-between gap-4">
-                            <p className="text-sm font-bold text-text-secondary">
-                                {filteredSuppliers.length} supplier{filteredSuppliers.length === 1 ? '' : 's'} found
-                            </p>
+                            <div>
+                                <p className="text-sm font-bold text-text-secondary">
+                                    {filteredSuppliers.length} supplier{filteredSuppliers.length === 1 ? '' : 's'} found
+                                </p>
+                                {preferredLocation && location === 'All' && (
+                                    <p className="mt-1 text-xs font-semibold text-primary">
+                                        Showing suppliers near {preferredLocation} first
+                                    </p>
+                                )}
+                            </div>
                             <Link href="/supplier/signup" className="text-sm font-black uppercase tracking-[0.16em] text-primary">
                                 Join directory
                             </Link>

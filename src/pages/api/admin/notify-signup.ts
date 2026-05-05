@@ -2,6 +2,58 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { sendEmail } from '@/lib/email';
 import { getWelcomeEmailHtml } from '@/lib/email-templates';
 
+type SignupRecord = {
+  email?: string;
+  full_name?: string;
+  display_name?: string;
+  account_type?: string;
+  source?: string;
+};
+
+async function sendSignupToGhl(record: SignupRecord, signupDate: string) {
+  const webhookUrl = process.env.GHL_SIGNUP_WEBHOOK_URL;
+  if (!webhookUrl) {
+    return { success: true, skipped: true };
+  }
+
+  const email = (record.email || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    return { success: false, skipped: true, error: 'Missing signup email for GHL' };
+  }
+
+  const fullName = (record.full_name || record.display_name || '').trim();
+  const [firstName = '', ...lastNameParts] = fullName.split(/\s+/).filter(Boolean);
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        full_name: fullName || 'QuickWeds User',
+        first_name: firstName,
+        last_name: lastNameParts.join(' '),
+        account_type: record.account_type || 'unknown',
+        source: record.source || 'quickweds_signup',
+        signup_date: signupDate,
+        app: 'QuickWeds',
+        tags: ['quickweds', 'signup'],
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      return { success: false, error: `GHL webhook failed: ${response.status} ${text}` };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown GHL webhook error' };
+  }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // 1. Security Check: Only allow POST requests
   if (req.method !== 'POST') {
@@ -9,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // 2. Extract User Data (passed from Supabase Webhook)
-  const { record } = req.body;
+  const { record } = req.body as { record?: SignupRecord };
   if (!record) {
     return res.status(400).json({ error: 'No user record provided' });
   }
@@ -52,16 +104,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       html: getWelcomeEmailHtml(userName)
     });
 
-    // Run both emails in parallel for speed
-    const [adminResult, userResult] = await Promise.all([adminEmailPromise, userWelcomePromise]);
+    const ghlPromise = sendSignupToGhl(record, signupDate);
 
-    if (adminResult.success && userResult.success) {
-      return res.status(200).json({ success: true, message: 'All notifications sent successfully' });
+    // Run notifications in parallel for speed
+    const [adminResult, userResult, ghlResult] = await Promise.all([adminEmailPromise, userWelcomePromise, ghlPromise]);
+
+    if (adminResult.success && userResult.success && ghlResult.success) {
+      return res.status(200).json({ success: true, ghl: ghlResult, message: 'All notifications sent successfully' });
     } else {
       return res.status(207).json({ 
         success: false, 
         admin: adminResult.success, 
         user: userResult.success,
+        ghl: ghlResult,
         error: 'One or more emails failed to send' 
       });
     }

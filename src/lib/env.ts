@@ -23,6 +23,7 @@ const envSchema = z.object({
 
     ADMIN_EMAIL: z.string().email('Invalid admin email').optional(),
     NEXT_PUBLIC_ADMIN_EMAIL: z.string().email('Invalid public admin email').optional(),
+    GHL_SIGNUP_WEBHOOK_URL: z.string().url('Invalid GHL signup webhook URL').optional(),
 });
 
 export function validateEnv() {
@@ -43,6 +44,7 @@ export function validateEnv() {
         NEXT_PUBLIC_ROOT_DOMAIN: process.env.NEXT_PUBLIC_ROOT_DOMAIN,
         ADMIN_EMAIL: process.env.ADMIN_EMAIL,
         NEXT_PUBLIC_ADMIN_EMAIL: process.env.NEXT_PUBLIC_ADMIN_EMAIL,
+        GHL_SIGNUP_WEBHOOK_URL: process.env.GHL_SIGNUP_WEBHOOK_URL,
     };
 
     const result = envSchema.safeParse(envVars);

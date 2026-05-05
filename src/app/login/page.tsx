@@ -28,8 +28,13 @@ export default function LoginPage() {
             return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
         }
 
-        const profile = await getClientAccountProfile(token);
-        return getRoleAwareRedirect(profile?.account_type, nextPath);
+        try {
+            const profile = await getClientAccountProfile(token);
+            return getRoleAwareRedirect(profile?.account_type, nextPath);
+        } catch {
+            // Gracefully degrade — if account profile table is missing, go to default path
+            return getSafeAppPath(nextPath, '/dashboard');
+        }
     };
 
     const rememberNextPath = () => {
@@ -123,7 +128,7 @@ export default function LoginPage() {
                                 autoCapitalize="none"
                                 autoCorrect="off"
                                 spellCheck={false}
-                                className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
+                                className="icon-field-left w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="hello@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -142,7 +147,7 @@ export default function LoginPage() {
                                 type="password"
                                 required
                                 autoComplete="current-password"
-                                className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
+                                className="icon-field-left w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="********"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}

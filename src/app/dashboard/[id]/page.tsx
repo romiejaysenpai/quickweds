@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle } from 'lucide-react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Link from 'next/link';
@@ -17,6 +17,7 @@ import ConfettiCelebration from '@/components/ConfettiCelebration';
 import CopyButton from '@/components/CopyButton';
 import DarkModeToggle from '@/components/DarkModeToggle';
 import UpgradeButton from '@/components/UpgradeButton';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getClientAccountProfile, getRoleAwareRedirect } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
 import {
@@ -29,6 +30,14 @@ import {
     type PlusOneRsvpStatus,
     escapeCsvCell,
 } from '@/lib/guest-list';
+
+const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
+
+function getFirstName(user: any) {
+    const fullName = user?.user_metadata?.full_name || user?.user_metadata?.name || '';
+    const firstName = fullName.trim().split(/\s+/)[0];
+    return firstName || 'there';
+}
 
 async function copyText(text: string) {
     await copyToClipboard(text);
@@ -94,6 +103,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [copyToast, setCopyToast] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [checkingRole, setCheckingRole] = useState(true);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
 
     // Download QR Code function
     const downloadQRCode = () => {
@@ -559,39 +571,138 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             <ConfettiCelebration trigger={showConfetti} />
 
             {/* Header */}
-            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-neutral-900/85 sm:p-4">
-                <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 sm:gap-3 sm:px-4">
-                    <Link href="/" className="flex min-w-[88px] flex-shrink-0 items-center sm:min-w-[96px]" aria-label="QuickWeds">
-                        <img src="/logo.png" alt="QuickWeds Logo" className="h-8 w-auto object-contain transition-transform hover:scale-105 sm:h-10" />
-                    </Link>
-                    <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 overflow-hidden pl-1 sm:w-auto sm:flex-none sm:overflow-visible sm:pl-0 sm:gap-3">
+            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-neutral-900/90 sm:p-4">
+                <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-2 sm:px-4">
+                    <div className="flex items-center gap-8">
+                        <Link href="/" className="flex min-w-[88px] flex-shrink-0 items-center sm:min-w-[104px]" aria-label="QuickWeds">
+                            <img src="/logo.png" alt="QuickWeds Logo" className="h-8 w-auto object-contain transition-transform hover:scale-105 sm:h-12" />
+                        </Link>
+                    </div>
+
+                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-hidden pl-1 sm:w-auto sm:flex-none sm:overflow-visible sm:pl-0">
                         {canManageWorkspace && (
-                            <Link href={`/builder?edit=${wedding.id}`} className="hidden min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/10 transition-all hover:bg-primary-hover sm:flex sm:rounded-xl sm:px-6 sm:text-sm">
-                                Edit Design
+                            <Link
+                                href={`/builder?edit=${wedding.id}`}
+                                className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
+                            >
+                                <Sparkles className="w-4 h-4 flex-shrink-0" />
+                                <span className="hidden sm:inline">Edit Design</span>
+                                <span className="sm:hidden">Edit</span>
                             </Link>
                         )}
-                        <Link href={`/dashboard/${wedding.id}/planner`} className={`hidden min-h-[44px] flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold shadow-lg transition-all sm:flex sm:rounded-xl sm:px-6 sm:text-sm ${hasPlannerPro ? 'bg-secondary text-white shadow-secondary/10 hover:opacity-90' : 'bg-white text-primary border border-primary/20 shadow-primary/10 hover:bg-primary/5'}`}>
-                            <ListTodo className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">{hasPlannerPro ? 'Planner' : 'Planner Pro'}</span>
-                        </Link>
-                        <Link href={url} target="_blank" className="flex min-h-[40px] min-w-[40px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border bg-neutral px-2 py-2 text-xs font-bold text-primary transition-all hover:border-primary/30 dark:bg-neutral/30 sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:text-sm">
-                            <span className="hidden sm:inline">View</span> <ExternalLink className="w-4 h-4 flex-shrink-0" />
-                        </Link>
-                        {/* Dark Mode Toggle */}
-                        <DarkModeToggle variant="minimal" />
+                        
                         <button
                             type="button"
-                            onClick={handleLogout}
-                            disabled={isLoggingOut}
-                            className="inline-flex min-h-[40px] min-w-[40px] flex-shrink-0 items-center justify-center rounded-lg border border-border bg-white px-2 text-text-secondary transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary disabled:opacity-60 sm:min-h-[44px] sm:min-w-[44px] sm:rounded-xl sm:px-4"
-                            aria-label="Log out"
-                            title="Log out"
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary hover:bg-primary/5 hover:text-primary"
+                            aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
                         >
-                            {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-                            <span className="ml-2 hidden text-xs font-bold md:inline">Logout</span>
+                            {isMobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* Right Side Burger Menu (Drawer) */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <div className="fixed inset-0 z-[150]">
+                        {/* Backdrop */}
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={closeMobileMenu}
+                            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                        />
+                        
+                        {/* Drawer Panel */}
+                        <motion.div 
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="absolute right-0 top-0 h-full w-[280px] sm:w-[320px] bg-white shadow-2xl border-l border-border flex flex-col"
+                        >
+                            <div className="p-5 flex items-center justify-between border-b border-border bg-neutral/30">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Workspace Menu</span>
+                                <button onClick={closeMobileMenu} className="w-9 h-9 rounded-full bg-white border border-border flex items-center justify-center text-text-secondary hover:text-primary transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                                <div className="mb-4">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary/50 mb-3 ml-1">Tools & Planning</p>
+                                    <div className="grid gap-2">
+                                        <Link 
+                                            href={`/dashboard/${wedding.id}/planner`} 
+                                            onClick={closeMobileMenu} 
+                                            className="flex h-14 items-center justify-between rounded-xl bg-primary/5 px-4 text-sm font-bold text-primary transition hover:bg-primary/10 border border-primary/10"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <ListTodo className="w-4 h-4" />
+                                                Planner
+                                            </span>
+                                            <ArrowRight className="h-4 w-4 opacity-30" />
+                                        </Link>
+                                        <Link 
+                                            href={url} 
+                                            target="_blank"
+                                            onClick={closeMobileMenu} 
+                                            className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <ExternalLink className="w-4 h-4" />
+                                                View Live Site
+                                            </span>
+                                            <ArrowRight className="h-4 w-4 opacity-20" />
+                                        </Link>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary/50 mb-3 ml-1">General</p>
+                                    <div className="grid gap-2">
+                                        {[
+                                            { label: 'Directory', href: '/suppliers', icon: MapPin },
+                                            { label: 'Guide', href: '/user-guide', icon: BookOpen },
+                                            { label: 'Settings', href: '/settings', icon: Settings },
+                                            { label: 'Admin Support', href: '/support', icon: LifeBuoy },
+                                        ].map((item) => (
+                                            <Link 
+                                                key={item.label}
+                                                href={item.href} 
+                                                onClick={closeMobileMenu} 
+                                                className="flex h-12 items-center justify-between rounded-xl bg-neutral/20 px-4 text-xs font-bold text-text-secondary transition hover:bg-primary/5 hover:text-primary border border-transparent"
+                                            >
+                                                <span className="flex items-center gap-3">
+                                                    <item.icon className="w-4 h-4 opacity-50" />
+                                                    {item.label}
+                                                </span>
+                                                <ArrowRight className="h-4 w-4 opacity-20" />
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-4 border-t border-border bg-neutral/10">
+                                <button 
+                                    onClick={() => { closeMobileMenu(); handleLogout(); }} 
+                                    className="flex h-14 items-center justify-between rounded-xl bg-white px-4 text-sm font-bold text-red-600 transition hover:bg-red-50 border border-border w-full text-left"
+                                >
+                                    <span className="flex items-center gap-3">
+                                        <LogOut className="w-4 h-4 opacity-70" />
+                                        Logout
+                                    </span>
+                                    <ArrowRight className="h-4 w-4 opacity-30" />
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-12 text-left">
                 {/* Mobile Tab Navigation (Fixed Bottom) */}
@@ -618,71 +729,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     </button>
                 </div>
 
-                {/* Mobile View Switching Header */}
-                <div className="sm:hidden mb-6 flex justify-between items-end">
-                    <div>
-                        <h2 className="text-2xl font-serif font-bold text-foreground">
-                            {activeTab === 'home' ? 'Dashboard' : activeTab === 'guests' ? 'Guest List' : activeTab === 'analytics' ? 'Insights' : activeTab === 'team' ? 'Collaborators' : 'Settings'}
-                        </h2>
-                        <p className="text-[10px] font-bold text-text-secondary/50 uppercase tracking-widest">
-                            {wedding.bride_name} & {wedding.groom_name}
-                        </p>
-                    </div>
-                    {activeTab !== 'home' && (
-                        <button onClick={() => setActiveTab('home')} className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1">
-                            Overview <ArrowRight className="w-3 h-3" />
-                        </button>
-                    )}
-                </div>
+
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12">
                     <div className="lg:col-span-2 space-y-6 sm:space-y-8">
                         
-                        {/* Mobile Home Hub / Widgets */}
-                        {activeTab === 'home' && (
-                            <div className="grid grid-cols-2 sm:hidden gap-3 mb-2 animate-in fade-in slide-in-from-bottom-2">
-                                <Link 
-                                    href={`/builder?edit=${wedding.id}`}
-                                    className="flex flex-col items-center justify-center p-6 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
-                                >
-                                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
-                                        <Sparkles className="w-6 h-6" />
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Edit Page</span>
-                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-active:opacity-100 transition-opacity" />
-                                </Link>
-                                <Link 
-                                    href={`/dashboard/${wedding.id}/planner`}
-                                    className="flex flex-col items-center justify-center p-6 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
-                                >
-                                    <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-3">
-                                        <ListTodo className="w-6 h-6" />
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">{hasPlannerPro ? 'Planner' : 'Planner Pro'}</span>
-                                    <div className="absolute inset-0 bg-secondary/5 opacity-0 group-active:opacity-100 transition-opacity" />
-                                </Link>
-                                <button 
-                                    onClick={() => setActiveTab('guests')}
-                                    className="flex flex-col items-center justify-center p-6 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
-                                >
-                                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-3">
-                                        <Users className="w-6 h-6" />
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Guest List</span>
-                                    <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-active:opacity-100 transition-opacity" />
-                                </button>
-                                <button 
-                                    onClick={() => setActiveTab('analytics')}
-                                    className="flex flex-col items-center justify-center p-6 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
-                                >
-                                    <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 mb-3">
-                                        <PieChartIcon className="w-6 h-6" />
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Insights</span>
-                                    <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-active:opacity-100 transition-opacity" />
-                                </button>
-                            </div>
-                        )}
+
 
                         {created && activeTab === 'home' && (
                             <div className="mb-8 p-4 rounded-xl bg-success-bg border border-border flex flex-row items-center gap-4 relative overflow-hidden sm:hidden">
@@ -698,46 +750,119 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         )}
 
                         {/* Desktop Only / Mobile Home Hero */}
-                        {(activeTab === 'home') && (
-                            <div className="hidden sm:flex p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/20 dark:to-accent/20 border border-primary/20 flex-col md:flex-row items-start md:items-center justify-between gap-6 group soft-shadow relative overflow-hidden">
-                                <div className="absolute inset-0 bg-white/5 dark:bg-black/5 pointer-events-none" />
-                                
-                                <div className="relative z-10 space-y-2">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                                        <Sparkles className="w-3 h-3" /> Planner Pro
+                        {activeTab === 'home' && (
+                            <motion.section
+                                initial={{ opacity: 0, y: 18 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="relative isolate mb-8 overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-2xl shadow-primary/10 sm:mb-12 sm:rounded-[2.25rem]"
+                            >
+                                <div className="p-4 sm:p-7 lg:p-9">
+                                    <div className="relative z-10 flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <p className="inline-flex rounded-full bg-primary/5 px-3 py-1 text-[9px] font-black uppercase tracking-[0.22em] text-primary/70 ring-1 ring-primary/10 sm:text-[10px]">
+                                                {wedding.wedding_date}
+                                            </p>
+                                            <h1 className="mt-3 max-w-3xl font-serif text-[1.5rem] sm:text-[2rem] font-black leading-[1.1] text-foreground sm:text-4xl">
+                                                Workspace: <span className="text-primary">{wedding.bride_name} & {wedding.groom_name}</span><span className="text-accent">.</span>
+                                            </h1>
+                                            <p className="mt-2 text-xs sm:text-sm text-text-secondary max-w-sm">
+                                                Welcome back, {getFirstName(user)}! Your wedding workspace is ready for updates.
+                                            </p>
+                                        </div>
                                     </div>
-                                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground mb-2 leading-tight">
-                                        Smart Wedding <span className="italic text-primary">Planner</span>
-                                    </h2>
-                                    <p className="text-sm sm:text-base text-text-secondary max-w-md">
-                                        {hasPlannerPro
-                                            ? 'Track budgets, vendors, seating, tasks, collaborators, and post-wedding details in one workspace.'
-                                            : 'Your website builder and RSVP flow are free. Upgrade when you are ready to organize budgets, vendors, seating, tasks, collaborators, reminders, photos, and thank-you tools.'}
-                                    </p>
+
+                                    <div className="relative left-1/2 mt-5 h-[128px] w-screen max-w-[calc(100%+2rem)] -translate-x-1/2 overflow-visible sm:-mx-7 sm:left-auto sm:w-auto sm:max-w-none sm:translate-x-0 sm:mt-8 sm:h-[300px] lg:-mx-9 lg:h-[340px]">
+                                        <div className="absolute inset-0 bg-primary" />
+                                        <div
+                                            className="absolute inset-x-[-32%] top-[-58px] z-10 h-[112px] bg-white sm:inset-x-[-24%] sm:top-[-92px] sm:h-[168px]"
+                                            style={{ borderRadius: '0 0 50% 50% / 0 0 74% 74%' }}
+                                        />
+
+                                        <img
+                                            src={WELCOME_CHARACTER_URL}
+                                            alt="QuickWeds welcome character"
+                                            className="absolute bottom-0 left-[-14px] z-[60] h-[152px] w-auto object-contain drop-shadow-2xl transition duration-500 hover:-translate-y-2 hover:scale-[1.03] sm:left-[-6px] sm:h-[300px] lg:left-4 lg:h-[360px]"
+                                        />
+
+                                        <div className="absolute left-[52%] right-3 top-[-6px] z-50 rounded-[1.2rem] bg-white px-3 py-2 pr-4 shadow-[0_18px_50px_rgba(122,90,97,0.18)] ring-1 ring-primary/10 sm:left-[50%] sm:right-2 sm:top-8 sm:rounded-[1.75rem] sm:px-6 sm:py-5 sm:pr-7 lg:left-[43%] lg:right-6 lg:max-w-2xl">
+                                            <span className="absolute left-[-13px] top-1/2 h-0 w-0 -translate-y-1/2 border-y-[12px] border-r-[14px] border-y-transparent border-r-white" />
+                                            <p className="text-[12px] font-black text-primary sm:text-base">Workspace Pro</p>
+                                            <p className="mt-1 text-[11px] font-semibold leading-[1.45] text-text-secondary sm:mt-2 sm:text-base sm:leading-7">
+                                                Track budgets, vendors, seating, and RSVPs all in one place. Your special day is coming soon!
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
+                                        <Link href={`/dashboard/${wedding.id}/planner`} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold text-xs sm:text-sm shadow-xl shadow-primary/20 hover:-translate-y-0.5 transition-all">
+                                            <ListTodo className="w-4 h-4" /> Open Planner
+                                        </Link>
+                                        <Link href={url} target="_blank" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border bg-white text-text-secondary font-bold text-xs sm:text-sm hover:bg-neutral transition-all">
+                                            <ExternalLink className="w-4 h-4" /> Live Site
+                                        </Link>
+                                    </div>
                                 </div>
-                                
-                                {hasPlannerPro ? (
-                                    <Link href={`/dashboard/${wedding.id}/planner`} className="relative z-10 shrink-0 px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
-                                        Open Planner <ArrowRight className="w-5 h-5" />
-                                    </Link>
-                                ) : (
-                                    <UpgradeButton weddingId={wedding.id} className="relative z-10 shrink-0 justify-center px-8 py-4 rounded-2xl text-sm uppercase tracking-widest" />
-                                )}
+                            </motion.section>
+                        )}
+
+                        {/* Mobile Home Hub / Widgets - Even smaller now */}
+                        {activeTab === 'home' && (
+                            <div className="grid grid-cols-2 sm:hidden gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2">
+                                <Link 
+                                    href={`/builder?edit=${wedding.id}`}
+                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1.5">
+                                        <Sparkles className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">Edit Page</span>
+                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-active:opacity-100 transition-opacity" />
+                                </Link>
+                                <Link 
+                                    href={`/dashboard/${wedding.id}/planner`}
+                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-1.5">
+                                        <ListTodo className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">{hasPlannerPro ? 'Planner' : 'Planner Pro'}</span>
+                                    <div className="absolute inset-0 bg-secondary/5 opacity-0 group-active:opacity-100 transition-opacity" />
+                                </Link>
+                                <button 
+                                    onClick={() => setActiveTab('guests')}
+                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-1.5">
+                                        <Users className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">Guest List</span>
+                                    <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-active:opacity-100 transition-opacity" />
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('analytics')}
+                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 mb-1.5">
+                                        <PieChartIcon className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">Insights</span>
+                                    <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-active:opacity-100 transition-opacity" />
+                                </button>
                             </div>
                         )}
 
-                        {/* Mobile Home Quick Stats Summary */}
+                        {/* Mobile Home Quick Stats Summary - Even smaller now */}
                         {activeTab === 'home' && (
-                            <div className="sm:hidden grid grid-cols-2 gap-3 mb-6">
-                                <div className="p-5 rounded-[2rem] bg-white dark:bg-neutral-800 border border-border soft-shadow">
-                                    <p className="text-[8px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Guests</p>
-                                    <p className="text-3xl font-serif font-bold text-primary">{stats.confirmed}</p>
-                                    <p className="text-[8px] font-bold text-text-secondary/40 mt-1 uppercase tracking-widest">Confirmed</p>
+                            <div className="sm:hidden grid grid-cols-2 gap-2 mb-4">
+                                <div className="p-4 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center">
+                                    <p className="text-[7px] uppercase font-black tracking-widest text-text-secondary/50 mb-0.5">Guests</p>
+                                    <p className="text-2xl font-serif font-bold text-primary">{stats.confirmed}</p>
+                                    <p className="text-[7px] font-bold text-text-secondary/40 uppercase tracking-widest">Confirmed</p>
                                 </div>
-                                <div className="p-5 rounded-[2rem] bg-white dark:bg-neutral-800 border border-border soft-shadow">
-                                    <p className="text-[8px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Budget</p>
-                                    <p className="text-3xl font-serif font-bold text-secondary">{stats.budgetPercent}%</p>
-                                    <p className="text-[8px] font-bold text-text-secondary/40 mt-1 uppercase tracking-widest">Utilized</p>
+                                <div className="p-4 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center">
+                                    <p className="text-[7px] uppercase font-black tracking-widest text-text-secondary/50 mb-0.5">Budget</p>
+                                    <p className="text-2xl font-serif font-bold text-secondary">{stats.budgetPercent}%</p>
+                                    <p className="text-[7px] font-bold text-text-secondary/40 uppercase tracking-widest">Utilized</p>
                                 </div>
                             </div>
                         )}
@@ -1262,9 +1387,11 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <input 
                                         type="number" 
                                         min="1"
-                                        value={newGuest.num_guests}
-                                        onChange={e => setNewGuest({...newGuest, num_guests: parseInt(e.target.value) || 1})}
-                                        className="w-full bg-neutral border border-border rounded-lg sm:rounded-2xl px-3 sm:px-6 py-2 sm:py-4 outline-none focus:ring-primary/20 font-mono text-xs sm:text-base min-h-[44px]"
+                                        inputMode="numeric"
+                                        placeholder="0"
+                                        value={newGuest.num_guests === 0 ? '' : newGuest.num_guests}
+                                        onChange={e => setNewGuest({...newGuest, num_guests: e.target.value === '' ? 0 : parseInt(e.target.value)})}
+                                        className="w-full bg-neutral border border-border rounded-lg sm:rounded-2xl px-3 sm:px-6 py-2 sm:py-4 outline-none focus:ring-primary/20 font-mono text-xs sm:text-base min-h-[44px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     />
                                 </div>
                             </div>

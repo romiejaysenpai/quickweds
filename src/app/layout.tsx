@@ -61,8 +61,8 @@ const herr = Herr_Von_Muellerhoff({ variable: "--font-herr", weight: "400", subs
 const lavishly = Lavishly_Yours({ variable: "--font-lavishly", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "QuickWeds | Instant Elegant Wedding Landing Pages",
-  description: "Create a beautiful, mobile-first wedding invitation landing page with an integrated RSVP system in minutes.",
+  title: "QuickWeds | Elegant Wedding Websites & Digital Planner",
+  description: "Create a beautiful, mobile-first wedding website for free. Manage RSVPs, track budgets, organize seating charts, and collaborate with your partner seamlessly.",
   applicationName: "QuickWeds",
   appleWebApp: {
     capable: true,

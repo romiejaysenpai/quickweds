@@ -38,6 +38,7 @@ export default function AuthCallbackPage() {
                     record: {
                         email: user.email,
                         full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'OAuth User',
+                        source: 'oauth_signup',
                     }
                 })
             }).catch(err => console.error('OAuth Notification Error:', err));
@@ -49,8 +50,13 @@ export default function AuthCallbackPage() {
                 return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
             }
 
-            const profile = await getClientAccountProfile(token);
-            return getRoleAwareRedirect(profile?.account_type, nextPath);
+            try {
+                const profile = await getClientAccountProfile(token);
+                return getRoleAwareRedirect(profile?.account_type, nextPath);
+            } catch {
+                // Gracefully degrade — if account profile table is missing, go to default path
+                return getSafeAppPath(nextPath, '/dashboard');
+            }
         };
 
         const finishSignIn = async (user: User, token: string, nextPath: string) => {

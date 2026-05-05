@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 
 /**
@@ -8,17 +8,10 @@ import { isKnownAdminEmail } from '@/lib/admin';
  */
 export async function GET(req: NextRequest) {
     try {
-        const authHeader = req.headers.get('authorization');
-        if (!authHeader?.startsWith('Bearer ')) {
-            return NextResponse.json({ isAdmin: false }, { status: 401 });
-        }
-
-        const token = authHeader.slice(7);
-
-        const { data: { user }, error } = await supabase.auth.getUser(token);
+        const { user, error } = await getRequestUser(req);
 
         if (error || !user?.email) {
-            console.log('Admin check — no user or email:', error?.message);
+            console.log('Admin check — no user or email:', error);
             return NextResponse.json({ isAdmin: false }, { status: 401 });
         }
 

@@ -1,14 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminDebugPage() {
     const { user, isAdmin, loading } = useAuth();
+    const router = useRouter();
     const [apiResult, setApiResult] = useState<any>(null);
     const [envAdmin, setEnvAdmin] = useState<string>('');
 
     useEffect(() => {
+        if (loading) return;
+        if (!user) {
+            router.replace('/login?next=/debug/admin-test');
+            return;
+        }
+        if (!isAdmin) {
+            router.replace('/dashboard');
+            return;
+        }
+
         // Show what env says (client-accessible only)
         setEnvAdmin(process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'not set');
 
@@ -17,7 +29,17 @@ export default function AdminDebugPage() {
             .then(res => res.json())
             .then(setApiResult)
             .catch(err => setApiResult({ error: err.message }));
-    }, []);
+    }, [isAdmin, loading, router, user]);
+
+    if (loading || !user || !isAdmin) {
+        return (
+            <div className="min-h-screen bg-neutral p-8 flex items-center justify-center">
+                <div className="rounded-2xl bg-white p-6 text-center shadow-xl">
+                    <p className="font-bold text-foreground">Checking admin access...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-neutral p-8">

@@ -65,8 +65,8 @@ function VendorPaymentStatusSelect({
                 value={normalized}
                 onChange={(e) => onChange(e.target.value as VendorPaymentStatus)}
                 aria-label="Vendor payment status"
-                className={`w-full appearance-none rounded-xl border pr-9 font-sans font-extrabold uppercase tracking-[0.14em] outline-none transition-all duration-200 hover:-translate-y-px hover:shadow-md focus:ring-4 ${
-                    compact ? 'min-h-[40px] px-3 py-2 text-[9px] sm:text-[10px]' : 'min-h-[44px] px-3.5 py-2.5 text-[10px] sm:text-xs'
+                className={`w-full appearance-none rounded-xl border pr-9 font-sans font-bold uppercase tracking-wider outline-none transition-all duration-200 hover:-translate-y-px hover:shadow-md focus:ring-4 ${
+                    compact ? 'min-h-[36px] px-3 py-1.5 text-[8px] sm:text-[9px]' : 'min-h-[40px] px-3.5 py-2 text-[9px] sm:text-[11px]'
                 } ${getVendorPaymentStatusClasses(normalized)}`}
             >
                 {VENDOR_PAYMENT_STATUS_OPTIONS.map((option) => (
@@ -108,6 +108,8 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
     useEffect(() => {
         if (!authLoading && !user) {
+            setCheckingRole(false);
+            setLoading(false);
             router.push('/login');
             return;
         }
@@ -123,24 +125,35 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             const token = sessionData.session?.access_token;
 
             if (!token) {
+                setCheckingRole(false);
+                setLoading(false);
                 router.push('/login');
                 return;
             }
 
             try {
                 if (!isAdmin) {
-                    const accountProfile = await getClientAccountProfile(token);
-                    if (accountProfile?.account_type !== 'couple') {
-                        router.replace(getRoleAwareRedirect(accountProfile?.account_type, `/dashboard/${weddingId}/planner`));
-                        return;
+                    try {
+                        const accountProfile = await getClientAccountProfile(token);
+                        if (accountProfile?.account_type === 'supplier') {
+                            setCheckingRole(false);
+                            setLoading(false);
+                            router.replace(getRoleAwareRedirect(accountProfile.account_type, `/dashboard/${weddingId}/planner`));
+                            return;
+                        }
+                    } catch (profileErr) {
+                        // Gracefully degrade — if account profile table is missing or API fails,
+                        // treat user as a regular couple user and continue loading.
+                        console.warn('Account profile check skipped (table may not exist):', profileErr);
                     }
                 }
 
                 setCheckingRole(false);
                 await loadPlannerData();
             } catch (err) {
-                console.error('Account role check failed:', err);
-                router.replace(getRoleAwareRedirect(null, `/dashboard/${weddingId}/planner`));
+                console.error('Planner load failed:', err);
+                setCheckingRole(false);
+                setLoading(false);
             }
         };
 
@@ -162,6 +175,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
             const response = await fetch(`/api/planner/load?weddingId=${encodeURIComponent(weddingId)}`, {
                 headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store',
             });
             const data = await response.json();
 
@@ -479,16 +493,16 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({ category: 'Venue', item_name: '', estimated_cost: '' });
 
-    // Local states for inputs to avoid jitter/focus issues
-    const [localBudget, setLocalBudget] = useState(wedding?.total_budget || 0);
+    // Local states for inputs to avoid jitter/focus issues and handle empty strings nicely
+    const [localBudget, setLocalBudget] = useState<string | number>(wedding?.total_budget || '');
     const [localCurrency, setLocalCurrency] = useState(wedding?.currency || 'USD');
-    const [localGuestLimit, setLocalGuestLimit] = useState(wedding?.guest_limit || 0);
+    const [localGuestLimit, setLocalGuestLimit] = useState<string | number>(wedding?.guest_limit || '');
 
     useEffect(() => {
         if (wedding) {
-            setLocalBudget(wedding.total_budget || 0);
+            setLocalBudget(wedding.total_budget || '');
             setLocalCurrency(wedding.currency || 'USD');
-            setLocalGuestLimit(wedding.guest_limit || 0);
+            setLocalGuestLimit(wedding.guest_limit || '');
         }
     }, [wedding]);
 
@@ -607,14 +621,14 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
                     <div className="rounded-xl border border-border bg-neutral/40 p-2.5 sm:col-span-2 sm:p-3 xl:col-span-1">
                         <p className="text-[9px] uppercase font-black tracking-widest text-text-secondary">Budget</p>
-                        <div className="mt-2 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
+                        <div className="mt-2 grid grid-cols-[7.5rem_minmax(0,1fr)] gap-2">
                             <select 
                                 value={localCurrency} 
                                 onChange={e => {
                                     setLocalCurrency(e.target.value);
                                     saveWeddingBudget('currency', e.target.value);
                                 }}
-                                className="h-11 w-full rounded-lg border border-border bg-white px-2 text-[11px] font-bold outline-none focus:ring-primary/20"
+                                className="h-11 w-full rounded-lg border border-border bg-white px-2 text-[12px] font-bold outline-none focus:ring-primary/20"
                             >
                                 <option value="USD">USD ($)</option>
                                 <option value="Yen">Yen (¥)</option>
@@ -624,10 +638,15 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold text-sm pointer-events-none">{currencySymbol}</span>
                                 <input 
                                     type="number" 
+                                    inputMode="decimal"
+                                    placeholder="0"
                                     value={localBudget}
-                                    onChange={e => setLocalBudget(parseFloat(e.target.value) || 0)}
-                                    onBlur={e => saveWeddingBudget('total_budget', parseFloat(e.target.value) || 0)}
-                                    className="h-11 w-full min-w-0 rounded-lg border border-border bg-white pl-8 pr-3 text-right font-mono text-base font-bold tabular-nums text-primary outline-none focus:ring-primary/20"
+                                    onChange={e => setLocalBudget(e.target.value)}
+                                    onBlur={e => {
+                                        const val = parseFloat(e.target.value) || 0;
+                                        saveWeddingBudget('total_budget', val);
+                                    }}
+                                    className="icon-field-left-compact h-11 w-full min-w-0 rounded-lg border border-border bg-white pl-8 pr-3 text-right font-mono text-base font-bold tabular-nums text-primary outline-none focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
                         </div>
@@ -636,19 +655,18 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                         <p className="text-[9px] uppercase font-black tracking-widest text-text-secondary">Guests</p>
                         <div className="relative mt-2">
                             <Users className="absolute left-2 top-1/2 -translate-y-1/2 text-primary w-4 h-4 pointer-events-none" />
-                            <input 
-                                type="number" 
-                                value={localGuestLimit}
-                                onChange={e => {
-                                    const val = parseInt(e.target.value) || 0;
-                                    setLocalGuestLimit(val);
-                                }}
-                                onBlur={e => {
-                                    const val = parseInt(e.target.value) || 0;
-                                    saveWeddingBudget('guest_limit', val);
-                                }}
-                                className="h-11 w-full rounded-lg border border-border bg-white pl-8 pr-3 text-right font-mono text-base font-bold tabular-nums text-primary outline-none focus:ring-primary/20"
-                            />
+                                <input 
+                                    type="number" 
+                                    inputMode="numeric"
+                                    placeholder="0"
+                                    value={localGuestLimit}
+                                    onChange={e => setLocalGuestLimit(e.target.value)}
+                                    onBlur={e => {
+                                        const val = parseInt(e.target.value) || 0;
+                                        saveWeddingBudget('guest_limit', val);
+                                    }}
+                                    className="icon-field-left-compact h-11 w-full rounded-lg border border-border bg-white pl-8 pr-3 text-right font-mono text-base font-bold tabular-nums text-primary outline-none focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
                         </div>
                     </div>
                     <div className="rounded-xl border border-border bg-neutral/40 p-2.5 sm:p-3">
@@ -782,10 +800,11 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                             <input 
                                 required
                                 type="number" 
-                                placeholder="0.00" 
+                                inputMode="decimal"
+                                placeholder="0" 
                                 value={newItem.estimated_cost}
                                 onChange={e => setNewItem({...newItem, estimated_cost: e.target.value})}
-                                className="w-full min-w-0 bg-white border border-border rounded-lg pl-8 pr-3 py-2.5 outline-none focus:ring-primary/20 font-mono text-base tabular-nums min-h-[44px]"
+                                className="icon-field-left-compact w-full min-w-0 bg-white border border-border rounded-lg pl-8 pr-3 py-2.5 outline-none focus:ring-primary/20 font-mono text-base tabular-nums min-h-[44px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                         </div>
                     </div>
@@ -815,7 +834,7 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                 <div className="divide-y divide-border/30 max-h-[310px] overflow-y-auto">
                                     {items.map((item: any) => (
                                         <div key={item.id} className="px-3 py-2.5 sm:px-4 flex justify-between items-center group hover:bg-neutral/10 gap-2 text-xs sm:text-sm">
-                                            <p className="font-serif truncate">{item.item_name}</p>
+                                            <p className="font-serif break-words">{item.item_name}</p>
                                             <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                                                 <span className="font-mono text-text-secondary text-xs sm:text-sm whitespace-nowrap">{currencySymbol}{Number(item.estimated_cost).toLocaleString()}</span>
                                                 <button onClick={() => deleteItem(item.id)} className="text-red-400 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity min-h-[36px] min-w-[36px] flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
@@ -834,8 +853,8 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                         <Users className="w-4 h-4 sm:w-5 sm:h-5 text-secondary flex-shrink-0" /> Actual Vendor Spending
                     </h3>
                     <div className="bg-white border border-border rounded-lg sm:rounded-xl overflow-hidden soft-shadow">
-                        <div className="overflow-x-auto -mx-4 sm:mx-0">
-                        <table className="w-full text-left border-collapse text-xs sm:text-base px-4 sm:px-0">
+                        <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs sm:text-base">
                             <thead>
                                 <tr className="bg-neutral/30 border-b border-border sticky top-0">
                                     <th className="px-3 sm:px-4 py-2 text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary">Vendor / Role</th>
@@ -849,9 +868,9 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                 ) : (
                                     vendors.map((vendor: any) => (
                                         <tr key={vendor.id} className="hover:bg-neutral/10 transition-colors">
-                                            <td className="px-3 sm:px-4 py-2">
-                                                <p className="font-bold text-foreground text-xs sm:text-base line-clamp-1">{vendor.name}</p>
-                                                <p className="text-[7px] sm:text-[10px] uppercase tracking-widest text-primary font-black opacity-60">{vendor.role}</p>
+                                            <td className="px-3 sm:px-4 py-2 min-w-[120px] sm:min-w-0">
+                                                <p className="font-bold text-foreground text-xs sm:text-base whitespace-normal break-words leading-tight">{vendor.name}</p>
+                                                <p className="text-[7px] sm:text-[10px] uppercase tracking-widest text-primary font-black opacity-60 mt-0.5">{vendor.role}</p>
                                             </td>
                                             <td className="px-3 sm:px-4 py-2 text-right font-mono font-bold text-xs sm:text-sm">
                                                 {currencySymbol}{Number(vendor.amount || 0).toLocaleString()}
@@ -996,10 +1015,11 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-sm font-bold pointer-events-none">{currencySymbol}</span>
                             <input 
                                 type="number" 
-                                placeholder="0.00" 
+                                inputMode="decimal"
+                                placeholder="0" 
                                 value={newItem.amount}
                                 onChange={e => setNewItem({...newItem, amount: e.target.value})}
-                                className="w-full min-w-0 bg-neutral border border-border rounded-lg sm:rounded-xl pl-8 pr-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 font-mono text-base tabular-nums min-h-[44px]"
+                                className="icon-field-left-compact w-full min-w-0 bg-neutral border border-border rounded-lg sm:rounded-xl pl-8 pr-3 py-2.5 sm:py-3 outline-none focus:ring-primary/20 font-mono text-base tabular-nums min-h-[44px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                         </div>
                     </div>

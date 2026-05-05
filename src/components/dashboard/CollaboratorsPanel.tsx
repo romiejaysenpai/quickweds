@@ -116,28 +116,28 @@ export default function CollaboratorsPanel({
     };
 
     return (
-        <div className="p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-3xl bg-white border border-border soft-shadow space-y-5">
-            <div>
-                <h3 className="text-lg sm:text-xl font-serif font-bold text-foreground flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-primary" /> Collaboration Access
+        <div className="overflow-hidden rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-3xl sm:p-6 md:p-8">
+            <div className="space-y-1">
+                <h3 className="flex items-center gap-2 text-lg font-serif font-bold text-foreground sm:text-xl">
+                    <ShieldCheck className="h-5 w-5 flex-shrink-0 text-primary" /> Collaboration Access
                 </h3>
                 <p className="text-xs sm:text-sm text-text-secondary">Invite a partner or coordinator to work inside this wedding workspace.</p>
             </div>
 
             {canManage && (
-                <div className="space-y-3">
-                    <form onSubmit={submitInvite} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
+                <div className="mt-5 space-y-3">
+                    <form onSubmit={submitInvite} className="grid grid-cols-1 items-stretch gap-3 xl:grid-cols-[minmax(320px,1fr)_160px_124px] 2xl:grid-cols-1">
                         <input
                             type="email"
                             placeholder="partner@example.com"
                             value={inviteEmail}
                             onChange={(e) => setInviteEmail(e.target.value)}
-                            className="px-4 py-3 rounded-xl border border-border bg-neutral dark:bg-neutral/40 text-sm outline-none focus:border-primary min-h-[44px]"
+                            className="h-12 min-w-0 rounded-xl border border-border bg-neutral px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 dark:bg-neutral/40"
                         />
                         <select
                             value={inviteRole}
                             onChange={(e) => setInviteRole(e.target.value as CollaboratorRole)}
-                            className="px-4 py-3 rounded-xl border border-border bg-neutral dark:bg-neutral/40 text-sm outline-none focus:border-primary min-h-[44px]"
+                            className="h-12 min-w-0 rounded-xl border border-border bg-neutral px-4 text-sm font-bold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 dark:bg-neutral/40"
                         >
                             <option value="partner">Partner</option>
                             <option value="coordinator">Coordinator</option>
@@ -145,7 +145,7 @@ export default function CollaboratorsPanel({
                         <button
                             type="submit"
                             disabled={submitting || !inviteEmail.trim()}
-                            className="px-4 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-hover transition-all disabled:opacity-50 min-h-[44px] inline-flex items-center justify-center gap-2"
+                            className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition-all hover:bg-primary-hover disabled:opacity-50"
                         >
                             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                             Invite
@@ -160,29 +160,29 @@ export default function CollaboratorsPanel({
             )}
 
             {loading ? (
-                <div className="flex items-center justify-center py-6">
+                <div className="mt-5 flex items-center justify-center py-6">
                     <Loader2 className="w-5 h-5 text-primary animate-spin" />
                 </div>
             ) : collaborators.length === 0 ? (
-                <p className="text-sm text-text-secondary">No collaborators added yet.</p>
+                <p className="mt-5 text-sm text-text-secondary">No collaborators added yet.</p>
             ) : (
-                <div className="space-y-3">
+                <div className="mt-5 space-y-3">
                     {collaborators.map((collaborator) => {
                         const isOwnInvite = collaborator.email.toLowerCase() === (currentUserEmail || '').toLowerCase();
 
                         return (
-                            <div key={collaborator.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-neutral/40 dark:bg-neutral/30 border border-border">
-                                <div>
-                                    <p className="font-bold text-foreground text-sm">{collaborator.email}</p>
+                            <div key={collaborator.id} className="grid grid-cols-1 items-center gap-3 rounded-2xl border border-border bg-neutral/40 p-4 dark:bg-neutral/30 md:grid-cols-[minmax(0,1fr)_auto]">
+                                <div className="min-w-0">
+                                    <p className="truncate text-sm font-bold text-foreground" title={collaborator.email}>{collaborator.email}</p>
                                     <p className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60">
                                         {ROLE_COPY[collaborator.role]} · {STATUS_COPY[collaborator.status]}
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex min-w-0 items-center justify-start gap-2 md:justify-end">
                                     {collaborator.status === 'pending' && isOwnInvite && (
                                         <button
                                             onClick={() => acceptInvite(collaborator.id)}
-                                            className="px-3 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-all min-h-[44px]"
+                                            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-xs font-bold text-white transition-all hover:bg-primary-hover"
                                         >
                                             Accept Invite
                                         </button>

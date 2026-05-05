@@ -29,8 +29,13 @@ export default function SignUpPage() {
             return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
         }
 
-        const profile = await getClientAccountProfile(token);
-        return getRoleAwareRedirect(profile?.account_type, nextPath);
+        try {
+            const profile = await getClientAccountProfile(token);
+            return getRoleAwareRedirect(profile?.account_type, nextPath);
+        } catch {
+            // Gracefully degrade — if account profile table is missing, go to default path
+            return getSafeAppPath(nextPath, '/dashboard');
+        }
     };
 
     const rememberNextPath = () => {
@@ -68,6 +73,7 @@ export default function SignUpPage() {
                     record: {
                         email: normalizedEmail,
                         full_name: trimmedName,
+                        source: 'email_signup',
                     }
                 })
             }).catch(err => console.error('Notification Error:', err));
@@ -140,7 +146,7 @@ export default function SignUpPage() {
                                 type="text"
                                 required
                                 autoComplete="name"
-                                className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
+                                className="icon-field-left w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="John Doe"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
@@ -160,7 +166,7 @@ export default function SignUpPage() {
                                 autoCapitalize="none"
                                 autoCorrect="off"
                                 spellCheck={false}
-                                className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
+                                className="icon-field-left w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="hello@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -176,7 +182,7 @@ export default function SignUpPage() {
                                 type="password"
                                 required
                                 autoComplete="new-password"
-                                className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
+                                className="icon-field-left w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                 placeholder="********"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}

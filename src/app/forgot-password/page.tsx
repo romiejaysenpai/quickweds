@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
                                         autoCapitalize="none"
                                         autoCorrect="off"
                                         spellCheck={false}
-                                        className="w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
+                                        className="icon-field-left w-full pl-14 pr-4 py-4 rounded-2xl bg-neutral border border-border focus:border-primary focus:bg-white outline-none transition-all placeholder:text-text-secondary/30"
                                         placeholder="hello@example.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}

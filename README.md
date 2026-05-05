@@ -70,6 +70,7 @@ QuickWeds is a sophisticated, all-in-one platform designed for modern couples to
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
    RESEND_API_KEY=your_resend_key
    CLOUDINARY_URL=your_cloudinary_url
+   GHL_SIGNUP_WEBHOOK_URL=your_gohighlevel_inbound_webhook_url
    ```
 
 4. **Run for Development**:
