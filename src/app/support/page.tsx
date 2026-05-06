@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, LifeBuoy, MessageSquare, AlertTriangle, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, LifeBuoy, MessageSquare, AlertTriangle, Loader2, Camera, X, Image as ImageIcon } from 'lucide-react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { submitInquiry, submitFeedback } from '@/app/actions/support';
 
@@ -12,6 +12,9 @@ export default function SupportPage() {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInquiry = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -35,10 +38,40 @@ export default function SupportPage() {
       formData.append('userEmail', user.email);
     }
     
+    if (screenshot) {
+      formData.append('screenshot', screenshot);
+    }
+    
     await submitFeedback(formData);
     
     setIsSubmittingFeedback(false);
     setFeedbackSent(true);
+    setScreenshot(null);
+    setScreenshotPreview(null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size too large. Please select an image under 5MB.');
+        return;
+      }
+      setScreenshot(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setScreenshotPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeScreenshot = () => {
+    setScreenshot(null);
+    setScreenshotPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -133,8 +166,47 @@ export default function SupportPage() {
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-bold text-text-secondary mb-1" htmlFor="details">Details</label>
-                  <textarea required id="details" name="details" className="w-full h-32 rounded-xl border border-border bg-neutral px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none" placeholder="Please provide as much detail as possible..."></textarea>
+                  <textarea required id="details" name="details" className="w-full h-24 rounded-xl border border-border bg-neutral px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none" placeholder="Please provide as much detail as possible..."></textarea>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-text-secondary mb-2">Screenshot (Optional)</label>
+                  {!screenshotPreview ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl p-4 text-text-secondary hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                    >
+                      <Camera className="w-5 h-5 group-hover:text-primary transition-colors" />
+                      <span className="text-sm font-medium">Attach an image</span>
+                    </button>
+                  ) : (
+                    <div className="relative rounded-xl overflow-hidden border border-border group h-32">
+                      <img src={screenshotPreview} alt="Screenshot preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={removeScreenshot}
+                          className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-md rounded-lg px-2 py-1 flex items-center gap-1.5 overflow-hidden">
+                        <ImageIcon className="w-3 h-3 text-white shrink-0" />
+                        <span className="text-[10px] text-white font-medium truncate">{screenshot?.name}</span>
+                      </div>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+
                 <button type="submit" disabled={isSubmittingFeedback} className="w-full inline-flex justify-center items-center gap-2 min-h-[44px] rounded-xl bg-foreground px-4 py-2 text-sm font-bold text-white shadow-lg shadow-black/10 transition hover:bg-black/80 disabled:opacity-70">
                   {isSubmittingFeedback ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                   Submit Feedback

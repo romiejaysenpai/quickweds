@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle, Bell, BellOff, Info } from 'lucide-react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Link from 'next/link';
@@ -20,6 +20,7 @@ import UpgradeButton from '@/components/UpgradeButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getClientAccountProfile, getRoleAwareRedirect } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
+import NotificationBell from '@/components/dashboard/NotificationBell';
 import {
     GUEST_GROUP_OPTIONS,
     getGuestGroupLabel,
@@ -382,6 +383,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         setHasMore(filteredRsvps.length > ITEMS_PER_PAGE);
     }, [searchQuery, filterStatus, groupFilter, invitationFilter, filteredRsvps.length]);
 
+    const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [activeTab, setActiveTab] = useState<'home' | 'guests' | 'analytics' | 'team' | 'settings'>('home');
 
     // CSV Export
@@ -441,6 +443,46 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     };
 
     // Delete RSVP
+    const toggleNotification = async (field: 'notify_on_rsvp' | 'notify_on_updates') => {
+        if (!wedding || isSavingSettings) return;
+
+        const newValue = !wedding[field];
+        setIsSavingSettings(true);
+
+        const { error } = await supabase
+            .from('weddings')
+            .update({ [field]: newValue })
+            .eq('id', id);
+
+        if (error) {
+            alert('Failed to update notification settings.');
+        } else {
+            setWedding({ ...wedding, [field]: newValue });
+        }
+        setIsSavingSettings(false);
+    };
+
+    const sendTestNotification = async () => {
+        if (!user || !wedding) return;
+        setIsSavingSettings(true);
+        
+        const { error } = await supabase
+            .from('user_notifications')
+            .insert({
+                user_id: user.id,
+                wedding_id: id,
+                title: '🔔 Test Notification Successful!',
+                message: 'Your in-app notification system is working perfectly. You will receive alerts like this for new RSVPs and app updates.',
+                type: 'info',
+                link: `/dashboard/${id}`
+            });
+
+        if (error) {
+            alert('Error sending test notification: ' + error.message);
+        }
+        setIsSavingSettings(false);
+    };
+
     const deleteRsvp = async (rsvpId: string) => {
         if (!confirm('Remove this guest from the list?')) return;
         await supabase.from('rsvps').delete().eq('id', rsvpId);
@@ -579,7 +621,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         </Link>
                     </div>
 
-                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-hidden pl-1 sm:w-auto sm:flex-none sm:overflow-visible sm:pl-0">
+                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
                         {canManageWorkspace && (
                             <Link
                                 href={`/builder?edit=${wedding.id}`}
@@ -590,6 +632,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 <span className="sm:hidden">Edit</span>
                             </Link>
                         )}
+                        
+                        <NotificationBell />
                         
                         <button
                             type="button"
@@ -730,6 +774,30 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 </div>
 
 
+
+                {/* Desktop Tab Navigation */}
+                <div className="hidden sm:flex items-center gap-1 mb-8 p-1.5 bg-neutral/50 dark:bg-neutral-800/50 rounded-2xl border border-border w-fit">
+                    {[
+                        { id: 'home', label: 'Overview', icon: LayoutDashboard },
+                        { id: 'guests', label: 'Guests', icon: Users },
+                        { id: 'analytics', label: 'Analytics', icon: PieChartIcon },
+                        { id: 'team', label: 'Team', icon: Share2 },
+                        { id: 'settings', label: 'Settings', icon: Settings },
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                activeTab === tab.id 
+                                    ? 'bg-white dark:bg-neutral-700 text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5' 
+                                    : 'text-text-secondary/60 hover:text-text-secondary hover:bg-white/50 dark:hover:bg-neutral-700/50'
+                            }`}
+                        >
+                            <tab.icon className="w-4 h-4" />
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12">
                     <div className="lg:col-span-2 space-y-6 sm:space-y-8">
@@ -1311,20 +1379,78 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         )}
 
                         {(activeTab === 'settings' || activeTab === 'home') && (
-                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-4 sm:p-8 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow animate-in fade-in`}>
-                                <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4">Event Details</h3>
-                                <div className="space-y-6">
-                                    <div>
-                                        <span className="text-text-secondary/40 block text-[8px] uppercase tracking-[0.3em] font-black pb-2">Date & Time</span>
-                                        <span className="font-serif italic text-foreground text-sm">{wedding.wedding_date} @ {wedding.wedding_time}</span>
+                            <div className="space-y-4 sm:space-y-6">
+                                <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow animate-in fade-in">
+                                    <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4 flex items-center justify-between">
+                                        Notifications
+                                        {isSavingSettings && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+                                    </h3>
+                                    <div className="space-y-5">
+                                        <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/90 border border-border group transition-all hover:border-primary/20">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${wedding?.notify_on_rsvp !== false ? 'bg-primary/10 text-primary' : 'bg-text-secondary/10 text-text-secondary'}`}>
+                                                    {wedding?.notify_on_rsvp !== false ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-foreground">RSVP Email Alerts</p>
+                                                    <p className="text-[10px] text-text-secondary">Get notified instantly when a guest RSVPs.</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => toggleNotification('notify_on_rsvp')}
+                                                disabled={isSavingSettings}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${wedding?.notify_on_rsvp !== false ? 'bg-primary' : 'bg-text-secondary/20'}`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${wedding?.notify_on_rsvp !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/90 border border-border group transition-all hover:border-primary/20">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${wedding?.notify_on_updates !== false ? 'bg-accent/10 text-accent' : 'bg-text-secondary/10 text-text-secondary'}`}>
+                                                    <Info className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-foreground">System Updates</p>
+                                                    <p className="text-[10px] text-text-secondary">Stay updated with new features and app improvements.</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => toggleNotification('notify_on_updates')}
+                                                disabled={isSavingSettings}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${wedding?.notify_on_updates !== false ? 'bg-accent' : 'bg-text-secondary/20'}`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${wedding?.notify_on_updates !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span className="text-text-secondary/40 block text-[8px] uppercase tracking-[0.3em] font-black pb-2">Venue</span>
-                                        <span className="font-serif italic text-foreground text-sm line-clamp-1">{wedding.venue_name}</span>
+                                    <div className="mt-6 pt-6 border-t border-border">
+                                        <button
+                                            onClick={sendTestNotification}
+                                            disabled={isSavingSettings}
+                                            className="w-full py-3 rounded-xl bg-neutral hover:bg-neutral/80 text-text-secondary text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-border"
+                                        >
+                                            <Bell className="w-3.5 h-3.5" />
+                                            Send Test Notification
+                                        </button>
                                     </div>
-                                    <div>
-                                        <span className="text-text-secondary/40 block text-[8px] uppercase tracking-[0.3em] font-black pb-2">Template</span>
-                                        <span className="font-serif italic text-foreground text-sm capitalize">{wedding.template}</span>
+                                </div>
+
+                                <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow animate-in fade-in">
+                                    <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4">Event Details</h3>
+                                    <div className="space-y-6">
+                                        <div>
+                                            <span className="text-text-secondary/40 block text-[8px] uppercase tracking-[0.3em] font-black pb-2">Date & Time</span>
+                                            <span className="font-serif italic text-foreground text-sm">{wedding.wedding_date} @ {wedding.wedding_time}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-text-secondary/40 block text-[8px] uppercase tracking-[0.3em] font-black pb-2">Venue</span>
+                                            <span className="font-serif italic text-foreground text-sm line-clamp-1">{wedding.venue_name}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-text-secondary/40 block text-[8px] uppercase tracking-[0.3em] font-black pb-2">Template</span>
+                                            <span className="font-serif italic text-foreground text-sm capitalize">{wedding.template}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

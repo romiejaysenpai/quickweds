@@ -1,8 +1,67 @@
 'use server';
 
 import { sendEmail } from '@/lib/email';
+import { v2 as cloudinary } from 'cloudinary';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@quickweds.site';
+
+// Configure Cloudinary
+if (process.env.CLOUDINARY_URL) {
+    cloudinary.config({
+        cloudinary_url: process.env.CLOUDINARY_URL
+    });
+}
+
+async function uploadToCloudinary(file: File): Promise<string | null> {
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        
+        return new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                {
+                    folder: 'support_tickets',
+                    resource_type: 'auto'
+                },
+                (error, result) => {
+                    if (error) {
+                        console.error('Cloudinary upload error:', error);
+                        resolve(null);
+                    } else {
+                        resolve(result?.secure_url || null);
+                    }
+                }
+            ).end(buffer);
+        });
+    } catch (error) {
+        console.error('File processing error:', error);
+        return null;
+    }
+}
+
+function getEmailWrapper(content: string, type: string, color: string = '#D16C78') {
+    return `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px 20px; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #eef2f1;">
+                <!-- Header -->
+                <div style="background-color: ${color}; padding: 30px; text-align: center;">
+                    <img src="https://www.quickweds.site/logo-white.png" alt="QuickWeds" style="height: 32px; margin-bottom: 10px;" onerror="this.style.display='none'">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">${type}</h1>
+                </div>
+                
+                <!-- Body -->
+                <div style="padding: 40px;">
+                    ${content}
+                    
+                    <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #f0f0f0; text-align: center;">
+                        <p style="font-size: 13px; color: #999; margin: 0;">This inquiry was sent from the QuickWeds Admin Support dashboard.</p>
+                        <p style="font-size: 13px; color: #999; margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} QuickWeds. All rights reserved.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
 
 export async function submitInquiry(formData: FormData) {
     const subject = formData.get('subject') as string;
@@ -13,18 +72,27 @@ export async function submitInquiry(formData: FormData) {
         return { success: false, error: 'Subject and message are required' };
     }
 
-    const html = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eaeaea; border-radius: 8px; padding: 20px;">
-            <h2 style="color: #333; margin-top: 0;">New Support Inquiry</h2>
-            <p style="color: #666; font-size: 14px;">A user has submitted a general inquiry via the QuickWeds dashboard.</p>
-            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                <p style="margin: 0 0 10px 0;"><strong>From:</strong> ${userEmail || 'Unknown User'}</p>
-                <p style="margin: 0 0 10px 0;"><strong>Subject:</strong> ${subject}</p>
-            </div>
-            <h3 style="color: #333; font-size: 16px;">Message:</h3>
-            <p style="white-space: pre-wrap; color: #444; line-height: 1.5;">${message}</p>
+    const content = `
+        <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 25px;">
+            Hello Admin, you have received a new general inquiry.
+        </p>
+        
+        <div style="background-color: #fdf8f9; border-left: 4px solid #D16C78; padding: 20px; margin-bottom: 30px; border-radius: 4px;">
+            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>From:</strong> <span style="color: #D16C78;">${userEmail || 'Unknown User'}</span></p>
+            <p style="margin: 0; font-size: 14px;"><strong>Subject:</strong> ${subject}</p>
+        </div>
+        
+        <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px;">Inquiry Details:</h3>
+        <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
+            <p style="white-space: pre-wrap; font-size: 15px; line-height: 1.7; color: #444; margin: 0;">${message}</p>
+        </div>
+        
+        <div style="margin-top: 35px; text-align: center;">
+            <a href="mailto:${userEmail}" style="background-color: #D16C78; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">Reply to User</a>
         </div>
     `;
+
+    const html = getEmailWrapper(content, 'New Support Inquiry');
 
     const result = await sendEmail({
         to: ADMIN_EMAIL,
@@ -39,9 +107,15 @@ export async function submitFeedback(formData: FormData) {
     const type = formData.get('type') as string;
     const details = formData.get('details') as string;
     const userEmail = formData.get('userEmail') as string;
+    const screenshot = formData.get('screenshot') as File | null;
 
     if (!type || !details) {
         return { success: false, error: 'Type and details are required' };
+    }
+
+    let screenshotUrl = null;
+    if (screenshot && screenshot.size > 0) {
+        screenshotUrl = await uploadToCloudinary(screenshot);
     }
 
     const typeLabels: Record<string, string> = {
@@ -50,20 +124,46 @@ export async function submitFeedback(formData: FormData) {
         review: 'App Review / Feedback'
     };
 
-    const displayType = typeLabels[type] || type;
+    const typeColors: Record<string, string> = {
+        bug: '#E53E3E', // Red
+        feature: '#3182CE', // Blue
+        review: '#38A169' // Green
+    };
 
-    const html = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eaeaea; border-radius: 8px; padding: 20px;">
-            <h2 style="color: #333; margin-top: 0;">New Feedback Received</h2>
-            <p style="color: #666; font-size: 14px;">A user has submitted feedback via the QuickWeds dashboard.</p>
-            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                <p style="margin: 0 0 10px 0;"><strong>From:</strong> ${userEmail || 'Unknown User'}</p>
-                <p style="margin: 0 0 10px 0;"><strong>Type:</strong> ${displayType}</p>
+    const displayType = typeLabels[type] || type;
+    const brandColor = typeColors[type] || '#D16C78';
+
+    const content = `
+        <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 25px;">
+            A user has submitted new feedback or reported an error.
+        </p>
+        
+        <div style="background-color: #f8fafc; border-left: 4px solid ${brandColor}; padding: 20px; margin-bottom: 30px; border-radius: 4px;">
+            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>From:</strong> <span style="color: ${brandColor};">${userEmail || 'Unknown User'}</span></p>
+            <p style="margin: 0; font-size: 14px;"><strong>Feedback Category:</strong> ${displayType}</p>
+        </div>
+        
+        <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px;">Feedback Details:</h3>
+        <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
+            <p style="white-space: pre-wrap; font-size: 15px; line-height: 1.7; color: #444; margin: 0;">${details}</p>
+        </div>
+        
+        ${screenshotUrl ? `
+            <h3 style="font-size: 18px; font-weight: 600; color: #333; margin: 30px 0 15px 0;">Attached Screenshot:</h3>
+            <div style="border-radius: 12px; overflow: hidden; border: 1px solid #eee; background-color: #000;">
+                <a href="${screenshotUrl}" target="_blank">
+                    <img src="${screenshotUrl}" alt="User Screenshot" style="max-width: 100%; display: block; margin: 0 auto;">
+                </a>
             </div>
-            <h3 style="color: #333; font-size: 16px;">Details:</h3>
-            <p style="white-space: pre-wrap; color: #444; line-height: 1.5;">${details}</p>
+            <p style="text-align: center; font-size: 12px; color: #999; margin-top: 8px;">Click image to view full size</p>
+        ` : ''}
+        
+        <div style="margin-top: 35px; text-align: center;">
+            <a href="mailto:${userEmail}" style="background-color: ${brandColor}; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">Contact User</a>
         </div>
     `;
+
+    const html = getEmailWrapper(content, 'Feedback & Error Report', brandColor);
 
     const result = await sendEmail({
         to: ADMIN_EMAIL,

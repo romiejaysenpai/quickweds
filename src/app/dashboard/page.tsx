@@ -11,6 +11,7 @@ import UpgradeButton from '@/components/UpgradeButton';
 import { acceptWeddingInvite, listSharedWeddings } from '@/lib/wedding-features';
 import { getClientAccountProfile, getRoleAwareRedirect } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
+import NotificationBell from '@/components/dashboard/NotificationBell';
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
 
@@ -372,7 +373,7 @@ export default function DashboardRedirect() {
                         </Link>
                     </div>
 
-                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-hidden pl-1 sm:w-auto sm:flex-none sm:overflow-visible sm:pl-0">
+                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
                         <Link
                             href="/builder"
                             className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
@@ -381,6 +382,8 @@ export default function DashboardRedirect() {
                             <span className="hidden sm:inline">Create New Wedding</span>
                             <span className="sm:hidden">New</span>
                         </Link>
+                        
+                        <NotificationBell />
 
                         <button
                             type="button"

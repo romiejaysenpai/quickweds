@@ -132,7 +132,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }),
         };
 
-        const emailJobs: ReturnType<typeof sendEmail>[] = [sendEmail(coupleEmail)];
+        // Create In-App Notification
+        if (wedding.user_id) {
+            try {
+                const adminClient = getSupabaseAdminClient();
+                await adminClient
+                    .from('user_notifications')
+                    .insert({
+                        user_id: wedding.user_id,
+                        wedding_id: validatedWeddingId,
+                        title: attendance === 'Yes' ? 'New RSVP Confirmed! 🥂' : 'RSVP Update',
+                        message: `${guestName} has ${attendance === 'Yes' ? 'confirmed' : 'declined'} their attendance.`,
+                        type: 'rsvp',
+                        link: `/dashboard/${validatedWeddingId}?tab=guests`
+                    });
+            } catch (inAppError) {
+                console.error('In-app notification failed:', inAppError);
+            }
+        }
+
+        const emailJobs: ReturnType<typeof sendEmail>[] = [];
+        
+        // Only send couple notification if enabled (defaults to true)
+        if (wedding.notify_on_rsvp !== false) {
+            emailJobs.push(sendEmail(coupleEmail));
+        }
 
         if (guestEmail) {
             const guestEmailRequest: EmailRequest = {
