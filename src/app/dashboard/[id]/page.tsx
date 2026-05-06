@@ -713,6 +713,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             { label: 'Guide', href: '/user-guide', icon: BookOpen },
                                             { label: 'Settings', href: '/settings', icon: Settings },
                                             { label: 'Admin Support', href: '/support', icon: LifeBuoy },
+                                            { label: 'Community', href: 'https://chat.whatsapp.com/K30P5s5I03f4wPI30URaRP', icon: MessageCircle },
                                         ].map((item) => (
                                             <Link 
                                                 key={item.label}
