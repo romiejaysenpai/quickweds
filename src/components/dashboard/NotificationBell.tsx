@@ -190,7 +190,7 @@ export default function NotificationBell() {
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <p className="text-xs text-text-secondary/70 mt-1 line-clamp-2">{n.message}</p>
+                                                <p className="text-xs text-text-secondary/70 mt-1 whitespace-pre-wrap">{n.message}</p>
                                                 <div className="flex items-center justify-between mt-2">
                                                     <span className="text-[9px] font-bold text-text-secondary/30 uppercase tracking-widest">
                                                         {new Date(n.created_at).toLocaleDateString() === new Date().toLocaleDateString() 
