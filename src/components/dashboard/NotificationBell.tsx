@@ -67,8 +67,8 @@ export default function NotificationBell() {
             .limit(20);
 
         if (!error && data) {
-            setNotifications(data);
-            setUnreadCount(data.filter(n => !n.is_read).length);
+            setNotifications(data as Notification[]);
+            setUnreadCount((data as Notification[]).filter(n => !n.is_read).length);
         }
     };
 
