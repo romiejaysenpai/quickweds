@@ -60,7 +60,7 @@ export default function NotificationBell() {
 
     const fetchNotifications = async () => {
         if (!user) return;
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('user_notifications')
             .select('*')
             .order('created_at', { ascending: false })
@@ -73,7 +73,7 @@ export default function NotificationBell() {
     };
 
     const markAsRead = async (id: string) => {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('user_notifications')
             .update({ is_read: true })
             .eq('id', id);
@@ -86,7 +86,7 @@ export default function NotificationBell() {
 
     const markAllAsRead = async () => {
         if (!user) return;
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('user_notifications')
             .update({ is_read: true })
             .eq('user_id', user.id)
@@ -99,7 +99,7 @@ export default function NotificationBell() {
     };
 
     const deleteNotification = async (id: string) => {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('user_notifications')
             .delete()
             .eq('id', id);

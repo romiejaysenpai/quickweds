@@ -136,7 +136,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (wedding.user_id) {
             try {
                 const adminClient = getSupabaseAdminClient();
-                await adminClient
+                await (adminClient as any)
                     .from('user_notifications')
                     .insert({
                         user_id: wedding.user_id,

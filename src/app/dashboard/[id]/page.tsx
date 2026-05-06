@@ -466,7 +466,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         if (!user || !wedding) return;
         setIsSavingSettings(true);
         
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('user_notifications')
             .insert({
                 user_id: user.id,
