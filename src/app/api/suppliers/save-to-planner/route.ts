@@ -73,7 +73,17 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'You cannot manage this wedding.', code: 'access_denied' }, { status: 403 });
         }
 
-        if (!isAdmin && !wedding.is_premium) {
+        const { data: ownerProfile, error: ownerProfileError } = await db
+            .from('user_app_profiles')
+            .select('is_pro, payment_status')
+            .eq('user_id', wedding.user_id)
+            .maybeSingle();
+
+        if (ownerProfileError) throw ownerProfileError;
+
+        const hasPlannerAccess = Boolean(wedding.is_premium) || Boolean(ownerProfile?.is_pro) || ownerProfile?.payment_status === 'paid';
+
+        if (!isAdmin && !hasPlannerAccess) {
             return NextResponse.json(
                 {
                     error: 'Planner Pro is required to add suppliers to your Suppliers/Vendors list.',

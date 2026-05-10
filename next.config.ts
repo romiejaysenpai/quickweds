@@ -1,11 +1,11 @@
 import type { NextConfig } from "next";
+import { validateEnv } from "./src/lib/env";
 
 // Validate environment variables on build/startup
 if (process.env.NODE_ENV !== 'production' || process.env.VALIDATE_ENV === 'true') {
   try {
     // Only validate in non-build contexts or when explicitly requested
     if (typeof window === 'undefined') {
-      const { validateEnv } = require('./src/lib/env');
       // Don't throw during config load, just warn
       validateEnv();
     }

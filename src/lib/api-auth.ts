@@ -19,7 +19,7 @@ export async function getRequestUser(req: NextRequest) {
         return { user: null, error: 'Missing authorization token' };
     }
 
-    let token = authHeader.slice(7).trim();
+    const token = authHeader.slice(7).trim();
     
     // Sometimes the client might send literal "undefined" or "null" if session state was weird
     if (token === 'undefined' || token === 'null' || !token) {

@@ -1,53 +1,51 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { Sun, Moon } from 'lucide-react';
 
 type Theme = 'light' | 'dark';
 
+const subscribeToClient = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
+function getStoredTheme(): Theme {
+    if (typeof window === 'undefined') return 'light';
+
+    const savedTheme = localStorage.getItem('quickweds-theme') as Theme | null;
+    if (savedTheme) return savedTheme;
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme: Theme) {
+    if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+}
+
 export function useDarkMode() {
-    const [theme, setTheme] = useState<Theme>('light');
-    const [mounted, setMounted] = useState(false);
+    const [theme, setTheme] = useState<Theme>(getStoredTheme);
+    const mounted = useSyncExternalStore(subscribeToClient, getClientSnapshot, getServerSnapshot);
 
     useEffect(() => {
-        setMounted(true);
-        
-        // Check localStorage and system preference
-        const savedTheme = localStorage.getItem('quickweds-theme') as Theme | null;
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
-        const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-        setTheme(initialTheme);
-        
-        if (initialTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, []);
+        applyTheme(theme);
+    }, [theme]);
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
         setTheme(newTheme);
         localStorage.setItem('quickweds-theme', newTheme);
-        
-        if (newTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        applyTheme(newTheme);
     };
 
     const setSpecificTheme = (newTheme: Theme) => {
         setTheme(newTheme);
         localStorage.setItem('quickweds-theme', newTheme);
-        
-        if (newTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        applyTheme(newTheme);
     };
 
     return { theme, toggleTheme, setTheme: setSpecificTheme, mounted };

@@ -268,7 +268,7 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><AlertCircle className="w-5 h-5 text-primary" /></div>
                 <div>
                     <h4 className="font-bold text-foreground text-sm sm:text-base">Pro Tip: Gratitude Strategy</h4>
-                    <p className="text-xs sm:text-sm text-text-secondary mt-1">Use personalization tags like <code>{`{guest_name}`}</code> to make your automated emails feel human. Don't forget to mention specific gifts in the draft history view.</p>
+                    <p className="text-xs sm:text-sm text-text-secondary mt-1">Use personalization tags like <code>{`{guest_name}`}</code> to make your automated emails feel human. Don&apos;t forget to mention specific gifts in the draft history view.</p>
                 </div>
             </div>
         </div>

@@ -8,18 +8,26 @@ import { supabase } from '@/lib/supabase';
 
 interface UpgradeButtonProps {
     weddingId?: string;
-    plan?: 'planner_pro' | 'premium' | 'elite';
+    plan?: 'account_pro' | 'planner_pro' | 'premium' | 'elite';
+    scope?: 'account' | 'wedding';
     variant?: 'primary' | 'outlined';
     className?: string;
+    label?: string;
 }
 
-export default function UpgradeButton({ weddingId: propWeddingId, plan = 'planner_pro', variant = 'primary', className = '' }: UpgradeButtonProps) {
+export default function UpgradeButton({ weddingId: propWeddingId, plan = 'planner_pro', scope = 'wedding', variant = 'primary', className = '', label }: UpgradeButtonProps) {
     const { user, isAdmin } = useAuth();
     const [loading, setLoading] = useState(false);
     const [weddingId, setWeddingId] = useState<string | null>(propWeddingId || null);
-    const [fetchingWedding, setFetchingWedding] = useState(!propWeddingId && Boolean(user));
+    const [fetchingWedding, setFetchingWedding] = useState(scope === 'wedding' && !propWeddingId && Boolean(user));
 
     useEffect(() => {
+        if (scope === 'account') {
+            setWeddingId(null);
+            setFetchingWedding(false);
+            return;
+        }
+
         if (propWeddingId) {
             setWeddingId(propWeddingId);
             return;
@@ -43,19 +51,23 @@ export default function UpgradeButton({ weddingId: propWeddingId, plan = 'planne
         };
 
         void fetchFirstWedding();
-    }, [user, propWeddingId]);
+    }, [user, propWeddingId, scope]);
 
     if (isAdmin) return null;
 
     const handleUpgrade = async () => {
-        if (!weddingId || loading) return;
+        if ((scope === 'wedding' && !weddingId) || loading) return;
 
         setLoading(true);
         try {
+            const { data: sessionData } = await supabase.auth.getSession();
             const response = await fetch('/api/stripe/checkout', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ weddingId, plan }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(sessionData.session?.access_token ? { Authorization: `Bearer ${sessionData.session.access_token}` } : {}),
+                },
+                body: JSON.stringify({ weddingId: scope === 'wedding' ? weddingId : undefined, plan, scope }),
             });
             const data = await response.json();
 
@@ -84,14 +96,14 @@ export default function UpgradeButton({ weddingId: propWeddingId, plan = 'planne
         );
     }
 
-    if (!weddingId) {
+    if (scope === 'wedding' && !weddingId) {
         return (
             <Link
                 href="/builder"
                 className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${baseStyles} ${className}`}
             >
-                <Sparkles className="w-5 h-5" />
-                Create Wedding to Upgrade
+                    <Sparkles className="w-5 h-5" />
+                    {label || 'Create Wedding to Upgrade'}
             </Link>
         );
     }
@@ -110,9 +122,9 @@ export default function UpgradeButton({ weddingId: propWeddingId, plan = 'planne
             ) : (
                 <>
                     <Sparkles className="w-5 h-5" />
-                    Unlock Planner Pro
-                </>
-            )}
+                    {label || (scope === 'account' ? 'Unlock Account Pro' : 'Unlock Planner Pro')}
+            </>
+        )}
         </button>
     );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, Check, Trash2, ExternalLink, Info, MessageSquare, Users, Sparkles, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -24,10 +24,26 @@ export default function NotificationBell() {
     const [unreadCount, setUnreadCount] = useState(0);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    const fetchNotifications = useCallback(async () => {
+        if (!user) return;
+        const { data, error } = await (supabase as any)
+            .from('user_notifications')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (!error && data) {
+            setNotifications(data as Notification[]);
+            setUnreadCount((data as Notification[]).filter(n => !n.is_read).length);
+        }
+    }, [user]);
+
     useEffect(() => {
         if (!user) return;
 
-        fetchNotifications();
+        const refreshTimer = window.setTimeout(() => {
+            fetchNotifications();
+        }, 0);
 
         // Real-time subscription
         const channel = supabase
@@ -44,9 +60,10 @@ export default function NotificationBell() {
             .subscribe();
 
         return () => {
+            window.clearTimeout(refreshTimer);
             supabase.removeChannel(channel);
         };
-    }, [user]);
+    }, [fetchNotifications, user]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -57,20 +74,6 @@ export default function NotificationBell() {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    const fetchNotifications = async () => {
-        if (!user) return;
-        const { data, error } = await (supabase as any)
-            .from('user_notifications')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(20);
-
-        if (!error && data) {
-            setNotifications(data as Notification[]);
-            setUnreadCount((data as Notification[]).filter(n => !n.is_read).length);
-        }
-    };
 
     const markAsRead = async (id: string) => {
         const { error } = await (supabase as any)
@@ -217,7 +220,7 @@ export default function NotificationBell() {
                                         <Bell className="w-6 h-6 text-text-secondary/20" />
                                     </div>
                                     <p className="text-sm font-bold text-text-secondary/30 uppercase tracking-[0.2em]">No notifications yet</p>
-                                    <p className="text-xs text-text-secondary/20 mt-1 italic">We'll let you know when things happen.</p>
+                                    <p className="text-xs text-text-secondary/20 mt-1 italic">We&apos;ll let you know when things happen.</p>
                                 </div>
                             )}
                         </div>

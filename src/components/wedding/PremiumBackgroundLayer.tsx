@@ -2,15 +2,15 @@
 
 import { motion } from 'framer-motion';
 import type { Wedding } from '@/types/wedding';
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { derivePalette } from '@/lib/theme-engine';
 
+const subscribeToClient = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export default function PremiumBackgroundLayer({ wedding }: { wedding: Wedding }) {
-    const [isMounted, setIsMounted] = useState(false);
-    
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
+    const isMounted = useSyncExternalStore(subscribeToClient, getClientSnapshot, getServerSnapshot);
 
     const motifColor = wedding.motif_color || '#D16C78';
     const palette = useMemo(() => derivePalette(motifColor), [motifColor]);
@@ -74,4 +74,3 @@ export default function PremiumBackgroundLayer({ wedding }: { wedding: Wedding }
         </div>
     );
 }
-

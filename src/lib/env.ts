@@ -20,6 +20,9 @@ const envSchema = z.object({
 
     NEXT_PUBLIC_APP_URL: z.string().url('Invalid app URL').optional(),
     NEXT_PUBLIC_ROOT_DOMAIN: z.string().optional(),
+    GOOGLE_CALENDAR_CLIENT_ID: z.string().optional(),
+    GOOGLE_CALENDAR_CLIENT_SECRET: z.string().optional(),
+    GOOGLE_OAUTH_STATE_SECRET: z.string().optional(),
 
     ADMIN_EMAIL: z.string().email('Invalid admin email').optional(),
     NEXT_PUBLIC_ADMIN_EMAIL: z.string().email('Invalid public admin email').optional(),
@@ -42,6 +45,9 @@ export function validateEnv() {
         VERCEL_TOKEN: process.env.VERCEL_TOKEN,
         NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
         NEXT_PUBLIC_ROOT_DOMAIN: process.env.NEXT_PUBLIC_ROOT_DOMAIN,
+        GOOGLE_CALENDAR_CLIENT_ID: process.env.GOOGLE_CALENDAR_CLIENT_ID,
+        GOOGLE_CALENDAR_CLIENT_SECRET: process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
+        GOOGLE_OAUTH_STATE_SECRET: process.env.GOOGLE_OAUTH_STATE_SECRET,
         ADMIN_EMAIL: process.env.ADMIN_EMAIL,
         NEXT_PUBLIC_ADMIN_EMAIL: process.env.NEXT_PUBLIC_ADMIN_EMAIL,
         GHL_SIGNUP_WEBHOOK_URL: process.env.GHL_SIGNUP_WEBHOOK_URL,

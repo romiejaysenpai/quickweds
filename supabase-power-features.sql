@@ -16,7 +16,24 @@ CREATE TABLE IF NOT EXISTS seating_tables (
     position_x INTEGER DEFAULT 0,
     position_y INTEGER DEFAULT 0,
     custom_style JSONB,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE seating_tables ADD COLUMN IF NOT EXISTS position_x INTEGER DEFAULT 0;
+ALTER TABLE seating_tables ADD COLUMN IF NOT EXISTS position_y INTEGER DEFAULT 0;
+ALTER TABLE seating_tables ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+CREATE TABLE IF NOT EXISTS seating_layouts (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    wedding_id TEXT UNIQUE REFERENCES weddings(id) ON DELETE CASCADE,
+    layout_name TEXT DEFAULT 'Main Reception',
+    venue_shape TEXT DEFAULT 'rectangle' CHECK (venue_shape IN ('rectangle', 'square', 'oval')),
+    venue_width INTEGER DEFAULT 100,
+    venue_height INTEGER DEFAULT 70,
+    grid_enabled BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Guests assigned to tables
@@ -125,6 +142,7 @@ CREATE TABLE IF NOT EXISTS thank_you_send_queue (
 -- Enable RLS on all new tables
 ALTER TABLE seating_tables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seating_assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seating_layouts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wedding_photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE photo_sharing_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE thank_you_templates ENABLE ROW LEVEL SECURITY;
@@ -147,6 +165,20 @@ WITH CHECK (
 
 -- Seating Assignments Policies
 CREATE POLICY "owners_manage_seating_assignments" ON seating_assignments
+FOR ALL
+USING (
+    wedding_id IN (
+        SELECT id FROM weddings WHERE user_id = auth.uid()
+    )
+)
+WITH CHECK (
+    wedding_id IN (
+        SELECT id FROM weddings WHERE user_id = auth.uid()
+    )
+);
+
+DROP POLICY IF EXISTS "owners_manage_seating_layouts" ON seating_layouts;
+CREATE POLICY "owners_manage_seating_layouts" ON seating_layouts
 FOR ALL
 USING (
     wedding_id IN (

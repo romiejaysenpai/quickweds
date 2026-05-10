@@ -29,10 +29,30 @@ export async function POST(req: NextRequest) {
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object as Stripe.Checkout.Session;
             const weddingId = session.metadata?.weddingId;
+            const userId = session.metadata?.userId;
+            const scope = session.metadata?.scope || (userId ? 'account' : 'wedding');
             const plan = session.metadata?.plan || 'planner_pro';
+            const supabase: any = getSupabaseAdminClient();
 
-            if (weddingId) {
-                const supabase: any = getSupabaseAdminClient();
+            if (scope === 'account' && userId) {
+                const { error } = await supabase
+                    .from('user_app_profiles')
+                    .upsert({
+                        user_id: userId,
+                        is_pro: true,
+                        plan_type: 'account_pro',
+                        payment_status: 'paid',
+                        payment_amount: (session.amount_total || 0) / 100,
+                        stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+                        stripe_checkout_session_id: session.id,
+                        pro_unlocked_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                    }, { onConflict: 'user_id' });
+
+                if (error) {
+                    throw error;
+                }
+            } else if (weddingId) {
                 const { error } = await supabase
                     .from('weddings')
                     .update({

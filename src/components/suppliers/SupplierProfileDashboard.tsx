@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
+import { CheckCircle2, ImagePlus, Loader2, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { getClientAccountProfile, getRoleAwareRedirect } from '@/lib/account';
+import { getClientAccountProfileForIntent, getRoleAwareRedirect } from '@/lib/account';
+import SupplierShareControls from '@/components/suppliers/SupplierShareControls';
 import {
     PHILIPPINE_SUPPLIER_LOCATIONS,
     SUPPLIER_CATEGORIES,
@@ -34,6 +35,7 @@ type SupplierFormState = {
     cover_image_url: string;
     gallery_images: string;
     status?: SupplierProfile['status'];
+    is_active?: boolean | null;
     slug?: string;
 };
 
@@ -77,6 +79,7 @@ function profileToForm(profile?: SupplierProfile | null): SupplierFormState {
         cover_image_url: profile.cover_image_url || '',
         gallery_images: (profile.gallery_images || []).join('\n'),
         status: profile.status,
+        is_active: profile.is_active,
         slug: profile.slug,
     };
 }
@@ -88,10 +91,13 @@ export default function SupplierProfileDashboard() {
     const [reviewQueue, setReviewQueue] = useState<SupplierProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<'draft' | 'submit' | null>(null);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [uploadingGallery, setUploadingGallery] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
     const statusLabel = useMemo(() => supplierStatusLabel(form.status), [form.status]);
+    const canSharePublicProfile = Boolean(form.slug && form.status === 'approved' && form.is_active);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -115,7 +121,7 @@ export default function SupplierProfileDashboard() {
 
             if (!isAdmin) {
                 try {
-                    const accountProfile = await getClientAccountProfile(token);
+                    const accountProfile = await getClientAccountProfileForIntent(token, '/supplier/dashboard');
                     if (accountProfile?.account_type !== 'supplier') {
                         router.replace(getRoleAwareRedirect(accountProfile?.account_type, '/supplier/dashboard'));
                         return;
@@ -148,6 +154,115 @@ export default function SupplierProfileDashboard() {
 
     const updateField = (field: keyof SupplierFormState, value: string) => {
         setForm((current) => ({ ...current, [field]: value }));
+    };
+
+    const getGalleryImages = () => form.gallery_images
+        .split(/\n|,/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    const setGalleryImages = (images: string[]) => {
+        updateField('gallery_images', images.join('\n'));
+    };
+
+    const uploadBusinessLogo = async (file: File | null) => {
+        if (!file) return;
+
+        setMessage('');
+        setError('');
+
+        if (!file.type.startsWith('image/')) {
+            setError('Please upload an image file for your business logo.');
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            setError('Logo image must be 5MB or smaller.');
+            return;
+        }
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token || !user) {
+            setError('Please sign in again to upload your business logo.');
+            return;
+        }
+
+        setUploadingLogo(true);
+        try {
+            const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+            const filePath = `suppliers/${user.id}/business-logo-${Date.now()}.${extension}`;
+            const { error: uploadError } = await supabase.storage
+                .from('quickweds')
+                .upload(filePath, file, {
+                    contentType: file.type,
+                    upsert: true,
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('quickweds')
+                .getPublicUrl(filePath);
+
+            updateField('cover_image_url', publicUrl);
+            setMessage('Business logo uploaded. Save your draft or submit for approval to keep it on your listing.');
+        } catch (err) {
+            const uploadMessage = err instanceof Error ? err.message : 'Unable to upload business logo.';
+            setError(uploadMessage);
+        } finally {
+            setUploadingLogo(false);
+        }
+    };
+
+    const uploadGalleryImages = async (files: FileList | null) => {
+        if (!files || files.length === 0) return;
+
+        setMessage('');
+        setError('');
+
+        const imageFiles = Array.from(files);
+        const invalidFile = imageFiles.find((file) => !file.type.startsWith('image/') || file.size > 8 * 1024 * 1024);
+        if (invalidFile) {
+            setError('Gallery photos must be image files and 8MB or smaller.');
+            return;
+        }
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token || !user) {
+            setError('Please sign in again to upload gallery photos.');
+            return;
+        }
+
+        setUploadingGallery(true);
+        try {
+            const uploadedUrls = await Promise.all(imageFiles.map(async (file, index) => {
+                const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+                const filePath = `suppliers/${user.id}/gallery-${Date.now()}-${index}.${extension}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('quickweds')
+                    .upload(filePath, file, {
+                        contentType: file.type,
+                        upsert: true,
+                    });
+                if (uploadError) throw uploadError;
+                const { data: { publicUrl } } = supabase.storage.from('quickweds').getPublicUrl(filePath);
+                return publicUrl;
+            }));
+
+            setGalleryImages([...getGalleryImages(), ...uploadedUrls]);
+            setMessage('Gallery photos uploaded. Save your draft or submit for approval to keep them on your listing.');
+        } catch (err) {
+            const uploadMessage = err instanceof Error ? err.message : 'Unable to upload gallery photos.';
+            setError(uploadMessage);
+        } finally {
+            setUploadingGallery(false);
+        }
+    };
+
+    const removeGalleryImage = (imageUrl: string) => {
+        setGalleryImages(getGalleryImages().filter((url) => url !== imageUrl));
     };
 
     const saveProfile = async (intent: 'draft' | 'submit') => {
@@ -225,7 +340,7 @@ export default function SupplierProfileDashboard() {
                         <Link href="/suppliers" className="rounded-xl border border-primary/20 px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary/5">
                             View Directory
                         </Link>
-                        {form.slug && form.status === 'approved' && (
+                        {canSharePublicProfile && form.slug && (
                             <Link href={`/suppliers/${form.slug}`} className="hidden rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover sm:inline-flex">
                                 Public Profile
                             </Link>
@@ -310,11 +425,80 @@ export default function SupplierProfileDashboard() {
                         </div>
 
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <Field label="Cover Image URL">
-                                <input value={form.cover_image_url} onChange={(event) => updateField('cover_image_url', event.target.value)} className="supplier-input" placeholder="https://..." />
+                            <Field label="Business Logo">
+                                <div className="rounded-2xl border border-border bg-neutral p-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-20 w-20 flex-none items-center justify-center overflow-hidden rounded-2xl border border-border bg-white">
+                                            {form.cover_image_url ? (
+                                                <img src={form.cover_image_url} alt="Business logo preview" className="h-full w-full object-contain p-2" />
+                                            ) : (
+                                                <ImagePlus className="h-8 w-8 text-primary/40" />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <label className="inline-flex min-h-[42px] cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover">
+                                                {uploadingLogo ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                                                {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    disabled={uploadingLogo}
+                                                    onChange={(event) => {
+                                                        void uploadBusinessLogo(event.target.files?.[0] || null);
+                                                        event.target.value = '';
+                                                    }}
+                                                    className="sr-only"
+                                                />
+                                            </label>
+                                            <p className="mt-2 text-xs leading-5 text-text-secondary">
+                                                PNG, JPG, or WebP up to 5MB. This image appears on your directory profile.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <input
+                                        value={form.cover_image_url ? 'Business logo uploaded' : ''}
+                                        readOnly
+                                        className="supplier-input mt-4 text-text-secondary"
+                                        placeholder="No logo uploaded yet"
+                                    />
+                                </div>
                             </Field>
-                            <Field label="Gallery Image URLs">
-                                <textarea value={form.gallery_images} onChange={(event) => updateField('gallery_images', event.target.value)} className="supplier-input min-h-28 resize-y" placeholder="Paste one image URL per line" />
+                            <Field label="Gallery Photos">
+                                <div className="rounded-2xl border border-border bg-neutral p-4">
+                                    <label className="flex min-h-[112px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/30 bg-white px-4 py-5 text-center text-sm font-bold text-primary transition hover:bg-primary/5">
+                                        {uploadingGallery ? <Loader2 className="h-6 w-6 animate-spin" /> : <ImagePlus className="h-6 w-6" />}
+                                        {uploadingGallery ? 'Uploading photos...' : 'Upload from phone or computer'}
+                                        <span className="text-xs font-medium leading-5 text-text-secondary">Select one or more photos. JPG, PNG, or WebP up to 8MB each.</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            disabled={uploadingGallery}
+                                            onChange={(event) => {
+                                                void uploadGalleryImages(event.target.files);
+                                                event.target.value = '';
+                                            }}
+                                            className="sr-only"
+                                        />
+                                    </label>
+                                    {getGalleryImages().length > 0 && (
+                                        <div className="mt-4 grid grid-cols-2 gap-3">
+                                            {getGalleryImages().map((imageUrl) => (
+                                                <div key={imageUrl} className="group relative overflow-hidden rounded-xl border border-border bg-white">
+                                                    <img src={imageUrl} alt="Supplier gallery preview" className="aspect-[4/3] w-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeGalleryImage(imageUrl)}
+                                                        className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white text-red-500 shadow-lg transition hover:bg-red-50"
+                                                        aria-label="Remove gallery photo"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </Field>
                         </div>
 
@@ -339,6 +523,22 @@ export default function SupplierProfileDashboard() {
                             <p>2. Submit when your details and contact links are ready.</p>
                             <p>3. QuickWeds admin reviews and approves the listing.</p>
                         </div>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-border bg-white p-5 shadow-sm">
+                        <h2 className="font-serif text-2xl font-bold text-foreground">Public sharing</h2>
+                        {canSharePublicProfile && form.slug ? (
+                            <>
+                                <p className="mt-3 text-sm leading-6 text-text-secondary">
+                                    Share your approved business profile with couples anywhere.
+                                </p>
+                                <SupplierShareControls slug={form.slug} businessName={form.business_name || 'Supplier profile'} className="mt-5" />
+                            </>
+                        ) : (
+                            <p className="mt-3 text-sm leading-6 text-text-secondary">
+                                Public sharing unlocks after QuickWeds approves your listing.
+                            </p>
+                        )}
                     </div>
 
                     {isAdmin && (

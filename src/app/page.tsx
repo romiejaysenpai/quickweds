@@ -287,7 +287,7 @@ function ContactSection() {
             <div className="bg-primary p-8 text-white md:col-span-2">
               <h3 className="font-serif text-2xl font-bold">Get in touch</h3>
               <p className="mt-4 text-sm leading-7 text-white/80">
-                Whether you're just starting or finalizing your details, we're here to help make your wedding planning journey a success.
+                Whether you&apos;re just starting or finalizing your details, we&apos;re here to help make your wedding planning journey a success.
               </p>
               
               <div className="mt-10 space-y-6">
@@ -319,7 +319,7 @@ function ContactSection() {
                     <CheckCircle2 className="h-8 w-8" />
                   </div>
                   <h3 className="font-serif text-2xl font-bold text-foreground">Message Sent!</h3>
-                  <p className="mt-2 text-text-secondary">We've received your inquiry and will respond to you as soon as possible.</p>
+                  <p className="mt-2 text-text-secondary">We&apos;ve received your inquiry and will respond to you as soon as possible.</p>
                   <button onClick={() => setSent(false)} className="mt-6 text-sm font-bold text-primary hover:underline">Send another message</button>
                 </div>
               ) : (
@@ -1061,7 +1061,7 @@ export default function Home() {
                 <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-10 w-auto object-contain" />
               </Link>
               <p className="max-w-xs mx-auto md:mx-0 text-sm leading-7 text-text-secondary">
-                The all-in-one wedding planning system for websites, RSVPs, guests, budgets, vendors, and more. Simplifying your journey to "I do".
+                The all-in-one wedding planning system for websites, RSVPs, guests, budgets, vendors, and more. Simplifying your journey to &quot;I do&quot;.
               </p>
               <div className="flex justify-center md:justify-start gap-4">
                 <a href="#" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">

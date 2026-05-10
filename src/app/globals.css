@@ -124,6 +124,34 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
 h1,
 h2,
 h3,
@@ -307,6 +335,34 @@ body {
   min-height: 100dvh;
   min-height: 100svh;
   padding-bottom: var(--safe-area-inset-bottom);
+}
+
+@media (display-mode: standalone) {
+  html {
+    background-color: var(--background);
+  }
+
+  body {
+    overscroll-behavior-y: contain;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+@supports (padding: max(0px)) {
+  .pwa-safe-shell {
+    padding-top: max(0px, var(--safe-area-inset-top));
+    padding-right: max(0px, var(--safe-area-inset-right));
+    padding-bottom: max(0px, var(--safe-area-inset-bottom));
+    padding-left: max(0px, var(--safe-area-inset-left));
+  }
 }
 
 /* Better mobile viewport handling on Safari/Chrome mobile URL bars */

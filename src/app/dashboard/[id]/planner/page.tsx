@@ -2,26 +2,132 @@
 
 import { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/context/AuthContext';
-import SeatingChartBuilder from '@/components/dashboard/SeatingChartBuilder';
-import PhotoSharingManager from '@/components/dashboard/PhotoSharingManager';
-import ThankYouNoteManager from '@/components/dashboard/ThankYouNoteManager';
 import UpgradeButton from '@/components/UpgradeButton';
-import { getClientAccountProfile, getRoleAwareRedirect } from '@/lib/account';
+import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 
-const PLANNER_TABS = ['checklist', 'budget', 'vendors', 'seating', 'photos', 'thanks'] as const;
+const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
+    loading: () => <PlannerPanelLoading label="Loading seating chart..." />,
+});
+const PhotoSharingManager = dynamic(() => import('@/components/dashboard/PhotoSharingManager'), {
+    loading: () => <PlannerPanelLoading label="Loading photo sharing..." />,
+});
+const ThankYouNoteManager = dynamic(() => import('@/components/dashboard/ThankYouNoteManager'), {
+    loading: () => <PlannerPanelLoading label="Loading thank-you tools..." />,
+});
+
+const PLANNER_TABS = ['checklist', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
 type PlannerTab = typeof PLANNER_TABS[number];
 type VendorPaymentStatus = 'not paid' | 'pending' | 'paid';
+
+const PLANNER_TAB_DETAILS: {
+    tab: PlannerTab;
+    label: string;
+    icon: typeof ListTodo;
+    headline: string;
+    body: string;
+}[] = [
+    {
+        tab: 'checklist',
+        label: 'Checklist',
+        icon: ListTodo,
+        headline: 'Checklist is part of Planner Pro',
+        body: 'Plan every task from the first booking to the final wedding-week details.',
+    },
+    {
+        tab: 'calendar',
+        label: 'Calendar',
+        icon: CalendarDays,
+        headline: 'Calendar is part of Planner Pro',
+        body: 'Keep deadlines, appointments, reminders, and supplier schedules in one place.',
+    },
+    {
+        tab: 'budget',
+        label: 'Budgets',
+        icon: Wallet,
+        headline: 'Budgets is part of Planner Pro',
+        body: 'Track estimates, paid suppliers, pending balances, and your total wedding spend.',
+    },
+    {
+        tab: 'food',
+        label: 'Food',
+        icon: Utensils,
+        headline: 'Food is part of Planner Pro',
+        body: 'Organize menus, drinks, caterer notes, quantities, and service details.',
+    },
+    {
+        tab: 'vendors',
+        label: 'Suppliers',
+        icon: Users,
+        headline: 'Suppliers is part of Planner Pro',
+        body: 'Manage contacts, payment status, supplier roles, notes, and saved directory picks.',
+    },
+    {
+        tab: 'seating',
+        label: 'Seating',
+        icon: Layout,
+        headline: 'Seating is part of Planner Pro',
+        body: 'Build tables, place guests, and keep your reception layout organized.',
+    },
+    {
+        tab: 'photos',
+        label: 'Photos',
+        icon: Camera,
+        headline: 'Photos is part of Planner Pro',
+        body: 'Collect and review guest photos from your wedding photo sharing portal.',
+    },
+    {
+        tab: 'thanks',
+        label: 'Thank You',
+        icon: Mail,
+        headline: 'Thank You is part of Planner Pro',
+        body: 'Prepare post-wedding thank-you messages and keep guest follow-up simple.',
+    },
+    {
+        tab: 'honeymoon',
+        label: 'Honeymoon',
+        icon: Plane,
+        headline: 'Honeymoon is part of Planner Pro',
+        body: 'Track bookings, activities, packing items, and travel notes after the wedding.',
+    },
+];
+
+function getCurrencySymbol(currency?: string | null) {
+    const normalized = String(currency || 'USD').toLowerCase();
+    if (normalized === 'usd') return '$';
+    if (normalized === 'jpy' || normalized === 'yen') return '\u00a5';
+    if (normalized === 'php' || normalized === 'peso') return '\u20b1';
+    return '\u20b1';
+}
+
+function PlannerPanelLoading({ label }: { label: string }) {
+    return (
+        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="mt-4 text-sm font-bold text-text-secondary">{label}</p>
+        </div>
+    );
+}
 
 const VENDOR_PAYMENT_STATUS_OPTIONS: { value: VendorPaymentStatus; label: string }[] = [
     { value: 'not paid', label: 'Not Paid' },
     { value: 'pending', label: 'Pending' },
     { value: 'paid', label: 'Paid' },
 ];
+
+const PLANNER_DELETE_TABLES: Record<string, string> = {
+    task: 'planner_tasks',
+    budget: 'planner_budgets',
+    vendor: 'planner_vendors',
+    event: 'planner_events',
+    foodDrink: 'planner_food_drinks',
+    honeymoon: 'planner_honeymoon_items',
+};
 
 function normalizeVendorPaymentStatus(status?: string | null): VendorPaymentStatus {
     const normalized = status?.toLowerCase();
@@ -80,6 +186,54 @@ function VendorPaymentStatusSelect({
     );
 }
 
+async function deletePlannerItem(weddingId: string, type: string, id: string) {
+    const table = PLANNER_DELETE_TABLES[type];
+    if (!table) throw new Error('Unknown planner item type.');
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) throw new Error('Please sign in again before deleting this item.');
+
+    const errors: string[] = [];
+
+    try {
+        const response = await fetch('/api/planner/items', {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ weddingId, type, id }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (response.ok) {
+            return;
+        }
+        errors.push(data.error || 'Server delete failed.');
+    } catch (err) {
+        errors.push(err instanceof Error ? err.message : 'Server delete failed.');
+    }
+
+    try {
+        const { error } = await supabase
+            .from(table)
+            .delete()
+            .eq('id', id)
+            .eq('wedding_id', weddingId);
+
+        if (error) {
+            errors.push(error.message);
+        } else {
+            return;
+        }
+    } catch (err) {
+        errors.push(err instanceof Error ? err.message : 'Direct delete failed.');
+    }
+
+    throw new Error(`Unable to delete planner item. ${errors.join(' ')}`);
+}
+
 export default function PlannerPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: weddingId } = use(params);
     const router = useRouter();
@@ -97,6 +251,11 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const [tasks, setTasks] = useState<any[]>([]);
     const [budgets, setBudgets] = useState<any[]>([]);
     const [vendors, setVendors] = useState<any[]>([]);
+    const [events, setEvents] = useState<any[]>([]);
+    const [foodDrinks, setFoodDrinks] = useState<any[]>([]);
+    const [googleCalendar, setGoogleCalendar] = useState<any>(null);
+    const [honeymoonItems, setHoneymoonItems] = useState<any[]>([]);
+    const [accountIsPro, setAccountIsPro] = useState(false);
     const [confirmedGuests, setConfirmedGuests] = useState<number>(0);
 
     useEffect(() => {
@@ -181,6 +340,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
             setAccessRole(data.accessRole || 'denied');
             setWedding(data.wedding || null);
+            setAccountIsPro(hasAccountPro(data.accountProfile));
 
             if (!response.ok) {
                 setPlannerError(data.error || 'Unable to verify planner access.');
@@ -195,6 +355,10 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             setTasks(data.tasks || []);
             setBudgets(data.budgets || []);
             setVendors(data.vendors || []);
+            setEvents(data.events || []);
+            setFoodDrinks(data.foodDrinks || []);
+            setGoogleCalendar(data.googleCalendar || null);
+            setHoneymoonItems(data.honeymoonItems || []);
             setConfirmedGuests(data.confirmedGuests || 0);
         } catch (err) {
             console.error("Error loading planner data:", err);
@@ -214,6 +378,8 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             alert("Failed to update vendor: " + err.message);
         }
     }
+
+    const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
 
     if (checkingRole || loading) {
         return <div className="min-h-screen flex items-center justify-center bg-background">
@@ -259,67 +425,6 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
         );
     }
 
-     if (!isAdmin && !wedding?.is_premium) {
-         return (
-             <div className="min-h-screen bg-background px-4 py-10 sm:px-6">
-                 <div className="mx-auto max-w-3xl">
-                     <div className="flex justify-between items-center mb-6">
-                         <Link href={`/dashboard/${weddingId}`} className="inline-flex items-center gap-2 text-sm font-bold text-primary">
-                             <ArrowLeft className="h-4 w-4" />
-                             Back to dashboard
-                         </Link>
-                         <Link href="/" className="inline-flex items-center gap-1 text-sm font-bold text-primary" aria-label="Home">
-                             <Home className="h-4 w-4" />
-                             <span className="hidden sm:inline">Home</span>
-                         </Link>
-                     </div>
-
-                    <div className="overflow-hidden rounded-[2rem] border border-primary/15 bg-white shadow-2xl shadow-primary/10 sm:rounded-[2.5rem]">
-                        <div className="bg-gradient-to-br from-primary/12 via-secondary/10 to-white p-6 text-center sm:p-10">
-                            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-white text-primary shadow-xl shadow-primary/10">
-                                <LockKeyhole className="h-7 w-7" />
-                            </div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">Planner Pro</p>
-                            <h1 className="mt-3 font-serif text-3xl font-bold leading-tight text-foreground sm:text-5xl">
-                                Unlock the complete wedding planner.
-                            </h1>
-                            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-text-secondary sm:text-base">
-                                Your wedding website, templates, RSVP tools, and builder stay free. Planner Pro is a one-time upgrade for the deeper planning workspace.
-                            </p>
-                        </div>
-
-                        <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-8">
-                            {[
-                                'Seating chart and guest placement',
-                                'Budget tracker with vendor spending',
-                                'Checklist and task planning',
-                                'Suppliers/vendors organizer',
-                                'Collaborator access for your partner or planner',
-                                'Photo sharing and thank-you tools',
-                            ].map((feature) => (
-                                <div key={feature} className="flex items-start gap-3 rounded-2xl bg-neutral p-4 text-sm font-semibold text-foreground">
-                                    <Sparkles className="mt-0.5 h-4 w-4 flex-none text-primary" />
-                                    {feature}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="flex flex-col items-center gap-3 border-t border-border p-5 text-center sm:p-8">
-                            {accessRole === 'owner' ? (
-                                <UpgradeButton weddingId={weddingId} className="justify-center" />
-                            ) : (
-                                <p className="max-w-md text-sm text-text-secondary">
-                                    Ask the wedding owner to unlock Planner Pro for this workspace.
-                                </p>
-                            )}
-                            <p className="text-xs text-text-secondary">One-time payment. No subscription.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-background">
             {/* Top Navigation Bar */}
@@ -350,38 +455,151 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 <div className="w-full md:w-56 lg:w-64 shrink-0">
                     <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl p-2 sm:p-4 md:p-6 soft-shadow border border-border sticky top-20 md:top-24 flex-shrink-0">
                         <div className="grid grid-cols-3 md:flex md:flex-col gap-2 md:gap-2">
-                            <button onClick={() => setActiveTab('checklist')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'checklist' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
-                                <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Checklist</span>
-                            </button>
-                            <button onClick={() => setActiveTab('budget')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'budget' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
-                                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Budgets</span>
-                            </button>
-                            <button onClick={() => setActiveTab('vendors')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'vendors' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
-                                <Users className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Suppliers</span>
-                            </button>
-                            <button onClick={() => setActiveTab('seating')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'seating' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
-                                <Layout className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Seating</span>
-                            </button>
-                            <button onClick={() => setActiveTab('photos')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'photos' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
-                                <Camera className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Photos</span>
-                            </button>
-                            <button onClick={() => setActiveTab('thanks')} className={`flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${activeTab === 'thanks' ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'}`}>
-                                <Mail className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Thank You</span>
-                            </button>
+                            {PLANNER_TAB_DETAILS.map((tab) => {
+                                const Icon = tab.icon;
+                                const isActive = activeTab === tab.tab;
+
+                                return (
+                                    <button
+                                        key={tab.tab}
+                                        onClick={() => setActiveTab(tab.tab)}
+                                        className={`relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${
+                                            isActive
+                                                ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
+                                                : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'
+                                        }`}
+                                    >
+                                        {!hasPlannerPro && (
+                                            <span className={`absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full md:static md:h-auto md:w-auto md:rounded-none md:bg-transparent ${
+                                                isActive ? 'bg-white/20 md:text-white' : 'bg-primary/10 text-primary'
+                                            }`}>
+                                                <LockKeyhole className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
+                                            </span>
+                                        )}
+                                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                                        <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">{tab.label}</span>
+                                        {!hasPlannerPro && (
+                                            <span className={`hidden md:inline-flex ml-auto rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
+                                                isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                                            }`}>
+                                                Pro
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
 
                 {/* Main Content Area */}
                 <div className="flex-1 min-w-0 overflow-x-hidden">
-                    {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} reload={loadPlannerData} />}
-                    {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} wedding={wedding} vendors={vendors} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                    {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                    {activeTab === 'seating' && <SeatingChartBuilder weddingId={weddingId} />}
-                    {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} />}
-                    {activeTab === 'thanks' && <ThankYouNoteManager weddingId={weddingId} />}
+                    {!hasPlannerPro ? (
+                        <LockedPlannerFeature
+                            activeTab={activeTab}
+                            accessRole={accessRole}
+                            weddingId={weddingId}
+                            onSelectTab={setActiveTab}
+                        />
+                    ) : (
+                        <>
+                            {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={loadPlannerData} />}
+                            {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} />}
+                            {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                            {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
+                            {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                            {activeTab === 'seating' && <SeatingChartBuilder weddingId={weddingId} />}
+                            {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} />}
+                            {activeTab === 'thanks' && <ThankYouNoteManager weddingId={weddingId} />}
+                            {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
+                        </>
+                    )}
                 </div>
             </div>
+        </div>
+    );
+}
+
+function LockedPlannerFeature({
+    activeTab,
+    accessRole,
+    weddingId,
+    onSelectTab,
+}: {
+    activeTab: PlannerTab;
+    accessRole: 'owner' | 'partner' | 'coordinator' | 'pending' | 'denied';
+    weddingId: string;
+    onSelectTab: (tab: PlannerTab) => void;
+}) {
+    const activeFeature = PLANNER_TAB_DETAILS.find((feature) => feature.tab === activeTab) || PLANNER_TAB_DETAILS[0];
+    const ActiveIcon = activeFeature.icon;
+
+    return (
+        <div className="space-y-4 sm:space-y-6">
+            <section className="overflow-hidden rounded-[1.75rem] border border-primary/15 bg-white shadow-2xl shadow-primary/10">
+                <div className="bg-gradient-to-br from-primary/12 via-secondary/10 to-white p-5 sm:p-8">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex min-w-0 items-start gap-4">
+                            <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-white text-primary shadow-xl shadow-primary/10 sm:h-16 sm:w-16">
+                                <ActiveIcon className="h-7 w-7" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">Planner Pro</p>
+                                <h2 className="mt-2 font-serif text-2xl font-bold leading-tight text-foreground sm:text-4xl">
+                                    {activeFeature.headline}
+                                </h2>
+                                <p className="mt-3 max-w-2xl text-sm leading-7 text-text-secondary sm:text-base">
+                                    {activeFeature.body} Your wedding website, builder, RSVP tools, and guest tracking stay free.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-stretch gap-2 sm:items-start lg:items-end">
+                            {accessRole === 'owner' ? (
+                                <UpgradeButton weddingId={weddingId} className="justify-center" />
+                            ) : (
+                                <p className="max-w-sm rounded-2xl border border-border bg-white/80 p-4 text-sm font-semibold leading-6 text-text-secondary">
+                                    Ask the wedding owner to unlock Planner Pro for this workspace.
+                                </p>
+                            )}
+                            <p className="text-center text-xs font-semibold text-text-secondary sm:text-left lg:text-right">One-time payment. No subscription.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
+                    {PLANNER_TAB_DETAILS.map((feature) => {
+                        const Icon = feature.icon;
+                        const isActive = feature.tab === activeTab;
+
+                        return (
+                            <button
+                                key={feature.tab}
+                                type="button"
+                                onClick={() => onSelectTab(feature.tab)}
+                                className={`group flex min-h-[116px] items-start gap-3 rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg ${
+                                    isActive
+                                        ? 'border-primary/30 bg-primary/5 shadow-lg shadow-primary/10'
+                                        : 'border-border bg-neutral hover:border-primary/20'
+                                }`}
+                            >
+                                <span className={`flex h-10 w-10 flex-none items-center justify-center rounded-xl ${
+                                    isActive ? 'bg-primary text-white' : 'bg-white text-primary group-hover:bg-primary group-hover:text-white'
+                                }`}>
+                                    <Icon className="h-5 w-5" />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="flex items-center gap-2 text-sm font-black text-foreground">
+                                        {feature.label}
+                                        <LockKeyhole className="h-3.5 w-3.5 text-primary" />
+                                    </span>
+                                    <span className="mt-1 block text-xs leading-5 text-text-secondary">{feature.body}</span>
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </section>
         </div>
     );
 }
@@ -390,106 +608,431 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 // CHILD COMPONENTS
 // ----------------------------------------------------
 
-function PlannerChecklists({ weddingId, initialTasks, reload }: any) {
-    const [newTask, setNewTask] = useState("");
+const CHECKLIST_SECTIONS = ['12-Month Wedding Plan', 'Entourage', 'Parents', 'Bride Attire', 'Groom Attire', 'General'];
+const TWELVE_MONTH_TASKS = [
+    ['12m-budget', 'Set wedding budget and guest target', 12, 'Couple'],
+    ['12m-venue', 'Book ceremony and reception venue', 11, 'Couple'],
+    ['12m-suppliers', 'Shortlist priority suppliers', 10, 'Coordinator'],
+    ['12m-entourage', 'Confirm entourage and parents attire needs', 9, 'Couple'],
+    ['12m-photo', 'Book photo and video team', 8, 'Coordinator'],
+    ['12m-attire', 'Choose bride and groom wedding attire', 7, 'Couple'],
+    ['12m-menu', 'Plan catering, food, and drinks options', 6, 'Couple'],
+    ['12m-invites', 'Finalize invitation and RSVP details', 5, 'Couple'],
+    ['12m-rings', 'Prepare rings and accessories', 4, 'Couple'],
+    ['12m-seating', 'Draft seating and program flow', 3, 'Coordinator'],
+    ['12m-final', 'Confirm final supplier payments and schedules', 2, 'Coordinator'],
+    ['12m-week', 'Prepare wedding week checklist', 1, 'Couple'],
+];
+
+function getChecklistDueDate(weddingDateValue: string | null | undefined, monthsBefore: number) {
+    if (!weddingDateValue) return null;
+    const weddingDate = new Date(weddingDateValue);
+    if (Number.isNaN(weddingDate.getTime())) return null;
+    const due = new Date(weddingDate);
+    due.setMonth(due.getMonth() - monthsBefore);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (due < today) return today.toISOString().slice(0, 10);
+    return due.toISOString().slice(0, 10);
+}
+
+function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], wedding, reload }: any) {
     const [publishing, setPublishing] = useState(false);
+    const [newTask, setNewTask] = useState({
+        title: '',
+        section: 'General',
+        due_date: '',
+        assigned_to: '',
+        planner_vendor_id: '',
+        custom_supplier_name: '',
+        notes: '',
+    });
 
     async function addTask(e: any) {
         e.preventDefault();
-        if (!newTask.trim() || publishing) return;
+        if (!newTask.title.trim() || publishing) return;
         setPublishing(true);
         try {
-            const { error } = await supabase.from('planner_tasks').insert({ wedding_id: weddingId, title: newTask.trim() });
+            const { error } = await supabase.from('planner_tasks').insert({
+                wedding_id: weddingId,
+                title: newTask.title.trim(),
+                section: newTask.section,
+                status: 'to_prepare',
+                due_date: newTask.due_date || null,
+                assigned_to: newTask.assigned_to.trim() || null,
+                planner_vendor_id: newTask.planner_vendor_id || null,
+                custom_supplier_name: newTask.custom_supplier_name.trim() || null,
+                notes: newTask.notes.trim() || null,
+            });
             if (error) throw error;
-            setNewTask("");
+            setNewTask((current) => ({ ...current, title: '', assigned_to: '', custom_supplier_name: '', notes: '' }));
             await reload();
         } catch (err) {
             console.error("Error adding task:", err);
-            alert("Failed to add task. Please try again.");
+            alert("Failed to add task. Please apply supabase-planner-expansion.sql if this is the first time using the expanded planner.");
         } finally {
             setPublishing(false);
         }
     }
 
-    async function toggleTask(task: any) {
-        const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+    async function updateTask(task: any, patch: Record<string, unknown>) {
         try {
-            const { error } = await supabase.from('planner_tasks').update({ status: newStatus }).eq('id', task.id);
+            const { error } = await supabase.from('planner_tasks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', task.id);
             if (error) throw error;
             await reload();
         } catch (err) {
-            console.error("Error toggling task:", err);
+            console.error("Error updating task:", err);
         }
+    }
+
+    async function seedTwelveMonthChecklist() {
+        const existingKeys = new Set(initialTasks.map((task: any) => task.template_key).filter(Boolean));
+        const existingTitles = new Set(initialTasks.map((task: any) => `${task.section || 'General'}:${String(task.title || '').trim().toLowerCase()}`));
+        const rows = TWELVE_MONTH_TASKS
+            .filter(([key, title]) => !existingKeys.has(key) && !existingTitles.has(`12-Month Wedding Plan:${String(title).trim().toLowerCase()}`))
+            .map(([template_key, title, monthsBefore, assignedTo]) => {
+                return {
+                    wedding_id: weddingId,
+                    title,
+                    template_key,
+                    section: '12-Month Wedding Plan',
+                    status: 'to_prepare',
+                    due_date: getChecklistDueDate(wedding?.wedding_date, Number(monthsBefore)),
+                    assigned_to: assignedTo,
+                };
+            });
+
+        if (rows.length === 0) return alert('The 12-month checklist is already loaded.');
+        const { error } = await supabase.from('planner_tasks').insert(rows);
+        if (error) {
+            alert('Failed to load checklist. Apply supabase-planner-expansion.sql first.');
+            return;
+        }
+        await reload();
     }
 
     async function deleteTask(id: string) {
         if (!confirm("Are you sure you want to delete this task?")) return;
         try {
-            const { error } = await supabase.from('planner_tasks').delete().eq('id', id);
-            if (error) throw error;
+            await deletePlannerItem(weddingId, 'task', id);
+            if (setTasks) setTasks((current: any[]) => current.filter((task: any) => task.id !== id));
             await reload();
         } catch (err) {
-            console.error("Error deleting task:", err);
+            console.error('Error deleting checklist item:', err);
+            alert(err instanceof Error ? err.message : 'Unable to delete checklist item.');
         }
     }
 
-    const completedCount = initialTasks.filter((t: any) => t.status === 'completed').length;
-    const progress = initialTasks.length > 0 ? Math.round((completedCount / initialTasks.length) * 100) : 0;
+    const preparedCount = initialTasks.filter((t: any) => t.status === 'prepared' || t.status === 'completed').length;
+    const progress = initialTasks.length > 0 ? Math.round((preparedCount / initialTasks.length) * 100) : 0;
 
     return (
-        <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 md:p-12 soft-shadow border border-border">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 sm:gap-0 mb-6 sm:mb-8 border-b border-border/50 pb-4 sm:pb-8">
+        <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 md:p-10 soft-shadow border border-border">
+            <div className="flex flex-col gap-4 border-b border-border/50 pb-6 mb-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground mb-1 sm:mb-2">To-Do Checklist</h2>
-                    <p className="text-xs sm:text-sm text-text-secondary">Keep track of every tiny detail before the big day.</p>
+                    <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">Planner Checklist</h2>
+                    <p className="text-xs sm:text-sm text-text-secondary mt-1">Track entourage, parents, attire, suppliers, and wedding-month tasks.</p>
                 </div>
-                <div className="text-right hidden md:block">
-                    <p className="text-2xl sm:text-3xl font-serif font-bold text-primary mb-1">{progress}%</p>
-                    <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-text-secondary">Completed</p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div className="rounded-2xl border border-border bg-neutral/40 px-5 py-3 text-center">
+                        <p className="text-2xl font-serif font-bold text-primary">{progress}%</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Done</p>
+                    </div>
+                    <button type="button" onClick={() => void seedTwelveMonthChecklist()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
+                        <Sparkles className="h-4 w-4" /> Load 12-Month List
+                    </button>
                 </div>
             </div>
 
-            <form onSubmit={addTask} className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-6 sm:mb-10">
-                <input 
-                    type="text" 
-                    value={newTask} 
-                    onChange={e => setNewTask(e.target.value)} 
-                    placeholder="E.g. Book the florist..." 
-                    className="flex-1 bg-neutral border border-border rounded-lg sm:rounded-2xl px-3 sm:px-6 py-2 sm:py-4 outline-none focus:ring-2 focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
-                />
-                <button type="submit" disabled={publishing || !newTask.trim()} className="bg-primary text-white rounded-lg sm:rounded-2xl px-4 sm:px-6 py-2 sm:py-4 font-bold disabled:opacity-50 text-xs sm:text-base min-h-[44px]">
-                    Add
-                </button>
+            <form onSubmit={addTask} className="mb-8 grid gap-3 rounded-2xl border border-border bg-neutral/30 p-4 lg:grid-cols-3">
+                <input required value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} placeholder="Checklist item" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <select value={newTask.section} onChange={(e) => setNewTask({ ...newTask, section: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
+                    {CHECKLIST_SECTIONS.map(section => <option key={section} value={section}>{section}</option>)}
+                </select>
+                <input type="date" value={newTask.due_date} onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <input value={newTask.assigned_to} onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })} placeholder="Assigned person / role" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <select value={newTask.planner_vendor_id} onChange={(e) => setNewTask({ ...newTask, planner_vendor_id: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
+                    <option value="">Select supplier/vendor</option>
+                    {vendors.map((vendor: any) => <option key={vendor.id} value={vendor.id}>{vendor.name} - {vendor.role}</option>)}
+                </select>
+                <input value={newTask.custom_supplier_name} onChange={(e) => setNewTask({ ...newTask, custom_supplier_name: e.target.value })} placeholder="Custom supplier" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <input value={newTask.notes} onChange={(e) => setNewTask({ ...newTask, notes: e.target.value })} placeholder="Notes" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <button type="submit" disabled={publishing} className="rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white disabled:opacity-50 min-h-[44px]">{publishing ? 'Adding...' : 'Add Checklist Item'}</button>
             </form>
 
-            <div className="space-y-1 sm:space-y-3">
-                {initialTasks.length === 0 ? (
-                    <div className="text-center py-8 sm:py-12 opacity-50 font-serif italic text-xs sm:text-base">Your checklist is beautifully empty. Add your first task above!</div>
-                ) : (
-                    initialTasks.map((task: any) => (
-                        <div key={task.id} className="flex items-center justify-between p-2 sm:p-4 rounded-lg sm:rounded-xl hover:bg-neutral dark:hover:bg-neutral/50 transition-colors group gap-2">
-                            <div className="flex items-center gap-2 sm:gap-4 flex-1 cursor-pointer min-w-0" onClick={() => toggleTask(task)}>
-                                {task.status === 'completed' ? (
-                                    <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 shrink-0" />
-                                ) : (
-                                    <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-border group-hover:text-primary transition-colors shrink-0" />
-                                )}
-                                <span className={`text-sm sm:text-lg font-serif truncate ${task.status === 'completed' ? 'text-text-secondary line-through' : 'text-foreground'}`}>
-                                    {task.title}
-                                </span>
+            <div className="space-y-5">
+                {CHECKLIST_SECTIONS.map((section) => {
+                    const sectionTasks = initialTasks.filter((task: any) => (task.section || 'General') === section);
+                    if (sectionTasks.length === 0) return null;
+                    return (
+                        <div key={section} className="rounded-2xl border border-border bg-white overflow-hidden">
+                            <div className="flex items-center justify-between gap-3 border-b border-border bg-neutral/30 px-4 py-3">
+                                <h3 className="font-serif text-lg font-bold text-foreground">{section}</h3>
+                                <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">{sectionTasks.length} items</span>
                             </div>
-                            <button onClick={() => deleteTask(task.id)} className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-red-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-red-500/10 flex-shrink-0 min-h-[44px] min-w-[44px]">
-                                <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="divide-y divide-border/40">
+                                {sectionTasks.map((task: any) => {
+                                    const linkedVendor = vendors.find((vendor: any) => vendor.id === task.planner_vendor_id);
+                                    const prepared = task.status === 'prepared' || task.status === 'completed';
+                                    return (
+                                        <div key={task.id} className="flex items-start gap-3 p-4 sm:items-center">
+                                            <button type="button" onClick={() => void updateTask(task, { status: prepared ? 'to_prepare' : 'prepared' })} aria-label={prepared ? 'Mark checklist item as not done' : 'Mark checklist item as done'} className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-full hover:bg-primary/10 sm:mt-0">
+                                                {prepared ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Circle className="h-5 w-5 text-border" />}
+                                            </button>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex min-w-0 items-start gap-3">
+                                                    <p className={`min-w-0 break-words font-serif text-base font-bold leading-snug ${prepared ? 'text-text-secondary line-through' : 'text-foreground'}`}>{task.title}</p>
+                                                </div>
+                                                <p className="mt-1 break-words text-xs leading-5 text-text-secondary">
+                                                    {[task.assigned_to, task.due_date ? new Date(task.due_date).toLocaleDateString() : null, linkedVendor?.name || task.custom_supplier_name].filter(Boolean).join(' - ') || 'No details yet'}
+                                                </p>
+                                                {task.notes && <p className="mt-1 break-words text-xs italic leading-5 text-text-secondary">{task.notes}</p>}
+                                            </div>
+                                            <button type="button" onClick={() => void deleteTask(task.id)} className="flex h-11 w-11 flex-none items-center justify-center rounded-xl text-red-500 hover:bg-red-50" aria-label="Delete checklist item"><Trash2 className="h-4 w-4" /></button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    ))
-                )}
+                    );
+                })}
+                {initialTasks.length === 0 && <div className="text-center py-12 opacity-50 font-serif italic text-sm">Your checklist is empty. Add an item or load the 12-month list.</div>}
             </div>
         </div>
     );
 }
 
-function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], reload, updateVendorStatus }: any) {
+function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], wedding, googleCalendar, reload }: any) {
+    const [publishing, setPublishing] = useState(false);
+    const [syncingGoogle, setSyncingGoogle] = useState(false);
+    const [newEvent, setNewEvent] = useState({
+        title: '',
+        starts_at: '',
+        ends_at: '',
+        location: '',
+        notes: '',
+        planner_task_id: '',
+        reminder_minutes: '1440',
+    });
+
+    const feedUrl = wedding?.planner_calendar_token
+        ? `/api/planner/calendar?weddingId=${encodeURIComponent(weddingId)}&token=${encodeURIComponent(wedding.planner_calendar_token)}`
+        : '';
+
+    async function getAuthToken() {
+        const { data } = await supabase.auth.getSession();
+        return data.session?.access_token || '';
+    }
+
+    async function connectGoogleCalendar() {
+        const token = await getAuthToken();
+        if (!token) return alert('Please sign in again before connecting Google Calendar.');
+        const response = await fetch(`/api/planner/google-calendar/connect?weddingId=${encodeURIComponent(weddingId)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
+        });
+        const data = await response.json();
+        if (!response.ok || !data.url) {
+            alert(data.error || 'Google Calendar connection is not configured yet.');
+            return;
+        }
+        window.location.href = data.url;
+    }
+
+    async function syncGoogleCalendar(silent = false) {
+        if (!googleCalendar?.connected) return;
+        setSyncingGoogle(true);
+        try {
+            const token = await getAuthToken();
+            const response = await fetch('/api/planner/google-calendar/sync', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ weddingId }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Unable to sync Google Calendar.');
+            if (!silent) alert(`Synced ${data.synced || 0} schedule items to Google Calendar.`);
+            await reload();
+        } catch (err) {
+            console.error('Google Calendar sync failed:', err);
+            if (!silent) alert(err instanceof Error ? err.message : 'Unable to sync Google Calendar.');
+        } finally {
+            setSyncingGoogle(false);
+        }
+    }
+
+    async function disconnectGoogleCalendar() {
+        if (!confirm('Disconnect Google Calendar for this planner?')) return;
+        const token = await getAuthToken();
+        const response = await fetch('/api/planner/google-calendar/disconnect', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ weddingId }),
+        });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            alert(data.error || 'Unable to disconnect Google Calendar.');
+            return;
+        }
+        await reload();
+    }
+
+    async function deleteGoogleCalendarEvent(eventId: string) {
+        if (!googleCalendar?.connected) return;
+        const token = await getAuthToken();
+        await fetch('/api/planner/google-calendar/sync', {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ weddingId, eventId }),
+        });
+    }
+
+    async function addEvent(e: any) {
+        e.preventDefault();
+        if (!newEvent.title || !newEvent.starts_at || publishing) return;
+        setPublishing(true);
+        try {
+            const { error } = await supabase.from('planner_events').insert({
+                wedding_id: weddingId,
+                title: newEvent.title.trim(),
+                starts_at: new Date(newEvent.starts_at).toISOString(),
+                ends_at: newEvent.ends_at ? new Date(newEvent.ends_at).toISOString() : null,
+                location: newEvent.location.trim() || null,
+                notes: newEvent.notes.trim() || null,
+                planner_task_id: newEvent.planner_task_id || null,
+                reminder_minutes: Number(newEvent.reminder_minutes) || 1440,
+            });
+            if (error) throw error;
+            setNewEvent({ title: '', starts_at: '', ends_at: '', location: '', notes: '', planner_task_id: '', reminder_minutes: '1440' });
+            await reload();
+            await syncGoogleCalendar(true);
+        } catch (err) {
+            console.error('Error adding planner event:', err);
+            alert('Failed to add schedule. Please apply supabase-planner-expansion.sql first.');
+        } finally {
+            setPublishing(false);
+        }
+    }
+
+    async function deleteEvent(id: string) {
+        if (!confirm('Delete this schedule?')) return;
+        try {
+            await deleteGoogleCalendarEvent(id);
+            await deletePlannerItem(weddingId, 'event', id);
+            if (setEvents) setEvents((current: any[]) => current.filter((event: any) => event.id !== id));
+            await reload();
+        } catch (err) {
+            console.error('Error deleting schedule:', err);
+            alert(err instanceof Error ? err.message : 'Unable to delete schedule.');
+        }
+    }
+
+    const today = new Date();
+    const upcoming = events.filter((event: any) => new Date(event.starts_at) >= today).slice(0, 6);
+    const grouped: Record<string, any[]> = events.reduce((acc: Record<string, any[]>, event: any) => {
+        const key = new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        acc[key] = acc[key] || [];
+        acc[key].push(event);
+        return acc;
+    }, {});
+
+    return (
+        <div className="space-y-5">
+            <div className="rounded-2xl sm:rounded-[2.5rem] border border-border bg-white p-5 md:p-10 soft-shadow">
+                <div className="mb-6 flex flex-col gap-4 border-b border-border/50 pb-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <h2 className="font-serif text-2xl font-bold text-foreground sm:text-3xl">Schedule Calendar</h2>
+                        <p className="mt-1 text-xs text-text-secondary sm:text-sm">Plan fittings, tastings, supplier meetings, and wedding week schedules.</p>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                        {googleCalendar?.connected ? (
+                            <>
+                                <button type="button" onClick={() => void syncGoogleCalendar()} disabled={syncingGoogle} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-600 hover:text-white disabled:opacity-50">
+                                    <RefreshCw className={`h-4 w-4 ${syncingGoogle ? 'animate-spin' : ''}`} /> {syncingGoogle ? 'Syncing...' : 'Sync Google'}
+                                </button>
+                                <button type="button" onClick={() => void disconnectGoogleCalendar()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary hover:bg-neutral">
+                                    Disconnect
+                                </button>
+                            </>
+                        ) : (
+                            <button type="button" onClick={() => void connectGoogleCalendar()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
+                                <CalendarDays className="h-4 w-4" /> Connect Google Calendar
+                            </button>
+                        )}
+                        {feedUrl && (
+                            <a href={feedUrl} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
+                                <Download className="h-4 w-4" /> Export .ics
+                            </a>
+                        )}
+                    </div>
+                </div>
+
+                <form onSubmit={addEvent} className="mb-6 grid gap-3 rounded-2xl border border-border bg-neutral/30 p-4 lg:grid-cols-3">
+                    <input required value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} placeholder="Schedule title" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                    <input required type="datetime-local" value={newEvent.starts_at} onChange={(e) => setNewEvent({ ...newEvent, starts_at: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                    <input type="datetime-local" value={newEvent.ends_at} onChange={(e) => setNewEvent({ ...newEvent, ends_at: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                    <input value={newEvent.location} onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })} placeholder="Location" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                    <select value={newEvent.planner_task_id} onChange={(e) => setNewEvent({ ...newEvent, planner_task_id: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
+                        <option value="">Related checklist item</option>
+                        {tasks.map((task: any) => <option key={task.id} value={task.id}>{task.title}</option>)}
+                    </select>
+                    <select value={newEvent.reminder_minutes} onChange={(e) => setNewEvent({ ...newEvent, reminder_minutes: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
+                        <option value="60">Remind 1 hour before</option>
+                        <option value="720">Remind 12 hours before</option>
+                        <option value="1440">Remind 1 day before</option>
+                        <option value="4320">Remind 3 days before</option>
+                    </select>
+                    <input value={newEvent.notes} onChange={(e) => setNewEvent({ ...newEvent, notes: e.target.value })} placeholder="Notes" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px] lg:col-span-2" />
+                    <button disabled={publishing} className="rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white disabled:opacity-50 min-h-[44px]">{publishing ? 'Adding...' : 'Add Schedule'}</button>
+                </form>
+
+                <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+                    <div className="rounded-2xl border border-border bg-neutral/30 p-4">
+                        <h3 className="mb-3 flex items-center gap-2 font-serif text-lg font-bold"><Clock className="h-5 w-5 text-primary" /> Upcoming</h3>
+                        <div className="space-y-2">
+                            {upcoming.length === 0 ? <p className="py-8 text-center text-sm italic text-text-secondary">No upcoming schedules.</p> : upcoming.map((event: any) => (
+                                <div key={event.id} className="rounded-xl bg-white p-3 text-sm">
+                                    <p className="font-bold text-foreground">{event.title}</p>
+                                    <p className="text-xs text-text-secondary">{new Date(event.starts_at).toLocaleString()}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        {Object.entries(grouped).map(([month, monthEvents]) => (
+                            <div key={month} className="overflow-hidden rounded-2xl border border-border bg-white">
+                                <div className="border-b border-border bg-neutral/30 px-4 py-3 font-serif font-bold">{month}</div>
+                                <div className="divide-y divide-border/40">
+                                    {monthEvents.map((event: any) => (
+                                        <div key={event.id} className="grid gap-2 p-4 sm:grid-cols-[140px_minmax(0,1fr)_44px] sm:items-center">
+                                            <p className="text-xs font-black uppercase tracking-widest text-primary">{new Date(event.starts_at).toLocaleDateString()}<br />{new Date(event.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                            <div>
+                                                <p className="font-bold text-foreground">{event.title}</p>
+                                                <p className="text-xs text-text-secondary">{[event.location, event.notes].filter(Boolean).join(' - ')}</p>
+                                            </div>
+                                            <button onClick={() => void deleteEvent(event.id)} className="flex h-11 w-11 items-center justify-center rounded-xl text-red-500 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendors = [], foodDrinks = [], reload, updateVendorStatus }: any) {
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({ category: 'Venue', item_name: '', estimated_cost: '' });
 
@@ -582,15 +1125,19 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
     async function deleteItem(id: string) {
         if (!confirm("Delete this budget item?")) return;
         try {
-            const { error } = await supabase.from('planner_budgets').delete().eq('id', id);
-            if (error) throw error;
+            await deletePlannerItem(weddingId, 'budget', id);
+            if (setBudgets) setBudgets((current: any[]) => current.filter((item: any) => item.id !== id));
             await reload();
         } catch (err) {
             console.error("Error deleting budget item:", err);
+            alert(err instanceof Error ? err.message : 'Unable to delete budget item.');
         }
     }
 
-    const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0);
+    const foodDrinkBudgetTotal = foodDrinks
+        .filter((item: any) => !item.planner_vendor_id)
+        .reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0);
+    const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0) + foodDrinkBudgetTotal;
     const totalSpentFromVendors = vendors
         .filter((v: any) => v.payment_status?.toLowerCase() === 'paid')
         .reduce((acc: number, v: any) => acc + (parseFloat(v.amount) || 0), 0);
@@ -602,14 +1149,14 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
 
     // Chart Data
     const chartData = [
-        { name: 'Allocated (Budget List)', value: totalEst },
+        { name: 'Allocated (Budget + Food)', value: totalEst },
         { name: 'Paid Vendors', value: totalSpentFromVendors },
         { name: 'Remaining', value: Math.max(0, budgetRemaining) }
     ];
     const COLORS = ['#D16C78', '#CBB26A', '#3A2A2D'];
 
     // Derive symbol from localCurrency for immediate UI feedback
-    const currencySymbol = localCurrency === 'USD' ? '$' : localCurrency === 'Yen' ? '¥' : '₱';
+    const currencySymbol = getCurrencySymbol(localCurrency);
 
     return (
         <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 lg:p-6 soft-shadow border border-border overflow-x-hidden">
@@ -767,6 +1314,7 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                     <h3 className="font-serif text-lg font-bold text-foreground">Add Expense</h3>
                     <div className="hidden gap-2 text-[10px] font-black uppercase tracking-widest text-text-secondary sm:flex">
                         <span>Planned {currencySymbol}{totalEst.toLocaleString()}</span>
+                        <span>Food {currencySymbol}{foodDrinkBudgetTotal.toLocaleString()}</span>
                         <span>Paid {currencySymbol}{totalSpentFromVendors.toLocaleString()}</span>
                     </div>
                 </div>
@@ -837,7 +1385,7 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
                                             <p className="font-serif break-words">{item.item_name}</p>
                                             <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                                                 <span className="font-mono text-text-secondary text-xs sm:text-sm whitespace-nowrap">{currencySymbol}{Number(item.estimated_cost).toLocaleString()}</span>
-                                                <button onClick={() => deleteItem(item.id)} className="text-red-400 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity min-h-[36px] min-w-[36px] flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
+                                                <button type="button" onClick={() => deleteItem(item.id)} className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50" aria-label="Delete budget item"><Trash2 className="w-4 h-4" /></button>
                                             </div>
                                         </div>
                                     ))}
@@ -896,7 +1444,324 @@ function PlannerBudgets({ weddingId, initialBudgets, wedding, vendors = [], relo
     );
 }
 
-function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVendorStatus }: any) {
+function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors = [], currency, reload }: any) {
+    const [publishing, setPublishing] = useState(false);
+    const [uploadingReference, setUploadingReference] = useState(false);
+    const [newItem, setNewItem] = useState({
+        item_type: 'food',
+        item_name: '',
+        serving_category: '',
+        reference_image_url: '',
+        estimated_cost: '',
+        planner_vendor_id: '',
+        custom_supplier_name: '',
+        notes: '',
+    });
+
+    const currencySymbol = getCurrencySymbol(currency);
+    const cateringVendors = vendors.filter((vendor: any) => /cater|food|drink|bar|dessert|cake/i.test(`${vendor.role} ${vendor.name}`));
+    const includedTotal = foodDrinks
+        .filter((item: any) => !item.planner_vendor_id)
+        .reduce((sum: number, item: any) => sum + Number(item.estimated_cost || 0), 0);
+
+    async function uploadReference(file: File) {
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file.');
+            return;
+        }
+        if (file.size > 8 * 1024 * 1024) {
+            alert('Food reference photo must be 8MB or smaller.');
+            return;
+        }
+        setUploadingReference(true);
+        try {
+            const safeName = file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+            const path = `planner-food/${weddingId}/${Date.now()}-${safeName}`;
+            const { error } = await supabase.storage.from('quickweds').upload(path, file, { contentType: file.type, upsert: true });
+            if (error) throw error;
+            const { data } = supabase.storage.from('quickweds').getPublicUrl(path);
+            setNewItem((current) => ({ ...current, reference_image_url: data.publicUrl }));
+        } catch (err) {
+            console.error('Food reference upload failed:', err);
+            alert(err instanceof Error ? err.message : 'Unable to upload food reference photo.');
+        } finally {
+            setUploadingReference(false);
+        }
+    }
+
+    async function addItem(e: any) {
+        e.preventDefault();
+        if (!newItem.item_name || publishing) return;
+        setPublishing(true);
+        try {
+            const { error } = await supabase.from('planner_food_drinks').insert({
+                wedding_id: weddingId,
+                item_type: newItem.item_type,
+                item_name: newItem.item_name.trim(),
+                serving_category: newItem.serving_category.trim() || null,
+                reference_image_url: newItem.reference_image_url.trim() || null,
+                estimated_cost: parseFloat(newItem.estimated_cost) || 0,
+                planner_vendor_id: newItem.planner_vendor_id || null,
+                custom_supplier_name: newItem.custom_supplier_name.trim() || null,
+                notes: newItem.notes.trim() || null,
+            });
+            if (error) throw error;
+            setNewItem({ item_type: 'food', item_name: '', serving_category: '', reference_image_url: '', estimated_cost: '', planner_vendor_id: '', custom_supplier_name: '', notes: '' });
+            await reload();
+        } catch (err) {
+            console.error('Error adding food/drink item:', err);
+            alert('Failed to add food or drink. Please apply supabase-planner-expansion.sql first.');
+        } finally {
+            setPublishing(false);
+        }
+    }
+
+    async function deleteItem(id: string) {
+        if (!confirm('Delete this food or drink item?')) return;
+        try {
+            await deletePlannerItem(weddingId, 'foodDrink', id);
+            if (setFoodDrinks) setFoodDrinks((current: any[]) => current.filter((item: any) => item.id !== id));
+            await reload();
+        } catch (err) {
+            console.error('Error deleting food or drink item:', err);
+            alert(err instanceof Error ? err.message : 'Unable to delete food or drink item.');
+        }
+    }
+
+    return (
+        <div className="rounded-2xl sm:rounded-[2.5rem] border border-border bg-white p-5 md:p-10 soft-shadow">
+            <div className="mb-6 flex flex-col gap-3 border-b border-border/50 pb-5 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 className="font-serif text-2xl font-bold text-foreground sm:text-3xl">Food & Drinks Planner</h2>
+                    <p className="mt-1 text-xs text-text-secondary sm:text-sm">Plan menu items, drink service, reference photos, suppliers, and custom costs.</p>
+                </div>
+                <div className="rounded-2xl border border-border bg-neutral/40 px-5 py-3 text-center">
+                    <p className="font-mono text-xl font-black text-primary">{currencySymbol}{includedTotal.toLocaleString()}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Added to budget</p>
+                </div>
+            </div>
+
+            <form onSubmit={addItem} className="mb-8 grid gap-3 rounded-2xl border border-border bg-neutral/30 p-4 lg:grid-cols-3">
+                <select value={newItem.item_type} onChange={(e) => setNewItem({ ...newItem, item_type: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
+                    <option value="food">Food</option>
+                    <option value="drink">Drink</option>
+                    <option value="dessert">Dessert</option>
+                    <option value="other">Other</option>
+                </select>
+                <input required value={newItem.item_name} onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })} placeholder="Item name" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <input value={newItem.serving_category} onChange={(e) => setNewItem({ ...newItem, serving_category: e.target.value })} placeholder="Course / serving category" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-text-secondary">{currencySymbol}</span>
+                    <input type="number" inputMode="decimal" value={newItem.estimated_cost} onChange={(e) => setNewItem({ ...newItem, estimated_cost: e.target.value })} placeholder="Cost" className="icon-field-left-compact w-full rounded-xl border border-border bg-white py-3 pl-8 pr-4 text-sm outline-none min-h-[44px]" />
+                </div>
+                <select value={newItem.planner_vendor_id} onChange={(e) => setNewItem({ ...newItem, planner_vendor_id: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
+                    <option value="">No catering supplier / custom</option>
+                    {cateringVendors.map((vendor: any) => <option key={vendor.id} value={vendor.id}>{vendor.name} - {vendor.role}</option>)}
+                </select>
+                <input value={newItem.custom_supplier_name} onChange={(e) => setNewItem({ ...newItem, custom_supplier_name: e.target.value })} placeholder="Custom supplier" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <label className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/30 bg-white px-4 py-3 text-sm font-bold text-primary">
+                    {uploadingReference ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                    {uploadingReference ? 'Uploading...' : newItem.reference_image_url ? 'Photo selected' : 'Upload from gallery'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && void uploadReference(e.target.files[0])} />
+                </label>
+                <div className="flex min-h-[44px] items-center rounded-xl border border-border bg-white px-4 py-3 text-sm text-text-secondary">
+                    {newItem.reference_image_url ? 'Reference photo uploaded' : 'No photo uploaded'}
+                </div>
+                <input value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} placeholder="Notes" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <button disabled={publishing} className="rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white disabled:opacity-50 min-h-[44px]">{publishing ? 'Adding...' : 'Add Food / Drink'}</button>
+            </form>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {foodDrinks.length === 0 ? (
+                    <div className="col-span-full py-12 text-center font-serif text-sm italic text-text-secondary">No food or drink items yet.</div>
+                ) : foodDrinks.map((item: any) => {
+                    const linkedVendor = vendors.find((vendor: any) => vendor.id === item.planner_vendor_id);
+                    return (
+                        <div key={item.id} className="overflow-hidden rounded-2xl border border-border bg-white soft-shadow">
+                            <div className="aspect-[4/3] bg-neutral/40">
+                                {item.reference_image_url ? <img src={item.reference_image_url} alt={item.item_name} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-text-secondary/30"><Utensils className="h-10 w-10" /></div>}
+                            </div>
+                            <div className="p-4">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-primary">{item.item_type} {item.serving_category ? `- ${item.serving_category}` : ''}</p>
+                                <h3 className="mt-1 font-serif text-lg font-bold text-foreground">{item.item_name}</h3>
+                                <p className="mt-1 text-xs text-text-secondary">{linkedVendor ? `Supplier: ${linkedVendor.name}` : item.custom_supplier_name ? `Custom: ${item.custom_supplier_name}` : 'No supplier linked'}</p>
+                                <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-3">
+                                    <div>
+                                        <p className="font-mono font-bold text-primary">{currencySymbol}{Number(item.estimated_cost || 0).toLocaleString()}</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-text-secondary">{item.planner_vendor_id ? 'Supplier cost excluded' : 'Included in budget'}</p>
+                                    </div>
+                                    <button type="button" onClick={() => void deleteItem(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl text-red-500 hover:bg-red-50" aria-label="Delete food or drink item"><Trash2 className="h-4 w-4" /></button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, reload }: any) {
+    const [publishing, setPublishing] = useState(false);
+    const [newItem, setNewItem] = useState({
+        category: 'destination',
+        title: '',
+        destination: '',
+        start_date: '',
+        end_date: '',
+        estimated_cost: '',
+        status: 'idea',
+        supplier_name: '',
+        booking_link: '',
+        notes: '',
+    });
+
+    const currencySymbol = getCurrencySymbol(currency);
+    const categories = ['destination', 'flight', 'hotel', 'activity', 'transport', 'documents', 'packing', 'other'];
+    const totalEstimated = items.reduce((sum: number, item: any) => sum + Number(item.estimated_cost || 0), 0);
+    const bookedCount = items.filter((item: any) => item.status === 'booked' || item.status === 'paid').length;
+    const topDestination = items.find((item: any) => item.destination)?.destination || 'Not selected';
+
+    async function addItem(e: any) {
+        e.preventDefault();
+        if (!newItem.title.trim() || publishing) return;
+        setPublishing(true);
+        try {
+            const { error } = await supabase.from('planner_honeymoon_items').insert({
+                wedding_id: weddingId,
+                category: newItem.category,
+                title: newItem.title.trim(),
+                destination: newItem.destination.trim() || null,
+                start_date: newItem.start_date || null,
+                end_date: newItem.end_date || null,
+                estimated_cost: parseFloat(newItem.estimated_cost) || 0,
+                status: newItem.status,
+                supplier_name: newItem.supplier_name.trim() || null,
+                booking_link: newItem.booking_link.trim() || null,
+                notes: newItem.notes.trim() || null,
+            });
+            if (error) throw error;
+            setNewItem({ category: newItem.category, title: '', destination: '', start_date: '', end_date: '', estimated_cost: '', status: 'idea', supplier_name: '', booking_link: '', notes: '' });
+            await reload();
+        } catch (err) {
+            console.error('Error adding honeymoon item:', err);
+            alert('Failed to add honeymoon item. Please apply supabase-planner-expansion.sql first.');
+        } finally {
+            setPublishing(false);
+        }
+    }
+
+    async function updateItem(item: any, patch: Record<string, unknown>) {
+        const { error } = await supabase.from('planner_honeymoon_items').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', item.id);
+        if (!error) await reload();
+    }
+
+    async function deleteItem(id: string) {
+        if (!confirm('Delete this honeymoon item?')) return;
+        try {
+            await deletePlannerItem(weddingId, 'honeymoon', id);
+            if (setHoneymoonItems) setHoneymoonItems((current: any[]) => current.filter((item: any) => item.id !== id));
+            await reload();
+        } catch (err) {
+            console.error('Error deleting honeymoon item:', err);
+            alert(err instanceof Error ? err.message : 'Unable to delete honeymoon item.');
+        }
+    }
+
+    return (
+        <div className="rounded-2xl sm:rounded-[2.5rem] border border-border bg-white p-5 md:p-10 soft-shadow">
+            <div className="mb-6 flex flex-col gap-4 border-b border-border/50 pb-5 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <h2 className="font-serif text-2xl font-bold text-foreground sm:text-3xl">Honeymoon Planner</h2>
+                    <p className="mt-1 text-xs text-text-secondary sm:text-sm">Plan destination ideas, bookings, travel documents, activities, and honeymoon budget.</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-border bg-neutral/40 px-4 py-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Destination</p>
+                        <p className="mt-1 truncate font-serif text-lg font-bold text-foreground">{topDestination}</p>
+                    </div>
+                    <div className="rounded-2xl border border-border bg-neutral/40 px-4 py-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Estimated</p>
+                        <p className="mt-1 font-mono text-lg font-black text-primary">{currencySymbol}{totalEstimated.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-2xl border border-border bg-neutral/40 px-4 py-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Booked</p>
+                        <p className="mt-1 font-serif text-lg font-bold text-foreground">{bookedCount}/{items.length}</p>
+                    </div>
+                </div>
+            </div>
+
+            <form onSubmit={addItem} className="mb-8 grid gap-3 rounded-2xl border border-border bg-neutral/30 p-4 lg:grid-cols-3">
+                <select value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
+                    {categories.map((category) => <option key={category} value={category}>{category.charAt(0).toUpperCase() + category.slice(1)}</option>)}
+                </select>
+                <input required value={newItem.title} onChange={(e) => setNewItem({ ...newItem, title: e.target.value })} placeholder="Plan item, e.g. Resort booking" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <input value={newItem.destination} onChange={(e) => setNewItem({ ...newItem, destination: e.target.value })} placeholder="Destination / city" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <input type="date" value={newItem.start_date} onChange={(e) => setNewItem({ ...newItem, start_date: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <input type="date" value={newItem.end_date} onChange={(e) => setNewItem({ ...newItem, end_date: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-text-secondary">{currencySymbol}</span>
+                    <input type="number" inputMode="decimal" value={newItem.estimated_cost} onChange={(e) => setNewItem({ ...newItem, estimated_cost: e.target.value })} placeholder="Budget / cost" className="icon-field-left-compact w-full rounded-xl border border-border bg-white py-3 pl-8 pr-4 text-sm outline-none min-h-[44px]" />
+                </div>
+                <select value={newItem.status} onChange={(e) => setNewItem({ ...newItem, status: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
+                    <option value="idea">Idea</option>
+                    <option value="researching">Researching</option>
+                    <option value="booked">Booked</option>
+                    <option value="paid">Paid</option>
+                </select>
+                <input value={newItem.supplier_name} onChange={(e) => setNewItem({ ...newItem, supplier_name: e.target.value })} placeholder="Airline, hotel, agency, supplier" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <input value={newItem.booking_link} onChange={(e) => setNewItem({ ...newItem, booking_link: e.target.value })} placeholder="Booking link" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                <input value={newItem.notes} onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })} placeholder="Notes, inclusions, reminders" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px] lg:col-span-2" />
+                <button disabled={publishing} className="rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white disabled:opacity-50 min-h-[44px]">{publishing ? 'Adding...' : 'Add Honeymoon Item'}</button>
+            </form>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+                {items.length === 0 ? (
+                    <div className="lg:col-span-2 py-12 text-center font-serif text-sm italic text-text-secondary">No honeymoon plans yet.</div>
+                ) : items.map((item: any) => (
+                    <div key={item.id} className="rounded-2xl border border-border bg-white p-4 soft-shadow">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-primary">{item.category}</p>
+                                <h3 className="mt-1 font-serif text-lg font-bold text-foreground">{item.title}</h3>
+                                <p className="mt-1 flex items-center gap-1 text-xs text-text-secondary"><MapPin className="h-3.5 w-3.5" /> {item.destination || 'Destination not set'}</p>
+                            </div>
+                            <button onClick={() => void deleteItem(item.id)} className="flex h-10 w-10 flex-none items-center justify-center rounded-xl text-red-500 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                            <div className="rounded-xl bg-neutral/40 p-3">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary">Dates</p>
+                                <p className="mt-1 text-xs font-bold text-foreground">{[item.start_date, item.end_date].filter(Boolean).join(' to ') || 'Not set'}</p>
+                            </div>
+                            <div className="rounded-xl bg-neutral/40 p-3">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary">Cost</p>
+                                <p className="mt-1 font-mono text-sm font-black text-primary">{currencySymbol}{Number(item.estimated_cost || 0).toLocaleString()}</p>
+                            </div>
+                            <div className="rounded-xl bg-neutral/40 p-3">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary">Status</p>
+                                <select value={item.status || 'idea'} onChange={(e) => void updateItem(item, { status: e.target.value })} className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-xs font-bold outline-none">
+                                    <option value="idea">Idea</option>
+                                    <option value="researching">Researching</option>
+                                    <option value="booked">Booked</option>
+                                    <option value="paid">Paid</option>
+                                </select>
+                            </div>
+                        </div>
+                        {(item.supplier_name || item.booking_link || item.notes) && (
+                            <div className="mt-4 border-t border-border pt-3 text-xs text-text-secondary">
+                                {item.supplier_name && <p><span className="font-bold text-foreground">Supplier:</span> {item.supplier_name}</p>}
+                                {item.booking_link && <a href={item.booking_link} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 font-bold text-primary"><LinkIcon className="h-3.5 w-3.5" /> Booking link</a>}
+                                {item.notes && <p className="mt-1 italic">{item.notes}</p>}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reload, updateVendorStatus }: any) {
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({ 
         role: 'Photographer', 
@@ -907,7 +1772,7 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
         payment_method: 'cash'
     });
     
-    const currencySymbol = currency === 'USD' ? '$' : currency === 'JPY' ? '¥' : '₱';
+    const currencySymbol = getCurrencySymbol(currency);
     const [roles, setRoles] = useState(['Photographer', 'Videographer', 'Florist', 'Caterer', 'Coordinator', 'DJ/Band', 'Hair & Makeup', 'Supplier']);
     
     const handleAddCustomRole = () => {
@@ -954,11 +1819,12 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
     async function deleteItem(id: string) {
         if (!confirm("Delete this supplier/vendor?")) return;
         try {
-            const { error } = await supabase.from('planner_vendors').delete().eq('id', id);
-            if (error) throw error;
+            await deletePlannerItem(weddingId, 'vendor', id);
+            if (setVendors) setVendors((current: any[]) => current.filter((vendor: any) => vendor.id !== id));
             await reload();
         } catch (err) {
             console.error("Error deleting vendor:", err);
+            alert(err instanceof Error ? err.message : 'Unable to delete supplier/vendor.');
         }
     }
 
@@ -1055,7 +1921,7 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
                 ) : (
                     initialVendors.map((vendor: any) => (
                         <div key={vendor.id} className="border border-border rounded-xl sm:rounded-2xl p-4 sm:p-5 group relative bg-white hover:border-primary/30 transition-all soft-shadow overflow-hidden">
-                            <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+                            <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2 pr-10">
                                 <div className="min-w-0 flex-1">
                                     <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-primary block mb-0.5 truncate">{vendor.role}</span>
                                     <h3 className="font-serif text-base sm:text-lg font-bold text-foreground truncate">{vendor.name}</h3>
@@ -1080,7 +1946,7 @@ function PlannerVendors({ weddingId, initialVendors, currency, reload, updateVen
                                 />
                             </div>
 
-                            <button onClick={() => deleteItem(vendor.id)} className="absolute -top-1.5 -right-1.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 border border-border shadow-sm">
+                            <button type="button" onClick={() => deleteItem(vendor.id)} className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-red-100 bg-white text-red-500 shadow-sm transition-colors hover:bg-red-50" aria-label="Delete supplier or vendor">
                                 <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </button>
                         </div>

@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import UpgradeButton from '@/components/UpgradeButton';
 import { acceptWeddingInvite, listSharedWeddings } from '@/lib/wedding-features';
-import { getClientAccountProfile, getRoleAwareRedirect } from '@/lib/account';
+import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro, type AccountProfile } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 
@@ -28,9 +28,11 @@ function getFirstName(user: any) {
 function DashboardWelcomeHero({
     user,
     weddings,
+    onOpenPlanner,
 }: {
     user: any;
     weddings: any[];
+    onOpenPlanner: () => void;
 }) {
     const hasWeddings = weddings.length > 0;
     const rsvpCount = weddings.reduce((total, wedding) => total + (wedding.rsvps?.length || 0), 0);
@@ -79,9 +81,15 @@ function DashboardWelcomeHero({
                     </div>
 
                     <div className="hidden shrink-0 items-center gap-3 sm:flex">
-                        <Link href={hasWeddings && latestWedding ? `/dashboard/${latestWedding.id}/planner` : '/builder'} title={hasWeddings ? 'Open planner' : 'Open builder'} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
-                            <Calendar className="h-5 w-5" />
-                        </Link>
+                        {hasWeddings ? (
+                            <button type="button" onClick={onOpenPlanner} title="Open planner" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
+                                <Calendar className="h-5 w-5" />
+                            </button>
+                        ) : (
+                            <Link href="/builder" title="Open builder" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
+                                <Calendar className="h-5 w-5" />
+                            </Link>
+                        )}
                         <Link href={hasWeddings && latestWedding ? `/dashboard/${latestWedding.id}` : '/user-guide'} title={hasWeddings ? 'Open workspace' : 'Open guide'} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
                             <Users className="h-5 w-5" />
                         </Link>
@@ -131,10 +139,17 @@ function DashboardWelcomeHero({
                         <Link href={hasWeddings && latestWedding ? `/dashboard/${latestWedding.id}` : '/builder'} className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover">
                             {hasWeddings ? 'Continue Workspace' : 'Create Your Free Site'} <ArrowRight className="h-4 w-4" />
                         </Link>
-                        <Link href={hasWeddings && latestWedding ? `/dashboard/${latestWedding.id}/planner` : '/user-guide'} className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-border bg-white px-6 py-3 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5">
-                            {hasWeddings ? <Calendar className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
-                            {hasWeddings ? 'Open Planner' : 'View Guide'}
-                        </Link>
+                        {hasWeddings ? (
+                            <button type="button" onClick={onOpenPlanner} className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-border bg-white px-6 py-3 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5">
+                                <Calendar className="h-4 w-4" />
+                                Open Planner
+                            </button>
+                        ) : (
+                            <Link href="/user-guide" className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-border bg-white px-6 py-3 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5">
+                                <BookOpen className="h-4 w-4" />
+                                View Guide
+                            </Link>
+                        )}
 
                     </div>
                 </div>
@@ -260,6 +275,10 @@ export default function DashboardRedirect() {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [checkingRole, setCheckingRole] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isPlannerPickerOpen, setIsPlannerPickerOpen] = useState(false);
+    const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+    const accountIsPro = isAdmin || hasAccountPro(accountProfile);
+    const freeWebsiteLimitReached = !accountIsPro && weddings.length >= 3;
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
     const fetchWeddings = useCallback(async () => {
@@ -295,6 +314,17 @@ export default function DashboardRedirect() {
         router.replace('/');
     };
 
+    const handleOpenPlanner = useCallback(() => {
+        if (weddings.length === 1) {
+            router.push(`/dashboard/${weddings[0].id}/planner`);
+            return;
+        }
+
+        if (weddings.length > 1) {
+            setIsPlannerPickerOpen(true);
+        }
+    }, [router, weddings]);
+
     useEffect(() => {
         if (!loading && !user && !isLoggingOut) {
             setCheckingRole(false);
@@ -319,6 +349,7 @@ export default function DashboardRedirect() {
 
             try {
                 if (isAdmin) {
+                    setAccountProfile(null);
                     setCheckingRole(false);
                     await fetchWeddings();
                     return;
@@ -326,6 +357,7 @@ export default function DashboardRedirect() {
 
                 try {
                     const profile = await getClientAccountProfile(token);
+                    setAccountProfile(profile);
                     if (profile?.account_type === 'supplier') {
                         setCheckingRole(false);
                         setFetching(false);
@@ -335,6 +367,7 @@ export default function DashboardRedirect() {
                 } catch (profileErr) {
                     // Gracefully degrade — if account profile table is missing or API fails,
                     // treat user as a regular couple user and continue loading dashboard.
+                    setAccountProfile(null);
                     console.warn('Account profile check skipped (table may not exist):', profileErr);
                 }
 
@@ -374,14 +407,23 @@ export default function DashboardRedirect() {
                     </div>
 
                     <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
-                        <Link
-                            href="/builder"
-                            className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
-                        >
-                            <Plus className="w-4 h-4 flex-shrink-0" />
-                            <span className="hidden sm:inline">Create New Wedding</span>
-                            <span className="sm:hidden">New</span>
-                        </Link>
+                        {freeWebsiteLimitReached ? (
+                            <UpgradeButton
+                                scope="account"
+                                plan="account_pro"
+                                label="Upgrade"
+                                className="min-h-[42px] min-w-[82px] flex-shrink-0 justify-center whitespace-nowrap rounded-lg !px-3 !py-2 text-xs sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:!px-6 sm:!py-2.5 sm:text-sm"
+                            />
+                        ) : (
+                            <Link
+                                href="/builder"
+                                className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
+                            >
+                                <Plus className="w-4 h-4 flex-shrink-0" />
+                                <span className="hidden sm:inline">Create New Wedding</span>
+                                <span className="sm:hidden">New</span>
+                            </Link>
+                        )}
                         
                         <NotificationBell />
 
@@ -468,10 +510,68 @@ export default function DashboardRedirect() {
                 )}
             </AnimatePresence>
 
+            <AnimatePresence>
+                {isPlannerPickerOpen && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center px-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                            onClick={() => setIsPlannerPickerOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 16, scale: 0.98 }}
+                            className="relative w-full max-w-lg rounded-3xl border border-border bg-white p-5 shadow-2xl sm:p-6"
+                        >
+                            <div className="mb-4 flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Wedding Planner</p>
+                                    <h2 className="mt-1 font-serif text-2xl font-bold text-foreground">Choose a planner</h2>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPlannerPickerOpen(false)}
+                                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-border text-text-secondary transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                                    aria-label="Close planner picker"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-2 no-scrollbar sm:max-h-[60vh] sm:overflow-y-auto sm:pr-1">
+                                {weddings.map((wedding) => (
+                                    <Link
+                                        key={wedding.id}
+                                        href={`/dashboard/${wedding.id}/planner`}
+                                        onClick={() => setIsPlannerPickerOpen(false)}
+                                        className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-neutral/30 p-4 text-left transition hover:border-primary/30 hover:bg-primary/5"
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-foreground">
+                                                {wedding.bride_name} & {wedding.groom_name}
+                                            </p>
+                                            <p className="mt-1 truncate text-xs text-text-secondary">
+                                                {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                {wedding.venue_name ? ` - ${wedding.venue_name}` : ''}
+                                            </p>
+                                        </div>
+                                        <ArrowRight className="h-4 w-4 flex-shrink-0 text-primary" />
+                                    </Link>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-6 sm:pt-12">
                 <DashboardWelcomeHero
                     user={user}
                     weddings={weddings}
+                    onOpenPlanner={handleOpenPlanner}
                 />
 
                 {sharedWeddings.length > 0 && (
@@ -658,7 +758,7 @@ export default function DashboardRedirect() {
                                                 className="flex-1 text-center py-2.5 rounded-xl bg-secondary/20 text-foreground text-xs sm:text-sm font-bold hover:bg-secondary/30 transition-all flex items-center justify-center gap-1.5 min-h-[44px] border border-secondary/30"
                                             >
                                                 <Heart className="w-3.5 h-3.5 text-primary" />
-                                                {wedding.is_premium || isAdmin ? 'Planner' : 'Planner Pro'}
+                                                {wedding.is_premium || accountIsPro ? 'Planner' : 'Planner Pro'}
                                             </Link>
                                             <Link
                                                 href={`/builder?edit=${wedding.id}`}
@@ -671,7 +771,7 @@ export default function DashboardRedirect() {
                                         </div>
 
                                         {/* Planner Pro prompt */}
-                                        {!wedding.is_premium && !isAdmin && (
+                                        {!wedding.is_premium && !accountIsPro && (
                                             <div className="rounded-2xl border border-primary/15 bg-primary/5 p-3">
                                                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Ready to plan deeper?</p>
                                                 <p className="mt-1 text-xs leading-5 text-text-secondary">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useCallback, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import { useHotkeys } from '@/hooks/useHotkeys';
 
 interface UndoRedoState<T> {
@@ -96,9 +96,6 @@ export function UndoRedoProvider<T>({
         future: [],
     });
 
-    const stateRef = useRef(state);
-    stateRef.current = state;
-
     // Limit history size
     useEffect(() => {
         if (state.past.length > maxHistory) {
@@ -116,10 +113,10 @@ export function UndoRedoProvider<T>({
 
     const setState = useCallback((newState: T | ((prev: T) => T)) => {
         const resolvedState = typeof newState === 'function' 
-            ? (newState as (prev: T) => T)(stateRef.current.present) 
+            ? (newState as (prev: T) => T)(state.present) 
             : newState;
         dispatch({ type: 'SET', payload: resolvedState });
-    }, []);
+    }, [state.present]);
 
     const undo = useCallback(() => {
         dispatch({ type: 'UNDO' });
@@ -182,10 +179,6 @@ export function useLocalUndoRedo<T>(initialState: T, maxHistory = 50) {
         future: [],
     });
 
-    // Ref to track current state for callback-style updates
-    const stateRef = useRef(state);
-    stateRef.current = state;
-
     // Limit history size
     useEffect(() => {
         if (state.past.length > maxHistory) {
@@ -198,10 +191,10 @@ export function useLocalUndoRedo<T>(initialState: T, maxHistory = 50) {
 
     const setState = useCallback((newState: T | ((prev: T) => T)) => {
         const resolvedState = typeof newState === 'function' 
-            ? (newState as (prev: T) => T)(stateRef.current.present) 
+            ? (newState as (prev: T) => T)(state.present) 
             : newState;
         dispatch({ type: 'SET', payload: resolvedState });
-    }, []);
+    }, [state.present]);
 
     const undo = useCallback(() => {
         dispatch({ type: 'UNDO' });

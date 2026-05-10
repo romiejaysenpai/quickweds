@@ -19,10 +19,17 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    "**/.next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
     ".firebase/**",
+    ".kilo/**",
+    ".snapshots/**",
+    "deploy*.js",
+    "find-weddings.js",
+    "fix.js",
+    "test-api.js",
   ]),
 ]);
 

@@ -169,9 +169,9 @@ export function getClientIP(req: Request): string {
     }
     
     // Standard remote address (may not work in serverless)
-    // @ts-ignore - some environments have this
+    // @ts-expect-error - some environments have this
     if (req.socket?.remoteAddress) {
-        // @ts-ignore
+        // @ts-expect-error - some environments have this
         return req.socket.remoteAddress;
     }
     

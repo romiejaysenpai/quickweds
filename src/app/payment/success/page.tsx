@@ -10,12 +10,37 @@ import { supabase } from '@/lib/supabase';
 function SuccessContent() {
     const searchParams = useSearchParams();
     const weddingId = searchParams?.get('wedding_id');
+    const scope = searchParams?.get('scope');
     const [verified, setVerified] = useState(false);
     const [checking, setChecking] = useState(true);
 
     useEffect(() => {
         const verifyPayment = async () => {
-            if (!weddingId) return;
+            if (scope === 'account') {
+                const { data: userData } = await supabase.auth.getUser();
+                const userId = userData.user?.id;
+                if (!userId) {
+                    setChecking(false);
+                    return;
+                }
+
+                const { data } = await supabase
+                    .from('user_app_profiles')
+                    .select('is_pro, payment_status')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (data?.is_pro || data?.payment_status === 'paid') {
+                    setVerified(true);
+                }
+                setChecking(false);
+                return;
+            }
+
+            if (!weddingId) {
+                setChecking(false);
+                return;
+            }
 
             const { data } = await supabase
                 .from('weddings')
@@ -34,7 +59,7 @@ function SuccessContent() {
         setTimeout(() => clearInterval(interval), 15000);
 
         return () => clearInterval(interval);
-    }, [weddingId]);
+    }, [weddingId, scope]);
 
     return (
         <div className="min-h-screen bg-neutral flex items-center justify-center px-6">
@@ -53,24 +78,24 @@ function SuccessContent() {
                 </motion.div>
 
                 <h1 className="text-4xl font-serif font-bold text-foreground mb-4">
-                    {checking ? 'Processing Payment...' : verified ? 'Planner Pro Unlocked!' : 'Payment Successful!'}
+                    {checking ? 'Processing Payment...' : verified ? (scope === 'account' ? 'Account Pro Unlocked!' : 'Planner Pro Unlocked!') : 'Payment Successful!'}
                 </h1>
 
                 <p className="text-lg text-text-secondary mb-8">
                     {checking
                         ? "We're activating your Planner Pro workspace..."
                         : verified
-                            ? 'Your complete planning workspace is ready.'
+                            ? (scope === 'account' ? 'Your account can now create more wedding websites and open planners for owned weddings.' : 'Your complete planning workspace is ready.')
                             : 'Your payment was successful. Planner Pro will be available shortly.'}
                 </p>
 
                 <div className="bg-neutral rounded-2xl p-6 mb-8 text-left">
                     <h3 className="text-sm uppercase tracking-widest font-bold text-text-secondary mb-4">
-                        Planner Pro includes
+                        {scope === 'account' ? 'Account Pro includes' : 'Planner Pro includes'}
                     </h3>
                     <ul className="space-y-3 text-foreground">
                         {[
-                            'Seating chart and guest placement tools',
+                            ...(scope === 'account' ? ['More than 3 wedding websites', 'Planner access for owned weddings'] : ['Seating chart and guest placement tools']),
                             'Budget, vendor, and checklist management',
                             'Collaborator access for your partner or planner',
                             'Photo sharing and thank-you tools',

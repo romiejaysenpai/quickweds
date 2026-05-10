@@ -111,7 +111,7 @@ export default function SupportPage() {
                   </svg>
                 </div>
                 <p className="font-bold text-foreground mb-1">Message Sent!</p>
-                <p className="text-sm text-text-secondary">We'll get back to you shortly.</p>
+                <p className="text-sm text-text-secondary">We&apos;ll get back to you shortly.</p>
               </div>
             ) : (
               <form 

@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarHeart, MapPin, Sparkles, Clock } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
+
+const subscribeToClient = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 interface CountdownTimerProps {
     weddingDate: string;
@@ -57,7 +61,7 @@ export default function CountdownTimer({
 }: CountdownTimerProps) {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
     const [isPast, setIsPast] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
+    const isMounted = useSyncExternalStore(subscribeToClient, getClientSnapshot, getServerSnapshot);
     const { registerSection, unregisterSection } = useSectionContext();
     
     useEffect(() => {
@@ -66,7 +70,6 @@ export default function CountdownTimer({
     }, [id, registerSection, unregisterSection]);
 
     useEffect(() => {
-        setIsMounted(true);
         const target = new Date(weddingDate);
         if (weddingTime) {
             const [h, m] = weddingTime.split(':').map(Number);

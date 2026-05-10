@@ -61,13 +61,55 @@ const herr = Herr_Von_Muellerhoff({ variable: "--font-herr", weight: "400", subs
 const lavishly = Lavishly_Yours({ variable: "--font-lavishly", weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://quickweds.site"),
   title: "QuickWeds | Elegant Wedding Websites & Digital Planner",
   description: "Create a beautiful, mobile-first wedding website for free. Manage RSVPs, track budgets, organize seating charts, and collaborate with your partner seamlessly.",
   applicationName: "QuickWeds",
+  manifest: "/manifest.webmanifest",
+  keywords: [
+    "wedding website",
+    "digital wedding invitation",
+    "wedding planner",
+    "RSVP tracker",
+    "wedding dashboard",
+    "QuickWeds",
+  ],
+  authors: [{ name: "QuickWeds" }],
+  creator: "QuickWeds",
+  publisher: "QuickWeds",
+  icons: {
+    icon: [
+      { url: "/icons/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "QuickWeds",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "QuickWeds",
+    title: "QuickWeds | Elegant Wedding Websites & Digital Planner",
+    description: "Create a beautiful, mobile-first wedding website for free. Manage RSVPs, track budgets, organize seating charts, and collaborate with your partner seamlessly.",
+    url: "/",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1200,
+        height: 960,
+        alt: "QuickWeds",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "QuickWeds | Elegant Wedding Websites & Digital Planner",
+    description: "Create a beautiful, mobile-first wedding website for free. Manage RSVPs, track budgets, organize seating charts, and collaborate with your partner seamlessly.",
+    images: ["/logo.png"],
   },
 };
 
@@ -84,6 +126,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import PWAInstaller from "@/components/PWAInstaller";
 
 import { SectionProvider } from '@/context/SectionContext';
 
@@ -93,7 +136,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body className={`
         ${inter.variable} ${montserrat.variable} ${tenorSans.variable} ${questrial.variable} ${syne.variable} ${faunaOne.variable} ${josefin.variable} ${outfit.variable} ${spaceGrotesk.variable}
         ${playfair.variable} ${cormorant.variable} ${ebGaramond.variable} ${bodoniModa.variable} ${prata.variable} ${lora.variable} ${cardo.variable} ${libreBaskerville.variable} ${marcellus.variable} ${forum.variable} ${alice.variable} ${spectral.variable} ${cinzel.variable} ${abril.variable} ${cormorantUpright.variable} ${oldStandard.variable} ${caslon.variable} ${quattrocento.variable} ${fraunces.variable} ${cormorantSC.variable}
@@ -105,6 +148,7 @@ export default function RootLayout({
             <SectionProvider>
               {children}
             </SectionProvider>
+            <PWAInstaller />
             <Analytics />
             <SpeedInsights />
           </AuthProvider>

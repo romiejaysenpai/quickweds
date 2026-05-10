@@ -2,8 +2,9 @@ import { z } from 'zod';
 
 // Stripe Checkout Validation
 export const checkoutSchema = z.object({
-    weddingId: z.string().min(1, 'Wedding ID is required'),
-    plan: z.enum(['planner_pro', 'premium', 'elite']).default('planner_pro'),
+    weddingId: z.string().min(1, 'Wedding ID is required').optional(),
+    scope: z.enum(['account', 'wedding']).optional(),
+    plan: z.enum(['account_pro', 'planner_pro', 'premium', 'elite']).default('planner_pro'),
 });
 
 // Stripe Webhook - raw body validation for signature verification
@@ -14,6 +15,8 @@ export const webhookSchema = z.object({
             id: z.string(),
             metadata: z.object({
                 weddingId: z.string().optional(),
+                userId: z.string().optional(),
+                scope: z.string().optional(),
                 plan: z.string().optional(),
             }).optional(),
             amount_total: z.number().optional(),

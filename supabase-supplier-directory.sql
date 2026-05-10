@@ -3,6 +3,11 @@
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Public bucket used by supplier logos and existing QuickWeds media uploads.
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('quickweds', 'quickweds', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
 CREATE TABLE IF NOT EXISTS supplier_profiles (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     owner_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -69,5 +74,26 @@ ON supplier_profiles
 FOR UPDATE
 USING (auth.uid() = owner_user_id)
 WITH CHECK (auth.uid() = owner_user_id);
+
+DROP POLICY IF EXISTS "authenticated_upload_quickweds_media" ON storage.objects;
+CREATE POLICY "authenticated_upload_quickweds_media"
+ON storage.objects
+FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'quickweds');
+
+DROP POLICY IF EXISTS "authenticated_update_own_quickweds_media" ON storage.objects;
+CREATE POLICY "authenticated_update_own_quickweds_media"
+ON storage.objects
+FOR UPDATE
+TO authenticated
+USING (bucket_id = 'quickweds' AND owner = auth.uid())
+WITH CHECK (bucket_id = 'quickweds' AND owner = auth.uid());
+
+DROP POLICY IF EXISTS "public_read_quickweds_media" ON storage.objects;
+CREATE POLICY "public_read_quickweds_media"
+ON storage.objects
+FOR SELECT
+USING (bucket_id = 'quickweds');
 
 NOTIFY pgrst, 'reload schema';

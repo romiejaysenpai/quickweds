@@ -13,7 +13,7 @@ export default function SupplierCard({ supplier }: { supplier: SupplierProfile }
                         <img
                             src={supplier.cover_image_url}
                             alt={`${supplier.business_name} cover`}
-                            className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                            className="h-full w-full object-contain p-5 transition duration-700 group-hover:scale-105"
                         />
                     ) : (
                         <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(209,108,120,0.18),transparent_35%),linear-gradient(135deg,#fff8f4,#f2dfd8)]">

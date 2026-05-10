@@ -9,8 +9,9 @@ export const config = {
          * - _next/static (static files)
          * - _next/image (image optimization files)
          * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+         * - manifest.webmanifest, sw.js, icons, offline, share-target (PWA assets)
          */
-        '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|sw.js|icons|offline|share-target).*)',
     ],
 };
 
@@ -22,6 +23,11 @@ export async function proxy(req: NextRequest) {
     if (
         path.startsWith('/api') || 
         path.startsWith('/_next') || 
+        path.startsWith('/icons') ||
+        path === '/manifest.webmanifest' ||
+        path === '/sw.js' ||
+        path === '/offline' ||
+        path === '/share-target' ||
         path.includes('.') || // Static files like favicon.ico, etc.
         path === '/favicon.ico'
     ) {
@@ -29,7 +35,7 @@ export async function proxy(req: NextRequest) {
     }
 
     // Get hostname...
-    let hostname = req.headers
+    const hostname = req.headers
         .get('host')!
         .replace('.localhost:3000', `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site'}`);
 

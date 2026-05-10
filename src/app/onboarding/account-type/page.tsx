@@ -7,7 +7,7 @@ import { ArrowRight, Building2, Heart, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import {
-    getClientAccountProfile,
+    getClientAccountProfileForIntent,
     getRoleAwareRedirect,
     getSafeAppPath,
     type AccountType,
@@ -60,7 +60,7 @@ function AccountTypeOnboardingContent() {
             }
 
             try {
-                const profile = await getClientAccountProfile(token);
+                const profile = await getClientAccountProfileForIntent(token, nextPath);
                 if (profile?.account_type) {
                     router.replace(getRoleAwareRedirect(profile.account_type, nextPath));
                     return;

@@ -8,7 +8,7 @@ export default function AdminDebugPage() {
     const { user, isAdmin, loading } = useAuth();
     const router = useRouter();
     const [apiResult, setApiResult] = useState<any>(null);
-    const [envAdmin, setEnvAdmin] = useState<string>('');
+    const envAdmin = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'not set';
 
     useEffect(() => {
         if (loading) return;
@@ -20,10 +20,6 @@ export default function AdminDebugPage() {
             router.replace('/dashboard');
             return;
         }
-
-        // Show what env says (client-accessible only)
-        setEnvAdmin(process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'not set');
-
         // Fetch the admin check API directly
         fetch('/api/auth/check-admin')
             .then(res => res.json())

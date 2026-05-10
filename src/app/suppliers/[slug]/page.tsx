@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink, Globe2, Instagram, Mail, MapPin, Phone, Sparkles, type LucideIcon } from 'lucide-react';
 import SupplierSaveButton from '@/components/suppliers/SupplierSaveButton';
+import SupplierShareControls from '@/components/suppliers/SupplierShareControls';
 import { supabase } from '@/lib/supabase';
 import {
   getSupplierDisplayLocation,
@@ -120,6 +121,7 @@ export default async function SupplierDetailPage({ params }: PageProps) {
               </p>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
                 <SupplierSaveButton supplierId={supplier.id} />
+                <SupplierShareControls slug={supplier.slug} businessName={supplier.business_name} />
                 {contactLinks[0] && (
                   <a href={contactLinks[0].href} className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-primary/5">
                     Contact Supplier
@@ -131,7 +133,7 @@ export default async function SupplierDetailPage({ params }: PageProps) {
             <div className="order-1 overflow-hidden rounded-[2rem] border border-white bg-white p-3 shadow-2xl shadow-primary/10 lg:order-2">
               <div className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-[radial-gradient(circle_at_top_left,rgba(209,108,120,0.16),transparent_35%),linear-gradient(135deg,#fff8f4,#f3ddd8)]">
                 {supplier.cover_image_url ? (
-                  <img src={supplier.cover_image_url} alt={`${supplier.business_name} cover`} className="h-full w-full object-cover" />
+                  <img src={supplier.cover_image_url} alt={`${supplier.business_name} logo`} className="h-full w-full object-contain p-6" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
                     <Sparkles className="h-14 w-14 text-primary/45" />

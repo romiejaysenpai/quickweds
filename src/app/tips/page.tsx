@@ -52,7 +52,7 @@ export default function TipsPage() {
             {/* Tip 1 */}
             <section>
               <h2 className="text-3xl font-serif font-bold text-foreground mb-4">1. Start With Your Top 3 Priorities</h2>
-              <p>Before choosing anything, sit down with your partner and ask: <strong className="text-foreground">"What matters most to us?"</strong></p>
+              <p>Before choosing anything, sit down with your partner and ask: <strong className="text-foreground">&quot;What matters most to us?&quot;</strong></p>
               <p className="mt-4 font-semibold">Common priorities:</p>
               <ul className="list-disc pl-5 mt-2 space-y-1">
                 <li>Venue</li>
@@ -119,7 +119,7 @@ export default function TipsPage() {
               </ul>
               <div className="bg-neutral p-5 rounded-2xl mt-6">
                 <p className="text-sm font-bold uppercase tracking-widest text-primary mb-2">Pro Tip</p>
-                <p className="m-0 text-foreground font-medium">Ask: "Have we talked to this person in the last year?" If not, reconsider.</p>
+                <p className="m-0 text-foreground font-medium">Ask: &quot;Have we talked to this person in the last year?&quot; If not, reconsider.</p>
               </div>
             </section>
 

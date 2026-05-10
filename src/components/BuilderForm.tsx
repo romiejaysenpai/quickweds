@@ -15,6 +15,7 @@ import MarketplacePanel from './builder/MarketplacePanel';
 import { MONOGRAM_SHAPES, MonogramMark } from './MonogramMark';
 import DecorativeLayer from './DecorativeLayer';
 import { useLocalUndoRedo } from '@/components/UndoRedoProvider';
+import { hasAccountPro } from '@/lib/account';
 import { FREE_TEMPLATE_IDS, TEMPLATES } from '@/lib/template-catalog';
 import {
     SECTION_BLOCK_LIBRARY,
@@ -265,7 +266,7 @@ function isMissingFaqColumnError(error: unknown) {
 
 export default function BuilderForm() {
     const router = useRouter();
-    const { user, loading: authLoading } = useAuth();
+    const { user, isAdmin, loading: authLoading } = useAuth();
     const searchParams = useSearchParams();
     const editId = searchParams?.get('edit');
     const [currentStep, setCurrentStep] = useState(0);
@@ -351,6 +352,44 @@ export default function BuilderForm() {
 
     const [isPremium, setIsPremium] = useState(true);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
+    const [accountIsPro, setAccountIsPro] = useState(false);
+    const [activeWeddingCount, setActiveWeddingCount] = useState(0);
+    const freeWebsiteLimitReached = !editId && !isAdmin && !accountIsPro && activeWeddingCount >= 3;
+
+    const loadAccountLimitState = useCallback(async () => {
+        if (!user) {
+            setAccountIsPro(false);
+            setActiveWeddingCount(0);
+            return { isPro: false, activeCount: 0 };
+        }
+
+        const [profileResult, countResult] = await Promise.all([
+            supabase
+                .from('user_app_profiles')
+                .select('is_pro, payment_status')
+                .eq('user_id', user.id)
+                .maybeSingle(),
+            supabase
+                .from('weddings')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .is('deleted_at', null),
+        ]);
+
+        if (profileResult.error) {
+            console.warn('Account Pro profile check skipped:', profileResult.error);
+        }
+
+        if (countResult.error) {
+            throw countResult.error;
+        }
+
+        const isPro = hasAccountPro(profileResult.data);
+        const activeCount = countResult.count || 0;
+        setAccountIsPro(isPro);
+        setActiveWeddingCount(activeCount);
+        return { isPro, activeCount };
+    }, [user]);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -456,6 +495,16 @@ export default function BuilderForm() {
             fetchWedding();
         }
     }, [user, authLoading, router, editId]);
+
+    useEffect(() => {
+        if (!user) {
+            setAccountIsPro(false);
+            setActiveWeddingCount(0);
+            return;
+        }
+
+        void loadAccountLimitState();
+    }, [user, loadAccountLimitState]);
 
     useEffect(() => {
         const loadPresets = async () => {
@@ -616,6 +665,21 @@ export default function BuilderForm() {
                 router.push('/login?returnTo=builder');
             }
             return;
+        }
+
+        if (!editId && !isAdmin) {
+            try {
+                const limitState = await loadAccountLimitState();
+                if (!limitState.isPro && limitState.activeCount >= 3) {
+                    alert('Free accounts can create up to 3 active wedding websites. Unlock Account Pro to create more.');
+                    return;
+                }
+            } catch (limitError) {
+                const message = getErrorMessage(limitError);
+                console.error('Website limit check failed:', limitError);
+                alert('Unable to verify your website limit right now: ' + message);
+                return;
+            }
         }
 
         setIsSubmitting(true);
@@ -966,7 +1030,7 @@ export default function BuilderForm() {
                              </span>
                          </div>
                          <Collapsible title="Typography & Fonts" isOpen={expandedSection === 'fonts'} onToggle={() => toggleSection('fonts')} icon={Layout}>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="grid grid-cols-2 gap-2 no-scrollbar sm:max-h-[400px] sm:grid-cols-3 sm:gap-3 sm:overflow-y-auto sm:pr-2 md:gap-4 custom-scrollbar">
                                 {FONTS.map((font, index) => {
                                     const isLocked = !isPremium && index >= 10;
                                     return (
@@ -1740,6 +1804,25 @@ return (
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                    {freeWebsiteLimitReached && (
+                        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Account Pro required</p>
+                                    <p className="mt-1 text-sm font-semibold text-foreground">
+                                        Free accounts include 3 active wedding websites. Unlock Account Pro to create more.
+                                    </p>
+                                </div>
+                                <UpgradeButton
+                                    scope="account"
+                                    plan="account_pro"
+                                    label="Unlock Account Pro"
+                                    className="w-full justify-center text-sm sm:w-auto"
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     <AnimatePresence mode="wait">
                         <motion.div key={currentStep} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="min-h-[300px]">
                             {renderStep()}
@@ -1803,7 +1886,7 @@ return (
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
-                            <div className="flex-1 overflow-y-auto bg-neutral p-4">
+                            <div className="flex-1 overflow-y-auto bg-neutral p-4 no-scrollbar">
                                 <div className="max-w-sm mx-auto">
                                     <LivePreview formData={formData} previews={previews} isMobileView />
                                 </div>

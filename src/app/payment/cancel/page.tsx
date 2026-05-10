@@ -9,6 +9,8 @@ import { motion } from 'framer-motion';
 function CancelContent() {
     const searchParams = useSearchParams();
     const weddingId = searchParams?.get('wedding_id');
+    const scope = searchParams?.get('scope');
+    const isAccountUpgrade = scope === 'account';
 
     return (
         <div className="min-h-screen bg-neutral flex items-center justify-center px-6">
@@ -36,9 +38,11 @@ function CancelContent() {
 
                 <div className="bg-neutral rounded-2xl p-6 mb-8 text-left">
                     <h3 className="text-sm uppercase tracking-widest font-bold text-text-secondary mb-3">
-                        Planner Pro unlocks
+                        {isAccountUpgrade ? 'Account Pro unlocks' : 'Planner Pro unlocks'}
                     </h3>
                     <ul className="space-y-2 text-sm text-text-secondary">
+                        {isAccountUpgrade ? <li>More than 3 wedding websites</li> : null}
+                        {isAccountUpgrade ? <li>Planner access for all owned weddings</li> : null}
                         <li>Seating chart and guest placement</li>
                         <li>Budget, vendor, and checklist tools</li>
                         <li>Collaborator access</li>

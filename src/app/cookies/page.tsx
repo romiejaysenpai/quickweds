@@ -88,7 +88,7 @@ export default function CookiesPage() {
                   You have the right to decide whether to accept or reject cookies. You can set or amend your web browser controls to accept or refuse cookies. If you choose to reject cookies, you may still use our website, though your access to some functionality and areas of our website may be restricted.
                 </p>
                 <p>
-                  To manage cookies, please visit your browser's settings:
+                  To manage cookies, please visit your browser&apos;s settings:
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Google Chrome</li>

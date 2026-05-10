@@ -3,6 +3,12 @@ import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import {
+    getSupplierOwnerEmail,
+    sendSupplierApprovedEmail,
+    sendSupplierRejectedEmail,
+} from '@/lib/supplier-notifications';
+import type { SupplierProfile } from '@/lib/suppliers';
 
 const ACTIONS = ['approve', 'reject', 'deactivate', 'feature', 'unfeature'] as const;
 
@@ -42,6 +48,16 @@ export async function POST(req: NextRequest) {
             .single();
 
         if (updateError) throw updateError;
+        if (action === 'approve' || action === 'reject') {
+            const profile = data as SupplierProfile;
+            const ownerEmail = await getSupplierOwnerEmail(db, profile);
+
+            if (action === 'approve') {
+                await sendSupplierApprovedEmail(profile, ownerEmail);
+            } else {
+                await sendSupplierRejectedEmail(profile, ownerEmail);
+            }
+        }
         return NextResponse.json({ profile: data });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to moderate supplier';

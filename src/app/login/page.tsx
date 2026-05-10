@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Heart, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPublicRedirectUrl } from '@/lib/site-url';
-import { getClientAccountProfile, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
+import { getClientAccountProfileForIntent, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
 import { isKnownAdminEmail } from '@/lib/admin';
 
 export default function LoginPage() {
@@ -29,7 +29,7 @@ export default function LoginPage() {
         }
 
         try {
-            const profile = await getClientAccountProfile(token);
+            const profile = await getClientAccountProfileForIntent(token, nextPath);
             return getRoleAwareRedirect(profile?.account_type, nextPath);
         } catch {
             // Gracefully degrade — if account profile table is missing, go to default path
@@ -43,6 +43,11 @@ export default function LoginPage() {
             window.localStorage.setItem('quickweds_auth_next', nextPath);
         }
         return nextPath;
+    };
+
+    const getSignupHref = () => {
+        const nextPath = getSafeNextPath();
+        return nextPath === '/dashboard' ? '/signup' : `/signup?next=${encodeURIComponent(nextPath)}`;
     };
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -197,7 +202,17 @@ export default function LoginPage() {
                 </form>
 
                 <p className="mt-8 text-center text-text-secondary">
-                    Don&apos;t have an account? <Link href="/signup" className="text-primary font-bold hover:underline">Sign Up</Link>
+                    Don&apos;t have an account?{' '}
+                    <Link
+                        href="/signup"
+                        onClick={(event) => {
+                            event.preventDefault();
+                            router.push(getSignupHref());
+                        }}
+                        className="text-primary font-bold hover:underline"
+                    >
+                        Sign Up
+                    </Link>
                 </p>
             </motion.div>
         </div>

@@ -6,19 +6,17 @@ import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState, use, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { trackWeddingEvent } from '@/lib/wedding-features';
-import AnalyticsPanel from '@/components/dashboard/AnalyticsPanel';
-import CollaboratorsPanel from '@/components/dashboard/CollaboratorsPanel';
-import GuestImportModal from '@/components/dashboard/GuestImportModal';
 import ConfettiCelebration from '@/components/ConfettiCelebration';
 import CopyButton from '@/components/CopyButton';
 import DarkModeToggle from '@/components/DarkModeToggle';
 import UpgradeButton from '@/components/UpgradeButton';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getClientAccountProfile, getRoleAwareRedirect } from '@/lib/account';
+import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import {
@@ -32,7 +30,24 @@ import {
     escapeCsvCell,
 } from '@/lib/guest-list';
 
-const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
+const AnalyticsPanel = dynamic(() => import('@/components/dashboard/AnalyticsPanel'), {
+    loading: () => <DashboardPanelLoading label="Loading analytics..." />,
+});
+const CollaboratorsPanel = dynamic(() => import('@/components/dashboard/CollaboratorsPanel'), {
+    loading: () => <DashboardPanelLoading label="Loading team tools..." />,
+});
+const GuestImportModal = dynamic(() => import('@/components/dashboard/GuestImportModal'));
+
+const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/dahsboard%20quivkyt.png';
+
+function DashboardPanelLoading({ label }: { label: string }) {
+    return (
+        <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-6 text-center soft-shadow">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="mt-3 text-sm font-bold text-text-secondary">{label}</p>
+        </div>
+    );
+}
 
 function getFirstName(user: any) {
     const fullName = user?.user_metadata?.full_name || user?.user_metadata?.name || '';
@@ -87,6 +102,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const created = searchParams?.get('created');
 
     const [wedding, setWedding] = useState<any>(null);
+    const [accountIsPro, setAccountIsPro] = useState(false);
     const [rsvps, setRsvps] = useState<EnhancedRSVP[]>([]);
     const [vendors, setVendors] = useState<any[]>([]);
     const [budgets, setBudgets] = useState<any[]>([]);
@@ -237,6 +253,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                 setAccessRole(role);
                 setWedding(weddingData);
+                setAccountIsPro(hasAccountPro(workspaceResult.accountProfile));
 
                 const [rsvpsRes, vendorsRes, budgetsRes] = await Promise.all([
                     supabase.from('rsvps').select('*').eq('wedding_id', id).order('created_at', { ascending: false }),
@@ -557,7 +574,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const url = wedding?.custom_domain ? domain : (wedding ? `${domain}/w/${wedding.id}` : '');
     const qrTrackingUrl = `${url}${url.includes('?') ? '&' : '?'}src=qr`;
     const canManageWorkspace = accessRole === 'owner' || accessRole === 'partner';
-    const hasPlannerPro = isAdmin || Boolean(wedding?.is_premium);
+    const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
 
     const handleShareWhatsApp = () => {
         void trackWeddingEvent(id, 'share_whatsapp', { source: 'dashboard' });

@@ -155,7 +155,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                         {wedding?.bride_name} &amp; {wedding?.groom_name}
                     </h1>
                     <p className="text-text-secondary sm:text-lg max-w-lg mx-auto">
-                        We're so glad you're here. Snap a photo or share one from your gallery to help us remember this special day!
+                        We&apos;re so glad you&apos;re here. Snap a photo or share one from your gallery to help us remember this special day!
                     </p>
                 </motion.div>
 
@@ -388,7 +388,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                             </div>
                             
                             {selectedPhoto.caption && (
-                                <p className="text-sm italic text-white/90 mt-4 leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/10">"{selectedPhoto.caption}"</p>
+                                <p className="text-sm italic text-white/90 mt-4 leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/10">&quot;{selectedPhoto.caption}&quot;</p>
                             )}
                         </div>
                     </motion.div>

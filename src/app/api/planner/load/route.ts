@@ -9,6 +9,48 @@ export const revalidate = 0;
 
 type PlannerAccessRole = 'owner' | 'partner' | 'coordinator' | 'pending' | 'denied';
 
+function isSchemaMissingError(error: any) {
+    const text = `${error?.code || ''} ${error?.message || ''} ${error?.details || ''}`.toLowerCase();
+    return (
+        text.includes('schema cache') ||
+        text.includes('does not exist') ||
+        text.includes('could not find') ||
+        text.includes('column') ||
+        error?.code === 'PGRST204' ||
+        error?.code === 'PGRST205' ||
+        error?.code === '42P01' ||
+        error?.code === '42703'
+    );
+}
+
+async function safePlannerList(query: any, label: string) {
+    const result = await query;
+    if (result.error) {
+        if (isSchemaMissingError(result.error)) {
+            console.warn(`Planner load skipped ${label}:`, result.error.message || result.error);
+            return [];
+        }
+
+        throw result.error;
+    }
+
+    return result.data || [];
+}
+
+async function safePlannerMaybeSingle(query: any, label: string) {
+    const result = await query;
+    if (result.error) {
+        if (isSchemaMissingError(result.error)) {
+            console.warn(`Planner load skipped ${label}:`, result.error.message || result.error);
+            return null;
+        }
+
+        throw result.error;
+    }
+
+    return result.data || null;
+}
+
 async function findWeddingById(db: any, weddingId: string) {
     const baseQuery = () => db
         .from('weddings')
@@ -86,38 +128,56 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ accessRole, wedding }, { status: 403 });
         }
 
+        const accountProfile = await safePlannerMaybeSingle(
+            db
+                .from('user_app_profiles')
+                .select('is_pro, plan_type, payment_status')
+                .eq('user_id', user.id)
+                .maybeSingle(),
+            'account profile'
+        );
+
         if (accessRole !== 'owner') {
-            return NextResponse.json({ accessRole, wedding, tasks: [], budgets: [], vendors: [], confirmedGuests: 0 });
+            return NextResponse.json({ accessRole, wedding, accountProfile, tasks: [], budgets: [], vendors: [], events: [], foodDrinks: [], googleCalendar: null, honeymoonItems: [], confirmedGuests: 0 });
         }
 
-        const [tasksRes, budgetsRes, vendorsRes, rsvpsRes] = await Promise.all([
-            db.from('planner_tasks').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }),
-            db.from('planner_budgets').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }),
-            db.from('planner_vendors').select('*').eq('wedding_id', resolvedWeddingId),
-            db.from('rsvps').select('num_guests, rsvp_status, attendance').eq('wedding_id', resolvedWeddingId),
+        const [tasks, budgets, vendors, events, foodDrinks, googleCalendarConnection, honeymoonItems, rsvps] = await Promise.all([
+            safePlannerList(db.from('planner_tasks').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }), 'checklist tasks'),
+            safePlannerList(db.from('planner_budgets').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }), 'budgets'),
+            safePlannerList(db.from('planner_vendors').select('*').eq('wedding_id', resolvedWeddingId), 'vendors'),
+            safePlannerList(db.from('planner_events').select('*').eq('wedding_id', resolvedWeddingId).order('starts_at', { ascending: true }), 'calendar events'),
+            safePlannerList(db.from('planner_food_drinks').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }), 'food and drinks'),
+            safePlannerMaybeSingle(db.from('planner_google_calendar_connections').select('connected_at, last_synced_at, google_calendar_id, revoked_at').eq('wedding_id', resolvedWeddingId).eq('user_id', user.id).is('revoked_at', null).maybeSingle(), 'Google calendar connection'),
+            safePlannerList(db.from('planner_honeymoon_items').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }), 'honeymoon items'),
+            safePlannerList(db.from('rsvps').select('num_guests, rsvp_status, attendance').eq('wedding_id', resolvedWeddingId), 'RSVPs'),
         ]);
 
-        if (tasksRes.error) throw tasksRes.error;
-        if (budgetsRes.error) throw budgetsRes.error;
-        if (vendorsRes.error) throw vendorsRes.error;
-        if (rsvpsRes.error) throw rsvpsRes.error;
-
-        const confirmedGuests = (rsvpsRes.data || [])
+        const confirmedGuests = rsvps
             .filter((rsvp: any) => rsvp.rsvp_status === 'confirmed' || rsvp.rsvp_status === 'confirmed_manual' || rsvp.attendance === 'Yes')
             .reduce((count: number, rsvp: any) => count + (rsvp.num_guests || 1), 0);
 
         return NextResponse.json({
             accessRole,
             wedding,
+            accountProfile,
             requestedWeddingId: weddingId,
             resolvedWeddingId,
-            tasks: tasksRes.data || [],
-            budgets: budgetsRes.data || [],
-            vendors: vendorsRes.data || [],
+            tasks,
+            budgets,
+            vendors,
+            events,
+            foodDrinks,
+            googleCalendar: googleCalendarConnection ? {
+                connected: true,
+                connectedAt: googleCalendarConnection.connected_at,
+                lastSyncedAt: googleCalendarConnection.last_synced_at,
+                calendarId: googleCalendarConnection.google_calendar_id,
+            } : { connected: false },
+            honeymoonItems,
             confirmedGuests,
         });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unable to load planner data';
+        const message = err instanceof Error ? err.message : (typeof err === 'object' && err ? JSON.stringify(err) : 'Unable to load planner data');
         const code = message.includes('Missing Supabase admin configuration')
             ? 'server_config_missing'
             : 'planner_load_failed';

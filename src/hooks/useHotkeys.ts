@@ -15,7 +15,10 @@ interface HotkeyMap {
  */
 export function useHotkeys(hotkeys: HotkeyMap, enabled = true) {
     const hotkeysRef = useRef(hotkeys);
-    hotkeysRef.current = hotkeys;
+
+    useEffect(() => {
+        hotkeysRef.current = hotkeys;
+    }, [hotkeys]);
 
     const handleKeyDown = useCallback((event: KeyboardEvent) => {
         if (!enabled) return;

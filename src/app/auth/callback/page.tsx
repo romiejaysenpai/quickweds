@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
-import { getClientAccountProfile, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
+import { getClientAccountProfileForIntent, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
 import { isKnownAdminEmail } from '@/lib/admin';
 
 export default function AuthCallbackPage() {
@@ -51,7 +51,7 @@ export default function AuthCallbackPage() {
             }
 
             try {
-                const profile = await getClientAccountProfile(token);
+                const profile = await getClientAccountProfileForIntent(token, nextPath);
                 return getRoleAwareRedirect(profile?.account_type, nextPath);
             } catch {
                 // Gracefully degrade — if account profile table is missing, go to default path

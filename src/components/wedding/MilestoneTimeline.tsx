@@ -77,7 +77,7 @@ export default function MilestoneTimeline({ milestones, motifColor }: MilestoneT
                                         </p>
                                         <h3 className="text-xl md:text-2xl font-serif text-foreground mb-4 break-words">{milestone.title}</h3>
                                         <p className="text-sm md:text-base text-text-secondary leading-relaxed font-serif italic break-words">
-                                            "{milestone.description}"
+                                            &quot;{milestone.description}&quot;
                                         </p>
                                     </div>
                                 </motion.div>
