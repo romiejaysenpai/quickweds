@@ -35,8 +35,10 @@ export default function PWAInstaller() {
     if (!supportsInstall) return;
 
     void navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => undefined);
-    setIsStandalone(isStandaloneDisplay());
-    setNotificationReady('Notification' in window && 'PushManager' in window);
+    window.setTimeout(() => {
+      setIsStandalone(isStandaloneDisplay());
+      setNotificationReady('Notification' in window && 'PushManager' in window);
+    }, 0);
 
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
