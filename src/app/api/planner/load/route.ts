@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import { EMPTY_PLANNER_USAGE, getPlannerUsage } from '@/lib/planner-limits';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -138,7 +139,7 @@ export async function GET(req: NextRequest) {
         );
 
         if (accessRole !== 'owner') {
-            return NextResponse.json({ accessRole, wedding, accountProfile, tasks: [], budgets: [], vendors: [], events: [], foodDrinks: [], googleCalendar: null, honeymoonItems: [], confirmedGuests: 0 });
+            return NextResponse.json({ accessRole, wedding, accountProfile, planUsage: EMPTY_PLANNER_USAGE, tasks: [], budgets: [], vendors: [], events: [], foodDrinks: [], googleCalendar: null, honeymoonItems: [], confirmedGuests: 0 });
         }
 
         const [tasks, budgets, vendors, events, foodDrinks, googleCalendarConnection, honeymoonItems, rsvps] = await Promise.all([
@@ -156,10 +157,13 @@ export async function GET(req: NextRequest) {
             .filter((rsvp: any) => rsvp.rsvp_status === 'confirmed' || rsvp.rsvp_status === 'confirmed_manual' || rsvp.attendance === 'Yes')
             .reduce((count: number, rsvp: any) => count + (rsvp.num_guests || 1), 0);
 
+        const planUsage = await getPlannerUsage(db, resolvedWeddingId);
+
         return NextResponse.json({
             accessRole,
             wedding,
             accountProfile,
+            planUsage,
             requestedWeddingId: weddingId,
             resolvedWeddingId,
             tasks,

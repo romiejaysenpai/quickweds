@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS seating_tables (
 
 ALTER TABLE seating_tables ADD COLUMN IF NOT EXISTS position_x INTEGER DEFAULT 0;
 ALTER TABLE seating_tables ADD COLUMN IF NOT EXISTS position_y INTEGER DEFAULT 0;
+ALTER TABLE seating_tables ADD COLUMN IF NOT EXISTS custom_style JSONB;
 ALTER TABLE seating_tables ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
 CREATE TABLE IF NOT EXISTS seating_layouts (
@@ -32,9 +33,12 @@ CREATE TABLE IF NOT EXISTS seating_layouts (
     venue_width INTEGER DEFAULT 100,
     venue_height INTEGER DEFAULT 70,
     grid_enabled BOOLEAN DEFAULT true,
+    layout_data JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE seating_layouts ADD COLUMN IF NOT EXISTS layout_data JSONB DEFAULT '{}'::jsonb;
 
 -- Guests assigned to tables
 CREATE TABLE IF NOT EXISTS seating_assignments (
@@ -150,6 +154,7 @@ ALTER TABLE thank_you_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE thank_you_send_queue ENABLE ROW LEVEL SECURITY;
 
 -- Seating Tables Policies
+DROP POLICY IF EXISTS "owners_manage_seating_tables" ON seating_tables;
 CREATE POLICY "owners_manage_seating_tables" ON seating_tables
 FOR ALL
 USING (
@@ -164,6 +169,7 @@ WITH CHECK (
 );
 
 -- Seating Assignments Policies
+DROP POLICY IF EXISTS "owners_manage_seating_assignments" ON seating_assignments;
 CREATE POLICY "owners_manage_seating_assignments" ON seating_assignments
 FOR ALL
 USING (
@@ -192,10 +198,12 @@ WITH CHECK (
 );
 
 -- Wedding Photos - Anyone can view approved photos, owners can manage
+DROP POLICY IF EXISTS "anyone_view_approved_photos" ON wedding_photos;
 CREATE POLICY "anyone_view_approved_photos" ON wedding_photos
 FOR SELECT
 USING (is_approved = true);
 
+DROP POLICY IF EXISTS "owners_manage_photos" ON wedding_photos;
 CREATE POLICY "owners_manage_photos" ON wedding_photos
 FOR ALL
 USING (
@@ -209,12 +217,14 @@ WITH CHECK (
     )
 );
 
+DROP POLICY IF EXISTS "anyone_upload_photos" ON wedding_photos;
 -- Anyone can upload photos (public upload with approval queue)
 CREATE POLICY "anyone_upload_photos" ON wedding_photos
 FOR INSERT
 WITH CHECK (true);
 
 -- Photo Sharing Codes - Owners can manage
+DROP POLICY IF EXISTS "owners_manage_sharing_codes" ON photo_sharing_codes;
 CREATE POLICY "owners_manage_sharing_codes" ON photo_sharing_codes
 FOR ALL
 USING (
@@ -228,12 +238,14 @@ WITH CHECK (
     )
 );
 
+DROP POLICY IF EXISTS "anyone_view_active_codes" ON photo_sharing_codes;
 -- Anyone can view active codes (for upload form validation)
 CREATE POLICY "anyone_view_active_codes" ON photo_sharing_codes
 FOR SELECT
 USING (is_active = true);
 
 -- Thank-You Templates - Owners can manage
+DROP POLICY IF EXISTS "owners_manage_thank_you_templates" ON thank_you_templates;
 CREATE POLICY "owners_manage_thank_you_templates" ON thank_you_templates
 FOR ALL
 USING (
@@ -248,6 +260,7 @@ WITH CHECK (
 );
 
 -- Thank-You Notes - Owners can manage
+DROP POLICY IF EXISTS "owners_manage_thank_you_notes" ON thank_you_notes;
 CREATE POLICY "owners_manage_thank_you_notes" ON thank_you_notes
 FOR ALL
 USING (
@@ -262,6 +275,7 @@ WITH CHECK (
 );
 
 -- Thank-You Send Queue - Owners can manage
+DROP POLICY IF EXISTS "owners_manage_thank_you_queue" ON thank_you_send_queue;
 CREATE POLICY "owners_manage_thank_you_queue" ON thank_you_send_queue
 FOR ALL
 USING (
@@ -275,6 +289,7 @@ WITH CHECK (
     )
 );
 
+DROP POLICY IF EXISTS "system_process_queue" ON thank_you_send_queue;
 -- System can process queue (cron job)
 CREATE POLICY "system_process_queue" ON thank_you_send_queue
 FOR UPDATE

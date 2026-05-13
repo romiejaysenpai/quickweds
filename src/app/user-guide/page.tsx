@@ -3,15 +3,22 @@ import Link from 'next/link';
 import {
   ArrowRight,
   Bell,
+  BookOpen,
   Calendar,
   CheckCircle2,
+  ClipboardList,
+  Camera,
   Gift,
   Heart,
   LayoutDashboard,
   MailCheck,
   Palette,
+  QrCode,
   Send,
   Sparkles,
+  Table2,
+  Utensils,
+  Wallet,
   UsersRound,
 } from 'lucide-react';
 
@@ -110,6 +117,75 @@ const quickTips = [
   },
 ];
 
+const featureGuides = [
+  {
+    title: 'Wedding Website Builder',
+    href: '/user-guide/wedding-website-builder',
+    icon: Palette,
+    text: 'Create, design, preview, publish, and edit a wedding website.',
+  },
+  {
+    title: 'RSVP and Guest List',
+    href: '/user-guide/rsvp-guest-list',
+    icon: UsersRound,
+    text: 'Track replies, add manual guests, manage plus-ones, and organize groups.',
+  },
+  {
+    title: 'Planner Workspace',
+    href: '/user-guide/planner-workspace',
+    icon: LayoutDashboard,
+    text: 'Understand the Planner tabs and how each wedding has its own planner.',
+  },
+  {
+    title: 'Checklist and Calendar',
+    href: '/user-guide/checklist-calendar',
+    icon: ClipboardList,
+    text: 'Use the wedding checklist, 12-month plan, schedules, and reminders.',
+  },
+  {
+    title: 'Budget Planner',
+    href: '/user-guide/budget-planner',
+    icon: Wallet,
+    text: 'Track wedding spending, supplier costs, balances, and budget totals.',
+  },
+  {
+    title: 'Suppliers and Directory',
+    href: '/user-guide/suppliers-directory',
+    icon: Gift,
+    text: 'Save suppliers, manage planner vendors, and use the business directory.',
+  },
+  {
+    title: 'Food and Drinks Planner',
+    href: '/user-guide/food-drinks-planner',
+    icon: Utensils,
+    text: 'List menu ideas, upload food references, add suppliers, and track costs.',
+  },
+  {
+    title: 'Seating Planner',
+    href: '/user-guide/seating-planner',
+    icon: Table2,
+    text: 'Build the floor plan, assign guests, generate QR seat codes, and check in guests.',
+  },
+  {
+    title: 'Photo Sharing',
+    href: '/user-guide/photo-sharing',
+    icon: Camera,
+    text: 'Let guests upload wedding photos and manage the shared gallery.',
+  },
+  {
+    title: 'Thank You Notes',
+    href: '/user-guide/thank-you-notes',
+    icon: MailCheck,
+    text: 'Prepare and send thank-you messages after the wedding.',
+  },
+  {
+    title: 'QR Codes and Sharing',
+    href: '/user-guide/qr-codes-sharing',
+    icon: QrCode,
+    text: 'Use guest links, RSVP QR codes, seat finder QR codes, and printed sharing.',
+  },
+];
+
 export default function UserGuidePage() {
   return (
     <main className="min-h-screen bg-neutral text-foreground">
@@ -123,10 +199,10 @@ export default function UserGuidePage() {
             User Guide
           </div>
           <h1 className="mx-auto max-w-4xl font-serif text-4xl font-bold leading-[1.05] text-foreground sm:text-6xl">
-            Build a beautiful <Accent>wedding site</Accent> without the stress.
+            QuickWeds <Accent>User Guide</Accent>
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-text-secondary sm:text-lg">
-            Follow this simple text guide to create your site, publish your guest link, manage RSVPs, and use planner tools when you need them.
+            Choose a feature guide below, or follow the quick-start steps to create your site, publish your guest link, manage RSVPs, and use planner tools.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link href="/builder" className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-white shadow-xl shadow-primary/20 transition hover:bg-primary-hover">
@@ -136,6 +212,35 @@ export default function UserGuidePage() {
             <Link href="/" className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-border bg-white px-6 py-3 font-bold text-foreground transition hover:border-primary hover:text-primary">
               Back to Home
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 pb-16 sm:px-6 sm:pb-20">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-6 flex items-center gap-3">
+            <BookOpen className="h-6 w-6 text-primary" />
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Guide Navigation</p>
+              <h2 className="font-serif text-3xl font-bold text-foreground">All App User Guides</h2>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featureGuides.map((guide) => {
+              const Icon = guide.icon;
+              return (
+                <Link key={guide.href} href={guide.href} className="group rounded-[1.25rem] border border-border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10">
+                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-serif text-xl font-bold text-foreground">{guide.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-text-secondary">{guide.text}</p>
+                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-primary">
+                    Open Guide <ArrowRight className="h-4 w-4" />
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>

@@ -4,6 +4,7 @@ import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import type { SupplierProfile } from '@/lib/suppliers';
+import { FREE_PLAN_LIMITS, hasPlannerProAccess } from '@/lib/planner-limits';
 
 export async function POST(req: NextRequest) {
     const { user, error } = await getRequestUser(req);
@@ -81,18 +82,7 @@ export async function POST(req: NextRequest) {
 
         if (ownerProfileError) throw ownerProfileError;
 
-        const hasPlannerAccess = Boolean(wedding.is_premium) || Boolean(ownerProfile?.is_pro) || ownerProfile?.payment_status === 'paid';
-
-        if (!isAdmin && !hasPlannerAccess) {
-            return NextResponse.json(
-                {
-                    error: 'Planner Pro is required to add suppliers to your Suppliers/Vendors list.',
-                    code: 'planner_pro_required',
-                    weddingId: wedding.id,
-                },
-                { status: 402 }
-            );
-        }
+        const hasPlannerAccess = hasPlannerProAccess({ isAdmin, wedding, accountProfile: ownerProfile });
 
         const profile = supplier as SupplierProfile;
         const vendorPayload = {
@@ -122,6 +112,27 @@ export async function POST(req: NextRequest) {
 
             if (updateError) throw updateError;
             return NextResponse.json({ vendorId: existing.id, weddingId: wedding.id, alreadySaved: true });
+        }
+
+        if (!hasPlannerAccess) {
+            const { count, error: vendorCountError } = await db
+                .from('planner_vendors')
+                .select('id', { count: 'exact', head: true })
+                .eq('wedding_id', wedding.id);
+
+            if (vendorCountError) throw vendorCountError;
+            if (Number(count || 0) >= FREE_PLAN_LIMITS.vendors) {
+                return NextResponse.json(
+                    {
+                        error: `Free Planner Lite includes ${FREE_PLAN_LIMITS.vendors} saved suppliers/vendors. Upgrade to Planner Pro to save unlimited suppliers from the directory.`,
+                        code: 'planner_lite_limit_reached',
+                        weddingId: wedding.id,
+                        limit: FREE_PLAN_LIMITS.vendors,
+                        used: Number(count || 0),
+                    },
+                    { status: 402 }
+                );
+            }
         }
 
         const { data: vendor, error: insertError } = await db

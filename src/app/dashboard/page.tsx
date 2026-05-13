@@ -471,7 +471,7 @@ export default function DashboardRedirect() {
                                 {[
                                     { label: 'Directory', href: '/suppliers', icon: MapPin },
                                     { label: 'Demo', href: '/demo', icon: PlayCircle },
-                                    { label: 'Guide', href: '/user-guide', icon: BookOpen },
+                                    { label: 'User Guide', href: '/user-guide', icon: BookOpen },
                                     { label: 'Planner', href: '/planner', icon: Calendar },
                                     { label: 'Settings', href: '/settings', icon: Settings },
                                     { label: 'Admin Support', href: '/support', icon: LifeBuoy },
@@ -512,7 +512,7 @@ export default function DashboardRedirect() {
 
             <AnimatePresence>
                 {isPlannerPickerOpen && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center px-4">
+                    <div className="fixed inset-0 z-[110] flex min-h-[100dvh] items-start justify-center overflow-y-auto px-3 py-4 sm:items-center sm:px-6 sm:py-8">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -524,9 +524,9 @@ export default function DashboardRedirect() {
                             initial={{ opacity: 0, y: 16, scale: 0.98 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 16, scale: 0.98 }}
-                            className="relative w-full max-w-lg rounded-3xl border border-border bg-white p-5 shadow-2xl sm:p-6"
+                            className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col rounded-3xl border border-border bg-white p-4 shadow-2xl sm:max-h-[calc(100dvh-4rem)] sm:p-6"
                         >
-                            <div className="mb-4 flex items-start justify-between gap-4">
+                            <div className="mb-4 flex flex-shrink-0 items-start justify-between gap-4">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Wedding Planner</p>
                                     <h2 className="mt-1 font-serif text-2xl font-bold text-foreground">Choose a planner</h2>
@@ -541,7 +541,7 @@ export default function DashboardRedirect() {
                                 </button>
                             </div>
 
-                            <div className="space-y-2 no-scrollbar sm:max-h-[60vh] sm:overflow-y-auto sm:pr-1">
+                            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 no-scrollbar">
                                 {weddings.map((wedding) => (
                                     <Link
                                         key={wedding.id}
@@ -758,7 +758,7 @@ export default function DashboardRedirect() {
                                                 className="flex-1 text-center py-2.5 rounded-xl bg-secondary/20 text-foreground text-xs sm:text-sm font-bold hover:bg-secondary/30 transition-all flex items-center justify-center gap-1.5 min-h-[44px] border border-secondary/30"
                                             >
                                                 <Heart className="w-3.5 h-3.5 text-primary" />
-                                                {wedding.is_premium || accountIsPro ? 'Planner' : 'Planner Pro'}
+                                                {wedding.is_premium || accountIsPro ? 'Planner' : 'Planner Lite'}
                                             </Link>
                                             <Link
                                                 href={`/builder?edit=${wedding.id}`}
@@ -773,9 +773,9 @@ export default function DashboardRedirect() {
                                         {/* Planner Pro prompt */}
                                         {!wedding.is_premium && !accountIsPro && (
                                             <div className="rounded-2xl border border-primary/15 bg-primary/5 p-3">
-                                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Ready to plan deeper?</p>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Ready for the full plan?</p>
                                                 <p className="mt-1 text-xs leading-5 text-text-secondary">
-                                                    Unlock budgets, suppliers, seating, tasks, collaborators, reminders, photos, and thank-you tools.
+                                                    Free includes Planner Lite, 50 guest emails, and starter limits. Pro unlocks unlimited planning, reminders, collaborators, seating, photos, and exports.
                                                 </p>
                                                 <UpgradeButton weddingId={wedding.id} className="mt-3 w-full justify-center text-xs sm:text-sm py-2 sm:py-2.5" />
                                             </div>

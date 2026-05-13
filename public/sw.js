@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'quickweds-pwa-v1';
+const CACHE_VERSION = 'quickweds-pwa-v2';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
@@ -72,6 +72,20 @@ async function staleWhileRevalidate(request) {
   return cached || (await network) || caches.match('/offline');
 }
 
+async function networkFirstAsset(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  try {
+    const response = await fetch(request);
+    if (response && response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+    return cached || caches.match('/offline');
+  }
+}
+
 async function networkFirstPage(request) {
   const cache = await caches.open(PAGE_CACHE);
   try {
@@ -112,6 +126,11 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(networkFirstPage(request));
+    return;
+  }
+
+  if (url.pathname.startsWith('/_next/static/') || request.destination === 'script' || request.destination === 'style') {
+    event.respondWith(networkFirstAsset(request));
     return;
   }
 

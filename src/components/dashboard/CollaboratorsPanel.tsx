@@ -11,12 +11,15 @@ import {
     type WeddingCollaborator,
 } from '@/lib/wedding-features';
 import { supabase } from '@/lib/supabase';
+import UpgradeButton from '@/components/UpgradeButton';
+import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
 
 interface CollaboratorsPanelProps {
     weddingId: string;
     currentUserId?: string;
     currentUserEmail?: string | null;
     canManage: boolean;
+    hasPlannerPro?: boolean;
 }
 
 const ROLE_COPY: Record<CollaboratorRole, string> = {
@@ -34,6 +37,7 @@ export default function CollaboratorsPanel({
     currentUserId,
     currentUserEmail,
     canManage,
+    hasPlannerPro = false,
 }: CollaboratorsPanelProps) {
     const [loading, setLoading] = useState(true);
     const [collaborators, setCollaborators] = useState<WeddingCollaborator[]>([]);
@@ -60,6 +64,10 @@ export default function CollaboratorsPanel({
         setSubmitting(true);
         setNotice(null);
         try {
+            if (!hasPlannerPro && (inviteRole !== 'partner' || collaborators.length >= FREE_PLAN_LIMITS.collaborators)) {
+                throw new Error('Free workspaces include 1 partner collaborator. Upgrade to Planner Pro for coordinators and more helpers.');
+            }
+
             const invitedAddress = inviteEmail.trim().toLowerCase();
             const { data } = await supabase.auth.getSession();
             const token = data.session?.access_token;
@@ -126,6 +134,14 @@ export default function CollaboratorsPanel({
 
             {canManage && (
                 <div className="mt-5 space-y-3">
+                    {!hasPlannerPro && (
+                        <div className="flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs font-semibold text-text-secondary">
+                                Free includes {FREE_PLAN_LIMITS.collaborators} partner collaborator. Planner Pro unlocks coordinators and more helpers.
+                            </p>
+                            <UpgradeButton weddingId={weddingId} variant="outlined" className="justify-center text-sm" />
+                        </div>
+                    )}
                     <form onSubmit={submitInvite} className="grid grid-cols-1 items-stretch gap-3 xl:grid-cols-[minmax(320px,1fr)_160px_124px] 2xl:grid-cols-1">
                         <input
                             type="email"
@@ -144,7 +160,7 @@ export default function CollaboratorsPanel({
                         </select>
                         <button
                             type="submit"
-                            disabled={submitting || !inviteEmail.trim()}
+                            disabled={submitting || !inviteEmail.trim() || (!hasPlannerPro && (inviteRole !== 'partner' || collaborators.length >= FREE_PLAN_LIMITS.collaborators))}
                             className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition-all hover:bg-primary-hover disabled:opacity-50"
                         >
                             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}

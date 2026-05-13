@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { sendEmail, getThankYouNoteHtml } from '@/lib/email';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import {
+    FREE_PLAN_LIMITS,
+    getEmailLimitMessage,
+    getUserTriggeredEmailUsage,
+    hasPlannerProAccess,
+    logPlannerEmailEvent,
+} from '@/lib/planner-limits';
 
 export async function POST(req: NextRequest) {
     try {
@@ -13,14 +20,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'weddingId and authorization token are required' }, { status: 400 });
         }
 
-        const { data: authUser, error: authError } = await supabase.auth.getUser(accessToken);
+        const db = getSupabaseAdminClient() as any;
+        const { data: authUser, error: authError } = await db.auth.getUser(accessToken);
         if (authError || !authUser.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { data: wedding, error: weddingError } = await supabase
+        const { data: wedding, error: weddingError } = await db
             .from('weddings')
-            .select('id, bride_name, groom_name, wedding_date, user_id')
+            .select('id, bride_name, groom_name, wedding_date, user_id, is_premium, payment_status')
             .eq('id', weddingId)
             .single();
 
@@ -31,7 +39,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const { data: notes, error: notesError } = await supabase
+        const { data: notes, error: notesError } = await db
             .from('thank_you_notes')
             .select('*')
             .eq('wedding_id', weddingId)
@@ -45,7 +53,25 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ sentCount: 0, failedCount: 0 });
         }
 
-        const settled = await Promise.all(notes.map(async (note) => {
+        const { data: ownerProfile } = await db
+            .from('user_app_profiles')
+            .select('is_pro, payment_status')
+            .eq('user_id', wedding.user_id)
+            .maybeSingle();
+        const hasPlannerPro = hasPlannerProAccess({ wedding, accountProfile: ownerProfile });
+        const emailsUsed = await getUserTriggeredEmailUsage(db, weddingId);
+
+        if (!hasPlannerPro && emailsUsed + notes.length > FREE_PLAN_LIMITS.userTriggeredEmails) {
+            return NextResponse.json({
+                error: getEmailLimitMessage(notes.length, emailsUsed),
+                code: 'email_limit_reached',
+                used: emailsUsed,
+                limit: FREE_PLAN_LIMITS.userTriggeredEmails,
+                requested: notes.length,
+            }, { status: 402 });
+        }
+
+        const settled = await Promise.all(notes.map(async (note: any) => {
             const html = getThankYouNoteHtml({
                 recipientName: note.recipient_name,
                 brideName: wedding.bride_name,
@@ -60,7 +86,7 @@ export async function POST(req: NextRequest) {
             });
 
             const nextStatus = result.success ? 'sent' : 'failed';
-            await supabase
+            await db
                 .from('thank_you_notes')
                 .update({
                     status: nextStatus,
@@ -74,6 +100,13 @@ export async function POST(req: NextRequest) {
 
         const sentCount = settled.filter(Boolean).length;
         const failedCount = settled.length - sentCount;
+        await logPlannerEmailEvent(db, {
+            weddingId,
+            eventType: 'thank_you',
+            recipientCount: notes.length,
+            successCount: sentCount,
+            userId: authUser.user.id,
+        });
 
         return NextResponse.json({ sentCount, failedCount });
     } catch (error) {

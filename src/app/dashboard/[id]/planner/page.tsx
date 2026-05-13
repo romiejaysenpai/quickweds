@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -10,15 +10,31 @@ import dynamic from 'next/dynamic';
 import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from '@/components/UpgradeButton';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
+import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
-    loading: () => <PlannerPanelLoading label="Loading seating chart..." />,
+    loading: () => (
+        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="mt-4 text-sm font-bold text-text-secondary">Loading seating chart...</p>
+        </div>
+    ),
 });
 const PhotoSharingManager = dynamic(() => import('@/components/dashboard/PhotoSharingManager'), {
-    loading: () => <PlannerPanelLoading label="Loading photo sharing..." />,
+    loading: () => (
+        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="mt-4 text-sm font-bold text-text-secondary">Loading photo sharing...</p>
+        </div>
+    ),
 });
 const ThankYouNoteManager = dynamic(() => import('@/components/dashboard/ThankYouNoteManager'), {
-    loading: () => <PlannerPanelLoading label="Loading thank-you tools..." />,
+    loading: () => (
+        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="mt-4 text-sm font-bold text-text-secondary">Loading thank-you tools...</p>
+        </div>
+    ),
 });
 
 const PLANNER_TABS = ['checklist', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
@@ -105,15 +121,6 @@ function getCurrencySymbol(currency?: string | null) {
     return '\u20b1';
 }
 
-function PlannerPanelLoading({ label }: { label: string }) {
-    return (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="mt-4 text-sm font-bold text-text-secondary">{label}</p>
-        </div>
-    );
-}
-
 const VENDOR_PAYMENT_STATUS_OPTIONS: { value: VendorPaymentStatus; label: string }[] = [
     { value: 'not paid', label: 'Not Paid' },
     { value: 'pending', label: 'Pending' },
@@ -128,6 +135,35 @@ const PLANNER_DELETE_TABLES: Record<string, string> = {
     foodDrink: 'planner_food_drinks',
     honeymoon: 'planner_honeymoon_items',
 };
+
+const TASK_META_SEPARATOR = '||QW_TASK_META||';
+
+function decodePlannerTask(task: any) {
+    const category = String(task?.category || '');
+    if (!category.includes(TASK_META_SEPARATOR)) {
+        return {
+            ...task,
+            section: task?.section || task?.category || 'General',
+        };
+    }
+
+    const [section, encodedMeta] = category.split(TASK_META_SEPARATOR);
+    try {
+        const meta = JSON.parse(encodedMeta || '{}');
+        return {
+            ...task,
+            ...meta,
+            category: section || meta.section || 'General',
+            section: meta.section || section || task?.section || 'General',
+        };
+    } catch {
+        return {
+            ...task,
+            category: section || 'General',
+            section: task?.section || section || 'General',
+        };
+    }
+}
 
 function normalizeVendorPaymentStatus(status?: string | null): VendorPaymentStatus {
     const normalized = status?.toLowerCase();
@@ -198,12 +234,12 @@ async function deletePlannerItem(weddingId: string, type: string, id: string) {
 
     try {
         const response = await fetch('/api/planner/items', {
-            method: 'DELETE',
+            method: 'POST',
             headers: {
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ weddingId, type, id }),
+            body: JSON.stringify({ action: 'delete', weddingId, type, id }),
         });
 
         const data = await response.json().catch(() => ({}));
@@ -234,6 +270,45 @@ async function deletePlannerItem(weddingId: string, type: string, id: string) {
     throw new Error(`Unable to delete planner item. ${errors.join(' ')}`);
 }
 
+function getPlannerErrorMessage(err: unknown, fallback: string) {
+    if (err instanceof Error && err.message) return err.message;
+    if (typeof err === 'object' && err) {
+        const record = err as { message?: string; error?: string; details?: string; hint?: string; code?: string };
+        return record.message || record.error || record.details || record.hint || record.code || fallback;
+    }
+    return fallback;
+}
+
+async function plannerItemRequest(method: 'POST' | 'PATCH', payload: Record<string, unknown>) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) throw new Error('Please sign in again before saving this planner item.');
+
+    const response = await fetch('/api/planner/items', {
+        method,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.error || 'Unable to save planner item.');
+    }
+
+    return data.item;
+}
+
+async function createPlannerItem(weddingId: string, type: string, values: Record<string, unknown>) {
+    return plannerItemRequest('POST', { action: 'create', weddingId, type, values });
+}
+
+async function updatePlannerItem(weddingId: string, type: string, id: string, values: Record<string, unknown>) {
+    return plannerItemRequest('PATCH', { weddingId, type, id, values });
+}
+
 export default function PlannerPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: weddingId } = use(params);
     const router = useRouter();
@@ -257,6 +332,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const [honeymoonItems, setHoneymoonItems] = useState<any[]>([]);
     const [accountIsPro, setAccountIsPro] = useState(false);
     const [confirmedGuests, setConfirmedGuests] = useState<number>(0);
+    const [planUsage, setPlanUsage] = useState<PlannerUsage>(EMPTY_PLANNER_USAGE);
 
     useEffect(() => {
         const requestedTab = searchParams?.get('tab');
@@ -341,6 +417,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             setAccessRole(data.accessRole || 'denied');
             setWedding(data.wedding || null);
             setAccountIsPro(hasAccountPro(data.accountProfile));
+            setPlanUsage(data.planUsage || EMPTY_PLANNER_USAGE);
 
             if (!response.ok) {
                 setPlannerError(data.error || 'Unable to verify planner access.');
@@ -352,7 +429,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 setAccessDebug(`Admin override - isAdmin=${isAdmin}, userEmail=${user?.email}`);
             }
 
-            setTasks(data.tasks || []);
+            setTasks((data.tasks || []).map(decodePlannerTask));
             setBudgets(data.budgets || []);
             setVendors(data.vendors || []);
             setEvents(data.events || []);
@@ -469,7 +546,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                                 : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'
                                         }`}
                                     >
-                                        {!hasPlannerPro && (
+                                        {!hasPlannerPro && (tab.tab === 'photos' || tab.tab === 'thanks') && (
                                             <span className={`absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full md:static md:h-auto md:w-auto md:rounded-none md:bg-transparent ${
                                                 isActive ? 'bg-white/20 md:text-white' : 'bg-primary/10 text-primary'
                                             }`}>
@@ -478,7 +555,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                         )}
                                         <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                         <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">{tab.label}</span>
-                                        {!hasPlannerPro && (
+                                        {!hasPlannerPro && (tab.tab === 'photos' || tab.tab === 'thanks') && (
                                             <span className={`hidden md:inline-flex ml-auto rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
                                                 isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
                                             }`}>
@@ -494,7 +571,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
                 {/* Main Content Area */}
                 <div className="flex-1 min-w-0 overflow-x-hidden">
-                    {!hasPlannerPro ? (
+                    {!hasPlannerPro && (activeTab === 'photos' || activeTab === 'thanks') ? (
                         <LockedPlannerFeature
                             activeTab={activeTab}
                             accessRole={accessRole}
@@ -503,12 +580,13 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                         />
                     ) : (
                         <>
+                            <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
                             {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={loadPlannerData} />}
-                            {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} />}
+                            {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} hasPlannerPro={hasPlannerPro} />}
                             {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
                             {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
                             {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'seating' && <SeatingChartBuilder weddingId={weddingId} />}
+                            {activeTab === 'seating' && <SeatingChartBuilder weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
                             {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} />}
                             {activeTab === 'thanks' && <ThankYouNoteManager weddingId={weddingId} />}
                             {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
@@ -604,6 +682,57 @@ function LockedPlannerFeature({
     );
 }
 
+function PlannerLiteUsageBanner({
+    activeTab,
+    hasPlannerPro,
+    usage,
+    weddingId,
+}: {
+    activeTab: PlannerTab;
+    hasPlannerPro: boolean;
+    usage: PlannerUsage;
+    weddingId: string;
+}) {
+    if (hasPlannerPro) return null;
+
+    const usageByTab: Partial<Record<PlannerTab, { label: string; used: number; limit: number }>> = {
+        checklist: { label: 'Checklist tasks', used: usage.tasks, limit: FREE_PLAN_LIMITS.checklistTasks },
+        calendar: { label: 'Calendar events', used: usage.events, limit: FREE_PLAN_LIMITS.calendarEvents },
+        budget: { label: 'Budget items', used: usage.budgets, limit: FREE_PLAN_LIMITS.budgetItems },
+        food: { label: 'Food and drink items', used: usage.foodDrinks, limit: FREE_PLAN_LIMITS.foodDrinks },
+        vendors: { label: 'Saved suppliers', used: usage.vendors, limit: FREE_PLAN_LIMITS.vendors },
+        seating: { label: 'Seating tables', used: usage.seatingTables, limit: FREE_PLAN_LIMITS.seatingTables },
+        honeymoon: { label: 'Honeymoon items', used: usage.honeymoonItems, limit: FREE_PLAN_LIMITS.honeymoonItems },
+    };
+
+    const activeUsage = usageByTab[activeTab];
+
+    return (
+        <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:mb-6">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="grid gap-2 sm:grid-cols-2">
+                    {activeUsage && (
+                        <div className="rounded-xl border border-primary/10 bg-white px-4 py-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">{activeUsage.label}</p>
+                            <p className="mt-1 font-serif text-xl font-bold text-foreground">{activeUsage.used} / {activeUsage.limit}</p>
+                        </div>
+                    )}
+                    <div className="rounded-xl border border-primary/10 bg-white px-4 py-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Guest emails</p>
+                        <p className="mt-1 font-serif text-xl font-bold text-foreground">{usage.userTriggeredEmailsUsed} / {FREE_PLAN_LIMITS.userTriggeredEmails}</p>
+                    </div>
+                </div>
+                <div className="flex flex-col gap-2 lg:items-end">
+                    <p className="max-w-xl text-sm font-semibold leading-6 text-text-secondary">
+                        Planner Lite is free with useful starter limits. Upgrade when guests, suppliers, seating, and reminders need to go unlimited.
+                    </p>
+                    <UpgradeButton weddingId={weddingId} className="justify-center text-sm" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ----------------------------------------------------
 // CHILD COMPONENTS
 // ----------------------------------------------------
@@ -638,6 +767,18 @@ function getChecklistDueDate(weddingDateValue: string | null | undefined, months
 
 function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], wedding, reload }: any) {
     const [publishing, setPublishing] = useState(false);
+    const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+    const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+    const [savingTaskId, setSavingTaskId] = useState<string | null>(null);
+    const [editTask, setEditTask] = useState({
+        title: '',
+        section: 'General',
+        due_date: '',
+        assigned_to: '',
+        planner_vendor_id: '',
+        custom_supplier_name: '',
+        notes: '',
+    });
     const [newTask, setNewTask] = useState({
         title: '',
         section: 'General',
@@ -653,35 +794,105 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
         if (!newTask.title.trim() || publishing) return;
         setPublishing(true);
         try {
-            const { error } = await supabase.from('planner_tasks').insert({
-                wedding_id: weddingId,
+            await createPlannerItem(weddingId, 'task', {
                 title: newTask.title.trim(),
                 section: newTask.section,
-                status: 'to_prepare',
+                status: 'pending',
                 due_date: newTask.due_date || null,
                 assigned_to: newTask.assigned_to.trim() || null,
                 planner_vendor_id: newTask.planner_vendor_id || null,
                 custom_supplier_name: newTask.custom_supplier_name.trim() || null,
                 notes: newTask.notes.trim() || null,
             });
-            if (error) throw error;
             setNewTask((current) => ({ ...current, title: '', assigned_to: '', custom_supplier_name: '', notes: '' }));
             await reload();
         } catch (err) {
-            console.error("Error adding task:", err);
-            alert("Failed to add task. Please apply supabase-planner-expansion.sql if this is the first time using the expanded planner.");
+            const message = getPlannerErrorMessage(err, 'Failed to add checklist item.');
+            console.warn('Error adding checklist item:', message);
+            alert(`Failed to add checklist item: ${message}`);
         } finally {
             setPublishing(false);
         }
     }
 
-    async function updateTask(task: any, patch: Record<string, unknown>) {
+    function startEditingTask(task: any) {
+        setEditingTaskId(task.id);
+        setEditTask({
+            title: task.title || '',
+            section: task.section || task.category || 'General',
+            due_date: task.due_date ? String(task.due_date).slice(0, 10) : '',
+            assigned_to: task.assigned_to || '',
+            planner_vendor_id: task.planner_vendor_id || '',
+            custom_supplier_name: task.custom_supplier_name || '',
+            notes: task.notes || '',
+        });
+    }
+
+    function cancelEditingTask() {
+        setEditingTaskId(null);
+        setSavingTaskId(null);
+        setEditTask({
+            title: '',
+            section: 'General',
+            due_date: '',
+            assigned_to: '',
+            planner_vendor_id: '',
+            custom_supplier_name: '',
+            notes: '',
+        });
+    }
+
+    async function saveTaskDetails(task: any) {
+        if (!editTask.title.trim() || savingTaskId) return;
+        setSavingTaskId(task.id);
         try {
-            const { error } = await supabase.from('planner_tasks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', task.id);
-            if (error) throw error;
+            const updatedTask = await updatePlannerItem(weddingId, 'task', task.id, {
+                title: editTask.title.trim(),
+                section: editTask.section,
+                category: editTask.section,
+                due_date: editTask.due_date || null,
+                assigned_to: editTask.assigned_to.trim() || null,
+                planner_vendor_id: editTask.planner_vendor_id || null,
+                custom_supplier_name: editTask.custom_supplier_name.trim() || null,
+                notes: editTask.notes.trim() || null,
+            });
+            if (setTasks && updatedTask) {
+                const decodedTask = decodePlannerTask(updatedTask);
+                setTasks((current: any[]) => current.map((item: any) => (
+                    item.id === task.id
+                        ? {
+                            ...item,
+                            ...decodedTask,
+                            title: decodedTask.title || editTask.title.trim(),
+                            section: decodedTask.section || decodedTask.category || editTask.section,
+                            due_date: decodedTask.due_date ?? (editTask.due_date || null),
+                            assigned_to: decodedTask.assigned_to ?? (editTask.assigned_to.trim() || null),
+                            planner_vendor_id: decodedTask.planner_vendor_id ?? (editTask.planner_vendor_id || null),
+                            custom_supplier_name: decodedTask.custom_supplier_name ?? (editTask.custom_supplier_name.trim() || null),
+                            notes: decodedTask.notes ?? (editTask.notes.trim() || null),
+                        }
+                        : item
+                )));
+            }
+            cancelEditingTask();
             await reload();
         } catch (err) {
-            console.error("Error updating task:", err);
+            const message = getPlannerErrorMessage(err, 'Unable to update checklist item.');
+            console.warn('Error updating checklist item:', message);
+            alert(`Unable to update checklist item: ${message}`);
+        } finally {
+            setSavingTaskId(null);
+        }
+    }
+
+    async function updateTask(task: any, patch: Record<string, unknown>) {
+        try {
+            await updatePlannerItem(weddingId, 'task', task.id, patch);
+            await reload();
+        } catch (err) {
+            const message = getPlannerErrorMessage(err, 'Unable to update checklist item.');
+            console.warn('Error updating checklist item:', message);
+            alert(`Unable to update checklist item: ${message}`);
         }
     }
 
@@ -696,30 +907,37 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                     title,
                     template_key,
                     section: '12-Month Wedding Plan',
-                    status: 'to_prepare',
+                    status: 'pending',
                     due_date: getChecklistDueDate(wedding?.wedding_date, Number(monthsBefore)),
                     assigned_to: assignedTo,
                 };
             });
 
         if (rows.length === 0) return alert('The 12-month checklist is already loaded.');
-        const { error } = await supabase.from('planner_tasks').insert(rows);
-        if (error) {
-            alert('Failed to load checklist. Apply supabase-planner-expansion.sql first.');
+        try {
+            await Promise.all(rows.map((row) => createPlannerItem(weddingId, 'task', row)));
+        } catch (err) {
+            const message = getPlannerErrorMessage(err, 'Failed to load checklist.');
+            console.warn('Error loading 12-month checklist:', message);
+            alert(`Failed to load checklist: ${message}`);
             return;
         }
         await reload();
     }
 
     async function deleteTask(id: string) {
-        if (!confirm("Are you sure you want to delete this task?")) return;
+        if (deletingTaskId) return;
+        setDeletingTaskId(id);
         try {
             await deletePlannerItem(weddingId, 'task', id);
             if (setTasks) setTasks((current: any[]) => current.filter((task: any) => task.id !== id));
             await reload();
         } catch (err) {
-            console.error('Error deleting checklist item:', err);
-            alert(err instanceof Error ? err.message : 'Unable to delete checklist item.');
+            const message = getPlannerErrorMessage(err, 'Unable to delete checklist item.');
+            console.warn('Error deleting checklist item:', message);
+            alert(message);
+        } finally {
+            setDeletingTaskId(null);
         }
     }
 
@@ -738,9 +956,12 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                         <p className="text-2xl font-serif font-bold text-primary">{progress}%</p>
                     <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Done</p>
                     </div>
-                    <button type="button" onClick={() => void seedTwelveMonthChecklist()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
-                        <Sparkles className="h-4 w-4" /> Load 12-Month List
-                    </button>
+                    <div className="text-center sm:text-left">
+                        <button type="button" onClick={() => void seedTwelveMonthChecklist()} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white sm:w-auto">
+                            <Sparkles className="h-4 w-4" /> Load 12-Month List
+                        </button>
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-text-secondary">Recommended template checklist</p>
+                    </div>
                 </div>
             </div>
 
@@ -775,20 +996,71 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                     const linkedVendor = vendors.find((vendor: any) => vendor.id === task.planner_vendor_id);
                                     const prepared = task.status === 'prepared' || task.status === 'completed';
                                     return (
-                                        <div key={task.id} className="flex items-start gap-3 p-4 sm:items-center">
-                                            <button type="button" onClick={() => void updateTask(task, { status: prepared ? 'to_prepare' : 'prepared' })} aria-label={prepared ? 'Mark checklist item as not done' : 'Mark checklist item as done'} className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-full hover:bg-primary/10 sm:mt-0">
+                                        <div key={task.id} className="grid grid-cols-[auto_1fr] gap-3 p-4 sm:flex sm:items-start">
+                                            <button type="button" onClick={() => void updateTask(task, { status: prepared ? 'pending' : 'completed' })} aria-label={prepared ? 'Mark checklist item as not done' : 'Mark checklist item as done'} className="mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-full hover:bg-primary/10">
                                                 {prepared ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Circle className="h-5 w-5 text-border" />}
                                             </button>
                                             <div className="min-w-0 flex-1">
-                                                <div className="flex min-w-0 items-start gap-3">
-                                                    <p className={`min-w-0 break-words font-serif text-base font-bold leading-snug ${prepared ? 'text-text-secondary line-through' : 'text-foreground'}`}>{task.title}</p>
-                                                </div>
-                                                <p className="mt-1 break-words text-xs leading-5 text-text-secondary">
-                                                    {[task.assigned_to, task.due_date ? new Date(task.due_date).toLocaleDateString() : null, linkedVendor?.name || task.custom_supplier_name].filter(Boolean).join(' - ') || 'No details yet'}
-                                                </p>
-                                                {task.notes && <p className="mt-1 break-words text-xs italic leading-5 text-text-secondary">{task.notes}</p>}
+                                                {editingTaskId === task.id ? (
+                                                    <div className="grid gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-3 lg:grid-cols-2">
+                                                        <input value={editTask.title} onChange={(e) => setEditTask({ ...editTask, title: e.target.value })} placeholder="Checklist item" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px] lg:col-span-2" />
+                                                        <select value={editTask.section} onChange={(e) => setEditTask({ ...editTask, section: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
+                                                            {CHECKLIST_SECTIONS.map(sectionOption => <option key={sectionOption} value={sectionOption}>{sectionOption}</option>)}
+                                                        </select>
+                                                        <input type="date" value={editTask.due_date} onChange={(e) => setEditTask({ ...editTask, due_date: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                                                        <input value={editTask.assigned_to} onChange={(e) => setEditTask({ ...editTask, assigned_to: e.target.value })} placeholder="Assigned person / role" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                                                        <select value={editTask.planner_vendor_id} onChange={(e) => setEditTask({ ...editTask, planner_vendor_id: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
+                                                            <option value="">Select supplier/vendor</option>
+                                                            {vendors.map((vendor: any) => <option key={vendor.id} value={vendor.id}>{vendor.name} - {vendor.role}</option>)}
+                                                        </select>
+                                                        <input value={editTask.custom_supplier_name} onChange={(e) => setEditTask({ ...editTask, custom_supplier_name: e.target.value })} placeholder="Custom supplier" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                                                        <input value={editTask.notes} onChange={(e) => setEditTask({ ...editTask, notes: e.target.value })} placeholder="Notes" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
+                                                        <div className="flex flex-col gap-2 sm:flex-row lg:col-span-2">
+                                                            <button type="button" disabled={savingTaskId === task.id || !editTask.title.trim()} onClick={() => void saveTaskDetails(task)} className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+                                                                {savingTaskId === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                                                Save Changes
+                                                            </button>
+                                                            <button type="button" onClick={cancelEditingTask} className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary hover:border-primary/30 hover:text-primary">
+                                                                <X className="h-4 w-4" />
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex min-w-0 items-start gap-3">
+                                                            <p className={`min-w-0 break-words font-serif text-base font-bold leading-snug ${prepared ? 'text-text-secondary line-through' : 'text-foreground'}`}>{task.title}</p>
+                                                        </div>
+                                                        <p className="mt-1 break-words text-xs leading-5 text-text-secondary">
+                                                            {[task.assigned_to, task.due_date ? new Date(task.due_date).toLocaleDateString() : null, linkedVendor?.name || task.custom_supplier_name].filter(Boolean).join(' - ') || 'No details yet'}
+                                                        </p>
+                                                        {task.notes && <p className="mt-1 break-words text-xs italic leading-5 text-text-secondary">{task.notes}</p>}
+                                                    </>
+                                                )}
                                             </div>
-                                            <button type="button" onClick={() => void deleteTask(task.id)} className="flex h-11 w-11 flex-none items-center justify-center rounded-xl text-red-500 hover:bg-red-50" aria-label="Delete checklist item"><Trash2 className="h-4 w-4" /></button>
+                                            {editingTaskId !== task.id && (
+                                                <div className="col-span-2 grid grid-cols-2 gap-2 sm:col-auto sm:flex sm:flex-none sm:items-start">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => startEditingTask(task)}
+                                                        className="flex min-h-[44px] w-full touch-manipulation items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-bold text-text-secondary hover:border-primary/30 hover:text-primary sm:w-auto sm:min-w-[44px] sm:px-3"
+                                                        aria-label="Edit checklist item"
+                                                    >
+                                                        <Edit2 className="h-4 w-4" />
+                                                        <span className="sm:hidden">Edit</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={deletingTaskId === task.id}
+                                                        onClick={() => void deleteTask(task.id)}
+                                                        className="flex min-h-[44px] w-full touch-manipulation items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 text-sm font-bold text-red-600 disabled:opacity-50 sm:w-auto sm:min-w-[44px] sm:bg-white sm:px-3 sm:hover:bg-red-50"
+                                                        aria-label="Delete checklist item"
+                                                    >
+                                                        {deletingTaskId === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                        <span className="sm:hidden">{deletingTaskId === task.id ? 'Deleting...' : 'Delete'}</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -802,7 +1074,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
     );
 }
 
-function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], wedding, googleCalendar, reload }: any) {
+function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], wedding, googleCalendar, reload, hasPlannerPro = false }: any) {
     const [publishing, setPublishing] = useState(false);
     const [syncingGoogle, setSyncingGoogle] = useState(false);
     const [newEvent, setNewEvent] = useState({
@@ -825,6 +1097,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
     }
 
     async function connectGoogleCalendar() {
+        if (!hasPlannerPro) return alert('Google Calendar sync is part of Planner Pro.');
         const token = await getAuthToken();
         if (!token) return alert('Please sign in again before connecting Google Calendar.');
         const response = await fetch(`/api/planner/google-calendar/connect?weddingId=${encodeURIComponent(weddingId)}`, {
@@ -840,6 +1113,10 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
     }
 
     async function syncGoogleCalendar(silent = false) {
+        if (!hasPlannerPro) {
+            if (!silent) alert('Google Calendar sync is part of Planner Pro.');
+            return;
+        }
         if (!googleCalendar?.connected) return;
         setSyncingGoogle(true);
         try {
@@ -901,8 +1178,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
         if (!newEvent.title || !newEvent.starts_at || publishing) return;
         setPublishing(true);
         try {
-            const { error } = await supabase.from('planner_events').insert({
-                wedding_id: weddingId,
+            await createPlannerItem(weddingId, 'event', {
                 title: newEvent.title.trim(),
                 starts_at: new Date(newEvent.starts_at).toISOString(),
                 ends_at: newEvent.ends_at ? new Date(newEvent.ends_at).toISOString() : null,
@@ -911,13 +1187,13 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
                 planner_task_id: newEvent.planner_task_id || null,
                 reminder_minutes: Number(newEvent.reminder_minutes) || 1440,
             });
-            if (error) throw error;
             setNewEvent({ title: '', starts_at: '', ends_at: '', location: '', notes: '', planner_task_id: '', reminder_minutes: '1440' });
             await reload();
             await syncGoogleCalendar(true);
         } catch (err) {
-            console.error('Error adding planner event:', err);
-            alert('Failed to add schedule. Please apply supabase-planner-expansion.sql first.');
+            const message = getPlannerErrorMessage(err, 'Failed to add schedule.');
+            console.error('Error adding planner event:', message);
+            alert(`Failed to add schedule: ${message}`);
         } finally {
             setPublishing(false);
         }
@@ -931,8 +1207,9 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
             if (setEvents) setEvents((current: any[]) => current.filter((event: any) => event.id !== id));
             await reload();
         } catch (err) {
-            console.error('Error deleting schedule:', err);
-            alert(err instanceof Error ? err.message : 'Unable to delete schedule.');
+            const message = getPlannerErrorMessage(err, 'Unable to delete schedule.');
+            console.warn('Error deleting schedule:', message);
+            alert(message);
         }
     }
 
@@ -954,7 +1231,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
                         <p className="mt-1 text-xs text-text-secondary sm:text-sm">Plan fittings, tastings, supplier meetings, and wedding week schedules.</p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
-                        {googleCalendar?.connected ? (
+                        {hasPlannerPro && googleCalendar?.connected ? (
                             <>
                                 <button type="button" onClick={() => void syncGoogleCalendar()} disabled={syncingGoogle} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-600 hover:text-white disabled:opacity-50">
                                     <RefreshCw className={`h-4 w-4 ${syncingGoogle ? 'animate-spin' : ''}`} /> {syncingGoogle ? 'Syncing...' : 'Sync Google'}
@@ -963,10 +1240,12 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
                                     Disconnect
                                 </button>
                             </>
-                        ) : (
+                        ) : hasPlannerPro ? (
                             <button type="button" onClick={() => void connectGoogleCalendar()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
                                 <CalendarDays className="h-4 w-4" /> Connect Google Calendar
                             </button>
+                        ) : (
+                            <UpgradeButton weddingId={weddingId} variant="outlined" className="justify-center text-sm" label="Unlock Google Sync" />
                         )}
                         {feedUrl && (
                             <a href={feedUrl} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
@@ -1074,18 +1353,17 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
         if (!newItem.item_name || publishing) return;
         setPublishing(true);
         try {
-            const { error } = await supabase.from('planner_budgets').insert({ 
-                wedding_id: weddingId, 
+            await createPlannerItem(weddingId, 'budget', {
                 category: newItem.category, 
                 item_name: newItem.item_name,
                 estimated_cost: parseFloat(newItem.estimated_cost) || 0
             });
-            if (error) throw error;
             setNewItem({ category: newItem.category, item_name: '', estimated_cost: '' });
             await reload();
-        } catch (err: any) {
-            console.error("Error adding budget item:", err);
-            alert("Failed to add budget item: " + err.message);
+        } catch (err) {
+            const message = getPlannerErrorMessage(err, 'Failed to add budget item.');
+            console.error("Error adding budget item:", message);
+            alert(`Failed to add budget item: ${message}`);
         } finally {
             setPublishing(false);
         }
@@ -1129,8 +1407,9 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
             if (setBudgets) setBudgets((current: any[]) => current.filter((item: any) => item.id !== id));
             await reload();
         } catch (err) {
-            console.error("Error deleting budget item:", err);
-            alert(err instanceof Error ? err.message : 'Unable to delete budget item.');
+            const message = getPlannerErrorMessage(err, 'Unable to delete budget item.');
+            console.warn('Error deleting budget item:', message);
+            alert(message);
         }
     }
 
@@ -1447,6 +1726,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
 function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors = [], currency, reload }: any) {
     const [publishing, setPublishing] = useState(false);
     const [uploadingReference, setUploadingReference] = useState(false);
+    const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
     const [newItem, setNewItem] = useState({
         item_type: 'food',
         item_name: '',
@@ -1494,8 +1774,7 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
         if (!newItem.item_name || publishing) return;
         setPublishing(true);
         try {
-            const { error } = await supabase.from('planner_food_drinks').insert({
-                wedding_id: weddingId,
+            await createPlannerItem(weddingId, 'foodDrink', {
                 item_type: newItem.item_type,
                 item_name: newItem.item_name.trim(),
                 serving_category: newItem.serving_category.trim() || null,
@@ -1505,26 +1784,30 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
                 custom_supplier_name: newItem.custom_supplier_name.trim() || null,
                 notes: newItem.notes.trim() || null,
             });
-            if (error) throw error;
             setNewItem({ item_type: 'food', item_name: '', serving_category: '', reference_image_url: '', estimated_cost: '', planner_vendor_id: '', custom_supplier_name: '', notes: '' });
             await reload();
         } catch (err) {
-            console.error('Error adding food/drink item:', err);
-            alert('Failed to add food or drink. Please apply supabase-planner-expansion.sql first.');
+            const message = getPlannerErrorMessage(err, 'Failed to add food or drink.');
+            console.warn('Error adding food/drink item:', message);
+            alert(`Failed to add food or drink: ${message}`);
         } finally {
             setPublishing(false);
         }
     }
 
     async function deleteItem(id: string) {
-        if (!confirm('Delete this food or drink item?')) return;
+        if (deletingItemId) return;
+        setDeletingItemId(id);
         try {
             await deletePlannerItem(weddingId, 'foodDrink', id);
             if (setFoodDrinks) setFoodDrinks((current: any[]) => current.filter((item: any) => item.id !== id));
             await reload();
         } catch (err) {
-            console.error('Error deleting food or drink item:', err);
-            alert(err instanceof Error ? err.message : 'Unable to delete food or drink item.');
+            const message = getPlannerErrorMessage(err, 'Unable to delete food or drink item.');
+            console.warn('Error deleting food or drink item:', message);
+            alert(message);
+        } finally {
+            setDeletingItemId(null);
         }
     }
 
@@ -1590,7 +1873,16 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
                                         <p className="font-mono font-bold text-primary">{currencySymbol}{Number(item.estimated_cost || 0).toLocaleString()}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-text-secondary">{item.planner_vendor_id ? 'Supplier cost excluded' : 'Included in budget'}</p>
                                     </div>
-                                    <button type="button" onClick={() => void deleteItem(item.id)} className="flex h-10 w-10 items-center justify-center rounded-xl text-red-500 hover:bg-red-50" aria-label="Delete food or drink item"><Trash2 className="h-4 w-4" /></button>
+                                    <button
+                                        type="button"
+                                        disabled={deletingItemId === item.id}
+                                        onClick={() => void deleteItem(item.id)}
+                                        className="flex min-h-[44px] min-w-[92px] touch-manipulation items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-sm font-bold text-red-600 disabled:opacity-50 sm:min-w-[44px] sm:bg-white sm:px-2 sm:hover:bg-red-50"
+                                        aria-label="Delete food or drink item"
+                                    >
+                                        {deletingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                        <span className="sm:hidden">{deletingItemId === item.id ? 'Deleting...' : 'Delete'}</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1627,8 +1919,7 @@ function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, 
         if (!newItem.title.trim() || publishing) return;
         setPublishing(true);
         try {
-            const { error } = await supabase.from('planner_honeymoon_items').insert({
-                wedding_id: weddingId,
+            await createPlannerItem(weddingId, 'honeymoon', {
                 category: newItem.category,
                 title: newItem.title.trim(),
                 destination: newItem.destination.trim() || null,
@@ -1640,12 +1931,12 @@ function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, 
                 booking_link: newItem.booking_link.trim() || null,
                 notes: newItem.notes.trim() || null,
             });
-            if (error) throw error;
             setNewItem({ category: newItem.category, title: '', destination: '', start_date: '', end_date: '', estimated_cost: '', status: 'idea', supplier_name: '', booking_link: '', notes: '' });
             await reload();
         } catch (err) {
-            console.error('Error adding honeymoon item:', err);
-            alert('Failed to add honeymoon item. Please apply supabase-planner-expansion.sql first.');
+            const message = getPlannerErrorMessage(err, 'Failed to add honeymoon item.');
+            console.error('Error adding honeymoon item:', message);
+            alert(`Failed to add honeymoon item: ${message}`);
         } finally {
             setPublishing(false);
         }
@@ -1663,8 +1954,9 @@ function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, 
             if (setHoneymoonItems) setHoneymoonItems((current: any[]) => current.filter((item: any) => item.id !== id));
             await reload();
         } catch (err) {
-            console.error('Error deleting honeymoon item:', err);
-            alert(err instanceof Error ? err.message : 'Unable to delete honeymoon item.');
+            const message = getPlannerErrorMessage(err, 'Unable to delete honeymoon item.');
+            console.warn('Error deleting honeymoon item:', message);
+            alert(message);
         }
     }
 
@@ -1788,8 +2080,7 @@ function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reloa
         if (!newItem.name || publishing) return;
         setPublishing(true);
         try {
-            const { error } = await supabase.from('planner_vendors').insert({ 
-                wedding_id: weddingId, 
+            await createPlannerItem(weddingId, 'vendor', {
                 role: newItem.role, 
                 name: newItem.name,
                 phone: newItem.contact,
@@ -1797,7 +2088,6 @@ function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reloa
                 payment_status: newItem.payment_status,
                 payment_method: newItem.payment_method
             });
-            if (error) throw error;
             setNewItem({ 
                 role: newItem.role, 
                 name: '', 
@@ -1808,7 +2098,9 @@ function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reloa
             });
             await reload();
         } catch (err) {
-            console.error("Error adding vendor:", err);
+            const message = getPlannerErrorMessage(err, 'Failed to add supplier/vendor.');
+            console.error("Error adding vendor:", message);
+            alert(`Failed to add supplier/vendor: ${message}`);
         } finally {
             setPublishing(false);
         }
@@ -1823,8 +2115,9 @@ function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reloa
             if (setVendors) setVendors((current: any[]) => current.filter((vendor: any) => vendor.id !== id));
             await reload();
         } catch (err) {
-            console.error("Error deleting vendor:", err);
-            alert(err instanceof Error ? err.message : 'Unable to delete supplier/vendor.');
+            const message = getPlannerErrorMessage(err, 'Unable to delete supplier/vendor.');
+            console.warn('Error deleting vendor:', message);
+            alert(message);
         }
     }
 

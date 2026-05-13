@@ -73,17 +73,15 @@ QuickWeds is a sophisticated, all-in-one platform designed for modern couples to
    GHL_SIGNUP_WEBHOOK_URL=your_gohighlevel_inbound_webhook_url
    ```
 
-4. **Run for Development**:
-   ```bash
-   npm run dev
-   ```
+4. **Apply the Seating Layout Migration**:
+   If you are using the seating chart features, run the latest migration for the seating layout tables.
+   - In Supabase SQL Editor: open `supabase-power-features.sql`, then execute the file.
+   - Or locally, if you have a database URL available:
+     ```bash
+     SUPABASE_DB_URL=your_database_url npm run migrate:power-features
+     ```
 
----
-
-## 📖 Documentation
-
-For detailed technical information, including database schema, API endpoints, and deployment guides, please refer to:
-- [TECHNICAL_DOCS.md](./TECHNICAL_DOCS.md)
+5. **Run for Development**:
 - [VERCEL_ENV_SETUP.md](./VERCEL_ENV_SETUP.md)
 
 ---

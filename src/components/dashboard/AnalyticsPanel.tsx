@@ -4,16 +4,21 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, BarChart3, Mail, Loader2, QrCode, Share2, TrendingUp, Users } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Cell } from 'recharts';
 import { getWeddingAnalyticsSummary } from '@/lib/wedding-features';
+import { supabase } from '@/lib/supabase';
+import UpgradeButton from '@/components/UpgradeButton';
+import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
 
 interface AnalyticsPanelProps {
     weddingId: string;
     rsvpCount: number;
     pendingGuestCount: number;
+    hasPlannerPro?: boolean;
+    guestEmailsUsed?: number;
 }
 
 const COLORS = ['#D16C78', '#CBB26A', '#5B8A72', '#4B6B8A'];
 
-export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount }: AnalyticsPanelProps) {
+export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount, hasPlannerPro = false, guestEmailsUsed = 0 }: AnalyticsPanelProps) {
     const [loading, setLoading] = useState(true);
     const [sendingReminder, setSendingReminder] = useState(false);
     const [summary, setSummary] = useState({
@@ -49,10 +54,12 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
     const sendReminder = async () => {
         setSendingReminder(true);
         try {
+            const { data: sessionData } = await supabase.auth.getSession();
             const res = await fetch('/api/weddings/reminders', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(sessionData.session?.access_token ? { Authorization: `Bearer ${sessionData.session.access_token}` } : {}),
                 },
                 body: JSON.stringify({
                     weddingId,
@@ -93,13 +100,22 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                 </div>
                 <button
                     onClick={sendReminder}
-                    disabled={sendingReminder || pendingGuestCount === 0}
+                    disabled={sendingReminder || pendingGuestCount === 0 || (!hasPlannerPro && guestEmailsUsed >= FREE_PLAN_LIMITS.userTriggeredEmails)}
                     className="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-primary px-4 text-xs font-bold text-white transition-all hover:bg-primary-hover disabled:opacity-50 sm:w-auto sm:text-sm"
                 >
                     {sendingReminder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                     Send RSVP Reminder
                 </button>
             </div>
+
+            {!hasPlannerPro && (
+                <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs font-semibold text-text-secondary">
+                        Guest emails used: <span className="font-black text-foreground">{guestEmailsUsed} / {FREE_PLAN_LIMITS.userTriggeredEmails}</span>. Upgrade for unlimited reminders, exports, and deeper analytics.
+                    </p>
+                    <UpgradeButton weddingId={weddingId} variant="outlined" className="justify-center text-sm" />
+                </div>
+            )}
 
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {stats.map((stat) => (
@@ -113,7 +129,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                 ))}
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {hasPlannerPro ? <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="min-w-0 rounded-2xl border border-border bg-neutral/40 p-4 dark:bg-neutral/30">
                     <h4 className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60 mb-3">Visit Sources</h4>
                     {summary.sourceBreakdown.length > 0 ? (
@@ -154,7 +170,11 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                         <span className="font-bold text-foreground inline-flex items-center gap-1"><Share2 className="w-3 h-3" /> {summary.shareActions}</span>
                     </div>
                 </div>
-            </div>
+            </div> : (
+                <div className="mt-4 rounded-2xl border border-border bg-neutral/40 p-4 text-sm font-semibold text-text-secondary">
+                    Planner Lite shows basic counts. Planner Pro unlocks reminder performance, traffic sources, exports, and campaign follow-through.
+                </div>
+            )}
         </div>
     );
 }

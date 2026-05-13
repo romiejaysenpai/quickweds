@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email';
 import { reminderSchema, validateRequest } from '@/lib/validations';
 import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeEmail, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { getRequestUser } from '@/lib/api-auth';
+import { isKnownAdminEmail } from '@/lib/admin';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import {
+    FREE_PLAN_LIMITS,
+    getEmailLimitMessage,
+    getUserTriggeredEmailUsage,
+    hasPlannerProAccess,
+    logPlannerEmailEvent,
+} from '@/lib/planner-limits';
 
 export async function POST(req: NextRequest) {
     // Rate limit reminder requests by IP
@@ -18,6 +27,11 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+        const { user, error: authError } = await getRequestUser(req);
+        if (!user) {
+            return NextResponse.json({ error: authError || 'Please sign in to send reminders.' }, { status: 401 });
+        }
+
         const body = await req.json();
         
         // CRITICAL FIX #2: Sanitize inputs before validation
@@ -35,18 +49,37 @@ export async function POST(req: NextRequest) {
         }
 
         const { weddingId, targetStatus } = validation.data;
+        const db = getSupabaseAdminClient() as any;
 
-        const { data: wedding, error: weddingError } = await supabase
+        const { data: wedding, error: weddingError } = await db
             .from('weddings')
             .select('*')
             .eq('id', weddingId)
-            .single();
+            .maybeSingle();
 
         if (weddingError || !wedding) {
             return NextResponse.json({ error: 'Wedding not found' }, { status: 404 });
         }
 
-        const { data: guests, error: guestError } = await supabase
+        const isAdmin = isKnownAdminEmail(user.email);
+        let canManage = isAdmin || wedding.user_id === user.id;
+        if (!canManage && user.email) {
+            const { data: collaborator } = await db
+                .from('wedding_collaborators')
+                .select('id')
+                .eq('wedding_id', weddingId)
+                .eq('email', user.email.toLowerCase())
+                .eq('status', 'accepted')
+                .in('role', ['partner', 'coordinator'])
+                .maybeSingle();
+            canManage = Boolean(collaborator);
+        }
+
+        if (!canManage) {
+            return NextResponse.json({ error: 'You do not have permission to send reminders for this wedding.' }, { status: 403 });
+        }
+
+        const { data: guests, error: guestError } = await db
             .from('rsvps')
             .select('guest_name, guest_email, rsvp_status, attendance')
             .eq('wedding_id', weddingId);
@@ -56,11 +89,11 @@ export async function POST(req: NextRequest) {
         }
 
         // CRITICAL FIX #2: Sanitize guest data before sending emails
-        const recipients = (guests || []).filter((guest) => {
+        const recipients: Array<{ guest_name: string | null; guest_email: string }> = (guests || []).filter((guest: any) => {
             const normalizedStatus = guest.rsvp_status || (guest.attendance === 'Yes' ? 'confirmed' : guest.attendance === 'No' ? 'declined' : 'pending');
             const sanitizedEmail = sanitizeEmail(guest.guest_email || '');
             return sanitizedEmail && normalizedStatus === targetStatus;
-        }).map(guest => ({
+        }).map((guest: any) => ({
             ...guest,
             guest_name: sanitizeInput(guest.guest_name, { maxLength: 200 }),
             guest_email: sanitizeEmail(guest.guest_email),
@@ -76,7 +109,25 @@ export async function POST(req: NextRequest) {
             ? `https://${sanitizeInput(wedding.custom_domain, { maxLength: 100 })}`
             : `${process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app'}/w/${weddingId}`;
 
-        const results = await Promise.all(recipients.map((guest) => sendEmail({
+        const { data: ownerProfile } = await db
+            .from('user_app_profiles')
+            .select('is_pro, payment_status')
+            .eq('user_id', wedding.user_id)
+            .maybeSingle();
+        const hasPlannerPro = hasPlannerProAccess({ isAdmin, wedding, accountProfile: ownerProfile });
+        const emailsUsed = await getUserTriggeredEmailUsage(db, weddingId);
+
+        if (!hasPlannerPro && emailsUsed + recipients.length > FREE_PLAN_LIMITS.userTriggeredEmails) {
+            return NextResponse.json({
+                error: getEmailLimitMessage(recipients.length, emailsUsed),
+                code: 'email_limit_reached',
+                used: emailsUsed,
+                limit: FREE_PLAN_LIMITS.userTriggeredEmails,
+                requested: recipients.length,
+            }, { status: 402 });
+        }
+
+        const results = await Promise.all(recipients.map((guest: { guest_name: string | null; guest_email: string }) => sendEmail({
             to: guest.guest_email,
             subject: `Reminder: ${sanitizedBrideName} & ${sanitizedGroomName} would love your RSVP`,
             html: `
@@ -103,12 +154,19 @@ export async function POST(req: NextRequest) {
         const successCount = results.filter((result) => result.success).length;
 
         try {
-            await supabase.from('wedding_reminders').insert({
+            await db.from('wedding_reminders').insert({
                 wedding_id: weddingId,
                 recipient_count: recipients.length,
                 success_count: successCount,
                 target_status: targetStatus,
                 channel: 'email',
+            });
+            await logPlannerEmailEvent(db, {
+                weddingId,
+                eventType: 'rsvp_reminder',
+                recipientCount: recipients.length,
+                successCount,
+                userId: user.id,
             });
         } catch (error) {
             console.warn('Reminder logging unavailable:', error);

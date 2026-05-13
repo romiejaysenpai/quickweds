@@ -34,6 +34,19 @@ export default function PWAInstaller() {
   useEffect(() => {
     if (!supportsInstall) return;
 
+    if (process.env.NODE_ENV !== 'production') {
+      void navigator.serviceWorker.getRegistrations()
+        .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+        .catch(() => undefined);
+
+      if ('caches' in window) {
+        void window.caches.keys()
+          .then((keys) => Promise.all(keys.filter((key) => key.startsWith('quickweds-pwa-')).map((key) => window.caches.delete(key))))
+          .catch(() => undefined);
+      }
+      return;
+    }
+
     void navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => undefined);
     window.setTimeout(() => {
       setIsStandalone(isStandaloneDisplay());

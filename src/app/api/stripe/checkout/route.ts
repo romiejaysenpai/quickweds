@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
         const productName = scope === 'account' ? 'QuickWeds Account Pro' : 'QuickWeds Planner Pro';
         const productDescription = scope === 'account'
             ? 'Account-level unlock for more than 3 wedding websites and planner access across owned weddings.'
-            : 'One-time unlock for seating, budgets, vendors, tasks, collaborators, reminders, photo sharing, and thank-you tools.';
+            : 'One-time unlock for unlimited guest emails, full planner tools, seating, reminders, collaborators, Google Calendar, photo tools, exports, and custom domains.';
         const successUrl = scope === 'account'
             ? `${appUrl}/payment/success?scope=account&plan=${plan}`
             : `${appUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}&wedding_id=${weddingId}&plan=${plan}`;

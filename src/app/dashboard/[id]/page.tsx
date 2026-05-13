@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
+import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
 import {
     GUEST_GROUP_OPTIONS,
     getGuestGroupLabel,
@@ -116,6 +117,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
     const [isImportGuestModalOpen, setIsImportGuestModalOpen] = useState(false);
     const [importingGuests, setImportingGuests] = useState(false);
+    const [planUsage, setPlanUsage] = useState<PlannerUsage>(EMPTY_PLANNER_USAGE);
     const [newGuest, setNewGuest] = useState<GuestFormState>(emptyGuestForm);
     const [copyToast, setCopyToast] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -254,6 +256,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 setAccessRole(role);
                 setWedding(weddingData);
                 setAccountIsPro(hasAccountPro(workspaceResult.accountProfile));
+                setPlanUsage(workspaceResult.planUsage || EMPTY_PLANNER_USAGE);
 
                 const [rsvpsRes, vendorsRes, budgetsRes] = await Promise.all([
                     supabase.from('rsvps').select('*').eq('wedding_id', id).order('created_at', { ascending: false }),
@@ -405,6 +408,11 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
     // CSV Export
     const exportCSV = () => {
+        if (!hasPlannerPro) {
+            alert('CSV export is part of Planner Pro. Upgrade when you need downloadable guest lists for final planning.');
+            return;
+        }
+
         const headers = [
             'Guest Name',
             'Email',
@@ -524,6 +532,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const handleAddManualGuest = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newGuest.guest_name) return;
+
+        const isAddingGuestEmail = Boolean(newGuest.guest_email.trim());
+        const currentGuestEmailCount = rsvps.filter((guest) => Boolean(guest.guest_email)).length;
+        if (!hasPlannerPro && isAddingGuestEmail && currentGuestEmailCount >= FREE_PLAN_LIMITS.guestEmails) {
+            alert('Your guest list is ready for Pro. Free weddings include 50 guests with email addresses; extra guests can still be tracked manually without email.');
+            return;
+        }
         
         const { data, error } = await supabase.from('rsvps').insert({
             wedding_id: id,
@@ -547,12 +562,22 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             alert("Error adding guest: " + error.message);
         } else {
             setRsvps([data, ...rsvps]);
+            if (data?.guest_email) {
+                setPlanUsage((current) => ({ ...current, guestEmailCount: current.guestEmailCount + 1 }));
+            }
             setNewGuest(emptyGuestForm);
             setIsAddGuestModalOpen(false);
         }
     };
 
     const handleImportGuests = async (rows: ImportedGuestRow[]) => {
+        const currentGuestEmailCount = rsvps.filter((guest) => Boolean(guest.guest_email)).length;
+        const incomingGuestEmails = rows.filter((row) => Boolean(row.guest_email)).length;
+
+        if (!hasPlannerPro && currentGuestEmailCount + incomingGuestEmails > FREE_PLAN_LIMITS.guestEmails) {
+            throw new Error(`Free CSV import is limited to ${FREE_PLAN_LIMITS.guestEmails} guests with email addresses. Remove email addresses from extra rows or upgrade to Planner Pro for unlimited imports.`);
+        }
+
         setImportingGuests(true);
         const payload = rows.map((row) => ({
             ...row,
@@ -567,6 +592,10 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         }
 
         setRsvps((prev) => [...(data || []), ...prev]);
+        if (data?.length) {
+            const importedGuestEmails = data.filter((row: EnhancedRSVP) => Boolean(row.guest_email)).length;
+            setPlanUsage((current) => ({ ...current, guestEmailCount: current.guestEmailCount + importedGuestEmails }));
+        }
     };
 
     // Copy & Share
@@ -727,7 +756,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <div className="grid gap-2">
                                         {[
                                             { label: 'Directory', href: '/suppliers', icon: MapPin },
-                                            { label: 'Guide', href: '/user-guide', icon: BookOpen },
+                                            { label: 'User Guide', href: '/user-guide', icon: BookOpen },
                                             { label: 'Settings', href: '/settings', icon: Settings },
                                             { label: 'Admin Support', href: '/support', icon: LifeBuoy },
                                             { label: 'Community', href: 'https://chat.whatsapp.com/K30P5s5I03f4wPI30URaRP', icon: MessageCircle },
@@ -1169,6 +1198,16 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                     <span className="px-2 py-1.5 rounded-lg bg-primary/10 text-primary text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
                                                         {stats.invitedCount} invited
                                                     </span>
+                                                    {!hasPlannerPro && (
+                                                        <>
+                                                            <span className="px-2 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
+                                                                {planUsage.guestEmailCount} / {FREE_PLAN_LIMITS.guestEmails} guest emails
+                                                            </span>
+                                                            <span className="px-2 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
+                                                                {planUsage.userTriggeredEmailsUsed} / {FREE_PLAN_LIMITS.userTriggeredEmails} sends
+                                                            </span>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1381,6 +1420,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     weddingId={id}
                                     rsvpCount={stats.total}
                                     pendingGuestCount={stats.pending}
+                                    hasPlannerPro={hasPlannerPro}
+                                    guestEmailsUsed={planUsage.userTriggeredEmailsUsed}
                                 />
                             </div>
                         )}
@@ -1392,6 +1433,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     currentUserId={user?.id}
                                     currentUserEmail={user?.email}
                                     canManage={canManageWorkspace}
+                                    hasPlannerPro={hasPlannerPro}
                                 />
                             </div>
                         )}

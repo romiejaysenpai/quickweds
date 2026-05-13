@@ -13,6 +13,8 @@ export default function AdminBroadcastPage() {
     const [message, setMessage] = useState(DEFAULT_MESSAGE);
     const [link, setLink] = useState('/dashboard');
     const [sendEmail, setSendEmail] = useState(false);
+    const [skipInApp, setSkipInApp] = useState(false);
+    const [recipients, setRecipients] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
 
@@ -31,7 +33,18 @@ export default function AdminBroadcastPage() {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ dryRun, sendEmail, title, message, link }),
+                body: JSON.stringify({
+                    dryRun,
+                    sendEmail,
+                    skipInApp,
+                    title,
+                    message,
+                    link,
+                    recipients: recipients
+                        .split(/[\s,;]+/)
+                        .map((value) => value.trim())
+                        .filter(Boolean),
+                }),
             });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(payload.error || 'Broadcast failed.');
@@ -81,6 +94,25 @@ export default function AdminBroadcastPage() {
                     <label className="flex items-center gap-3 rounded-2xl border border-border bg-neutral/40 p-4">
                         <input type="checkbox" checked={sendEmail} onChange={(event) => setSendEmail(event.target.checked)} className="h-5 w-5 rounded border-border text-primary" />
                         <span className="text-sm font-semibold text-foreground">Also send email through Resend</span>
+                    </label>
+
+                    <label className="flex items-center gap-3 rounded-2xl border border-border bg-neutral/40 p-4">
+                        <input type="checkbox" checked={skipInApp} onChange={(event) => setSkipInApp(event.target.checked)} className="h-5 w-5 rounded border-border text-primary" />
+                        <span className="text-sm font-semibold text-foreground">Skip in-app notifications</span>
+                    </label>
+
+                    <label className="block">
+                        <span className="text-xs font-bold uppercase tracking-widest text-text-secondary">Specific email recipients</span>
+                        <textarea
+                            value={recipients}
+                            onChange={(event) => setRecipients(event.target.value)}
+                            rows={5}
+                            placeholder="Optional. Paste failed email addresses here, separated by commas or new lines."
+                            className="mt-2 w-full rounded-xl border border-border bg-neutral px-4 py-3 text-sm leading-6 outline-none focus:border-primary"
+                        />
+                        <span className="mt-1 block text-xs text-text-secondary">
+                            If this is filled, email sends only to these addresses. Use with “Skip in-app notifications” to resend failed emails without duplicate app alerts.
+                        </span>
                     </label>
 
                     <div className="flex flex-col gap-3 sm:flex-row">

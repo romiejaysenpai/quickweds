@@ -3,18 +3,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
 import {
     ArrowDown,
     ArrowLeft,
     ArrowRight,
     ArrowUp,
+    BookOpen,
+    Camera,
     CheckCircle2,
     Circle,
+    Copy,
+    Download,
     Edit2,
+    ExternalLink,
     Layout,
     Loader2,
+    Mail,
     Move,
     Plus,
+    QrCode,
     RectangleHorizontal,
     RotateCcw,
     Search,
@@ -31,6 +39,8 @@ import {
     type EnhancedRSVP,
     type GuestGroup,
 } from '@/lib/guest-list';
+import UpgradeButton from '@/components/UpgradeButton';
+import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
 
 interface Table {
     id: string;
@@ -39,6 +49,11 @@ interface Table {
     capacity: number;
     position_x: number;
     position_y: number;
+    custom_style?: {
+        width?: number;
+        height?: number;
+        rotation?: number;
+    } | null;
 }
 
 interface Assignment {
@@ -50,6 +65,23 @@ interface Assignment {
 }
 
 type VenueShape = 'rectangle' | 'square' | 'oval';
+type VenueObjectType = 'dance_floor' | 'stage' | 'bar' | 'buffet' | 'dj' | 'photo_booth' | 'gift_table' | 'entrance' | 'custom';
+
+interface VenueObject {
+    id: string;
+    type: VenueObjectType;
+    label: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+}
+
+interface SeatingLayoutData {
+    showMeasurements?: boolean;
+    objects?: VenueObject[];
+}
 
 interface SeatingLayout {
     id?: string;
@@ -59,6 +91,7 @@ interface SeatingLayout {
     venue_width: number;
     venue_height: number;
     grid_enabled: boolean;
+    layout_data?: SeatingLayoutData;
 }
 
 const DEFAULT_LAYOUT = {
@@ -67,6 +100,25 @@ const DEFAULT_LAYOUT = {
     venue_width: 100,
     venue_height: 70,
     grid_enabled: true,
+    layout_data: {
+        showMeasurements: true,
+        objects: [
+            { id: 'dance-floor-default', type: 'dance_floor' as VenueObjectType, label: 'Dance Floor', x: 50, y: 52, width: 28, height: 22, rotation: 0 },
+            { id: 'entrance-default', type: 'entrance' as VenueObjectType, label: 'Entrance', x: 50, y: 96, width: 12, height: 8, rotation: 0 },
+        ],
+    },
+};
+
+const VENUE_OBJECT_PRESETS: Record<VenueObjectType, { label: string; width: number; height: number }> = {
+    dance_floor: { label: 'Dance Floor', width: 28, height: 22 },
+    stage: { label: 'Stage', width: 20, height: 10 },
+    bar: { label: 'Bar', width: 16, height: 8 },
+    buffet: { label: 'Buffet', width: 18, height: 8 },
+    dj: { label: 'DJ Booth', width: 12, height: 8 },
+    photo_booth: { label: 'Photo Booth', width: 12, height: 12 },
+    gift_table: { label: 'Gift Table', width: 14, height: 8 },
+    entrance: { label: 'Entrance', width: 12, height: 8 },
+    custom: { label: 'Custom Block', width: 14, height: 10 },
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -86,6 +138,53 @@ function getDefaultTablePosition(index: number) {
     };
 }
 
+function getTableSize(table: Table) {
+    const fallback = table.table_shape === 'rectangular'
+        ? { width: 15, height: 9 }
+        : table.table_shape === 'square'
+            ? { width: 11, height: 11 }
+            : { width: 12, height: 12 };
+
+    return {
+        width: clamp(Number(table.custom_style?.width || fallback.width), 7, 28),
+        height: clamp(Number(table.custom_style?.height || fallback.height), 6, 24),
+        rotation: Number(table.custom_style?.rotation || 0),
+    };
+}
+
+function getChairPositions(table: Table) {
+    const { width, height } = getTableSize(table);
+    const capacity = Math.max(1, Number(table.capacity || 1));
+    const chairs: { x: number; y: number; rotation: number }[] = [];
+
+    if (table.table_shape === 'round') {
+        const radiusX = width / 2 + 1.8;
+        const radiusY = height / 2 + 1.8;
+        for (let index = 0; index < capacity; index += 1) {
+            const angle = (Math.PI * 2 * index) / capacity - Math.PI / 2;
+            chairs.push({
+                x: Math.cos(angle) * radiusX,
+                y: Math.sin(angle) * radiusY,
+                rotation: (angle * 180) / Math.PI + 90,
+            });
+        }
+        return chairs;
+    }
+
+    const topCount = Math.ceil(capacity / 2);
+    const bottomCount = capacity - topCount;
+    for (let index = 0; index < topCount; index += 1) {
+        const x = ((index + 1) / (topCount + 1) - 0.5) * width;
+        chairs.push({ x, y: -height / 2 - 1.6, rotation: 0 });
+    }
+    for (let index = 0; index < bottomCount; index += 1) {
+        const x = ((index + 1) / (bottomCount + 1) - 0.5) * width;
+        chairs.push({ x, y: height / 2 + 1.6, rotation: 180 });
+    }
+
+    return chairs;
+}
+
 function getPartySize(guest?: Pick<EnhancedRSVP, 'num_guests' | 'plus_one_allowed' | 'plus_one_name' | 'plus_one_rsvp_status'> | null) {
     const explicitCount = Number(guest?.num_guests || 0);
     if (Number.isFinite(explicitCount) && explicitCount > 1) return Math.floor(explicitCount);
@@ -97,17 +196,31 @@ function getPartySize(guest?: Pick<EnhancedRSVP, 'num_guests' | 'plus_one_allowe
     return plusOneCounts ? 2 : 1;
 }
 
-export default function SeatingChartBuilder({ weddingId }: { weddingId: string }) {
+export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }: { weddingId: string; hasPlannerPro?: boolean }) {
     const canvasRef = useRef<HTMLDivElement>(null);
     const tablesRef = useRef<Table[]>([]);
+    const objectsRef = useRef<VenueObject[]>([]);
     const [loading, setLoading] = useState(true);
     const [guests, setGuests] = useState<EnhancedRSVP[]>([]);
     const [tables, setTables] = useState<Table[]>([]);
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [layout, setLayout] = useState<SeatingLayout>({ wedding_id: weddingId, ...DEFAULT_LAYOUT });
     const [selectedTable, setSelectedTable] = useState<string | null>(null);
+    const [selectedObject, setSelectedObject] = useState<string | null>(null);
     const [draggingTable, setDraggingTable] = useState<string | null>(null);
+    const [draggingObject, setDraggingObject] = useState<string | null>(null);
     const [positionSaveError, setPositionSaveError] = useState('');
+    const [seatFinderLoading, setSeatFinderLoading] = useState<'generate' | 'send' | 'resend' | null>(null);
+    const [seatFinderStatus, setSeatFinderStatus] = useState('');
+    const [publicSeatFinderUrl, setPublicSeatFinderUrl] = useState('');
+    const [publicSeatFinderToken, setPublicSeatFinderToken] = useState('');
+    const [qrPreviewUrl, setQrPreviewUrl] = useState('');
+    const [seatFinderSummary, setSeatFinderSummary] = useState<{
+        attendingCount?: number;
+        assignedCount?: number;
+        sentCount?: number;
+        checkedInCount?: number;
+    }>({});
     const [searchQuery, setSearchQuery] = useState('');
     const [groupFilter, setGroupFilter] = useState<'all' | GuestGroup>('all');
     const [isTableModalOpen, setIsTableModalOpen] = useState(false);
@@ -121,6 +234,10 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
     useEffect(() => {
         tablesRef.current = tables;
     }, [tables]);
+
+    useEffect(() => {
+        objectsRef.current = layout.layout_data?.objects || [];
+    }, [layout.layout_data?.objects]);
 
     const guestMap = useMemo(() => new Map(guests.map((guest) => [guest.id, guest])), [guests]);
 
@@ -151,8 +268,13 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
             if (assignmentsRes.error) throw assignmentsRes.error;
 
             if (layoutRes.error) {
-                console.warn('Seating layout unavailable. Apply the latest supabase-power-features.sql migration.', layoutRes.error.message);
+                console.warn(
+                    'Seating layout unavailable. Run supabase-power-features.sql migration in Supabase SQL Editor or via npm run migrate:power-features.',
+                    layoutRes.error.message
+                );
+                setLayout({ wedding_id: weddingId, ...DEFAULT_LAYOUT });
             } else if (layoutRes.data) {
+                const loadedLayoutData = (layoutRes.data.layout_data || {}) as SeatingLayoutData;
                 setLayout({
                     wedding_id: weddingId,
                     layout_name: layoutRes.data.layout_name || DEFAULT_LAYOUT.layout_name,
@@ -160,6 +282,11 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                     venue_width: layoutRes.data.venue_width || DEFAULT_LAYOUT.venue_width,
                     venue_height: layoutRes.data.venue_height || DEFAULT_LAYOUT.venue_height,
                     grid_enabled: layoutRes.data.grid_enabled ?? DEFAULT_LAYOUT.grid_enabled,
+                    layout_data: {
+                        ...DEFAULT_LAYOUT.layout_data,
+                        ...loadedLayoutData,
+                        objects: Array.isArray(loadedLayoutData.objects) ? loadedLayoutData.objects : DEFAULT_LAYOUT.layout_data.objects,
+                    },
                     id: layoutRes.data.id,
                 });
             }
@@ -206,23 +333,46 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
     };
 
     const saveLayout = async (nextLayout: SeatingLayout) => {
+        const payload = {
+            wedding_id: weddingId,
+            layout_name: nextLayout.layout_name,
+            venue_shape: nextLayout.venue_shape,
+            venue_width: nextLayout.venue_width,
+            venue_height: nextLayout.venue_height,
+            grid_enabled: nextLayout.grid_enabled,
+            layout_data: nextLayout.layout_data || {},
+            updated_at: new Date().toISOString(),
+        };
+
         const { error } = await supabase
             .from('seating_layouts')
-            .upsert(
-                {
-                    wedding_id: weddingId,
-                    layout_name: nextLayout.layout_name,
-                    venue_shape: nextLayout.venue_shape,
-                    venue_width: nextLayout.venue_width,
-                    venue_height: nextLayout.venue_height,
-                    grid_enabled: nextLayout.grid_enabled,
-                    updated_at: new Date().toISOString(),
-                },
-                { onConflict: 'wedding_id' }
-            );
+            .upsert(payload, { onConflict: 'wedding_id' });
 
         if (error) {
-            console.warn('Unable to save seating layout. Apply the latest supabase-power-features.sql migration.', error.message);
+            const message = String(error.message || '').toLowerCase();
+            const missingLayoutData = message.includes('layout_data') || message.includes('schema cache') || message.includes('column');
+            if (missingLayoutData) {
+                const fallbackPayload = {
+                    wedding_id: payload.wedding_id,
+                    layout_name: payload.layout_name,
+                    venue_shape: payload.venue_shape,
+                    venue_width: payload.venue_width,
+                    venue_height: payload.venue_height,
+                    grid_enabled: payload.grid_enabled,
+                    updated_at: payload.updated_at,
+                };
+                const fallback = await supabase
+                    .from('seating_layouts')
+                    .upsert(fallbackPayload, { onConflict: 'wedding_id' });
+                if (!fallback.error) {
+                    console.warn('Seating floor-plan objects require the latest supabase-power-features.sql layout_data migration.');
+                    return;
+                }
+            }
+            console.warn(
+                'Unable to save seating layout. Run supabase-power-features.sql migration in Supabase SQL Editor or via npm run migrate:power-features.',
+                error.message
+            );
         }
     };
 
@@ -242,7 +392,64 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
         void saveLayout(nextLayout);
     };
 
+    const updateLayoutData = (patch: Partial<SeatingLayoutData>) => {
+        const nextLayout = {
+            ...layout,
+            layout_data: {
+                ...(layout.layout_data || {}),
+                ...patch,
+            },
+        };
+        setLayout(nextLayout);
+        void saveLayout(nextLayout);
+    };
+
+    const addVenueObject = (type: VenueObjectType) => {
+        const preset = VENUE_OBJECT_PRESETS[type];
+        const currentObjects = layout.layout_data?.objects || [];
+        const newObject: VenueObject = {
+            id: `${type}-${Date.now()}`,
+            type,
+            label: preset.label,
+            x: clamp(18 + (currentObjects.length % 4) * 18, 8, 92),
+            y: clamp(18 + Math.floor(currentObjects.length / 4) * 16, 8, 92),
+            width: preset.width,
+            height: preset.height,
+            rotation: 0,
+        };
+        updateLayoutData({ objects: [...currentObjects, newObject] });
+        setSelectedTable(null);
+        setSelectedObject(newObject.id);
+    };
+
+    const updateVenueObject = (objectId: string, patch: Partial<VenueObject>) => {
+        const currentObjects = layout.layout_data?.objects || [];
+        const nextObjects = currentObjects.map((object) => (
+            object.id === objectId
+                ? {
+                    ...object,
+                    ...patch,
+                    x: clamp(Number(patch.x ?? object.x), 4, 96),
+                    y: clamp(Number(patch.y ?? object.y), 4, 96),
+                    width: clamp(Number(patch.width ?? object.width), 5, 50),
+                    height: clamp(Number(patch.height ?? object.height), 4, 40),
+                    rotation: Number(patch.rotation ?? object.rotation),
+                }
+                : object
+        ));
+        updateLayoutData({ objects: nextObjects });
+    };
+
+    const deleteVenueObject = (objectId: string) => {
+        updateLayoutData({ objects: (layout.layout_data?.objects || []).filter((object) => object.id !== objectId) });
+        if (selectedObject === objectId) setSelectedObject(null);
+    };
+
     const openAddTableModal = () => {
+        if (!hasPlannerPro && tables.length >= FREE_PLAN_LIMITS.seatingTables) {
+            alert(`Free seating includes ${FREE_PLAN_LIMITS.seatingTables} tables. Upgrade to Planner Pro for the full seating chart, guest check-in, and seat-link sending.`);
+            return;
+        }
         setEditingTableId(null);
         setTableFormData({ name: `Table ${tables.length + 1}`, shape: 'round', capacity: 8 });
         setIsTableModalOpen(true);
@@ -320,7 +527,10 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
             await loadData();
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown seating save error';
-            alert(`Failed to save table: ${message}`);
+            const guidance = /permission denied|rls|row level security|could not find|blocked by database permissions/i.test(message)
+                ? ' Please run the seating RLS migration SQL in Supabase or verify the seating table policies.'
+                : '';
+            alert(`Failed to save table: ${message}.${guidance}`);
         }
     };
 
@@ -357,6 +567,34 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
             setPositionSaveError('Unable to save table position.');
         }
     }, []);
+
+    const updateTableStyle = async (tableId: string, patch: NonNullable<Table['custom_style']>) => {
+        const existing = tables.find((table) => table.id === tableId);
+        if (!existing) return;
+        const currentStyle = getTableSize(existing);
+        const nextStyle = {
+            ...currentStyle,
+            ...patch,
+            width: clamp(Number(patch.width ?? currentStyle.width), 7, 28),
+            height: clamp(Number(patch.height ?? currentStyle.height), 6, 24),
+            rotation: Number(patch.rotation ?? currentStyle.rotation),
+        };
+
+        setTables((current) => current.map((table) => (
+            table.id === tableId ? { ...table, custom_style: nextStyle } : table
+        )));
+
+        const { error } = await supabase
+            .from('seating_tables')
+            .update({ custom_style: nextStyle, updated_at: new Date().toISOString() })
+            .eq('id', tableId);
+
+        if (error) {
+            setPositionSaveError('Unable to save table style. Apply the latest seating migration.');
+        } else {
+            setPositionSaveError('');
+        }
+    };
 
     const deleteTable = async (tableId: string) => {
         if (!confirm('Are you sure? All assignments to this table will be removed.')) return;
@@ -441,6 +679,183 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
         }
     };
 
+    const callSeatFinderApi = async (path: string, body: Record<string, unknown>) => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) throw new Error('Please sign in again before using QR Seat Finder.');
+
+        const response = await fetch(path, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'QR Seat Finder request failed.');
+        return data;
+    };
+
+    const getClientSeatFinderUrl = useCallback((token?: string | null, fallbackUrl?: string | null) => {
+        let resolvedToken = token || '';
+        if (!resolvedToken && fallbackUrl) {
+            try {
+                resolvedToken = new URL(fallbackUrl).searchParams.get('token') || '';
+            } catch {
+                resolvedToken = '';
+            }
+        }
+
+        if (!resolvedToken) return fallbackUrl || '';
+        const path = `/w/${encodeURIComponent(weddingId)}/seat-finder?token=${encodeURIComponent(resolvedToken)}`;
+        if (typeof window === 'undefined') return path;
+        return `${window.location.origin}${path}`;
+    }, [weddingId]);
+
+    const generateSeatLinks = async () => {
+        if (!hasPlannerPro) {
+            alert('Guest seat links and check-in are part of Planner Pro.');
+            return;
+        }
+        setSeatFinderLoading('generate');
+        setSeatFinderStatus('');
+        try {
+            const data = await callSeatFinderApi('/api/seating/generate-seat-links', { weddingId });
+            const token = data.publicSeatFinderToken || '';
+            setPublicSeatFinderToken(token);
+            setPublicSeatFinderUrl(getClientSeatFinderUrl(token, data.publicSeatFinderUrl));
+            setSeatFinderSummary({
+                attendingCount: data.attendingCount,
+                assignedCount: data.assignedCount,
+                sentCount: data.sentCount,
+                checkedInCount: data.checkedInCount,
+            });
+            setSeatFinderStatus(`Guest codes ready. ${data.generated || 0} new code${data.generated === 1 ? '' : 's'} generated.`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unable to generate guest codes.';
+            setSeatFinderStatus(message);
+            alert(message);
+        } finally {
+            setSeatFinderLoading(null);
+        }
+    };
+
+    const sendSeatLinks = async (resendAll = false) => {
+        if (!hasPlannerPro) {
+            alert('Seat-link email sending is part of Planner Pro.');
+            return;
+        }
+        setSeatFinderLoading(resendAll ? 'resend' : 'send');
+        setSeatFinderStatus('');
+        try {
+            const data = await callSeatFinderApi('/api/seating/send-seat-links', { weddingId, resendAll });
+            setSeatFinderStatus(`Seat links sent: ${data.sent || 0}. No email: ${data.skippedNoEmail || 0}. Unassigned: ${data.skippedUnassigned || 0}.${data.emailErrorCount ? ` Email errors: ${data.emailErrorCount}.` : ''}`);
+            if (!publicSeatFinderUrl) {
+                void generateSeatLinks();
+            }
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unable to send seat links.';
+            setSeatFinderStatus(message);
+            alert(message);
+        } finally {
+            setSeatFinderLoading(null);
+        }
+    };
+
+    const getSeatFinderQrDataUrl = () => {
+        const canvas = document.getElementById('public-seat-finder-qr-canvas') as HTMLCanvasElement | null;
+        if (!canvas) {
+            setSeatFinderStatus('Generate the venue QR first, then download it.');
+            return null;
+        }
+
+        try {
+            return canvas.toDataURL('image/png');
+        } catch {
+            setSeatFinderStatus('Unable to prepare QR download. Please try again.');
+            return null;
+        }
+    };
+
+    const dataUrlToFile = (dataUrl: string, fileName: string) => {
+        const [header, encoded] = dataUrl.split(',');
+        const mime = header.match(/data:(.*?);base64/)?.[1] || 'image/png';
+        const binary = atob(encoded || '');
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+            bytes[index] = binary.charCodeAt(index);
+        }
+        return new File([bytes], fileName, { type: mime });
+    };
+
+    const downloadPublicSeatFinderQr = async () => {
+        const dataUrl = getSeatFinderQrDataUrl();
+        if (!dataUrl) {
+            return;
+        }
+        const fileName = `${layout.layout_name.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'venue'}-seat-finder-qr.png`;
+
+        try {
+            const file = dataUrlToFile(dataUrl, fileName);
+            const shareData = { files: [file], title: 'QuickWeds Venue QR' };
+            if (navigator.share && navigator.canShare?.(shareData)) {
+                await navigator.share(shareData);
+                setSeatFinderStatus('Venue QR ready to save or share.');
+                return;
+            }
+        } catch {
+            // Continue to browser download fallback.
+        }
+
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = fileName;
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setQrPreviewUrl(dataUrl);
+        const isPhoneBrowser = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+        if (isPhoneBrowser) {
+            window.setTimeout(() => {
+                const opened = window.open(dataUrl, '_blank');
+                if (opened) opened.opener = null;
+            }, 250);
+            setSeatFinderStatus('If the QR did not download, use the opened QR image and save it to your phone.');
+        } else {
+            setSeatFinderStatus('Venue QR downloaded.');
+        }
+    };
+
+    const openPublicSeatFinder = () => {
+        const url = publicSeatFinderUrl || getClientSeatFinderUrl(publicSeatFinderToken);
+        if (!url) {
+            setSeatFinderStatus('Generate the venue QR first, then open the finder.');
+            return;
+        }
+        const openUrl = new URL(url, window.location.origin);
+        openUrl.searchParams.set('returnTo', `/dashboard/${weddingId}/planner?tab=seating`);
+        const opened = window.open(openUrl.toString(), '_blank');
+        if (opened) {
+            opened.opener = null;
+        } else {
+            window.location.href = url;
+        }
+    };
+
+    const copyPublicSeatFinderUrl = async () => {
+        const url = publicSeatFinderUrl || getClientSeatFinderUrl(publicSeatFinderToken);
+        if (!url) return;
+        try {
+            await navigator.clipboard.writeText(url);
+            setSeatFinderStatus('Venue QR link copied.');
+        } catch {
+            setSeatFinderStatus(url);
+        }
+    };
+
     const getPointerPosition = useCallback((clientX: number, clientY: number) => {
         const canvas = canvasRef.current;
         if (!canvas) return null;
@@ -489,10 +904,56 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
         };
     }, [draggingTable, getPointerPosition, updateTablePosition]);
 
+    useEffect(() => {
+        if (!draggingObject) return;
+
+        const moveObject = (event: PointerEvent) => {
+            const position = getPointerPosition(event.clientX, event.clientY);
+            if (!position) return;
+            setLayout((current) => ({
+                ...current,
+                layout_data: {
+                    ...(current.layout_data || {}),
+                    objects: (current.layout_data?.objects || []).map((object) => (
+                        object.id === draggingObject
+                            ? { ...object, x: position.position_x, y: position.position_y }
+                            : object
+                    )),
+                },
+            }));
+        };
+
+        const stopDragging = () => {
+            const draggedObject = objectsRef.current.find((object) => object.id === draggingObject);
+            setDraggingObject(null);
+            if (draggedObject) {
+                updateVenueObject(draggedObject.id, { x: draggedObject.x, y: draggedObject.y });
+            }
+        };
+
+        window.addEventListener('pointermove', moveObject);
+        window.addEventListener('pointerup', stopDragging, { once: true });
+
+        return () => {
+            window.removeEventListener('pointermove', moveObject);
+            window.removeEventListener('pointerup', stopDragging);
+        };
+    }, [draggingObject, getPointerPosition]);
+
     const startTableDrag = (event: ReactPointerEvent, table: Table) => {
         event.preventDefault();
+        event.stopPropagation();
         setSelectedTable(table.id);
+        setSelectedObject(null);
         setDraggingTable(table.id);
+    };
+
+    const startObjectDrag = (event: ReactPointerEvent, object: VenueObject) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setSelectedTable(null);
+        setSelectedObject(object.id);
+        setDraggingObject(object.id);
     };
 
     const nudgeSelectedTable = (deltaX: number, deltaY: number) => {
@@ -512,6 +973,14 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
             const { position_x, position_y } = nextPosition;
             void updateTablePosition(selectedTable, position_x, position_y);
         }
+    };
+
+    const nudgeSelectedObject = (deltaX: number, deltaY: number) => {
+        if (!selectedObjectData) return;
+        updateVenueObject(selectedObjectData.id, {
+            x: selectedObjectData.x + deltaX,
+            y: selectedObjectData.y + deltaY,
+        });
     };
 
     const resetTablePositions = () => {
@@ -551,22 +1020,19 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
     }, [assignments, guestMap, guests, tables]);
 
     const selectedTableData = tables.find((table) => table.id === selectedTable) || null;
+    const selectedObjectData = (layout.layout_data?.objects || []).find((object) => object.id === selectedObject) || null;
+    const selectedTableSize = selectedTableData ? getTableSize(selectedTableData) : null;
     const selectedTableAssignments = selectedTableData
         ? assignments
             .filter((assignment) => assignment.table_id === selectedTableData.id)
             .sort((a, b) => Number(a.seat_number || 0) - Number(b.seat_number || 0))
         : [];
+    const displayedSeatFinderUrl = publicSeatFinderUrl || getClientSeatFinderUrl(publicSeatFinderToken);
 
     const getCanvasShapeClass = () => {
         if (layout.venue_shape === 'oval') return 'rounded-[50%]';
         if (layout.venue_shape === 'square') return 'rounded-[2rem]';
         return 'rounded-[2rem]';
-    };
-
-    const getTableShapeClass = (shape: Table['table_shape']) => {
-        if (shape === 'square') return 'h-28 w-28 rounded-2xl';
-        if (shape === 'rectangular') return 'h-24 w-36 rounded-2xl';
-        return 'h-28 w-28 rounded-full';
     };
 
     const canvasAspectRatio = layout.venue_shape === 'square'
@@ -595,6 +1061,16 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                     </button>
                 </div>
 
+                {!hasPlannerPro && (
+                    <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm font-bold text-foreground">Free seating sample: {Math.min(tables.length, FREE_PLAN_LIMITS.seatingTables)} / {FREE_PLAN_LIMITS.seatingTables} tables</p>
+                            <p className="mt-1 text-xs text-text-secondary">Upgrade for unlimited tables, guest check-in, seat links, and bulk seat emails.</p>
+                        </div>
+                        <UpgradeButton weddingId={weddingId} className="justify-center text-sm" />
+                    </div>
+                )}
+
                 <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
                         ['Seated Guests', `${seatingSummary.seatedGuests}/${seatingSummary.totalGuests}`],
@@ -610,7 +1086,7 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                 </div>
 
                 <div className="mb-6 rounded-2xl border border-border bg-neutral/40 p-4">
-                    <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_auto_auto]">
+                    <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_auto_auto_auto]">
                         <label className="space-y-1">
                             <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">Layout Name</span>
                             <input value={layout.layout_name} onChange={(event) => updateLayout({ layout_name: event.target.value })} className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-primary" />
@@ -634,13 +1110,115 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                         <button type="button" onClick={() => updateLayout({ grid_enabled: !layout.grid_enabled })} className={`inline-flex min-h-[44px] items-center justify-center rounded-xl border px-4 py-2 text-sm font-bold transition ${layout.grid_enabled ? 'border-primary bg-primary text-white' : 'border-border bg-white text-text-secondary hover:text-primary'}`}>
                             {layout.grid_enabled ? 'Grid On' : 'Grid Off'}
                         </button>
+                        <button type="button" onClick={() => updateLayoutData({ showMeasurements: !layout.layout_data?.showMeasurements })} className={`inline-flex min-h-[44px] items-center justify-center rounded-xl border px-4 py-2 text-sm font-bold transition ${layout.layout_data?.showMeasurements ? 'border-primary bg-primary text-white' : 'border-border bg-white text-text-secondary hover:text-primary'}`}>
+                            {layout.layout_data?.showMeasurements ? 'Measure On' : 'Measure Off'}
+                        </button>
                         <button type="button" onClick={resetTablePositions} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
                             <RotateCcw className="h-4 w-4" /> Reset
                         </button>
                     </div>
+                    <div className="mt-4 grid grid-cols-3 gap-2 sm:flex sm:gap-2 sm:overflow-x-auto sm:pb-1">
+                        {([
+                            'dance_floor',
+                            'stage',
+                            'bar',
+                            'buffet',
+                            'dj',
+                            'photo_booth',
+                            'gift_table',
+                            'entrance',
+                            'custom',
+                        ] as VenueObjectType[]).map((type) => (
+                            <button
+                                key={type}
+                                type="button"
+                                onClick={() => addVenueObject(type)}
+                                className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl border border-border bg-white px-2 py-2 text-[10px] font-bold leading-tight text-text-secondary transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary sm:px-3 sm:text-xs"
+                            >
+                                {VENUE_OBJECT_PRESETS[type].label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
+                <div className="flex flex-col">
+                <div className="order-2 mt-6 rounded-2xl border border-primary/15 bg-primary/5 p-4 lg:order-1 lg:mb-6 lg:mt-0">
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">QR Seat Finder</p>
+                            <h3 className="mt-1 font-serif text-xl font-bold text-foreground">Guest seat links and venue check-in</h3>
+                            <p className="mt-1 text-xs leading-5 text-text-secondary">Generate guest codes, email QR seat links, or print one venue QR for guests to find their seats.</p>
+                            {(seatFinderSummary.attendingCount !== undefined || seatFinderStatus) && (
+                                <p className="mt-2 text-xs font-semibold text-text-secondary">
+                                    {seatFinderSummary.attendingCount !== undefined && (
+                                        <>
+                                            Guests: {seatFinderSummary.attendingCount || 0} - Assigned: {seatFinderSummary.assignedCount || 0} - Sent: {seatFinderSummary.sentCount || 0} - Checked in: {seatFinderSummary.checkedInCount || 0}
+                                        </>
+                                    )}
+                                    {seatFinderStatus && <span className="block text-primary">{seatFinderStatus}</span>}
+                                </p>
+                            )}
+                        </div>
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                            {displayedSeatFinderUrl && (
+                                <div className="flex items-center gap-3 rounded-2xl border border-border bg-white p-3">
+                                    <QRCodeSVG id="public-seat-finder-qr" value={displayedSeatFinderUrl} size={72} />
+                                    <QRCodeCanvas
+                                        id="public-seat-finder-qr-canvas"
+                                        value={displayedSeatFinderUrl}
+                                        size={720}
+                                        includeMargin
+                                        className="pointer-events-none absolute -left-[9999px] top-0 h-[720px] w-[720px]"
+                                    />
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Venue QR</p>
+                                        <p className="mt-1 max-w-[180px] truncate text-xs font-bold text-foreground">{displayedSeatFinderUrl}</p>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                                <button type="button" onClick={() => void generateSeatLinks()} disabled={seatFinderLoading !== null} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary hover:text-white disabled:opacity-50">
+                                    {seatFinderLoading === 'generate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+                                    Generate
+                                </button>
+                                <button type="button" onClick={() => void sendSeatLinks(false)} disabled={seatFinderLoading !== null} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white transition hover:bg-primary-hover disabled:opacity-50">
+                                    {seatFinderLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                                    Send Links
+                                </button>
+                                <button type="button" onClick={() => void sendSeatLinks(true)} disabled={seatFinderLoading !== null} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary disabled:opacity-50">
+                                    {seatFinderLoading === 'resend' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                                    Resend All
+                                </button>
+                                <a href={`/dashboard/${weddingId}/planner/check-in`} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    Check-In
+                                </a>
+                                {displayedSeatFinderUrl && (
+                                    <>
+                                        <button type="button" onClick={() => void copyPublicSeatFinderUrl()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
+                                            <Copy className="h-4 w-4" />
+                                            Copy QR Link
+                                        </button>
+                                        <button type="button" onClick={downloadPublicSeatFinderQr} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
+                                            <Download className="h-4 w-4" />
+                                            Download QR
+                                        </button>
+                                        <button type="button" onClick={openPublicSeatFinder} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
+                                            <ExternalLink className="h-4 w-4" />
+                                            Open Finder
+                                        </button>
+                                    </>
+                                )}
+                                <a href={`/user-guide/seating-planner?returnTo=${encodeURIComponent(`/dashboard/${weddingId}/planner?tab=seating`)}`} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary hover:text-white">
+                                    <BookOpen className="h-4 w-4" />
+                                    Seating Guide
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="order-1 grid grid-cols-1 gap-6 sm:gap-10 lg:order-2 lg:grid-cols-3">
                     <div className="lg:col-span-2 space-y-5">
                         <div className="rounded-2xl border border-border bg-white p-3 shadow-inner">
                             {positionSaveError && (
@@ -650,81 +1228,121 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                             )}
                             <div
                                 ref={canvasRef}
-                                className={`relative mx-auto min-h-[420px] w-full max-w-5xl overflow-hidden border-2 border-dashed border-primary/25 bg-[#fffaf7] shadow-inner ${getCanvasShapeClass()}`}
+                                className={`relative mx-auto min-h-[420px] w-full max-w-5xl overflow-hidden border-[3px] border-black bg-[#f7f7f5] shadow-inner ${getCanvasShapeClass()}`}
                                 style={{
                                     aspectRatio: canvasAspectRatio,
                                     backgroundImage: layout.grid_enabled
-                                        ? 'linear-gradient(to right, rgba(209,108,120,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(209,108,120,0.08) 1px, transparent 1px)'
+                                        ? 'linear-gradient(to right, rgba(0,0,0,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.045) 1px, transparent 1px)'
                                         : undefined,
                                     backgroundSize: layout.grid_enabled ? '5% 5%' : undefined,
                                 }}
                             >
-                                <div className="pointer-events-none absolute left-5 top-5 rounded-full bg-white/80 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-primary shadow-sm">
-                                    {layout.layout_name} - {layout.venue_width} x {layout.venue_height}
-                                </div>
+                                <svg className="absolute inset-0 h-full w-full touch-none select-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                    <defs>
+                                        <filter id="floor-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                                            <feDropShadow dx="0.8" dy="1.2" stdDeviation="0.7" floodColor="#000000" floodOpacity="0.22" />
+                                        </filter>
+                                        <pattern id="hatch" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                                            <line x1="0" y1="0" x2="0" y2="2" stroke="#b8b8b8" strokeWidth="0.25" />
+                                        </pattern>
+                                    </defs>
 
-                                {tables.length === 0 ? (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-text-secondary opacity-50">
+                                    {layout.layout_data?.showMeasurements && (
+                                        <g className="pointer-events-none" stroke="#5bb7ff" strokeWidth="0.25" fill="#3aa4f5" fontSize="2.2" fontFamily="Arial" fontWeight="700">
+                                            <line x1="3" y1="1.8" x2="97" y2="1.8" />
+                                            <line x1="3" y1="1" x2="3" y2="2.8" />
+                                            <line x1="97" y1="1" x2="97" y2="2.8" />
+                                            <text x="50" y="1.4" textAnchor="middle">{layout.venue_width}&apos;</text>
+                                            <line x1="98.2" y1="5" x2="98.2" y2="95" />
+                                            <line x1="97.2" y1="5" x2="99.2" y2="5" />
+                                            <line x1="97.2" y1="95" x2="99.2" y2="95" />
+                                            <text x="99.4" y="51" transform="rotate(90 99.4 51)" textAnchor="middle">{layout.venue_height}&apos;</text>
+                                        </g>
+                                    )}
+
+                                    {(layout.layout_data?.objects || []).map((object) => {
+                                        const isSelected = selectedObject === object.id;
+                                        const isEntrance = object.type === 'entrance';
+                                        const fill = object.type === 'dance_floor' ? 'url(#hatch)' : object.type === 'stage' ? '#ffffff' : '#fdfdfd';
+                                        return (
+                                            <g
+                                                key={object.id}
+                                                transform={`translate(${object.x} ${object.y}) rotate(${object.rotation})`}
+                                                onPointerDown={(event) => startObjectDrag(event, object)}
+                                                className="cursor-grab"
+                                            >
+                                                {isEntrance ? (
+                                                    <g>
+                                                        <path d="M 0 3 L -4 -5 L 4 -5 Z" fill="#000" filter="url(#floor-shadow)" />
+                                                        <text y="-7" textAnchor="middle" fontSize="2.6" fontWeight="800" fill="#333">{object.label}</text>
+                                                    </g>
+                                                ) : (
+                                                    <g>
+                                                        <rect x={-object.width / 2} y={-object.height / 2} width={object.width} height={object.height} rx="0.8" fill={fill} stroke={isSelected ? '#D16C78' : '#777'} strokeWidth={isSelected ? 0.75 : 0.35} filter="url(#floor-shadow)" />
+                                                        <text textAnchor="middle" dominantBaseline="middle" fontSize="2.6" fontWeight="800" fill="#4d4d4d">{object.label}</text>
+                                                        {layout.layout_data?.showMeasurements && (
+                                                            <text x={object.width / 2 + 2} y="0" fontSize="2.1" fontWeight="800" fill="#4aaaf5" transform={`rotate(${object.rotation * -1} ${object.width / 2 + 2} 0)`}>{object.width.toFixed(0)}&apos;</text>
+                                                        )}
+                                                    </g>
+                                                )}
+                                            </g>
+                                        );
+                                    })}
+
+                                    {tables.map((table) => {
+                                        const tableAssignments = assignments.filter((assignment) => assignment.table_id === table.id);
+                                        const seatsUsed = getSeatsUsed(table.id);
+                                        const isSelected = selectedTable === table.id;
+                                        const seatsRemaining = table.capacity - seatsUsed;
+                                        const isFull = seatsRemaining === 0;
+                                        const isOverbooked = seatsRemaining < 0;
+                                        const size = getTableSize(table);
+                                        const chairs = getChairPositions(table);
+
+                                        return (
+                                            <g
+                                                key={table.id}
+                                                transform={`translate(${table.position_x} ${table.position_y}) rotate(${size.rotation})`}
+                                                onPointerDown={(event) => startTableDrag(event, table)}
+                                                className="cursor-grab"
+                                            >
+                                                {chairs.map((chair, index) => (
+                                                    <rect key={index} x={chair.x - 1.05} y={chair.y - 1.15} width="2.1" height="2.3" rx="0.25" fill="#fff" stroke="#555" strokeWidth="0.22" transform={`rotate(${chair.rotation} ${chair.x} ${chair.y})`} filter="url(#floor-shadow)" />
+                                                ))}
+                                                {table.table_shape === 'round' ? (
+                                                    <ellipse cx="0" cy="0" rx={size.width / 2} ry={size.height / 2} fill="#fff" stroke={isSelected ? '#D16C78' : '#999'} strokeWidth={isSelected ? 0.75 : 0.35} filter="url(#floor-shadow)" />
+                                                ) : (
+                                                    <rect x={-size.width / 2} y={-size.height / 2} width={size.width} height={size.height} rx="1.1" fill="#fff" stroke={isSelected ? '#D16C78' : '#999'} strokeWidth={isSelected ? 0.75 : 0.35} filter="url(#floor-shadow)" />
+                                                )}
+                                                <text y="-0.7" textAnchor="middle" fontSize="2.5" fontWeight="900" fill="#3A2A2D">{table.table_name}</text>
+                                                <text y="2.4" textAnchor="middle" fontSize="2" fontWeight="800" fill={isOverbooked ? '#ef4444' : isFull ? '#d97706' : '#7A5A61'}>{seatsUsed}/{table.capacity}</text>
+                                                {tableAssignments.length > 0 && (
+                                                    <text y="5.3" textAnchor="middle" fontSize="1.7" fill="#7A5A61">{tableAssignments.length} parties</text>
+                                                )}
+                                            </g>
+                                        );
+                                    })}
+                                </svg>
+
+                                {tables.length === 0 && (
+                                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-text-secondary opacity-50">
                                         <Layout className="w-16 h-16 mb-4" />
                                         <p className="font-serif italic text-lg">No tables defined yet.</p>
                                         <p className="text-sm mt-2">Click &quot;Add Table&quot; to start your floor plan.</p>
                                     </div>
-                                ) : (
-                                    <AnimatePresence>
-                                        {tables.map((table) => {
-                                            const tableAssignments = assignments.filter((assignment) => assignment.table_id === table.id);
-                                            const seatsUsed = getSeatsUsed(table.id);
-                                            const isSelected = selectedTable === table.id;
-                                            const seatsRemaining = table.capacity - seatsUsed;
-                                            const isFull = seatsRemaining === 0;
-                                            const isOverbooked = seatsRemaining < 0;
-
-                                            return (
-                                                <motion.div
-                                                    key={table.id}
-                                                    initial={{ opacity: 0, scale: 0.9 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    exit={{ opacity: 0, scale: 0.9 }}
-                                                    onPointerDown={(event) => startTableDrag(event, table)}
-                                                    className={`group absolute flex -translate-x-1/2 -translate-y-1/2 touch-none select-none flex-col items-center justify-center border-2 bg-white/95 p-3 text-center shadow-lg transition hover:shadow-xl ${getTableShapeClass(table.table_shape)} ${isSelected ? 'z-20 border-primary ring-4 ring-primary/10' : 'z-10 border-border hover:border-primary/40'} ${draggingTable === table.id ? 'cursor-grabbing scale-105' : 'cursor-grab'}`}
-                                                    style={{ left: `${table.position_x}%`, top: `${table.position_y}%` }}
-                                                >
-                                                    <div className="absolute -top-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-white px-2 py-1 text-primary shadow-sm">
-                                                        <Move className="h-3 w-3" />
-                                                        <span className="text-[8px] font-black uppercase tracking-widest">Drag</span>
-                                                    </div>
-                                                    <div className="absolute -right-2 -top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 sm:opacity-100">
-                                                        <button onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); openEditTableModal(table); }} className="rounded-full border border-border bg-white p-1.5 text-primary shadow-sm transition hover:bg-primary hover:text-white">
-                                                            <Edit2 className="h-3.5 w-3.5" />
-                                                        </button>
-                                                        <button onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); void deleteTable(table.id); }} className="rounded-full border border-border bg-white p-1.5 text-red-500 shadow-sm transition hover:bg-red-50">
-                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                        </button>
-                                                    </div>
-                                                    <h3 className="max-w-full truncate text-sm font-black text-foreground">{table.table_name}</h3>
-                                                    <p className={`mt-1 text-[10px] font-bold ${isOverbooked ? 'text-red-500' : isFull ? 'text-amber-600' : 'text-text-secondary'}`}>{seatsUsed}/{table.capacity} seats</p>
-                                                    <p className="mt-1 text-[9px] font-black uppercase tracking-wider text-primary/70">{table.table_shape}</p>
-                                                    {tableAssignments.length > 0 && (
-                                                        <p className="mt-2 max-w-[96px] truncate text-[9px] text-text-secondary">
-                                                            {tableAssignments.slice(0, 2).map((assignment) => assignment.guest_name).join(', ')}
-                                                            {tableAssignments.length > 2 ? ` +${tableAssignments.length - 2}` : ''}
-                                                        </p>
-                                                    )}
-                                                </motion.div>
-                                            );
-                                        })}
-                                    </AnimatePresence>
                                 )}
                             </div>
-                        </div>
-
-                        {selectedTableData && (
-                            <div className="rounded-2xl border border-border bg-neutral/40 p-4">
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Selected Table</p>
-                                        <h3 className="font-serif text-xl font-bold text-foreground">{selectedTableData.table_name}</h3>
-                                    </div>
+                            <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-border bg-neutral/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Current Layout</p>
+                                    <p className="mt-1 text-sm font-bold text-foreground">{layout.layout_name} - {layout.venue_width}&apos; x {layout.venue_height}&apos;</p>
+                                    {(selectedTableData || selectedObjectData) && (
+                                        <p className="mt-1 text-xs text-text-secondary">
+                                            Moving {selectedTableData?.table_name || selectedObjectData?.label}
+                                        </p>
+                                    )}
+                                </div>
+                                {selectedTableData && (
                                     <div className="grid w-full max-w-[180px] grid-cols-3 grid-rows-3 gap-1.5 self-start sm:self-center" aria-label="Move selected table">
                                         <button type="button" onClick={() => nudgeSelectedTable(0, -5)} className="col-start-2 row-start-1 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move table up">
                                             <ArrowUp className="h-4 w-4" />
@@ -740,6 +1358,87 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                                         </button>
                                         <button type="button" onClick={() => nudgeSelectedTable(0, 5)} className="col-start-2 row-start-3 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move table down">
                                             <ArrowDown className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                )}
+                                {selectedObjectData && (
+                                    <div className="grid w-full max-w-[180px] grid-cols-3 grid-rows-3 gap-1.5 self-start sm:self-center" aria-label="Move selected venue item">
+                                        <button type="button" onClick={() => nudgeSelectedObject(0, -5)} className="col-start-2 row-start-1 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move item up">
+                                            <ArrowUp className="h-4 w-4" />
+                                        </button>
+                                        <button type="button" onClick={() => nudgeSelectedObject(-5, 0)} className="col-start-1 row-start-2 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move item left">
+                                            <ArrowLeft className="h-4 w-4" />
+                                        </button>
+                                        <div className="col-start-2 row-start-2 flex h-10 items-center justify-center rounded-xl border border-dashed border-primary/20 bg-white/60 text-primary">
+                                            <Move className="h-4 w-4" />
+                                        </div>
+                                        <button type="button" onClick={() => nudgeSelectedObject(5, 0)} className="col-start-3 row-start-2 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move item right">
+                                            <ArrowRight className="h-4 w-4" />
+                                        </button>
+                                        <button type="button" onClick={() => nudgeSelectedObject(0, 5)} className="col-start-2 row-start-3 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move item down">
+                                            <ArrowDown className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {selectedTableData && selectedTableSize && (
+                            <div className="rounded-2xl border border-border bg-neutral/40 p-4">
+                                <div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Selected Table</p>
+                                        <h3 className="font-serif text-xl font-bold text-foreground">{selectedTableData.table_name}</h3>
+                                        <p className="mt-1 text-xs font-semibold text-text-secondary">{getSeatsUsed(selectedTableData.id)} of {selectedTableData.capacity} seats used</p>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            <button type="button" onClick={() => openEditTableModal(selectedTableData)} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
+                                                <Edit2 className="h-4 w-4" /> Edit
+                                            </button>
+                                            <button type="button" onClick={() => void deleteTable(selectedTableData.id)} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-red-100 bg-white px-3 py-2 text-xs font-bold text-red-500 transition hover:bg-red-50">
+                                                <Trash2 className="h-4 w-4" /> Delete
+                                            </button>
+                                        </div>
+                                        <div className="mt-4 grid grid-cols-3 gap-2">
+                                            <label className="space-y-1">
+                                                <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Width</span>
+                                                <input type="number" min={7} max={28} value={selectedTableSize.width} onChange={(event) => void updateTableStyle(selectedTableData.id, { width: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                            </label>
+                                            <label className="space-y-1">
+                                                <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Height</span>
+                                                <input type="number" min={6} max={24} value={selectedTableSize.height} onChange={(event) => void updateTableStyle(selectedTableData.id, { height: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                            </label>
+                                            <label className="space-y-1">
+                                                <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Rotate</span>
+                                                <input type="number" step={15} value={selectedTableSize.rotation} onChange={(event) => void updateTableStyle(selectedTableData.id, { rotation: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedObjectData && (
+                            <div className="rounded-2xl border border-border bg-neutral/40 p-4">
+                                <div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Selected Venue Item</p>
+                                        <input value={selectedObjectData.label} onChange={(event) => updateVenueObject(selectedObjectData.id, { label: event.target.value })} className="mt-2 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm font-bold outline-none focus:border-primary" />
+                                        <div className="mt-4 grid grid-cols-3 gap-2">
+                                            <label className="space-y-1">
+                                                <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Width</span>
+                                                <input type="number" min={5} max={50} value={selectedObjectData.width} onChange={(event) => updateVenueObject(selectedObjectData.id, { width: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                            </label>
+                                            <label className="space-y-1">
+                                                <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Height</span>
+                                                <input type="number" min={4} max={40} value={selectedObjectData.height} onChange={(event) => updateVenueObject(selectedObjectData.id, { height: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                            </label>
+                                            <label className="space-y-1">
+                                                <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Rotate</span>
+                                                <input type="number" step={15} value={selectedObjectData.rotation} onChange={(event) => updateVenueObject(selectedObjectData.id, { rotation: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                            </label>
+                                        </div>
+                                        <button type="button" onClick={() => deleteVenueObject(selectedObjectData.id)} className="mt-4 inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-red-100 bg-white px-3 py-2 text-xs font-bold text-red-500 transition hover:bg-red-50">
+                                            <Trash2 className="h-4 w-4" /> Delete Item
                                         </button>
                                     </div>
                                 </div>
@@ -820,9 +1519,28 @@ export default function SeatingChartBuilder({ weddingId }: { weddingId: string }
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
 
             <AnimatePresence>
+                {qrPreviewUrl && (
+                    <>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setQrPreviewUrl('')} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 z-[60] w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-white p-6 text-center shadow-2xl">
+                            <button type="button" onClick={() => setQrPreviewUrl('')} className="absolute right-4 top-4 rounded-full p-2 text-text-secondary transition hover:bg-neutral">
+                                <X className="h-5 w-5" />
+                            </button>
+                            <Camera className="mx-auto h-8 w-8 text-primary" />
+                            <h3 className="mt-3 font-serif text-2xl font-bold text-foreground">Venue QR</h3>
+                            <p className="mt-2 text-xs leading-5 text-text-secondary">If your phone did not download automatically, long-press this QR image and save it to your photos.</p>
+                            <img src={qrPreviewUrl} alt="Venue seat finder QR code" className="mx-auto mt-5 h-56 w-56 rounded-2xl border border-border bg-white p-3" />
+                            <a href={qrPreviewUrl} download={`${layout.layout_name.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'venue'}-seat-finder-qr.png`} className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white">
+                                <Download className="h-4 w-4" />
+                                Save QR
+                            </a>
+                        </motion.div>
+                    </>
+                )}
                 {isTableModalOpen && (
                     <>
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => setIsTableModalOpen(false)} />

@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { sendEmail, getCollaboratorInviteHtml } from '@/lib/email';
 import { sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { FREE_PLAN_LIMITS, hasPlannerProAccess } from '@/lib/planner-limits';
+import { isKnownAdminEmail } from '@/lib/admin';
 
 type SupabaseAdminClient = ReturnType<typeof getSupabaseAdminClient>;
 type WeddingInviteContext = {
@@ -12,6 +14,8 @@ type WeddingInviteContext = {
     groom_name: string | null;
     wedding_date: string | null;
     venue_name: string | null;
+    is_premium?: boolean | null;
+    payment_status?: string | null;
 };
 
 type CollaboratorInvitePayload = {
@@ -123,7 +127,7 @@ export async function POST(req: Request) {
 
         const { data: wedding, error: weddingError } = await supabase
             .from('weddings')
-            .select('id, user_id, bride_name, groom_name, wedding_date, venue_name')
+            .select('id, user_id, bride_name, groom_name, wedding_date, venue_name, is_premium, payment_status')
             .eq('id', weddingId)
             .is('deleted_at', null)
             .single();
@@ -146,6 +150,41 @@ export async function POST(req: Request) {
 
             if (!collaborator) {
                 return NextResponse.json({ error: 'Only the owner or accepted partner can invite collaborators' }, { status: 403 });
+            }
+        }
+
+        const { data: ownerProfile } = await supabase
+            .from('user_app_profiles')
+            .select('is_pro, payment_status')
+            .eq('user_id', weddingContext.user_id)
+            .maybeSingle();
+        const hasPlannerPro = hasPlannerProAccess({
+            isAdmin: isKnownAdminEmail(user.email),
+            wedding: weddingContext,
+            accountProfile: ownerProfile,
+        });
+
+        if (!hasPlannerPro) {
+            if (role !== 'partner') {
+                return NextResponse.json({
+                    error: 'Free workspaces include 1 partner collaborator. Coordinators are part of Planner Pro.',
+                    code: 'planner_pro_required',
+                }, { status: 402 });
+            }
+
+            const { count, error: collaboratorCountError } = await (supabase as any)
+                .from('wedding_collaborators')
+                .select('id', { count: 'exact', head: true })
+                .eq('wedding_id', weddingId);
+
+            if (collaboratorCountError) throw collaboratorCountError;
+            if (Number(count || 0) >= FREE_PLAN_LIMITS.collaborators) {
+                return NextResponse.json({
+                    error: 'Free workspaces include 1 partner collaborator. Upgrade to Planner Pro for coordinators and more helpers.',
+                    code: 'collaborator_limit_reached',
+                    limit: FREE_PLAN_LIMITS.collaborators,
+                    used: Number(count || 0),
+                }, { status: 402 });
             }
         }
 

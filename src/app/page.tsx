@@ -142,7 +142,7 @@ const testimonials = [
 const faqs = [
   {
     question: 'Is QuickWeds only a wedding website builder?',
-    answer: 'No. You can build and publish a free wedding website with RSVP tracking and guest responses. Planner Pro is the one-time upgrade for seating, budgets, vendor notes, tasks, collaborators, reminders, photo sharing, and post-wedding messaging.',
+    answer: 'No. You can build and publish a free wedding website with RSVP tracking, QR sharing, a basic guest list, 50 guest emails, and Planner Lite. Planner Pro is the one-time upgrade for unlimited guest emails, full planner tools, seating, collaborators, reminders, photo tools, exports, and custom domains.',
   },
   {
     question: 'Can guests RSVP from their phones?',
@@ -150,11 +150,11 @@ const faqs = [
   },
   {
     question: 'Will I get notifications when someone RSVPs?',
-    answer: 'Yes. Free wedding sites include RSVP response emails and host notifications. Planner Pro adds reminder workflows for pending guests when you need help getting final answers.',
+    answer: 'Yes. Automatic RSVP confirmations and host notifications stay free and do not count toward your 50 guest email allowance. User-triggered sends like RSVP reminders, seat emails, and thank-you emails count toward that allowance.',
   },
   {
     question: 'Can my partner or planner help manage the wedding?',
-    answer: 'Yes. Collaborator access is part of Planner Pro, so your partner, family member, or wedding planner can help manage budgets, vendors, tasks, seating, and post-wedding details from the dashboard.',
+    answer: 'Yes. Free workspaces include 1 partner collaborator. Planner Pro unlocks coordinators and more helpers for managing budgets, vendors, tasks, seating, reminders, and post-wedding details.',
   },
   {
     question: 'Do I need technical skills to launch my site?',
@@ -162,7 +162,7 @@ const faqs = [
   },
   {
     question: 'Can I start free?',
-    answer: 'Yes. All templates, the builder, your wedding website, RSVP tools, and guest tracking are free. Planner Pro is a one-time upgrade for seating, budgets, vendors, tasks, collaborators, photo sharing, and thank-you tools.',
+    answer: 'Yes. All templates, the builder, your wedding website, RSVP tools, QR sharing, basic guest tracking, 50 guest emails, and Planner Lite are free. Planner Pro unlocks unlimited planning, unlimited guest emails, seating, reminders, collaborators, exports, photo tools, and thank-you tools.',
   },
 ];
 
@@ -870,18 +870,19 @@ export default function Home() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-[1.5rem] border border-border bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8">
                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">Free forever</p>
-                <h3 className="mt-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">Wedding Site</h3>
-                <p className="mt-3 text-text-secondary">Launch a polished wedding website with RSVP tools and guest tracking.</p>
+                <h3 className="mt-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">Free</h3>
+                <p className="mt-3 text-text-secondary">Perfect for starting your wedding site and collecting early RSVPs.</p>
                 <div className="mt-6">
                   <PrimaryCta>Create Free Site</PrimaryCta>
                 </div>
                 <div className="mt-8 grid gap-3">
                   {[
-                    'All templates included',
-                    'Website builder and design tools',
-                    'Timeline, FAQs, dress code, venue, gifts, and gallery sections',
-                    'RSVP form and guest tracking',
-                    'RSVP emails and host notifications',
+                    'Wedding website and all templates',
+                    'RSVP tracking and basic guest list',
+                    'QR sharing for invitations',
+                    '50 guest emails per wedding',
+                    'Planner Lite with starter limits',
+                    'Automatic RSVP emails and host notifications',
                   ].map((item) => (
                     <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
                       <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
@@ -891,19 +892,23 @@ export default function Home() {
                 </div>
               </div>
                 <div className="rounded-[1.5rem] border border-primary/25 bg-white p-5 shadow-2xl shadow-primary/10 sm:rounded-[2rem] sm:p-8 relative">
+                  <div className="absolute right-5 top-5 rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white">
+                    Most Popular
+                  </div>
                   <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">One-time upgrade</p>
                   <div className="mt-2 flex flex-col gap-2 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
                     <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Planner Pro</h3>
                     <p className="font-serif text-3xl font-bold text-primary">$29</p>
                   </div>
-                  <p className="mt-3 text-text-secondary">Unlock the planning workspace when RSVPs, vendors, budgets, and seating start needing one calm home.</p>
+                  <p className="mt-3 text-text-secondary">Built for finalizing the real wedding plan when guests, suppliers, seating, and reminders matter.</p>
                   <div className="mt-8 grid gap-3">
                     {[
-                      'Seating chart and guest placement',
-                      'Budget, vendor, and task management',
-                      'Collaborator access',
-                      'RSVP reminders and planning notifications',
-                      'Photo sharing, custom domains, and post-wedding thank-you tools',
+                      'Unlimited guest emails',
+                      'Full planner with unlimited tasks, budgets, suppliers, and calendar items',
+                      'Seating chart, guest check-in, and seat-link emails',
+                      'RSVP reminders and unlimited collaborators',
+                      'Google Calendar sync and custom domain',
+                      'Photo tools, thank-you tools, CSV exports, and advanced analytics',
                     ].map((item) => (
                       <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
                         <CheckCircle2 className="h-5 w-5 flex-none text-primary" />

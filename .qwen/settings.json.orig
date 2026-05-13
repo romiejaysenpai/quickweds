@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(select-object *)",
+      "Bash(del *)",
+      "Bash(rmdir *)",
+      "Bash(dir *)"
     ]
-  }
+  },
+  "$version": 3
 }

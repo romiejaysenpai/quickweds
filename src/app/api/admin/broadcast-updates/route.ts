@@ -17,10 +17,12 @@ const DEFAULT_LINK = '/dashboard';
 type BroadcastBody = {
     dryRun?: boolean;
     sendEmail?: boolean;
+    skipInApp?: boolean;
     title?: string;
     message?: string;
     link?: string;
     limit?: number;
+    recipients?: string[];
 };
 
 function sanitizeText(value: unknown, fallback: string, maxLength: number) {
@@ -44,6 +46,37 @@ function getUpdateEmailHtml(message: string, link: string) {
             <p style="font-size: 12px; line-height: 1.6; color: #9b7b82;">You are receiving this because you have a QuickWeds account.</p>
         </div>
     `;
+}
+
+function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRateLimitError(message?: string) {
+    return String(message || '').toLowerCase().includes('too many requests');
+}
+
+async function sendEmailWithRetry(input: { to: string; subject: string; html: string }) {
+    let lastError = '';
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        const result = await sendEmail(input);
+        if (result.success) return result;
+
+        lastError = result.error || 'failed';
+        if (!isRateLimitError(lastError)) return result;
+
+        await sleep(1250 * (attempt + 1));
+    }
+
+    return { success: false, error: lastError || 'failed after retries' };
+}
+
+function normalizeRecipients(values?: string[]) {
+    if (!Array.isArray(values)) return [];
+    return Array.from(new Set(values
+        .map((value) => String(value || '').trim().toLowerCase())
+        .filter((value) => value.includes('@'))));
 }
 
 async function listAllAuthUsers(db: any, limit?: number) {
@@ -74,48 +107,59 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({})) as BroadcastBody;
     const dryRun = body.dryRun !== false;
     const sendEmailUpdates = body.sendEmail === true;
+    const skipInApp = body.skipInApp === true;
     const title = sanitizeText(body.title, DEFAULT_TITLE, 140);
     const message = sanitizeText(body.message, DEFAULT_MESSAGE, 1200);
     const link = sanitizeText(body.link, DEFAULT_LINK, 300);
     const limit = typeof body.limit === 'number' && body.limit > 0 ? Math.min(Math.floor(body.limit), 10000) : undefined;
+    const explicitRecipients = normalizeRecipients(body.recipients);
 
     try {
         const db = getSupabaseAdminClient() as any;
         const users = (await listAllAuthUsers(db, limit))
             .filter((authUser) => authUser?.id && authUser?.email);
+        const emailRecipients = explicitRecipients.length > 0
+            ? explicitRecipients
+            : users.map((authUser) => String(authUser.email).trim().toLowerCase()).filter(Boolean);
 
         if (dryRun) {
             return NextResponse.json({
                 success: true,
                 dryRun: true,
                 userCount: users.length,
+                emailRecipientCount: emailRecipients.length,
                 sendEmail: sendEmailUpdates,
+                skipInApp,
                 title,
                 message,
                 link,
             });
         }
 
-        const notificationRows = users.map((authUser) => ({
-            user_id: authUser.id,
-            title,
-            message,
-            type: 'system',
-            link,
-        }));
+        let notified = 0;
+        if (!skipInApp) {
+            const notificationRows = users.map((authUser) => ({
+                user_id: authUser.id,
+                title,
+                message,
+                type: 'system',
+                link,
+            }));
 
-        for (let index = 0; index < notificationRows.length; index += 500) {
-            const chunk = notificationRows.slice(index, index + 500);
-            const { error: insertError } = await db.from('user_notifications').insert(chunk);
-            if (insertError) throw insertError;
+            for (let index = 0; index < notificationRows.length; index += 500) {
+                const chunk = notificationRows.slice(index, index + 500);
+                const { error: insertError } = await db.from('user_notifications').insert(chunk);
+                if (insertError) throw insertError;
+                notified += chunk.length;
+            }
         }
 
         let emailSent = 0;
         const emailErrors: string[] = [];
         if (sendEmailUpdates) {
-            for (const authUser of users) {
-                const result = await sendEmail({
-                    to: authUser.email,
+            for (const email of emailRecipients) {
+                const result = await sendEmailWithRetry({
+                    to: email,
                     subject: title,
                     html: getUpdateEmailHtml(message, link),
                 });
@@ -123,15 +167,17 @@ export async function POST(req: NextRequest) {
                 if (result.success) {
                     emailSent += 1;
                 } else {
-                    emailErrors.push(`${authUser.email}: ${result.error || 'failed'}`);
+                    emailErrors.push(`${email}: ${result.error || 'failed'}`);
                 }
+
+                await sleep(250);
             }
         }
 
         return NextResponse.json({
             success: true,
             dryRun: false,
-            notified: notificationRows.length,
+            notified,
             emailSent,
             emailErrors: emailErrors.slice(0, 25),
             emailErrorCount: emailErrors.length,
