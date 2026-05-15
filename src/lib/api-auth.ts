@@ -26,12 +26,10 @@ export async function getRequestUser(req: NextRequest) {
         return { user: null, error: 'Invalid authorization token string' };
     }
 
-    console.log('[DEBUG getRequestUser] Token prefix:', token.substring(0, 10));
-
     const { data, error } = await serverSupabase.auth.getUser(token);
 
     if (error || !data.user) {
-        console.warn('[DEBUG getRequestUser] Error from serverSupabase.auth.getUser:', error);
+        console.warn('Request auth failed:', error);
         return { user: null, error: error?.message || 'Invalid authorization token' };
     }
 

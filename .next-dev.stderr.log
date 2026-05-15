@@ -1,9 +1,51 @@
-⨯ Failed to start server
-Error: listen EADDRINUSE: address already in use 0.0.0.0:3000
-    at <unknown> (Error: listen EADDRINUSE: address already in use 0.0.0.0:3000) {
-  code: 'EADDRINUSE',
-  errno: -4091,
-  syscall: 'listen',
-  address: '0.0.0.0',
-  port: 3000
-}
+[browser] AuthApiError: Invalid Refresh Token: Refresh Token Not Found
+[browser] AuthApiError: Invalid Refresh Token: Refresh Token Not Found
+⚠ Fast Refresh had to perform a full reload when ./src/context/AuthContext.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/context/AuthContext.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/context/AuthContext.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/context/AuthContext.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[browser] Uncaught ReferenceError: Cannot access 'getClientSeatFinderUrl' before initialization
+    at SeatingChartBuilder (src/components/dashboard/SeatingChartBuilder.tsx:366:9)
+    at PlannerPage (src/app/dashboard/[id]/planner/page.tsx:610:57)
+  364 |         setPublicSeatFinderToken(initialPublicSeatFinderToken);
+  365 |         setPublicSeatFinderUrl(getClientSeatFinderUrl(initialPublicSeatFinderToken));
+> 366 |     }, [getClientSeatFinderUrl, initialPublicSeatFinderToken, initialSeatFinderEnabled]);
+      |         ^
+  367 |
+  368 |     useEffect(() => {
+  369 |         const handleFullscreenChange = () => {
+[browser] Global app error: ReferenceError: Cannot access 'getClientSeatFinderUrl' before initialization
+    at SeatingChartBuilder (src/components/dashboard/SeatingChartBuilder.tsx:366:9)
+  364 |         setPublicSeatFinderToken(initialPublicSeatFinderToken);
+  365 |         setPublicSeatFinderUrl(getClientSeatFinderUrl(initialPublicSeatFinderToken));
+> 366 |     }, [getClientSeatFinderUrl, initialPublicSeatFinderToken, initialSeatFinderEnabled]);
+      |         ^
+  367 |
+  368 |     useEffect(() => {
+  369 |         const handleFullscreenChange = () => { (src/app/global-error.tsx:15:17)
+[browser] Global app error: ReferenceError: Cannot access 'getClientSeatFinderUrl' before initialization
+    at SeatingChartBuilder (src/components/dashboard/SeatingChartBuilder.tsx:366:9)
+  364 |         setPublicSeatFinderToken(initialPublicSeatFinderToken);
+  365 |         setPublicSeatFinderUrl(getClientSeatFinderUrl(initialPublicSeatFinderToken));
+> 366 |     }, [getClientSeatFinderUrl, initialPublicSeatFinderToken, initialSeatFinderEnabled]);
+      |         ^
+  367 |
+  368 |     useEffect(() => {
+  369 |         const handleFullscreenChange = () => { (src/app/global-error.tsx:15:17)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+[browser] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.

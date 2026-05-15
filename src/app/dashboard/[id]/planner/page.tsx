@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -333,6 +333,8 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const [accountIsPro, setAccountIsPro] = useState(false);
     const [confirmedGuests, setConfirmedGuests] = useState<number>(0);
     const [planUsage, setPlanUsage] = useState<PlannerUsage>(EMPTY_PLANNER_USAGE);
+    const lastGuardKeyRef = useRef('');
+    const plannerLoadRef = useRef<{ key: string; promise: Promise<void> } | null>(null);
 
     useEffect(() => {
         const requestedTab = searchParams?.get('tab');
@@ -353,6 +355,10 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
         // Wait for admin check to complete before loading planner data
         if (!adminChecked) return;
+
+        const guardKey = `${weddingId}:${user.id}:${isAdmin ? 'admin' : 'user'}`;
+        if (lastGuardKeyRef.current === guardKey) return;
+        lastGuardKeyRef.current = guardKey;
 
         const guardAndLoad = async () => {
             setCheckingRole(true);
@@ -387,6 +393,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 await loadPlannerData();
             } catch (err) {
                 console.error('Planner load failed:', err);
+                lastGuardKeyRef.current = '';
                 setCheckingRole(false);
                 setLoading(false);
             }
@@ -396,54 +403,68 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     }, [weddingId, user, authLoading, isAdmin, adminChecked, router]);
 
     const loadPlannerData = async () => {
-        setLoading(true);
-        setPlannerError('');
-        try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData.session?.access_token;
-
-            if (!token) {
-                setAccessRole('denied');
-                setPlannerError('Your login session was not available. Please sign out and sign in again.');
-                return;
-            }
-
-            const response = await fetch(`/api/planner/load?weddingId=${encodeURIComponent(weddingId)}`, {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: 'no-store',
-            });
-            const data = await response.json();
-
-            setAccessRole(data.accessRole || 'denied');
-            setWedding(data.wedding || null);
-            setAccountIsPro(hasAccountPro(data.accountProfile));
-            setPlanUsage(data.planUsage || EMPTY_PLANNER_USAGE);
-
-            if (!response.ok) {
-                setPlannerError(data.error || 'Unable to verify planner access.');
-            }
-
-            if (data.accessRole !== 'owner') return;
-
-            if (isAdmin) {
-                setAccessDebug(`Admin override - isAdmin=${isAdmin}, userEmail=${user?.email}`);
-            }
-
-            setTasks((data.tasks || []).map(decodePlannerTask));
-            setBudgets(data.budgets || []);
-            setVendors(data.vendors || []);
-            setEvents(data.events || []);
-            setFoodDrinks(data.foodDrinks || []);
-            setGoogleCalendar(data.googleCalendar || null);
-            setHoneymoonItems(data.honeymoonItems || []);
-            setConfirmedGuests(data.confirmedGuests || 0);
-        } catch (err) {
-            console.error("Error loading planner data:", err);
-            setPlannerError(err instanceof Error ? err.message : 'Unable to verify planner access.');
-            setAccessRole('denied');
-        } finally {
-            setLoading(false);
+        const loadKey = `${weddingId}:${user?.id || 'anonymous'}:${isAdmin ? 'admin' : 'user'}`;
+        if (plannerLoadRef.current?.key === loadKey) {
+            return plannerLoadRef.current.promise;
         }
+
+        let promise: Promise<void>;
+        promise = (async () => {
+            setLoading(true);
+            setPlannerError('');
+            try {
+                const { data: sessionData } = await supabase.auth.getSession();
+                const token = sessionData.session?.access_token;
+
+                if (!token) {
+                    setAccessRole('denied');
+                    setPlannerError('Your login session was not available. Please sign out and sign in again.');
+                    return;
+                }
+
+                const response = await fetch(`/api/planner/load?weddingId=${encodeURIComponent(weddingId)}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    cache: 'no-store',
+                });
+                const data = await response.json();
+
+                setAccessRole(data.accessRole || 'denied');
+                setWedding(data.wedding || null);
+                setAccountIsPro(hasAccountPro(data.accountProfile));
+                setPlanUsage(data.planUsage || EMPTY_PLANNER_USAGE);
+
+                if (!response.ok) {
+                    setPlannerError(data.error || 'Unable to verify planner access.');
+                }
+
+                if (data.accessRole !== 'owner') return;
+
+                if (isAdmin) {
+                    setAccessDebug(`Admin override - isAdmin=${isAdmin}, userEmail=${user?.email}`);
+                }
+
+                setTasks((data.tasks || []).map(decodePlannerTask));
+                setBudgets(data.budgets || []);
+                setVendors(data.vendors || []);
+                setEvents(data.events || []);
+                setFoodDrinks(data.foodDrinks || []);
+                setGoogleCalendar(data.googleCalendar || null);
+                setHoneymoonItems(data.honeymoonItems || []);
+                setConfirmedGuests(data.confirmedGuests || 0);
+            } catch (err) {
+                console.error("Error loading planner data:", err);
+                setPlannerError(err instanceof Error ? err.message : 'Unable to verify planner access.');
+                setAccessRole('denied');
+            } finally {
+                setLoading(false);
+                if (plannerLoadRef.current?.key === loadKey) {
+                    plannerLoadRef.current = null;
+                }
+            }
+        })();
+
+        plannerLoadRef.current = { key: loadKey, promise };
+        return promise;
     };
 
     async function updateVendorStatus(id: string, status: string) {
@@ -586,7 +607,14 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                             {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
                             {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
                             {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'seating' && <SeatingChartBuilder weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
+                            {activeTab === 'seating' && (
+                                <SeatingChartBuilder
+                                    weddingId={weddingId}
+                                    hasPlannerPro={hasPlannerPro}
+                                    initialPublicSeatFinderToken={wedding?.public_seat_finder_token || ''}
+                                    initialSeatFinderEnabled={wedding?.seat_finder_enabled !== false && Boolean(wedding?.public_seat_finder_token)}
+                                />
+                            )}
                             {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} />}
                             {activeTab === 'thanks' && <ThankYouNoteManager weddingId={weddingId} />}
                             {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
@@ -1224,54 +1252,75 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
 
     return (
         <div className="space-y-5">
-            <div className="rounded-2xl sm:rounded-[2.5rem] border border-border bg-white p-5 md:p-10 soft-shadow">
-                <div className="mb-6 flex flex-col gap-4 border-b border-border/50 pb-5 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                        <h2 className="font-serif text-2xl font-bold text-foreground sm:text-3xl">Schedule Calendar</h2>
-                        <p className="mt-1 text-xs text-text-secondary sm:text-sm">Plan fittings, tastings, supplier meetings, and wedding week schedules.</p>
+            <div className="rounded-2xl border border-border bg-white p-4 soft-shadow sm:rounded-[2rem] sm:p-6 md:p-10">
+                <div className="mb-5 flex flex-col gap-4 border-b border-border/50 pb-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="min-w-0">
+                        <h2 className="font-serif text-2xl font-bold leading-tight text-foreground sm:text-3xl">Schedule Calendar</h2>
+                        <p className="mt-1 max-w-2xl text-xs leading-5 text-text-secondary sm:text-sm">Plan fittings, tastings, supplier meetings, and wedding week schedules.</p>
                     </div>
-                    <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:w-auto lg:flex lg:flex-row">
                         {hasPlannerPro && googleCalendar?.connected ? (
                             <>
-                                <button type="button" onClick={() => void syncGoogleCalendar()} disabled={syncingGoogle} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-600 hover:text-white disabled:opacity-50">
+                                <button type="button" onClick={() => void syncGoogleCalendar()} disabled={syncingGoogle} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-600 hover:text-white disabled:opacity-50 sm:w-auto">
                                     <RefreshCw className={`h-4 w-4 ${syncingGoogle ? 'animate-spin' : ''}`} /> {syncingGoogle ? 'Syncing...' : 'Sync Google'}
                                 </button>
-                                <button type="button" onClick={() => void disconnectGoogleCalendar()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary hover:bg-neutral">
+                                <button type="button" onClick={() => void disconnectGoogleCalendar()} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary hover:bg-neutral sm:w-auto">
                                     Disconnect
                                 </button>
                             </>
                         ) : hasPlannerPro ? (
-                            <button type="button" onClick={() => void connectGoogleCalendar()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
+                            <button type="button" onClick={() => void connectGoogleCalendar()} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white sm:w-auto">
                                 <CalendarDays className="h-4 w-4" /> Connect Google Calendar
                             </button>
                         ) : (
                             <UpgradeButton weddingId={weddingId} variant="outlined" className="justify-center text-sm" label="Unlock Google Sync" />
                         )}
                         {feedUrl && (
-                            <a href={feedUrl} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
+                            <a href={feedUrl} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white sm:w-auto">
                                 <Download className="h-4 w-4" /> Export .ics
                             </a>
                         )}
                     </div>
                 </div>
 
-                <form onSubmit={addEvent} className="mb-6 grid gap-3 rounded-2xl border border-border bg-neutral/30 p-4 lg:grid-cols-3">
-                    <input required value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} placeholder="Schedule title" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
-                    <input required type="datetime-local" value={newEvent.starts_at} onChange={(e) => setNewEvent({ ...newEvent, starts_at: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
-                    <input type="datetime-local" value={newEvent.ends_at} onChange={(e) => setNewEvent({ ...newEvent, ends_at: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
-                    <input value={newEvent.location} onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })} placeholder="Location" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
-                    <select value={newEvent.planner_task_id} onChange={(e) => setNewEvent({ ...newEvent, planner_task_id: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
-                        <option value="">Related checklist item</option>
-                        {tasks.map((task: any) => <option key={task.id} value={task.id}>{task.title}</option>)}
-                    </select>
-                    <select value={newEvent.reminder_minutes} onChange={(e) => setNewEvent({ ...newEvent, reminder_minutes: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
-                        <option value="60">Remind 1 hour before</option>
-                        <option value="720">Remind 12 hours before</option>
-                        <option value="1440">Remind 1 day before</option>
-                        <option value="4320">Remind 3 days before</option>
-                    </select>
-                    <input value={newEvent.notes} onChange={(e) => setNewEvent({ ...newEvent, notes: e.target.value })} placeholder="Notes" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px] lg:col-span-2" />
-                    <button disabled={publishing} className="rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white disabled:opacity-50 min-h-[44px]">{publishing ? 'Adding...' : 'Add Schedule'}</button>
+                <form onSubmit={addEvent} className="mb-6 grid min-w-0 gap-3 rounded-2xl border border-border bg-neutral/30 p-3 sm:p-4 lg:grid-cols-3">
+                    <label className="min-w-0 space-y-1">
+                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-text-secondary">Title</span>
+                        <input required value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} placeholder="Schedule title" className="min-h-[46px] w-full min-w-0 rounded-xl border border-border bg-white px-4 py-3 text-base outline-none focus:border-primary sm:text-sm" />
+                    </label>
+                    <label className="min-w-0 space-y-1">
+                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-text-secondary">Starts</span>
+                        <input required type="datetime-local" value={newEvent.starts_at} onChange={(e) => setNewEvent({ ...newEvent, starts_at: e.target.value })} className="min-h-[46px] w-full min-w-0 rounded-xl border border-border bg-white px-3 py-3 text-base outline-none focus:border-primary sm:text-sm" />
+                    </label>
+                    <label className="min-w-0 space-y-1">
+                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-text-secondary">Ends</span>
+                        <input type="datetime-local" value={newEvent.ends_at} onChange={(e) => setNewEvent({ ...newEvent, ends_at: e.target.value })} className="min-h-[46px] w-full min-w-0 rounded-xl border border-border bg-white px-3 py-3 text-base outline-none focus:border-primary sm:text-sm" />
+                    </label>
+                    <label className="min-w-0 space-y-1">
+                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-text-secondary">Location</span>
+                        <input value={newEvent.location} onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })} placeholder="Location" className="min-h-[46px] w-full min-w-0 rounded-xl border border-border bg-white px-4 py-3 text-base outline-none focus:border-primary sm:text-sm" />
+                    </label>
+                    <label className="min-w-0 space-y-1">
+                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-text-secondary">Checklist Link</span>
+                        <select value={newEvent.planner_task_id} onChange={(e) => setNewEvent({ ...newEvent, planner_task_id: e.target.value })} className="min-h-[46px] w-full min-w-0 rounded-xl border border-border bg-white px-4 py-3 text-base outline-none focus:border-primary sm:text-sm">
+                            <option value="">Related checklist item</option>
+                            {tasks.map((task: any) => <option key={task.id} value={task.id}>{task.title}</option>)}
+                        </select>
+                    </label>
+                    <label className="min-w-0 space-y-1">
+                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-text-secondary">Reminder</span>
+                        <select value={newEvent.reminder_minutes} onChange={(e) => setNewEvent({ ...newEvent, reminder_minutes: e.target.value })} className="min-h-[46px] w-full min-w-0 rounded-xl border border-border bg-white px-4 py-3 text-base outline-none focus:border-primary sm:text-sm">
+                            <option value="60">Remind 1 hour before</option>
+                            <option value="720">Remind 12 hours before</option>
+                            <option value="1440">Remind 1 day before</option>
+                            <option value="4320">Remind 3 days before</option>
+                        </select>
+                    </label>
+                    <label className="min-w-0 space-y-1 lg:col-span-2">
+                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-text-secondary">Notes</span>
+                        <input value={newEvent.notes} onChange={(e) => setNewEvent({ ...newEvent, notes: e.target.value })} placeholder="Notes" className="min-h-[46px] w-full min-w-0 rounded-xl border border-border bg-white px-4 py-3 text-base outline-none focus:border-primary sm:text-sm" />
+                    </label>
+                    <button disabled={publishing} className="min-h-[46px] rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{publishing ? 'Adding...' : 'Add Schedule'}</button>
                 </form>
 
                 <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
@@ -1279,8 +1328,8 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
                         <h3 className="mb-3 flex items-center gap-2 font-serif text-lg font-bold"><Clock className="h-5 w-5 text-primary" /> Upcoming</h3>
                         <div className="space-y-2">
                             {upcoming.length === 0 ? <p className="py-8 text-center text-sm italic text-text-secondary">No upcoming schedules.</p> : upcoming.map((event: any) => (
-                                <div key={event.id} className="rounded-xl bg-white p-3 text-sm">
-                                    <p className="font-bold text-foreground">{event.title}</p>
+                                <div key={event.id} className="min-w-0 rounded-xl bg-white p-3 text-sm">
+                                    <p className="break-words font-bold text-foreground">{event.title}</p>
                                     <p className="text-xs text-text-secondary">{new Date(event.starts_at).toLocaleString()}</p>
                                 </div>
                             ))}
@@ -1292,13 +1341,16 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
                                 <div className="border-b border-border bg-neutral/30 px-4 py-3 font-serif font-bold">{month}</div>
                                 <div className="divide-y divide-border/40">
                                     {monthEvents.map((event: any) => (
-                                        <div key={event.id} className="grid gap-2 p-4 sm:grid-cols-[140px_minmax(0,1fr)_44px] sm:items-center">
+                                        <div key={event.id} className="grid min-w-0 gap-3 p-4 sm:grid-cols-[140px_minmax(0,1fr)_44px] sm:items-center">
                                             <p className="text-xs font-black uppercase tracking-widest text-primary">{new Date(event.starts_at).toLocaleDateString()}<br />{new Date(event.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                            <div>
-                                                <p className="font-bold text-foreground">{event.title}</p>
-                                                <p className="text-xs text-text-secondary">{[event.location, event.notes].filter(Boolean).join(' - ')}</p>
+                                            <div className="min-w-0">
+                                                <p className="break-words font-bold text-foreground">{event.title}</p>
+                                                <p className="break-words text-xs leading-5 text-text-secondary">{[event.location, event.notes].filter(Boolean).join(' - ')}</p>
                                             </div>
-                                            <button onClick={() => void deleteEvent(event.id)} className="flex h-11 w-11 items-center justify-center rounded-xl text-red-500 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
+                                            <button onClick={() => void deleteEvent(event.id)} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-100 text-sm font-bold text-red-500 hover:bg-red-50 sm:w-11 sm:border-0" aria-label="Delete schedule">
+                                                <Trash2 className="h-4 w-4" />
+                                                <span className="sm:hidden">Delete</span>
+                                            </button>
                                         </div>
                                     ))}
                                 </div>

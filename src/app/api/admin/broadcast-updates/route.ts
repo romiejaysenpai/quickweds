@@ -33,19 +33,20 @@ function sanitizeText(value: unknown, fallback: string, maxLength: number) {
 
 function getUpdateEmailHtml(message: string, link: string) {
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.quickweds.site').replace(/\/+$/, '');
-    const href = `${appUrl}${link.startsWith('/') ? link : `/${link}`}`;
+    const normalizedLink = link.startsWith('/') ? link : '/' + link;
+    const href = appUrl + normalizedLink;
 
-    return `
-        <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; color: #3A2A2D;">
-            <p style="margin: 0 0 8px; color: #D16C78; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px;">QuickWeds Update</p>
-            <h1 style="margin: 0 0 16px; font-size: 28px; line-height: 1.2;">New planning tools are live</h1>
-            <p style="font-size: 16px; line-height: 1.7; color: #7A5A61;">${message}</p>
-            <p style="margin: 28px 0;">
-                <a href="${href}" style="display: inline-block; background: #D16C78; color: #fff; padding: 14px 20px; border-radius: 12px; text-decoration: none; font-weight: 700;">Open QuickWeds</a>
-            </p>
-            <p style="font-size: 12px; line-height: 1.6; color: #9b7b82;">You are receiving this because you have a QuickWeds account.</p>
-        </div>
-    `;
+    return [
+        '<div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; color: #3A2A2D;">',
+        '    <p style="margin: 0 0 8px; color: #D16C78; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px;">QuickWeds Update</p>',
+        '    <h1 style="margin: 0 0 16px; font-size: 28px; line-height: 1.2;">New planning tools are live</h1>',
+        '    <p style="font-size: 16px; line-height: 1.7; color: #7A5A61;">' + message + '</p>',
+        '    <p style="margin: 28px 0;">',
+        '        <a href="' + href + '" style="display: inline-block; background: #D16C78; color: #fff; padding: 14px 20px; border-radius: 12px; text-decoration: none; font-weight: 700;">Open QuickWeds</a>',
+        '    </p>',
+        '    <p style="font-size: 12px; line-height: 1.6; color: #9b7b82;">You are receiving this because you have a QuickWeds account.</p>',
+        '</div>',
+    ].join('\n');
 }
 
 function sleep(ms: number) {

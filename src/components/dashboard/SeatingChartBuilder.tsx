@@ -20,6 +20,8 @@ import {
     Layout,
     Loader2,
     Mail,
+    Maximize2,
+    Minimize2,
     Move,
     Plus,
     QrCode,
@@ -196,8 +198,38 @@ function getPartySize(guest?: Pick<EnhancedRSVP, 'num_guests' | 'plus_one_allowe
     return plusOneCounts ? 2 : 1;
 }
 
-export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }: { weddingId: string; hasPlannerPro?: boolean }) {
+function drawRoundedRectPath(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+    const safeRadius = Math.min(radius, width / 2, height / 2);
+
+    if (typeof context.roundRect === 'function') {
+        context.roundRect(x, y, width, height, safeRadius);
+        return;
+    }
+
+    context.moveTo(x + safeRadius, y);
+    context.lineTo(x + width - safeRadius, y);
+    context.quadraticCurveTo(x + width, y, x + width, y + safeRadius);
+    context.lineTo(x + width, y + height - safeRadius);
+    context.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height);
+    context.lineTo(x + safeRadius, y + height);
+    context.quadraticCurveTo(x, y + height, x, y + height - safeRadius);
+    context.lineTo(x, y + safeRadius);
+    context.quadraticCurveTo(x, y, x + safeRadius, y);
+}
+
+export default function SeatingChartBuilder({
+    weddingId,
+    hasPlannerPro = true,
+    initialPublicSeatFinderToken = '',
+    initialSeatFinderEnabled = false,
+}: {
+    weddingId: string;
+    hasPlannerPro?: boolean;
+    initialPublicSeatFinderToken?: string | null;
+    initialSeatFinderEnabled?: boolean;
+}) {
     const canvasRef = useRef<HTMLDivElement>(null);
+    const chartShellRef = useRef<HTMLDivElement>(null);
     const tablesRef = useRef<Table[]>([]);
     const objectsRef = useRef<VenueObject[]>([]);
     const [loading, setLoading] = useState(true);
@@ -212,8 +244,10 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
     const [positionSaveError, setPositionSaveError] = useState('');
     const [seatFinderLoading, setSeatFinderLoading] = useState<'generate' | 'send' | 'resend' | null>(null);
     const [seatFinderStatus, setSeatFinderStatus] = useState('');
+    const [chartStatus, setChartStatus] = useState('');
+    const [isChartFullscreen, setIsChartFullscreen] = useState(false);
     const [publicSeatFinderUrl, setPublicSeatFinderUrl] = useState('');
-    const [publicSeatFinderToken, setPublicSeatFinderToken] = useState('');
+    const [publicSeatFinderToken, setPublicSeatFinderToken] = useState(initialSeatFinderEnabled ? (initialPublicSeatFinderToken || '') : '');
     const [qrPreviewUrl, setQrPreviewUrl] = useState('');
     const [seatFinderSummary, setSeatFinderSummary] = useState<{
         attendingCount?: number;
@@ -240,6 +274,26 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
     }, [layout.layout_data?.objects]);
 
     const guestMap = useMemo(() => new Map(guests.map((guest) => [guest.id, guest])), [guests]);
+    const assignmentsByTable = useMemo(() => {
+        const grouped = new Map<string, Assignment[]>();
+        assignments.forEach((assignment) => {
+            const current = grouped.get(assignment.table_id) || [];
+            current.push(assignment);
+            grouped.set(assignment.table_id, current);
+        });
+        return grouped;
+    }, [assignments]);
+    const assignedGuestIds = useMemo(() => new Set(assignments.map((assignment) => assignment.rsvp_id)), [assignments]);
+    const seatsUsedByTable = useMemo(() => {
+        const counts = new Map<string, number>();
+        assignmentsByTable.forEach((tableAssignments, tableId) => {
+            counts.set(
+                tableId,
+                tableAssignments.reduce((total, assignment) => total + getPartySize(guestMap.get(assignment.rsvp_id)), 0)
+            );
+        });
+        return counts;
+    }, [assignmentsByTable, guestMap]);
 
     const spreadDefaultPositions = useCallback((loadedTables: Table[]) => {
         return loadedTables.map((table, index) => {
@@ -305,10 +359,41 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
         void loadData();
     }, [loadData]);
 
-    const getSeatsUsed = (tableId: string) =>
-        assignments
-            .filter((assignment) => assignment.table_id === tableId)
-            .reduce((total, assignment) => total + getPartySize(guestMap.get(assignment.rsvp_id)), 0);
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            if (!document.fullscreenElement) {
+                setIsChartFullscreen(false);
+            } else if (document.fullscreenElement === chartShellRef.current) {
+                setIsChartFullscreen(true);
+            }
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
+    useEffect(() => {
+        if (!isChartFullscreen) return;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            setIsChartFullscreen(false);
+            if (document.fullscreenElement === chartShellRef.current) {
+                void document.exitFullscreen();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isChartFullscreen]);
+
+    const getSeatsUsed = useCallback((tableId: string) => seatsUsedByTable.get(tableId) || 0, [seatsUsedByTable]);
 
     const getNextSeatNumber = (tableId: string) => {
         return assignments
@@ -624,7 +709,7 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
     };
 
     const assignGuest = async (guest: EnhancedRSVP, tableId: string) => {
-        if (assignments.find((assignment) => assignment.rsvp_id === guest.id)) {
+        if (assignedGuestIds.has(guest.id)) {
             return alert('Guest is already assigned');
         }
 
@@ -712,6 +797,12 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
         if (typeof window === 'undefined') return path;
         return `${window.location.origin}${path}`;
     }, [weddingId]);
+
+    useEffect(() => {
+        if (!initialSeatFinderEnabled || !initialPublicSeatFinderToken) return;
+        setPublicSeatFinderToken(initialPublicSeatFinderToken);
+        setPublicSeatFinderUrl(getClientSeatFinderUrl(initialPublicSeatFinderToken));
+    }, [getClientSeatFinderUrl, initialPublicSeatFinderToken, initialSeatFinderEnabled]);
 
     const generateSeatLinks = async () => {
         if (!hasPlannerPro) {
@@ -856,6 +947,158 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
         }
     };
 
+    const getLayoutFileName = (suffix: string) => {
+        const safeName = layout.layout_name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+        return `${safeName || 'seating-layout'}-${suffix}`;
+    };
+
+    const toggleChartFullscreen = async () => {
+        const shell = chartShellRef.current;
+        if (!shell) return;
+
+        if (isChartFullscreen) {
+            setIsChartFullscreen(false);
+            if (document.fullscreenElement === shell) {
+                await document.exitFullscreen().catch(() => undefined);
+            }
+            return;
+        }
+
+        setIsChartFullscreen(true);
+        setChartStatus('Fullscreen chart view opened.');
+
+        if (document.fullscreenEnabled) {
+            try {
+                await shell.requestFullscreen();
+            } catch {
+                // Keep the app-level fullscreen overlay active when native fullscreen is blocked.
+            }
+        }
+    };
+
+    const downloadSeatingLayoutImage = async () => {
+        const canvasElement = canvasRef.current;
+        const svgElement = canvasElement?.querySelector('svg');
+        if (!canvasElement || !svgElement) {
+            setChartStatus('Unable to prepare the seating layout image.');
+            return;
+        }
+
+        setChartStatus('Preparing layout image...');
+
+        try {
+            const ratio = layout.venue_shape === 'square'
+                ? 1
+                : Math.max(0.35, layout.venue_width / Math.max(1, layout.venue_height));
+            const exportWidth = 1800;
+            const exportHeight = Math.round(exportWidth / ratio);
+            const padding = 72;
+            const imageWidth = exportWidth - padding * 2;
+            const imageHeight = exportHeight - padding * 2;
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = exportWidth;
+            exportCanvas.height = exportHeight;
+            const context = exportCanvas.getContext('2d');
+            if (!context) throw new Error('Canvas export is not supported.');
+
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, exportWidth, exportHeight);
+            context.save();
+            context.beginPath();
+            if (layout.venue_shape === 'oval') {
+                context.ellipse(exportWidth / 2, exportHeight / 2, imageWidth / 2, imageHeight / 2, 0, 0, Math.PI * 2);
+            } else {
+                const radius = layout.venue_shape === 'square' ? 56 : 44;
+                drawRoundedRectPath(context, padding, padding, imageWidth, imageHeight, radius);
+            }
+            context.clip();
+            context.fillStyle = '#f7f7f5';
+            context.fillRect(padding, padding, imageWidth, imageHeight);
+
+            if (layout.grid_enabled) {
+                context.strokeStyle = 'rgba(0,0,0,0.08)';
+                context.lineWidth = 1;
+                for (let index = 1; index < 20; index += 1) {
+                    const x = padding + (imageWidth * index) / 20;
+                    const y = padding + (imageHeight * index) / 20;
+                    context.beginPath();
+                    context.moveTo(x, padding);
+                    context.lineTo(x, padding + imageHeight);
+                    context.stroke();
+                    context.beginPath();
+                    context.moveTo(padding, y);
+                    context.lineTo(padding + imageWidth, y);
+                    context.stroke();
+                }
+            }
+
+            const svgClone = svgElement.cloneNode(true) as SVGSVGElement;
+            svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            svgClone.setAttribute('width', String(imageWidth));
+            svgClone.setAttribute('height', String(imageHeight));
+            const serializedSvg = new XMLSerializer().serializeToString(svgClone);
+            const svgUrl = URL.createObjectURL(new Blob([serializedSvg], { type: 'image/svg+xml;charset=utf-8' }));
+            const image = new Image();
+            image.decoding = 'async';
+            const loaded = new Promise<void>((resolve, reject) => {
+                image.onload = () => resolve();
+                image.onerror = () => reject(new Error('Unable to render the layout image.'));
+            });
+            image.src = svgUrl;
+            await loaded;
+            context.drawImage(image, padding, padding, imageWidth, imageHeight);
+            URL.revokeObjectURL(svgUrl);
+            context.restore();
+
+            context.strokeStyle = '#111111';
+            context.lineWidth = 8;
+            context.beginPath();
+            if (layout.venue_shape === 'oval') {
+                context.ellipse(exportWidth / 2, exportHeight / 2, imageWidth / 2, imageHeight / 2, 0, 0, Math.PI * 2);
+            } else {
+                const radius = layout.venue_shape === 'square' ? 56 : 44;
+                drawRoundedRectPath(context, padding, padding, imageWidth, imageHeight, radius);
+            }
+            context.stroke();
+
+            const dataUrl = exportCanvas.toDataURL('image/png');
+            const fileName = getLayoutFileName('final-layout.png');
+
+            try {
+                const file = dataUrlToFile(dataUrl, fileName);
+                const shareData = { files: [file], title: 'QuickWeds Seating Layout' };
+                if (navigator.share && navigator.canShare?.(shareData)) {
+                    await navigator.share(shareData);
+                    setChartStatus('Seating layout image ready to save or share.');
+                    return;
+                }
+            } catch {
+                // Continue to browser download fallback.
+            }
+
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = fileName;
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            const isPhoneBrowser = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+            if (isPhoneBrowser) {
+                window.setTimeout(() => {
+                    const opened = window.open(dataUrl, '_blank');
+                    if (opened) opened.opener = null;
+                }, 250);
+                setChartStatus('If the layout did not download, use the opened image and save it to your phone.');
+            } else {
+                setChartStatus('Seating layout image downloaded.');
+            }
+        } catch (err) {
+            setChartStatus(err instanceof Error ? err.message : 'Unable to download the seating layout image.');
+        }
+    };
+
     const getPointerPosition = useCallback((clientX: number, clientY: number) => {
         const canvas = canvasRef.current;
         if (!canvas) return null;
@@ -991,7 +1234,7 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
 
     const unassignedGuests = useMemo(() => {
         return guests
-            .filter((guest) => !assignments.find((assignment) => assignment.rsvp_id === guest.id))
+            .filter((guest) => !assignedGuestIds.has(guest.id))
             .filter((guest) => {
                 const normalizedQuery = searchQuery.toLowerCase();
                 const matchesSearch = [
@@ -1003,7 +1246,7 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
                 const matchesGroup = groupFilter === 'all' ? true : guest.guest_group === groupFilter;
                 return matchesSearch && matchesGroup;
             });
-    }, [assignments, guests, groupFilter, searchQuery]);
+    }, [assignedGuestIds, guests, groupFilter, searchQuery]);
 
     const seatingSummary = useMemo(() => {
         const totalGuests = guests.reduce((total, guest) => total + getPartySize(guest), 0);
@@ -1023,8 +1266,8 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
     const selectedObjectData = (layout.layout_data?.objects || []).find((object) => object.id === selectedObject) || null;
     const selectedTableSize = selectedTableData ? getTableSize(selectedTableData) : null;
     const selectedTableAssignments = selectedTableData
-        ? assignments
-            .filter((assignment) => assignment.table_id === selectedTableData.id)
+        ? (assignmentsByTable.get(selectedTableData.id) || [])
+            .slice()
             .sort((a, b) => Number(a.seat_number || 0) - Number(b.seat_number || 0))
         : [];
     const displayedSeatFinderUrl = publicSeatFinderUrl || getClientSeatFinderUrl(publicSeatFinderToken);
@@ -1220,7 +1463,28 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
 
                 <div className="order-1 grid grid-cols-1 gap-6 sm:gap-10 lg:order-2 lg:grid-cols-3">
                     <div className="lg:col-span-2 space-y-5">
-                        <div className="rounded-2xl border border-border bg-white p-3 shadow-inner">
+                        <div
+                            ref={chartShellRef}
+                            className={`${isChartFullscreen ? 'fixed inset-0 z-[9999] flex h-dvh flex-col overflow-auto rounded-none border-0 bg-white p-3 shadow-none sm:p-6' : 'rounded-2xl border border-border bg-white p-3 shadow-inner'}`}
+                        >
+                            <div className="mb-3 flex flex-col gap-3 rounded-2xl border border-border bg-neutral/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Interactive Seating Chart</p>
+                                    <p className="mt-1 text-xs font-semibold text-text-secondary">
+                                        {chartStatus || 'Open the chart fullscreen or download the final floor plan as a PNG.'}
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+                                    <button type="button" onClick={() => void downloadSeatingLayoutImage()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
+                                        <Download className="h-4 w-4" />
+                                        Download Image
+                                    </button>
+                                    <button type="button" onClick={() => void toggleChartFullscreen()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white transition hover:bg-primary-hover">
+                                        {isChartFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                                        {isChartFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                                    </button>
+                                </div>
+                            </div>
                             {positionSaveError && (
                                 <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
                                     {positionSaveError}
@@ -1228,7 +1492,7 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
                             )}
                             <div
                                 ref={canvasRef}
-                                className={`relative mx-auto min-h-[420px] w-full max-w-5xl overflow-hidden border-[3px] border-black bg-[#f7f7f5] shadow-inner ${getCanvasShapeClass()}`}
+                                className={`relative mx-auto w-full overflow-hidden border-[3px] border-black bg-[#f7f7f5] shadow-inner ${isChartFullscreen ? 'h-[calc(100dvh-150px)] min-h-[520px] max-w-none flex-1' : 'min-h-[420px] max-w-5xl'} ${getCanvasShapeClass()}`}
                                 style={{
                                     aspectRatio: canvasAspectRatio,
                                     backgroundImage: layout.grid_enabled
@@ -1290,8 +1554,8 @@ export default function SeatingChartBuilder({ weddingId, hasPlannerPro = true }:
                                     })}
 
                                     {tables.map((table) => {
-                                        const tableAssignments = assignments.filter((assignment) => assignment.table_id === table.id);
-                                        const seatsUsed = getSeatsUsed(table.id);
+                                        const tableAssignments = assignmentsByTable.get(table.id) || [];
+                                        const seatsUsed = seatsUsedByTable.get(table.id) || 0;
                                         const isSelected = selectedTable === table.id;
                                         const seatsRemaining = table.capacity - seatsUsed;
                                         const isFull = seatsRemaining === 0;

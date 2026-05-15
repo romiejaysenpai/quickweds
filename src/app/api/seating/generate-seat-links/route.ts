@@ -72,6 +72,12 @@ export async function POST(req: NextRequest) {
                 .update({ public_seat_finder_token: publicToken, seat_finder_enabled: true })
                 .eq('id', weddingId);
             if (error) throw error;
+        } else if (wedding.seat_finder_enabled === false) {
+            const { error } = await db
+                .from('weddings')
+                .update({ seat_finder_enabled: true })
+                .eq('id', weddingId);
+            if (error) throw error;
         }
 
         const { data: guests, error: guestsError } = await db

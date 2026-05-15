@@ -1,9 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { User } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { isKnownAdminEmail } from '@/lib/admin';
+import { clearLocalSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
 
 interface AuthContextType {
     user: User | null;
@@ -26,27 +28,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [adminChecked, setAdminChecked] = useState(false);
     const [loading, setLoading] = useState(true);
+    const lastAdminCheckRef = useRef('');
 
     // CRITICAL FIX #2: Check admin status server-side
-    const checkAdminStatus = async (user: User | null) => {
+    const checkAdminStatus = useCallback(async (user: User | null, session?: Session | null) => {
         setAdminChecked(false);
         if (!user) {
+            lastAdminCheckRef.current = '';
             setIsAdmin(false);
             setAdminChecked(true);
             return;
         }
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session?.access_token) {
+            let activeSession = session || null;
+            if (!activeSession) {
+                const { data: { session: loadedSession }, error } = await supabase.auth.getSession();
+                if (error) {
+                    if (isInvalidRefreshTokenError(error)) {
+                        await clearLocalSupabaseSession();
+                        setUser(null);
+                    }
+                    setIsAdmin(false);
+                    setAdminChecked(true);
+                    return;
+                }
+                activeSession = loadedSession;
+            }
+
+            if (!activeSession?.access_token) {
                 setIsAdmin(false);
                 setAdminChecked(true);
                 return;
             }
 
+            const adminCheckKey = `${user.id}:${activeSession.access_token.slice(-16)}`;
+            if (lastAdminCheckRef.current === adminCheckKey) {
+                setAdminChecked(true);
+                return;
+            }
+            lastAdminCheckRef.current = adminCheckKey;
+
             const response = await fetch('/api/auth/check-admin', {
                 headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
+                    'Authorization': `Bearer ${activeSession.access_token}`,
                 },
             });
 
@@ -62,27 +87,52 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
             setAdminChecked(true);
         }
-    };
+    }, []);
 
     useEffect(() => {
         // Check active sessions and sets the user
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            const currentUser = session?.user ?? null;
-            setUser(currentUser);
-            checkAdminStatus(currentUser);
-            setLoading(false);
-        });
+        supabase.auth.getSession()
+            .then(async ({ data: { session }, error }) => {
+                if (error) {
+                    if (isInvalidRefreshTokenError(error)) {
+                        await clearLocalSupabaseSession();
+                    } else {
+                        console.error('Error loading auth session:', error);
+                    }
+                    setUser(null);
+                    setIsAdmin(false);
+                    setAdminChecked(true);
+                    return;
+                }
+
+                const currentUser = session?.user ?? null;
+                setUser(currentUser);
+                await checkAdminStatus(currentUser, session);
+            })
+            .catch(async (error) => {
+                if (isInvalidRefreshTokenError(error)) {
+                    await clearLocalSupabaseSession();
+                } else {
+                    console.error('Error loading auth session:', error);
+                }
+                setUser(null);
+                setIsAdmin(false);
+                setAdminChecked(true);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
 
         // Listen for changes on auth state (logged in, signed out, etc.)
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             const currentUser = session?.user ?? null;
             setUser(currentUser);
-            checkAdminStatus(currentUser);
+            void checkAdminStatus(currentUser, session);
             setLoading(false);
         });
 
         return () => subscription.unsubscribe();
-    }, []);
+    }, [checkAdminStatus]);
 
     const logout = async () => {
         await supabase.auth.signOut();

@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { getClientAccountProfileForIntent, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
 import { isKnownAdminEmail } from '@/lib/admin';
+import { clearLocalSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
@@ -129,6 +130,12 @@ export default function AuthCallbackPage() {
                 const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
                 if (sessionError) {
+                    if (isInvalidRefreshTokenError(sessionError)) {
+                        await clearLocalSupabaseSession();
+                        window.localStorage.removeItem('quickweds_auth_next');
+                        router.replace('/login?error=session-expired');
+                        return;
+                    }
                     console.error('Session error:', sessionError);
                     setError(`Session error: ${sessionError.message}`);
                     setTimeout(() => router.replace('/login?error=session-failed'), 2000);
@@ -142,6 +149,12 @@ export default function AuthCallbackPage() {
 
                 waitForSession(nextPath);
             } catch (err: any) {
+                if (isInvalidRefreshTokenError(err)) {
+                    await clearLocalSupabaseSession();
+                    window.localStorage.removeItem('quickweds_auth_next');
+                    router.replace('/login?error=session-expired');
+                    return;
+                }
                 console.error('Auth callback unexpected error:', err);
                 setError(`Unexpected error: ${err.message}`);
                 setDebug(`Stack: ${err.stack?.split('\n')[0]}`);
