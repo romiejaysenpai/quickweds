@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getSeatFinderErrorPayload, getSeatFinderPartySize, isSeatFinderSchemaError } from '@/lib/seat-finder';
+import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,6 +72,10 @@ export async function GET(req: NextRequest) {
     const token = String(searchParams.get('token') || '').trim();
     if (!token) return NextResponse.json({ error: 'Seat token is required.' }, { status: 400 });
 
+    const rateLimit = createRateLimitMiddleware('SEAT_LOOKUP');
+    const limited = rateLimit.check(`${getClientIP(req)}:guest-token`);
+    if (limited.limited) return limited.response;
+
     try {
         const db = getSupabaseAdminClient() as any;
         const { data: guest, error } = await db
@@ -82,7 +87,10 @@ export async function GET(req: NextRequest) {
         if (error) throw error;
         if (!guest) return NextResponse.json({ error: 'Seat link not found.' }, { status: 404 });
 
-        return buildSeatResponse(db, guest, 'personal_qr');
+        const response = await buildSeatResponse(db, guest, 'personal_qr');
+        response.headers.set('Cache-Control', 'no-store');
+        for (const [key, value] of Object.entries(limited.headers || {})) response.headers.set(key, value);
+        return response;
     } catch (err) {
         const payload = getSeatFinderErrorPayload(err, 'Unable to load seat information.');
         console.error('Unable to load seat information:', payload.details || payload.error);

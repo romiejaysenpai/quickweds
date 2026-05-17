@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send, CheckCircle2, Music, Users, AlertCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { trackWeddingEvent } from '@/lib/wedding-features';
 import confetti from 'canvas-confetti';
 
@@ -17,35 +16,9 @@ const DIETARY_OPTIONS = [
     'Other (see message)',
 ];
 
-function getPrimaryPlusOneName(raw: string) {
-    const [firstName] = raw
-        .split(',')
-        .map((name) => name.trim())
-        .filter(Boolean);
-    return firstName || '';
-}
-
 type WeddingPreview = {
     template?: string;
     motif_color?: string;
-};
-
-type RsvpInsertData = {
-    wedding_id: string;
-    guest_name: string;
-    guest_email: string | null;
-    attendance: string;
-    num_guests: number;
-    rsvp_status: string;
-    plus_one_allowed: boolean;
-    meal_preference?: string;
-    dietary_details?: string;
-    message?: string;
-    plus_one_names?: string;
-    plus_one_name?: string;
-    plus_one_rsvp_status?: string;
-    song_request?: string;
-    children_count?: number;
 };
 
 export default function RSVPForm({ weddingId, wedding }: { weddingId: string, wedding?: WeddingPreview }) {
@@ -76,52 +49,30 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
         setSubmitError(null);
 
         try {
-            // Check for duplicate RSVP
-            const { data: existing, error: checkError } = await supabase
-                .from('rsvps')
-                .select('id')
-                .eq('wedding_id', weddingId)
-                .ilike('guest_name', formData.guestName.trim())
-                .limit(1);
+            const response = await fetch('/api/public/rsvp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    weddingId,
+                    guestName: formData.guestName.trim(),
+                    guestEmail: formData.guestEmail.trim(),
+                    attendance: formData.attendance,
+                    numGuests: formData.numGuests,
+                    mealPreference: formData.mealPreference,
+                    dietaryDetails: formData.dietaryDetails,
+                    message: formData.message,
+                    plusOneNames: formData.plusOneNames,
+                    songRequest: formData.songRequest,
+                    childrenCount: formData.childrenCount,
+                }),
+            });
+            const result = await response.json().catch(() => ({}));
 
-            if (checkError) {
-                console.warn("Duplicate check error (ignored):", checkError);
-            }
-
-            if (existing && existing.length > 0) {
-                setDuplicateError(true);
-                setSubmitError("You have already RSVP'd for this wedding. If you need to make changes, please contact the couple directly.");
-                setIsSubmitting(false);
-                return;
-            }
-
-            const insertData: RsvpInsertData = {
-                wedding_id: weddingId,
-                guest_name: formData.guestName.trim(),
-                guest_email: formData.guestEmail.trim() || null,
-                attendance: formData.attendance,
-                num_guests: formData.numGuests || 1,
-                rsvp_status: formData.attendance === 'Yes' ? 'confirmed' : 'declined',
-                plus_one_allowed: formData.numGuests > 1 || Boolean(formData.plusOneNames.trim()),
-            };
-
-            // Optional fields
-            if (formData.mealPreference && formData.mealPreference !== 'No Preference') insertData.meal_preference = formData.mealPreference;
-            if (formData.dietaryDetails) insertData.dietary_details = formData.dietaryDetails;
-            if (formData.message) insertData.message = formData.message;
-            if (formData.plusOneNames) {
-                insertData.plus_one_names = formData.plusOneNames;
-                insertData.plus_one_name = getPrimaryPlusOneName(formData.plusOneNames);
-                insertData.plus_one_rsvp_status = formData.attendance === 'Yes' ? 'confirmed' : 'declined';
-            }
-            if (formData.songRequest) insertData.song_request = formData.songRequest;
-            if (formData.childrenCount > 0) insertData.children_count = formData.childrenCount;
-
-            const { error: insertError } = await supabase.from('rsvps').insert(insertData);
-
-            if (insertError) {
-                console.error("Supabase RSVP error:", insertError);
-                setSubmitError(`Submission failed: ${insertError.message}`);
+            if (!response.ok) {
+                if (response.status === 409 || result.code === 'duplicate_rsvp') {
+                    setDuplicateError(true);
+                }
+                setSubmitError(result.error || 'Submission failed. Please try again.');
                 setIsSubmitting(false);
                 return;
             }
@@ -141,26 +92,9 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                 source: 'rsvp_form',
                 attendance: formData.attendance,
             });
-            
-            fetch('/api/rsvp-notify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    weddingId,
-                    guestName: formData.guestName.trim(),
-                    guestEmail: formData.guestEmail.trim(),
-                    attendance: formData.attendance,
-                    numGuests: formData.numGuests,
-                    message: formData.message,
-                    dietaryDetails: formData.dietaryDetails,
-                    songRequest: formData.songRequest,
-                    plusOneNames: formData.plusOneNames,
-                    childrenCount: formData.childrenCount
-                }),
-            }).catch(err => console.error("Email notification error:", err));
         } catch (err) {
             console.error(err);
-            alert("An unexpected error occurred.");
+            setSubmitError("An unexpected error occurred.");
         } finally {
             setIsSubmitting(false);
         }

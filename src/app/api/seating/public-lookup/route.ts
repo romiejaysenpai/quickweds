@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getSeatFinderErrorPayload, getSeatFinderPartySize, isSeatFinderSchemaError } from '@/lib/seat-finder';
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +55,7 @@ async function buildSeatResponse(db: any, guest: any) {
 
 export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
-    const weddingId = normalize(body.weddingId);
+    const weddingId = sanitizeWeddingId(normalize(body.weddingId));
     const token = normalize(body.token);
     const query = normalize(body.query);
 
@@ -62,11 +63,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Wedding, token, and guest lookup are required.' }, { status: 400 });
     }
 
+    const rateLimit = createRateLimitMiddleware('SEAT_LOOKUP');
+    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}`);
+    if (limited.limited) return limited.response;
+
     try {
         const db = getSupabaseAdminClient() as any;
         const { data: wedding, error: weddingError } = await db
             .from('weddings')
-            .select('id, bride_name, groom_name, wedding_date, public_seat_finder_token, seat_finder_enabled, seat_finder_show_map')
+            .select('id, bride_name, groom_name, wedding_date, public_seat_finder_token, seat_finder_enabled, seat_finder_show_map, seat_finder_require_code')
             .eq('id', weddingId)
             .maybeSingle();
 
@@ -76,10 +81,17 @@ export async function POST(req: NextRequest) {
         }
 
         const selectColumns = 'id, wedding_id, guest_name, guest_email, phone, num_guests, table_assignment, plus_one_allowed, plus_one_name, plus_one_rsvp_status, guest_code, checked_in_at';
-        const exactCode = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_code', query).limit(2);
+        const exactCode = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_code', query.toUpperCase()).limit(2);
         if (exactCode.error) throw exactCode.error;
 
         let matches = exactCode.data || [];
+        if (matches.length === 0 && wedding.seat_finder_require_code !== false) {
+            return NextResponse.json(
+                { error: 'We could not find one exact guest code match. Please enter your guest code or ask reception.' },
+                { status: 404, headers: { ...limited.headers, 'Cache-Control': 'no-store' } }
+            );
+        }
+
         if (matches.length === 0 && query.includes('@')) {
             const byEmail = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_email', query).limit(2);
             if (byEmail.error) throw byEmail.error;
@@ -97,7 +109,10 @@ export async function POST(req: NextRequest) {
         }
 
         if (matches.length !== 1) {
-            return NextResponse.json({ error: 'We could not find one exact guest match. Please enter your guest code or ask reception.' }, { status: 404 });
+            return NextResponse.json(
+                { error: 'We could not find one exact guest match. Please enter your guest code or ask reception.' },
+                { status: 404, headers: { ...limited.headers, 'Cache-Control': 'no-store' } }
+            );
         }
 
         const seatData = await buildSeatResponse(db, matches[0]);
@@ -110,7 +125,7 @@ export async function POST(req: NextRequest) {
                 showMap: wedding.seat_finder_show_map !== false,
             },
             ...seatData,
-        });
+        }, { headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
     } catch (err) {
         const payload = getSeatFinderErrorPayload(err, 'Unable to find guest seat.');
         console.error('Unable to find guest seat:', payload.details || payload.error);

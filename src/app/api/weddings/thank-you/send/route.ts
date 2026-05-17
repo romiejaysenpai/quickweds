@@ -8,17 +8,22 @@ import {
     hasPlannerProAccess,
     logPlannerEmailEvent,
 } from '@/lib/planner-limits';
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const weddingId = typeof body?.weddingId === 'string' ? body.weddingId : '';
+        const weddingId = sanitizeWeddingId(typeof body?.weddingId === 'string' ? body.weddingId : '');
         const authHeader = req.headers.get('authorization') || '';
         const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
 
         if (!weddingId || !accessToken) {
             return NextResponse.json({ error: 'weddingId and authorization token are required' }, { status: 400 });
         }
+
+        const rateLimit = createRateLimitMiddleware('THANK_YOU_EMAIL');
+        const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}`);
+        if (limited.limited) return limited.response;
 
         const db = getSupabaseAdminClient() as any;
         const { data: authUser, error: authError } = await db.auth.getUser(accessToken);
@@ -108,7 +113,7 @@ export async function POST(req: NextRequest) {
             userId: authUser.user.id,
         });
 
-        return NextResponse.json({ sentCount, failedCount });
+        return NextResponse.json({ sentCount, failedCount }, { headers: limited.headers });
     } catch (error) {
         return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to send thank-you notes' }, { status: 500 });
     }

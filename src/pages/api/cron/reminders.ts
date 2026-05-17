@@ -3,10 +3,27 @@ import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/lib/email';
 import { getGuestReminderHtml } from '@/lib/email-templates';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+let supabaseAdmin: any = null;
+
+function getCronSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Cron reminders require NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+  }
+
+  if (!supabaseAdmin) {
+    supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+
+  return supabaseAdmin as any;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // 1. Security Check
@@ -16,6 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    const supabase = getCronSupabaseClient();
     const now = new Date();
     
     const threeDaysStart = new Date(now.getTime() + 70 * 60 * 60 * 1000).toISOString();
@@ -50,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         if (guestError) throw guestError;
 
-        const eligibleGuests = guests.filter(g => 
+        const eligibleGuests = (guests || []).filter((g: any) =>
           !g.rsvp_reminders?.some((rem: any) => rem.reminder_type === trigger.type)
         );
 

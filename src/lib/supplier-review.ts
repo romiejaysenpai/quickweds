@@ -10,13 +10,7 @@ export function isSupplierReviewAction(value: string | null | undefined): value 
 }
 
 function getReviewSecret() {
-    return (
-        process.env.SUPPLIER_REVIEW_SECRET ||
-        process.env.RESEND_API_KEY ||
-        process.env.ADMIN_EMAIL ||
-        process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
-        ''
-    );
+    return process.env.SUPPLIER_REVIEW_SECRET || '';
 }
 
 function getPayload(supplierId: string, action: SupplierReviewAction, expires: string) {
@@ -41,6 +35,10 @@ export function verifySupplierReviewAction(
     expires: string,
     token: string
 ) {
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+        return false;
+    }
+
     const expected = signSupplierReviewAction(supplierId, action, expires);
     const expectedBuffer = Buffer.from(expected, 'hex');
     const tokenBuffer = Buffer.from(token, 'hex');

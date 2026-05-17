@@ -1,7 +1,17 @@
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { getStripe, PRICING } from '@/lib/stripe';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+
+function isPaidCheckoutSession(session: Stripe.Checkout.Session) {
+    return (
+        session.mode === 'payment' &&
+        session.payment_status === 'paid' &&
+        session.currency === PRICING.CURRENCY &&
+        typeof session.amount_total === 'number' &&
+        session.amount_total > 0
+    );
+}
 
 export async function POST(req: NextRequest) {
     const body = await req.text();
@@ -14,6 +24,7 @@ export async function POST(req: NextRequest) {
     try {
         const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
         let event: Stripe.Event;
+        const stripe = getStripe();
 
         if (webhookSecret) {
             event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
@@ -32,9 +43,30 @@ export async function POST(req: NextRequest) {
             const userId = session.metadata?.userId;
             const scope = session.metadata?.scope || (userId ? 'account' : 'wedding');
             const plan = session.metadata?.plan || 'planner_pro';
+            const expectedAmount = Number(session.metadata?.expectedAmount || 0);
             const supabase: any = getSupabaseAdminClient();
 
+            if (!isPaidCheckoutSession(session)) {
+                console.warn('Ignoring unpaid or invalid Stripe checkout session:', session.id);
+                return NextResponse.json({ received: true });
+            }
+
+            if (expectedAmount && session.amount_total !== expectedAmount) {
+                console.warn('Ignoring Stripe checkout session with unexpected amount:', session.id);
+                return NextResponse.json({ received: true });
+            }
+
             if (scope === 'account' && userId) {
+                const { data: existing } = await supabase
+                    .from('user_app_profiles')
+                    .select('stripe_checkout_session_id, payment_status')
+                    .eq('user_id', userId)
+                    .maybeSingle();
+
+                if (existing?.stripe_checkout_session_id === session.id && existing?.payment_status === 'paid') {
+                    return NextResponse.json({ received: true });
+                }
+
                 const { error } = await supabase
                     .from('user_app_profiles')
                     .upsert({
@@ -53,12 +85,28 @@ export async function POST(req: NextRequest) {
                     throw error;
                 }
             } else if (weddingId) {
+                const { data: wedding, error: lookupError } = await supabase
+                    .from('weddings')
+                    .select('id, stripe_checkout_session_id, payment_status')
+                    .eq('id', weddingId)
+                    .maybeSingle();
+
+                if (lookupError) throw lookupError;
+                if (!wedding) {
+                    console.warn('Ignoring Stripe session for missing wedding:', session.id, weddingId);
+                    return NextResponse.json({ received: true });
+                }
+                if (wedding.stripe_checkout_session_id === session.id && wedding.payment_status === 'paid') {
+                    return NextResponse.json({ received: true });
+                }
+
                 const { error } = await supabase
                     .from('weddings')
                     .update({
                         payment_status: 'paid',
                         payment_amount: (session.amount_total || 0) / 100,
                         stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+                        stripe_checkout_session_id: session.id,
                         is_premium: true,
                         plan_type: plan,
                     })
@@ -68,6 +116,8 @@ export async function POST(req: NextRequest) {
                     throw error;
                 }
             }
+        } else if (event.type === 'checkout.session.async_payment_failed' || event.type === 'checkout.session.expired') {
+            return NextResponse.json({ received: true });
         }
 
         return NextResponse.json({ received: true });

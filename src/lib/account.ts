@@ -110,3 +110,14 @@ export async function getClientAccountProfileForIntent(token: string, requestedP
 
     return profile;
 }
+
+export async function getClientAdminStatus(token: string) {
+    const response = await fetch('/api/auth/check-admin', {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) return false;
+
+    const data = await response.json().catch(() => ({}));
+    return Boolean(data?.isAdmin);
+}

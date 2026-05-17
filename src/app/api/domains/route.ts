@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { domainSchema, validateRequest } from '@/lib/validations';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-
-const weddingIdSchema = z.string().uuid('Invalid wedding ID format');
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
 
 type AccessCheckResult =
     | { ok: true; customDomain: string | null; isPremium: boolean }
@@ -66,8 +64,12 @@ async function verifyWeddingAccess(req: Request, weddingId: string): Promise<Acc
 }
 
 function parseWeddingId(value: string | null) {
-    const parsed = weddingIdSchema.safeParse(value);
-    return parsed.success ? parsed.data : null;
+    return sanitizeWeddingId(value || '') || null;
+}
+
+function checkDomainRateLimit(req: Request, weddingId: string) {
+    const rateLimit = createRateLimitMiddleware('DOMAIN_MANAGEMENT');
+    return rateLimit.check(`${getClientIP(req)}:${weddingId}`);
 }
 
 export async function POST(req: Request) {
@@ -83,6 +85,9 @@ export async function POST(req: Request) {
         if (!weddingId) {
             return NextResponse.json({ error: 'Valid weddingId is required' }, { status: 400 });
         }
+
+        const limited = checkDomainRateLimit(req, weddingId);
+        if (limited.limited) return limited.response;
 
         const access = await verifyWeddingAccess(req, weddingId);
         if (!access.ok) {
@@ -117,7 +122,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: data.error.message }, { status: response.status });
         }
 
-        return NextResponse.json(data);
+        return NextResponse.json(data, { headers: limited.headers });
     } catch {
         return NextResponse.json({ error: 'Failed to add domain to Vercel' }, { status: 500 });
     }
@@ -136,6 +141,9 @@ export async function GET(req: Request) {
         if (!weddingId) {
             return NextResponse.json({ error: 'Valid weddingId is required' }, { status: 400 });
         }
+
+        const limited = checkDomainRateLimit(req, weddingId);
+        if (limited.limited) return limited.response;
 
         const access = await verifyWeddingAccess(req, weddingId);
         if (!access.ok) {
@@ -163,7 +171,7 @@ export async function GET(req: Request) {
         });
 
         const data = await response.json();
-        return NextResponse.json(data);
+        return NextResponse.json(data, { headers: limited.headers });
     } catch {
         return NextResponse.json({ error: 'Failed to fetch domain verification status' }, { status: 500 });
     }
@@ -181,6 +189,9 @@ export async function DELETE(req: Request) {
     if (!weddingId) {
         return NextResponse.json({ error: 'Valid weddingId is required' }, { status: 400 });
     }
+
+    const limited = checkDomainRateLimit(req, weddingId);
+    if (limited.limited) return limited.response;
 
     const access = await verifyWeddingAccess(req, weddingId);
     if (!access.ok) {
@@ -209,7 +220,7 @@ export async function DELETE(req: Request) {
         });
 
         const data = await response.json();
-        return NextResponse.json(data);
+        return NextResponse.json(data, { headers: limited.headers });
     } catch {
         return NextResponse.json({ error: 'Failed to delete custom domain from Vercel.' }, { status: 500 });
     }

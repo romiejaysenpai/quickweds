@@ -5,6 +5,8 @@ import { isKnownAdminEmail } from '@/lib/admin';
 import { sendEmail } from '@/lib/email';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { hasPlannerProAccess, logPlannerEmailEvent } from '@/lib/planner-limits';
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { getWeddingAccess } from '@/lib/wedding-access';
 import {
     getAppBaseUrl,
     getSeatFinderErrorPayload,
@@ -25,19 +27,17 @@ async function getAuthorizedWedding(req: NextRequest, weddingId: string) {
     if (!user) return { response: NextResponse.json({ error }, { status: 401 }) };
 
     const db = getSupabaseAdminClient() as any;
-    const { data: wedding, error: weddingError } = await db
-        .from('weddings')
-        .select('id, user_id, bride_name, groom_name, public_seat_finder_token, is_premium, payment_status')
-        .eq('id', weddingId)
-        .maybeSingle();
+    const access = await getWeddingAccess(db, user, weddingId, {
+        select: 'id, user_id, bride_name, groom_name, public_seat_finder_token, is_premium, payment_status',
+        collaboratorRoles: ['partner', 'coordinator'],
+    });
 
-    if (weddingError) throw weddingError;
-    if (!wedding) return { response: NextResponse.json({ error: 'Wedding not found.' }, { status: 404 }) };
-    if (wedding.user_id !== user.id && !isKnownAdminEmail(user.email)) {
+    if (!access.wedding) return { response: NextResponse.json({ error: 'Wedding not found.' }, { status: 404 }) };
+    if (!access.canManage) {
         return { response: NextResponse.json({ error: 'You do not have permission to send seat links.' }, { status: 403 }) };
     }
 
-    return { db, wedding, user };
+    return { db, wedding: access.wedding, user };
 }
 
 function getWeddingName(wedding: any) {
@@ -54,9 +54,13 @@ function getSeatLabel(guest: SeatFinderRsvp, seatNumber?: number | null) {
 
 export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
-    const weddingId = String(body.weddingId || '');
+    const weddingId = sanitizeWeddingId(String(body.weddingId || ''));
     const resendAll = body.resendAll === true;
     if (!weddingId) return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
+
+    const rateLimit = createRateLimitMiddleware('SEAT_MUTATION');
+    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}:send`);
+    if (limited.limited) return limited.response;
 
     try {
         const context = await getAuthorizedWedding(req, weddingId);
@@ -188,7 +192,7 @@ export async function POST(req: NextRequest) {
             skippedUnassigned,
             emailErrors,
             emailErrorCount: emailErrors.length,
-        });
+        }, { headers: limited.headers });
     } catch (err) {
         const payload = getSeatFinderErrorPayload(err, 'Unable to send seat links.');
         console.error('Unable to send seat links:', payload.details || payload.error);

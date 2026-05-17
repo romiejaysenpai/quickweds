@@ -408,8 +408,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             return plannerLoadRef.current.promise;
         }
 
-        let promise: Promise<void>;
-        promise = (async () => {
+        const promise: Promise<void> = (async () => {
             setLoading(true);
             setPlannerError('');
             try {

@@ -107,8 +107,25 @@ export function parseSupplierList(value: string[] | string | null | undefined) {
 export function sanitizeSupplierUrl(value: string | null | undefined) {
     const trimmed = (value || '').trim();
     if (!trimmed) return null;
-    if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    return `https://${trimmed}`;
+    const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+    try {
+        const url = new URL(candidate);
+        if (!['http:', 'https:'].includes(url.protocol)) return null;
+        if (!url.hostname || url.hostname.length > 253) return null;
+        return url.toString().slice(0, 500);
+    } catch {
+        return null;
+    }
+}
+
+function trimMax(value: string | null | undefined, maxLength: number) {
+    return (value || '').trim().slice(0, maxLength);
+}
+
+function normalizeSupplierEmail(value: string | null | undefined) {
+    const email = trimMax(value, 254).toLowerCase();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
 
 export function normalizeSupplierProfileInput(input: SupplierProfileInput) {
@@ -117,17 +134,17 @@ export function normalizeSupplierProfileInput(input: SupplierProfileInput) {
         .filter((url): url is string => Boolean(url));
 
     return {
-        business_name: (input.business_name || '').trim(),
-        category: (input.category || 'Other').trim(),
-        city: (input.city || '').trim(),
-        province: (input.province || '').trim(),
-        service_areas: parseSupplierList(input.service_areas),
-        summary: (input.summary || '').trim(),
-        description: (input.description || '').trim(),
-        price_band: (input.price_band || 'Custom quote').trim(),
-        phone: (input.phone || '').trim() || null,
-        email: (input.email || '').trim().toLowerCase() || null,
-        whatsapp: (input.whatsapp || '').trim() || null,
+        business_name: trimMax(input.business_name, 160),
+        category: trimMax(input.category || 'Other', 80),
+        city: trimMax(input.city, 120),
+        province: trimMax(input.province, 120),
+        service_areas: parseSupplierList(input.service_areas).map((item) => item.slice(0, 120)).slice(0, 25),
+        summary: trimMax(input.summary, 280),
+        description: trimMax(input.description, 3000),
+        price_band: trimMax(input.price_band || 'Custom quote', 80),
+        phone: trimMax(input.phone, 60) || null,
+        email: normalizeSupplierEmail(input.email),
+        whatsapp: trimMax(input.whatsapp, 60) || null,
         website_url: sanitizeSupplierUrl(input.website_url),
         instagram_url: sanitizeSupplierUrl(input.instagram_url),
         facebook_url: sanitizeSupplierUrl(input.facebook_url),

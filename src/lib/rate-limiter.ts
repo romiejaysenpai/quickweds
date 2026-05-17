@@ -18,7 +18,16 @@ interface RateLimitConfig {
 export const RATE_LIMITS = {
     // Strict limits for email sending (prevent abuse)
     RSVP_NOTIFY: { maxRequests: 30, windowMs: 60 * 60 * 1000 },      // 30 per hour
+    RSVP_SUBMIT: { maxRequests: 15, windowMs: 60 * 60 * 1000 },      // 15 per hour
     REMINDER_EMAIL: { maxRequests: 5, windowMs: 60 * 60 * 1000 },    // 5 per hour
+    THANK_YOU_EMAIL: { maxRequests: 5, windowMs: 60 * 60 * 1000 },   // 5 per hour
+    GUEST_BOOK: { maxRequests: 12, windowMs: 60 * 60 * 1000 },       // 12 per hour
+    PHOTO_UPLOAD: { maxRequests: 20, windowMs: 60 * 60 * 1000 },     // 20 per hour
+    SEAT_LOOKUP: { maxRequests: 30, windowMs: 15 * 60 * 1000 },      // 30 per 15 minutes
+    SEAT_MUTATION: { maxRequests: 20, windowMs: 60 * 60 * 1000 },    // 20 per hour
+    CHECKOUT: { maxRequests: 10, windowMs: 60 * 60 * 1000 },         // 10 per hour
+    SUPPLIER_REVIEW: { maxRequests: 20, windowMs: 60 * 60 * 1000 },  // 20 per hour
+    SIGNUP_NOTIFY: { maxRequests: 20, windowMs: 60 * 60 * 1000 },    // 20 per hour
     
     // Moderate limits for read operations
     WEDDING_READ: { maxRequests: 100, windowMs: 15 * 60 * 1000 },    // 100 per 15 minutes

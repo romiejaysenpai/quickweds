@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
-import { getClientAccountProfileForIntent, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
-import { isKnownAdminEmail } from '@/lib/admin';
+import { getClientAccountProfileForIntent, getClientAdminStatus, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
 import { clearLocalSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
 
 export default function AuthCallbackPage() {
@@ -46,7 +45,7 @@ export default function AuthCallbackPage() {
         };
 
         const resolvePostAuthPath = async (token: string, nextPath: string, userEmail?: string | null) => {
-            if (isKnownAdminEmail(userEmail)) {
+            if (await getClientAdminStatus(token)) {
                 const safeNext = getSafeAppPath(nextPath, '/dashboard');
                 return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
             }

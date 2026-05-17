@@ -52,15 +52,16 @@ export async function proxy(req: NextRequest) {
     // It is a custom domain requested!
     // Query Supabase directly from Edge using REST API
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (supabaseUrl && supabaseKey) {
         try {
-            const res = await fetch(`${supabaseUrl}/rest/v1/weddings?custom_domain=eq.${hostname}&select=id`, {
+            const res = await fetch(`${supabaseUrl}/rest/v1/weddings?custom_domain=eq.${encodeURIComponent(hostname)}&select=id`, {
                 headers: {
                     apikey: supabaseKey,
                     Authorization: `Bearer ${supabaseKey}`
-                }
+                },
+                cache: 'no-store',
             });
             const data = await res.json();
             if (data && data.length > 0) {

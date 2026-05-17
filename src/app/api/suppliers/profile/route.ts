@@ -145,6 +145,10 @@ function getSupplierReviewEmailHtml(profile: SupplierProfile, ownerEmail?: strin
 
 async function sendSupplierReviewEmail(profile: SupplierProfile, ownerEmail?: string | null) {
     const adminEmail = getPrimaryAdminEmail();
+    if (!adminEmail) {
+        console.warn('Supplier review email skipped: ADMIN_EMAIL or ADMIN_EMAILS is not configured.');
+        return;
+    }
 
     try {
         const result = await sendEmail({

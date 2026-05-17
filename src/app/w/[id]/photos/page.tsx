@@ -1,7 +1,6 @@
 'use client';
 
 import { use, useEffect, useState, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Image as ImageIcon, Upload, X, Loader2, CheckCircle2, Maximize2 } from 'lucide-react';
@@ -44,12 +43,12 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
 
     useEffect(() => {
         const load = async () => {
-            const [weddingRes, photosRes] = await Promise.all([
-                supabase.from('weddings').select('id, bride_name, groom_name').eq('id', weddingId).single(),
-                supabase.from('wedding_photos').select('*').eq('wedding_id', weddingId).eq('is_approved', true).order('created_at', { ascending: false }),
-            ]);
-            if (weddingRes.data) setWedding(weddingRes.data);
-            if (photosRes.data) setPhotos(photosRes.data);
+            const response = await fetch(`/api/public/photos/${encodeURIComponent(weddingId)}`);
+            const data = await response.json().catch(() => ({}));
+            if (response.ok) {
+                if (data.wedding) setWedding(data.wedding);
+                if (data.photos) setPhotos(data.photos);
+            }
             setLoading(false);
         };
         void load();
@@ -58,6 +57,14 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
+            if (!file.type.startsWith('image/')) {
+                alert('Please choose an image file.');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Please choose a photo smaller than 10 MB.');
+                return;
+            }
             setSelectedFile(file);
             // Create a local blob URL for live preview
             setPreviewUrl(URL.createObjectURL(file));
@@ -79,44 +86,22 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
 
         setSubmitting(true);
         try {
-            // 1. Verify access code
-            const { data: codeData, error: codeError } = await supabase
-                .from('photo_sharing_codes')
-                .select('*')
-                .eq('wedding_id', weddingId)
-                .eq('code', normalizedCode)
-                .eq('is_active', true)
-                .maybeSingle();
+            const formData = new FormData();
+            formData.set('weddingId', weddingId);
+            formData.set('code', normalizedCode);
+            formData.set('uploaderName', form.uploader_name || 'Guest');
+            formData.set('caption', form.caption || '');
+            formData.set('file', selectedFile);
 
-            if (codeError || !codeData) throw new Error('Invalid or inactive sharing code. Please check with the couple.');
-
-            // 2. Upload file to Supabase Storage
-            const fileExt = selectedFile.name.split('.').pop();
-            const fileName = `guest-uploads/${weddingId}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-            
-            const { error: uploadError } = await supabase.storage
-                .from('quickweds')
-                .upload(fileName, selectedFile, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
-
-            if (uploadError) throw new Error('Failed to upload image file.');
-
-            // 3. Get the public URL
-            const { data: { publicUrl } } = supabase.storage.from('quickweds').getPublicUrl(fileName);
-
-            // 4. Save metadata to database
-            const { error: dbError } = await supabase.from('wedding_photos').insert({
-                wedding_id: weddingId,
-                uploader_name: form.uploader_name || 'Guest',
-                cloudinary_url: publicUrl, // using 'cloudinary_url' column to hold our Supabase URL for backwards compatibility
-                cloudinary_public_id: fileName,
-                caption: form.caption || null,
-                is_approved: false, // Must be approved in dashboard
+            const response = await fetch('/api/public/photos/upload', {
+                method: 'POST',
+                body: formData,
             });
+            const result = await response.json().catch(() => ({}));
 
-            if (dbError) throw new Error('Failed to record photo details.');
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to upload photo.');
+            }
 
             // Success state
             setSubmissionSuccess(true);
@@ -126,8 +111,8 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                 setForm({ ...form, caption: '' }); // keep name and code for faster subsequent uploads
             }, 3000);
 
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error: unknown) {
+            alert(error instanceof Error ? error.message : 'Failed to upload photo.');
         } finally {
             setSubmitting(false);
         }

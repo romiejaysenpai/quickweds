@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, Camera, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { MessageSquare, Send, CheckCircle2 } from 'lucide-react';
 
 interface GuestBookEntry {
     id: string;
@@ -27,15 +26,11 @@ export default function GuestBook({ weddingId }: GuestBookProps) {
 
     useEffect(() => {
         const fetchEntries = async () => {
-            const { data, error } = await supabase
-                .from('guest_book')
-                .select('*')
-                .eq('wedding_id', weddingId)
-                .order('created_at', { ascending: false })
-                .limit(50);
+            const response = await fetch(`/api/public/guest-book?weddingId=${encodeURIComponent(weddingId)}`);
+            const data = await response.json().catch(() => ({}));
 
-            if (!error && data) {
-                setEntries(data);
+            if (response.ok && data.entries) {
+                setEntries(data.entries);
             }
             setLoading(false);
         };
@@ -48,18 +43,19 @@ export default function GuestBook({ weddingId }: GuestBookProps) {
 
         setSubmitting(true);
         try {
-            const { data, error } = await supabase
-                .from('guest_book')
-                .insert({
-                    wedding_id: weddingId,
-                    guest_name: name.trim(),
+            const response = await fetch('/api/public/guest-book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    weddingId,
+                    guestName: name.trim(),
                     message: message.trim(),
-                })
-                .select()
-                .single();
+                }),
+            });
+            const data = await response.json().catch(() => ({}));
 
-            if (!error && data) {
-                setEntries((prev) => [data, ...prev]);
+            if (response.ok && data.entry) {
+                setEntries((prev) => [data.entry, ...prev]);
                 setSubmitted(true);
                 setName('');
                 setMessage('');

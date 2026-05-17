@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, PRICING } from '@/lib/stripe';
+import { getStripe, PRICING } from '@/lib/stripe';
 import { checkoutSchema, validateRequest } from '@/lib/validations';
 import { getRequestUser } from '@/lib/api-auth';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { getWeddingAccess } from '@/lib/wedding-access';
 
 export async function POST(req: NextRequest) {
-    console.log('Stripe checkout session initiated');
+    const rateLimit = createRateLimitMiddleware('CHECKOUT');
+    const rateKey = getClientIP(req);
+    const limited = rateLimit.check(rateKey);
+    if (limited.limited) return limited.response;
+
     try {
         const body = await req.json();
         const validation = validateRequest(checkoutSchema, body);
@@ -16,27 +23,33 @@ export async function POST(req: NextRequest) {
         const requestedScope = validation.data.scope || (validation.data.weddingId ? 'wedding' : 'account');
         const scope = requestedScope === 'account' ? 'account' : 'wedding';
         const plan = scope === 'account' ? 'account_pro' : (validation.data.plan || 'planner_pro');
-        const weddingId = validation.data.weddingId;
+        const weddingId = validation.data.weddingId ? sanitizeWeddingId(validation.data.weddingId) : '';
 
         let userId: string | null = null;
-        if (scope === 'account') {
-            const { user, error } = await getRequestUser(req);
-            if (!user) {
-                return NextResponse.json({ error: error || 'Please sign in to upgrade your account.' }, { status: 401 });
-            }
-            userId = user.id;
+        const { user, error } = await getRequestUser(req);
+        if (!user) {
+            return NextResponse.json({ error: error || 'Please sign in to continue checkout.' }, { status: 401 });
         }
+        userId = user.id;
 
         if (scope === 'wedding' && !weddingId) {
             return NextResponse.json({ error: 'Wedding ID is required for Planner Pro checkout.' }, { status: 400 });
         }
 
-        if (!process.env.STRIPE_SECRET_KEY) {
-            console.error('STRIPE_SECRET_KEY is missing');
-            return NextResponse.json(
-                { error: 'Server configuration error: STRIPE_SECRET_KEY is missing' },
-                { status: 500 }
-            );
+        if (scope === 'wedding') {
+            const db = getSupabaseAdminClient() as any;
+            const access = await getWeddingAccess(db, user, weddingId, {
+                select: 'id, user_id, deleted_at',
+                collaboratorRoles: ['partner'],
+            });
+
+            if (!access.wedding || access.wedding.deleted_at) {
+                return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
+            }
+
+            if (!access.canManage) {
+                return NextResponse.json({ error: 'You do not have permission to upgrade this wedding.' }, { status: 403 });
+            }
         }
 
         const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '');
@@ -53,6 +66,9 @@ export async function POST(req: NextRequest) {
             ? `${appUrl}/payment/cancel?scope=account`
             : `${appUrl}/payment/cancel?wedding_id=${weddingId}`;
 
+        const stripe = getStripe();
+        const amountCents = Math.round(price * 100);
+
         // Create Stripe checkout session
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -65,7 +81,7 @@ export async function POST(req: NextRequest) {
                             description: productDescription,
                             images: [`${appUrl}/logo.png`],
                         },
-                        unit_amount: Math.round(price * 100),
+                        unit_amount: amountCents,
                     },
                     quantity: 1,
                 },
@@ -78,10 +94,12 @@ export async function POST(req: NextRequest) {
                 ...(userId ? { userId } : {}),
                 scope,
                 plan,
+                expectedAmount: String(amountCents),
+                expectedCurrency: PRICING.CURRENCY,
             },
         });
 
-        return NextResponse.json({ url: session.url });
+        return NextResponse.json({ url: session.url }, { headers: limited.headers });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Failed to create checkout session';
         console.error('Stripe checkout error:', error);

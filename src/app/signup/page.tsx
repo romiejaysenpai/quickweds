@@ -7,8 +7,7 @@ import Link from 'next/link';
 import { Heart, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPublicRedirectUrl } from '@/lib/site-url';
-import { getClientAccountProfileForIntent, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
-import { isKnownAdminEmail } from '@/lib/admin';
+import { getClientAccountProfileForIntent, getClientAdminStatus, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
 
 export default function SignUpPage() {
     const [email, setEmail] = useState('');
@@ -24,7 +23,7 @@ export default function SignUpPage() {
     };
 
     const resolvePostAuthPath = async (token: string, nextPath: string, userEmail?: string | null) => {
-        if (isKnownAdminEmail(userEmail)) {
+        if (await getClientAdminStatus(token)) {
             const safeNext = getSafeAppPath(nextPath, '/dashboard');
             return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
         }

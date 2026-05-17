@@ -6,7 +6,6 @@ import { Heart } from 'lucide-react';
 import DecorativeLayer from '@/components/DecorativeLayer';
 import { MonogramMark } from '@/components/MonogramMark';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
 import {
     HeroEnhancer,
     PremiumBackgroundLayer,
@@ -68,17 +67,14 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const { data, error } = await supabase
-                    .from('weddings')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
+                const response = await fetch(`/api/public/weddings/${encodeURIComponent(id)}`);
+                const result = await response.json().catch(() => ({}));
 
-                if (error) {
-                    console.error("Supabase error:", error);
+                if (!response.ok || !result.wedding) {
+                    console.error("Wedding load error:", result.error || response.statusText);
                     setWedding(null);
                 } else {
-                    setWedding(data);
+                    setWedding(result.wedding);
                 }
             } catch (err) {
                 console.error(err);

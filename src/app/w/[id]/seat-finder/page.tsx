@@ -79,7 +79,7 @@ export default function PublicSeatFinderPage() {
                 </button>
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary">QuickWeds Seat Finder</p>
                 <h1 className="mt-3 font-serif text-3xl font-bold leading-tight">Find Your Seat</h1>
-                <p className="mt-2 text-sm leading-6 text-text-secondary">Enter your guest code from email, or your exact email, phone, or name.</p>
+                <p className="mt-2 text-sm leading-6 text-text-secondary">Enter the guest code from your email. Some weddings may also allow exact email, phone, or name lookup.</p>
 
                 {token && finderUrl && (
                     <div className="mt-5 flex items-center gap-4 rounded-2xl border border-primary/15 bg-primary/5 p-4">
@@ -98,7 +98,7 @@ export default function PublicSeatFinderPage() {
                     <input
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Guest code, email, phone, or exact name"
+                        placeholder="Guest code"
                         className="min-h-[48px] flex-1 rounded-2xl border border-border bg-white px-4 text-sm font-bold outline-none focus:border-primary"
                     />
                     <button disabled={loading || !query.trim()} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-bold text-white disabled:opacity-50">

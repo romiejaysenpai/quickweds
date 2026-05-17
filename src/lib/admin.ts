@@ -1,8 +1,8 @@
+import 'server-only';
+
 const KNOWN_ADMIN_EMAILS = [
     process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    'romiejaybacasmas@gmail.com',
-    'romiejaysenpai@gmail.com',
+    ...(process.env.ADMIN_EMAILS || '').split(','),
 ]
     .filter(Boolean)
     .map((email) => email!.trim().toLowerCase());
@@ -13,5 +13,5 @@ export function isKnownAdminEmail(email?: string | null) {
 }
 
 export function getPrimaryAdminEmail() {
-    return process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'romiejaybacasmas@gmail.com';
+    return KNOWN_ADMIN_EMAILS[0] || '';
 }

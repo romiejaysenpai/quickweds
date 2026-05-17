@@ -1,13 +1,21 @@
 import Stripe from 'stripe';
 
-// Initialize Stripe with strict checking
-// We use a fallback to prevent build-time errors if env vars aren't present
-// The API routes will perform their own checks before using the client
-const stripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder';
+let stripeClient: Stripe | null = null;
 
-export const stripe = new Stripe(stripeKey, {
-    apiVersion: '2025-02-24.acacia',
-});
+export function getStripe() {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) {
+        throw new Error('STRIPE_SECRET_KEY is missing');
+    }
+
+    if (!stripeClient) {
+        stripeClient = new Stripe(stripeKey, {
+            apiVersion: '2025-02-24.acacia',
+        });
+    }
+
+    return stripeClient;
+}
 
 const parsePrice = (value: string | undefined, fallback: number) => {
     const parsed = Number(value);

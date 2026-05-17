@@ -1,9 +1,10 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
-import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getSeatFinderErrorPayload, getSeatFinderPartySize, isSeatFinderSchemaError } from '@/lib/seat-finder';
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { getWeddingAccess } from '@/lib/wedding-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,19 +13,17 @@ async function getAuthorizedWedding(req: NextRequest, weddingId: string) {
     if (!user) return { response: NextResponse.json({ error }, { status: 401 }) };
 
     const db = getSupabaseAdminClient() as any;
-    const { data: wedding, error: weddingError } = await db
-        .from('weddings')
-        .select('id, user_id, bride_name, groom_name')
-        .eq('id', weddingId)
-        .maybeSingle();
+    const access = await getWeddingAccess(db, user, weddingId, {
+        select: 'id, user_id, bride_name, groom_name',
+        collaboratorRoles: ['partner', 'coordinator'],
+    });
 
-    if (weddingError) throw weddingError;
-    if (!wedding) return { response: NextResponse.json({ error: 'Wedding not found.' }, { status: 404 }) };
-    if (wedding.user_id !== user.id && !isKnownAdminEmail(user.email)) {
+    if (!access.wedding) return { response: NextResponse.json({ error: 'Wedding not found.' }, { status: 404 }) };
+    if (!access.canManage) {
         return { response: NextResponse.json({ error: 'You do not have permission to check in guests.' }, { status: 403 }) };
     }
 
-    return { db, wedding, user };
+    return { db, wedding: access.wedding, user };
 }
 
 function normalize(value: unknown) {
@@ -63,8 +62,12 @@ async function resolveGuest(db: any, weddingId: string, body: Record<string, any
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
-    const weddingId = normalize(searchParams.get('weddingId'));
+    const weddingId = sanitizeWeddingId(normalize(searchParams.get('weddingId')));
     if (!weddingId) return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
+
+    const rateLimit = createRateLimitMiddleware('SEAT_LOOKUP');
+    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}:check-in-list`);
+    if (limited.limited) return limited.response;
 
     try {
         const context = await getAuthorizedWedding(req, weddingId);
@@ -85,7 +88,7 @@ export async function GET(req: NextRequest) {
                 ...guest,
                 partySize: getSeatFinderPartySize(guest),
             })),
-        });
+        }, { headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
     } catch (err) {
         const payload = getSeatFinderErrorPayload(err, 'Unable to load check-in list.');
         console.error('Unable to load check-in list:', payload.details || payload.error);
@@ -95,8 +98,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
-    const weddingId = normalize(body.weddingId);
+    const weddingId = sanitizeWeddingId(normalize(body.weddingId));
     if (!weddingId) return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
+
+    const rateLimit = createRateLimitMiddleware('SEAT_MUTATION');
+    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}:check-in`);
+    if (limited.limited) return limited.response;
 
     try {
         const context = await getAuthorizedWedding(req, weddingId);
@@ -129,7 +136,7 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        return NextResponse.json({ success: true, guest: updated });
+        return NextResponse.json({ success: true, guest: updated }, { headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
     } catch (err) {
         const payload = getSeatFinderErrorPayload(err, 'Unable to update guest check-in.');
         console.error('Unable to update guest check-in:', payload.details || payload.error);

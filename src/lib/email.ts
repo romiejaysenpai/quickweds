@@ -1,9 +1,16 @@
 import { Resend } from 'resend';
 import { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtml, getCollaboratorInviteHtml } from './email-templates';
 
-const resendApiKey = process.env.RESEND_API_KEY || '';
-const resend = resendApiKey ? new Resend(resendApiKey) : null;
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'QuickWeds <noreply@rsvp.quickweds.site>';
+
+let resendClient: Resend | null = null;
+
+function getResendClient() {
+    const resendApiKey = process.env.RESEND_API_KEY || '';
+    if (!resendApiKey) return null;
+    if (!resendClient) resendClient = new Resend(resendApiKey);
+    return resendClient;
+}
 
 interface SendEmailParams {
     to: string | string[];
@@ -16,15 +23,23 @@ interface SendEmailParams {
 }
 
 export async function sendEmail({ to, subject, html, template }: SendEmailParams) {
+    const resend = getResendClient();
     if (!resend) {
         console.error('Email configuration missing. Set RESEND_API_KEY before sending.');
         return { success: false, error: 'Email configuration missing' };
     }
 
     const recipientList = Array.isArray(to) ? to : [to];
+    const validRecipients = recipientList
+        .map((recipient) => String(recipient || '').trim())
+        .filter((recipient) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient));
+
+    if (validRecipients.length === 0) {
+        return { success: false, error: 'No valid email recipients provided' };
+    }
 
     try {
-        console.log(`Attempting to send email via Resend to: ${recipientList.join(', ')}`);
+        console.log(`Attempting to send email via Resend to ${validRecipients.length} recipient(s).`);
         console.log(`Email Subject: "${subject}" | From: "${FROM_EMAIL}"`);
 
         if (template?.id) {
@@ -37,7 +52,7 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
 
         const { data, error } = await resend.emails.send({
             from: FROM_EMAIL,
-            to: recipientList,
+            to: validRecipients,
             subject,
             html,
         });

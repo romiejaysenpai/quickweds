@@ -4,7 +4,6 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { User } from '@supabase/supabase-js';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { isKnownAdminEmail } from '@/lib/admin';
 import { clearLocalSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
 
 interface AuthContextType {
@@ -77,13 +76,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (response.ok) {
                 const data = await response.json();
-                setIsAdmin(Boolean(data.isAdmin) || isKnownAdminEmail(user.email));
+                setIsAdmin(Boolean(data.isAdmin));
             } else {
-                setIsAdmin(isKnownAdminEmail(user.email));
+                setIsAdmin(false);
             }
         } catch (error) {
             console.error('Error checking admin status:', error);
-            setIsAdmin(isKnownAdminEmail(user.email));
+            setIsAdmin(false);
         } finally {
             setAdminChecked(true);
         }

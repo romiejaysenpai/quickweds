@@ -3,14 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminDebugPage() {
     const { user, isAdmin, loading } = useAuth();
     const router = useRouter();
     const [apiResult, setApiResult] = useState<any>(null);
-    const envAdmin = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'not set';
 
     useEffect(() => {
+        if (process.env.NODE_ENV === 'production') {
+            router.replace('/dashboard');
+            return;
+        }
         if (loading) return;
         if (!user) {
             router.replace('/login?next=/debug/admin-test');
@@ -20,8 +24,12 @@ export default function AdminDebugPage() {
             router.replace('/dashboard');
             return;
         }
-        // Fetch the admin check API directly
-        fetch('/api/auth/check-admin')
+        supabase.auth.getSession()
+            .then(({ data }) => fetch('/api/auth/check-admin', {
+                headers: data.session?.access_token
+                    ? { Authorization: `Bearer ${data.session.access_token}` }
+                    : {},
+            }))
             .then(res => res.json())
             .then(setApiResult)
             .catch(err => setApiResult({ error: err.message }));
@@ -58,17 +66,9 @@ export default function AdminDebugPage() {
                         )}
                     </div>
 
-                    <div className="p-4 bg-neutral rounded-xl">
-                        <h2 className="font-bold mb-2">Public Env Vars</h2>
-                        <p><strong>NEXT_PUBLIC_ADMIN_EMAIL:</strong> {envAdmin}</p>
-                        <p className="text-xs text-text-secondary mt-2">
-                            Note: ADMIN_EMAIL (server-only) is not visible here for security.
-                        </p>
-                    </div>
-
                     <div className="p-4 bg-accent/10 rounded-xl border border-accent">
                         <h2 className="font-bold mb-2 text-accent">Expected</h2>
-                        <p>If you are logged in as <strong>romiejaybacasmas@gmail.com</strong>, the API should return:</p>
+                        <p>If your email is configured in server-only admin settings, the API should return:</p>
                         <code className="block mt-2 p-2 bg-white rounded">{`{ "isAdmin": true }`}</code>
                     </div>
                 </div>

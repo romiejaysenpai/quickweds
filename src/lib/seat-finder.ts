@@ -42,8 +42,11 @@ export function makeGuestCode(name?: string | null) {
         .slice(0, 3)
         .toUpperCase()
         .padEnd(3, 'X');
-    const digits = randomBytes(2).readUInt16BE(0).toString().slice(0, 4).padStart(4, '0');
-    return `${prefix}-${digits}`;
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const randomPart = Array.from(randomBytes(6))
+        .map((byte) => alphabet[byte % alphabet.length])
+        .join('');
+    return `${prefix}-${randomPart}`;
 }
 
 export function isAttendingGuest(guest: Pick<SeatFinderRsvp, 'rsvp_status' | 'attendance'>) {

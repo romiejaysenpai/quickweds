@@ -120,7 +120,10 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
     };
 
     const generateCode = async () => {
-        const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const bytes = new Uint8Array(8);
+        crypto.getRandomValues(bytes);
+        const newCode = Array.from(bytes).map((byte) => alphabet[byte % alphabet.length]).join('');
         try {
             const { data, error } = await supabase.from('photo_sharing_codes').insert({
                 wedding_id: weddingId,
