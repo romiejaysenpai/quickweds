@@ -12,6 +12,7 @@ import {
     hasPlannerProAccess,
     logPlannerEmailEvent,
 } from '@/lib/planner-limits';
+import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 
 export async function POST(req: NextRequest) {
     // Rate limit reminder requests by IP
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
 
         const weddingUrl = wedding.custom_domain
             ? `https://${sanitizeInput(wedding.custom_domain, { maxLength: 100 })}`
-            : `${process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app'}/w/${weddingId}`;
+            : getWeddingPublicUrl(process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app', wedding);
 
         const { data: ownerProfile } = await db
             .from('user_app_profiles')

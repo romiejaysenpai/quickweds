@@ -20,6 +20,7 @@ import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
+import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 import {
     GUEST_GROUP_OPTIONS,
     getGuestGroupLabel,
@@ -599,9 +600,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     };
 
     // Copy & Share
-    const domain = wedding?.custom_domain ? `https://${wedding.custom_domain}` : (process.env.NEXT_PUBLIC_APP_URL || 'https://quickweds.site');
-    const url = wedding?.custom_domain ? domain : (wedding ? `${domain}/w/${wedding.id}` : '');
-    const qrTrackingUrl = `${url}${url.includes('?') ? '&' : '?'}src=qr`;
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://quickweds.site';
+    const url = wedding ? getWeddingPublicUrl(appBaseUrl, wedding) : '';
+    const qrTrackingUrl = url ? `${url}${url.includes('?') ? '&' : '?'}src=qr` : '';
     const canManageWorkspace = accessRole === 'owner' || accessRole === 'partner';
     const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
 

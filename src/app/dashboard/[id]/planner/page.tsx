@@ -207,8 +207,8 @@ function VendorPaymentStatusSelect({
                 value={normalized}
                 onChange={(e) => onChange(e.target.value as VendorPaymentStatus)}
                 aria-label="Vendor payment status"
-                className={`w-full appearance-none rounded-xl border pr-9 font-sans font-bold uppercase tracking-wider outline-none transition-all duration-200 hover:-translate-y-px hover:shadow-md focus:ring-4 ${
-                    compact ? 'min-h-[36px] px-3 py-1.5 text-[8px] sm:text-[9px]' : 'min-h-[40px] px-3.5 py-2 text-[9px] sm:text-[11px]'
+                className={`w-full appearance-none rounded-xl border font-sans font-black uppercase leading-none outline-none transition-all duration-200 hover:-translate-y-px hover:shadow-md focus:ring-4 [&>option]:bg-white [&>option]:text-[12px] [&>option]:font-semibold [&>option]:normal-case [&>option]:text-foreground ${
+                    compact ? 'min-h-[32px] pl-3 pr-8 py-1 text-[8px] tracking-[0.1em] sm:text-[9px]' : 'min-h-[40px] pl-3.5 pr-9 py-2 text-[9px] tracking-[0.11em] sm:text-[10px]'
                 } ${getVendorPaymentStatusClasses(normalized)}`}
             >
                 {VENDOR_PAYMENT_STATUS_OPTIONS.map((option) => (

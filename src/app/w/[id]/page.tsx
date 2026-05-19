@@ -63,22 +63,33 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
     const { id } = use(params);
     const [wedding, setWedding] = useState<Wedding | null>(null);
     const [loading, setLoading] = useState(true);
+    const [notFoundState, setNotFoundState] = useState(false);
+    const [loadError, setLoadError] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
+            setLoading(true);
+            setNotFoundState(false);
+            setLoadError('');
             try {
                 const response = await fetch(`/api/public/weddings/${encodeURIComponent(id)}`);
                 const result = await response.json().catch(() => ({}));
 
-                if (!response.ok || !result.wedding) {
+                if (response.status === 404) {
                     console.error("Wedding load error:", result.error || response.statusText);
                     setWedding(null);
+                    setNotFoundState(true);
+                } else if (!response.ok || !result.wedding) {
+                    console.error("Wedding load error:", result.error || response.statusText);
+                    setWedding(null);
+                    setLoadError('Unable to load this wedding page right now. Please refresh in a moment.');
                 } else {
                     setWedding(result.wedding);
                 }
             } catch (err) {
                 console.error(err);
                 setWedding(null);
+                setLoadError('Unable to load this wedding page right now. Please refresh in a moment.');
             } finally {
                 setLoading(false);
             }
@@ -87,7 +98,7 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
     }, [id]);
 
     useEffect(() => {
-        if (!id || typeof window === 'undefined') return;
+        if (!id || !wedding?.id || typeof window === 'undefined') return;
 
         const visitKey = `quickweds_visit_${id}`;
         if (window.sessionStorage.getItem(visitKey)) return;
@@ -98,11 +109,11 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
         const source = params.get('src') || 'direct';
         const eventType = source === 'qr' ? 'qr_scan' : 'visit';
 
-        void trackWeddingEvent(id, 'visit', { source });
+        void trackWeddingEvent(wedding.id, 'visit', { source, publicIdentifier: id });
         if (eventType === 'qr_scan') {
-            void trackWeddingEvent(id, 'qr_scan', { source });
+            void trackWeddingEvent(wedding.id, 'qr_scan', { source, publicIdentifier: id });
         }
-    }, [id]);
+    }, [id, wedding?.id]);
 
     if (loading) return (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#120f10]">
@@ -121,8 +132,31 @@ export default function WeddingPage({ params }: { params: Promise<{ id: string }
         </div>
     );
 
-    if (!wedding) {
+    if (notFoundState) {
         notFound();
+    }
+
+    if (!wedding) {
+        return (
+            <div className="min-h-screen bg-[#FFF8F4] px-6 py-24 text-center text-foreground">
+                <div className="mx-auto max-w-xl rounded-[2rem] border border-primary/10 bg-white/80 p-8 shadow-xl shadow-primary/10">
+                    <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                        <Heart className="h-7 w-7 text-primary" />
+                    </div>
+                    <h1 className="font-serif text-3xl font-bold">Wedding page temporarily unavailable</h1>
+                    <p className="mt-4 text-sm leading-6 text-text-secondary">
+                        {loadError || 'Unable to load this wedding page right now. Please refresh in a moment.'}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="mt-8 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20"
+                    >
+                        Refresh Page
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     const isExpired = new Date(wedding.rsvp_deadline) < new Date();

@@ -1,5 +1,6 @@
 export interface Wedding {
     id: string;
+    public_slug?: string;
     user_id: string;
     bride_name: string;
     groom_name: string;

@@ -3,6 +3,7 @@ import 'server-only';
 import { sendEmail } from '@/lib/email';
 import { getGuestConfirmationHtml, getCoupleNotificationHtml } from '@/lib/email-templates';
 import { getPrimaryAdminEmail } from '@/lib/admin';
+import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 
 type RsvpNotificationInput = {
     weddingId: string;
@@ -64,7 +65,7 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
     const rootDomain = getRootDomain();
     const publicWeddingUrl = wedding.custom_domain
         ? `https://${wedding.custom_domain}`
-        : `https://${rootDomain}/w/${weddingId}`;
+        : getWeddingPublicUrl(`https://${rootDomain}`, { ...wedding, id: weddingId });
     const dashboardUrl = `https://${rootDomain}/dashboard/${weddingId}`;
 
     if (wedding.user_id) {

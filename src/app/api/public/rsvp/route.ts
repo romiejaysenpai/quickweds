@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { rsvpSubmissionSchema } from '@/lib/validations';
 import { createRateLimitMiddleware, getClientIP, sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limiter';
 import { sendRsvpNotifications } from '@/lib/rsvp-notifications';
+import { isMissingPublicSlugColumnError } from '@/lib/wedding-slugs';
 
 function getPrimaryPlusOneName(raw: string) {
     const [firstName] = raw
@@ -41,12 +42,24 @@ export async function POST(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const { data: wedding, error: weddingError } = await db
+        const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline';
+        let weddingResult = await db
             .from('weddings')
-            .select('id, user_id, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline')
+            .select(weddingSelect)
             .eq('id', weddingId)
             .is('deleted_at', null)
             .maybeSingle();
+
+        if (weddingResult.error && isMissingPublicSlugColumnError(weddingResult.error)) {
+            weddingResult = await db
+                .from('weddings')
+                .select(weddingSelect.replace('public_slug, ', ''))
+                .eq('id', weddingId)
+                .is('deleted_at', null)
+                .maybeSingle();
+        }
+
+        const { data: wedding, error: weddingError } = weddingResult;
 
         if (weddingError) throw weddingError;
         if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });

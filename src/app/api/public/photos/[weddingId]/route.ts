@@ -1,22 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
+import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ weddingId: string }> }) {
     const { weddingId: rawWeddingId } = await params;
-    const weddingId = sanitizeWeddingId(rawWeddingId);
-    if (!weddingId) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
 
     const rateLimit = createRateLimitMiddleware('WEDDING_READ');
-    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}:photos`);
+    const limited = rateLimit.check(`${getClientIP(req)}:${rawWeddingId}:photos`);
     if (limited.limited) return limited.response;
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const [weddingRes, photosRes] = await Promise.all([
-            db.from('weddings').select('id, bride_name, groom_name').eq('id', weddingId).is('deleted_at', null).maybeSingle(),
+        const weddingRes = await resolvePublicWeddingByIdentifier(db, rawWeddingId, 'id, bride_name, groom_name');
+
+        if (weddingRes.error) throw weddingRes.error;
+        if (!weddingRes.identifier || !weddingRes.wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
+
+        const weddingId = weddingRes.wedding.id;
+        const [photosRes] = await Promise.all([
             db.from('wedding_photos')
                 .select('id, cloudinary_url, caption, uploader_name')
                 .eq('wedding_id', weddingId)
@@ -24,12 +28,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ wedd
                 .order('created_at', { ascending: false }),
         ]);
 
-        if (weddingRes.error) throw weddingRes.error;
         if (photosRes.error) throw photosRes.error;
-        if (!weddingRes.data) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
 
         return NextResponse.json(
-            { wedding: weddingRes.data, photos: photosRes.data || [] },
+            { wedding: weddingRes.wedding, photos: photosRes.data || [] },
             { headers: { ...limited.headers, 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' } }
         );
     } catch (error) {

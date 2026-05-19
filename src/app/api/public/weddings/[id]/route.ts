@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
+import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 
 export const dynamic = 'force-dynamic';
 
-const PUBLIC_WEDDING_COLUMNS = [
+const PUBLIC_WEDDING_FIELDS = [
     'id',
+    'public_slug',
     'bride_name',
     'groom_name',
     'wedding_date',
@@ -51,33 +53,47 @@ const PUBLIC_WEDDING_COLUMNS = [
     'voice_greeting_url',
     'created_at',
     'updated_at',
-].join(', ');
+] as const;
+
+function toPublicWedding(record: Record<string, unknown>) {
+    return PUBLIC_WEDDING_FIELDS.reduce<Record<string, unknown>>((publicWedding, field) => {
+        if (field in record) {
+            publicWedding[field] = record[field];
+        }
+        return publicWedding;
+    }, {});
+}
+
+function getSupabaseErrorMessage(error: unknown) {
+    if (!error) return '';
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'object') {
+        const value = error as Record<string, unknown>;
+        return [value.message, value.details, value.hint, value.code]
+            .filter(Boolean)
+            .map((item) => String(item))
+            .join(' ');
+    }
+    return String(error);
+}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const weddingId = sanitizeWeddingId(id);
-    if (!weddingId) {
-        return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
-    }
+    const rawIdentifier = String(id || '');
 
     const rateLimit = createRateLimitMiddleware('WEDDING_PAGE_VIEW');
-    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}`);
+    const limited = rateLimit.check(`${getClientIP(req)}:${rawIdentifier}`);
     if (limited.limited) return limited.response;
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const { data, error } = await db
-            .from('weddings')
-            .select(PUBLIC_WEDDING_COLUMNS)
-            .eq('id', weddingId)
-            .is('deleted_at', null)
-            .maybeSingle();
+        const { wedding, error, identifier } = await resolvePublicWeddingByIdentifier(db, rawIdentifier, '*');
 
         if (error) throw error;
-        if (!data) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
+        if (!identifier || !wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
 
         return NextResponse.json(
-            { wedding: data },
+            { wedding: toPublicWedding(wedding) },
             {
                 headers: {
                     ...limited.headers,
@@ -86,7 +102,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             }
         );
     } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unable to load wedding.';
+        const message = getSupabaseErrorMessage(error) || 'Unable to load wedding.';
         console.error('Public wedding load failed:', message);
         return NextResponse.json({ error: 'Unable to load wedding.' }, { status: 500 });
     }

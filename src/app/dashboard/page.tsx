@@ -12,6 +12,7 @@ import { acceptWeddingInvite, listSharedWeddings } from '@/lib/wedding-features'
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro, type AccountProfile } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
+import { getWeddingPublicPath } from '@/lib/wedding-slugs';
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
 
@@ -158,17 +159,17 @@ function DashboardWelcomeHero({
     );
 }
 
-function CopyLinkButton({ id }: { id: string }) {
+function CopyLinkButton({ wedding }: { wedding: { id: string; public_slug?: string | null } }) {
     const [copied, setCopied] = useState(false);
     const handleCopy = useCallback(() => {
-        const url = `${window.location.origin}/w/${id}`;
+        const url = `${window.location.origin}${getWeddingPublicPath(wedding)}`;
         copyText(url).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2500);
         }).catch(() => {
             // no-op: keep button responsive even on restricted contexts
         });
-    }, [id]);
+    }, [wedding]);
 
     return (
         <button
@@ -736,14 +737,14 @@ export default function DashboardRedirect() {
                                                 Manage
                                             </Link>
                                             <Link
-                                                href={`/w/${wedding.id}`}
+                                                href={getWeddingPublicPath(wedding)}
                                                 target="_blank"
                                                 title="View live page"
                                                 className="h-10 sm:h-11 w-10 sm:w-11 rounded-xl border border-border flex items-center justify-center text-text-secondary hover:bg-foreground hover:text-white hover:border-foreground transition-all flex-shrink-0"
                                             >
                                                 <ExternalLink className="w-4 h-4" />
                                             </Link>
-                                            <CopyLinkButton id={wedding.id} />
+                                            <CopyLinkButton wedding={wedding} />
                                             <DeleteButton
                                                 weddingId={wedding.id}
                                                 coupleName={`${wedding.bride_name} & ${wedding.groom_name}`}

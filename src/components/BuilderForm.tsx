@@ -25,6 +25,11 @@ import {
     saveTemplatePreset,
     type WeddingTemplatePreset,
 } from '@/lib/wedding-features';
+import {
+    createWeddingSlugBase,
+    isMissingPublicSlugColumnError,
+    sanitizeWeddingSlug,
+} from '@/lib/wedding-slugs';
 
 // Helper component for collapsible sections
 const Collapsible = ({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) => (
@@ -264,6 +269,20 @@ function isMissingFaqColumnError(error: unknown) {
     return text.includes('faq_items') && (text.includes('column') || text.includes('schema cache') || text.includes('pgrst204'));
 }
 
+function isMissingOptionalWeddingColumnError(error: unknown, column: string) {
+    if (!error || typeof error !== 'object') return false;
+    const record = error as Record<string, unknown>;
+    const text = `${record.code || ''} ${record.message || ''} ${record.details || ''} ${record.hint || ''}`.toLowerCase();
+    return text.includes(column.toLowerCase()) && (
+        text.includes('column') ||
+        text.includes('schema cache') ||
+        text.includes('could not find') ||
+        text.includes('does not exist') ||
+        text.includes('pgrst204') ||
+        text.includes('42703')
+    );
+}
+
 export default function BuilderForm() {
     const router = useRouter();
     const { user, isAdmin, loading: authLoading } = useAuth();
@@ -273,6 +292,7 @@ export default function BuilderForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [weddingOwnerId, setWeddingOwnerId] = useState<string | null>(null);
+    const [existingPublicSlug, setExistingPublicSlug] = useState<string>('');
     
     // Mobile UI state
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -432,6 +452,7 @@ export default function BuilderForm() {
                     // Builder features are included on the free plan. Paid status now unlocks Planner Pro.
                     setIsPremium(true);
                     setWeddingOwnerId(data.user_id || user.id);
+                    setExistingPublicSlug(typeof data.public_slug === 'string' ? data.public_slug : '');
 
                     setFormData({
                         brideName: data.bride_name || '',
@@ -537,6 +558,38 @@ export default function BuilderForm() {
         const { name, value } = e.target;
         setFormData((prev: any) => ({ ...prev, [name]: value }));
     };
+
+    const resolvePublicSlug = useCallback(async (weddingId: string) => {
+        const currentSlug = sanitizeWeddingSlug(existingPublicSlug);
+        if (currentSlug) return currentSlug;
+
+        const base = createWeddingSlugBase(formData.brideName, formData.groomName);
+        const candidates = [
+            base,
+            ...Array.from({ length: 7 }, (_, index) => `${base}-${index + 2}`),
+            `${base}-${weddingId.slice(0, 4).toLowerCase()}`,
+        ];
+
+        for (const candidate of candidates) {
+            const { data, error } = await supabase
+                .from('weddings')
+                .select('id')
+                .eq('public_slug', candidate)
+                .maybeSingle();
+
+            if (error) {
+                if (isMissingPublicSlugColumnError(error)) return '';
+                console.warn('Public slug availability check skipped:', error);
+                return candidate;
+            }
+
+            if (!data || data.id === weddingId) {
+                return candidate;
+            }
+        }
+
+        return `${base}-${weddingId.slice(0, 8).toLowerCase()}`;
+    }, [existingPublicSlug, formData.brideName, formData.groomName]);
 
     const applyPreset = (preset: Record<string, any>) => {
         setFormData((prev: any) => ({
@@ -770,34 +823,49 @@ export default function BuilderForm() {
             
             if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
 
-            // Using UPSERT (Update + Insert) for maximum reliability
-            // This prevents "Resource already exists" errors when re-editing and RLS issues on inserts
-            const { error: submitError } = await supabase
-                .from('weddings')
-                .upsert({ 
-                    ...payload, 
-                    id: weddingId, 
-                    user_id: editId && weddingOwnerId ? weddingOwnerId : user.id 
-                }, { onConflict: 'id' });
+            const publicSlug = await resolvePublicSlug(weddingId);
+            const baseSubmitPayload: any = {
+                ...payload,
+                ...(publicSlug ? { public_slug: publicSlug } : {}),
+                id: weddingId,
+                user_id: editId && weddingOwnerId ? weddingOwnerId : user.id,
+            };
 
-            if (submitError) {
-                if (isMissingFaqColumnError(submitError)) {
-                    const fallbackPayload = { ...payload };
-                    delete fallbackPayload.faq_items;
+            let submitPayload = { ...baseSubmitPayload };
+            let submitError: unknown = null;
+            for (let attempt = 0; attempt < 3; attempt += 1) {
+                const { error } = await supabase
+                    .from('weddings')
+                    .upsert(submitPayload, { onConflict: 'id' });
 
-                    const { error: fallbackError } = await supabase
-                        .from('weddings')
-                        .upsert({
-                            ...fallbackPayload,
-                            id: weddingId,
-                            user_id: editId && weddingOwnerId ? weddingOwnerId : user.id,
-                        }, { onConflict: 'id' });
-
-                    if (fallbackError) throw fallbackError;
-                } else {
-                    throw submitError;
+                if (!error) {
+                    submitError = null;
+                    break;
                 }
+
+                submitError = error;
+                const fallbackPayload = { ...submitPayload };
+                let canRetry = false;
+
+                if (isMissingFaqColumnError(error) || isMissingOptionalWeddingColumnError(error, 'faq_items')) {
+                    delete fallbackPayload.faq_items;
+                    canRetry = true;
+                }
+
+                if (isMissingPublicSlugColumnError(error) || isMissingOptionalWeddingColumnError(error, 'public_slug')) {
+                    delete fallbackPayload.public_slug;
+                    canRetry = true;
+                }
+
+                if (!canRetry || JSON.stringify(fallbackPayload) === JSON.stringify(submitPayload)) {
+                    break;
+                }
+
+                submitPayload = fallbackPayload;
             }
+
+            if (submitError) throw submitError;
+            if (submitPayload.public_slug) setExistingPublicSlug(submitPayload.public_slug);
 
             // Success
             router.push(`/dashboard/${weddingId}?created=true`);

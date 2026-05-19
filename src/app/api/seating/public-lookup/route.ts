@@ -2,7 +2,8 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getSeatFinderErrorPayload, getSeatFinderPartySize, isSeatFinderSchemaError } from '@/lib/seat-finder';
-import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
+import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,31 +56,32 @@ async function buildSeatResponse(db: any, guest: any) {
 
 export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
-    const weddingId = sanitizeWeddingId(normalize(body.weddingId));
+    const weddingIdentifier = normalize(body.weddingId);
     const token = normalize(body.token);
     const query = normalize(body.query);
 
-    if (!weddingId || !token || !query) {
+    if (!weddingIdentifier || !token || !query) {
         return NextResponse.json({ error: 'Wedding, token, and guest lookup are required.' }, { status: 400 });
     }
 
     const rateLimit = createRateLimitMiddleware('SEAT_LOOKUP');
-    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}`);
+    const limited = rateLimit.check(`${getClientIP(req)}:${weddingIdentifier}`);
     if (limited.limited) return limited.response;
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const { data: wedding, error: weddingError } = await db
-            .from('weddings')
-            .select('id, bride_name, groom_name, wedding_date, public_seat_finder_token, seat_finder_enabled, seat_finder_show_map, seat_finder_require_code')
-            .eq('id', weddingId)
-            .maybeSingle();
+        const { wedding, error: weddingError } = await resolvePublicWeddingByIdentifier(
+            db,
+            weddingIdentifier,
+            'id, bride_name, groom_name, wedding_date, public_seat_finder_token, seat_finder_enabled, seat_finder_show_map, seat_finder_require_code'
+        );
 
         if (weddingError) throw weddingError;
         if (!wedding || wedding.public_seat_finder_token !== token || wedding.seat_finder_enabled === false) {
             return NextResponse.json({ error: 'Seat finder is not available.' }, { status: 404 });
         }
 
+        const weddingId = wedding.id;
         const selectColumns = 'id, wedding_id, guest_name, guest_email, phone, num_guests, table_assignment, plus_one_allowed, plus_one_name, plus_one_rsvp_status, guest_code, checked_in_at';
         const exactCode = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_code', query.toUpperCase()).limit(2);
         if (exactCode.error) throw exactCode.error;

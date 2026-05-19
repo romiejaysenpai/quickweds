@@ -1,7 +1,8 @@
 import { randomBytes } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeInput } from '@/lib/rate-limiter';
+import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,17 +21,17 @@ export async function POST(req: NextRequest) {
 
     try {
         const form = await req.formData();
-        const weddingId = sanitizeWeddingId(String(form.get('weddingId') || ''));
+        const weddingIdentifier = String(form.get('weddingId') || '');
         const code = sanitizeInput(String(form.get('code') || ''), { maxLength: 32 }).toUpperCase();
         const uploaderName = sanitizeInput(String(form.get('uploaderName') || 'Guest'), { maxLength: 120 }) || 'Guest';
         const caption = sanitizeInput(String(form.get('caption') || ''), { maxLength: 500, allowNewlines: true });
         const file = form.get('file');
 
-        if (!weddingId || !code || !(file instanceof File)) {
+        if (!weddingIdentifier || !code || !(file instanceof File)) {
             return NextResponse.json({ error: 'Wedding, sharing code, and photo are required.' }, { status: 400 });
         }
 
-        const limited = rateLimit.check(`${clientIP}:${weddingId}`);
+        const limited = rateLimit.check(`${clientIP}:${weddingIdentifier}`);
         if (limited.limited) return limited.response;
 
         if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
@@ -42,15 +43,11 @@ export async function POST(req: NextRequest) {
         }
 
         const db = getSupabaseAdminClient() as any;
-        const { data: wedding, error: weddingError } = await db
-            .from('weddings')
-            .select('id')
-            .eq('id', weddingId)
-            .is('deleted_at', null)
-            .maybeSingle();
+        const { wedding, error: weddingError } = await resolvePublicWeddingByIdentifier(db, weddingIdentifier, 'id');
 
         if (weddingError) throw weddingError;
         if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
+        const weddingId = wedding.id;
 
         const { data: sharingCode, error: codeError } = await db
             .from('photo_sharing_codes')
