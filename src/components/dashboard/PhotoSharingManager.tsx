@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Camera, Plus, Trash2, Check, X, Loader2, ExternalLink,
-    Image as ImageIcon, Shield, Key, RefreshCw, Download, 
+    Plus, Trash2, Check, X, Loader2, ExternalLink,
+    ImageIcon, Key, RefreshCw, Download, 
     Maximize2, CheckCircle2
 } from 'lucide-react';
 
@@ -23,6 +23,8 @@ interface SharingCode {
     code: string;
     is_active: boolean;
     expires_at: string;
+    max_uploads?: number | null;
+    current_uploads?: number | null;
 }
 
 export default function PhotoSharingManager({ weddingId }: { weddingId: string }) {
@@ -42,7 +44,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
         try {
             const [photosRes, codesRes] = await Promise.all([
                 supabase.from('wedding_photos').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
-                supabase.from('photo_sharing_codes').select('*').eq('wedding_id', weddingId)
+                supabase.from('photo_sharing_codes').select('id, code, is_active, expires_at, max_uploads, current_uploads').eq('wedding_id', weddingId)
             ]);
 
             if (photosRes.data) setPhotos(photosRes.data);
@@ -92,23 +94,6 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
         }
     };
 
-    const downloadPhoto = async (url: string, filename: string) => {
-        try {
-            const response = await fetch(url);
-            const blob = await response.blob();
-            const blobUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(blobUrl);
-        } catch (err) {
-            alert("Failed to download photo");
-        }
-    };
-
     const toggleCode = async (codeId: string, current: boolean) => {
         try {
             const { error } = await supabase.from('photo_sharing_codes').update({ is_active: !current }).eq('id', codeId);
@@ -128,7 +113,8 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
             const { data, error } = await supabase.from('photo_sharing_codes').insert({
                 wedding_id: weddingId,
                 code: newCode,
-                is_active: true
+                is_active: true,
+                max_uploads: 3,
             }).select().single();
             
             if (error) throw error;
@@ -141,19 +127,29 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
     const deleteCode = async (codeId: string) => {
         if (!confirm("Are you sure? Guests using this code won't be able to upload anymore.")) return;
         try {
-            const { error } = await supabase.from('photo_sharing_codes').delete().eq('id', codeId);
-            if (error) throw error;
+            const { error } = await supabase
+                .from('photo_sharing_codes')
+                .delete()
+                .eq('id', codeId)
+                .eq('wedding_id', weddingId);
+            
+            if (error) {
+                console.error("Delete error:", error);
+                throw error;
+            }
             setCodes(codes.filter(c => c.id !== codeId));
+            alert("Code deleted successfully!");
         } catch (err) {
-            alert("Failed to delete code");
+            console.error("Failed to delete code:", err);
+            alert(`Failed to delete code: ${err instanceof Error ? err.message : 'Unknown error'}`);
         }
     };
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] soft-shadow border border-border">
-                <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-                <p className="text-text-secondary font-serif italic">Loading photo portal...</p>
+            <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-white/5 rounded-xl soft-shadow border border-border sm:rounded-2xl sm:py-16">
+                <Loader2 className="w-10 h-10 text-primary animate-spin mb-3 sm:w-12 sm:h-12" />
+                <p className="text-text-secondary font-serif text-xs italic sm:text-sm">Loading photo portal...</p>
             </div>
         );
     }
@@ -162,172 +158,191 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
     const approvedPhotos = photos.filter(p => p.is_approved);
 
     return (
-        <div className="space-y-5 sm:space-y-8">
-            {/* Header & Codes */}
-            <div className="rounded-2xl border border-border bg-white p-4 soft-shadow dark:bg-white/5 sm:rounded-[2rem] sm:p-8 md:p-10">
-                <div className="mb-6 flex flex-col items-start gap-5 sm:mb-10 md:flex-row md:items-center md:justify-between">
-                    <div className="min-w-0">
-                        <h2 className="font-serif text-2xl font-bold leading-tight text-foreground sm:text-3xl">Photo Sharing Portal</h2>
-                        <p className="mt-1 max-w-xl text-xs leading-5 text-text-secondary sm:text-sm">Manage guest uploads and sharing access. Approve photos to display them publicly.</p>
+        <div className="space-y-3 sm:space-y-4">
+            {/* Header & Metrics */}
+            <div className="rounded-xl border border-border bg-white p-3 soft-shadow dark:bg-white/5 sm:rounded-2xl sm:p-4">
+                <div className="mb-3 flex flex-col items-start gap-2 sm:mb-4 md:flex-row md:items-center md:justify-between">
+                    <div className="min-w-0 flex-1">
+                        <h2 className="font-serif text-xl font-bold text-foreground sm:text-2xl">Photo Portal</h2>
+                        <p className="mt-1 text-xs leading-5 text-text-secondary sm:text-sm">Manage uploads, monitor sharing codes, approve photos.</p>
                     </div>
-                    <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 md:w-auto">
+                    <div className="flex gap-2 w-full sm:w-auto">
                         <a 
                             href={`/w/${weddingId}/photos`} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl border border-border bg-neutral px-4 py-3 text-sm font-bold text-foreground transition-all hover:bg-neutral/80 dark:bg-neutral/40"
+                            className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-lg border border-border bg-neutral px-3 py-2 text-xs font-bold text-foreground transition-all hover:bg-neutral/80 dark:bg-neutral/40 flex-1 sm:flex-none whitespace-nowrap"
                         >
-                            <ExternalLink className="w-4 h-4" /> Guest Gallery
+                            <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" /> Gallery
                         </a>
                         <button 
                             onClick={generateCode}
-                            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white transition-all hover:shadow-lg"
+                            className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white transition-all hover:shadow-lg flex-1 sm:flex-none whitespace-nowrap"
                         >
-                            <Plus className="w-4 h-4 sm:w-5 sm:h-5" /> New Code
+                            <Plus className="w-3 h-3 sm:w-4 sm:h-4" /> New
                         </button>
                     </div>
                 </div>
 
-                {/* Access Codes List */}
-                <div className="space-y-4">
-                    <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-text-secondary mb-4 flex items-center gap-2">
-                        <Key className="w-4 h-4 opacity-70" /> 
-                        Active Access Codes
+                {/* Metrics Grid - 2x2 on mobile, 4 across on larger */}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div className="rounded-lg border border-border bg-neutral/40 p-2.5 sm:p-3">
+                        <p className="text-[7px] font-black uppercase tracking-widest text-text-secondary sm:text-[8px]">Total codes</p>
+                        <p className="mt-1 text-lg font-bold text-foreground sm:text-xl">{codes.length}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-neutral/40 p-2.5 sm:p-3">
+                        <p className="text-[7px] font-black uppercase tracking-widest text-text-secondary sm:text-[8px]">Active</p>
+                        <p className="mt-1 text-lg font-bold text-foreground sm:text-xl">{codes.filter((code) => code.is_active).length}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-neutral/40 p-2.5 sm:p-3">
+                        <p className="text-[7px] font-black uppercase tracking-widest text-text-secondary sm:text-[8px]">Pending</p>
+                        <p className="mt-1 text-lg font-bold text-foreground sm:text-xl">{pendingPhotos.length}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-neutral/40 p-2.5 sm:p-3">
+                        <p className="text-[7px] font-black uppercase tracking-widest text-text-secondary sm:text-[8px]">Uploads left</p>
+                        <p className="mt-1 text-lg font-bold text-foreground sm:text-xl">
+                            {codes.reduce((sum, code) => {
+                                const maxUploads = Number(code.max_uploads ?? 3);
+                                const currentUploads = Number(code.current_uploads ?? 0);
+                                return sum + Math.max(0, maxUploads - currentUploads);
+                            }, 0)}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Codes Grid */}
+            {codes.length > 0 && (
+                <div className="rounded-xl border border-border bg-white p-3 soft-shadow dark:bg-white/5 sm:rounded-2xl sm:p-4">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-text-secondary mb-2 flex items-center gap-1.5">
+                        <Key className="w-3 h-3 opacity-70 sm:w-4 sm:h-4" /> Codes ({codes.length})
                     </h3>
-                    {codes.length === 0 ? (
-                        <div className="p-8 border-2 border-dashed border-border rounded-2xl sm:rounded-3xl text-center bg-neutral/30 dark:bg-neutral/10">
-                            <Shield className="w-10 h-10 text-text-secondary opacity-30 mx-auto mb-3" />
-                            <p className="text-xs sm:text-sm text-text-secondary font-medium">No access codes generated yet.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                            {codes.map(code => (
-                                <div key={code.id} className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-border bg-white p-4 shadow-sm transition-colors hover:border-primary/30 dark:bg-white/5 sm:rounded-2xl">
-                                    <div className="flex min-w-0 items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${code.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                                        <span className="min-w-0 font-mono text-base font-bold tracking-wider text-foreground sm:text-lg">{code.code}</span>
+                    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2 lg:grid-cols-4 xl:grid-cols-5">
+                        {codes.map(code => {
+                            const maxUploads = Number(code.max_uploads ?? 3);
+                            const currentUploads = Number(code.current_uploads ?? 0);
+                            const remainingUploads = Math.max(0, maxUploads - currentUploads);
+                            const limitReached = remainingUploads === 0;
+                            return (
+                                <div key={code.id} className={`flex flex-col justify-between gap-2 rounded-lg border p-2 sm:p-2.5 shadow-sm transition-colors ${code.is_active ? 'border-border bg-white hover:border-primary/30 dark:bg-white/5' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+                                    <div className="flex items-center justify-between gap-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${code.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                                            <span className="font-mono text-xs font-bold text-foreground truncate sm:text-sm">{code.code}</span>
+                                        </div>
+                                        <span className={`rounded px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider whitespace-nowrap shrink-0 ${code.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'} sm:text-[8px]`}>
+                                            {code.is_active ? 'On' : 'Off'}
+                                        </span>
                                     </div>
-                                    <div className="flex shrink-0 items-center gap-1">
+                                    <div className="grid grid-cols-2 gap-1 text-[10px] sm:text-xs">
+                                        <div className="rounded border border-border bg-neutral/40 p-1.5">
+                                            <p className="text-[7px] uppercase tracking-widest text-text-secondary sm:text-[8px]">Used</p>
+                                            <p className="mt-0.5 font-bold text-foreground">{currentUploads}</p>
+                                        </div>
+                                        <div className="rounded border border-border bg-neutral/40 p-1.5">
+                                            <p className="text-[7px] uppercase tracking-widest text-text-secondary sm:text-[8px]">Left</p>
+                                            <p className={`mt-0.5 font-bold ${limitReached ? 'text-rose-600' : 'text-foreground'}`}>{remainingUploads}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-0.5">
                                         <button 
                                             onClick={() => toggleCode(code.id, code.is_active)}
-                                            className={`min-h-10 min-w-10 rounded-lg p-2 transition-colors sm:rounded-xl ${code.is_active ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10' : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/40'}`}
+                                            className={`h-6 w-6 rounded p-1 transition-colors flex items-center justify-center ${code.is_active ? 'text-emerald-600 hover:bg-emerald-500/10' : 'text-text-secondary hover:bg-neutral'} sm:h-7 sm:w-7`}
                                             title={code.is_active ? "Pause" : "Activate"}
                                         >
-                                            {code.is_active ? <Check className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
+                                            {code.is_active ? <Check className="w-3 h-3" /> : <RefreshCw className="w-3 h-3" />}
                                         </button>
                                         <button 
                                             onClick={() => deleteCode(code.id)}
-                                            className="min-h-10 min-w-10 rounded-lg p-2 text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 sm:rounded-xl"
+                                            className="h-6 w-6 rounded p-1 text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 flex items-center justify-center sm:h-7 sm:w-7"
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash2 className="w-3 h-3" />
                                         </button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Moderation Queue */}
-            <div className="rounded-2xl border border-border bg-white p-4 soft-shadow dark:bg-white/5 sm:rounded-[2rem] sm:p-8 md:p-10">
-                <div className="mb-6 flex flex-col items-start justify-between gap-4 border-b border-border/50 pb-5 sm:flex-row sm:items-center">
-                    <div className="min-w-0">
-                        <h2 className="font-serif text-2xl font-bold leading-tight text-foreground sm:text-3xl">Photo Queue</h2>
-                        <p className="mt-1 text-xs leading-5 text-text-secondary sm:text-sm">Found {pendingPhotos.length} photos waiting for your approval.</p>
+                            );
+                        })}
                     </div>
-                    {pendingPhotos.length > 0 && (
+                </div>
+            )}
+
+            {/* Pending Photos */}
+            {pendingPhotos.length > 0 && (
+                <div className="rounded-xl border border-border bg-white soft-shadow dark:bg-white/5 sm:rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between gap-2 border-b border-border/50 px-2.5 py-2 sm:px-3.5 sm:py-3">
+                        <h3 className="font-serif text-sm font-bold text-foreground">Pending ({pendingPhotos.length})</h3>
                         <button 
                             onClick={approveAllPending}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white rounded-xl sm:rounded-2xl font-bold hover:shadow-lg transition-all text-sm min-h-[44px]"
+                            className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 bg-primary text-white rounded-lg font-bold hover:shadow-lg transition-all text-xs whitespace-nowrap sm:px-3 sm:py-2"
                         >
-                            <CheckCircle2 className="w-4 h-4" /> Approve All
+                            <CheckCircle2 className="w-3 h-3" /> All
                         </button>
-                    )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 p-2 sm:grid-cols-4 sm:gap-1.5 sm:p-2.5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
+                        {pendingPhotos.map((photo) => (
+                            <motion.div 
+                                layout
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                key={photo.id} 
+                                className="group relative overflow-hidden rounded border border-border bg-neutral dark:bg-neutral/20 aspect-square sm:rounded-lg"
+                            >
+                                <img src={photo.cloudinary_url} alt="Pending" className="h-full w-full object-cover" />
+                                <div className="flex items-center justify-center gap-1 absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => approvePhoto(photo.id)} className="flex h-6 w-6 items-center justify-center rounded bg-emerald-500 text-white transition-transform hover:scale-110 sm:h-7 sm:w-7">
+                                        <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    </button>
+                                    <button onClick={() => deletePhoto(photo.id)} className="flex h-6 w-6 items-center justify-center rounded bg-red-500 text-white transition-transform hover:scale-110 sm:h-7 sm:w-7">
+                                        <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
                 </div>
-
-                {pendingPhotos.length === 0 ? (
-                    <div className="py-12 sm:py-20 text-center opacity-40 italic font-serif">
-                        <ImageIcon className="w-12 h-12 mx-auto mb-4" />
-                        <p>No pending photos to moderate.</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-                        <AnimatePresence>
-                            {pendingPhotos.map((photo) => (
-                                <motion.div 
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    key={photo.id} 
-                                    className="group relative overflow-hidden rounded-2xl border border-border bg-neutral dark:bg-neutral/20"
-                                >
-                                    <div className="aspect-square">
-                                        <img src={photo.cloudinary_url} alt="Guest upload" className="h-full w-full object-cover" />
-                                    </div>
-                                    <div className="flex items-center justify-between gap-3 bg-white p-3 dark:bg-neutral/20 sm:absolute sm:inset-0 sm:flex-col sm:justify-center sm:bg-black/60 sm:p-4 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-                                        <p className="min-w-0 truncate text-xs font-bold text-foreground sm:mt-2 sm:text-center sm:text-[10px] sm:uppercase sm:tracking-widest sm:text-white/80">{photo.uploader_name || 'Anonymous'}</p>
-                                        <div className="flex shrink-0 gap-2">
-                                            <button onClick={() => approvePhoto(photo.id)} className="flex h-10 min-w-10 items-center justify-center gap-1 rounded-xl bg-emerald-500 px-3 text-xs font-bold text-white transition-transform hover:scale-105">
-                                                <Check className="h-5 w-5" />
-                                                <span className="sm:hidden">Approve</span>
-                                            </button>
-                                            <button onClick={() => deletePhoto(photo.id)} className="flex h-10 min-w-10 items-center justify-center rounded-xl bg-red-500 px-3 text-white transition-transform hover:scale-105" aria-label="Delete photo">
-                                                <Trash2 className="h-5 w-5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                )}
-            </div>
+            )}
 
             {/* Approved Gallery */}
-            <div className="rounded-2xl border border-border bg-white p-4 soft-shadow dark:bg-white/5 sm:rounded-[2rem] sm:p-8 md:p-10">
-                <div className="mb-6 flex items-center justify-between rounded-xl border border-border/50 bg-neutral/40 p-3 dark:bg-neutral/10 sm:mb-8 sm:rounded-2xl">
-                    <h3 className="min-w-0 px-1 text-sm font-bold text-foreground sm:px-2 sm:text-base">Approved Gallery ({approvedPhotos.length})</h3>
-                    <button onClick={loadData} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-text-secondary transition-colors hover:text-primary" aria-label="Refresh approved gallery"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
-                </div>
-
-                {approvedPhotos.length === 0 ? (
-                    <div className="py-12 sm:py-20 text-center opacity-40 italic font-serif">
-                        <p>No photos have been approved yet.</p>
+            {approvedPhotos.length > 0 && (
+                <div className="rounded-xl border border-border bg-white soft-shadow dark:bg-white/5 sm:rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between gap-2 px-2.5 py-2 border-b border-border/50 sm:px-3.5 sm:py-3">
+                        <h3 className="font-serif text-sm font-bold text-foreground">Approved ({approvedPhotos.length})</h3>
+                        <button onClick={loadData} className="flex h-6 w-6 items-center justify-center rounded text-text-secondary transition-colors hover:text-primary sm:h-7 sm:w-7"><RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /></button>
                     </div>
-                ) : (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    <div className="grid grid-cols-4 gap-1 p-2 sm:grid-cols-5 sm:gap-1.5 sm:p-2.5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
                         {approvedPhotos.map((photo) => (
-                            <button type="button" key={photo.id} className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-neutral text-left dark:bg-neutral/20 sm:rounded-xl" onClick={() => setSelectedPhoto(photo)} aria-label="Open approved guest photo">
-                                <img src={photo.cloudinary_url} alt="Wedding gallery" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 transition-opacity sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100">
-                                    <Maximize2 className="w-5 h-5 text-white" />
+                            <button type="button" key={photo.id} className="group relative aspect-square cursor-pointer overflow-hidden rounded border border-border bg-neutral dark:bg-neutral/20 hover:ring-2 ring-primary/50 sm:rounded-lg" onClick={() => setSelectedPhoto(photo)}>
+                                <img src={photo.cloudinary_url} alt="Approved" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
+                                    <Maximize2 className="w-3 h-3 text-white" />
                                 </div>
                             </button>
                         ))}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Lightbox Modal */}
             <AnimatePresence>
                 {selectedPhoto && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-3 backdrop-blur-md sm:p-6">
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-2 backdrop-blur-md sm:p-4">
                         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative max-w-5xl w-full h-full flex flex-col items-center justify-center">
-                            <div className="absolute right-0 top-0 z-10 flex gap-2 p-2 sm:p-4">
-                                <button onClick={() => downloadPhoto(selectedPhoto.cloudinary_url, `quickweds-${selectedPhoto.id}.jpg`)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 text-white backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all"><Download className="w-5 h-5" /></button>
-                                <button onClick={() => deletePhoto(selectedPhoto.id)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-500/20 text-red-500 backdrop-blur-md flex items-center justify-center hover:bg-red-500/40 transition-all"><Trash2 className="w-5 h-5" /></button>
-                                <button onClick={() => setSelectedPhoto(null)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 text-white backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all"><X className="w-5 h-5" /></button>
+                            <div className="absolute right-2 top-2 z-10 flex gap-1 sm:right-4 sm:top-4 sm:gap-2">
+                                <button onClick={() => deletePhoto(selectedPhoto.id)} className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-500 backdrop-blur-md hover:bg-red-500/40 transition-all sm:h-9 sm:w-9" title="Delete"><Trash2 className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+                                <button onClick={() => setSelectedPhoto(null)} className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md hover:bg-white/20 transition-all sm:h-9 sm:w-9" title="Close"><X className="w-4 h-4 sm:w-5 sm:h-5" /></button>
                             </div>
-                            <img src={selectedPhoto.cloudinary_url} alt="Wedding Gallery Large" className="max-h-[72vh] max-w-full rounded-lg object-contain shadow-2xl sm:max-h-[80vh]" />
-                            <div className="mt-4 max-w-full text-center text-white sm:mt-6">
-                                <p className="break-words font-serif text-lg font-bold sm:text-xl">{selectedPhoto.uploader_name || 'Anonymous Guest'}</p>
-                                {selectedPhoto.caption && <p className="mt-2 break-words text-sm italic text-white/60">&ldquo;{selectedPhoto.caption}&rdquo;</p>}
-                                <p className="mt-4 text-[10px] uppercase tracking-widest text-white/40">{new Date(selectedPhoto.created_at).toLocaleDateString()}</p>
+                            <img src={selectedPhoto.cloudinary_url} alt="Gallery" className="max-h-[60vh] max-w-full rounded-lg object-contain shadow-2xl sm:max-h-[70vh]" />
+                            <div className="mt-2 text-center text-white text-xs sm:text-sm sm:mt-3">
+                                <p className="font-bold">{selectedPhoto.uploader_name || 'Guest'}</p>
+                                {selectedPhoto.caption && <p className="mt-1 italic text-white/70 max-w-md text-xs">{selectedPhoto.caption}</p>}
                             </div>
                         </motion.div>
-                    </div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

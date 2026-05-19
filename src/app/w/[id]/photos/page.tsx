@@ -18,6 +18,14 @@ type SharedPhoto = {
     uploader_name: string | null;
 };
 
+type CodeStatus = {
+    valid: boolean;
+    remainingUploads: number;
+    maxUploads: number;
+    currentUploads: number;
+    message: string;
+};
+
 export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: weddingId } = use(params);
     const [wedding, setWedding] = useState<WeddingLite | null>(null);
@@ -40,6 +48,8 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
     // Lightbox State
     const [selectedPhoto, setSelectedPhoto] = useState<SharedPhoto | null>(null);
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
+    const [codeStatus, setCodeStatus] = useState<CodeStatus | null>(null);
+    const [codeChecking, setCodeChecking] = useState(false);
 
     useEffect(() => {
         const load = async () => {
@@ -53,6 +63,70 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
         };
         void load();
     }, [weddingId]);
+
+    useEffect(() => {
+        const normalizedCode = form.code.trim().toUpperCase();
+        if (!normalizedCode) {
+            setCodeStatus(null);
+            return;
+        }
+
+        let isActive = true;
+        const controller = new AbortController();
+        const timeout = window.setTimeout(async () => {
+            setCodeChecking(true);
+            try {
+                const response = await fetch('/api/public/photos/validate-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ weddingId, code: normalizedCode }),
+                    signal: controller.signal,
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!isActive) return;
+
+                if (!response.ok) {
+                    setCodeStatus({
+                        valid: false,
+                        remainingUploads: 0,
+                        maxUploads: 3,
+                        currentUploads: 0,
+                        message: data.error || 'Invalid sharing code.',
+                    });
+                    return;
+                }
+
+                setCodeStatus({
+                    valid: true,
+                    remainingUploads: data.remainingUploads,
+                    maxUploads: data.maxUploads,
+                    currentUploads: data.currentUploads,
+                    message: data.remainingUploads > 0
+                        ? `This sharing code can upload ${data.remainingUploads} more photo${data.remainingUploads === 1 ? '' : 's'}.`
+                        : 'This sharing code has reached its 3-photo limit.',
+                });
+            } catch (error) {
+                if (!isActive) return;
+                setCodeStatus({
+                    valid: false,
+                    remainingUploads: 0,
+                    maxUploads: 3,
+                    currentUploads: 0,
+                    message: 'Unable to validate sharing code right now.',
+                });
+            } finally {
+                if (isActive) setCodeChecking(false);
+            }
+        }, 350);
+
+        return () => {
+            isActive = false;
+            controller.abort();
+            window.clearTimeout(timeout);
+        };
+    }, [form.code, weddingId]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -83,6 +157,8 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
         
         const normalizedCode = form.code.trim().toUpperCase();
         if (!normalizedCode) return alert('A sharing code is required to upload.');
+        if (codeStatus?.valid === false) return alert(codeStatus.message || 'Please enter a valid sharing code.');
+        if (codeStatus?.remainingUploads === 0) return alert(codeStatus.message || 'This sharing code has reached its upload limit.');
 
         setSubmitting(true);
         try {
@@ -105,6 +181,21 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
 
             // Success state
             setSubmissionSuccess(true);
+            if (codeStatus?.valid) {
+                setCodeStatus((prev) =>
+                    prev
+                        ? {
+                              ...prev,
+                              currentUploads: prev.currentUploads + 1,
+                              remainingUploads: Math.max(0, prev.remainingUploads - 1),
+                              message:
+                                  prev.remainingUploads > 1
+                                      ? `This sharing code can upload ${prev.remainingUploads - 1} more photo${prev.remainingUploads - 1 === 1 ? '' : 's'}.`
+                                      : 'This sharing code has reached its 3-photo limit.',
+                          }
+                        : prev
+                );
+            }
             setTimeout(() => {
                 setSubmissionSuccess(false);
                 clearSelection();
@@ -251,6 +342,19 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                                                 placeholder="e.g. A1B2C" 
                                                 className="min-h-[46px] w-full min-w-0 rounded-xl border border-border bg-neutral px-4 py-3.5 font-bold uppercase tracking-widest outline-none transition-all focus:border-primary focus:bg-white" 
                                             />
+                                            <p className="mt-2 text-xs leading-5">
+                                                {codeChecking ? (
+                                                    <span className="text-text-secondary">Checking code…</span>
+                                                ) : codeStatus ? (
+                                                    codeStatus.valid ? (
+                                                        <span className="text-emerald-700">{codeStatus.message}</span>
+                                                    ) : (
+                                                        <span className="text-rose-600">{codeStatus.message}</span>
+                                                    )
+                                                ) : (
+                                                    <span className="text-text-secondary">Enter the sharing code found on the guest photo portal.</span>
+                                                )}
+                                            </p>
                                         </div>
                                         <div className="min-w-0">
                                             <label className="block text-[10px] font-black uppercase tracking-widest text-text-secondary mb-1.5 ml-2">Your Name</label>
@@ -274,7 +378,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
 
                                     <button 
                                         type="submit" 
-                                        disabled={submitting} 
+                                        disabled={submitting || !selectedFile || !form.code.trim() || (codeStatus?.valid === false) || codeStatus?.remainingUploads === 0} 
                                         className="mt-4 flex min-h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-primary px-6 py-4 text-base font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0 sm:text-lg"
                                     >
                                         {submitting ? (

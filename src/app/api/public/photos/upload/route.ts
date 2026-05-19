@@ -7,6 +7,7 @@ import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 export const dynamic = 'force-dynamic';
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+const MAX_UPLOADS_PER_SHARING_CODE = 3;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const EXTENSIONS: Record<string, string> = {
     'image/jpeg': 'jpg',
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
 
         const { data: sharingCode, error: codeError } = await db
             .from('photo_sharing_codes')
-            .select('id')
+            .select('id, max_uploads, current_uploads')
             .eq('wedding_id', weddingId)
             .eq('code', code)
             .eq('is_active', true)
@@ -60,6 +61,13 @@ export async function POST(req: NextRequest) {
         if (codeError) throw codeError;
         if (!sharingCode) {
             return NextResponse.json({ error: 'Invalid or inactive sharing code. Please check with the couple.' }, { status: 403 });
+        }
+
+        const currentUploads = Number(sharingCode.current_uploads ?? 0);
+        const codeLimit = Math.min(Number(sharingCode.max_uploads ?? MAX_UPLOADS_PER_SHARING_CODE), MAX_UPLOADS_PER_SHARING_CODE);
+
+        if (currentUploads >= codeLimit) {
+            return NextResponse.json({ error: `This sharing code has reached its ${codeLimit}-photo limit.` }, { status: 403 });
         }
 
         const extension = EXTENSIONS[file.type] || 'jpg';
@@ -89,6 +97,15 @@ export async function POST(req: NextRequest) {
         });
 
         if (insertError) throw insertError;
+
+        const { error: updateError } = await db
+            .from('photo_sharing_codes')
+            .update({ current_uploads: currentUploads + 1 })
+            .eq('id', sharingCode.id);
+
+        if (updateError) {
+            console.error('Failed to update sharing code upload count:', updateError);
+        }
 
         return NextResponse.json({ success: true }, { headers: limited.headers });
     } catch (error) {
