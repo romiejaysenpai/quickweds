@@ -31,6 +31,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
     const [loading, setLoading] = useState(true);
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [codes, setCodes] = useState<SharingCode[]>([]);
+    const [deletingCodeId, setDeletingCodeId] = useState<string | null>(null);
     
     // Lightbox State
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
@@ -125,23 +126,34 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
     };
 
     const deleteCode = async (codeId: string) => {
+        if (deletingCodeId) return;
         if (!window.confirm("Are you sure? Guests using this code won't be able to upload anymore.")) return;
+        setDeletingCodeId(codeId);
         try {
-            const { error } = await supabase
-                .from('photo_sharing_codes')
-                .delete()
-                .eq('id', codeId)
-                .eq('wedding_id', weddingId);
-            
-            if (error) {
-                console.error("Delete error:", error);
-                throw error;
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) {
+                throw new Error('Please sign in again to delete this sharing code.');
             }
-            setCodes(codes.filter(c => c.id !== codeId));
-            window.alert("Code deleted successfully!");
+
+            const response = await fetch('/api/photos/sharing-codes', {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ weddingId, id: codeId }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to delete sharing code.');
+            }
+
+            setCodes((currentCodes) => currentCodes.filter(c => c.id !== codeId));
         } catch (err) {
             console.error("Failed to delete code:", err);
             window.alert(`Failed to delete code: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        } finally {
+            setDeletingCodeId(null);
         }
     };
 
@@ -257,10 +269,12 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                                         <button 
                                             type="button"
                                             onClick={() => deleteCode(code.id)}
-                                            className="h-6 w-6 rounded p-1 text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 flex items-center justify-center sm:h-7 sm:w-7"
+                                            disabled={deletingCodeId === code.id}
+                                            className="h-6 w-6 rounded p-1 text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-60 sm:h-7 sm:w-7"
                                             title="Delete code"
+                                            aria-label={`Delete sharing code ${code.code}`}
                                         >
-                                            <Trash2 className="w-3 h-3" />
+                                            {deletingCodeId === code.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                                         </button>
                                     </div>
                                 </div>
