@@ -30,6 +30,7 @@ import {
     isMissingPublicSlugColumnError,
     sanitizeWeddingSlug,
 } from '@/lib/wedding-slugs';
+import { getUserPlanTier, PLAN_LIMITS, type UserPlanTier } from '@/lib/planner-limits';
 
 // Helper component for collapsible sections
 const Collapsible = ({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) => (
@@ -373,20 +374,23 @@ export default function BuilderForm() {
     const [isPremium, setIsPremium] = useState(true);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
     const [accountIsPro, setAccountIsPro] = useState(false);
+    const [accountTier, setAccountTier] = useState<UserPlanTier>('free');
     const [activeWeddingCount, setActiveWeddingCount] = useState(0);
-    const freeWebsiteLimitReached = !editId && !isAdmin && !accountIsPro && activeWeddingCount >= 3;
+    const websiteLimit = PLAN_LIMITS[accountTier].websites;
+    const websiteLimitReached = !editId && !isAdmin && activeWeddingCount >= websiteLimit;
 
     const loadAccountLimitState = useCallback(async () => {
         if (!user) {
             setAccountIsPro(false);
+            setAccountTier('free');
             setActiveWeddingCount(0);
-            return { isPro: false, activeCount: 0 };
+            return { tier: 'free' as UserPlanTier, activeCount: 0, websiteLimit: PLAN_LIMITS.free.websites };
         }
 
         const [profileResult, countResult] = await Promise.all([
             supabase
                 .from('user_app_profiles')
-                .select('is_pro, payment_status')
+                .select('is_pro, plan_type, payment_status')
                 .eq('user_id', user.id)
                 .maybeSingle(),
             supabase
@@ -405,11 +409,13 @@ export default function BuilderForm() {
         }
 
         const isPro = hasAccountPro(profileResult.data);
+        const tier = getUserPlanTier({ isAdmin, accountProfile: profileResult.data });
         const activeCount = countResult.count || 0;
         setAccountIsPro(isPro);
+        setAccountTier(tier);
         setActiveWeddingCount(activeCount);
-        return { isPro, activeCount };
-    }, [user]);
+        return { tier, activeCount, websiteLimit: PLAN_LIMITS[tier].websites };
+    }, [user, isAdmin]);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -520,6 +526,7 @@ export default function BuilderForm() {
     useEffect(() => {
         if (!user) {
             setAccountIsPro(false);
+            setAccountTier('free');
             setActiveWeddingCount(0);
             return;
         }
@@ -723,8 +730,10 @@ export default function BuilderForm() {
         if (!editId && !isAdmin) {
             try {
                 const limitState = await loadAccountLimitState();
-                if (!limitState.isPro && limitState.activeCount >= 3) {
-                    alert('Free accounts can create up to 3 active wedding websites. Unlock Account Pro to create more.');
+                if (limitState.activeCount >= limitState.websiteLimit) {
+                    alert(limitState.tier === 'pro'
+                        ? 'Planner Pro includes up to 15 active wedding websites. Contact support for the Unlimited custom plan.'
+                        : 'Free accounts can create up to 3 active wedding websites. Upgrade to Planner Pro to create more.');
                     return;
                 }
             } catch (limitError) {
@@ -1872,21 +1881,29 @@ return (
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-                    {freeWebsiteLimitReached && (
+                    {websiteLimitReached && (
                         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Account Pro required</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">{accountTier === 'pro' ? 'Unlimited plan available' : 'Planner Pro required'}</p>
                                     <p className="mt-1 text-sm font-semibold text-foreground">
-                                        Free accounts include 3 active wedding websites. Unlock Account Pro to create more.
+                                        {accountTier === 'pro'
+                                            ? 'Planner Pro includes 15 active wedding websites. Contact support for an Unlimited custom plan.'
+                                            : 'Free accounts include 3 active wedding websites. Upgrade to Planner Pro to create more.'}
                                     </p>
                                 </div>
-                                <UpgradeButton
-                                    scope="account"
-                                    plan="account_pro"
-                                    label="Unlock Account Pro"
-                                    className="w-full justify-center text-sm sm:w-auto"
-                                />
+                                {accountTier === 'pro' ? (
+                                    <a href="/#contact" className="inline-flex w-full justify-center rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white sm:w-auto">
+                                        Contact Support
+                                    </a>
+                                ) : (
+                                    <UpgradeButton
+                                        scope="account"
+                                        plan="account_pro"
+                                        label="Unlock Planner Pro"
+                                        className="w-full justify-center text-sm sm:w-auto"
+                                    />
+                                )}
                             </div>
                         </div>
                     )}
@@ -1911,7 +1928,7 @@ return (
                         <button type="button" onClick={prevStep} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2 rounded-lg sm:rounded-xl text-primary font-bold text-sm sm:text-base min-h-[44px] min-w-[44px] ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'hover:bg-neutral transition-colors'}`}>
                             <ArrowLeft className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Back</span>
                         </button>
-                        <button type="submit" disabled={isSubmitting} className="bg-primary text-white px-6 sm:px-10 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold flex items-center gap-2 hover:bg-primary-hover shadow-lg shadow-primary/20 disabled:opacity-50 text-sm sm:text-base min-h-[44px] transition-all flex-1 sm:flex-none justify-center sm:justify-start">
+                        <button type="submit" disabled={isSubmitting || websiteLimitReached} className="bg-primary text-white px-6 sm:px-10 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold flex items-center gap-2 hover:bg-primary-hover shadow-lg shadow-primary/20 disabled:opacity-50 text-sm sm:text-base min-h-[44px] transition-all flex-1 sm:flex-none justify-center sm:justify-start">
                             {isSubmitting ? 'Processing...' : currentStep === STEPS.length - 1 ? <><span className="hidden sm:inline">{editId ? 'Update Invitation' : 'Create Invitation'}</span><span className="sm:hidden">Finish</span> <Send className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></> : <>Next <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></>}
                         </button>
                     </div>

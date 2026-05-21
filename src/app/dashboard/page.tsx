@@ -13,6 +13,7 @@ import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro, type Acco
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { getWeddingPublicPath } from '@/lib/wedding-slugs';
+import { getUserPlanTier, PLAN_LIMITS } from '@/lib/planner-limits';
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
 
@@ -278,8 +279,10 @@ export default function DashboardRedirect() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isPlannerPickerOpen, setIsPlannerPickerOpen] = useState(false);
     const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+    const accountTier = getUserPlanTier({ isAdmin, accountProfile });
     const accountIsPro = isAdmin || hasAccountPro(accountProfile);
-    const freeWebsiteLimitReached = !accountIsPro && weddings.length >= 3;
+    const websiteLimitReached = weddings.length >= PLAN_LIMITS[accountTier].websites;
+    const proWebsiteLimitReached = accountTier === 'pro' && websiteLimitReached;
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
     const fetchWeddings = useCallback(async () => {
@@ -408,13 +411,22 @@ export default function DashboardRedirect() {
                     </div>
 
                     <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
-                        {freeWebsiteLimitReached ? (
-                            <UpgradeButton
-                                scope="account"
-                                plan="account_pro"
-                                label="Upgrade"
-                                className="min-h-[42px] min-w-[82px] flex-shrink-0 justify-center whitespace-nowrap rounded-lg !px-3 !py-2 text-xs sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:!px-6 sm:!py-2.5 sm:text-sm"
-                            />
+                        {websiteLimitReached ? (
+                            proWebsiteLimitReached ? (
+                                <a
+                                    href="/#contact"
+                                    className="flex min-h-[42px] min-w-[104px] flex-shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
+                                >
+                                    Contact Admin
+                                </a>
+                            ) : (
+                                <UpgradeButton
+                                    scope="account"
+                                    plan="account_pro"
+                                    label="Upgrade"
+                                    className="min-h-[42px] min-w-[82px] flex-shrink-0 justify-center whitespace-nowrap rounded-lg !px-3 !py-2 text-xs sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:!px-6 sm:!py-2.5 sm:text-sm"
+                                />
+                            )
                         ) : (
                             <Link
                                 href="/builder"
@@ -776,7 +788,7 @@ export default function DashboardRedirect() {
                                             <div className="rounded-2xl border border-primary/15 bg-primary/5 p-3">
                                                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Ready for the full plan?</p>
                                                 <p className="mt-1 text-xs leading-5 text-text-secondary">
-                                                    Free includes Planner Lite, 50 guest emails, and starter limits. Pro unlocks unlimited planning, reminders, collaborators, seating, photos, and exports.
+                                                    Free includes Planner Lite, 3 wedding websites, 50 account emails, and starter limits. Pro adds 15 websites, 300 account emails, reminders, seating, photos, and exports.
                                                 </p>
                                                 <UpgradeButton weddingId={wedding.id} className="mt-3 w-full justify-center text-xs sm:text-sm py-2 sm:py-2.5" />
                                             </div>

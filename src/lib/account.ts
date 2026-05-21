@@ -32,8 +32,11 @@ export function getDefaultRoleRedirect(accountType?: AccountType | null) {
     return ACCOUNT_ONBOARDING_PATH;
 }
 
-export function hasAccountPro(profile?: Pick<AccountProfile, 'is_pro' | 'payment_status'> | null) {
-    return Boolean(profile?.is_pro) || profile?.payment_status === 'paid';
+export function hasAccountPro(profile?: Pick<AccountProfile, 'is_pro' | 'payment_status' | 'plan_type'> | null) {
+    const planType = String(profile?.plan_type || '').toLowerCase();
+    return ['pro', 'unlimited', 'custom', 'enterprise', 'admin'].includes(planType)
+        || Boolean(profile?.is_pro)
+        || profile?.payment_status === 'paid';
 }
 
 export function hasSupplierIntent(path?: string | null) {

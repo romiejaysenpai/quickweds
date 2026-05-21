@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
-import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
+import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, PLAN_LIMITS, getUserPlanTier, type PlannerUsage, type UserPlanTier } from '@/lib/planner-limits';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 import {
     GUEST_GROUP_OPTIONS,
@@ -105,6 +105,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
     const [wedding, setWedding] = useState<any>(null);
     const [accountIsPro, setAccountIsPro] = useState(false);
+    const [accountTier, setAccountTier] = useState<UserPlanTier>('free');
     const [rsvps, setRsvps] = useState<EnhancedRSVP[]>([]);
     const [vendors, setVendors] = useState<any[]>([]);
     const [budgets, setBudgets] = useState<any[]>([]);
@@ -257,6 +258,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 setAccessRole(role);
                 setWedding(weddingData);
                 setAccountIsPro(hasAccountPro(workspaceResult.accountProfile));
+                setAccountTier(getUserPlanTier({ isAdmin, wedding: weddingData, accountProfile: workspaceResult.accountProfile }));
                 setPlanUsage(workspaceResult.planUsage || EMPTY_PLANNER_USAGE);
 
                 const [rsvpsRes, vendorsRes, budgetsRes] = await Promise.all([
@@ -605,6 +607,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const qrTrackingUrl = url ? `${url}${url.includes('?') ? '&' : '?'}src=qr` : '';
     const canManageWorkspace = accessRole === 'owner' || accessRole === 'partner';
     const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
+    const emailLimit = PLAN_LIMITS[accountTier].emails;
+    const showEmailUsageBadge = Number.isFinite(emailLimit);
 
     const handleShareWhatsApp = () => {
         void trackWeddingEvent(id, 'share_whatsapp', { source: 'dashboard' });
@@ -1199,13 +1203,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                     <span className="px-2 py-1.5 rounded-lg bg-primary/10 text-primary text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
                                                         {stats.invitedCount} invited
                                                     </span>
-                                                    {!hasPlannerPro && (
+                                                    {showEmailUsageBadge && (
                                                         <>
                                                             <span className="px-2 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
                                                                 {planUsage.guestEmailCount} / {FREE_PLAN_LIMITS.guestEmails} guest emails
                                                             </span>
                                                             <span className="px-2 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
-                                                                {planUsage.userTriggeredEmailsUsed} / {FREE_PLAN_LIMITS.userTriggeredEmails} sends
+                                                                {planUsage.userTriggeredEmailsUsed} / {emailLimit} account emails
                                                             </span>
                                                         </>
                                                     )}

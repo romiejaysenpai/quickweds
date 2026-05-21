@@ -142,7 +142,7 @@ const testimonials = [
 const faqs = [
   {
     question: 'Is QuickWeds only a wedding website builder?',
-    answer: 'No. You can build and publish a free wedding website with RSVP tracking, QR sharing, a basic guest list, 50 guest emails, and Planner Lite. Planner Pro is the one-time upgrade for unlimited guest emails, full planner tools, seating, collaborators, reminders, photo tools, exports, and custom domains.',
+    answer: 'No. Free includes up to 3 wedding websites, RSVP tracking, QR sharing, a basic guest list, 50 total account emails, and Planner Lite. Planner Pro includes up to 15 wedding websites and 300 total account emails. Unlimited / Custom is available for planners, agencies, and larger needs.',
   },
   {
     question: 'Can guests RSVP from their phones?',
@@ -150,7 +150,7 @@ const faqs = [
   },
   {
     question: 'Will I get notifications when someone RSVPs?',
-    answer: 'Yes. Automatic RSVP confirmations and host notifications stay free and do not count toward your 50 guest email allowance. User-triggered sends like RSVP reminders, seat emails, and thank-you emails count toward that allowance.',
+    answer: 'Yes. RSVP confirmations and host notifications are included, and all wedding emails count toward your account-wide email limit: 50 on Free, 300 on Planner Pro, and unlimited on Unlimited / Custom.',
   },
   {
     question: 'Can my partner or planner help manage the wedding?',
@@ -162,7 +162,7 @@ const faqs = [
   },
   {
     question: 'Can I start free?',
-    answer: 'Yes. All templates, the builder, your wedding website, RSVP tools, QR sharing, basic guest tracking, 50 guest emails, and Planner Lite are free. Planner Pro unlocks unlimited planning, unlimited guest emails, seating, reminders, collaborators, exports, photo tools, and thank-you tools.',
+    answer: 'Yes. You can start with up to 3 free wedding websites, RSVP tools, QR sharing, basic guest tracking, 50 total account emails, and Planner Lite. Upgrade to Planner Pro for 15 websites and 300 account emails, or contact support for Unlimited / Custom.',
   },
 ];
 
@@ -862,27 +862,26 @@ export default function Home() {
           <div className="mx-auto max-w-5xl">
             <SectionHeading
               eyebrow="Simple pricing"
-              title="Build free. Unlock"
-              accent="Planner Pro"
-              afterAccent=" once."
-              body="Start with every template and the full wedding website builder free. Upgrade only when you want the complete planning workspace."
+              title="Build free. Upgrade when you need"
+              accent="more."
+              body="Start with a generous free account, move to Planner Pro for more weddings and emails, or request a custom Unlimited plan for professional planning needs."
             />
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-[1.5rem] border border-border bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8">
                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">Free forever</p>
                 <h3 className="mt-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">Free</h3>
-                <p className="mt-3 text-text-secondary">Perfect for starting your wedding site and collecting early RSVPs.</p>
+                <p className="mt-3 text-text-secondary">Perfect for couples starting their wedding websites and collecting early RSVPs.</p>
                 <div className="mt-6">
                   <PrimaryCta>Create Free Site</PrimaryCta>
                 </div>
                 <div className="mt-8 grid gap-3">
                   {[
                     'Wedding website and all templates',
+                    'Up to 3 wedding websites',
                     'RSVP tracking and basic guest list',
                     'QR sharing for invitations',
-                    '50 guest emails per wedding',
+                    '50 total account emails (RSVPs, seating links, reminders, thank yous)',
                     'Planner Lite with starter limits',
-                    'Automatic RSVP emails and host notifications',
                   ].map((item) => (
                     <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
                       <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
@@ -900,13 +899,14 @@ export default function Home() {
                     <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Planner Pro</h3>
                     <p className="font-serif text-3xl font-bold text-primary">$29</p>
                   </div>
-                  <p className="mt-3 text-text-secondary">Built for finalizing the real wedding plan when guests, suppliers, seating, and reminders matter.</p>
+                  <p className="mt-3 text-text-secondary">Built for active couples and planners managing more websites, emails, guests, suppliers, seating, and reminders.</p>
                   <div className="mt-8 grid gap-3">
                     {[
-                      'Unlimited guest emails',
+                      'Up to 15 wedding websites',
+                      '300 total account emails (RSVPs, seating links, reminders, thank yous)',
                       'Full planner with unlimited tasks, budgets, suppliers, and calendar items',
                       'Seating chart, guest check-in, and seat-link emails',
-                      'RSVP reminders and unlimited collaborators',
+                      'RSVP reminders and collaborator tools',
                       'Google Calendar sync and custom domain',
                       'Photo tools, thank-you tools, CSV exports, and advanced analytics',
                     ].map((item) => (
@@ -935,6 +935,37 @@ export default function Home() {
                         Sign Up to Upgrade
                       </Link>
                     )}
+                  </div>
+                </div>
+                <div className="rounded-[1.5rem] border border-secondary/40 bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8">
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">Unlimited / Custom</p>
+                  <div className="mt-2 flex flex-col gap-2 text-center sm:text-left">
+                    <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Unlimited</h3>
+                    <p className="font-serif text-3xl font-bold text-primary">Custom Rate</p>
+                  </div>
+                  <p className="mt-3 text-text-secondary">For professional planners, agencies, venues, or custom wedding needs that require unlimited scale.</p>
+                  <div className="mt-8 grid gap-3">
+                    {[
+                      'Unlimited wedding websites',
+                      'Unlimited account emails',
+                      'Full planner with unlimited items and tools',
+                      'Priority setup and concierge support',
+                      'Custom workflow guidance for teams',
+                      'Best fit for planners, agencies, and high-volume events',
+                    ].map((item) => (
+                      <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
+                        <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
+                        {item}
+                      </p>
+                    ))}
+                  </div>
+                  <div className="mt-8 flex justify-center sm:justify-start">
+                    <a
+                      href="#contact"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-8 py-4 text-base font-bold text-primary shadow-sm transition-all hover:bg-primary/5"
+                    >
+                      Contact Support
+                    </a>
                   </div>
                 </div>
             </div>

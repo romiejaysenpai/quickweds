@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail, getThankYouNoteHtml } from '@/lib/email';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import {
-    FREE_PLAN_LIMITS,
+    getAccountEmailUsage,
     getEmailLimitMessage,
-    getUserTriggeredEmailUsage,
-    hasPlannerProAccess,
+    getUserPlanTier,
     logPlannerEmailEvent,
+    PLAN_LIMITS,
 } from '@/lib/planner-limits';
 import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
 
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
         const { data: wedding, error: weddingError } = await db
             .from('weddings')
-            .select('id, bride_name, groom_name, wedding_date, user_id, is_premium, payment_status')
+            .select('id, bride_name, groom_name, wedding_date, user_id, is_premium, payment_status, plan_type')
             .eq('id', weddingId)
             .single();
 
@@ -60,18 +60,19 @@ export async function POST(req: NextRequest) {
 
         const { data: ownerProfile } = await db
             .from('user_app_profiles')
-            .select('is_pro, payment_status')
+            .select('is_pro, plan_type, payment_status')
             .eq('user_id', wedding.user_id)
             .maybeSingle();
-        const hasPlannerPro = hasPlannerProAccess({ wedding, accountProfile: ownerProfile });
-        const emailsUsed = await getUserTriggeredEmailUsage(db, weddingId);
+        const tier = getUserPlanTier({ wedding, accountProfile: ownerProfile });
+        const emailsUsed = await getAccountEmailUsage(db, wedding.user_id);
+        const emailLimit = PLAN_LIMITS[tier].emails;
 
-        if (!hasPlannerPro && emailsUsed + notes.length > FREE_PLAN_LIMITS.userTriggeredEmails) {
+        if (emailsUsed + notes.length > emailLimit) {
             return NextResponse.json({
-                error: getEmailLimitMessage(notes.length, emailsUsed),
+                error: getEmailLimitMessage(notes.length, emailsUsed, tier),
                 code: 'email_limit_reached',
                 used: emailsUsed,
-                limit: FREE_PLAN_LIMITS.userTriggeredEmails,
+                limit: emailLimit,
                 requested: notes.length,
             }, { status: 402 });
         }

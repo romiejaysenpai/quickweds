@@ -11,6 +11,15 @@ export const FREE_PLAN_LIMITS = {
     collaborators: 1,
 } as const;
 
+export type UserPlanTier = 'free' | 'pro' | 'unlimited' | 'admin';
+
+export const PLAN_LIMITS = {
+    free: { emails: 50, websites: 3 },
+    pro: { emails: 300, websites: 15 },
+    unlimited: { emails: Infinity, websites: Infinity },
+    admin: { emails: Infinity, websites: Infinity },
+} as const;
+
 export type PlannerItemType = 'task' | 'budget' | 'vendor' | 'event' | 'foodDrink' | 'honeymoon';
 export type PlannerEmailEventType = 'rsvp_reminder' | 'seat_link' | 'thank_you' | 'manual_guest_message';
 
@@ -60,14 +69,41 @@ export const PLANNER_USAGE_KEYS: Record<PlannerItemType, keyof PlannerUsage> = {
 
 export function hasPlannerProAccess(input: {
     isAdmin?: boolean;
-    wedding?: { is_premium?: boolean | null; payment_status?: string | null } | null;
-    accountProfile?: { is_pro?: boolean | null; payment_status?: string | null } | null;
+    wedding?: { is_premium?: boolean | null; payment_status?: string | null; plan_type?: string | null } | null;
+    accountProfile?: { is_pro?: boolean | null; payment_status?: string | null; plan_type?: string | null } | null;
 }) {
-    return Boolean(input.isAdmin)
+    return getUserPlanTier(input) !== 'free';
+}
+
+function normalizePlanType(planType?: string | null) {
+    return String(planType || '').trim().toLowerCase();
+}
+
+export function getUserPlanTier(input: {
+    isAdmin?: boolean;
+    wedding?: { is_premium?: boolean | null; payment_status?: string | null; plan_type?: string | null } | null;
+    accountProfile?: { is_pro?: boolean | null; payment_status?: string | null; plan_type?: string | null } | null;
+}): UserPlanTier {
+    if (input.isAdmin) return 'admin';
+
+    const accountPlan = normalizePlanType(input.accountProfile?.plan_type);
+    const weddingPlan = normalizePlanType(input.wedding?.plan_type);
+    if (accountPlan === 'admin' || weddingPlan === 'admin') return 'admin';
+    if (['unlimited', 'custom', 'enterprise'].includes(accountPlan) || ['unlimited', 'custom', 'enterprise'].includes(weddingPlan)) {
+        return 'unlimited';
+    }
+    if (
+        accountPlan === 'pro'
+        || weddingPlan === 'pro'
         || Boolean(input.wedding?.is_premium)
         || input.wedding?.payment_status === 'paid'
         || Boolean(input.accountProfile?.is_pro)
-        || input.accountProfile?.payment_status === 'paid';
+        || input.accountProfile?.payment_status === 'paid'
+    ) {
+        return 'pro';
+    }
+
+    return 'free';
 }
 
 export function getPlannerLimitMessage(type: PlannerItemType) {
@@ -83,12 +119,22 @@ export function getPlannerLimitMessage(type: PlannerItemType) {
     return `Free Planner Lite includes ${PLANNER_ITEM_LIMITS[type]} ${labels[type]}. Upgrade to Planner Pro for unlimited planning.`;
 }
 
-export function getEmailLimitMessage(needed = 1, used = 0) {
-    const remaining = Math.max(0, FREE_PLAN_LIMITS.userTriggeredEmails - used);
-    if (remaining <= 0) {
-        return 'Your guest list is ready for Pro. Free weddings include 50 guest emails; upgrade to Planner Pro for unlimited guest emails.';
+export function getEmailLimitMessage(needed = 1, used = 0, tier: UserPlanTier = 'free') {
+    const limit = PLAN_LIMITS[tier].emails;
+    if (!Number.isFinite(limit)) {
+        return 'This account has unlimited wedding emails.';
     }
-    return `This send needs ${needed} guest email${needed === 1 ? '' : 's'}, but only ${remaining} free guest email${remaining === 1 ? '' : 's'} remain. Upgrade to Planner Pro for unlimited guest emails.`;
+
+    const remaining = Math.max(0, limit - used);
+    const planLabel = tier === 'pro' ? 'Planner Pro' : 'Free';
+    const upgradePrompt = tier === 'pro'
+        ? 'Contact support for the Unlimited custom plan.'
+        : 'Upgrade to Planner Pro for 300 total account emails, or contact support for Unlimited.';
+
+    if (remaining <= 0) {
+        return `${planLabel} accounts include ${limit} total wedding emails across all active wedding websites. ${upgradePrompt}`;
+    }
+    return `This send needs ${needed} wedding email${needed === 1 ? '' : 's'}, but only ${remaining} remain on your ${planLabel} account. ${upgradePrompt}`;
 }
 
 export function isSchemaMissingError(error: any) {
@@ -136,6 +182,25 @@ export async function getUserTriggeredEmailUsage(db: any, weddingId: string) {
     ]);
 
     return Math.max(tracked, reminderRecipients + sentThankYouNotes + seatLinksSent);
+}
+
+export async function getAccountEmailUsage(db: any, userId: string) {
+    if (!userId) return 0;
+
+    const result = await db
+        .from('weddings')
+        .select('id')
+        .eq('user_id', userId)
+        .is('deleted_at', null);
+
+    if (result.error) {
+        if (isSchemaMissingError(result.error)) return 0;
+        throw result.error;
+    }
+
+    const weddingIds = (result.data || []).map((wedding: { id?: string }) => wedding.id).filter(Boolean);
+    const usages = await Promise.all(weddingIds.map((weddingId: string) => getUserTriggeredEmailUsage(db, weddingId)));
+    return usages.reduce((total: number, usage: number) => total + usage, 0);
 }
 
 export async function getPlannerUsage(db: any, weddingId: string): Promise<PlannerUsage> {
