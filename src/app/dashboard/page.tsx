@@ -31,10 +31,12 @@ function getFirstName(user: any) {
 function DashboardWelcomeHero({
     user,
     weddings,
+    onOpenWorkspace,
     onOpenPlanner,
 }: {
     user: any;
     weddings: any[];
+    onOpenWorkspace: () => void;
     onOpenPlanner: () => void;
 }) {
     const hasWeddings = weddings.length > 0;
@@ -93,9 +95,15 @@ function DashboardWelcomeHero({
                                 <Calendar className="h-5 w-5" />
                             </Link>
                         )}
-                        <Link href={hasWeddings && latestWedding ? `/dashboard/${latestWedding.id}` : '/user-guide'} title={hasWeddings ? 'Open workspace' : 'Open guide'} className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
-                            <Users className="h-5 w-5" />
-                        </Link>
+                        {hasWeddings ? (
+                            <button type="button" onClick={onOpenWorkspace} title="Open workspace" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
+                                <Users className="h-5 w-5" />
+                            </button>
+                        ) : (
+                            <Link href="/user-guide" title="Open guide" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
+                                <Users className="h-5 w-5" />
+                            </Link>
+                        )}
                         <Link href={hasWeddings && latestWedding ? `/builder?edit=${latestWedding.id}` : '/builder'} title="Customize website" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
                             <Settings className="h-5 w-5" />
                         </Link>
@@ -139,9 +147,15 @@ function DashboardWelcomeHero({
                     </div>
 
                     <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-                        <Link href={hasWeddings && latestWedding ? `/dashboard/${latestWedding.id}` : '/builder'} className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover">
-                            {hasWeddings ? 'Continue Workspace' : 'Create Your Free Site'} <ArrowRight className="h-4 w-4" />
-                        </Link>
+                        {hasWeddings ? (
+                            <button type="button" onClick={onOpenWorkspace} className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover">
+                                Continue Workspace <ArrowRight className="h-4 w-4" />
+                            </button>
+                        ) : (
+                            <Link href="/builder" className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover">
+                                Create Your Free Site <ArrowRight className="h-4 w-4" />
+                            </Link>
+                        )}
                         {hasWeddings ? (
                             <button type="button" onClick={onOpenPlanner} className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-border bg-white px-6 py-3 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5">
                                 <Calendar className="h-4 w-4" />
@@ -278,6 +292,7 @@ export default function DashboardRedirect() {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [checkingRole, setCheckingRole] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isWorkspacePickerOpen, setIsWorkspacePickerOpen] = useState(false);
     const [isPlannerPickerOpen, setIsPlannerPickerOpen] = useState(false);
     const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
     const accountTier = getUserPlanTier({ isAdmin, accountProfile });
@@ -318,6 +333,17 @@ export default function DashboardRedirect() {
         await logout();
         router.replace('/');
     };
+
+    const handleOpenWorkspace = useCallback(() => {
+        if (weddings.length === 1) {
+            router.push(`/dashboard/${weddings[0].id}`);
+            return;
+        }
+
+        if (weddings.length > 1) {
+            setIsWorkspacePickerOpen(true);
+        }
+    }, [router, weddings]);
 
     const handleOpenPlanner = useCallback(() => {
         if (weddings.length === 1) {
@@ -525,6 +551,63 @@ export default function DashboardRedirect() {
             </AnimatePresence>
 
             <AnimatePresence>
+                {isWorkspacePickerOpen && (
+                    <div className="fixed inset-0 z-[110] flex min-h-[100dvh] items-start justify-center overflow-y-auto px-3 py-4 sm:items-center sm:px-6 sm:py-8">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                            onClick={() => setIsWorkspacePickerOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 16, scale: 0.98 }}
+                            className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col rounded-3xl border border-border bg-white p-4 shadow-2xl sm:max-h-[calc(100dvh-4rem)] sm:p-6"
+                        >
+                            <div className="mb-4 flex flex-shrink-0 items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Wedding Workspace</p>
+                                    <h2 className="mt-1 font-serif text-2xl font-bold text-foreground">Choose a workspace</h2>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsWorkspacePickerOpen(false)}
+                                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-border text-text-secondary transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                                    aria-label="Close workspace picker"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 no-scrollbar">
+                                {weddings.map((wedding) => (
+                                    <Link
+                                        key={wedding.id}
+                                        href={`/dashboard/${wedding.id}`}
+                                        onClick={() => setIsWorkspacePickerOpen(false)}
+                                        className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-neutral/30 p-4 text-left transition hover:border-primary/30 hover:bg-primary/5"
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-foreground">
+                                                {wedding.bride_name} & {wedding.groom_name}
+                                            </p>
+                                            <p className="mt-1 truncate text-xs text-text-secondary">
+                                                {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                {wedding.venue_name ? ` - ${wedding.venue_name}` : ''}
+                                            </p>
+                                        </div>
+                                        <ArrowRight className="h-4 w-4 flex-shrink-0 text-primary" />
+                                    </Link>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
                 {isPlannerPickerOpen && (
                     <div className="fixed inset-0 z-[110] flex min-h-[100dvh] items-start justify-center overflow-y-auto px-3 py-4 sm:items-center sm:px-6 sm:py-8">
                         <motion.div
@@ -585,6 +668,7 @@ export default function DashboardRedirect() {
                 <DashboardWelcomeHero
                     user={user}
                     weddings={weddings}
+                    onOpenWorkspace={handleOpenWorkspace}
                     onOpenPlanner={handleOpenPlanner}
                 />
 

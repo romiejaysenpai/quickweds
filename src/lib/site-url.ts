@@ -13,7 +13,9 @@ export function getPublicAppUrl() {
 }
 
 export function getPublicRedirectUrl(path: string) {
-    const baseUrl = getPublicAppUrl();
+    const baseUrl = typeof window !== 'undefined'
+        ? window.location.origin.replace(/\/+$/, '')
+        : getPublicAppUrl();
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     const fullUrl = `${baseUrl}${normalizedPath}`;
     

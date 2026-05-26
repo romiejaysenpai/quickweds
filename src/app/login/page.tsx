@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -9,12 +9,28 @@ import { motion } from 'framer-motion';
 import { getPublicRedirectUrl } from '@/lib/site-url';
 import { getClientAccountProfileForIntent, getClientAdminStatus, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
 
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+    'exchange-failed': 'Google sign in could not be completed. Please try again from this page.',
+    'oauth-session-missing': 'Google sign in expired before it could finish. Please try again.',
+    'oauth-failed': 'Google did not authorize the sign in. Please try again.',
+    'session-failed': 'We could not load your sign in session. Please try again.',
+    'session-expired': 'Your previous session expired. Please sign in again.',
+    unexpected: 'Something went wrong while signing you in. Please try again.',
+};
+
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        const errorCode = new URLSearchParams(window.location.search).get('error');
+        if (errorCode) {
+            setError(AUTH_ERROR_MESSAGES[errorCode] || 'Google sign in failed. Please try again.');
+        }
+    }, []);
 
     const getSafeNextPath = () => {
         if (typeof window === 'undefined') return '/dashboard';

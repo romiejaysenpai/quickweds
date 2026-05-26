@@ -118,7 +118,13 @@ export default function AuthCallbackPage() {
                         console.error('Code exchange error:', exchangeError);
                         setError(`Code exchange failed: ${exchangeError.message}`);
                         setDebug(`Error details: ${JSON.stringify(exchangeError)}`);
-                        setTimeout(() => router.replace('/login?error=exchange-failed'), 2000);
+                        await clearLocalSupabaseSession();
+                        window.localStorage.removeItem('quickweds_auth_next');
+
+                        const errorCode = /code verifier|pkce|auth code/i.test(exchangeError.message)
+                            ? 'oauth-session-missing'
+                            : 'exchange-failed';
+                        setTimeout(() => router.replace(`/login?error=${errorCode}`), 2000);
                         return;
                     }
 
