@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarHeart, MapPin, Sparkles, Clock } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
+import { getTemplateVisualProfile } from '@/lib/theme-engine';
 
 const subscribeToClient = () => () => {};
 const getClientSnapshot = () => true;
@@ -18,6 +19,9 @@ interface CountdownTimerProps {
     venueAddress?: string;
     className?: string;
     id: string;
+    template?: string;
+    motifColor?: string;
+    invert?: boolean;
 }
 
 function generateICS(props: CountdownTimerProps): string {
@@ -58,6 +62,9 @@ export default function CountdownTimer({
     venueAddress,
     className = '',
     id,
+    template = 'classic',
+    motifColor = '#D16C78',
+    invert = false,
 }: CountdownTimerProps) {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
     const [isPast, setIsPast] = useState(false);
@@ -113,19 +120,39 @@ export default function CountdownTimer({
     // Suppress Hydration issue by displaying generic zeros/empty until mounted, allowing the DOM to match the server output
     if (!isMounted) return <div className="sr-only">Loading timer...</div>;
 
+    const visual = getTemplateVisualProfile(template, motifColor, invert);
+    const isEditorial = visual.mood === 'editorial';
+    const isDark = visual.isDark;
+    const sectionClasses = `${visual.sectionClass} ${className}`;
+    const panelClass = isEditorial
+        ? 'rounded-none border border-black bg-white shadow-[18px_18px_0_rgba(0,0,0,0.08)]'
+        : visual.cardClass;
+    const detailIconClass = isDark
+        ? 'border-primary/25 bg-primary/10 text-primary'
+        : isEditorial
+            ? 'border-black/15 bg-black text-white'
+            : 'border-primary/15 bg-primary/8 text-primary';
+    const unitShellClass = isEditorial
+        ? 'rounded-none border border-black/10 bg-white shadow-none'
+        : isDark
+            ? 'rounded-none border border-primary/25 bg-white/[0.06] shadow-[0_18px_50px_rgba(0,0,0,0.25)]'
+            : `${visual.accentCardClass}`;
+    const unitValueClass = isDark ? 'text-white' : 'text-[#333]';
+    const separatorClass = isDark ? 'bg-primary/25' : isEditorial ? 'bg-black/15' : 'bg-primary/15';
+
     if (isPast) {
         return (
-            <section className={`py-8 sm:py-12 px-4 sm:px-6 w-full ${className} relative overflow-hidden flex justify-center`}>
+            <section className={`py-8 sm:py-12 px-4 sm:px-6 w-full ${sectionClasses} flex justify-center`} style={visual.sectionStyle}>
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
-                    className="max-w-3xl w-full text-center p-6 sm:p-8 md:p-12 rounded-2xl sm:rounded-[3rem] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden"
+                    className={`max-w-3xl w-full text-center p-6 sm:p-8 md:p-12 relative overflow-hidden ${panelClass}`}
                 >
-                    <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%,100%_100%] animate-[shimmer_5s_infinite]" />
+                    <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.16)_50%,transparent_75%)] bg-[length:250%_250%,100%_100%] animate-[shimmer_5s_infinite]" />
                     <Sparkles className="w-10 sm:w-12 md:w-16 h-10 sm:h-12 md:h-16 text-primary mx-auto mb-4 sm:mb-6 animate-pulse" />
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-serif text-primary/90 leading-tight">Happily Ever After <br/><span className="italic font-light">Has Begun</span></h2>
-                    <p className="text-base sm:text-lg uppercase tracking-widest font-black opacity-30 mt-4 sm:mt-6 block">We did it!</p>
+                    <h2 className={`text-2xl sm:text-3xl md:text-4xl lg:text-6xl leading-tight ${visual.headingClass}`}>Happily Ever After <br/><span className={isEditorial ? '' : 'italic font-light'}>Has Begun</span></h2>
+                    <p className={`text-base sm:text-lg uppercase tracking-widest font-black opacity-50 mt-4 sm:mt-6 block ${visual.bodyClass}`}>We did it!</p>
                 </motion.div>
             </section>
         );
@@ -139,7 +166,7 @@ export default function CountdownTimer({
     ];
 
     return (
-        <section className={`py-12 sm:py-16 md:py-24 px-4 sm:px-6 w-full flex justify-center relative ${className}`}>
+        <section className={`py-12 sm:py-16 md:py-24 px-4 sm:px-6 w-full flex justify-center ${sectionClasses}`} style={visual.sectionStyle}>
             <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -147,11 +174,10 @@ export default function CountdownTimer({
                 transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                 className="max-w-5xl w-full"
             >
-                <div className="relative p-[1px] rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-b from-white/60 to-white/10 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.08)] overflow-hidden group">
-                    {/* Atmospheric Glow */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-24 sm:h-32 bg-primary/20 blur-[60px] sm:blur-[80px] rounded-full pointer-events-none -translate-y-1/2 transition-opacity duration-1000 opacity-50 group-hover:opacity-100" />
+                <div className={`relative overflow-hidden group ${panelClass}`}>
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-24 sm:h-32 bg-primary/15 blur-[60px] sm:blur-[80px] rounded-full pointer-events-none -translate-y-1/2 transition-opacity duration-1000 opacity-50 group-hover:opacity-90" />
                     
-                    <div className="bg-white/40 backdrop-blur-3xl rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 md:p-16 lg:p-20 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12">
+                    <div className="p-4 sm:p-8 md:p-16 lg:p-20 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12">
                         
                         {/* Event Details Section */}
                         <div className="text-center md:text-left flex-1 md:max-w-sm shrink-0">
@@ -161,33 +187,33 @@ export default function CountdownTimer({
                                 transition={{ delay: 0.2 }}
                                 className="flex items-center justify-center md:justify-start gap-3 mb-4 sm:mb-6"
                             >
-                                <span className="h-[1px] w-8 sm:w-12 bg-primary/30 hidden md:block" />
-                                <span className="text-[9px] sm:text-xs font-black uppercase tracking-[0.4em] text-primary/70">The Details</span>
-                                <span className="h-[1px] w-8 sm:w-12 bg-primary/30 hidden md:block" />
+                                <span className={`h-[1px] w-8 sm:w-12 hidden md:block ${separatorClass}`} />
+                                <span className={`text-[9px] sm:text-xs font-black uppercase ${visual.eyebrowClass}`}>The Countdown</span>
+                                <span className={`h-[1px] w-8 sm:w-12 hidden md:block ${separatorClass}`} />
                             </motion.div>
                             
-                            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-serif text-[#333] mb-6 sm:mb-8 leading-[1.1]">
-                                Counting down <br /> <span className="italic font-light text-primary">to forever</span>
+                            <h2 className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl mb-6 sm:mb-8 leading-[1.1] ${visual.headingClass}`}>
+                                Counting down <br /> <span className={isEditorial ? '' : 'italic font-light'}>to forever</span>
                             </h2>
                             
                             <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
                                 <div className="flex items-start justify-center md:justify-start gap-3 sm:gap-4 group/item">
-                                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10 group-hover/item:bg-primary/10 transition-colors min-h-[44px] min-w-[44px]">
-                                        <CalendarHeart className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                                    <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 border transition-colors min-h-[44px] min-w-[44px] ${detailIconClass}`}>
+                                        <CalendarHeart className="w-4 h-4 sm:w-5 sm:h-5" />
                                     </div>
                                     <div className="text-left font-serif pt-1 sm:pt-1.5">
-                                        <p className="text-base sm:text-lg md:text-xl text-[#444] leading-none mb-1">{new Date(weddingDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                                        {weddingTime && <p className="text-xs font-sans font-bold tracking-widest uppercase opacity-40">{weddingTime}</p>}
+                                        <p className={`text-base sm:text-lg md:text-xl leading-none mb-1 ${unitValueClass}`}>{new Date(weddingDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                                        {weddingTime && <p className={`text-xs font-sans font-bold tracking-widest uppercase opacity-55 ${visual.bodyClass}`}>{weddingTime}</p>}
                                     </div>
                                 </div>
                                 {venueName && (
                                     <div className="flex items-start justify-center md:justify-start gap-3 sm:gap-4 group/item">
-                                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10 group-hover/item:bg-primary/10 transition-colors min-h-[44px] min-w-[44px]">
-                                            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                                        <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 border transition-colors min-h-[44px] min-w-[44px] ${detailIconClass}`}>
+                                            <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
                                         </div>
                                         <div className="text-left font-serif pt-1 sm:pt-1.5">
-                                            <p className="text-base sm:text-lg md:text-xl text-[#444] leading-tight mb-1">{venueName}</p>
-                                            {venueAddress && <p className="text-xs font-sans font-bold tracking-widest uppercase opacity-40 line-clamp-2">{venueAddress}</p>}
+                                            <p className={`text-base sm:text-lg md:text-xl leading-tight mb-1 ${unitValueClass}`}>{venueName}</p>
+                                            {venueAddress && <p className={`text-xs font-sans font-bold tracking-widest uppercase opacity-55 line-clamp-2 ${visual.bodyClass}`}>{venueAddress}</p>}
                                         </div>
                                     </div>
                                 )}
@@ -206,7 +232,7 @@ export default function CountdownTimer({
                         </div>
 
                         {/* Timer Grid Section */}
-                        <div className="w-[1px] h-24 sm:h-32 bg-primary/10 hidden lg:block shrink-0" />
+                        <div className={`w-[1px] h-24 sm:h-32 hidden lg:block shrink-0 ${separatorClass}`} />
 
                         <div className="grid grid-cols-2 lg:flex lg:flex-row gap-3 sm:gap-4 md:gap-6 flex-1 w-full relative z-20">
                             <AnimatePresence>
@@ -216,20 +242,20 @@ export default function CountdownTimer({
                                         initial={{ opacity: 0, scale: 0.8 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
-                                        className="relative p-[1px] rounded-3xl bg-gradient-to-br from-white/80 to-white/10 group/box hover:-translate-y-2 transition-transform duration-500 w-full"
+                                        className={`relative group/box hover:-translate-y-2 transition-transform duration-500 w-full ${unitShellClass}`}
                                     >
-                                        <div className="w-full h-full bg-white/40 backdrop-blur-xl rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden">
+                                        <div className="w-full h-full p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden">
                                             <motion.div
                                                 key={unit.value}
                                                 initial={{ y: -10, opacity: 0, scale: 0.9 }}
                                                 animate={{ y: 0, opacity: 1, scale: 1 }}
                                                 transition={{ type: "spring", damping: 15 }}
                                             >
-                                                <span className="text-4xl md:text-5xl lg:text-7xl font-serif font-light tracking-tighter text-[#333] drop-shadow-sm mb-2 block">
+                                                <span className={`text-4xl md:text-5xl lg:text-7xl font-serif font-light tracking-tighter drop-shadow-sm mb-2 block ${unitValueClass}`}>
                                                     {String(unit.value).padStart(2, '0')}
                                                 </span>
                                             </motion.div>
-                                            <span className="text-[10px] md:text-xs font-sans font-black uppercase tracking-[0.25em] text-primary/70">
+                                            <span className={`text-[10px] md:text-xs font-sans font-black uppercase ${visual.eyebrowClass}`}>
                                                 {unit.label}
                                             </span>
                                         </div>
