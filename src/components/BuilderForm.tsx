@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -31,9 +31,11 @@ import {
     sanitizeWeddingSlug,
 } from '@/lib/wedding-slugs';
 import { getUserPlanTier, PLAN_LIMITS, type UserPlanTier } from '@/lib/planner-limits';
+import { getCachedSession } from '@/lib/session-cache';
 
 // Helper component for collapsible sections
-const Collapsible = ({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) => (
+const Collapsible = memo(function Collapsible({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) {
+    return (
     <div className="border border-border rounded-2xl overflow-hidden bg-white/50 mb-3 transition-all duration-300">
         <button
             type="button"
@@ -61,9 +63,10 @@ const Collapsible = ({ title, children, isOpen, onToggle, icon: Icon }: { title:
             )}
         </AnimatePresence>
     </div>
-);
+    );
+});
 
-function AutoResizeTextarea({
+const AutoResizeTextarea = memo(function AutoResizeTextarea({
     value,
     onChange,
     className = '',
@@ -98,7 +101,7 @@ function AutoResizeTextarea({
             className={`${className} overflow-hidden`}
         />
     );
-}
+});
 
 const STEPS = [
     { id: 'details', title: 'Details', icon: Heart },
@@ -290,6 +293,14 @@ export default function BuilderForm() {
     const searchParams = useSearchParams();
     const editId = searchParams?.get('edit');
     const [currentStep, setCurrentStep] = useState(0);
+
+    // Scroll to top of the page when the step changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [currentStep]);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [weddingOwnerId, setWeddingOwnerId] = useState<string | null>(null);
@@ -442,7 +453,7 @@ export default function BuilderForm() {
 
         if (user && editId) {
             const fetchWedding = async () => {
-                const { data: sessionData } = await supabase.auth.getSession();
+                const { data: sessionData } = await getCachedSession();
                 const token = sessionData.session?.access_token;
                 if (!token) return;
 

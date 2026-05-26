@@ -5,6 +5,7 @@ import { Sparkles, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { getCachedSession } from '@/lib/session-cache';
 
 interface UpgradeButtonProps {
     weddingId?: string;
@@ -60,7 +61,7 @@ export default function UpgradeButton({ weddingId: propWeddingId, plan = 'planne
 
         setLoading(true);
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
+            const { data: sessionData } = await getCachedSession();
             const response = await fetch('/api/stripe/checkout', {
                 method: 'POST',
                 headers: {

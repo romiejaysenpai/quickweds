@@ -1,82 +1,64 @@
 import type { Metadata, Viewport } from "next";
 import {
-  Inter, Playfair_Display, Cormorant_Garamond, Great_Vibes, Montserrat, Cinzel,
-  EB_Garamond, Bodoni_Moda, Prata, Lora, Cardo, Libre_Baskerville, Marcellus, Forum, Alice,
-  Alex_Brush, Allura, Arizonia, Dancing_Script, Italianno, Pinyon_Script, Sacramento, Tangerine, Parisienne,
-  Tenor_Sans, Questrial, Syne, Spectral, Fauna_One,
-  Abril_Fatface, Cormorant_Upright, Old_Standard_TT, Josefin_Sans, Libre_Caslon_Text, Quattrocento,
-  Mrs_Saint_Delafield, Monsieur_La_Doulaise, Homemade_Apple, Herr_Von_Muellerhoff,
-  Outfit, Space_Grotesk, Fraunces, Cormorant_SC, Lavishly_Yours
+  Inter, Playfair_Display, Montserrat
 } from "next/font/google";
 import "./globals.css";
 
-// --- SANS & MODERN ---
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
-const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"] });
-const tenorSans = Tenor_Sans({ variable: "--font-tenor", weight: "400", subsets: ["latin"] });
-const questrial = Questrial({ variable: "--font-questrial", weight: "400", subsets: ["latin"] });
-const syne = Syne({ variable: "--font-syne", subsets: ["latin"] });
-const faunaOne = Fauna_One({ variable: "--font-fauna", weight: "400", subsets: ["latin"] });
-const josefin = Josefin_Sans({ variable: "--font-josefin", subsets: ["latin"] });
-const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
-const spaceGrotesk = Space_Grotesk({ variable: "--font-space", subsets: ["latin"] });
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
+const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"], display: "swap" });
+const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap" });
 
-// --- SERIF & CLASSIC ---
-const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"] });
-const cormorant = Cormorant_Garamond({ variable: "--font-cormorant", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
-const ebGaramond = EB_Garamond({ variable: "--font-eb-garamond", subsets: ["latin"] });
-const bodoniModa = Bodoni_Moda({ variable: "--font-bodoni", subsets: ["latin"] });
-const prata = Prata({ variable: "--font-prata", weight: "400", subsets: ["latin"] });
-const lora = Lora({ variable: "--font-lora", subsets: ["latin"] });
-const cardo = Cardo({ variable: "--font-cardo", weight: "400", subsets: ["latin"] });
-const libreBaskerville = Libre_Baskerville({ variable: "--font-libre", weight: ["400", "700"], subsets: ["latin"] });
-const marcellus = Marcellus({ variable: "--font-marcellus", weight: "400", subsets: ["latin"] });
-const forum = Forum({ variable: "--font-forum", weight: "400", subsets: ["latin"] });
-const alice = Alice({ variable: "--font-alice", weight: "400", subsets: ["latin"] });
-const spectral = Spectral({ variable: "--font-spectral", subsets: ["latin"], weight: ["200", "300", "400", "700"] });
-const cinzel = Cinzel({ variable: "--font-cinzel", subsets: ["latin"] });
-const abril = Abril_Fatface({ variable: "--font-abril", weight: "400", subsets: ["latin"] });
-const cormorantUpright = Cormorant_Upright({ variable: "--font-cormorant-upright", weight: ["300", "400", "500", "600", "700"], subsets: ["latin"] });
-const oldStandard = Old_Standard_TT({ variable: "--font-old-standard", weight: ["400", "700"], subsets: ["latin"] });
-const caslon = Libre_Caslon_Text({ variable: "--font-caslon", weight: ["400", "700"], subsets: ["latin"] });
-const quattrocento = Quattrocento({ variable: "--font-quattrocento", weight: ["400", "700"], subsets: ["latin"] });
-const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"] });
-const cormorantSC = Cormorant_SC({ variable: "--font-cormorant-sc", weight: ["300", "400", "700"], subsets: ["latin"] });
-
-// --- SCRIPT & CALLIGRAPHY ---
-const greatVibes = Great_Vibes({ variable: "--font-script", weight: "400", subsets: ["latin"] });
-const alexBrush = Alex_Brush({ variable: "--font-alex", weight: "400", subsets: ["latin"] });
-const allura = Allura({ variable: "--font-allura", weight: "400", subsets: ["latin"] });
-const arizonia = Arizonia({ variable: "--font-arizonia", weight: "400", subsets: ["latin"] });
-const dancingScript = Dancing_Script({ variable: "--font-dancing", subsets: ["latin"] });
-const italianno = Italianno({ variable: "--font-italianno", weight: "400", subsets: ["latin"] });
-const pinyonScript = Pinyon_Script({ variable: "--font-pinyon", weight: "400", subsets: ["latin"] });
-const sacramento = Sacramento({ variable: "--font-sacramento", weight: "400", subsets: ["latin"] });
-const tangerine = Tangerine({ variable: "--font-tangerine", weight: ["400", "700"], subsets: ["latin"] });
-const parisienne = Parisienne({ variable: "--font-parisienne", weight: "400", subsets: ["latin"] });
-const mrsSaint = Mrs_Saint_Delafield({ variable: "--font-mrs-saint", weight: "400", subsets: ["latin"] });
-const monsieur = Monsieur_La_Doulaise({ variable: "--font-monsieur", weight: "400", subsets: ["latin"] });
-const homemade = Homemade_Apple({ variable: "--font-homemade", weight: "400", subsets: ["latin"] });
-const herr = Herr_Von_Muellerhoff({ variable: "--font-herr", weight: "400", subsets: ["latin"] });
-const lavishly = Lavishly_Yours({ variable: "--font-lavishly", weight: "400", subsets: ["latin"] });
+const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "");
+const appUrl =
+  configuredAppUrl &&
+  !configuredAppUrl.includes("localhost") &&
+  !configuredAppUrl.includes("127.0.0.1")
+    ? configuredAppUrl
+    : "https://quickweds.site";
+const siteName = "QuickWeds";
+const defaultTitle = "QuickWeds | Free Wedding Website Builder & Planner";
+const defaultDescription =
+  "Create a free wedding website with RSVP tracking, guest lists, seating charts, budgets, vendor planning, and a private planning dashboard for couples.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://quickweds.site"),
-  title: "QuickWeds | Elegant Wedding Websites & Digital Planner",
-  description: "Create a beautiful, mobile-first wedding website for free. Manage RSVPs, track budgets, organize seating charts, and collaborate with your partner seamlessly.",
-  applicationName: "QuickWeds",
+  metadataBase: new URL(appUrl),
+  title: defaultTitle,
+  description: defaultDescription,
+  applicationName: siteName,
   manifest: "/manifest.webmanifest",
   keywords: [
+    "free wedding website builder",
     "wedding website",
+    "wedding website builder",
+    "online wedding planner",
     "digital wedding invitation",
     "wedding planner",
+    "wedding planning app",
     "RSVP tracker",
-    "wedding dashboard",
+    "guest list manager",
+    "seating chart planner",
+    "wedding budget tracker",
+    "wedding vendor planner",
     "QuickWeds",
   ],
-  authors: [{ name: "QuickWeds" }],
-  creator: "QuickWeds",
-  publisher: "QuickWeds",
+  authors: [{ name: siteName }],
+  creator: siteName,
+  publisher: siteName,
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  category: "Wedding planning software",
   icons: {
     icon: [
       { url: "/icons/favicon-16.png", sizes: "16x16", type: "image/png" },
@@ -88,28 +70,34 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "QuickWeds",
+    title: siteName,
   },
   openGraph: {
     type: "website",
-    siteName: "QuickWeds",
-    title: "QuickWeds | Elegant Wedding Websites & Digital Planner",
-    description: "Create a beautiful, mobile-first wedding website for free. Manage RSVPs, track budgets, organize seating charts, and collaborate with your partner seamlessly.",
+    locale: "en_US",
+    siteName,
+    title: defaultTitle,
+    description: defaultDescription,
     url: "/",
     images: [
       {
         url: "/logo.png",
         width: 1200,
         height: 960,
-        alt: "QuickWeds",
+        alt: "QuickWeds wedding website builder and digital planner",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "QuickWeds | Elegant Wedding Websites & Digital Planner",
-    description: "Create a beautiful, mobile-first wedding website for free. Manage RSVPs, track budgets, organize seating charts, and collaborate with your partner seamlessly.",
+    title: defaultTitle,
+    description: defaultDescription,
     images: ["/logo.png"],
+  },
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
   },
 };
 
@@ -138,9 +126,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className={`
-        ${inter.variable} ${montserrat.variable} ${tenorSans.variable} ${questrial.variable} ${syne.variable} ${faunaOne.variable} ${josefin.variable} ${outfit.variable} ${spaceGrotesk.variable}
-        ${playfair.variable} ${cormorant.variable} ${ebGaramond.variable} ${bodoniModa.variable} ${prata.variable} ${lora.variable} ${cardo.variable} ${libreBaskerville.variable} ${marcellus.variable} ${forum.variable} ${alice.variable} ${spectral.variable} ${cinzel.variable} ${abril.variable} ${cormorantUpright.variable} ${oldStandard.variable} ${caslon.variable} ${quattrocento.variable} ${fraunces.variable} ${cormorantSC.variable}
-        ${greatVibes.variable} ${alexBrush.variable} ${allura.variable} ${arizonia.variable} ${dancingScript.variable} ${italianno.variable} ${pinyonScript.variable} ${sacramento.variable} ${tangerine.variable} ${parisienne.variable} ${mrsSaint.variable} ${monsieur.variable} ${homemade.variable} ${herr.variable} ${lavishly.variable}
+        ${inter.variable} ${montserrat.variable} ${playfair.variable}
         antialiased
       `}>
         <ThemeProvider>

@@ -5,6 +5,7 @@ import { User } from '@supabase/supabase-js';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { clearLocalSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
+import { getCachedSession, invalidateSessionCache } from '@/lib/session-cache';
 
 interface AuthContextType {
     user: User | null;
@@ -42,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             let activeSession = session || null;
             if (!activeSession) {
-                const { data: { session: loadedSession }, error } = await supabase.auth.getSession();
+                const { data: { session: loadedSession }, error } = await getCachedSession();
                 if (error) {
                     if (isInvalidRefreshTokenError(error)) {
                         await clearLocalSupabaseSession();
@@ -90,7 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         // Check active sessions and sets the user
-        supabase.auth.getSession()
+        getCachedSession()
             .then(async ({ data: { session }, error }) => {
                 if (error) {
                     if (isInvalidRefreshTokenError(error)) {
@@ -124,6 +125,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Listen for changes on auth state (logged in, signed out, etc.)
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            invalidateSessionCache();
             const currentUser = session?.user ?? null;
             setUser(currentUser);
             void checkAdminStatus(currentUser, session);
@@ -135,6 +137,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const logout = async () => {
         await supabase.auth.signOut();
+        invalidateSessionCache();
         setIsAdmin(false);
         setAdminChecked(false);
     };

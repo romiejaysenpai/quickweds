@@ -521,6 +521,49 @@ html {
   }
 }
 
+/* ===== PERFORMANCE OPTIMIZATIONS ===== */
+
+/* Eliminate 300ms tap delay on all interactive elements */
+a, button, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Hardware-accelerated smooth scrolling on iOS */
+.overflow-y-auto,
+.overflow-y-scroll,
+[style*="overflow"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Layout containment for repeated cards/list items — 
+   tells the browser changes inside won't affect siblings */
+.grid > div,
+.space-y-2 > div,
+.space-y-3 > div,
+.space-y-4 > div {
+  contain: layout style;
+}
+
+/* GPU compositing hints for animated elements */
+.animate-spin,
+.animate-pulse,
+.animate-float,
+.animate-marquee,
+.hover-lift {
+  will-change: transform;
+}
+
+.glass,
+.glossy {
+  will-change: backdrop-filter;
+}
+
+/* Defer rendering of off-screen sections to reduce initial paint cost */
+section:not(:first-child) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
+
 /* Extra small phone optimization (< 375px) */
 @media (max-width: 374px) {
   h1 {

@@ -2,13 +2,11 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle, Bell, BellOff, Info } from 'lucide-react';
-import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
-import { useEffect, useState, use, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useState, use, useMemo, useRef, useCallback, useDeferredValue } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { trackWeddingEvent } from '@/lib/wedding-features';
 import ConfettiCelebration from '@/components/ConfettiCelebration';
@@ -31,6 +29,7 @@ import {
     type PlusOneRsvpStatus,
     escapeCsvCell,
 } from '@/lib/guest-list';
+import { getCachedSession } from '@/lib/session-cache';
 
 const AnalyticsPanel = dynamic(() => import('@/components/dashboard/AnalyticsPanel'), {
     loading: () => <DashboardPanelLoading label="Loading analytics..." />,
@@ -38,6 +37,12 @@ const AnalyticsPanel = dynamic(() => import('@/components/dashboard/AnalyticsPan
 const CollaboratorsPanel = dynamic(() => import('@/components/dashboard/CollaboratorsPanel'), {
     loading: () => <DashboardPanelLoading label="Loading team tools..." />,
 });
+const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudgetPieChart'), {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse rounded-full bg-neutral/50" />,
+});
+const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), { ssr: false });
+const QRCodeCanvas = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeCanvas), { ssr: false });
 const GuestImportModal = dynamic(() => import('@/components/dashboard/GuestImportModal'));
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/dahsboard%20quivkyt.png';
@@ -113,6 +118,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [accessRole, setAccessRole] = useState<'owner' | 'partner' | 'coordinator' | 'pending' | 'denied'>('denied');
     const [accessDebug, setAccessDebug] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
+    const deferredSearchQuery = useDeferredValue(searchQuery);
     const [filterStatus, setFilterStatus] = useState<'all' | 'confirmed' | 'declined' | 'pending'>('all');
     const [groupFilter, setGroupFilter] = useState<'all' | GuestGroup>('all');
     const [invitationFilter, setInvitationFilter] = useState<'all' | 'sent' | 'not_sent'>('all');
@@ -204,7 +210,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         const fetchData = async () => {
             try {
                 setCheckingRole(true);
-                const { data: sessionData } = await supabase.auth.getSession();
+                const { data: sessionData } = await getCachedSession();
                 const token = sessionData.session?.access_token;
 
                 if (!token) {
@@ -344,7 +350,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     // Filtered list
     const filteredRsvps = useMemo(() => {
         return rsvps.filter(r => {
-            const normalizedQuery = searchQuery.toLowerCase();
+            const normalizedQuery = deferredSearchQuery.toLowerCase();
             const matchSearch = [
                 r.guest_name,
                 r.guest_email,
@@ -364,7 +370,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     : !r.invitation_sent;
             return matchSearch && matchStatus && matchGroup && matchInvitation;
         });
-    }, [rsvps, searchQuery, filterStatus, groupFilter, invitationFilter]);
+    }, [rsvps, deferredSearchQuery, filterStatus, groupFilter, invitationFilter]);
 
     // Feature: Infinite scroll state and logic (must be after filteredRsvps)
     const [visibleCount, setVisibleCount] = useState(20);
@@ -404,7 +410,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     useEffect(() => {
         setVisibleCount(ITEMS_PER_PAGE);
         setHasMore(filteredRsvps.length > ITEMS_PER_PAGE);
-    }, [searchQuery, filterStatus, groupFilter, invitationFilter, filteredRsvps.length]);
+    }, [deferredSearchQuery, filterStatus, groupFilter, invitationFilter, filteredRsvps.length]);
 
     const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [activeTab, setActiveTab] = useState<'home' | 'guests' | 'analytics' | 'team' | 'settings'>('home');
@@ -1039,28 +1045,15 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
                                     <div className="h-44 relative">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={budgetData}
-                                                    cx="50%"
-                                                    cy="50%"
-                                                    innerRadius={50}
-                                                    outerRadius={70}
-                                                    paddingAngle={8}
-                                                    dataKey="value"
-                                                    stroke="none"
-                                                >
-                                                    {budgetData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="outline-none" />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip 
-                                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                                    formatter={(value: any) => [`${currencySymbol}${Number(value || 0).toLocaleString()}`, 'Amount']} 
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
+                                        <LazyBudgetPieChart
+                                            data={budgetData}
+                                            colors={COLORS}
+                                            currencySymbol={currencySymbol}
+                                            innerRadius={50}
+                                            outerRadius={70}
+                                            paddingAngle={8}
+                                            tooltipRadius={16}
+                                        />
                                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                             <span className="text-[10px] uppercase font-black tracking-widest text-text-secondary/40">Spent</span>
                                             <span className="text-lg font-black font-mono text-primary">{currencySymbol}{stats.totalSpent.toLocaleString()}</span>

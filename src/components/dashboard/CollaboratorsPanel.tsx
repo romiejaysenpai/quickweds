@@ -10,9 +10,9 @@ import {
     type CollaboratorStatus,
     type WeddingCollaborator,
 } from '@/lib/wedding-features';
-import { supabase } from '@/lib/supabase';
 import UpgradeButton from '@/components/UpgradeButton';
 import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
+import { getCachedSession } from '@/lib/session-cache';
 
 interface CollaboratorsPanelProps {
     weddingId: string;
@@ -69,7 +69,7 @@ export default function CollaboratorsPanel({
             }
 
             const invitedAddress = inviteEmail.trim().toLowerCase();
-            const { data } = await supabase.auth.getSession();
+            const { data } = await getCachedSession();
             const token = data.session?.access_token;
             if (!token) throw new Error('Please login again and retry.');
 

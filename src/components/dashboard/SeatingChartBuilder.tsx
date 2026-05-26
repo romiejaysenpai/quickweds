@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
+import dynamic from 'next/dynamic';
 import {
     ArrowDown,
     ArrowLeft,
@@ -43,6 +43,10 @@ import {
 } from '@/lib/guest-list';
 import UpgradeButton from '@/components/UpgradeButton';
 import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
+import { getCachedSession } from '@/lib/session-cache';
+
+const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), { ssr: false });
+const QRCodeCanvas = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeCanvas), { ssr: false });
 
 interface Table {
     id: string;
@@ -232,6 +236,10 @@ export default function SeatingChartBuilder({
     const chartShellRef = useRef<HTMLDivElement>(null);
     const tablesRef = useRef<Table[]>([]);
     const objectsRef = useRef<VenueObject[]>([]);
+    const tableMoveFrameRef = useRef<number | null>(null);
+    const objectMoveFrameRef = useRef<number | null>(null);
+    const lastTableDragPositionRef = useRef<Pick<Table, 'position_x' | 'position_y'> | null>(null);
+    const lastObjectDragPositionRef = useRef<Pick<VenueObject, 'x' | 'y'> | null>(null);
     const [loading, setLoading] = useState(true);
     const [guests, setGuests] = useState<EnhancedRSVP[]>([]);
     const [tables, setTables] = useState<Table[]>([]);
@@ -256,6 +264,7 @@ export default function SeatingChartBuilder({
         checkedInCount?: number;
     }>({});
     const [searchQuery, setSearchQuery] = useState('');
+    const deferredSearchQuery = useDeferredValue(searchQuery);
     const [groupFilter, setGroupFilter] = useState<'all' | GuestGroup>('all');
     const [isTableModalOpen, setIsTableModalOpen] = useState(false);
     const [editingTableId, setEditingTableId] = useState<string | null>(null);
@@ -621,7 +630,7 @@ export default function SeatingChartBuilder({
 
     const updateTablePosition = useCallback(async (tableId: string, position_x: number, position_y: number) => {
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
+            const { data: sessionData } = await getCachedSession();
             const token = sessionData.session?.access_token;
             if (!token) {
                 setPositionSaveError('Sign in again to save table positions.');
@@ -765,7 +774,7 @@ export default function SeatingChartBuilder({
     };
 
     const callSeatFinderApi = async (path: string, body: Record<string, unknown>) => {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getCachedSession();
         const token = sessionData.session?.access_token;
         if (!token) throw new Error('Please sign in again before using QR Seat Finder.');
 
@@ -1124,24 +1133,50 @@ export default function SeatingChartBuilder({
         const moveTable = (event: PointerEvent) => {
             const position = getPointerPosition(event.clientX, event.clientY);
             if (!position) return;
-            setTables((current) => current.map((table) => (
-                table.id === draggingTable ? { ...table, ...position } : table
-            )));
+            lastTableDragPositionRef.current = position;
+            if (tableMoveFrameRef.current !== null) {
+                cancelAnimationFrame(tableMoveFrameRef.current);
+            }
+            tableMoveFrameRef.current = requestAnimationFrame(() => {
+                setTables((current) => current.map((table) => (
+                    table.id === draggingTable ? { ...table, ...position } : table
+                )));
+                tableMoveFrameRef.current = null;
+            });
         };
 
         const stopDragging = () => {
             const draggedTable = tablesRef.current.find((table) => table.id === draggingTable);
+            const finalPosition = lastTableDragPositionRef.current;
+            if (tableMoveFrameRef.current !== null) {
+                cancelAnimationFrame(tableMoveFrameRef.current);
+                tableMoveFrameRef.current = null;
+            }
+            if (finalPosition) {
+                setTables((current) => current.map((table) => (
+                    table.id === draggingTable ? { ...table, ...finalPosition } : table
+                )));
+            }
             setDraggingTable(null);
 
             if (draggedTable) {
-                void updateTablePosition(draggedTable.id, draggedTable.position_x, draggedTable.position_y);
+                void updateTablePosition(
+                    draggedTable.id,
+                    finalPosition?.position_x ?? draggedTable.position_x,
+                    finalPosition?.position_y ?? draggedTable.position_y,
+                );
             }
+            lastTableDragPositionRef.current = null;
         };
 
         window.addEventListener('pointermove', moveTable);
         window.addEventListener('pointerup', stopDragging, { once: true });
 
         return () => {
+            if (tableMoveFrameRef.current !== null) {
+                cancelAnimationFrame(tableMoveFrameRef.current);
+                tableMoveFrameRef.current = null;
+            }
             window.removeEventListener('pointermove', moveTable);
             window.removeEventListener('pointerup', stopDragging);
         };
@@ -1153,31 +1188,62 @@ export default function SeatingChartBuilder({
         const moveObject = (event: PointerEvent) => {
             const position = getPointerPosition(event.clientX, event.clientY);
             if (!position) return;
-            setLayout((current) => ({
-                ...current,
-                layout_data: {
-                    ...(current.layout_data || {}),
-                    objects: (current.layout_data?.objects || []).map((object) => (
-                        object.id === draggingObject
-                            ? { ...object, x: position.position_x, y: position.position_y }
-                            : object
-                    )),
-                },
-            }));
+            lastObjectDragPositionRef.current = { x: position.position_x, y: position.position_y };
+            if (objectMoveFrameRef.current !== null) {
+                cancelAnimationFrame(objectMoveFrameRef.current);
+            }
+            objectMoveFrameRef.current = requestAnimationFrame(() => {
+                setLayout((current) => ({
+                    ...current,
+                    layout_data: {
+                        ...(current.layout_data || {}),
+                        objects: (current.layout_data?.objects || []).map((object) => (
+                            object.id === draggingObject
+                                ? { ...object, x: position.position_x, y: position.position_y }
+                                : object
+                        )),
+                    },
+                }));
+                objectMoveFrameRef.current = null;
+            });
         };
 
         const stopDragging = () => {
             const draggedObject = objectsRef.current.find((object) => object.id === draggingObject);
+            const finalPosition = lastObjectDragPositionRef.current;
+            if (objectMoveFrameRef.current !== null) {
+                cancelAnimationFrame(objectMoveFrameRef.current);
+                objectMoveFrameRef.current = null;
+            }
+            if (finalPosition) {
+                setLayout((current) => ({
+                    ...current,
+                    layout_data: {
+                        ...(current.layout_data || {}),
+                        objects: (current.layout_data?.objects || []).map((object) => (
+                            object.id === draggingObject ? { ...object, ...finalPosition } : object
+                        )),
+                    },
+                }));
+            }
             setDraggingObject(null);
             if (draggedObject) {
-                updateVenueObject(draggedObject.id, { x: draggedObject.x, y: draggedObject.y });
+                updateVenueObject(draggedObject.id, {
+                    x: finalPosition?.x ?? draggedObject.x,
+                    y: finalPosition?.y ?? draggedObject.y,
+                });
             }
+            lastObjectDragPositionRef.current = null;
         };
 
         window.addEventListener('pointermove', moveObject);
         window.addEventListener('pointerup', stopDragging, { once: true });
 
         return () => {
+            if (objectMoveFrameRef.current !== null) {
+                cancelAnimationFrame(objectMoveFrameRef.current);
+                objectMoveFrameRef.current = null;
+            }
             window.removeEventListener('pointermove', moveObject);
             window.removeEventListener('pointerup', stopDragging);
         };
@@ -1236,7 +1302,7 @@ export default function SeatingChartBuilder({
         return guests
             .filter((guest) => !assignedGuestIds.has(guest.id))
             .filter((guest) => {
-                const normalizedQuery = searchQuery.toLowerCase();
+                const normalizedQuery = deferredSearchQuery.toLowerCase();
                 const matchesSearch = [
                     guest.guest_name,
                     guest.guest_email,
@@ -1246,7 +1312,7 @@ export default function SeatingChartBuilder({
                 const matchesGroup = groupFilter === 'all' ? true : guest.guest_group === groupFilter;
                 return matchesSearch && matchesGroup;
             });
-    }, [assignedGuestIds, guests, groupFilter, searchQuery]);
+    }, [assignedGuestIds, deferredSearchQuery, guests, groupFilter]);
 
     const seatingSummary = useMemo(() => {
         const totalGuests = guests.reduce((total, guest) => total + getPartySize(guest), 0);

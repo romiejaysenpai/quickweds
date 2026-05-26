@@ -1,7 +1,18 @@
 import { supabase } from '@/lib/supabase';
 
 export function isInvalidRefreshTokenError(error: unknown) {
-    const message = error instanceof Error ? error.message : String(error || '');
+    if (!error) return false;
+
+    let message = '';
+    if (error instanceof Error) {
+        message = error.message;
+    } else if (typeof error === 'object') {
+        const record = error as Record<string, unknown>;
+        message = String(record.message || record.error_description || record.error || JSON.stringify(record));
+    } else {
+        message = String(error);
+    }
+
     return /invalid refresh token|refresh token not found/i.test(message);
 }
 
@@ -26,4 +37,20 @@ export async function clearLocalSupabaseSession() {
 
     clearAuthKeys(window.localStorage);
     clearAuthKeys(window.sessionStorage);
+
+    // Also clear supabase auth cookies if present
+    if (typeof document !== 'undefined') {
+        try {
+            const cookies = document.cookie.split(';');
+            for (const cookie of cookies) {
+                const eqPos = cookie.indexOf('=');
+                const name = eqPos > -1 ? cookie.slice(0, eqPos).trim() : cookie.trim();
+                if (name.startsWith('sb-') || name.includes('auth-token') || name.includes('supabase')) {
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to clear local auth cookies:', e);
+        }
+    }
 }

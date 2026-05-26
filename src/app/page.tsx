@@ -166,6 +166,82 @@ const faqs = [
   },
 ];
 
+const landingPageStructuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': 'https://quickweds.site/#organization',
+      name: 'QuickWeds',
+      url: 'https://quickweds.site/',
+      logo: 'https://quickweds.site/logo.png',
+      sameAs: ['https://www.facebook.com/profile.php?id=61587661715324'],
+      contactPoint: [
+        {
+          '@type': 'ContactPoint',
+          email: 'support@quickweds.site',
+          contactType: 'customer support',
+          availableLanguage: ['English'],
+        },
+      ],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://quickweds.site/#website',
+      name: 'QuickWeds',
+      url: 'https://quickweds.site/',
+      description: 'Free wedding website builder and all-in-one digital wedding planning dashboard.',
+      publisher: {
+        '@id': 'https://quickweds.site/#organization',
+      },
+      inLanguage: 'en',
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': 'https://quickweds.site/#app',
+      name: 'QuickWeds',
+      applicationCategory: 'LifestyleApplication',
+      operatingSystem: 'Web',
+      url: 'https://quickweds.site/',
+      image: 'https://quickweds.site/logo.png',
+      description:
+        'Create a wedding website, manage RSVPs, organize guests, build seating charts, track budgets, coordinate vendors, and collaborate from one planning dashboard.',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+        availability: 'https://schema.org/InStock',
+      },
+      featureList: [
+        'Free wedding website builder',
+        'Digital wedding invitations',
+        'RSVP tracking and reminders',
+        'Guest list management',
+        'Seating chart planner',
+        'Wedding budget tracker',
+        'Vendor organizer',
+        'Wedding checklist and task planner',
+        'Partner and planner collaboration',
+      ],
+      publisher: {
+        '@id': 'https://quickweds.site/#organization',
+      },
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': 'https://quickweds.site/#faq',
+      mainEntity: faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq.answer,
+        },
+      })),
+    },
+  ],
+};
+
 const weddingTips = [
   {
     title: 'Finalize Your Guest Count Early',
@@ -442,6 +518,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen overflow-hidden bg-neutral pb-20 text-foreground sm:pb-0">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(landingPageStructuredData) }}
+      />
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-border/70 bg-white/90 backdrop-blur-xl">
         <div className="mobile-safe-px mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:h-20 sm:gap-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
@@ -1145,11 +1225,11 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-16 pt-8 border-t border-border flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <p className="text-xs font-bold text-text-secondary/60">
+          <div className="mt-16 flex flex-col items-center gap-4 border-t border-border pt-8 text-center md:flex-row md:justify-between md:text-left">
+            <p className="text-xs font-bold leading-relaxed text-text-secondary/60">
               © {new Date().getFullYear()} QuickWeds. All rights reserved.
             </p>
-            <div className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 md:justify-end">
               <Link href="/privacy" className="text-xs font-bold text-text-secondary/60 hover:text-primary transition-colors">Privacy</Link>
               <Link href="/terms" className="text-xs font-bold text-text-secondary/60 hover:text-primary transition-colors">Terms</Link>
               <Link href="/cookies" className="text-xs font-bold text-text-secondary/60 hover:text-primary transition-colors">Cookies</Link>

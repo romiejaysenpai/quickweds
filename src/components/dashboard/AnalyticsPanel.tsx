@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, BarChart3, Mail, Loader2, QrCode, Share2, TrendingUp, Users } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Cell } from 'recharts';
 import { getWeddingAnalyticsSummary } from '@/lib/wedding-features';
-import { supabase } from '@/lib/supabase';
 import UpgradeButton from '@/components/UpgradeButton';
 import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
+import { getCachedSession } from '@/lib/session-cache';
 
 interface AnalyticsPanelProps {
     weddingId: string;
@@ -54,7 +54,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
     const sendReminder = async () => {
         setSendingReminder(true);
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
+            const { data: sessionData } = await getCachedSession();
             const res = await fetch('/api/weddings/reminders', {
                 method: 'POST',
                 headers: {

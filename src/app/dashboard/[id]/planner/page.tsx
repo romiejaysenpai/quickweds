@@ -3,7 +3,6 @@
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -11,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from '@/components/UpgradeButton';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
+import { getCachedSession } from '@/lib/session-cache';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
     loading: () => (
@@ -35,6 +35,10 @@ const ThankYouNoteManager = dynamic(() => import('@/components/dashboard/ThankYo
             <p className="mt-4 text-sm font-bold text-text-secondary">Loading thank-you tools...</p>
         </div>
     ),
+});
+const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudgetPieChart'), {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse rounded-full bg-neutral/50" />,
 });
 
 const PLANNER_TABS = ['checklist', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
@@ -226,7 +230,7 @@ async function deletePlannerItem(weddingId: string, type: string, id: string) {
     const table = PLANNER_DELETE_TABLES[type];
     if (!table) throw new Error('Unknown planner item type.');
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getCachedSession();
     const token = sessionData.session?.access_token;
     if (!token) throw new Error('Please sign in again before deleting this item.');
 
@@ -280,7 +284,7 @@ function getPlannerErrorMessage(err: unknown, fallback: string) {
 }
 
 async function plannerItemRequest(method: 'POST' | 'PATCH', payload: Record<string, unknown>) {
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getCachedSession();
     const token = sessionData.session?.access_token;
     if (!token) throw new Error('Please sign in again before saving this planner item.');
 
@@ -362,7 +366,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
         const guardAndLoad = async () => {
             setCheckingRole(true);
-            const { data: sessionData } = await supabase.auth.getSession();
+            const { data: sessionData } = await getCachedSession();
             const token = sessionData.session?.access_token;
 
             if (!token) {
@@ -412,7 +416,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             setLoading(true);
             setPlannerError('');
             try {
-                const { data: sessionData } = await supabase.auth.getSession();
+                const { data: sessionData } = await getCachedSession();
                 const token = sessionData.session?.access_token;
 
                 if (!token) {
@@ -1119,7 +1123,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
         : '';
 
     async function getAuthToken() {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await getCachedSession();
         return data.session?.access_token || '';
     }
 
@@ -1563,27 +1567,15 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                 {/* Visual Usage */}
                 <div className="bg-neutral/30 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/50 grid gap-3 sm:grid-cols-[170px_1fr] sm:items-center shadow-inner">
                     <div className="h-[150px] sm:h-[170px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={chartData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={40}
-                                    outerRadius={60}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {chartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip 
-                                    formatter={(value: any) => [`${currencySymbol}${value.toLocaleString()}`, 'Amount']}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
+                        <LazyBudgetPieChart
+                            data={chartData}
+                            colors={COLORS}
+                            currencySymbol={currencySymbol}
+                            innerRadius={40}
+                            outerRadius={60}
+                            paddingAngle={5}
+                            tooltipRadius={12}
+                        />
                     </div>
                     <div className="space-y-3">
                         <div className="flex justify-between items-end gap-2">

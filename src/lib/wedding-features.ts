@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { getCachedSession } from '@/lib/session-cache';
 import { checkRateLimit, sanitizeInput, sanitizeWeddingId, sanitizeEmail, sanitizeUUID } from '@/lib/rate-limiter';
 
 export type CollaboratorRole = 'partner' | 'coordinator';
@@ -330,7 +331,7 @@ export async function getWeddingAnalyticsSummary(weddingId: string, rsvpCount: n
 
 export async function listWeddingCollaborators(weddingId: string): Promise<WeddingCollaborator[]> {
     try {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getCachedSession();
         const token = sessionData.session?.access_token;
 
         if (token) {
@@ -435,7 +436,7 @@ export async function inviteWeddingCollaborator(input: {
 }
 
 export async function acceptWeddingInvite(collaboratorId: string) {
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getCachedSession();
     const token = sessionData.session?.access_token;
 
     if (token) {
@@ -499,7 +500,7 @@ export async function listSharedWeddings(email?: string | null) {
     if (!email) return [];
 
     try {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getCachedSession();
         const token = sessionData.session?.access_token;
 
         if (token) {

@@ -14,6 +14,7 @@ import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { getWeddingPublicPath } from '@/lib/wedding-slugs';
 import { getUserPlanTier, PLAN_LIMITS } from '@/lib/planner-limits';
+import { getCachedSession } from '@/lib/session-cache';
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
 
@@ -341,7 +342,7 @@ export default function DashboardRedirect() {
 
         const guardAndFetch = async () => {
             setCheckingRole(true);
-            const { data } = await supabase.auth.getSession();
+            const { data } = await getCachedSession();
             const token = data.session?.access_token;
 
             if (!token) {
