@@ -124,6 +124,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+main section[id] {
+  scroll-margin-top: 5.5rem;
+}
+
+@media (min-width: 640px) {
+  main section[id] {
+    scroll-margin-top: 6.5rem;
+  }
+}
+
 .no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;

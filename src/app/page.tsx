@@ -563,15 +563,15 @@ export default function Home() {
       />
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-border/70 bg-white/90 backdrop-blur-xl">
         <div className="mobile-safe-px mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:h-20 sm:gap-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2">
+          <a href="#home" className="flex items-center gap-2" onClick={closeMobileMenu}>
             <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-8 w-auto object-contain sm:h-11" priority />
-          </Link>
+          </a>
 
           <div className="hidden items-center gap-7 lg:flex">
             <a href="#features" className={navItemClass}>Features</a>
-            <Link href="/suppliers" className={navItemClass}>Directory</Link>
+            <a href="#directory" className={navItemClass}>Directory</a>
             <a href="#tips" className={navItemClass}>Wedding Tips</a>
-            <button type="button" onClick={openDemo} className={navItemClass}>Demo</button>
+            <a href="#demo" className={navItemClass}>Demo</a>
             <a href="#pricing" className={navItemClass}>Pricing</a>
             <a href="#contact" className={navItemClass}>Contact</a>
           </div>
@@ -639,14 +639,14 @@ export default function Home() {
                 Pricing
                 <ArrowRight className="h-4 w-4" />
               </a>
-              <Link
-                href="/suppliers"
+              <a
+                href="#directory"
                 onClick={closeMobileMenu}
                 className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
               >
                 Directory
                 <ArrowRight className="h-4 w-4" />
-              </Link>
+              </a>
               <a
                 href="#tips"
                 onClick={closeMobileMenu}
@@ -663,14 +663,14 @@ export default function Home() {
                 Templates
                 <ArrowRight className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                onClick={openDemo}
+              <a
+                href="#demo"
+                onClick={closeMobileMenu}
                 className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-left text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
               >
                 Demo
                 <ArrowRight className="h-4 w-4" />
-              </button>
+              </a>
               <Link
                 href="/user-guide"
                 onClick={closeMobileMenu}
@@ -743,7 +743,7 @@ export default function Home() {
       </nav>
 
       <main className="pt-16 sm:pt-20">
-        <section className="relative px-4 pb-14 pt-9 sm:px-6 sm:pb-24 sm:pt-16 lg:pb-28">
+        <section id="home" className="relative px-4 pb-14 pt-9 sm:px-6 sm:pb-24 sm:pt-16 lg:pb-28">
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,rgba(209,108,120,0.13),transparent_30%),radial-gradient(circle_at_85%_12%,rgba(214,184,124,0.16),transparent_26%)]" />
           <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
             <div className="text-center lg:text-left">
@@ -871,7 +871,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-white px-4 py-16 sm:px-6 sm:py-24">
+        <section id="directory" className="bg-white px-4 py-16 sm:px-6 sm:py-24">
           <div className="mx-auto grid max-w-6xl gap-8 rounded-[1.5rem] border border-border bg-neutral p-5 shadow-sm sm:rounded-[2rem] sm:p-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div className="text-center lg:text-left">
               <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-primary/70 sm:text-xs sm:tracking-[0.28em]">Supplier directory</p>
@@ -897,7 +897,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-white px-4 py-16 sm:px-6 sm:py-28">
+        <section id="demo" className="bg-white px-4 py-16 sm:px-6 sm:py-28">
           <div className="mx-auto max-w-6xl">
             <SectionHeading eyebrow="How it works" title="Set everything up in" accent="minutes" />
             <div className="grid gap-4 md:grid-cols-3">
@@ -1215,9 +1215,9 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4 lg:gap-8 text-center md:text-left">
             {/* Brand Column */}
             <div className="space-y-6">
-              <Link href="/" className="inline-block">
+              <a href="#home" className="inline-block">
                 <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-10 w-auto object-contain" />
-              </Link>
+              </a>
               <p className="max-w-xs mx-auto md:mx-0 text-sm leading-7 text-text-secondary">
                 The all-in-one wedding planning system for websites, RSVPs, guests, budgets, vendors, and more. Simplifying your journey to &quot;I do&quot;.
               </p>
@@ -1239,9 +1239,9 @@ export default function Home() {
               <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Product</h4>
               <ul className="space-y-4">
                 <li><button type="button" onClick={openTemplates} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Wedding Templates</button></li>
-                <li><button type="button" onClick={openDemo} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">View Live Demo</button></li>
+                <li><a href="#demo" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">View Live Demo</a></li>
                 <li><a href="#pricing" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Pricing & Features</a></li>
-                <li><Link href="/suppliers" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Vendor Directory</Link></li>
+                <li><a href="#directory" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Vendor Directory</a></li>
               </ul>
             </div>
 
