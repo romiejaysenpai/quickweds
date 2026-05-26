@@ -197,6 +197,28 @@ const landingPageStructuredData = {
       inLanguage: 'en',
     },
     {
+      '@type': 'WebPage',
+      '@id': 'https://quickweds.site/#webpage',
+      url: 'https://quickweds.site/',
+      name: 'QuickWeds | Free Wedding Website Builder & Planner',
+      description:
+        'Create a free wedding website with RSVP tracking, guest lists, seating charts, budgets, vendor planning, and a private planning dashboard for couples.',
+      isPartOf: {
+        '@id': 'https://quickweds.site/#website',
+      },
+      about: {
+        '@id': 'https://quickweds.site/#app',
+      },
+      primaryImageOfPage: {
+        '@type': 'ImageObject',
+        url: 'https://quickweds.site/logo.png',
+      },
+      breadcrumb: {
+        '@id': 'https://quickweds.site/#breadcrumb',
+      },
+      inLanguage: 'en',
+    },
+    {
       '@type': 'SoftwareApplication',
       '@id': 'https://quickweds.site/#app',
       name: 'QuickWeds',
@@ -226,6 +248,18 @@ const landingPageStructuredData = {
       publisher: {
         '@id': 'https://quickweds.site/#organization',
       },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      '@id': 'https://quickweds.site/#breadcrumb',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: 'https://quickweds.site/',
+        },
+      ],
     },
     {
       '@type': 'FAQPage',

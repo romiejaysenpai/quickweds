@@ -263,6 +263,16 @@ export async function generateMetadata({
   return {
     title: `${guide.title} | QuickWeds`,
     description: guide.description,
+    alternates: {
+      canonical: `/user-guide/${slug}`,
+    },
+    openGraph: {
+      title: `${guide.title} | QuickWeds`,
+      description: guide.description,
+      url: `/user-guide/${slug}`,
+      siteName: 'QuickWeds',
+      type: 'article',
+    },
   };
 }
 

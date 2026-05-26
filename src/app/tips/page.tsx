@@ -3,8 +3,18 @@ import Link from 'next/link';
 import { ArrowLeft, Lightbulb, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: "Wedding Planning Tips That Actually Work (2026 Guide)",
-  description: "Discover 10 proven wedding planning tips to save money, reduce stress, and plan your dream wedding with ease. Perfect for modern couples.",
+  title: "Wedding Planning Tips That Actually Work (2026 Guide) | QuickWeds",
+  description: "Use these practical wedding planning tips to save money, reduce stress, manage RSVPs, organize guests, and plan your wedding with more confidence.",
+  alternates: {
+    canonical: '/tips',
+  },
+  openGraph: {
+    title: "Wedding Planning Tips That Actually Work (2026 Guide)",
+    description: "Practical wedding planning tips for budgets, guests, RSVPs, suppliers, timelines, and stress-free organization.",
+    url: '/tips',
+    siteName: 'QuickWeds',
+    type: 'article',
+  },
 };
 
 export default function TipsPage() {
