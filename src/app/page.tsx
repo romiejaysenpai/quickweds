@@ -31,7 +31,6 @@ import {
   Facebook,
   Loader2,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import DemoSection from '@/components/DemoSection';
 import ExamplesSection from '@/components/ExamplesSection';
@@ -43,7 +42,6 @@ import { submitInquiry } from '@/app/actions/support';
 
 const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/Minimalist%20Neutral%20Multi%20Device%20Computer%20Mockup%20Website%20Launch%20Instagram%20Post.png';
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/pc%20vew.png';
-const joySectionMobileImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/sdgsdfgsd.png';
 const navItemClass = 'inline-flex h-10 items-center px-1 text-sm font-bold leading-none text-text-secondary transition hover:text-primary';
 const footerItemClass = 'inline-flex h-9 items-center px-1 leading-none transition hover:text-primary';
 
@@ -179,7 +177,7 @@ const landingPageStructuredData = {
       contactPoint: [
         {
           '@type': 'ContactPoint',
-          email: 'support@quickweds.site',
+          url: 'https://quickweds.site/#contact',
           contactType: 'customer support',
           availableLanguage: ['English'],
         },
@@ -321,21 +319,25 @@ function SectionHeading({
   accent,
   afterAccent,
   body,
+  as = 'h2',
 }: {
   eyebrow?: string;
   title: string;
   accent?: string;
   afterAccent?: string;
   body?: string;
+  as?: 'h2' | 'h3';
 }) {
+  const HeadingTag = as;
+
   return (
     <div className="mx-auto mb-8 max-w-3xl text-center sm:mb-14">
       {eyebrow && (
         <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-primary/70 sm:text-xs sm:tracking-[0.28em]">{eyebrow}</p>
       )}
-      <h2 className="text-[2rem] font-bold leading-[1.08] text-foreground sm:text-4xl lg:text-5xl">
+      <HeadingTag className="text-[2rem] font-bold leading-[1.08] text-foreground sm:text-4xl lg:text-5xl">
         {title} {accent && <Accent>{accent}</Accent>}{afterAccent}
-      </h2>
+      </HeadingTag>
       {body && (
         <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-text-secondary sm:mt-5 sm:text-lg sm:leading-8">{body}</p>
       )}
@@ -352,6 +354,7 @@ function WeddingTipsSection() {
           title="Plan your big day with"
           accent="confidence."
           body="Expert advice to help you navigate the planning process without the stress."
+          as="h3"
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {weddingTips.map((tip) => (
@@ -390,6 +393,7 @@ function ContactSection() {
           title="Have a question or need"
           accent="help?"
           body="Our team is here to support you. Send us a message and we'll get back to you shortly."
+          as="h3"
         />
         
         <div className="overflow-hidden rounded-[2rem] border border-border bg-white shadow-2xl shadow-primary/5">
@@ -407,7 +411,7 @@ function ContactSection() {
                   </div>
                   <div>
                     <p className="text-xs font-black uppercase tracking-widest text-white/50">Email</p>
-                    <p className="font-bold">support@quickweds.site</p>
+                    <p className="font-bold">Use the support form</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -469,14 +473,15 @@ function ContactSection() {
 function HeroImagePanel() {
   return (
     <div className="relative mx-auto w-full max-w-[390px] sm:max-w-[580px] lg:max-w-[650px]">
-      <div className="relative flex min-h-[300px] items-center justify-center sm:min-h-[420px] lg:min-h-[520px]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+      <div className="relative aspect-[4/3] min-h-[300px] sm:min-h-[420px] lg:min-h-[520px]">
+        <Image
           src={heroImageUrl}
           alt="QuickWeds multi-device wedding website and planning dashboard mockup"
-          className="h-auto w-full object-contain drop-shadow-2xl"
-          loading="eager"
-          decoding="async"
+          fill
+          priority
+          fetchPriority="high"
+          sizes="(max-width: 640px) 390px, (max-width: 1024px) 580px, 650px"
+          className="object-contain drop-shadow-2xl"
         />
         <div className="absolute left-1/2 top-3 flex -translate-x-1/2 items-center justify-center rounded-2xl border border-white/70 bg-white/85 px-4 py-2 shadow-xl shadow-primary/10 backdrop-blur-md sm:top-5 sm:px-5 sm:py-3">
           <Image
@@ -741,7 +746,7 @@ export default function Home() {
         <section className="relative px-4 pb-14 pt-9 sm:px-6 sm:pb-24 sm:pt-16 lg:pb-28">
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,rgba(209,108,120,0.13),transparent_30%),radial-gradient(circle_at_85%_12%,rgba(214,184,124,0.16),transparent_26%)]" />
           <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
-            <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="text-center lg:text-left">
+            <div className="text-center lg:text-left">
               <div className="mx-auto mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-white/75 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-primary shadow-sm sm:mb-6 sm:px-4 sm:text-xs sm:tracking-[0.22em] lg:mx-0">
                 <Sparkles className="h-3.5 w-3.5" />
                 <span className="truncate">Complete wedding planning system</span>
@@ -766,11 +771,11 @@ export default function Home() {
                 <CheckCircle2 className="mt-1 h-4 w-4 flex-none text-primary" />
                 No spreadsheets. No chasing guests. No stress.
               </p>
-            </motion.div>
+            </div>
 
-            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.55 }}>
+            <div>
               <HeroImagePanel />
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -913,7 +918,7 @@ export default function Home() {
 
         <section className="px-4 py-16 sm:px-6 sm:py-28">
           <div className="mx-auto max-w-6xl">
-            <SectionHeading eyebrow="Why couples choose QuickWeds" title="Built to replace the planning" accent="mess," afterAccent=" not add another tab." />
+            <SectionHeading eyebrow="Why couples choose QuickWeds" title="Built to replace the planning" accent="mess," afterAccent=" not add another tab." as="h3" />
             <div className="space-y-3 sm:hidden">
               {quickWedsComparison.map(([quickweds, others]) => (
                 <div key={quickweds} className="rounded-2xl border border-border bg-white p-4 shadow-sm">
@@ -947,16 +952,13 @@ export default function Home() {
 
         <section className="px-4 py-8 sm:px-6 sm:py-10">
           <div className="relative mx-auto min-h-[480px] max-w-7xl overflow-hidden rounded-[1.5rem] border border-border bg-foreground sm:min-h-[420px] sm:rounded-[2rem]">
-            <picture>
-              <source media="(min-width: 640px)" srcSet={joySectionDesktopImageUrl} />
-              <img
-                src={joySectionMobileImageUrl}
-                alt="QuickWeds planning experience preview"
-                className="absolute inset-0 h-full w-full object-cover object-center opacity-70 sm:opacity-65"
-                loading="lazy"
-                decoding="async"
-              />
-            </picture>
+            <Image
+              src={joySectionDesktopImageUrl}
+              alt="QuickWeds planning experience preview"
+              fill
+              sizes="(max-width: 768px) 100vw, 1280px"
+              className="object-cover object-center opacity-70 sm:opacity-65"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/92 via-foreground/55 to-foreground/10 sm:bg-gradient-to-r sm:from-foreground/85 sm:via-foreground/45 sm:to-transparent" />
             <div className="relative flex min-h-[480px] max-w-2xl flex-col justify-end p-6 text-white sm:min-h-[420px] sm:justify-center sm:p-12 lg:p-16">
               <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-white/75 sm:mb-4 sm:text-xs sm:tracking-[0.28em]">More joy, less admin</p>
@@ -979,6 +981,7 @@ export default function Home() {
               title="Build free. Upgrade when you need"
               accent="more."
               body="Start with a generous free account, move to Planner Pro for more weddings and emails, or request a custom Unlimited plan for professional planning needs."
+              as="h3"
             />
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-[1.5rem] border border-border bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8">
@@ -1112,6 +1115,7 @@ export default function Home() {
               title="Planning feels lighter when everything is"
               accent="together."
               body="QuickWeds is built for couples who want a beautiful guest experience and a calm planning dashboard behind it."
+              as="h3"
             />
             <div className="grid gap-4 md:grid-cols-3">
               {testimonials.map((testimonial) => (
@@ -1140,6 +1144,7 @@ export default function Home() {
               title="Questions before you start"
               accent="planning?"
               body="Here are the answers couples usually need before creating their QuickWeds site."
+              as="h3"
             />
             <div className="space-y-3">
               {faqs.map((faq) => (
@@ -1187,10 +1192,13 @@ export default function Home() {
                 {/* Decorative glow behind bird */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-white/20 blur-[60px] rounded-full" />
                 
-                <img 
-                  src="https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/computer%20quicky.png" 
-                  alt="QuickWeds Mascot" 
-                  className="relative z-20 h-[240px] sm:h-[320px] lg:h-[400px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-transform duration-500 hover:scale-[1.05]"
+                <Image
+                  src="https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/computer%20quicky.png"
+                  alt="QuickWeds app mascot"
+                  width={420}
+                  height={420}
+                  sizes="(max-width: 640px) 240px, (max-width: 1024px) 320px, 400px"
+                  className="relative z-20 h-[240px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-transform duration-500 hover:scale-[1.05] sm:h-[320px] lg:h-[400px]"
                 />
               </div>
             </div>
@@ -1253,7 +1261,7 @@ export default function Home() {
               <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Support</h4>
               <ul className="space-y-4">
                 <li><a href="#contact" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Contact Support</a></li>
-                <li><a href="mailto:support@quickweds.site" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">support@quickweds.site</a></li>
+                <li><a href="#contact" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Send a support message</a></li>
                 <li><a href="https://wa.me/639454602270" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Chat on WhatsApp</a></li>
               </ul>
             </div>

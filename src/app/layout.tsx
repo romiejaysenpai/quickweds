@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import {
   Inter, Playfair_Display, Montserrat
 } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
@@ -19,6 +20,7 @@ const siteName = "QuickWeds";
 const defaultTitle = "QuickWeds | Free Wedding Website Builder & Planner";
 const defaultDescription =
   "Create a free wedding website with RSVP tracking, guest lists, seating charts, budgets, vendor planning, and a private planning dashboard for couples.";
+const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.NEXT_PUBLIC_GA_ID;
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
@@ -137,6 +139,22 @@ export default function RootLayout({
             <PWAInstaller />
             <Analytics />
             <SpeedInsights />
+            {googleAnalyticsId && (
+              <>
+                <Script
+                  src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+                  strategy="afterInteractive"
+                />
+                <Script id="google-analytics" strategy="afterInteractive">
+                  {`
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    gtag('config', '${googleAnalyticsId}');
+                  `}
+                </Script>
+              </>
+            )}
           </AuthProvider>
         </ThemeProvider>
       </body>
