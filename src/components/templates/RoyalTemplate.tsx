@@ -41,7 +41,7 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                                 groomName={wedding.groom_name}
                                 shape={wedding.logo_shape || 'crest'}
                                 color={wedding.logo_color || wedding.motif_color}
-                                motifColor={wedding.motif_color}
+                    motifColor={wedding.motif_color}
                                 fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
                                 size="sm"
                                 inverted
@@ -82,6 +82,8 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}
                     venueAddress={wedding.venue_address}
+                    template={wedding.template}
+                    motifColor={wedding.motif_color}
                 />
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />

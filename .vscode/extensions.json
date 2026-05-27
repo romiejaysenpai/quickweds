@@ -1,11 +1,5 @@
 {
     "recommendations": [
-        "anthropic.claude-code",
-        "qwenlm.qwen-code-vscode-ide-companion",
-        "openai.chatgpt",
-        "kilocode.kilo-code",
-        "ms-python.python",
-        "lirobi.phone-preview",
-        "moonshot-ai.kimi-code"
+        "openai.chatgpt"
     ]
 }

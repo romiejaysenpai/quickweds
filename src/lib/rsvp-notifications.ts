@@ -3,7 +3,6 @@ import 'server-only';
 import { sendEmail } from '@/lib/email';
 import { getGuestConfirmationHtml, getCoupleNotificationHtml } from '@/lib/email-templates';
 import { getPrimaryAdminEmail } from '@/lib/admin';
-import { getAccountEmailUsage, getUserPlanTier, logPlannerEmailEvent, PLAN_LIMITS } from '@/lib/planner-limits';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 
 type RsvpNotificationInput = {
@@ -84,10 +83,10 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
         }
     }
 
-    const emailPayloads: Parameters<typeof sendEmail>[0][] = [];
+    const emailJobs: ReturnType<typeof sendEmail>[] = [];
 
     if (recipientEmail && wedding.notify_on_rsvp !== false) {
-        emailPayloads.push({
+        emailJobs.push(sendEmail({
             to: recipientEmail,
             subject: `${attendance === 'Yes' ? 'RSVP Confirmed' : 'RSVP Update'}: ${guestName} - ${wedding.bride_name} & ${wedding.groom_name}`,
             html: getCoupleNotificationHtml({
@@ -106,11 +105,11 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
                 dashboardUrl,
                 weddingTitle: `${wedding.bride_name} & ${wedding.groom_name}`,
             }),
-        });
+        }));
     }
 
     if (guestEmail) {
-        emailPayloads.push({
+        emailJobs.push(sendEmail({
             to: guestEmail,
             subject: attendance === 'Yes' ? "We can't wait to see you! (RSVP Confirmation)" : 'RSVP Confirmation',
             html: getGuestConfirmationHtml({
@@ -126,55 +125,10 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
                 mapsLink: wedding.maps_link,
                 weddingUrl: publicWeddingUrl,
             }),
-        });
+        }));
     }
 
-    if (wedding.user_id && emailPayloads.length > 0) {
-        try {
-            const { data: ownerProfile } = await db
-                .from('user_app_profiles')
-                .select('is_pro, plan_type, payment_status')
-                .eq('user_id', wedding.user_id)
-                .maybeSingle();
-            const tier = getUserPlanTier({ wedding, accountProfile: ownerProfile });
-            const emailsUsed = await getAccountEmailUsage(db, wedding.user_id);
-            const limit = PLAN_LIMITS[tier].emails;
-
-            if (emailsUsed + emailPayloads.length > limit) {
-                console.warn('RSVP emails skipped because account email limit was reached:', {
-                    weddingId,
-                    ownerUserId: wedding.user_id,
-                    tier,
-                    emailsUsed,
-                    requested: emailPayloads.length,
-                    limit,
-                });
-                return {
-                    success: true,
-                    skipped: true,
-                    reason: 'email_limit_reached',
-                    results: [],
-                };
-            }
-        } catch (limitError) {
-            console.warn('RSVP email limit check skipped:', limitError);
-        }
-    }
-
-    const results = await Promise.all(emailPayloads.map((payload) => sendEmail(payload)));
-    const successCount = results.filter((result) => result.success).length;
-    try {
-        await logPlannerEmailEvent(db, {
-            weddingId,
-            eventType: 'manual_guest_message',
-            recipientCount: emailPayloads.length,
-            successCount,
-            userId: wedding.user_id || null,
-        });
-    } catch (logError) {
-        console.warn('RSVP email event logging unavailable:', logError);
-    }
-
+    const results = await Promise.all(emailJobs);
     return {
         success: results.every((result) => result.success),
         results,

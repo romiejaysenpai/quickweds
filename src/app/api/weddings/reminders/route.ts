@@ -6,11 +6,11 @@ import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import {
-    getAccountEmailUsage,
+    FREE_PLAN_LIMITS,
     getEmailLimitMessage,
-    getUserPlanTier,
+    getUserTriggeredEmailUsage,
+    hasPlannerProAccess,
     logPlannerEmailEvent,
-    PLAN_LIMITS,
 } from '@/lib/planner-limits';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 
@@ -112,19 +112,18 @@ export async function POST(req: NextRequest) {
 
         const { data: ownerProfile } = await db
             .from('user_app_profiles')
-            .select('is_pro, plan_type, payment_status')
+            .select('is_pro, payment_status')
             .eq('user_id', wedding.user_id)
             .maybeSingle();
-        const tier = getUserPlanTier({ isAdmin, wedding, accountProfile: ownerProfile });
-        const emailsUsed = await getAccountEmailUsage(db, wedding.user_id);
-        const emailLimit = PLAN_LIMITS[tier].emails;
+        const hasPlannerPro = hasPlannerProAccess({ isAdmin, wedding, accountProfile: ownerProfile });
+        const emailsUsed = await getUserTriggeredEmailUsage(db, weddingId);
 
-        if (emailsUsed + recipients.length > emailLimit) {
+        if (!hasPlannerPro && emailsUsed + recipients.length > FREE_PLAN_LIMITS.userTriggeredEmails) {
             return NextResponse.json({
-                error: getEmailLimitMessage(recipients.length, emailsUsed, tier),
+                error: getEmailLimitMessage(recipients.length, emailsUsed),
                 code: 'email_limit_reached',
                 used: emailsUsed,
-                limit: emailLimit,
+                limit: FREE_PLAN_LIMITS.userTriggeredEmails,
                 requested: recipients.length,
             }, { status: 402 });
         }

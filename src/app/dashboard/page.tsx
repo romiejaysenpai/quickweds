@@ -13,8 +13,8 @@ import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro, type Acco
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { getWeddingPublicPath } from '@/lib/wedding-slugs';
-import { getUserPlanTier, PLAN_LIMITS } from '@/lib/planner-limits';
 import { getCachedSession } from '@/lib/session-cache';
+import { openExternalUrl } from '@/lib/native-actions';
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
 
@@ -295,10 +295,8 @@ export default function DashboardRedirect() {
     const [isWorkspacePickerOpen, setIsWorkspacePickerOpen] = useState(false);
     const [isPlannerPickerOpen, setIsPlannerPickerOpen] = useState(false);
     const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
-    const accountTier = getUserPlanTier({ isAdmin, accountProfile });
     const accountIsPro = isAdmin || hasAccountPro(accountProfile);
-    const websiteLimitReached = weddings.length >= PLAN_LIMITS[accountTier].websites;
-    const proWebsiteLimitReached = accountTier === 'pro' && websiteLimitReached;
+    const freeWebsiteLimitReached = !accountIsPro && weddings.length >= 3;
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
     const fetchWeddings = useCallback(async () => {
@@ -429,7 +427,7 @@ export default function DashboardRedirect() {
     return (
         <div className="mobile-safe-screen bg-background pb-16 sm:pb-20 mobile-safe-bottom">
             {/* Top nav */}
-            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-neutral-900/90 sm:p-4">
+            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-white/90 sm:p-4">
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-2 sm:px-4">
                     <div className="flex items-center gap-8">
                         <Link href="/" className="flex min-w-[88px] flex-shrink-0 items-center sm:min-w-[104px]" aria-label="QuickWeds">
@@ -438,22 +436,13 @@ export default function DashboardRedirect() {
                     </div>
 
                     <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
-                        {websiteLimitReached ? (
-                            proWebsiteLimitReached ? (
-                                <a
-                                    href="/#contact"
-                                    className="flex min-h-[42px] min-w-[104px] flex-shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
-                                >
-                                    Contact Admin
-                                </a>
-                            ) : (
-                                <UpgradeButton
-                                    scope="account"
-                                    plan="account_pro"
-                                    label="Upgrade"
-                                    className="min-h-[42px] min-w-[82px] flex-shrink-0 justify-center whitespace-nowrap rounded-lg !px-3 !py-2 text-xs sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:!px-6 sm:!py-2.5 sm:text-sm"
-                                />
-                            )
+                        {freeWebsiteLimitReached ? (
+                            <UpgradeButton
+                                scope="account"
+                                plan="account_pro"
+                                label="Upgrade"
+                                className="min-h-[42px] min-w-[82px] flex-shrink-0 justify-center whitespace-nowrap rounded-lg !px-3 !py-2 text-xs sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:!px-6 sm:!py-2.5 sm:text-sm"
+                            />
                         ) : (
                             <Link
                                 href="/builder"
@@ -489,7 +478,7 @@ export default function DashboardRedirect() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={closeMobileMenu}
-                            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                            className="absolute inset-0 bg-foreground/20 backdrop-blur-sm"
                         />
                         
                         {/* Drawer Panel */}
@@ -514,7 +503,7 @@ export default function DashboardRedirect() {
                                     { label: 'User Guide', href: '/user-guide', icon: BookOpen },
                                     { label: 'Planner', href: '/planner', icon: Calendar },
                                     { label: 'Settings', href: '/settings', icon: Settings },
-                                    { label: 'Admin Support', href: '/support', icon: LifeBuoy },
+                                    { label: 'Support', href: '/support', icon: LifeBuoy },
                                     { label: 'Wedding Tips', href: '/tips', icon: Sparkles },
                                     { label: 'Community', href: 'https://chat.whatsapp.com/K30P5s5I03f4wPI30URaRP', icon: MessageCircle },
                                 ].map((item) => (
@@ -614,7 +603,7 @@ export default function DashboardRedirect() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                            className="absolute inset-0 bg-foreground/25 backdrop-blur-sm"
                             onClick={() => setIsPlannerPickerOpen(false)}
                         />
                         <motion.div
@@ -833,14 +822,14 @@ export default function DashboardRedirect() {
                                                 <Settings className="w-3.5 h-3.5" />
                                                 Manage
                                             </Link>
-                                            <Link
-                                                href={getWeddingPublicPath(wedding)}
-                                                target="_blank"
-                                                title="View live page"
-                                                className="h-10 sm:h-11 w-10 sm:w-11 rounded-xl border border-border flex items-center justify-center text-text-secondary hover:bg-foreground hover:text-white hover:border-foreground transition-all flex-shrink-0"
+                                            <button
+                                                type="button"
+                                                onClick={() => void openExternalUrl(`${window.location.origin}${getWeddingPublicPath(wedding)}`)}
+                                                title="Guest view"
+                                                className="h-10 sm:h-11 w-10 sm:w-11 rounded-xl border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:text-white hover:border-primary transition-all flex-shrink-0"
                                             >
                                                 <ExternalLink className="w-4 h-4" />
-                                            </Link>
+                                            </button>
                                             <CopyLinkButton wedding={wedding} />
                                             <DeleteButton
                                                 weddingId={wedding.id}
@@ -873,7 +862,7 @@ export default function DashboardRedirect() {
                                             <div className="rounded-2xl border border-primary/15 bg-primary/5 p-3">
                                                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Ready for the full plan?</p>
                                                 <p className="mt-1 text-xs leading-5 text-text-secondary">
-                                                    Free includes Planner Lite, 3 wedding websites, 50 account emails, and starter limits. Pro adds 15 websites, 300 account emails, reminders, seating, photos, and exports.
+                                                    Free includes Planner Lite, 50 guest emails, and starter limits. Pro unlocks unlimited planning, reminders, collaborators, seating, photos, and exports.
                                                 </p>
                                                 <UpgradeButton weddingId={wedding.id} className="mt-3 w-full justify-center text-xs sm:text-sm py-2 sm:py-2.5" />
                                             </div>

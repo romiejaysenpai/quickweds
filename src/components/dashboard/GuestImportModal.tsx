@@ -102,7 +102,7 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-foreground/55 backdrop-blur-sm">
             <div className="bg-white rounded-lg sm:rounded-[2.5rem] p-4 sm:p-8 md:p-10 w-full max-w-5xl max-h-[90vh] overflow-y-auto shadow-2xl">
                 <div className="flex items-start justify-between gap-4 mb-6">
                     <div>

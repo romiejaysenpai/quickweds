@@ -47,6 +47,7 @@ import { getCachedSession } from '@/lib/session-cache';
 
 const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), { ssr: false });
 const QRCodeCanvas = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeCanvas), { ssr: false });
+import { openExternalUrl } from '@/lib/native-actions';
 
 interface Table {
     id: string;
@@ -937,12 +938,7 @@ export default function SeatingChartBuilder({
         }
         const openUrl = new URL(url, window.location.origin);
         openUrl.searchParams.set('returnTo', `/dashboard/${weddingId}/planner?tab=seating`);
-        const opened = window.open(openUrl.toString(), '_blank');
-        if (opened) {
-            opened.opener = null;
-        } else {
-            window.location.href = url;
-        }
+        void openExternalUrl(openUrl.toString());
     };
 
     const copyPublicSeatFinderUrl = async () => {
@@ -1558,7 +1554,7 @@ export default function SeatingChartBuilder({
                             )}
                             <div
                                 ref={canvasRef}
-                                className={`relative mx-auto w-full overflow-hidden border-[3px] border-black bg-[#f7f7f5] shadow-inner ${isChartFullscreen ? 'h-[calc(100dvh-150px)] min-h-[520px] max-w-none flex-1' : 'min-h-[420px] max-w-5xl'} ${getCanvasShapeClass()}`}
+                                className={`relative mx-auto w-full overflow-hidden border-2 border-primary/20 bg-neutral shadow-inner ${isChartFullscreen ? 'h-[calc(100dvh-150px)] min-h-[520px] max-w-none flex-1' : 'min-h-[420px] max-w-5xl'} ${getCanvasShapeClass()}`}
                                 style={{
                                     aspectRatio: canvasAspectRatio,
                                     backgroundImage: layout.grid_enabled
@@ -1570,7 +1566,7 @@ export default function SeatingChartBuilder({
                                 <svg className="absolute inset-0 h-full w-full touch-none select-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                                     <defs>
                                         <filter id="floor-shadow" x="-30%" y="-30%" width="160%" height="160%">
-                                            <feDropShadow dx="0.8" dy="1.2" stdDeviation="0.7" floodColor="#000000" floodOpacity="0.22" />
+                                            <feDropShadow dx="0.8" dy="1.2" stdDeviation="0.7" floodColor="#3A2A2D" floodOpacity="0.22" />
                                         </filter>
                                         <pattern id="hatch" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                                             <line x1="0" y1="0" x2="0" y2="2" stroke="#b8b8b8" strokeWidth="0.25" />
@@ -1603,7 +1599,7 @@ export default function SeatingChartBuilder({
                                             >
                                                 {isEntrance ? (
                                                     <g>
-                                                        <path d="M 0 3 L -4 -5 L 4 -5 Z" fill="#000" filter="url(#floor-shadow)" />
+                                                        <path d="M 0 3 L -4 -5 L 4 -5 Z" fill="#7A5A61" filter="url(#floor-shadow)" />
                                                         <text y="-7" textAnchor="middle" fontSize="2.6" fontWeight="800" fill="#333">{object.label}</text>
                                                     </g>
                                                 ) : (
@@ -1855,7 +1851,7 @@ export default function SeatingChartBuilder({
             <AnimatePresence>
                 {qrPreviewUrl && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setQrPreviewUrl('')} />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-foreground/55 backdrop-blur-sm" onClick={() => setQrPreviewUrl('')} />
                         <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 z-[60] w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-white p-6 text-center shadow-2xl">
                             <button type="button" onClick={() => setQrPreviewUrl('')} className="absolute right-4 top-4 rounded-full p-2 text-text-secondary transition hover:bg-neutral">
                                 <X className="h-5 w-5" />
@@ -1873,8 +1869,8 @@ export default function SeatingChartBuilder({
                 )}
                 {isTableModalOpen && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => setIsTableModalOpen(false)} />
-                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-10 z-[60] shadow-2xl border border-border">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-foreground/55 backdrop-blur-sm z-50" onClick={() => setIsTableModalOpen(false)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md bg-white dark:bg-white rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-10 z-[60] shadow-2xl border border-border">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="font-serif font-bold text-xl sm:text-2xl text-foreground">{editingTableId ? 'Edit Table' : 'Customize Table'}</h3>
                                 <button onClick={() => setIsTableModalOpen(false)} className="p-2 hover:bg-neutral dark:hover:bg-neutral/10 rounded-full transition-colors"><X className="w-5 h-5 text-text-secondary" /></button>

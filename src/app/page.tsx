@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -32,18 +33,17 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import DemoSection from '@/components/DemoSection';
-import ExamplesSection from '@/components/ExamplesSection';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
-import UpgradeButton from '@/components/UpgradeButton';
 import { submitInquiry } from '@/app/actions/support';
+
+const DemoSection = dynamic(() => import('@/components/DemoSection'), { ssr: false });
+const UpgradeButton = dynamic(() => import('@/components/UpgradeButton'), { ssr: false });
 
 const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/Minimalist%20Neutral%20Multi%20Device%20Computer%20Mockup%20Website%20Launch%20Instagram%20Post.png';
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/pc%20vew.png';
 const navItemClass = 'inline-flex h-10 items-center px-1 text-sm font-bold leading-none text-text-secondary transition hover:text-primary';
-const footerItemClass = 'inline-flex h-9 items-center px-1 leading-none transition hover:text-primary';
 
 const featureCards = [
   {
@@ -140,7 +140,7 @@ const testimonials = [
 const faqs = [
   {
     question: 'Is QuickWeds only a wedding website builder?',
-    answer: 'No. Free includes up to 3 wedding websites, RSVP tracking, QR sharing, a basic guest list, 50 total account emails, and Planner Lite. Planner Pro includes up to 15 wedding websites and 300 total account emails. Unlimited / Custom is available for planners, agencies, and larger needs.',
+    answer: 'No. You can build and publish a free wedding website with RSVP tracking, QR sharing, a basic guest list, 50 guest emails, and Planner Lite. Planner Pro is the one-time upgrade for unlimited guest emails, full planner tools, seating, collaborators, reminders, photo tools, exports, and custom domains.',
   },
   {
     question: 'Can guests RSVP from their phones?',
@@ -148,7 +148,7 @@ const faqs = [
   },
   {
     question: 'Will I get notifications when someone RSVPs?',
-    answer: 'Yes. RSVP confirmations and host notifications are included, and all wedding emails count toward your account-wide email limit: 50 on Free, 300 on Planner Pro, and unlimited on Unlimited / Custom.',
+    answer: 'Yes. Automatic RSVP confirmations and host notifications stay free and do not count toward your 50 guest email allowance. User-triggered sends like RSVP reminders, seat emails, and thank-you emails count toward that allowance.',
   },
   {
     question: 'Can my partner or planner help manage the wedding?',
@@ -160,7 +160,7 @@ const faqs = [
   },
   {
     question: 'Can I start free?',
-    answer: 'Yes. You can start with up to 3 free wedding websites, RSVP tools, QR sharing, basic guest tracking, 50 total account emails, and Planner Lite. Upgrade to Planner Pro for 15 websites and 300 account emails, or contact support for Unlimited / Custom.',
+    answer: 'Yes. The builder, your wedding website, RSVP tools, QR sharing, basic guest tracking, 50 guest emails, and Planner Lite are free. Planner Pro unlocks unlimited planning, unlimited guest emails, seating, reminders, collaborators, exports, photo tools, and thank-you tools.',
   },
 ];
 
@@ -499,7 +499,6 @@ function HeroImagePanel() {
 }
 
 export default function Home() {
-  const [isExamplesOpen, setIsExamplesOpen] = useState(false);
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasWeddingSite, setHasWeddingSite] = useState(false);
@@ -546,10 +545,6 @@ export default function Home() {
   }, [user]);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
-  const openTemplates = () => {
-    setIsExamplesOpen(true);
-    closeMobileMenu();
-  };
   const openDemo = () => {
     setIsDemoOpen(true);
     closeMobileMenu();
@@ -657,20 +652,12 @@ export default function Home() {
               </a>
               <button
                 type="button"
-                onClick={openTemplates}
-                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-left text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
-              >
-                Templates
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <a
-                href="#demo"
-                onClick={closeMobileMenu}
+                onClick={openDemo}
                 className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-left text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
               >
                 Demo
                 <ArrowRight className="h-4 w-4" />
-              </a>
+              </button>
               <Link
                 href="/user-guide"
                 onClick={closeMobileMenu}
@@ -983,22 +970,22 @@ export default function Home() {
               body="Start with a generous free account, move to Planner Pro for more weddings and emails, or request a custom Unlimited plan for professional planning needs."
               as="h3"
             />
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-3">
               <div className="rounded-[1.5rem] border border-border bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8">
                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">Free forever</p>
                 <h3 className="mt-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">Free</h3>
-                <p className="mt-3 text-text-secondary">Perfect for couples starting their wedding websites and collecting early RSVPs.</p>
+                <p className="mt-3 text-text-secondary">Perfect for starting your wedding site and collecting early RSVPs.</p>
                 <div className="mt-6">
                   <PrimaryCta>Create Free Site</PrimaryCta>
                 </div>
                 <div className="mt-8 grid gap-3">
                   {[
-                    'Wedding website and all templates',
-                    'Up to 3 wedding websites',
+                    'Wedding website builder and RSVP tools',
                     'RSVP tracking and basic guest list',
                     'QR sharing for invitations',
-                    '50 total account emails (RSVPs, seating links, reminders, thank yous)',
+                    '50 guest emails per wedding',
                     'Planner Lite with starter limits',
+                    'Automatic RSVP emails and host notifications',
                   ].map((item) => (
                     <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
                       <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
@@ -1016,14 +1003,13 @@ export default function Home() {
                     <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Planner Pro</h3>
                     <p className="font-serif text-3xl font-bold text-primary">$29</p>
                   </div>
-                  <p className="mt-3 text-text-secondary">Built for active couples and planners managing more websites, emails, guests, suppliers, seating, and reminders.</p>
+                  <p className="mt-3 text-text-secondary">Built for finalizing the real wedding plan when guests, suppliers, seating, and reminders matter.</p>
                   <div className="mt-8 grid gap-3">
                     {[
-                      'Up to 15 wedding websites',
-                      '300 total account emails (RSVPs, seating links, reminders, thank yous)',
+                      'Unlimited guest emails',
                       'Full planner with unlimited tasks, budgets, suppliers, and calendar items',
                       'Seating chart, guest check-in, and seat-link emails',
-                      'RSVP reminders and collaborator tools',
+                      'RSVP reminders and unlimited collaborators',
                       'Google Calendar sync and custom domain',
                       'Photo tools, thank-you tools, CSV exports, and advanced analytics',
                     ].map((item) => (
@@ -1054,37 +1040,35 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-                <div className="rounded-[1.5rem] border border-secondary/40 bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8">
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">Unlimited / Custom</p>
-                  <div className="mt-2 flex flex-col gap-2 text-center sm:text-left">
-                    <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Unlimited</h3>
-                    <p className="font-serif text-3xl font-bold text-primary">Custom Rate</p>
-                  </div>
-                  <p className="mt-3 text-text-secondary">For professional planners, agencies, venues, or custom wedding needs that require unlimited scale.</p>
-                  <div className="mt-8 grid gap-3">
-                    {[
-                      'Unlimited wedding websites',
-                      'Unlimited account emails',
-                      'Full planner with unlimited items and tools',
-                      'Priority setup and concierge support',
-                      'Custom workflow guidance for teams',
-                      'Best fit for planners, agencies, and high-volume events',
-                    ].map((item) => (
-                      <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
-                        <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
-                        {item}
-                      </p>
-                    ))}
-                  </div>
-                  <div className="mt-8 flex justify-center sm:justify-start">
-                    <a
-                      href="#contact"
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-8 py-4 text-base font-bold text-primary shadow-sm transition-all hover:bg-primary/5"
-                    >
-                      Contact Support
-                    </a>
-                  </div>
+              <div className="rounded-[1.5rem] border border-border bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8">
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">Tailored support</p>
+                <h3 className="mt-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">Custom Plan</h3>
+                <p className="mt-3 text-text-secondary">For couples, coordinators, venues, or suppliers who need a more personal setup.</p>
+                <div className="mt-8 grid gap-3">
+                  {[
+                    'Custom guest, email, or collaborator needs',
+                    'Hands-on setup support for your wedding workspace',
+                    'Venue, coordinator, or supplier workflow requests',
+                    'Custom domain, migration, or special launch help',
+                    'Priority admin review for your request',
+                  ].map((item) => (
+                    <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
+                      <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
+                      {item}
+                    </p>
+                  ))}
                 </div>
+                <p className="mt-6 text-center text-xs font-bold uppercase tracking-[0.18em] text-text-secondary sm:text-left">Tell us what you need.</p>
+                <div className="mt-8 flex justify-center sm:justify-start">
+                  <Link
+                    href="/support?intent=custom-plan"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/25 bg-white px-8 py-4 text-base font-bold text-primary shadow-lg shadow-primary/10 transition-all hover:border-primary hover:bg-primary/5"
+                  >
+                    Request Custom Plan
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -1238,8 +1222,7 @@ export default function Home() {
             <div>
               <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Product</h4>
               <ul className="space-y-4">
-                <li><button type="button" onClick={openTemplates} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Wedding Templates</button></li>
-                <li><a href="#demo" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">View Live Demo</a></li>
+                <li><button type="button" onClick={openDemo} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">View Live Demo</button></li>
                 <li><a href="#pricing" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Pricing & Features</a></li>
                 <li><a href="#directory" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Vendor Directory</a></li>
               </ul>
@@ -1309,8 +1292,7 @@ export default function Home() {
         </button>
       </div>
 
-      <DemoSection isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
-      <ExamplesSection isOpen={isExamplesOpen} onClose={() => setIsExamplesOpen(false)} />
+      {isDemoOpen && <DemoSection isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />}
     </div>
   );
 }

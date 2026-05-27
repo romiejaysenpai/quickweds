@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { ShieldCheck, Megaphone, Users, Settings } from 'lucide-react';
+import { Megaphone, Settings, ShieldCheck, Users } from 'lucide-react';
 
 export default function AdminHubPage() {
     useEffect(() => {
@@ -29,7 +29,6 @@ export default function AdminHubPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                    {/* Broadcast Tool */}
                     <Link href="/admin/broadcast" className="group flex flex-col justify-between rounded-2xl border border-border bg-neutral/20 p-6 transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-md">
                         <div>
                             <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
@@ -42,7 +41,6 @@ export default function AdminHubPage() {
                         </div>
                     </Link>
 
-                    {/* User Management Tool */}
                     <Link href="/admin/users" className="group flex flex-col justify-between rounded-2xl border border-border bg-neutral/20 p-6 transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-md">
                         <div>
                             <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
@@ -55,7 +53,6 @@ export default function AdminHubPage() {
                         </div>
                     </Link>
 
-                    {/* Platform Settings Tool */}
                     <Link href="/admin/settings" className="group flex flex-col justify-between rounded-2xl border border-border bg-neutral/20 p-6 transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-md">
                         <div>
                             <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">

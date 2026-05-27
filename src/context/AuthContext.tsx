@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { User } from '@supabase/supabase-js';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { clearLocalSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
@@ -135,15 +135,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => subscription.unsubscribe();
     }, [checkAdminStatus]);
 
-    const logout = async () => {
+    const logout = useCallback(async () => {
         await supabase.auth.signOut();
         invalidateSessionCache();
         setIsAdmin(false);
         setAdminChecked(false);
-    };
+    }, []);
+
+    const value = useMemo(
+        () => ({ user, isAdmin, adminChecked, loading, logout }),
+        [user, isAdmin, adminChecked, loading, logout],
+    );
 
     return (
-        <AuthContext.Provider value={{ user, isAdmin, adminChecked, loading, logout }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

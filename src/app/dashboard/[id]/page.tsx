@@ -17,8 +17,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
-import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, PLAN_LIMITS, getUserPlanTier, type PlannerUsage, type UserPlanTier } from '@/lib/planner-limits';
+import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
+import { openExternalUrl } from '@/lib/native-actions';
 import {
     GUEST_GROUP_OPTIONS,
     getGuestGroupLabel,
@@ -67,10 +68,7 @@ async function copyText(text: string) {
 }
 
 function openExternal(url: string) {
-    const opened = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!opened) {
-        window.location.href = url;
-    }
+    void openExternalUrl(url);
 }
 
 type GuestFormState = {
@@ -110,7 +108,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
     const [wedding, setWedding] = useState<any>(null);
     const [accountIsPro, setAccountIsPro] = useState(false);
-    const [accountTier, setAccountTier] = useState<UserPlanTier>('free');
     const [rsvps, setRsvps] = useState<EnhancedRSVP[]>([]);
     const [vendors, setVendors] = useState<any[]>([]);
     const [budgets, setBudgets] = useState<any[]>([]);
@@ -264,7 +261,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 setAccessRole(role);
                 setWedding(weddingData);
                 setAccountIsPro(hasAccountPro(workspaceResult.accountProfile));
-                setAccountTier(getUserPlanTier({ isAdmin, wedding: weddingData, accountProfile: workspaceResult.accountProfile }));
                 setPlanUsage(workspaceResult.planUsage || EMPTY_PLANNER_USAGE);
 
                 const [rsvpsRes, vendorsRes, budgetsRes] = await Promise.all([
@@ -613,8 +609,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const qrTrackingUrl = url ? `${url}${url.includes('?') ? '&' : '?'}src=qr` : '';
     const canManageWorkspace = accessRole === 'owner' || accessRole === 'partner';
     const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
-    const emailLimit = PLAN_LIMITS[accountTier].emails;
-    const showEmailUsageBadge = Number.isFinite(emailLimit);
 
     const handleShareWhatsApp = () => {
         void trackWeddingEvent(id, 'share_whatsapp', { source: 'dashboard' });
@@ -670,7 +664,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             <ConfettiCelebration trigger={showConfetti} />
 
             {/* Header */}
-            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-neutral-900/90 sm:p-4">
+            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-white/90 sm:p-4">
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-2 sm:px-4">
                     <div className="flex items-center gap-8">
                         <Link href="/" className="flex min-w-[88px] flex-shrink-0 items-center sm:min-w-[104px]" aria-label="QuickWeds">
@@ -714,7 +708,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={closeMobileMenu}
-                            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                            className="absolute inset-0 bg-foreground/20 backdrop-blur-sm"
                         />
                         
                         {/* Drawer Panel */}
@@ -747,18 +741,20 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             </span>
                                             <ArrowRight className="h-4 w-4 opacity-30" />
                                         </Link>
-                                        <Link 
-                                            href={url} 
-                                            target="_blank"
-                                            onClick={closeMobileMenu} 
+                                        <button 
+                                            type="button"
+                                            onClick={() => {
+                                                closeMobileMenu();
+                                                openExternal(url);
+                                            }} 
                                             className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
                                         >
                                             <span className="flex items-center gap-3">
                                                 <ExternalLink className="w-4 h-4" />
-                                                View Live Site
+                                                Guest View
                                             </span>
                                             <ArrowRight className="h-4 w-4 opacity-20" />
-                                        </Link>
+                                        </button>
                                     </div>
                                 </div>
 
@@ -769,7 +765,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             { label: 'Directory', href: '/suppliers', icon: MapPin },
                                             { label: 'User Guide', href: '/user-guide', icon: BookOpen },
                                             { label: 'Settings', href: '/settings', icon: Settings },
-                                            { label: 'Admin Support', href: '/support', icon: LifeBuoy },
+                                            { label: 'Support', href: '/support', icon: LifeBuoy },
                                             { label: 'Community', href: 'https://chat.whatsapp.com/K30P5s5I03f4wPI30URaRP', icon: MessageCircle },
                                         ].map((item) => (
                                             <Link 
@@ -808,7 +804,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
             <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-12 text-left">
                 {/* Mobile Tab Navigation (Fixed Bottom) */}
-                <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md border-t border-border z-[100] flex justify-around items-center p-2 pb-safe shadow-2xl">
+                <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-white/90 backdrop-blur-md border-t border-border z-[100] flex justify-around items-center p-2 pb-safe shadow-2xl">
                     <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'home' ? 'text-primary' : 'text-text-secondary/50'}`}>
                         <LayoutDashboard className="w-5 h-5" />
                         <span className="text-[8px] font-black uppercase tracking-widest">Overview</span>
@@ -834,7 +830,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
 
                 {/* Desktop Tab Navigation */}
-                <div className="hidden sm:flex items-center gap-1 mb-8 p-1.5 bg-neutral/50 dark:bg-neutral-800/50 rounded-2xl border border-border w-fit">
+                <div className="hidden sm:flex items-center gap-1 mb-8 p-1.5 bg-neutral/50 dark:bg-neutral/70 rounded-2xl border border-border w-fit">
                     {[
                         { id: 'home', label: 'Overview', icon: LayoutDashboard },
                         { id: 'guests', label: 'Guests', icon: Users },
@@ -847,8 +843,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
                                 activeTab === tab.id 
-                                    ? 'bg-white dark:bg-neutral-700 text-primary shadow-sm ring-1 ring-black/5 dark:ring-white/5' 
-                                    : 'text-text-secondary/60 hover:text-text-secondary hover:bg-white/50 dark:hover:bg-neutral-700/50'
+                                    ? 'bg-white dark:bg-white text-primary shadow-sm ring-1 ring-primary/10 dark:ring-white/5' 
+                                    : 'text-text-secondary/60 hover:text-text-secondary hover:bg-white/50 dark:hover:bg-white/70'
                             }`}
                         >
                             <tab.icon className="w-4 h-4" />
@@ -865,7 +861,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {created && activeTab === 'home' && (
                             <div className="mb-8 p-4 rounded-xl bg-success-bg border border-border flex flex-row items-center gap-4 relative overflow-hidden sm:hidden">
                                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 pointer-events-none" />
-                                <div className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 flex items-center justify-center text-accent shadow-sm flex-shrink-0 relative">
+                                <div className="w-10 h-10 rounded-full bg-white dark:bg-white flex items-center justify-center text-accent shadow-sm flex-shrink-0 relative">
                                     <Sparkles className="w-5 h-5" />
                                 </div>
                                 <div className="relative">
@@ -923,9 +919,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         <Link href={`/dashboard/${wedding.id}/planner`} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold text-xs sm:text-sm shadow-xl shadow-primary/20 hover:-translate-y-0.5 transition-all">
                                             <ListTodo className="w-4 h-4" /> Open Planner
                                         </Link>
-                                        <Link href={url} target="_blank" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border bg-white text-text-secondary font-bold text-xs sm:text-sm hover:bg-neutral transition-all">
-                                            <ExternalLink className="w-4 h-4" /> Live Site
-                                        </Link>
+                                        <button type="button" onClick={() => openExternal(url)} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border bg-white text-text-secondary font-bold text-xs sm:text-sm hover:bg-neutral transition-all">
+                                            <ExternalLink className="w-4 h-4" /> Guest View
+                                        </button>
                                     </div>
                                 </div>
                             </motion.section>
@@ -936,7 +932,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             <div className="grid grid-cols-2 sm:hidden gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2">
                                 <Link 
                                     href={`/builder?edit=${wedding.id}`}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1.5">
                                         <Sparkles className="w-4 h-4" />
@@ -946,7 +942,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </Link>
                                 <Link 
                                     href={`/dashboard/${wedding.id}/planner`}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-1.5">
                                         <ListTodo className="w-4 h-4" />
@@ -956,7 +952,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </Link>
                                 <button 
                                     onClick={() => setActiveTab('guests')}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-1.5">
                                         <Users className="w-4 h-4" />
@@ -966,7 +962,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </button>
                                 <button 
                                     onClick={() => setActiveTab('analytics')}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-neutral-800 rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 mb-1.5">
                                         <PieChartIcon className="w-4 h-4" />
@@ -980,12 +976,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {/* Mobile Home Quick Stats Summary - Even smaller now */}
                         {activeTab === 'home' && (
                             <div className="sm:hidden grid grid-cols-2 gap-2 mb-4">
-                                <div className="p-4 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center">
+                                <div className="p-4 rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center">
                                     <p className="text-[7px] uppercase font-black tracking-widest text-text-secondary/50 mb-0.5">Guests</p>
                                     <p className="text-2xl font-serif font-bold text-primary">{stats.confirmed}</p>
                                     <p className="text-[7px] font-bold text-text-secondary/40 uppercase tracking-widest">Confirmed</p>
                                 </div>
-                                <div className="p-4 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center">
+                                <div className="p-4 rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center">
                                     <p className="text-[7px] uppercase font-black tracking-widest text-text-secondary/50 mb-0.5">Budget</p>
                                     <p className="text-2xl font-serif font-bold text-secondary">{stats.budgetPercent}%</p>
                                     <p className="text-[7px] font-bold text-text-secondary/40 uppercase tracking-widest">Utilized</p>
@@ -996,28 +992,28 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {/* Full Stats Cards - Mobile: Analytics only, Desktop: All */}
                         {(activeTab === 'analytics' || activeTab === 'home') && (
                             <div className={`${activeTab === 'home' ? 'hidden sm:grid' : 'grid'} grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 animate-in fade-in`}>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center hover:border-primary/30 transition-all">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-primary/30 transition-all">
                                     <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <Users className="w-5 h-5 text-primary" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.totalGuests}</p>
                                     <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Total Guests</p>
                                 </div>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center hover:border-green-500/30 transition-all">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-green-500/30 transition-all">
                                     <div className="w-10 h-10 rounded-full bg-green-500/5 dark:bg-green-500/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <CheckCircle2 className="w-5 h-5 text-green-500" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.confirmed}</p>
                                     <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Confirmed</p>
                                 </div>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center hover:border-red-400/30 transition-all">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-red-400/30 transition-all">
                                     <div className="w-10 h-10 rounded-full bg-red-400/5 dark:bg-red-400/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <X className="w-5 h-5 text-red-400" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.declined}</p>
                                     <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Declined</p>
                                 </div>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow text-center hover:border-amber-500/30 transition-all">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-amber-500/30 transition-all">
                                     <div className="w-10 h-10 rounded-full bg-amber-500/5 dark:bg-amber-500/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <AlertCircle className="w-5 h-5 text-amber-500" />
                                     </div>
@@ -1029,7 +1025,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                         {/* Budget Visualization - Mobile: Analytics only, Desktop: All */}
                         {(activeTab === 'analytics' || activeTab === 'home') && (
-                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-6 sm:p-10 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow animate-in fade-in`}>
+                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-6 sm:p-10 rounded-3xl bg-white dark:bg-white border border-border soft-shadow animate-in fade-in`}>
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                                     <div>
                                         <h2 className="text-xl sm:text-2xl font-serif font-bold text-foreground flex items-center gap-3">
@@ -1080,7 +1076,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                     {currencySymbol}{stats.remainingBudget.toLocaleString()}
                                                 </p>
                                             </div>
-                                            <Link href={`/dashboard/${id}/planner?tab=budget`} className="px-6 py-3 rounded-xl bg-neutral-900 text-white font-black uppercase tracking-widest text-[10px] hover:bg-black transition-all flex items-center gap-2 shadow-lg">
+                                            <Link href={`/dashboard/${id}/planner?tab=budget`} className="px-6 py-3 rounded-xl bg-primary text-white font-black uppercase tracking-widest text-[10px] hover:bg-primary-hover transition-all flex items-center gap-2 shadow-lg">
                                                 Details <ArrowRight className="w-4 h-4" />
                                             </Link>
                                         </div>
@@ -1093,7 +1089,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {(activeTab === 'analytics' || activeTab === 'home') && (
                             <div className={`${activeTab === 'home' ? 'hidden sm:grid' : 'grid'} grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in fade-in`}>
                                 {/* Attendance Breakdown */}
-                                <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow">
+                                <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-white border border-border soft-shadow">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-secondary/40 mb-8 flex items-center gap-2">
                                         <PieChartIcon className="w-4 h-4 text-primary" /> RSVP Distribution
                                     </h3>
@@ -1103,7 +1099,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                 ? `conic-gradient(#22c55e ${attendPct}%, #ef4444 ${attendPct}% ${attendPct + declinePct}%, #f59e0b ${attendPct + declinePct}% ${attendPct + declinePct + pendingPct}%, #3A2A2D ${attendPct + declinePct + pendingPct}% 100%)`
                                                 : '#3A2A2D'
                                         }}>
-                                            <div className="absolute inset-2 sm:inset-4 bg-white dark:bg-neutral-800 rounded-full flex flex-col items-center justify-center shadow-inner">
+                                            <div className="absolute inset-2 sm:inset-4 bg-white dark:bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
                                                 <span className="text-xl sm:text-2xl font-black text-foreground">{stats.total}</span>
                                                 <span className="text-[8px] font-black uppercase tracking-widest text-text-secondary/40">Total</span>
                                             </div>
@@ -1135,7 +1131,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </div>
 
                                 {/* Meal Summary */}
-                                <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow">
+                                <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-white border border-border soft-shadow">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-secondary/40 mb-8 flex items-center gap-2">
                                         <Smartphone className="w-4 h-4 text-secondary" /> Dining Preferences
                                     </h3>
@@ -1196,13 +1192,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                     <span className="px-2 py-1.5 rounded-lg bg-primary/10 text-primary text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
                                                         {stats.invitedCount} invited
                                                     </span>
-                                                    {showEmailUsageBadge && (
+                                                    {!hasPlannerPro && (
                                                         <>
                                                             <span className="px-2 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
                                                                 {planUsage.guestEmailCount} / {FREE_PLAN_LIMITS.guestEmails} guest emails
                                                             </span>
                                                             <span className="px-2 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
-                                                                {planUsage.userTriggeredEmailsUsed} / {emailLimit} account emails
+                                                                {planUsage.userTriggeredEmailsUsed} / {FREE_PLAN_LIMITS.userTriggeredEmails} sends
                                                             </span>
                                                         </>
                                                     )}
@@ -1438,7 +1434,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                         {(activeTab === 'settings' || activeTab === 'home') && (
                             <div className="space-y-4 sm:space-y-6">
-                                <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow animate-in fade-in">
+                                <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-white border border-border soft-shadow animate-in fade-in">
                                     <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4 flex items-center justify-between">
                                         Notifications
                                         {isSavingSettings && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
@@ -1494,7 +1490,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     </div>
                                 </div>
 
-                                <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-neutral-800 border border-border soft-shadow animate-in fade-in">
+                                <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-white border border-border soft-shadow animate-in fade-in">
                                     <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4">Event Details</h3>
                                     <div className="space-y-6">
                                         <div>
@@ -1519,7 +1515,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
             {/* Add Guest Modal */}
             {isAddGuestModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-foreground/55 backdrop-blur-sm">
                     <div className="bg-white rounded-lg sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-300 relative shadow-2xl">
                         <div className="flex justify-between items-start sm:items-center gap-4 mb-4 sm:mb-8 sticky top-0 bg-white">
                             <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-foreground">Add Guest</h2>

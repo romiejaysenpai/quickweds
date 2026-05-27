@@ -7,6 +7,13 @@ import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib
 import { getWeddingAccess } from '@/lib/wedding-access';
 
 export async function POST(req: NextRequest) {
+    if (req.headers.get('x-quickweds-client') === 'ios-capacitor') {
+        return NextResponse.json(
+            { error: 'Paid upgrades are managed on the QuickWeds website.' },
+            { status: 403 }
+        );
+    }
+
     const rateLimit = createRateLimitMiddleware('CHECKOUT');
     const rateKey = getClientIP(req);
     const limited = rateLimit.check(rateKey);

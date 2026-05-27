@@ -2,7 +2,6 @@ import 'server-only';
 
 const KNOWN_ADMIN_EMAILS = [
     process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
     ...(process.env.ADMIN_EMAILS || '').split(','),
 ]
     .filter(Boolean)

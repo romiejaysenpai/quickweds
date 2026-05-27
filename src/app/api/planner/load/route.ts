@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { EMPTY_PLANNER_USAGE, getAccountEmailUsage, getPlannerUsage } from '@/lib/planner-limits';
+import { EMPTY_PLANNER_USAGE, getPlannerUsage } from '@/lib/planner-limits';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
             db
                 .from('user_app_profiles')
                 .select('is_pro, plan_type, payment_status')
-                .eq('user_id', wedding.user_id)
+                .eq('user_id', user.id)
                 .maybeSingle(),
             'account profile'
         );
@@ -157,11 +157,7 @@ export async function GET(req: NextRequest) {
             .filter((rsvp: any) => rsvp.rsvp_status === 'confirmed' || rsvp.rsvp_status === 'confirmed_manual' || rsvp.attendance === 'Yes')
             .reduce((count: number, rsvp: any) => count + (rsvp.num_guests || 1), 0);
 
-        const [planUsage, accountEmailUsage] = await Promise.all([
-            getPlannerUsage(db, resolvedWeddingId),
-            getAccountEmailUsage(db, wedding.user_id),
-        ]);
-        planUsage.userTriggeredEmailsUsed = accountEmailUsage;
+        const planUsage = await getPlannerUsage(db, resolvedWeddingId);
 
         return NextResponse.json({
             accessRole,

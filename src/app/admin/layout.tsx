@@ -1,24 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, isAdmin, adminChecked, loading } = useAuth();
     const router = useRouter();
-    const [isVerified, setIsVerified] = useState(false);
+    const isVerified = !loading && adminChecked && Boolean(user) && isAdmin;
 
     useEffect(() => {
-        if (!loading && adminChecked) {
-            if (!user || !isAdmin) {
-                router.replace('/dashboard');
-            } else {
-                setIsVerified(true);
-            }
+        if (loading || !adminChecked) return;
+
+        if (!user || !isAdmin) {
+            router.replace('/dashboard');
         }
-    }, [loading, adminChecked, user, isAdmin, router]);
+    }, [adminChecked, isAdmin, loading, router, user]);
 
     if (!isVerified) {
         return (

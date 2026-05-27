@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CheckCheck, Copy, Share2 } from 'lucide-react';
 import { copyToClipboard } from '@/lib/client-clipboard';
+import { shareTextOrUrl } from '@/lib/native-actions';
 
 export default function SupplierShareControls({
     slug,
@@ -30,16 +31,12 @@ export default function SupplierShareControls({
     const shareProfile = async () => {
         const url = getShareUrl();
         try {
-            if (navigator.share) {
-                await navigator.share({
-                    title: `${businessName} | QuickWeds Suppliers`,
-                    text: `View ${businessName} on QuickWeds.`,
-                    url,
-                });
-                return;
-            }
-
-            await copyLink();
+            await shareTextOrUrl({
+                title: `${businessName} | QuickWeds Suppliers`,
+                text: `View ${businessName} on QuickWeds.`,
+                url,
+                dialogTitle: 'Share supplier profile',
+            });
         } catch {
             // User cancellation should not show an error state.
         }

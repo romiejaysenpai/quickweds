@@ -117,6 +117,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import PWAInstaller from "@/components/PWAInstaller";
+import NativeAppChrome from "@/components/NativeAppChrome";
 
 import { SectionProvider } from '@/context/SectionContext';
 
@@ -136,6 +137,7 @@ export default function RootLayout({
             <SectionProvider>
               {children}
             </SectionProvider>
+            <NativeAppChrome />
             <PWAInstaller />
             <Analytics />
             <SpeedInsights />

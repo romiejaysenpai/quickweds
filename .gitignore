@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -23,12 +25,24 @@
 # misc
 .DS_Store
 *.pem
+.kilo/
+.qwen/
+.vscode/settings.json
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
+.next-dev*.log
+build-output.txt
+build_log.txt
+debug.log
+scratch-test.ts
+test-api.js
+test-write.txt
+*.bat
 
 # env files
 .env*

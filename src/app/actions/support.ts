@@ -4,6 +4,10 @@ import { sendEmail } from '@/lib/email';
 import { v2 as cloudinary } from 'cloudinary';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@quickweds.site';
+const ADMIN_EMAILS = [
+    ADMIN_EMAIL,
+    ...(process.env.ADMIN_EMAILS || '').split(','),
+].map((email) => email.trim()).filter(Boolean);
 
 // Configure Cloudinary
 if (process.env.CLOUDINARY_URL) {
@@ -17,7 +21,7 @@ async function uploadToCloudinary(file: File): Promise<string | null> {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             cloudinary.uploader.upload_stream(
                 {
                     folder: 'support_tickets',
@@ -63,40 +67,62 @@ function getEmailWrapper(content: string, type: string, color: string = '#D16C78
     `;
 }
 
+function escapeHtml(value: string) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 export async function submitInquiry(formData: FormData) {
-    const subject = formData.get('subject') as string;
-    const message = formData.get('message') as string;
-    const userEmail = formData.get('userEmail') as string;
+    const subject = String(formData.get('subject') || '').trim();
+    const message = String(formData.get('message') || '').trim();
+    const userEmail = String(formData.get('userEmail') || '').trim();
+    const inquiryType = String(formData.get('inquiryType') || '').trim();
+    const isCustomPlanInquiry = inquiryType === 'custom-plan' || /custom plan/i.test(subject);
 
     if (!subject || !message) {
         return { success: false, error: 'Subject and message are required' };
     }
 
+    if (isCustomPlanInquiry && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
+        return { success: false, error: 'A valid email address is required for custom plan inquiries' };
+    }
+
+    const safeSubject = escapeHtml(subject);
+    const safeMessage = escapeHtml(message);
+    const safeUserEmail = escapeHtml(userEmail || 'Unknown User');
+    const emailType = isCustomPlanInquiry ? 'Custom Plan Inquiry' : 'New Support Inquiry';
+    const brandColor = isCustomPlanInquiry ? '#8B5CF6' : '#D16C78';
+
     const content = `
         <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 25px;">
-            Hello Admin, you have received a new general inquiry.
+            Hello Admin, you have received a new ${isCustomPlanInquiry ? 'custom plan inquiry' : 'general inquiry'}.
         </p>
         
-        <div style="background-color: #fdf8f9; border-left: 4px solid #D16C78; padding: 20px; margin-bottom: 30px; border-radius: 4px;">
-            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>From:</strong> <span style="color: #D16C78;">${userEmail || 'Unknown User'}</span></p>
-            <p style="margin: 0; font-size: 14px;"><strong>Subject:</strong> ${subject}</p>
+        <div style="background-color: #fdf8f9; border-left: 4px solid ${brandColor}; padding: 20px; margin-bottom: 30px; border-radius: 4px;">
+            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>From:</strong> <span style="color: ${brandColor};">${safeUserEmail}</span></p>
+            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Type:</strong> ${isCustomPlanInquiry ? 'Custom Plan Request' : 'General Inquiry'}</p>
+            <p style="margin: 0; font-size: 14px;"><strong>Subject:</strong> ${safeSubject}</p>
         </div>
         
         <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px;">Inquiry Details:</h3>
         <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
-            <p style="white-space: pre-wrap; font-size: 15px; line-height: 1.7; color: #444; margin: 0;">${message}</p>
+            <p style="white-space: pre-wrap; font-size: 15px; line-height: 1.7; color: #444; margin: 0;">${safeMessage}</p>
         </div>
         
         <div style="margin-top: 35px; text-align: center;">
-            <a href="mailto:${userEmail}" style="background-color: #D16C78; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">Reply to User</a>
+            <a href="mailto:${encodeURIComponent(userEmail)}" style="background-color: ${brandColor}; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">Reply to User</a>
         </div>
     `;
 
-    const html = getEmailWrapper(content, 'New Support Inquiry');
+    const html = getEmailWrapper(content, emailType, brandColor);
 
     const result = await sendEmail({
-        to: ADMIN_EMAIL,
-        subject: `[Support Inquiry] ${subject}`,
+        to: ADMIN_EMAILS,
+        subject: isCustomPlanInquiry ? `[Custom Plan Inquiry] ${subject}` : `[Support Inquiry] ${subject}`,
         html,
     });
 

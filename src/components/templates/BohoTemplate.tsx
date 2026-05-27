@@ -142,6 +142,8 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}
                     venueAddress={wedding.venue_address}
+                    template={wedding.template}
+                    motifColor={wedding.motif_color}
                 />
             )}
             

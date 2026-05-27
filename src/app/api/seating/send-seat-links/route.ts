@@ -4,7 +4,7 @@ import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { sendEmail } from '@/lib/email';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { getAccountEmailUsage, getEmailLimitMessage, getUserPlanTier, hasPlannerProAccess, logPlannerEmailEvent, PLAN_LIMITS } from '@/lib/planner-limits';
+import { hasPlannerProAccess, logPlannerEmailEvent } from '@/lib/planner-limits';
 import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
 import { getWeddingAccess } from '@/lib/wedding-access';
 import {
@@ -28,7 +28,7 @@ async function getAuthorizedWedding(req: NextRequest, weddingId: string) {
 
     const db = getSupabaseAdminClient() as any;
     const access = await getWeddingAccess(db, user, weddingId, {
-        select: 'id, user_id, bride_name, groom_name, public_seat_finder_token, is_premium, payment_status, plan_type',
+        select: 'id, user_id, bride_name, groom_name, public_seat_finder_token, is_premium, payment_status',
         collaboratorRoles: ['partner', 'coordinator'],
     });
 
@@ -69,14 +69,9 @@ export async function POST(req: NextRequest) {
 
         const { data: ownerProfile } = await db
             .from('user_app_profiles')
-            .select('is_pro, plan_type, payment_status')
+            .select('is_pro, payment_status')
             .eq('user_id', wedding.user_id)
             .maybeSingle();
-        const tier = getUserPlanTier({
-            isAdmin: isKnownAdminEmail(user.email),
-            wedding,
-            accountProfile: ownerProfile,
-        });
         const hasPlannerPro = hasPlannerProAccess({
             isAdmin: isKnownAdminEmail(user.email),
             wedding,
@@ -118,23 +113,6 @@ export async function POST(req: NextRequest) {
         let skippedUnassigned = 0;
 
         const attendingGuests = ((guests || []) as SeatFinderRsvp[]).filter(isAttendingGuest);
-        const emailsNeeded = attendingGuests.filter((guest) => {
-            const assignment = assignmentMap.get(guest.id);
-            const tableName = assignment ? tableMap.get(assignment.table_id)?.table_name : guest.table_assignment;
-            return Boolean(tableName && guest.guest_email && (resendAll || !guest.seat_link_last_sent_at));
-        }).length;
-        const emailsUsed = await getAccountEmailUsage(db, wedding.user_id);
-        const emailLimit = PLAN_LIMITS[tier].emails;
-
-        if (emailsUsed + emailsNeeded > emailLimit) {
-            return NextResponse.json({
-                error: getEmailLimitMessage(emailsNeeded, emailsUsed, tier),
-                code: 'email_limit_reached',
-                used: emailsUsed,
-                limit: emailLimit,
-                requested: emailsNeeded,
-            }, { status: 402 });
-        }
 
         for (const guest of attendingGuests) {
             const assignment = assignmentMap.get(guest.id);

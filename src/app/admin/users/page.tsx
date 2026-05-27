@@ -1,9 +1,8 @@
 'use client';
 
-import { Search, Filter, ShieldCheck, Mail, MoreHorizontal, Crown } from 'lucide-react';
 import Link from 'next/link';
+import { Crown, Filter, Mail, MoreHorizontal, Search, ShieldCheck } from 'lucide-react';
 
-// Static placeholder data for the premium UI until the backend API is fully wired
 const MOCK_USERS = [
     { id: '1', name: 'Sarah & James', email: 'sarah.j@example.com', type: 'couple', isPro: true, date: '2025-08-14' },
     { id: '2', name: 'Michael Chen', email: 'michael@prestigecatering.com', type: 'supplier', isPro: false, date: '2025-06-20' },
@@ -31,7 +30,6 @@ export default function AdminUsersPage() {
                     </Link>
                 </div>
 
-                {/* Filters and Search */}
                 <div className="mb-6 flex flex-col gap-3 sm:flex-row">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
@@ -47,7 +45,6 @@ export default function AdminUsersPage() {
                     </button>
                 </div>
 
-                {/* Users Table */}
                 <div className="overflow-x-auto rounded-2xl border border-border bg-white">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-neutral/40 text-xs font-bold uppercase tracking-wider text-text-secondary">

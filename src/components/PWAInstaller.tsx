@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Download, Bell, X } from 'lucide-react';
+import { isNativeCapacitorApp } from '@/lib/capacitor';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -32,6 +33,7 @@ export default function PWAInstaller() {
   const supportsInstall = useMemo(() => typeof window !== 'undefined' && 'serviceWorker' in navigator, []);
 
   useEffect(() => {
+    if (isNativeCapacitorApp()) return;
     if (!supportsInstall) return;
 
     if (process.env.NODE_ENV !== 'production') {

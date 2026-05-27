@@ -55,7 +55,7 @@ export default function DemoSection({ isOpen, onClose }: { isOpen: boolean; onCl
                                     See how QuickWeds simplifies the whole wedding.
                                 </h2>
                                 <p className="mt-4 text-sm leading-7 text-text-secondary sm:text-base">
-                                    The video walkthrough is being prepared. For now, you can start building instantly or explore the template gallery from the Templates menu.
+                                    The video walkthrough is being prepared. For now, you can start building instantly from your QuickWeds workspace.
                                 </p>
 
                                 <div className="mt-6 grid gap-3 text-left">

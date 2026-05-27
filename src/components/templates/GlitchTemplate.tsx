@@ -59,6 +59,8 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: any) {
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}
                     venueAddress={wedding.venue_address}
+                    template={wedding.template}
+                    motifColor={wedding.motif_color}
                 />
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />

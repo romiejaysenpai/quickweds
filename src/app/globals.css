@@ -67,53 +67,53 @@
   --color-error-text: var(--error-text);
 
   /* Fonts */
-  --font-serif: var(--font-playfair), serif;
-  --font-sans: var(--font-inter), sans-serif;
-  --font-elegant: var(--font-cormorant), serif;
-  --font-cursive: var(--font-script), cursive;
-  --font-modern: var(--font-montserrat), sans-serif;
-  --font-classic: var(--font-cinzel), serif;
+  --font-serif: var(--font-playfair, Georgia, serif);
+  --font-sans: var(--font-inter, Arial, sans-serif);
+  --font-elegant: var(--font-cormorant, Georgia, serif);
+  --font-cursive: var(--font-script, cursive);
+  --font-modern: var(--font-montserrat, Arial, sans-serif);
+  --font-classic: var(--font-cinzel, Georgia, serif);
 
   /* New Specialized Fonts */
-  --font-eb: var(--font-eb-garamond), serif;
-  --font-bodoni: var(--font-bodoni), serif;
-  --font-prata: var(--font-prata), serif;
-  --font-lora: var(--font-lora), serif;
-  --font-cardo: var(--font-cardo), serif;
-  --font-libre: var(--font-libre), serif;
-  --font-marcellus: var(--font-marcellus), serif;
-  --font-forum: var(--font-forum), serif;
-  --font-alice: var(--font-alice), serif;
-  --font-spectral: var(--font-spectral), serif;
-  --font-fauna: var(--font-fauna), sans-serif;
-  --font-tenor: var(--font-tenor), sans-serif;
-  --font-questrial: var(--font-questrial), sans-serif;
-  --font-syne: var(--font-syne), sans-serif;
+  --font-eb: var(--font-cormorant, Georgia, serif);
+  --font-bodoni: var(--font-playfair, Georgia, serif);
+  --font-prata: var(--font-playfair, Georgia, serif);
+  --font-lora: var(--font-cormorant, Georgia, serif);
+  --font-cardo: var(--font-cormorant, Georgia, serif);
+  --font-libre: var(--font-playfair, Georgia, serif);
+  --font-marcellus: var(--font-cinzel, Georgia, serif);
+  --font-forum: var(--font-cinzel, Georgia, serif);
+  --font-alice: var(--font-playfair, Georgia, serif);
+  --font-spectral: var(--font-cormorant, Georgia, serif);
+  --font-fauna: var(--font-inter, Arial, sans-serif);
+  --font-tenor: var(--font-montserrat, Arial, sans-serif);
+  --font-questrial: var(--font-inter, Arial, sans-serif);
+  --font-syne: var(--font-montserrat, Arial, sans-serif);
 
   /* Additional Premium Fonts */
-  --font-abril: var(--font-abril), serif;
-  --font-cormorant-upright: var(--font-cormorant-upright), serif;
-  --font-old-standard: var(--font-old-standard), serif;
-  --font-josefin: var(--font-josefin), sans-serif;
-  --font-caslon: var(--font-caslon), serif;
-  --font-quattrocento: var(--font-quattrocento), serif;
+  --font-abril: var(--font-playfair, Georgia, serif);
+  --font-cormorant-upright: var(--font-cormorant, Georgia, serif);
+  --font-old-standard: var(--font-cormorant, Georgia, serif);
+  --font-josefin: var(--font-montserrat, Arial, sans-serif);
+  --font-caslon: var(--font-playfair, Georgia, serif);
+  --font-quattrocento: var(--font-cormorant, Georgia, serif);
 
   /* New Script Fonts */
-  --font-alex: var(--font-alex), cursive;
-  --font-allura: var(--font-allura), cursive;
-  --font-arizonia: var(--font-arizonia), cursive;
-  --font-dancing: var(--font-dancing), cursive;
-  --font-italianno: var(--font-italianno), cursive;
-  --font-pinyon: var(--font-pinyon), cursive;
-  --font-sacramento: var(--font-sacramento), cursive;
-  --font-tangerine: var(--font-tangerine), cursive;
-  --font-parisienne: var(--font-parisienne), cursive;
+  --font-alex: var(--font-script, cursive);
+  --font-allura: var(--font-script, cursive);
+  --font-arizonia: var(--font-script, cursive);
+  --font-dancing: var(--font-script, cursive);
+  --font-italianno: var(--font-script, cursive);
+  --font-pinyon: var(--font-script, cursive);
+  --font-sacramento: var(--font-script, cursive);
+  --font-tangerine: var(--font-script, cursive);
+  --font-parisienne: var(--font-script, cursive);
 
   /* Additional Calligraphy Fonts */
-  --font-mrs-saint: var(--font-mrs-saint), cursive;
-  --font-monsieur: var(--font-monsieur), cursive;
-  --font-homemade: var(--font-homemade), cursive;
-  --font-herr: var(--font-herr), cursive;
+  --font-mrs-saint: var(--font-script, cursive);
+  --font-monsieur: var(--font-script, cursive);
+  --font-homemade: var(--font-script, cursive);
+  --font-herr: var(--font-script, cursive);
 }
 
 body {
@@ -349,6 +349,126 @@ body {
   min-height: 100dvh;
   min-height: 100svh;
   padding-bottom: var(--safe-area-inset-bottom);
+}
+
+html.native-app {
+  background: var(--background);
+  overscroll-behavior: none;
+  scroll-behavior: smooth;
+}
+
+html.native-app body {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--neutral) 92%, white), var(--background) 32rem);
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.native-ios body {
+  padding-top: var(--safe-area-inset-top);
+  padding-right: var(--safe-area-inset-right);
+  padding-left: var(--safe-area-inset-left);
+  padding-bottom: calc(var(--safe-area-inset-bottom) + 4.75rem);
+}
+
+html.native-app a,
+html.native-app button {
+  -webkit-touch-callout: none;
+}
+
+html.native-app input,
+html.native-app textarea,
+html.native-app select,
+html.native-app [contenteditable="true"] {
+  -webkit-touch-callout: default;
+}
+
+html.native-app .noise-overlay {
+  display: none;
+}
+
+html.native-app .hover-lift:hover,
+html.native-app [class*="hover\\:-translate-y"]:hover,
+html.native-app [class*="hover\\:scale"]:hover {
+  transform: none;
+}
+
+html.native-app .sticky.top-0,
+html.native-app .fixed.top-0 {
+  top: var(--safe-area-inset-top);
+}
+
+html.native-app main {
+  padding-bottom: max(6.75rem, calc(var(--safe-area-inset-bottom) + 5.5rem));
+}
+
+.native-tabbar {
+  display: none;
+}
+
+html.native-app .native-tabbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 220;
+  display: block;
+  padding: 0.5rem max(0.75rem, var(--safe-area-inset-right)) max(0.5rem, var(--safe-area-inset-bottom)) max(0.75rem, var(--safe-area-inset-left));
+  border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  background: color-mix(in srgb, var(--white) 88%, transparent);
+  box-shadow: 0 -18px 45px color-mix(in srgb, var(--primary) 12%, transparent);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.native-tabbar-inner {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin: 0 auto;
+  max-width: 30rem;
+}
+
+.native-tab {
+  display: flex;
+  min-width: 0;
+  min-height: 3.6rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  border-radius: 1.15rem;
+  color: color-mix(in srgb, var(--text-secondary) 72%, transparent);
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.native-tab-icon {
+  display: grid;
+  height: 1.55rem;
+  place-items: center;
+}
+
+.native-tab.is-active {
+  background: color-mix(in srgb, var(--primary) 12%, white);
+  color: var(--primary);
+}
+
+.native-tab:active {
+  transform: scale(0.96);
+}
+
+html.native-app .pb-safe {
+  padding-bottom: max(0.5rem, var(--safe-area-inset-bottom));
+}
+
+html.native-app .web-only,
+html.native-app [data-web-only="true"] {
+  display: none !important;
 }
 
 @media (display-mode: standalone) {
