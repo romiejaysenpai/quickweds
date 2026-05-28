@@ -1,5 +1,6 @@
 const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
 const weddingId = process.env.WEDDING_ID || '0cdd2b2d';
+const profile = process.env.STRESS_PROFILE || 'local';
 const requestTimeoutMs = Number(process.env.REQUEST_TIMEOUT_MS || 15000);
 
 const endpointSets = {
@@ -22,11 +23,20 @@ const endpointSets = {
   ],
 };
 
-const stages = [
-  { name: 'smoke-pages', durationMs: 15000, concurrency: 5, endpoints: endpointSets.pages },
-  { name: 'balanced-public-read', durationMs: 30000, concurrency: 25, endpoints: endpointSets.mixedRead },
-  { name: 'spike-public-read', durationMs: 20000, concurrency: 75, endpoints: endpointSets.mixedRead },
-];
+const profiles = {
+  local: [
+    { name: 'smoke-pages', durationMs: 15000, concurrency: 5, endpoints: endpointSets.pages },
+    { name: 'balanced-public-read', durationMs: 30000, concurrency: 25, endpoints: endpointSets.mixedRead },
+    { name: 'spike-public-read', durationMs: 20000, concurrency: 75, endpoints: endpointSets.mixedRead },
+  ],
+  'production-safe': [
+    { name: 'prod-smoke-pages', durationMs: 10000, concurrency: 3, endpoints: endpointSets.pages },
+    { name: 'prod-balanced-public-read', durationMs: 20000, concurrency: 10, endpoints: endpointSets.mixedRead },
+    { name: 'prod-controlled-spike-read', durationMs: 15000, concurrency: 30, endpoints: endpointSets.mixedRead },
+  ],
+};
+
+const stages = profiles[profile] || profiles.local;
 
 function percentile(values, target) {
   if (!values.length) return 0;
@@ -143,6 +153,7 @@ async function runStage(stage) {
 console.log(JSON.stringify({
   baseUrl,
   weddingId,
+  profile,
   requestTimeoutMs,
   startedAt: new Date().toISOString(),
   stages: stages.map(({ name, durationMs, concurrency, endpoints }) => ({
@@ -170,4 +181,4 @@ for (const stage of stages) {
 }
 
 console.log('\nSUMMARY_JSON');
-console.log(JSON.stringify({ baseUrl, weddingId, results }, null, 2));
+console.log(JSON.stringify({ baseUrl, weddingId, profile, results }, null, 2));
