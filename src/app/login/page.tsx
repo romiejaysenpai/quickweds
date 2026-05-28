@@ -143,7 +143,7 @@ export default function LoginPage() {
                     <div className="space-y-2">
                         <div className="flex justify-between items-center ml-1">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary">Password</label>
-                            <Link href="/forgot-password" title="Forgot Password" className="text-xs text-primary font-bold hover:underline">Forgot?</Link>
+                            <Link href="/forgot-password" title="Forgot Password" className="inline-flex min-h-[44px] items-center text-xs font-bold text-primary hover:underline">Forgot?</Link>
                         </div>
                         <div className="relative">
                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/40 pointer-events-none" />
@@ -208,7 +208,7 @@ export default function LoginPage() {
                             event.preventDefault();
                             router.push(getSignupHref());
                         }}
-                        className="text-primary font-bold hover:underline"
+                        className="inline-flex min-h-[44px] items-center font-bold text-primary hover:underline"
                     >
                         Sign Up
                     </Link>

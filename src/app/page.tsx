@@ -223,7 +223,7 @@ function SectionHeading({
       {eyebrow && (
         <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-primary/70 sm:text-xs sm:tracking-[0.28em]">{eyebrow}</p>
       )}
-      <h2 className="text-[2rem] font-bold leading-[1.08] text-foreground sm:text-4xl lg:text-5xl">
+      <h2 className="text-[1.8rem] font-bold leading-[1.08] text-foreground min-[390px]:text-[2rem] sm:text-4xl lg:text-5xl">
         {title} {accent && <Accent>{accent}</Accent>}{afterAccent}
       </h2>
       {body && (
@@ -282,9 +282,9 @@ function ContactSection() {
           body="Our team is here to support you. Send us a message and we'll get back to you shortly."
         />
         
-        <div className="overflow-hidden rounded-[2rem] border border-border bg-white shadow-2xl shadow-primary/5">
-          <div className="grid md:grid-cols-5">
-            <div className="bg-primary p-8 text-white md:col-span-2">
+        <div className="w-full min-w-0 overflow-hidden rounded-[1.5rem] border border-border bg-white shadow-2xl shadow-primary/5 sm:rounded-[2rem]">
+          <div className="grid min-w-0 md:grid-cols-5">
+            <div className="min-w-0 bg-primary p-5 text-white sm:p-8 md:col-span-2">
               <h3 className="font-serif text-2xl font-bold">Get in touch</h3>
               <p className="mt-4 text-sm leading-7 text-white/80">
                 Whether you&apos;re just starting or finalizing your details, we&apos;re here to help make your wedding planning journey a success.
@@ -312,7 +312,7 @@ function ContactSection() {
               </div>
             </div>
             
-            <div className="p-8 md:col-span-3">
+            <div className="min-w-0 p-5 sm:p-8 md:col-span-3">
               {sent ? (
                 <div className="flex h-full flex-col items-center justify-center text-center py-10">
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
@@ -441,11 +441,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen overflow-hidden bg-neutral pb-20 text-foreground sm:pb-0">
+    <div className="min-h-screen overflow-x-hidden bg-neutral pb-20 text-foreground sm:pb-0">
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-border/70 bg-white/90 backdrop-blur-xl">
         <div className="mobile-safe-px mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:h-20 sm:gap-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-8 w-auto object-contain sm:h-11" priority />
+          <Link href="/" className="flex min-w-0 shrink items-center gap-2" aria-label="QuickWeds home">
+            <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-7 w-auto max-w-[128px] object-contain min-[390px]:h-8 min-[390px]:max-w-[150px] sm:h-11 sm:max-w-none" priority />
           </Link>
 
           <div className="hidden items-center gap-7 lg:flex">
@@ -483,7 +483,7 @@ export default function Home() {
             )}
             <Link
               href="/builder"
-              className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover sm:min-h-[44px] sm:px-5 sm:text-sm"
+              className="hidden min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover min-[360px]:inline-flex sm:min-h-[44px] sm:px-5 sm:text-sm"
               onClick={closeMobileMenu}
             >
               <span className="sm:hidden">Free Site</span>
@@ -502,7 +502,7 @@ export default function Home() {
           </div>
         </div>
         {isMobileMenuOpen && (
-          <div id="landing-mobile-menu" className="mobile-safe-px border-t border-border/60 bg-white/95 px-4 py-4 shadow-xl shadow-primary/10 backdrop-blur-xl lg:hidden">
+          <div id="landing-mobile-menu" className="mobile-safe-px max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-border/60 bg-white/95 px-4 py-4 shadow-xl shadow-primary/10 backdrop-blur-xl lg:hidden">
             <div className="mx-auto grid max-w-7xl gap-2">
               <a
                 href="#features"
@@ -632,7 +632,7 @@ export default function Home() {
                 <Sparkles className="h-3.5 w-3.5" />
                 <span className="truncate">Complete wedding planning system</span>
               </div>
-              <h1 className="mx-auto max-w-3xl text-[2.55rem] font-bold leading-[1.03] tracking-tight text-foreground min-[390px]:text-[2.85rem] sm:text-5xl lg:mx-0 lg:text-7xl">
+              <h1 className="mx-auto max-w-3xl text-[2.1rem] font-bold leading-[1.05] text-foreground min-[390px]:text-[2.65rem] sm:text-5xl lg:mx-0 lg:text-7xl">
                 Plan, invite, and manage your <Accent>wedding</Accent> all in one place.
               </h1>
               <p className="mx-auto mt-5 max-w-2xl text-[16px] leading-7 text-text-secondary sm:mt-6 sm:text-xl sm:leading-8 lg:mx-0">
@@ -1014,11 +1014,11 @@ export default function Home() {
         </section>
 
         <section className="px-4 py-16 sm:px-6 sm:py-28 overflow-hidden">
-          <div className="mx-auto max-w-4xl relative isolate overflow-hidden rounded-[2rem] bg-primary shadow-2xl shadow-primary/25 sm:rounded-[2.5rem]">
+          <div className="relative isolate mx-auto max-w-4xl overflow-hidden rounded-[1.5rem] bg-primary shadow-2xl shadow-primary/25 sm:rounded-[2.5rem]">
             {/* Wave effect like the dashboard hero */}
-            <div className="absolute inset-x-[-10%] top-[-50%] h-[150%] w-[120%] opacity-10 bg-white/10 blur-3xl pointer-events-none" />
+            <div className="pointer-events-none absolute inset-x-0 top-[-50%] h-[150%] opacity-10 bg-white/10 blur-3xl" />
             <div 
-                className="absolute inset-x-[-20%] bottom-[-80%] h-[120%] bg-white/5 pointer-events-none" 
+                className="pointer-events-none absolute inset-x-0 bottom-[-80%] h-[120%] bg-white/5" 
                 style={{ borderRadius: '50% 50% 0 0 / 100% 100% 0 0' }}
             />
 
@@ -1085,10 +1085,10 @@ export default function Home() {
             <div>
               <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Product</h4>
               <ul className="space-y-4">
-                <li><button type="button" onClick={openTemplates} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Wedding Templates</button></li>
-                <li><button type="button" onClick={openDemo} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">View Live Demo</button></li>
-                <li><a href="#pricing" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Pricing & Features</a></li>
-                <li><Link href="/suppliers" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Vendor Directory</Link></li>
+                <li><button type="button" onClick={openTemplates} className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Wedding Templates</button></li>
+                <li><button type="button" onClick={openDemo} className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">View Live Demo</button></li>
+                <li><a href="#pricing" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Pricing & Features</a></li>
+                <li><Link href="/suppliers" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Vendor Directory</Link></li>
               </ul>
             </div>
 
@@ -1096,10 +1096,10 @@ export default function Home() {
             <div>
               <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Resources</h4>
               <ul className="space-y-4">
-                <li><a href="#tips" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Wedding Tips</a></li>
-                <li><Link href="/user-guide" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Planning Guide</Link></li>
-                <li><a href="#faq" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">FAQ</a></li>
-                <li><Link href="/privacy" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Privacy Policy</Link></li>
+                <li><a href="#tips" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Wedding Tips</a></li>
+                <li><Link href="/user-guide" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Planning Guide</Link></li>
+                <li><a href="#faq" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">FAQ</a></li>
+                <li><Link href="/privacy" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Privacy Policy</Link></li>
               </ul>
             </div>
 
@@ -1107,9 +1107,9 @@ export default function Home() {
             <div>
               <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Support</h4>
               <ul className="space-y-4">
-                <li><a href="#contact" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Contact Support</a></li>
-                <li><a href="mailto:support@quickweds.site" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">support@quickweds.site</a></li>
-                <li><a href="https://wa.me/639454602270" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Chat on WhatsApp</a></li>
+                <li><a href="#contact" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Contact Support</a></li>
+                <li><a href="mailto:support@quickweds.site" className="inline-flex min-h-[44px] items-center break-all text-sm font-bold text-text-secondary transition-colors hover:text-primary">support@quickweds.site</a></li>
+                <li><a href="https://wa.me/639454602270" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Chat on WhatsApp</a></li>
               </ul>
             </div>
           </div>

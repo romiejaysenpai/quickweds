@@ -1,10 +1,9 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { User } from '@supabase/supabase-js';
-import type { Session } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { clearLocalSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
+import { clearLocalSupabaseSession, getSafeSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
 
 interface AuthContextType {
     user: User | null;
@@ -42,12 +41,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             let activeSession = session || null;
             if (!activeSession) {
-                const { data: { session: loadedSession }, error } = await supabase.auth.getSession();
+                const { session: loadedSession, error } = await getSafeSupabaseSession();
                 if (error) {
-                    if (isInvalidRefreshTokenError(error)) {
-                        await clearLocalSupabaseSession();
-                        setUser(null);
-                    }
                     setIsAdmin(false);
                     setAdminChecked(true);
                     return;
@@ -89,13 +84,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     useEffect(() => {
+        const handleRejectedAuthRefresh = (event: PromiseRejectionEvent) => {
+            if (!isInvalidRefreshTokenError(event.reason)) return;
+
+            event.preventDefault();
+            void clearLocalSupabaseSession().finally(() => {
+                setUser(null);
+                setIsAdmin(false);
+                setAdminChecked(true);
+                setLoading(false);
+            });
+        };
+
+        window.addEventListener('unhandledrejection', handleRejectedAuthRefresh);
+
         // Check active sessions and sets the user
-        supabase.auth.getSession()
-            .then(async ({ data: { session }, error }) => {
+        getSafeSupabaseSession()
+            .then(async ({ session, error }) => {
                 if (error) {
-                    if (isInvalidRefreshTokenError(error)) {
-                        await clearLocalSupabaseSession();
-                    } else {
+                    if (!isInvalidRefreshTokenError(error)) {
                         console.error('Error loading auth session:', error);
                     }
                     setUser(null);
@@ -130,11 +137,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setLoading(false);
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            window.removeEventListener('unhandledrejection', handleRejectedAuthRefresh);
+            subscription.unsubscribe();
+        };
     }, [checkAdminStatus]);
 
     const logout = async () => {
-        await supabase.auth.signOut();
+        try {
+            const { error } = await supabase.auth.signOut();
+
+            if (error && isInvalidRefreshTokenError(error)) {
+                await clearLocalSupabaseSession();
+            } else if (error) {
+                throw error;
+            }
+        } catch (error) {
+            if (isInvalidRefreshTokenError(error)) {
+                await clearLocalSupabaseSession();
+            } else {
+                throw error;
+            }
+        }
+
+        setUser(null);
         setIsAdmin(false);
         setAdminChecked(false);
     };

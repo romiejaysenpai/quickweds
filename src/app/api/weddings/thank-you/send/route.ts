@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const weddingId = sanitizeWeddingId(typeof body?.weddingId === 'string' ? body.weddingId : '');
+        const dryRun = body?.dryRun === true || req.nextUrl.searchParams.get('dryRun') === '1';
         const authHeader = req.headers.get('authorization') || '';
         const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
 
@@ -74,6 +75,17 @@ export async function POST(req: NextRequest) {
                 limit: FREE_PLAN_LIMITS.userTriggeredEmails,
                 requested: notes.length,
             }, { status: 402 });
+        }
+
+        if (dryRun) {
+            return NextResponse.json({
+                dryRun: true,
+                sentCount: 0,
+                failedCount: 0,
+                wouldSendCount: notes.length,
+                emailsUsed,
+                hasPlannerPro,
+            }, { headers: limited.headers });
         }
 
         const settled = await Promise.all(notes.map(async (note: any) => {

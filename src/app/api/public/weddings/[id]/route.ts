@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
+import { getCachedServerValue } from '@/lib/server-cache';
 
 export const dynamic = 'force-dynamic';
+
+const PUBLIC_WEDDING_CACHE_TTL_MS = 60 * 1000;
 
 const PUBLIC_WEDDING_FIELDS = [
     'id',
@@ -86,18 +89,31 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (limited.limited) return limited.response;
 
     try {
-        const db = getSupabaseAdminClient() as any;
-        const { wedding, error, identifier } = await resolvePublicWeddingByIdentifier(db, rawIdentifier, '*');
+        const { value, cacheStatus } = await getCachedServerValue(
+            `public-wedding:${rawIdentifier}`,
+            PUBLIC_WEDDING_CACHE_TTL_MS,
+            async () => {
+                const db = getSupabaseAdminClient() as any;
+                const { wedding, error, identifier } = await resolvePublicWeddingByIdentifier(db, rawIdentifier, '*');
 
-        if (error) throw error;
-        if (!identifier || !wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
+                if (error) throw error;
+
+                return {
+                    identifier,
+                    wedding: wedding ? toPublicWedding(wedding) : null,
+                };
+            }
+        );
+
+        if (!value.identifier || !value.wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
 
         return NextResponse.json(
-            { wedding: toPublicWedding(wedding) },
+            { wedding: value.wedding },
             {
                 headers: {
                     ...limited.headers,
                     'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+                    'X-QuickWeds-Cache': cacheStatus,
                 },
             }
         );

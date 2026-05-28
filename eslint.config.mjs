@@ -26,6 +26,7 @@ const eslintConfig = defineConfig([
     ".firebase/**",
     ".kilo/**",
     ".snapshots/**",
+    "quickweds/**",
     "deploy*.js",
     "find-weddings.js",
     "fix.js",
