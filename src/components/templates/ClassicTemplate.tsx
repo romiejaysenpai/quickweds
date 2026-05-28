@@ -115,7 +115,7 @@ export default function ClassicTemplate({ wedding, gallery, isExpired }: Templat
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
             <BioSection id="bio" wedding={wedding} />
             <DetailsSection id="details" wedding={wedding} />
-            {!wedding.is_thank_you_mode && !isExpired && (
+            {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
                     weddingTime={wedding.wedding_time}
@@ -123,6 +123,8 @@ export default function ClassicTemplate({ wedding, gallery, isExpired }: Templat
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}
                     venueAddress={wedding.venue_address}
+                    template={wedding.template}
+                    motifColor={wedding.motif_color}
                 />
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />

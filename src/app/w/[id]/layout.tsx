@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
+import WeddingFontProvider from '@/components/WeddingFontProvider';
 
 export async function generateMetadata(
     { params }: { params: Promise<{ id: string }> }
@@ -54,5 +55,5 @@ export default function WeddingLayout({
 }: {
     children: React.ReactNode;
 }) {
-    return <>{children}</>;
+    return <WeddingFontProvider>{children}</WeddingFontProvider>;
 }

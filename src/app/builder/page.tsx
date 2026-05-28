@@ -1,9 +1,11 @@
 import BuilderForm from '@/components/BuilderForm';
+import WeddingFontProvider from '@/components/WeddingFontProvider';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
 export default function BuilderPage() {
     return (
+        <WeddingFontProvider>
         <div className="mobile-safe-screen mobile-safe-px mobile-safe-bottom py-6 sm:py-12 flex flex-col items-center bg-neutral">
             <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-top-4 duration-1000 px-2 sm:px-6">
                 <div className="flex justify-center mb-4 sm:mb-6">
@@ -19,5 +21,6 @@ export default function BuilderPage() {
                 <BuilderForm />
             </Suspense>
         </div>
+        </WeddingFontProvider>
     );
 }

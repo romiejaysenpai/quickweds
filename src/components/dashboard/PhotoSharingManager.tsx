@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
     Plus, Trash2, Check, X, Loader2, ExternalLink,
-    ImageIcon, Key, RefreshCw, Download, 
+    ImageIcon, Key, RefreshCw, Download,
     Maximize2, CheckCircle2
 } from 'lucide-react';
+import { openExternalUrl } from '@/lib/native-actions';
 
 interface Photo {
     id: string;
@@ -31,7 +32,8 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
     const [loading, setLoading] = useState(true);
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [codes, setCodes] = useState<SharingCode[]>([]);
-    
+    const [deletingCodeId, setDeletingCodeId] = useState<string | null>(null);
+
     // Lightbox State
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
 
@@ -62,35 +64,35 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
             if (error) throw error;
             setPhotos(photos.map(p => p.id === photoId ? { ...p, is_approved: true } : p));
         } catch (err) {
-            alert("Failed to approve photo");
+            window.alert("Failed to approve photo");
         }
     };
 
     const approveAllPending = async () => {
         const pending = photos.filter(p => !p.is_approved);
         if (pending.length === 0) return;
-        if (!confirm(`Are you sure you want to instantly approve all ${pending.length} pending photos?`)) return;
+        if (!window.confirm(`Are you sure you want to instantly approve all ${pending.length} pending photos?`)) return;
 
         try {
             const pendingIds = pending.map(p => p.id);
             const { error } = await supabase.from('wedding_photos').update({ is_approved: true, approved_at: new Date().toISOString() }).in('id', pendingIds);
             if (error) throw error;
-            
+
             setPhotos(photos.map(p => p.is_approved ? p : { ...p, is_approved: true }));
         } catch (err) {
-            alert("Failed to approve all photos");
+            window.alert("Failed to approve all photos");
         }
     };
 
     const deletePhoto = async (photoId: string) => {
-        if (!confirm("Are you sure you want to delete this photo permanently?")) return;
+        if (!window.confirm("Are you sure you want to delete this photo permanently?")) return;
         try {
             const { error } = await supabase.from('wedding_photos').delete().eq('id', photoId);
             if (error) throw error;
             setPhotos(photos.filter(p => p.id !== photoId));
             if (selectedPhoto?.id === photoId) setSelectedPhoto(null);
         } catch (err) {
-            alert("Failed to delete photo");
+            window.alert("Failed to delete photo");
         }
     };
 
@@ -100,7 +102,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
             if (error) throw error;
             setCodes(codes.map(c => c.id === codeId ? { ...c, is_active: !current } : c));
         } catch (err) {
-            alert("Failed to update sharing code");
+            window.alert("Failed to update sharing code");
         }
     };
 
@@ -116,32 +118,43 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                 is_active: true,
                 max_uploads: 3,
             }).select().single();
-            
+
             if (error) throw error;
             if (data) setCodes([...codes, data]);
         } catch (err) {
-            alert("Failed to generate code");
+            window.alert("Failed to generate code");
         }
     };
 
     const deleteCode = async (codeId: string) => {
-        if (!confirm("Are you sure? Guests using this code won't be able to upload anymore.")) return;
+        if (deletingCodeId) return;
+        if (!window.confirm("Are you sure? Guests using this code won't be able to upload anymore.")) return;
+        setDeletingCodeId(codeId);
         try {
-            const { error } = await supabase
-                .from('photo_sharing_codes')
-                .delete()
-                .eq('id', codeId)
-                .eq('wedding_id', weddingId);
-            
-            if (error) {
-                console.error("Delete error:", error);
-                throw error;
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) {
+                throw new Error('Please sign in again to delete this sharing code.');
             }
-            setCodes(codes.filter(c => c.id !== codeId));
-            alert("Code deleted successfully!");
+
+            const response = await fetch('/api/photos/sharing-codes', {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ weddingId, id: codeId }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to delete sharing code.');
+            }
+
+            setCodes((currentCodes) => currentCodes.filter(c => c.id !== codeId));
         } catch (err) {
             console.error("Failed to delete code:", err);
-            alert(`Failed to delete code: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            window.alert(`Failed to delete code: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        } finally {
+            setDeletingCodeId(null);
         }
     };
 
@@ -167,15 +180,15 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                         <p className="mt-1 text-xs leading-5 text-text-secondary sm:text-sm">Manage uploads, monitor sharing codes, approve photos.</p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                        <a 
-                            href={`/w/${weddingId}/photos`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                        <button
+                            type="button"
+                            onClick={() => void openExternalUrl(`${window.location.origin}/w/${weddingId}/photos`)}
                             className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-lg border border-border bg-neutral px-3 py-2 text-xs font-bold text-foreground transition-all hover:bg-neutral/80 dark:bg-neutral/40 flex-1 sm:flex-none whitespace-nowrap"
                         >
                             <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" /> Gallery
-                        </a>
-                        <button 
+                        </button>
+                        <button
+                            type="button"
                             onClick={generateCode}
                             className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white transition-all hover:shadow-lg flex-1 sm:flex-none whitespace-nowrap"
                         >
@@ -245,18 +258,23 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-end gap-0.5">
-                                        <button 
+                                        <button
+                                            type="button"
                                             onClick={() => toggleCode(code.id, code.is_active)}
                                             className={`h-6 w-6 rounded p-1 transition-colors flex items-center justify-center ${code.is_active ? 'text-emerald-600 hover:bg-emerald-500/10' : 'text-text-secondary hover:bg-neutral'} sm:h-7 sm:w-7`}
                                             title={code.is_active ? "Pause" : "Activate"}
                                         >
                                             {code.is_active ? <Check className="w-3 h-3" /> : <RefreshCw className="w-3 h-3" />}
                                         </button>
-                                        <button 
+                                        <button
+                                            type="button"
                                             onClick={() => deleteCode(code.id)}
-                                            className="h-6 w-6 rounded p-1 text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 flex items-center justify-center sm:h-7 sm:w-7"
+                                            disabled={deletingCodeId === code.id}
+                                            className="h-6 w-6 rounded p-1 text-text-secondary transition-colors hover:bg-red-50 hover:text-red-500 flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-60 sm:h-7 sm:w-7"
+                                            title="Delete code"
+                                            aria-label={`Delete sharing code ${code.code}`}
                                         >
-                                            <Trash2 className="w-3 h-3" />
+                                            {deletingCodeId === code.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                                         </button>
                                     </div>
                                 </div>
@@ -271,7 +289,8 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                 <div className="rounded-xl border border-border bg-white soft-shadow dark:bg-white/5 sm:rounded-2xl overflow-hidden">
                     <div className="flex items-center justify-between gap-2 border-b border-border/50 px-2.5 py-2 sm:px-3.5 sm:py-3">
                         <h3 className="font-serif text-sm font-bold text-foreground">Pending ({pendingPhotos.length})</h3>
-                        <button 
+                        <button
+                            type="button"
                             onClick={approveAllPending}
                             className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 bg-primary text-white rounded-lg font-bold hover:shadow-lg transition-all text-xs whitespace-nowrap sm:px-3 sm:py-2"
                         >
@@ -280,20 +299,20 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                     </div>
                     <div className="grid grid-cols-3 gap-1 p-2 sm:grid-cols-4 sm:gap-1.5 sm:p-2.5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
                         {pendingPhotos.map((photo) => (
-                            <motion.div 
+                            <motion.div
                                 layout
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
-                                key={photo.id} 
+                                key={photo.id}
                                 className="group relative overflow-hidden rounded border border-border bg-neutral dark:bg-neutral/20 aspect-square sm:rounded-lg"
                             >
                                 <img src={photo.cloudinary_url} alt="Pending" className="h-full w-full object-cover" />
-                                <div className="flex items-center justify-center gap-1 absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => approvePhoto(photo.id)} className="flex h-6 w-6 items-center justify-center rounded bg-emerald-500 text-white transition-transform hover:scale-110 sm:h-7 sm:w-7">
+                                <div className="flex items-center justify-center gap-1 absolute inset-0 bg-foreground/55 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button type="button" onClick={() => approvePhoto(photo.id)} className="flex h-6 w-6 items-center justify-center rounded bg-emerald-500 text-white transition-transform hover:scale-110 sm:h-7 sm:w-7">
                                         <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                     </button>
-                                    <button onClick={() => deletePhoto(photo.id)} className="flex h-6 w-6 items-center justify-center rounded bg-red-500 text-white transition-transform hover:scale-110 sm:h-7 sm:w-7">
+                                    <button type="button" onClick={() => deletePhoto(photo.id)} className="flex h-6 w-6 items-center justify-center rounded bg-red-500 text-white transition-transform hover:scale-110 sm:h-7 sm:w-7">
                                         <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                     </button>
                                 </div>
@@ -308,13 +327,13 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                 <div className="rounded-xl border border-border bg-white soft-shadow dark:bg-white/5 sm:rounded-2xl overflow-hidden">
                     <div className="flex items-center justify-between gap-2 px-2.5 py-2 border-b border-border/50 sm:px-3.5 sm:py-3">
                         <h3 className="font-serif text-sm font-bold text-foreground">Approved ({approvedPhotos.length})</h3>
-                        <button onClick={loadData} className="flex h-6 w-6 items-center justify-center rounded text-text-secondary transition-colors hover:text-primary sm:h-7 sm:w-7"><RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /></button>
+                        <button type="button" onClick={loadData} className="flex h-6 w-6 items-center justify-center rounded text-text-secondary transition-colors hover:text-primary sm:h-7 sm:w-7"><RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /></button>
                     </div>
                     <div className="grid grid-cols-4 gap-1 p-2 sm:grid-cols-5 sm:gap-1.5 sm:p-2.5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
                         {approvedPhotos.map((photo) => (
                             <button type="button" key={photo.id} className="group relative aspect-square cursor-pointer overflow-hidden rounded border border-border bg-neutral dark:bg-neutral/20 hover:ring-2 ring-primary/50 sm:rounded-lg" onClick={() => setSelectedPhoto(photo)}>
                                 <img src={photo.cloudinary_url} alt="Approved" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
+                                <div className="absolute inset-0 flex items-center justify-center bg-foreground/20 opacity-0 transition-opacity group-hover:opacity-100">
                                     <Maximize2 className="w-3 h-3 text-white" />
                                 </div>
                             </button>
@@ -326,15 +345,15 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
             {/* Lightbox Modal */}
             <AnimatePresence>
                 {selectedPhoto && (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-2 backdrop-blur-md sm:p-4">
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/95 p-2 backdrop-blur-md sm:p-4">
                         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative max-w-5xl w-full h-full flex flex-col items-center justify-center">
                             <div className="absolute right-2 top-2 z-10 flex gap-1 sm:right-4 sm:top-4 sm:gap-2">
-                                <button onClick={() => deletePhoto(selectedPhoto.id)} className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-500 backdrop-blur-md hover:bg-red-500/40 transition-all sm:h-9 sm:w-9" title="Delete"><Trash2 className="w-4 h-4 sm:w-5 sm:h-5" /></button>
-                                <button onClick={() => setSelectedPhoto(null)} className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md hover:bg-white/20 transition-all sm:h-9 sm:w-9" title="Close"><X className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+                                <button type="button" onClick={() => deletePhoto(selectedPhoto.id)} className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-500 backdrop-blur-md hover:bg-red-500/40 transition-all sm:h-9 sm:w-9" title="Delete"><Trash2 className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+                                <button type="button" onClick={() => setSelectedPhoto(null)} className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md hover:bg-white/20 transition-all sm:h-9 sm:w-9" title="Close"><X className="w-4 h-4 sm:w-5 sm:h-5" /></button>
                             </div>
                             <img src={selectedPhoto.cloudinary_url} alt="Gallery" className="max-h-[60vh] max-w-full rounded-lg object-contain shadow-2xl sm:max-h-[70vh]" />
                             <div className="mt-2 text-center text-white text-xs sm:text-sm sm:mt-3">

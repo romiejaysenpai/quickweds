@@ -2,8 +2,11 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CalendarCheck, PlayCircle, Video } from 'lucide-react';
 
 export const metadata = {
-    title: 'QuickWeds Demo',
-    description: 'Preview how QuickWeds helps couples create wedding websites, manage RSVPs, and plan their celebration.',
+    title: 'QuickWeds Demo | Wedding Website Builder and RSVP Planner',
+    description: 'Preview how QuickWeds helps couples create wedding websites, collect RSVPs, manage guests, track budgets, and plan their celebration.',
+    alternates: {
+        canonical: '/demo',
+    },
 };
 
 export default function DemoPage() {

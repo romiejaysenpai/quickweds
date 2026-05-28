@@ -3,7 +3,6 @@
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -11,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from '@/components/UpgradeButton';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
+import { getCachedSession } from '@/lib/session-cache';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
     loading: () => (
@@ -35,6 +35,10 @@ const ThankYouNoteManager = dynamic(() => import('@/components/dashboard/ThankYo
             <p className="mt-4 text-sm font-bold text-text-secondary">Loading thank-you tools...</p>
         </div>
     ),
+});
+const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudgetPieChart'), {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse rounded-full bg-neutral/50" />,
 });
 
 const PLANNER_TABS = ['checklist', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
@@ -226,7 +230,7 @@ async function deletePlannerItem(weddingId: string, type: string, id: string) {
     const table = PLANNER_DELETE_TABLES[type];
     if (!table) throw new Error('Unknown planner item type.');
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getCachedSession();
     const token = sessionData.session?.access_token;
     if (!token) throw new Error('Please sign in again before deleting this item.');
 
@@ -280,7 +284,7 @@ function getPlannerErrorMessage(err: unknown, fallback: string) {
 }
 
 async function plannerItemRequest(method: 'POST' | 'PATCH', payload: Record<string, unknown>) {
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getCachedSession();
     const token = sessionData.session?.access_token;
     if (!token) throw new Error('Please sign in again before saving this planner item.');
 
@@ -362,7 +366,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
         const guardAndLoad = async () => {
             setCheckingRole(true);
-            const { data: sessionData } = await supabase.auth.getSession();
+            const { data: sessionData } = await getCachedSession();
             const token = sessionData.session?.access_token;
 
             if (!token) {
@@ -412,7 +416,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
             setLoading(true);
             setPlannerError('');
             try {
-                const { data: sessionData } = await supabase.auth.getSession();
+                const { data: sessionData } = await getCachedSession();
                 const token = sessionData.session?.access_token;
 
                 if (!token) {
@@ -1119,7 +1123,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
         : '';
 
     async function getAuthToken() {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await getCachedSession();
         return data.session?.access_token || '';
     }
 
@@ -1426,6 +1430,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
             // 1. Update local states immediately for no-lag feel
             if (field === 'total_budget') setLocalBudget(value);
             if (field === 'currency') setLocalCurrency(value);
+            if (field === 'guest_limit') setLocalGuestLimit(value);
 
             // 2. Persist to Supabase
             const { error, data } = await supabase
@@ -1489,23 +1494,31 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
     const currencySymbol = getCurrencySymbol(localCurrency);
 
     return (
-        <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 lg:p-6 soft-shadow border border-border overflow-x-hidden">
-            <div className="grid gap-3 xl:grid-cols-[1fr_1.6fr] xl:items-end mb-4 border-b border-border/50 pb-4">
-                <div className="min-w-0">
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-foreground">Budget Tracker</h2>
-                    <p className="mt-1 text-xs sm:text-sm text-text-secondary">Budget, estimates, and paid vendors in one compact view.</p>
+        <div className="overflow-x-hidden rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-2xl sm:p-6 md:rounded-3xl lg:p-8">
+            <div className="mb-5 border-b border-border/50 pb-5">
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="min-w-0">
+                        <h2 className="font-serif text-2xl font-bold text-foreground md:text-3xl">Budget Tracker</h2>
+                        <p className="mt-1 text-sm text-text-secondary">Set the whole wedding budget, then compare estimates, food costs, and paid vendors.</p>
+                    </div>
+                    <div className="hidden items-center gap-2 rounded-full border border-border bg-neutral/40 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-text-secondary lg:inline-flex">
+                        <Wallet className="h-4 w-4 text-primary" />
+                        Live budget controls
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-xl border border-border bg-neutral/40 p-2.5 sm:col-span-2 sm:p-3 xl:col-span-1">
-                        <p className="text-[9px] uppercase font-black tracking-widest text-text-secondary">Budget</p>
-                        <div className="mt-2 grid grid-cols-[7.5rem_minmax(0,1fr)] gap-2">
+
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(21rem,2fr)_repeat(3,minmax(9rem,1fr))]">
+                    <div className="rounded-2xl border border-primary/15 bg-neutral/40 p-3 sm:col-span-2 sm:p-4 lg:col-span-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Whole Wedding Budget</p>
+                        <div className="mt-2 grid grid-cols-[minmax(6.75rem,8rem)_minmax(8rem,1fr)] gap-2 sm:grid-cols-[8rem_minmax(10rem,1fr)]">
                             <select 
                                 value={localCurrency} 
                                 onChange={e => {
                                     setLocalCurrency(e.target.value);
                                     saveWeddingBudget('currency', e.target.value);
                                 }}
-                                className="h-11 w-full rounded-lg border border-border bg-white px-2 text-[12px] font-bold outline-none focus:ring-primary/20"
+                                aria-label="Budget currency"
+                                className="h-12 w-full rounded-xl border border-border bg-white px-3 text-sm font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
                             >
                                 <option value="USD">USD ($)</option>
                                 <option value="Yen">Yen (¥)</option>
@@ -1523,13 +1536,14 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                                         const val = parseFloat(e.target.value) || 0;
                                         saveWeddingBudget('total_budget', val);
                                     }}
-                                    className="icon-field-left-compact h-11 w-full min-w-0 rounded-lg border border-border bg-white pl-8 pr-3 text-right font-mono text-base font-bold tabular-nums text-primary outline-none focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    aria-label="Whole wedding budget amount"
+                                    className="icon-field-left-compact h-12 w-full min-w-0 rounded-xl border border-border bg-white pl-8 pr-3 text-right font-mono text-lg font-bold tabular-nums text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
                         </div>
                     </div>
-                    <div className="rounded-xl border border-border bg-neutral/40 p-2.5 sm:p-3">
-                        <p className="text-[9px] uppercase font-black tracking-widest text-text-secondary">Guests</p>
+                    <div className="rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Guests</p>
                         <div className="relative mt-2">
                             <Users className="absolute left-2 top-1/2 -translate-y-1/2 text-primary w-4 h-4 pointer-events-none" />
                                 <input 
@@ -1542,17 +1556,18 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                                         const val = parseInt(e.target.value) || 0;
                                         saveWeddingBudget('guest_limit', val);
                                     }}
-                                    className="icon-field-left-compact h-11 w-full rounded-lg border border-border bg-white pl-8 pr-3 text-right font-mono text-base font-bold tabular-nums text-primary outline-none focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    aria-label="Guest target"
+                                    className="icon-field-left-compact h-12 w-full rounded-xl border border-border bg-white pl-8 pr-3 text-right font-mono text-lg font-bold tabular-nums text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                         </div>
                     </div>
-                    <div className="rounded-xl border border-border bg-neutral/40 p-2.5 sm:p-3">
-                        <p className="text-[9px] uppercase font-black tracking-widest text-text-secondary">Spent</p>
-                        <p className={`mt-2 break-words text-lg font-mono font-black leading-tight tabular-nums ${totalCommitted > (wedding?.total_budget || 0) ? 'text-red-500' : 'text-primary'}`}>{currencySymbol}{totalCommitted.toLocaleString()}</p>
+                    <div className="rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Spent</p>
+                        <p className={`mt-3 break-words font-mono text-xl font-black leading-tight tabular-nums ${totalCommitted > (wedding?.total_budget || 0) ? 'text-red-500' : 'text-primary'}`}>{currencySymbol}{totalCommitted.toLocaleString()}</p>
                     </div>
-                    <div className="rounded-xl border border-border bg-neutral/40 p-2.5 sm:p-3">
-                        <p className="text-[9px] uppercase font-black tracking-widest text-text-secondary">Remaining</p>
-                        <p className={`mt-2 break-words text-lg font-mono font-black leading-tight tabular-nums ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                    <div className="rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Remaining</p>
+                        <p className={`mt-3 break-words font-mono text-xl font-black leading-tight tabular-nums ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                             {currencySymbol}{budgetRemaining.toLocaleString()}
                         </p>
                     </div>
@@ -1563,27 +1578,15 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                 {/* Visual Usage */}
                 <div className="bg-neutral/30 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/50 grid gap-3 sm:grid-cols-[170px_1fr] sm:items-center shadow-inner">
                     <div className="h-[150px] sm:h-[170px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={chartData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={40}
-                                    outerRadius={60}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {chartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip 
-                                    formatter={(value: any) => [`${currencySymbol}${value.toLocaleString()}`, 'Amount']}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
+                        <LazyBudgetPieChart
+                            data={chartData}
+                            colors={COLORS}
+                            currencySymbol={currencySymbol}
+                            innerRadius={40}
+                            outerRadius={60}
+                            paddingAngle={5}
+                            tooltipRadius={12}
+                        />
                     </div>
                     <div className="space-y-3">
                         <div className="flex justify-between items-end gap-2">
@@ -1639,7 +1642,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                 </div>
             </div>
 
-            <form onSubmit={addItem} className="mb-4 bg-neutral/30 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/50">
+            <form onSubmit={addItem} className="mb-5 rounded-2xl border border-border/50 bg-neutral/30 p-4 lg:p-5">
                 <div className="mb-3 flex items-center justify-between gap-3">
                     <h3 className="font-serif text-lg font-bold text-foreground">Add Expense</h3>
                     <div className="hidden gap-2 text-[10px] font-black uppercase tracking-widest text-text-secondary sm:flex">
@@ -1648,13 +1651,13 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                         <span>Paid {currencySymbol}{totalSpentFromVendors.toLocaleString()}</span>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[1fr_1.3fr_0.9fr_auto] gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1.35fr_minmax(11rem,0.9fr)_minmax(8rem,auto)] xl:items-end">
                     <div className="min-w-0">
                         <label className="block text-[9px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Category</label>
                         <select 
                             value={newItem.category} 
                             onChange={e => e.target.value === 'CUSTOM' ? handleAddCustomCategory() : setNewItem({...newItem, category: e.target.value})}
-                            className="w-full bg-white border border-border rounded-lg px-3 py-2.5 outline-none focus:ring-primary/20 text-xs sm:text-sm min-h-[44px]"
+                            className="min-h-[46px] w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
                         >
                             {categories.map(c => <option key={c} value={c}>{c}</option>)}
                             <option value="CUSTOM">+ Add Custom</option>
@@ -1668,7 +1671,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                             placeholder="e.g. Venue Rental" 
                             value={newItem.item_name}
                             onChange={e => setNewItem({...newItem, item_name: e.target.value})}
-                            className="w-full bg-white border border-border rounded-lg px-3 py-2.5 outline-none focus:ring-primary/20 text-xs sm:text-sm min-h-[44px]"
+                            className="min-h-[46px] w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
                         />
                     </div>
                     <div className="min-w-0">
@@ -1682,12 +1685,13 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                                 placeholder="0" 
                                 value={newItem.estimated_cost}
                                 onChange={e => setNewItem({...newItem, estimated_cost: e.target.value})}
-                                className="icon-field-left-compact w-full min-w-0 bg-white border border-border rounded-lg pl-8 pr-3 py-2.5 outline-none focus:ring-primary/20 font-mono text-base tabular-nums min-h-[44px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="icon-field-left-compact min-h-[46px] w-full min-w-0 rounded-xl border border-border bg-white py-2.5 pl-8 pr-3 font-mono text-base tabular-nums outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                         </div>
                     </div>
-                    <button type="submit" disabled={publishing} className="self-end bg-primary text-white rounded-lg px-5 py-2.5 font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all text-sm min-h-[44px]">
-                        {publishing ? 'Adding...' : 'Add'}
+                    <button type="submit" disabled={publishing} className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60">
+                        <Plus className="h-4 w-4" />
+                        {publishing ? 'Adding...' : 'Add Expense'}
                     </button>
                 </div>
             </form>

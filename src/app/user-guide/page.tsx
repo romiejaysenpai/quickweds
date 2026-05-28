@@ -23,8 +23,11 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'QuickWeds User Guide | Build Your Wedding Site',
-  description: 'A step-by-step QuickWeds text guide for creating your wedding site, choosing your design, managing guests, and using planner tools.',
+  title: 'QuickWeds User Guide | Wedding Website and Planner Tutorials',
+  description: 'Learn how to build a wedding website, manage RSVPs, organize guests, plan seating, track budgets, and use QuickWeds planner tools.',
+  alternates: {
+    canonical: '/user-guide',
+  },
 };
 
 function Accent({ children }: { children: React.ReactNode }) {

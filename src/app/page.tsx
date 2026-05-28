@@ -34,7 +34,6 @@ import {
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import DemoSection from '@/components/DemoSection';
-import ExamplesSection from '@/components/ExamplesSection';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
@@ -384,7 +383,6 @@ function HeroImagePanel() {
 }
 
 export default function Home() {
-  const [isExamplesOpen, setIsExamplesOpen] = useState(false);
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasWeddingSite, setHasWeddingSite] = useState(false);
@@ -431,10 +429,6 @@ export default function Home() {
   }, [user]);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
-  const openTemplates = () => {
-    setIsExamplesOpen(true);
-    closeMobileMenu();
-  };
   const openDemo = () => {
     setIsDemoOpen(true);
     closeMobileMenu();
@@ -536,14 +530,6 @@ export default function Home() {
                 Wedding Tips
                 <ArrowRight className="h-4 w-4" />
               </a>
-              <button
-                type="button"
-                onClick={openTemplates}
-                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-left text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
-              >
-                Templates
-                <ArrowRight className="h-4 w-4" />
-              </button>
               <button
                 type="button"
                 onClick={openDemo}
@@ -1085,7 +1071,6 @@ export default function Home() {
             <div>
               <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Product</h4>
               <ul className="space-y-4">
-                <li><button type="button" onClick={openTemplates} className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Wedding Templates</button></li>
                 <li><button type="button" onClick={openDemo} className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">View Live Demo</button></li>
                 <li><a href="#pricing" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Pricing & Features</a></li>
                 <li><Link href="/suppliers" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Vendor Directory</Link></li>
@@ -1157,7 +1142,6 @@ export default function Home() {
       </div>
 
       <DemoSection isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
-      <ExamplesSection isOpen={isExamplesOpen} onClose={() => setIsExamplesOpen(false)} />
     </div>
   );
 }

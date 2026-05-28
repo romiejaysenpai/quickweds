@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
+import dynamic from 'next/dynamic';
 import {
     ArrowDown,
     ArrowLeft,
@@ -43,6 +43,11 @@ import {
 } from '@/lib/guest-list';
 import UpgradeButton from '@/components/UpgradeButton';
 import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
+import { getCachedSession } from '@/lib/session-cache';
+
+const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), { ssr: false });
+const QRCodeCanvas = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeCanvas), { ssr: false });
+import { openExternalUrl } from '@/lib/native-actions';
 
 interface Table {
     id: string;
@@ -232,6 +237,10 @@ export default function SeatingChartBuilder({
     const chartShellRef = useRef<HTMLDivElement>(null);
     const tablesRef = useRef<Table[]>([]);
     const objectsRef = useRef<VenueObject[]>([]);
+    const tableMoveFrameRef = useRef<number | null>(null);
+    const objectMoveFrameRef = useRef<number | null>(null);
+    const lastTableDragPositionRef = useRef<Pick<Table, 'position_x' | 'position_y'> | null>(null);
+    const lastObjectDragPositionRef = useRef<Pick<VenueObject, 'x' | 'y'> | null>(null);
     const [loading, setLoading] = useState(true);
     const [guests, setGuests] = useState<EnhancedRSVP[]>([]);
     const [tables, setTables] = useState<Table[]>([]);
@@ -256,6 +265,7 @@ export default function SeatingChartBuilder({
         checkedInCount?: number;
     }>({});
     const [searchQuery, setSearchQuery] = useState('');
+    const deferredSearchQuery = useDeferredValue(searchQuery);
     const [groupFilter, setGroupFilter] = useState<'all' | GuestGroup>('all');
     const [isTableModalOpen, setIsTableModalOpen] = useState(false);
     const [editingTableId, setEditingTableId] = useState<string | null>(null);
@@ -621,7 +631,7 @@ export default function SeatingChartBuilder({
 
     const updateTablePosition = useCallback(async (tableId: string, position_x: number, position_y: number) => {
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
+            const { data: sessionData } = await getCachedSession();
             const token = sessionData.session?.access_token;
             if (!token) {
                 setPositionSaveError('Sign in again to save table positions.');
@@ -765,7 +775,7 @@ export default function SeatingChartBuilder({
     };
 
     const callSeatFinderApi = async (path: string, body: Record<string, unknown>) => {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getCachedSession();
         const token = sessionData.session?.access_token;
         if (!token) throw new Error('Please sign in again before using QR Seat Finder.');
 
@@ -928,12 +938,7 @@ export default function SeatingChartBuilder({
         }
         const openUrl = new URL(url, window.location.origin);
         openUrl.searchParams.set('returnTo', `/dashboard/${weddingId}/planner?tab=seating`);
-        const opened = window.open(openUrl.toString(), '_blank');
-        if (opened) {
-            opened.opener = null;
-        } else {
-            window.location.href = url;
-        }
+        void openExternalUrl(openUrl.toString());
     };
 
     const copyPublicSeatFinderUrl = async () => {
@@ -1124,24 +1129,50 @@ export default function SeatingChartBuilder({
         const moveTable = (event: PointerEvent) => {
             const position = getPointerPosition(event.clientX, event.clientY);
             if (!position) return;
-            setTables((current) => current.map((table) => (
-                table.id === draggingTable ? { ...table, ...position } : table
-            )));
+            lastTableDragPositionRef.current = position;
+            if (tableMoveFrameRef.current !== null) {
+                cancelAnimationFrame(tableMoveFrameRef.current);
+            }
+            tableMoveFrameRef.current = requestAnimationFrame(() => {
+                setTables((current) => current.map((table) => (
+                    table.id === draggingTable ? { ...table, ...position } : table
+                )));
+                tableMoveFrameRef.current = null;
+            });
         };
 
         const stopDragging = () => {
             const draggedTable = tablesRef.current.find((table) => table.id === draggingTable);
+            const finalPosition = lastTableDragPositionRef.current;
+            if (tableMoveFrameRef.current !== null) {
+                cancelAnimationFrame(tableMoveFrameRef.current);
+                tableMoveFrameRef.current = null;
+            }
+            if (finalPosition) {
+                setTables((current) => current.map((table) => (
+                    table.id === draggingTable ? { ...table, ...finalPosition } : table
+                )));
+            }
             setDraggingTable(null);
 
             if (draggedTable) {
-                void updateTablePosition(draggedTable.id, draggedTable.position_x, draggedTable.position_y);
+                void updateTablePosition(
+                    draggedTable.id,
+                    finalPosition?.position_x ?? draggedTable.position_x,
+                    finalPosition?.position_y ?? draggedTable.position_y,
+                );
             }
+            lastTableDragPositionRef.current = null;
         };
 
         window.addEventListener('pointermove', moveTable);
         window.addEventListener('pointerup', stopDragging, { once: true });
 
         return () => {
+            if (tableMoveFrameRef.current !== null) {
+                cancelAnimationFrame(tableMoveFrameRef.current);
+                tableMoveFrameRef.current = null;
+            }
             window.removeEventListener('pointermove', moveTable);
             window.removeEventListener('pointerup', stopDragging);
         };
@@ -1153,31 +1184,62 @@ export default function SeatingChartBuilder({
         const moveObject = (event: PointerEvent) => {
             const position = getPointerPosition(event.clientX, event.clientY);
             if (!position) return;
-            setLayout((current) => ({
-                ...current,
-                layout_data: {
-                    ...(current.layout_data || {}),
-                    objects: (current.layout_data?.objects || []).map((object) => (
-                        object.id === draggingObject
-                            ? { ...object, x: position.position_x, y: position.position_y }
-                            : object
-                    )),
-                },
-            }));
+            lastObjectDragPositionRef.current = { x: position.position_x, y: position.position_y };
+            if (objectMoveFrameRef.current !== null) {
+                cancelAnimationFrame(objectMoveFrameRef.current);
+            }
+            objectMoveFrameRef.current = requestAnimationFrame(() => {
+                setLayout((current) => ({
+                    ...current,
+                    layout_data: {
+                        ...(current.layout_data || {}),
+                        objects: (current.layout_data?.objects || []).map((object) => (
+                            object.id === draggingObject
+                                ? { ...object, x: position.position_x, y: position.position_y }
+                                : object
+                        )),
+                    },
+                }));
+                objectMoveFrameRef.current = null;
+            });
         };
 
         const stopDragging = () => {
             const draggedObject = objectsRef.current.find((object) => object.id === draggingObject);
+            const finalPosition = lastObjectDragPositionRef.current;
+            if (objectMoveFrameRef.current !== null) {
+                cancelAnimationFrame(objectMoveFrameRef.current);
+                objectMoveFrameRef.current = null;
+            }
+            if (finalPosition) {
+                setLayout((current) => ({
+                    ...current,
+                    layout_data: {
+                        ...(current.layout_data || {}),
+                        objects: (current.layout_data?.objects || []).map((object) => (
+                            object.id === draggingObject ? { ...object, ...finalPosition } : object
+                        )),
+                    },
+                }));
+            }
             setDraggingObject(null);
             if (draggedObject) {
-                updateVenueObject(draggedObject.id, { x: draggedObject.x, y: draggedObject.y });
+                updateVenueObject(draggedObject.id, {
+                    x: finalPosition?.x ?? draggedObject.x,
+                    y: finalPosition?.y ?? draggedObject.y,
+                });
             }
+            lastObjectDragPositionRef.current = null;
         };
 
         window.addEventListener('pointermove', moveObject);
         window.addEventListener('pointerup', stopDragging, { once: true });
 
         return () => {
+            if (objectMoveFrameRef.current !== null) {
+                cancelAnimationFrame(objectMoveFrameRef.current);
+                objectMoveFrameRef.current = null;
+            }
             window.removeEventListener('pointermove', moveObject);
             window.removeEventListener('pointerup', stopDragging);
         };
@@ -1236,7 +1298,7 @@ export default function SeatingChartBuilder({
         return guests
             .filter((guest) => !assignedGuestIds.has(guest.id))
             .filter((guest) => {
-                const normalizedQuery = searchQuery.toLowerCase();
+                const normalizedQuery = deferredSearchQuery.toLowerCase();
                 const matchesSearch = [
                     guest.guest_name,
                     guest.guest_email,
@@ -1246,7 +1308,7 @@ export default function SeatingChartBuilder({
                 const matchesGroup = groupFilter === 'all' ? true : guest.guest_group === groupFilter;
                 return matchesSearch && matchesGroup;
             });
-    }, [assignedGuestIds, guests, groupFilter, searchQuery]);
+    }, [assignedGuestIds, deferredSearchQuery, guests, groupFilter]);
 
     const seatingSummary = useMemo(() => {
         const totalGuests = guests.reduce((total, guest) => total + getPartySize(guest), 0);
@@ -1492,7 +1554,7 @@ export default function SeatingChartBuilder({
                             )}
                             <div
                                 ref={canvasRef}
-                                className={`relative mx-auto w-full overflow-hidden border-[3px] border-black bg-[#f7f7f5] shadow-inner ${isChartFullscreen ? 'h-[calc(100dvh-150px)] min-h-[520px] max-w-none flex-1' : 'min-h-[420px] max-w-5xl'} ${getCanvasShapeClass()}`}
+                                className={`relative mx-auto w-full overflow-hidden border-2 border-primary/20 bg-neutral shadow-inner ${isChartFullscreen ? 'h-[calc(100dvh-150px)] min-h-[520px] max-w-none flex-1' : 'min-h-[420px] max-w-5xl'} ${getCanvasShapeClass()}`}
                                 style={{
                                     aspectRatio: canvasAspectRatio,
                                     backgroundImage: layout.grid_enabled
@@ -1504,7 +1566,7 @@ export default function SeatingChartBuilder({
                                 <svg className="absolute inset-0 h-full w-full touch-none select-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                                     <defs>
                                         <filter id="floor-shadow" x="-30%" y="-30%" width="160%" height="160%">
-                                            <feDropShadow dx="0.8" dy="1.2" stdDeviation="0.7" floodColor="#000000" floodOpacity="0.22" />
+                                            <feDropShadow dx="0.8" dy="1.2" stdDeviation="0.7" floodColor="#3A2A2D" floodOpacity="0.22" />
                                         </filter>
                                         <pattern id="hatch" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                                             <line x1="0" y1="0" x2="0" y2="2" stroke="#b8b8b8" strokeWidth="0.25" />
@@ -1537,7 +1599,7 @@ export default function SeatingChartBuilder({
                                             >
                                                 {isEntrance ? (
                                                     <g>
-                                                        <path d="M 0 3 L -4 -5 L 4 -5 Z" fill="#000" filter="url(#floor-shadow)" />
+                                                        <path d="M 0 3 L -4 -5 L 4 -5 Z" fill="#7A5A61" filter="url(#floor-shadow)" />
                                                         <text y="-7" textAnchor="middle" fontSize="2.6" fontWeight="800" fill="#333">{object.label}</text>
                                                     </g>
                                                 ) : (
@@ -1789,7 +1851,7 @@ export default function SeatingChartBuilder({
             <AnimatePresence>
                 {qrPreviewUrl && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setQrPreviewUrl('')} />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-foreground/55 backdrop-blur-sm" onClick={() => setQrPreviewUrl('')} />
                         <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 z-[60] w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-white p-6 text-center shadow-2xl">
                             <button type="button" onClick={() => setQrPreviewUrl('')} className="absolute right-4 top-4 rounded-full p-2 text-text-secondary transition hover:bg-neutral">
                                 <X className="h-5 w-5" />
@@ -1807,8 +1869,8 @@ export default function SeatingChartBuilder({
                 )}
                 {isTableModalOpen && (
                     <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => setIsTableModalOpen(false)} />
-                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md bg-white dark:bg-[#1a1a1a] rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-10 z-[60] shadow-2xl border border-border">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-foreground/55 backdrop-blur-sm z-50" onClick={() => setIsTableModalOpen(false)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md bg-white dark:bg-white rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-10 z-[60] shadow-2xl border border-border">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="font-serif font-bold text-xl sm:text-2xl text-foreground">{editingTableId ? 'Edit Table' : 'Customize Table'}</h3>
                                 <button onClick={() => setIsTableModalOpen(false)} className="p-2 hover:bg-neutral dark:hover:bg-neutral/10 rounded-full transition-colors"><X className="w-5 h-5 text-text-secondary" /></button>

@@ -39,6 +39,22 @@ function isSchemaMissingError(error: any) {
     );
 }
 
+function getMissingColumnName(error: any): string | null {
+    if (!error) return null;
+    const message = String(error.message || error.details || '').toLowerCase();
+
+    const match1 = message.match(/could not find the '([^']+)' column/);
+    if (match1 && match1[1]) return match1[1];
+
+    const match2 = message.match(/column "([^"]+)" of relation/);
+    if (match2 && match2[1]) return match2[1];
+
+    const match3 = message.match(/column "([^"]+)" does not exist/);
+    if (match3 && match3[1]) return match3[1];
+
+    return null;
+}
+
 function cleanString(value: unknown) {
     const text = String(value || '').trim();
     return text || null;
@@ -292,7 +308,8 @@ async function handleDeletePlannerItem(req: NextRequest, parsedBody?: Record<str
 
         return NextResponse.json({ success: true, deletedId: itemId, type });
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unable to delete planner item.';
+        console.error('Error in handleDeletePlannerItem:', err);
+        const message = err instanceof Error ? err.message : String((err as any)?.message || err || 'Unable to delete planner item.');
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }
@@ -333,13 +350,44 @@ async function handleCreatePlannerItem(req: NextRequest, parsedBody?: Record<str
             }
         }
 
-        const result = await db.from(table).insert(payload).select('*').single();
+        let currentPayload = { ...payload };
+        let result = await db.from(table).insert(currentPayload).select('*').single();
+
+        // Dynamically strip missing columns (like due_date) and retry
+        let retryCount = 0;
+        while (result.error && isSchemaMissingError(result.error) && retryCount < 5) {
+            const missingColumn = getMissingColumnName(result.error);
+            if (missingColumn && missingColumn in currentPayload) {
+                console.warn(`[Supabase Schema Fallback] Stripping missing column '${missingColumn}' and retrying insert...`);
+                delete (currentPayload as any)[missingColumn];
+                result = await db.from(table).insert(currentPayload).select('*').single();
+                retryCount++;
+            } else {
+                break;
+            }
+        }
+
         if (!result.error) {
             return NextResponse.json({ success: true, item: result.data, type });
         }
 
         if (type === 'task' && isSchemaMissingError(result.error)) {
-            const fallback = await db.from(table).insert(getTaskFallbackPayload(weddingId, values)).select('*').single();
+            let fallbackPayload = getTaskFallbackPayload(weddingId, values);
+            let fallback = await db.from(table).insert(fallbackPayload).select('*').single();
+
+            let fbRetryCount = 0;
+            while (fallback.error && isSchemaMissingError(fallback.error) && fbRetryCount < 5) {
+                const missingColumn = getMissingColumnName(fallback.error);
+                if (missingColumn && missingColumn in fallbackPayload) {
+                    console.warn(`[Supabase Fallback Schema Fallback] Stripping missing column '${missingColumn}' and retrying fallback insert...`);
+                    delete (fallbackPayload as any)[missingColumn];
+                    fallback = await db.from(table).insert(fallbackPayload).select('*').single();
+                    fbRetryCount++;
+                } else {
+                    break;
+                }
+            }
+
             if (!fallback.error) {
                 return NextResponse.json({ success: true, item: getTaskFallbackResponseItem(fallback.data, values), type, fallback: true });
             }
@@ -348,7 +396,8 @@ async function handleCreatePlannerItem(req: NextRequest, parsedBody?: Record<str
 
         throw result.error;
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unable to create planner item.';
+        console.error('Error in handleCreatePlannerItem:', err);
+        const message = err instanceof Error ? err.message : String((err as any)?.message || err || 'Unable to create planner item.');
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }
@@ -378,18 +427,50 @@ export async function PATCH(req: NextRequest) {
         }
 
         const payload = getUpdatePayload(type, values);
-        const result = await db.from(table).update(payload).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
+        let currentPayload = { ...payload };
+        let result = await db.from(table).update(currentPayload).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
+
+        // Dynamically strip missing columns (like due_date) and retry
+        let retryCount = 0;
+        while (result.error && isSchemaMissingError(result.error) && retryCount < 5) {
+            const missingColumn = getMissingColumnName(result.error);
+            if (missingColumn && missingColumn in currentPayload) {
+                console.warn(`[Supabase Schema Fallback] Stripping missing column '${missingColumn}' and retrying update...`);
+                delete (currentPayload as any)[missingColumn];
+                result = await db.from(table).update(currentPayload).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
+                retryCount++;
+            } else {
+                break;
+            }
+        }
+
         if (!result.error) return NextResponse.json({ success: true, item: result.data, type });
 
         if (type === 'task' && isSchemaMissingError(result.error)) {
-            const fallback = await db.from(table).update(getTaskUpdateFallbackPayload(values)).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
+            let fallbackPayload = getTaskUpdateFallbackPayload(values);
+            let fallback = await db.from(table).update(fallbackPayload).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
+
+            let fbRetryCount = 0;
+            while (fallback.error && isSchemaMissingError(fallback.error) && fbRetryCount < 5) {
+                const missingColumn = getMissingColumnName(fallback.error);
+                if (missingColumn && missingColumn in fallbackPayload) {
+                    console.warn(`[Supabase Fallback Schema Fallback] Stripping missing column '${missingColumn}' and retrying fallback update...`);
+                    delete (fallbackPayload as any)[missingColumn];
+                    fallback = await db.from(table).update(fallbackPayload).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
+                    fbRetryCount++;
+                } else {
+                    break;
+                }
+            }
+
             if (!fallback.error) return NextResponse.json({ success: true, item: getTaskFallbackResponseItem(fallback.data, values), type, fallback: true });
             throw fallback.error;
         }
 
         throw result.error;
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unable to update planner item.';
+        console.error('Error in PATCH planner item:', err);
+        const message = err instanceof Error ? err.message : String((err as any)?.message || err || 'Unable to update planner item.');
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }

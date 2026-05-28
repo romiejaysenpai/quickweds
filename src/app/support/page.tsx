@@ -1,13 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, LifeBuoy, MessageSquare, AlertTriangle, Loader2, Camera, X, Image as ImageIcon } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { ArrowLeft, MessageSquare, AlertTriangle, Loader2, Camera, X, Image as ImageIcon } from 'lucide-react';
+import { Suspense, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { submitInquiry, submitFeedback } from '@/app/actions/support';
 
 export default function SupportPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <SupportPageContent />
+    </Suspense>
+  );
+}
+
+function SupportPageContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const isCustomPlanRequest = searchParams?.get('intent') === 'custom-plan';
+  const [inquirySubject, setInquirySubject] = useState(isCustomPlanRequest ? 'Custom Plan Request' : '');
+  const [inquiryMessage, setInquiryMessage] = useState(isCustomPlanRequest ? 'Hi QuickWeds team, I am interested in a custom plan. Here is what I need:\n\nWedding size:\nNeeded features:\nTimeline:\nBudget range:\nOther notes:' : '');
   const [inquirySent, setInquirySent] = useState(false);
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
@@ -85,8 +98,10 @@ export default function SupportPage() {
           <div className="absolute right-[-20%] sm:right-[-10%] top-[-20%] bottom-[-20%] w-[70%] sm:w-[50%] rounded-l-[100%] bg-white/10 z-0" />
           
           <div className="relative z-20 w-[55%] sm:w-[65%] pr-2 sm:pr-0">
-            <h1 className="text-2xl sm:text-4xl font-serif font-bold text-white leading-tight">Admin Support</h1>
-            <p className="text-white/80 mt-2 text-sm sm:text-base">We are here to help you with your wedding planning journey.</p>
+            <h1 className="text-2xl sm:text-4xl font-serif font-bold text-white leading-tight">{isCustomPlanRequest ? 'Custom Plan Request' : 'QuickWeds Support'}</h1>
+            <p className="text-white/80 mt-2 text-sm sm:text-base">
+              {isCustomPlanRequest ? 'Tell us what you need and our team will help shape the right setup.' : 'We are here to help you with your wedding planning journey.'}
+            </p>
           </div>
           
           <img 
@@ -118,13 +133,44 @@ export default function SupportPage() {
                 className="space-y-4 flex-1 flex flex-col"
                 onSubmit={handleInquiry}
               >
+                <input type="hidden" name="inquiryType" value={isCustomPlanRequest ? 'custom-plan' : 'general'} />
+                {!user?.email && (
+                  <div>
+                    <label className="block text-sm font-bold text-text-secondary mb-1" htmlFor="userEmail">Email Address</label>
+                    <input
+                      required
+                      type="email"
+                      id="userEmail"
+                      name="userEmail"
+                      className="w-full rounded-xl border border-border bg-neutral px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-bold text-text-secondary mb-1" htmlFor="subject">Subject</label>
-                  <input required type="text" id="subject" name="subject" className="w-full rounded-xl border border-border bg-neutral px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" placeholder="How can we help?" />
+                  <input
+                    required
+                    type="text"
+                    id="subject"
+                    name="subject"
+                    value={inquirySubject}
+                    onChange={(e) => setInquirySubject(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-neutral px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                    placeholder="How can we help?"
+                  />
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-bold text-text-secondary mb-1" htmlFor="message">Message</label>
-                  <textarea required id="message" name="message" className="w-full h-32 rounded-xl border border-border bg-neutral px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none" placeholder="Describe your question or issue..."></textarea>
+                  <textarea
+                    required
+                    id="message"
+                    name="message"
+                    value={inquiryMessage}
+                    onChange={(e) => setInquiryMessage(e.target.value)}
+                    className="w-full h-32 rounded-xl border border-border bg-neutral px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none"
+                    placeholder="Describe your question or issue..."
+                  />
                 </div>
                 <button type="submit" disabled={isSubmittingInquiry} className="w-full inline-flex justify-center items-center gap-2 min-h-[44px] rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover disabled:opacity-70">
                   {isSubmittingInquiry ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

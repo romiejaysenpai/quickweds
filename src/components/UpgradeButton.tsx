@@ -5,6 +5,8 @@ import { Sparkles, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { getCachedSession } from '@/lib/session-cache';
+import { isIosAppShell } from '@/lib/capacitor';
 
 interface UpgradeButtonProps {
     weddingId?: string;
@@ -18,8 +20,13 @@ interface UpgradeButtonProps {
 export default function UpgradeButton({ weddingId: propWeddingId, plan = 'planner_pro', scope = 'wedding', variant = 'primary', className = '', label }: UpgradeButtonProps) {
     const { user, isAdmin } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [hideForIosApp, setHideForIosApp] = useState(false);
     const [weddingId, setWeddingId] = useState<string | null>(propWeddingId || null);
     const [fetchingWedding, setFetchingWedding] = useState(scope === 'wedding' && !propWeddingId && Boolean(user));
+
+    useEffect(() => {
+        setHideForIosApp(isIosAppShell());
+    }, []);
 
     useEffect(() => {
         if (scope === 'account') {
@@ -53,18 +60,19 @@ export default function UpgradeButton({ weddingId: propWeddingId, plan = 'planne
         void fetchFirstWedding();
     }, [user, propWeddingId, scope]);
 
-    if (isAdmin) return null;
+    if (isAdmin || hideForIosApp) return null;
 
     const handleUpgrade = async () => {
         if ((scope === 'wedding' && !weddingId) || loading) return;
 
         setLoading(true);
         try {
-            const { data: sessionData } = await supabase.auth.getSession();
+            const { data: sessionData } = await getCachedSession();
             const response = await fetch('/api/stripe/checkout', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(isIosAppShell() ? { 'X-QuickWeds-Client': 'ios-capacitor' } : {}),
                     ...(sessionData.session?.access_token ? { Authorization: `Bearer ${sessionData.session.access_token}` } : {}),
                 },
                 body: JSON.stringify({ weddingId: scope === 'wedding' ? weddingId : undefined, plan, scope }),
