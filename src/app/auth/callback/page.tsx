@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { getClientAccountProfileForIntent, getClientAdminStatus, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
-import { clearLocalSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
+import { clearLocalSupabaseSession, getSafeSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
@@ -132,7 +132,7 @@ export default function AuthCallbackPage() {
                 }
 
                 // Double-check session. This also handles implicit/hash OAuth callbacks where no code is present.
-                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                const { session, error: sessionError } = await getSafeSupabaseSession();
 
                 if (sessionError) {
                     if (isInvalidRefreshTokenError(sessionError)) {
@@ -147,8 +147,8 @@ export default function AuthCallbackPage() {
                     return;
                 }
 
-                if (sessionData.session?.user && sessionData.session.access_token) {
-                    await finishSignIn(sessionData.session.user, sessionData.session.access_token, nextPath);
+                if (session?.user && session.access_token) {
+                    await finishSignIn(session.user, session.access_token, nextPath);
                     return;
                 }
 

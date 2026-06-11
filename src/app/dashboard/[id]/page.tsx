@@ -135,11 +135,11 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const downloadQRCode = () => {
         const canvas = document.getElementById('qr-canvas') as HTMLCanvasElement;
         if (!canvas) return;
-        
+
         const pngUrl = canvas
             .toDataURL("image/png")
             .replace("image/png", "image/octet-stream");
-        
+
         const downloadLink = document.createElement("a");
         downloadLink.href = pngUrl;
         downloadLink.download = `wedding-qr-${wedding?.bride_name}-${wedding?.groom_name}.png`;
@@ -158,7 +158,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             if (!blob) return downloadQRCode();
 
             const file = new File([blob], 'wedding-qr.png', { type: 'image/png' });
-            
+
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     files: [file],
@@ -287,7 +287,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         const confirmed = rsvps.filter(r => r.rsvp_status === 'confirmed' || r.attendance === 'Yes');
         const declined = rsvps.filter(r => r.rsvp_status === 'declined' || r.attendance === 'No');
         const pending = rsvps.filter(r => r.rsvp_status === 'pending');
-        
+
         const totalGuests = confirmed.reduce((acc, r) => acc + (r.num_guests || 1), 0);
         const totalChildren = rsvps.reduce((acc, r) => acc + (r.children_count || 0), 0);
         const invitedCount = rsvps.filter(r => r.invitation_sent).length;
@@ -316,23 +316,23 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         const totalSpentFromVendors = vendors
             .filter(v => v.payment_status?.toLowerCase() === 'paid')
             .reduce((acc, v) => acc + (parseFloat(v.amount) || 0), 0);
-        
+
         const totalCommitted = totalEst + totalSpentFromVendors;
         const remainingBudget = totalBudget - totalCommitted;
         const budgetPercent = totalBudget > 0 ? Math.min(100, Math.round((totalCommitted / totalBudget) * 100)) : 0;
 
-        return { 
-            confirmed: confirmed.length, 
-            declined: declined.length, 
+        return {
+            confirmed: confirmed.length,
+            declined: declined.length,
             pending: pending.length,
-            totalGuests, 
-            totalChildren, 
+            totalGuests,
+            totalChildren,
             invitedCount,
             seatedCount,
             groupedCount,
-            meals, 
+            meals,
             groups,
-            songs, 
+            songs,
             total: rsvps.length,
             totalBudget,
             totalSpent: totalCommitted, // Using Committed as "Spent" for the dashboard overview
@@ -495,7 +495,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const sendTestNotification = async () => {
         if (!user || !wedding) return;
         setIsSavingSettings(true);
-        
+
         const { error } = await (supabase as any)
             .from('user_notifications')
             .insert({
@@ -544,7 +544,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             alert('Your guest list is ready for Pro. Free weddings include 50 guests with email addresses; extra guests can still be tracked manually without email.');
             return;
         }
-        
+
         const { data, error } = await supabase.from('rsvps').insert({
             wedding_id: id,
             guest_name: newGuest.guest_name,
@@ -683,9 +683,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 <span className="sm:hidden">Edit</span>
                             </Link>
                         )}
-                        
+
                         <NotificationBell />
-                        
+
                         <button
                             type="button"
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -703,16 +703,16 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 {isMobileMenuOpen && (
                     <div className="fixed inset-0 z-[150]">
                         {/* Backdrop */}
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={closeMobileMenu}
                             className="absolute inset-0 bg-foreground/20 backdrop-blur-sm"
                         />
-                        
+
                         {/* Drawer Panel */}
-                        <motion.div 
+                        <motion.div
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
@@ -730,9 +730,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 <div className="mb-4">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary/50 mb-3 ml-1">Tools & Planning</p>
                                     <div className="grid gap-2">
-                                        <Link 
-                                            href={`/dashboard/${wedding.id}/planner`} 
-                                            onClick={closeMobileMenu} 
+                                        <Link
+                                            href={`/dashboard/${wedding.id}/planner`}
+                                            onClick={closeMobileMenu}
                                             className="flex h-14 items-center justify-between rounded-xl bg-primary/5 px-4 text-sm font-bold text-primary transition hover:bg-primary/10 border border-primary/10"
                                         >
                                             <span className="flex items-center gap-3">
@@ -741,12 +741,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             </span>
                                             <ArrowRight className="h-4 w-4 opacity-30" />
                                         </Link>
-                                        <button 
+                                        <button
                                             type="button"
                                             onClick={() => {
                                                 closeMobileMenu();
                                                 openExternal(url);
-                                            }} 
+                                            }}
                                             className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
                                         >
                                             <span className="flex items-center gap-3">
@@ -768,10 +768,10 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             { label: 'Support', href: '/support', icon: LifeBuoy },
                                             { label: 'Community', href: 'https://chat.whatsapp.com/K30P5s5I03f4wPI30URaRP', icon: MessageCircle },
                                         ].map((item) => (
-                                            <Link 
+                                            <Link
                                                 key={item.label}
-                                                href={item.href} 
-                                                onClick={closeMobileMenu} 
+                                                href={item.href}
+                                                onClick={closeMobileMenu}
                                                 className="flex h-12 items-center justify-between rounded-xl bg-neutral/20 px-4 text-xs font-bold text-text-secondary transition hover:bg-primary/5 hover:text-primary border border-transparent"
                                             >
                                                 <span className="flex items-center gap-3">
@@ -786,8 +786,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             </div>
 
                             <div className="p-4 border-t border-border bg-neutral/10">
-                                <button 
-                                    onClick={() => { closeMobileMenu(); handleLogout(); }} 
+                                <button
+                                    onClick={() => { closeMobileMenu(); handleLogout(); }}
                                     className="flex h-14 items-center justify-between rounded-xl bg-white px-4 text-sm font-bold text-red-600 transition hover:bg-red-50 border border-border w-full text-left"
                                 >
                                     <span className="flex items-center gap-3">
@@ -842,8 +842,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                                activeTab === tab.id 
-                                    ? 'bg-white dark:bg-white text-primary shadow-sm ring-1 ring-primary/10 dark:ring-white/5' 
+                                activeTab === tab.id
+                                    ? 'bg-white dark:bg-white text-primary shadow-sm ring-1 ring-primary/10 dark:ring-white/5'
                                     : 'text-text-secondary/60 hover:text-text-secondary hover:bg-white/50 dark:hover:bg-white/70'
                             }`}
                         >
@@ -855,7 +855,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12">
                     <div className="lg:col-span-2 space-y-6 sm:space-y-8">
-                        
+
 
 
                         {created && activeTab === 'home' && (
@@ -914,7 +914,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             </p>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
                                         <Link href={`/dashboard/${wedding.id}/planner`} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold text-xs sm:text-sm shadow-xl shadow-primary/20 hover:-translate-y-0.5 transition-all">
                                             <ListTodo className="w-4 h-4" /> Open Planner
@@ -930,7 +930,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {/* Mobile Home Hub / Widgets - Even smaller now */}
                         {activeTab === 'home' && (
                             <div className="grid grid-cols-2 sm:hidden gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2">
-                                <Link 
+                                <Link
                                     href={`/builder?edit=${wedding.id}`}
                                     className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
@@ -940,7 +940,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">Edit Page</span>
                                     <div className="absolute inset-0 bg-primary/5 opacity-0 group-active:opacity-100 transition-opacity" />
                                 </Link>
-                                <Link 
+                                <Link
                                     href={`/dashboard/${wedding.id}/planner`}
                                     className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
@@ -950,7 +950,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">{hasPlannerPro ? 'Planner' : 'Planner Pro'}</span>
                                     <div className="absolute inset-0 bg-secondary/5 opacity-0 group-active:opacity-100 transition-opacity" />
                                 </Link>
-                                <button 
+                                <button
                                     onClick={() => setActiveTab('guests')}
                                     className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
@@ -960,7 +960,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">Guest List</span>
                                     <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-active:opacity-100 transition-opacity" />
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => setActiveTab('analytics')}
                                     className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
@@ -1068,7 +1068,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                 <p className="text-xl font-mono font-black text-primary">{currencySymbol}{stats.totalSpent.toLocaleString()}</p>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/20 border border-border">
                                             <div>
                                                 <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Remaining Balance</p>
@@ -1179,7 +1179,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </div>
                                     </div>
                                 )}
-                                
+
                                 <div className="bg-white rounded-xl sm:rounded-3xl border border-border soft-shadow overflow-hidden">
                                     <div className="p-4 sm:p-6 md:p-8 border-b border-border space-y-6">
                                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -1205,7 +1205,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex flex-wrap gap-2 w-full sm:w-auto overflow-x-auto pb-1 no-scrollbar">
                                             <button onClick={() => setIsAddGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 transition-colors min-h-[44px]">
                                                 <Plus className="w-4 h-4 flex-shrink-0" /> <span>Add</span>
@@ -1274,11 +1274,11 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                         </td>
                                                         <td className="px-3 sm:px-6 py-3 sm:py-5">
                                                             <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter sm:tracking-widest ${
-                                                                (rsvp.rsvp_status === 'confirmed' || rsvp.attendance === 'Yes') ? 'bg-emerald-50 text-emerald-600' : 
+                                                                (rsvp.rsvp_status === 'confirmed' || rsvp.attendance === 'Yes') ? 'bg-emerald-50 text-emerald-600' :
                                                                 (rsvp.rsvp_status === 'declined' || rsvp.attendance === 'No') ? 'bg-red-50 text-red-600' :
                                                                 'bg-amber-50 text-amber-600'
                                                             }`}>
-                                                                { (rsvp.rsvp_status === 'confirmed' || rsvp.attendance === 'Yes') ? 'YES' : 
+                                                                { (rsvp.rsvp_status === 'confirmed' || rsvp.attendance === 'Yes') ? 'YES' :
                                                                   (rsvp.rsvp_status === 'declined' || rsvp.attendance === 'No') ? 'NO' : '?' }
                                                             </span>
                                                         </td>
@@ -1316,7 +1316,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             <div className="p-6 sm:p-10 rounded-[2.5rem] bg-primary text-white shadow-2xl relative overflow-hidden group animate-in fade-in slide-in-from-right-4">
                                 <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-[80px] -mr-24 -mt-24" />
                                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-[60px] -ml-16 -mb-16" />
-                                
+
                                 <div className="relative z-10 flex flex-col items-center">
                                     <div className="w-full flex justify-between items-center mb-8">
                                         <div className="p-3 rounded-2xl bg-white/10 border border-white/20">
@@ -1337,20 +1337,20 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                 <Smartphone className="w-10 h-10 mb-3 animate-bounce" />
                                                 <p className="text-[10px] font-black uppercase tracking-[0.2em]">Scan to Preview</p>
                                             </div>
-                                            
-                                            <QRCodeSVG 
-                                                value={qrTrackingUrl} 
-                                                size={160} 
-                                                fgColor="#D16C78" 
+
+                                            <QRCodeSVG
+                                                value={qrTrackingUrl}
+                                                size={160}
+                                                fgColor="#D16C78"
                                                 level="H"
                                                 includeMargin={false}
                                                 className="w-full h-auto"
                                             />
                                             <div className="hidden">
-                                                <QRCodeCanvas 
+                                                <QRCodeCanvas
                                                     id="qr-canvas"
-                                                    value={qrTrackingUrl} 
-                                                    size={1024} 
+                                                    value={qrTrackingUrl}
+                                                    size={1024}
                                                     level="H"
                                                     fgColor="#D16C78"
                                                     includeMargin={true}
@@ -1361,31 +1361,31 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                                     <div className="w-full space-y-3">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            <button 
+                                            <button
                                                 onClick={downloadQRCode}
                                                 className="flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl bg-white text-primary font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-neutral-50 active:scale-95 transition-all group/btn"
                                             >
                                                 <Download className="w-4 h-4 group-hover/btn:translate-y-0.5 transition-transform" /> Download PNG
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={shareQRCode}
                                                 className="flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl bg-white/20 backdrop-blur-md text-white border border-white/30 font-black uppercase tracking-widest text-[10px] hover:bg-white/30 active:scale-95 transition-all group/share"
                                             >
                                                 <Share2 className="w-4 h-4 group-hover/share:scale-110 transition-transform" /> Share Image
                                             </button>
                                         </div>
-                                        
+
                                         <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/40 text-center sm:hidden">Tip: Long press QR code to save to gallery</p>
-                                        
+
                                         <div className="grid grid-cols-2 gap-3">
-                                            <button 
+                                            <button
                                                 onClick={handleShareWhatsApp}
                                                 className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 transition-colors group/wa"
                                             >
                                                 <MessageCircle className="w-5 h-5 text-white group-hover/wa:scale-110 transition-transform" />
                                                 <span className="text-[8px] font-black uppercase tracking-widest text-white/80">WhatsApp</span>
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={handleShareEmail}
                                                 className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 transition-colors group/email"
                                             >
@@ -1396,8 +1396,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                                         <div className="p-4 rounded-2xl bg-white/10 border border-white/5 flex items-center justify-between group/link">
                                             <p className="text-[10px] font-mono text-white/50 truncate max-w-[120px]">{url}</p>
-                                            <CopyButton 
-                                                text={url} 
+                                            <CopyButton
+                                                text={url}
                                                 label="Copy"
                                                 variant="minimal"
                                                 className="text-white font-black uppercase tracking-widest text-[10px] hover:scale-110 transition-transform"
@@ -1450,7 +1450,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                     <p className="text-[10px] text-text-secondary">Get notified instantly when a guest RSVPs.</p>
                                                 </div>
                                             </div>
-                                            <button 
+                                            <button
                                                 onClick={() => toggleNotification('notify_on_rsvp')}
                                                 disabled={isSavingSettings}
                                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${wedding?.notify_on_rsvp !== false ? 'bg-primary' : 'bg-text-secondary/20'}`}
@@ -1469,7 +1469,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                     <p className="text-[10px] text-text-secondary">Stay updated with new features and app improvements.</p>
                                                 </div>
                                             </div>
-                                            <button 
+                                            <button
                                                 onClick={() => toggleNotification('notify_on_updates')}
                                                 disabled={isSavingSettings}
                                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${wedding?.notify_on_updates !== false ? 'bg-accent' : 'bg-text-secondary/20'}`}
@@ -1528,9 +1528,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
                                 <div>
                                     <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-2">Guest Name</label>
-                                    <input 
+                                    <input
                                         required
-                                        type="text" 
+                                        type="text"
                                         value={newGuest.guest_name}
                                         onChange={e => setNewGuest({...newGuest, guest_name: e.target.value})}
                                         placeholder="Full name..."
@@ -1539,8 +1539,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </div>
                                 <div>
                                     <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-2">Email Address</label>
-                                    <input 
-                                        type="email" 
+                                    <input
+                                        type="email"
                                         value={newGuest.guest_email}
                                         onChange={e => setNewGuest({...newGuest, guest_email: e.target.value})}
                                         placeholder="email@example.com"
@@ -1552,7 +1552,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
                                 <div>
                                     <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-2">RSVP Status</label>
-                                    <select 
+                                    <select
                                         value={newGuest.rsvp_status}
                                         onChange={e => setNewGuest({...newGuest, rsvp_status: e.target.value as 'pending' | 'confirmed' | 'declined'})}
                                         className="w-full bg-neutral border border-border rounded-lg sm:rounded-2xl px-3 sm:px-6 py-2 sm:py-4 outline-none focus:ring-primary/20 text-xs sm:text-base min-h-[44px]"
@@ -1564,8 +1564,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </div>
                                 <div>
                                     <label className="block text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary mb-2">Number of Guests</label>
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         min="1"
                                         inputMode="numeric"
                                         placeholder="0"

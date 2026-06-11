@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -32,18 +31,20 @@ import {
   Facebook,
   Loader2,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import DemoSection from '@/components/DemoSection';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
+import UpgradeButton from '@/components/UpgradeButton';
 import { submitInquiry } from '@/app/actions/support';
-
-const DemoSection = dynamic(() => import('@/components/DemoSection'), { ssr: false });
-const UpgradeButton = dynamic(() => import('@/components/UpgradeButton'), { ssr: false });
 
 const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/Minimalist%20Neutral%20Multi%20Device%20Computer%20Mockup%20Website%20Launch%20Instagram%20Post.png';
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/pc%20vew.png';
+const joySectionMobileImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/sdgsdfgsd.png';
 const navItemClass = 'inline-flex h-10 items-center px-1 text-sm font-bold leading-none text-text-secondary transition hover:text-primary';
+const footerItemClass = 'inline-flex h-9 items-center px-1 leading-none transition hover:text-primary';
 
 const featureCards = [
   {
@@ -160,119 +161,9 @@ const faqs = [
   },
   {
     question: 'Can I start free?',
-    answer: 'Yes. The builder, your wedding website, RSVP tools, QR sharing, basic guest tracking, 50 guest emails, and Planner Lite are free. Planner Pro unlocks unlimited planning, unlimited guest emails, seating, reminders, collaborators, exports, photo tools, and thank-you tools.',
+    answer: 'Yes. All templates, the builder, your wedding website, RSVP tools, QR sharing, basic guest tracking, 50 guest emails, and Planner Lite are free. Planner Pro unlocks unlimited planning, unlimited guest emails, seating, reminders, collaborators, exports, photo tools, and thank-you tools.',
   },
 ];
-
-const landingPageStructuredData = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'Organization',
-      '@id': 'https://quickweds.site/#organization',
-      name: 'QuickWeds',
-      url: 'https://quickweds.site/',
-      logo: 'https://quickweds.site/logo.png',
-      sameAs: ['https://www.facebook.com/profile.php?id=61587661715324'],
-      contactPoint: [
-        {
-          '@type': 'ContactPoint',
-          url: 'https://quickweds.site/#contact',
-          contactType: 'customer support',
-          availableLanguage: ['English'],
-        },
-      ],
-    },
-    {
-      '@type': 'WebSite',
-      '@id': 'https://quickweds.site/#website',
-      name: 'QuickWeds',
-      url: 'https://quickweds.site/',
-      description: 'Free wedding website builder and all-in-one digital wedding planning dashboard.',
-      publisher: {
-        '@id': 'https://quickweds.site/#organization',
-      },
-      inLanguage: 'en',
-    },
-    {
-      '@type': 'WebPage',
-      '@id': 'https://quickweds.site/#webpage',
-      url: 'https://quickweds.site/',
-      name: 'QuickWeds | Free Wedding Website Builder & Planner',
-      description:
-        'Create a free wedding website with RSVP tracking, guest lists, seating charts, budgets, vendor planning, and a private planning dashboard for couples.',
-      isPartOf: {
-        '@id': 'https://quickweds.site/#website',
-      },
-      about: {
-        '@id': 'https://quickweds.site/#app',
-      },
-      primaryImageOfPage: {
-        '@type': 'ImageObject',
-        url: 'https://quickweds.site/logo.png',
-      },
-      breadcrumb: {
-        '@id': 'https://quickweds.site/#breadcrumb',
-      },
-      inLanguage: 'en',
-    },
-    {
-      '@type': 'SoftwareApplication',
-      '@id': 'https://quickweds.site/#app',
-      name: 'QuickWeds',
-      applicationCategory: 'LifestyleApplication',
-      operatingSystem: 'Web',
-      url: 'https://quickweds.site/',
-      image: 'https://quickweds.site/logo.png',
-      description:
-        'Create a wedding website, manage RSVPs, organize guests, build seating charts, track budgets, coordinate vendors, and collaborate from one planning dashboard.',
-      offers: {
-        '@type': 'Offer',
-        price: '0',
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock',
-      },
-      featureList: [
-        'Free wedding website builder',
-        'Digital wedding invitations',
-        'RSVP tracking and reminders',
-        'Guest list management',
-        'Seating chart planner',
-        'Wedding budget tracker',
-        'Vendor organizer',
-        'Wedding checklist and task planner',
-        'Partner and planner collaboration',
-      ],
-      publisher: {
-        '@id': 'https://quickweds.site/#organization',
-      },
-    },
-    {
-      '@type': 'BreadcrumbList',
-      '@id': 'https://quickweds.site/#breadcrumb',
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'Home',
-          item: 'https://quickweds.site/',
-        },
-      ],
-    },
-    {
-      '@type': 'FAQPage',
-      '@id': 'https://quickweds.site/#faq',
-      mainEntity: faqs.map((faq) => ({
-        '@type': 'Question',
-        name: faq.question,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: faq.answer,
-        },
-      })),
-    },
-  ],
-};
 
 const weddingTips = [
   {
@@ -319,25 +210,21 @@ function SectionHeading({
   accent,
   afterAccent,
   body,
-  as = 'h2',
 }: {
   eyebrow?: string;
   title: string;
   accent?: string;
   afterAccent?: string;
   body?: string;
-  as?: 'h2' | 'h3';
 }) {
-  const HeadingTag = as;
-
   return (
     <div className="mx-auto mb-8 max-w-3xl text-center sm:mb-14">
       {eyebrow && (
         <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-primary/70 sm:text-xs sm:tracking-[0.28em]">{eyebrow}</p>
       )}
-      <HeadingTag className="text-[2rem] font-bold leading-[1.08] text-foreground sm:text-4xl lg:text-5xl">
+      <h2 className="text-[1.8rem] font-bold leading-[1.08] text-foreground min-[390px]:text-[2rem] sm:text-4xl lg:text-5xl">
         {title} {accent && <Accent>{accent}</Accent>}{afterAccent}
-      </HeadingTag>
+      </h2>
       {body && (
         <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-text-secondary sm:mt-5 sm:text-lg sm:leading-8">{body}</p>
       )}
@@ -354,7 +241,6 @@ function WeddingTipsSection() {
           title="Plan your big day with"
           accent="confidence."
           body="Expert advice to help you navigate the planning process without the stress."
-          as="h3"
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {weddingTips.map((tip) => (
@@ -393,12 +279,11 @@ function ContactSection() {
           title="Have a question or need"
           accent="help?"
           body="Our team is here to support you. Send us a message and we'll get back to you shortly."
-          as="h3"
         />
         
-        <div className="overflow-hidden rounded-[2rem] border border-border bg-white shadow-2xl shadow-primary/5">
-          <div className="grid md:grid-cols-5">
-            <div className="bg-primary p-8 text-white md:col-span-2">
+        <div className="w-full min-w-0 overflow-hidden rounded-[1.5rem] border border-border bg-white shadow-2xl shadow-primary/5 sm:rounded-[2rem]">
+          <div className="grid min-w-0 md:grid-cols-5">
+            <div className="min-w-0 bg-primary p-5 text-white sm:p-8 md:col-span-2">
               <h3 className="font-serif text-2xl font-bold">Get in touch</h3>
               <p className="mt-4 text-sm leading-7 text-white/80">
                 Whether you&apos;re just starting or finalizing your details, we&apos;re here to help make your wedding planning journey a success.
@@ -411,7 +296,7 @@ function ContactSection() {
                   </div>
                   <div>
                     <p className="text-xs font-black uppercase tracking-widest text-white/50">Email</p>
-                    <p className="font-bold">Use the support form</p>
+                    <p className="font-bold">support@quickweds.site</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -426,7 +311,7 @@ function ContactSection() {
               </div>
             </div>
             
-            <div className="p-8 md:col-span-3">
+            <div className="min-w-0 p-5 sm:p-8 md:col-span-3">
               {sent ? (
                 <div className="flex h-full flex-col items-center justify-center text-center py-10">
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
@@ -473,15 +358,14 @@ function ContactSection() {
 function HeroImagePanel() {
   return (
     <div className="relative mx-auto w-full max-w-[390px] sm:max-w-[580px] lg:max-w-[650px]">
-      <div className="relative aspect-[4/3] min-h-[300px] sm:min-h-[420px] lg:min-h-[520px]">
-        <Image
+      <div className="relative flex min-h-[300px] items-center justify-center sm:min-h-[420px] lg:min-h-[520px]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={heroImageUrl}
           alt="QuickWeds multi-device wedding website and planning dashboard mockup"
-          fill
-          priority
-          fetchPriority="high"
-          sizes="(max-width: 640px) 390px, (max-width: 1024px) 580px, 650px"
-          className="object-contain drop-shadow-2xl"
+          className="h-auto w-full object-contain drop-shadow-2xl"
+          loading="eager"
+          decoding="async"
         />
         <div className="absolute left-1/2 top-3 flex -translate-x-1/2 items-center justify-center rounded-2xl border border-white/70 bg-white/85 px-4 py-2 shadow-xl shadow-primary/10 backdrop-blur-md sm:top-5 sm:px-5 sm:py-3">
           <Image
@@ -551,22 +435,18 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen overflow-hidden bg-neutral pb-20 text-foreground sm:pb-0">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(landingPageStructuredData) }}
-      />
+    <div className="min-h-screen overflow-x-hidden bg-neutral pb-20 text-foreground sm:pb-0">
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-border/70 bg-white/90 backdrop-blur-xl">
         <div className="mobile-safe-px mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:h-20 sm:gap-4 sm:px-6">
-          <a href="#home" className="flex items-center gap-2" onClick={closeMobileMenu}>
-            <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-8 w-auto object-contain sm:h-11" priority />
-          </a>
+          <Link href="/" className="flex min-w-0 shrink items-center gap-2" aria-label="QuickWeds home">
+            <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-7 w-auto max-w-[128px] object-contain min-[390px]:h-8 min-[390px]:max-w-[150px] sm:h-11 sm:max-w-none" priority />
+          </Link>
 
           <div className="hidden items-center gap-7 lg:flex">
             <a href="#features" className={navItemClass}>Features</a>
-            <a href="#directory" className={navItemClass}>Directory</a>
+            <Link href="/suppliers" className={navItemClass}>Directory</Link>
             <a href="#tips" className={navItemClass}>Wedding Tips</a>
-            <a href="#demo" className={navItemClass}>Demo</a>
+            <button type="button" onClick={openDemo} className={navItemClass}>Demo</button>
             <a href="#pricing" className={navItemClass}>Pricing</a>
             <a href="#contact" className={navItemClass}>Contact</a>
           </div>
@@ -597,7 +477,7 @@ export default function Home() {
             )}
             <Link
               href="/builder"
-              className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover sm:min-h-[44px] sm:px-5 sm:text-sm"
+              className="hidden min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover min-[360px]:inline-flex sm:min-h-[44px] sm:px-5 sm:text-sm"
               onClick={closeMobileMenu}
             >
               <span className="sm:hidden">Free Site</span>
@@ -616,7 +496,7 @@ export default function Home() {
           </div>
         </div>
         {isMobileMenuOpen && (
-          <div id="landing-mobile-menu" className="mobile-safe-px border-t border-border/60 bg-white/95 px-4 py-4 shadow-xl shadow-primary/10 backdrop-blur-xl lg:hidden">
+          <div id="landing-mobile-menu" className="mobile-safe-px max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-border/60 bg-white/95 px-4 py-4 shadow-xl shadow-primary/10 backdrop-blur-xl lg:hidden">
             <div className="mx-auto grid max-w-7xl gap-2">
               <a
                 href="#features"
@@ -634,14 +514,14 @@ export default function Home() {
                 Pricing
                 <ArrowRight className="h-4 w-4" />
               </a>
-              <a
-                href="#directory"
+              <Link
+                href="/suppliers"
                 onClick={closeMobileMenu}
                 className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
               >
                 Directory
                 <ArrowRight className="h-4 w-4" />
-              </a>
+              </Link>
               <a
                 href="#tips"
                 onClick={closeMobileMenu}
@@ -730,15 +610,15 @@ export default function Home() {
       </nav>
 
       <main className="pt-16 sm:pt-20">
-        <section id="home" className="relative px-4 pb-14 pt-9 sm:px-6 sm:pb-24 sm:pt-16 lg:pb-28">
+        <section className="relative px-4 pb-14 pt-9 sm:px-6 sm:pb-24 sm:pt-16 lg:pb-28">
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,rgba(209,108,120,0.13),transparent_30%),radial-gradient(circle_at_85%_12%,rgba(214,184,124,0.16),transparent_26%)]" />
           <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
-            <div className="text-center lg:text-left">
+            <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="text-center lg:text-left">
               <div className="mx-auto mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-white/75 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-primary shadow-sm sm:mb-6 sm:px-4 sm:text-xs sm:tracking-[0.22em] lg:mx-0">
                 <Sparkles className="h-3.5 w-3.5" />
                 <span className="truncate">Complete wedding planning system</span>
               </div>
-              <h1 className="mx-auto max-w-3xl text-[2.55rem] font-bold leading-[1.03] tracking-tight text-foreground min-[390px]:text-[2.85rem] sm:text-5xl lg:mx-0 lg:text-7xl">
+              <h1 className="mx-auto max-w-3xl text-[2.1rem] font-bold leading-[1.05] text-foreground min-[390px]:text-[2.65rem] sm:text-5xl lg:mx-0 lg:text-7xl">
                 Plan, invite, and manage your <Accent>wedding</Accent> all in one place.
               </h1>
               <p className="mx-auto mt-5 max-w-2xl text-[16px] leading-7 text-text-secondary sm:mt-6 sm:text-xl sm:leading-8 lg:mx-0">
@@ -758,11 +638,11 @@ export default function Home() {
                 <CheckCircle2 className="mt-1 h-4 w-4 flex-none text-primary" />
                 No spreadsheets. No chasing guests. No stress.
               </p>
-            </div>
+            </motion.div>
 
-            <div>
+            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.55 }}>
               <HeroImagePanel />
-            </div>
+            </motion.div>
           </div>
         </section>
 
@@ -858,7 +738,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="directory" className="bg-white px-4 py-16 sm:px-6 sm:py-24">
+        <section className="bg-white px-4 py-16 sm:px-6 sm:py-24">
           <div className="mx-auto grid max-w-6xl gap-8 rounded-[1.5rem] border border-border bg-neutral p-5 shadow-sm sm:rounded-[2rem] sm:p-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div className="text-center lg:text-left">
               <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-primary/70 sm:text-xs sm:tracking-[0.28em]">Supplier directory</p>
@@ -884,7 +764,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="demo" className="bg-white px-4 py-16 sm:px-6 sm:py-28">
+        <section className="bg-white px-4 py-16 sm:px-6 sm:py-28">
           <div className="mx-auto max-w-6xl">
             <SectionHeading eyebrow="How it works" title="Set everything up in" accent="minutes" />
             <div className="grid gap-4 md:grid-cols-3">
@@ -905,7 +785,7 @@ export default function Home() {
 
         <section className="px-4 py-16 sm:px-6 sm:py-28">
           <div className="mx-auto max-w-6xl">
-            <SectionHeading eyebrow="Why couples choose QuickWeds" title="Built to replace the planning" accent="mess," afterAccent=" not add another tab." as="h3" />
+            <SectionHeading eyebrow="Why couples choose QuickWeds" title="Built to replace the planning" accent="mess," afterAccent=" not add another tab." />
             <div className="space-y-3 sm:hidden">
               {quickWedsComparison.map(([quickweds, others]) => (
                 <div key={quickweds} className="rounded-2xl border border-border bg-white p-4 shadow-sm">
@@ -939,13 +819,16 @@ export default function Home() {
 
         <section className="px-4 py-8 sm:px-6 sm:py-10">
           <div className="relative mx-auto min-h-[480px] max-w-7xl overflow-hidden rounded-[1.5rem] border border-border bg-foreground sm:min-h-[420px] sm:rounded-[2rem]">
-            <Image
-              src={joySectionDesktopImageUrl}
-              alt="QuickWeds planning experience preview"
-              fill
-              sizes="(max-width: 768px) 100vw, 1280px"
-              className="object-cover object-center opacity-70 sm:opacity-65"
-            />
+            <picture>
+              <source media="(min-width: 640px)" srcSet={joySectionDesktopImageUrl} />
+              <img
+                src={joySectionMobileImageUrl}
+                alt="QuickWeds planning experience preview"
+                className="absolute inset-0 h-full w-full object-cover object-center opacity-70 sm:opacity-65"
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/92 via-foreground/55 to-foreground/10 sm:bg-gradient-to-r sm:from-foreground/85 sm:via-foreground/45 sm:to-transparent" />
             <div className="relative flex min-h-[480px] max-w-2xl flex-col justify-end p-6 text-white sm:min-h-[420px] sm:justify-center sm:p-12 lg:p-16">
               <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-white/75 sm:mb-4 sm:text-xs sm:tracking-[0.28em]">More joy, less admin</p>
@@ -965,12 +848,12 @@ export default function Home() {
           <div className="mx-auto max-w-5xl">
             <SectionHeading
               eyebrow="Simple pricing"
-              title="Build free. Upgrade when you need"
-              accent="more."
-              body="Start with a generous free account, move to Planner Pro for more weddings and emails, or request a custom Unlimited plan for professional planning needs."
-              as="h3"
+              title="Build free. Unlock"
+              accent="Planner Pro"
+              afterAccent=" once."
+              body="Start with every template and the full wedding website builder free. Upgrade only when you want the complete planning workspace."
             />
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-[1.5rem] border border-border bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8">
                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">Free forever</p>
                 <h3 className="mt-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">Free</h3>
@@ -980,7 +863,7 @@ export default function Home() {
                 </div>
                 <div className="mt-8 grid gap-3">
                   {[
-                    'Wedding website builder and RSVP tools',
+                    'Wedding website and all templates',
                     'RSVP tracking and basic guest list',
                     'QR sharing for invitations',
                     '50 guest emails per wedding',
@@ -1040,35 +923,6 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-              <div className="rounded-[1.5rem] border border-border bg-white p-5 shadow-sm sm:rounded-[2rem] sm:p-8">
-                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">Tailored support</p>
-                <h3 className="mt-2 font-serif text-3xl font-bold text-foreground sm:text-4xl">Custom Plan</h3>
-                <p className="mt-3 text-text-secondary">For couples, coordinators, venues, or suppliers who need a more personal setup.</p>
-                <div className="mt-8 grid gap-3">
-                  {[
-                    'Custom guest, email, or collaborator needs',
-                    'Hands-on setup support for your wedding workspace',
-                    'Venue, coordinator, or supplier workflow requests',
-                    'Custom domain, migration, or special launch help',
-                    'Priority admin review for your request',
-                  ].map((item) => (
-                    <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
-                      <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
-                      {item}
-                    </p>
-                  ))}
-                </div>
-                <p className="mt-6 text-center text-xs font-bold uppercase tracking-[0.18em] text-text-secondary sm:text-left">Tell us what you need.</p>
-                <div className="mt-8 flex justify-center sm:justify-start">
-                  <Link
-                    href="/support?intent=custom-plan"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/25 bg-white px-8 py-4 text-base font-bold text-primary shadow-lg shadow-primary/10 transition-all hover:border-primary hover:bg-primary/5"
-                  >
-                    Request Custom Plan
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -1099,7 +953,6 @@ export default function Home() {
               title="Planning feels lighter when everything is"
               accent="together."
               body="QuickWeds is built for couples who want a beautiful guest experience and a calm planning dashboard behind it."
-              as="h3"
             />
             <div className="grid gap-4 md:grid-cols-3">
               {testimonials.map((testimonial) => (
@@ -1128,7 +981,6 @@ export default function Home() {
               title="Questions before you start"
               accent="planning?"
               body="Here are the answers couples usually need before creating their QuickWeds site."
-              as="h3"
             />
             <div className="space-y-3">
               {faqs.map((faq) => (
@@ -1148,11 +1000,11 @@ export default function Home() {
         </section>
 
         <section className="px-4 py-16 sm:px-6 sm:py-28 overflow-hidden">
-          <div className="mx-auto max-w-4xl relative isolate overflow-hidden rounded-[2rem] bg-primary shadow-2xl shadow-primary/25 sm:rounded-[2.5rem]">
+          <div className="relative isolate mx-auto max-w-4xl overflow-hidden rounded-[1.5rem] bg-primary shadow-2xl shadow-primary/25 sm:rounded-[2.5rem]">
             {/* Wave effect like the dashboard hero */}
-            <div className="absolute inset-x-[-10%] top-[-50%] h-[150%] w-[120%] opacity-10 bg-white/10 blur-3xl pointer-events-none" />
+            <div className="pointer-events-none absolute inset-x-0 top-[-50%] h-[150%] opacity-10 bg-white/10 blur-3xl" />
             <div 
-                className="absolute inset-x-[-20%] bottom-[-80%] h-[120%] bg-white/5 pointer-events-none" 
+                className="pointer-events-none absolute inset-x-0 bottom-[-80%] h-[120%] bg-white/5" 
                 style={{ borderRadius: '50% 50% 0 0 / 100% 100% 0 0' }}
             />
 
@@ -1176,13 +1028,10 @@ export default function Home() {
                 {/* Decorative glow behind bird */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-white/20 blur-[60px] rounded-full" />
                 
-                <Image
-                  src="https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/computer%20quicky.png"
-                  alt="QuickWeds app mascot"
-                  width={420}
-                  height={420}
-                  sizes="(max-width: 640px) 240px, (max-width: 1024px) 320px, 400px"
-                  className="relative z-20 h-[240px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-transform duration-500 hover:scale-[1.05] sm:h-[320px] lg:h-[400px]"
+                <img 
+                  src="https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/computer%20quicky.png" 
+                  alt="QuickWeds Mascot" 
+                  className="relative z-20 h-[240px] sm:h-[320px] lg:h-[400px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-transform duration-500 hover:scale-[1.05]"
                 />
               </div>
             </div>
@@ -1199,9 +1048,9 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4 lg:gap-8 text-center md:text-left">
             {/* Brand Column */}
             <div className="space-y-6">
-              <a href="#home" className="inline-block">
+              <Link href="/" className="inline-block">
                 <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-10 w-auto object-contain" />
-              </a>
+              </Link>
               <p className="max-w-xs mx-auto md:mx-0 text-sm leading-7 text-text-secondary">
                 The all-in-one wedding planning system for websites, RSVPs, guests, budgets, vendors, and more. Simplifying your journey to &quot;I do&quot;.
               </p>
@@ -1222,9 +1071,9 @@ export default function Home() {
             <div>
               <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Product</h4>
               <ul className="space-y-4">
-                <li><button type="button" onClick={openDemo} className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">View Live Demo</button></li>
-                <li><a href="#pricing" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Pricing & Features</a></li>
-                <li><a href="#directory" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Vendor Directory</a></li>
+                <li><button type="button" onClick={openDemo} className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">View Live Demo</button></li>
+                <li><a href="#pricing" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Pricing & Features</a></li>
+                <li><Link href="/suppliers" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Vendor Directory</Link></li>
               </ul>
             </div>
 
@@ -1232,10 +1081,10 @@ export default function Home() {
             <div>
               <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Resources</h4>
               <ul className="space-y-4">
-                <li><a href="#tips" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Wedding Tips</a></li>
-                <li><Link href="/user-guide" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Planning Guide</Link></li>
-                <li><a href="#faq" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">FAQ</a></li>
-                <li><Link href="/privacy" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Privacy Policy</Link></li>
+                <li><a href="#tips" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Wedding Tips</a></li>
+                <li><Link href="/user-guide" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Planning Guide</Link></li>
+                <li><a href="#faq" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">FAQ</a></li>
+                <li><Link href="/privacy" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Privacy Policy</Link></li>
               </ul>
             </div>
 
@@ -1243,18 +1092,18 @@ export default function Home() {
             <div>
               <h4 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">Support</h4>
               <ul className="space-y-4">
-                <li><a href="#contact" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Contact Support</a></li>
-                <li><a href="#contact" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Send a support message</a></li>
-                <li><a href="https://wa.me/639454602270" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors">Chat on WhatsApp</a></li>
+                <li><a href="#contact" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Contact Support</a></li>
+                <li><a href="mailto:support@quickweds.site" className="inline-flex min-h-[44px] items-center break-all text-sm font-bold text-text-secondary transition-colors hover:text-primary">support@quickweds.site</a></li>
+                <li><a href="https://wa.me/639454602270" className="inline-flex min-h-[44px] items-center text-sm font-bold text-text-secondary transition-colors hover:text-primary">Chat on WhatsApp</a></li>
               </ul>
             </div>
           </div>
 
-          <div className="mt-16 flex flex-col items-center gap-4 border-t border-border pt-8 text-center md:flex-row md:justify-between md:text-left">
-            <p className="text-xs font-bold leading-relaxed text-text-secondary/60">
+          <div className="mt-16 pt-8 border-t border-border flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <p className="text-xs font-bold text-text-secondary/60">
               © {new Date().getFullYear()} QuickWeds. All rights reserved.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 md:justify-end">
+            <div className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2">
               <Link href="/privacy" className="text-xs font-bold text-text-secondary/60 hover:text-primary transition-colors">Privacy</Link>
               <Link href="/terms" className="text-xs font-bold text-text-secondary/60 hover:text-primary transition-colors">Terms</Link>
               <Link href="/cookies" className="text-xs font-bold text-text-secondary/60 hover:text-primary transition-colors">Cookies</Link>
@@ -1292,7 +1141,7 @@ export default function Home() {
         </button>
       </div>
 
-      {isDemoOpen && <DemoSection isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />}
+      <DemoSection isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
     </div>
   );
 }

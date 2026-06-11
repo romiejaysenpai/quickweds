@@ -1,5 +1,22 @@
 import type { CSSProperties, ReactNode } from 'react';
 
+/**
+ * WeddingFontProvider
+ *
+ * Lazily loads the full set of 35+ wedding template fonts.
+ * These fonts are ONLY needed on pages that render or preview wedding templates:
+ * - /builder (BuilderForm)
+ * - /w/[slug] (public wedding pages)
+ * - /preview
+ *
+ * The root layout only loads 3 core UI fonts (Inter, Playfair, Montserrat).
+ * This component injects the remaining font CSS variables into a wrapper div
+ * so child components can reference them via CSS custom properties.
+ *
+ * Usage: Wrap any page/layout that needs the full font catalog:
+ *   <WeddingFontProvider>{children}</WeddingFontProvider>
+ */
+
 type WeddingFontProviderProps = {
     children: ReactNode;
     fontStyle?: string;

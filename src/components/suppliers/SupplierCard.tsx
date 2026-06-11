@@ -31,7 +31,7 @@ export default function SupplierCard({ supplier }: { supplier: SupplierProfile }
             <div className="space-y-4 p-5">
                 <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">{supplier.category}</p>
-                    <Link href={`/suppliers/${supplier.slug}`}>
+                    <Link href={`/suppliers/${supplier.slug}`} className="inline-flex min-h-[44px] items-center">
                         <h3 className="mt-2 font-serif text-2xl font-bold leading-tight text-foreground transition group-hover:text-primary">
                             {supplier.business_name}
                         </h3>
@@ -51,7 +51,7 @@ export default function SupplierCard({ supplier }: { supplier: SupplierProfile }
                     <span className="rounded-full bg-neutral px-3 py-1 text-xs font-bold text-text-secondary">
                         {supplier.price_band || 'Custom quote'}
                     </span>
-                    <Link href={`/suppliers/${supplier.slug}`} className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-primary">
+                    <Link href={`/suppliers/${supplier.slug}`} className="inline-flex min-h-[44px] items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-primary">
                         View
                         <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                     </Link>

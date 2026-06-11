@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
     Plus, Trash2, Check, X, Loader2, ExternalLink,
-    ImageIcon, Key, RefreshCw, Download, 
+    ImageIcon, Key, RefreshCw, Download,
     Maximize2, CheckCircle2
 } from 'lucide-react';
 import { openExternalUrl } from '@/lib/native-actions';
@@ -34,7 +34,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [codes, setCodes] = useState<SharingCode[]>([]);
     const [deletingCodeId, setDeletingCodeId] = useState<string | null>(null);
-    
+
     // Lightbox State
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
 
@@ -78,7 +78,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
             const pendingIds = pending.map(p => p.id);
             const { error } = await supabase.from('wedding_photos').update({ is_approved: true, approved_at: new Date().toISOString() }).in('id', pendingIds);
             if (error) throw error;
-            
+
             setPhotos(photos.map(p => p.is_approved ? p : { ...p, is_approved: true }));
         } catch (err) {
             window.alert("Failed to approve all photos");
@@ -119,7 +119,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                 is_active: true,
                 max_uploads: 3,
             }).select().single();
-            
+
             if (error) throw error;
             if (data) setCodes([...codes, data]);
         } catch (err) {
@@ -181,14 +181,14 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                         <p className="mt-1 text-xs leading-5 text-text-secondary sm:text-sm">Manage uploads, monitor sharing codes, approve photos.</p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                        <button 
+                        <button
                             type="button"
                             onClick={() => void openExternalUrl(`${window.location.origin}/w/${weddingId}/photos`)}
                             className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-lg border border-border bg-neutral px-3 py-2 text-xs font-bold text-foreground transition-all hover:bg-neutral/80 dark:bg-neutral/40 flex-1 sm:flex-none whitespace-nowrap"
                         >
                             <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" /> Gallery
                         </button>
-                        <button 
+                        <button
                             type="button"
                             onClick={generateCode}
                             className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white transition-all hover:shadow-lg flex-1 sm:flex-none whitespace-nowrap"
@@ -259,7 +259,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-end gap-0.5">
-                                        <button 
+                                        <button
                                             type="button"
                                             onClick={() => toggleCode(code.id, code.is_active)}
                                             className={`h-6 w-6 rounded p-1 transition-colors flex items-center justify-center ${code.is_active ? 'text-emerald-600 hover:bg-emerald-500/10' : 'text-text-secondary hover:bg-neutral'} sm:h-7 sm:w-7`}
@@ -267,7 +267,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                                         >
                                             {code.is_active ? <Check className="w-3 h-3" /> : <RefreshCw className="w-3 h-3" />}
                                         </button>
-                                        <button 
+                                        <button
                                             type="button"
                                             onClick={() => deleteCode(code.id)}
                                             disabled={deletingCodeId === code.id}
@@ -290,7 +290,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                 <div className="rounded-xl border border-border bg-white soft-shadow dark:bg-white/5 sm:rounded-2xl overflow-hidden">
                     <div className="flex items-center justify-between gap-2 border-b border-border/50 px-2.5 py-2 sm:px-3.5 sm:py-3">
                         <h3 className="font-serif text-sm font-bold text-foreground">Pending ({pendingPhotos.length})</h3>
-                        <button 
+                        <button
                             type="button"
                             onClick={approveAllPending}
                             className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 bg-primary text-white rounded-lg font-bold hover:shadow-lg transition-all text-xs whitespace-nowrap sm:px-3 sm:py-2"
@@ -300,12 +300,12 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
                     </div>
                     <div className="grid grid-cols-3 gap-1 p-2 sm:grid-cols-4 sm:gap-1.5 sm:p-2.5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
                         {pendingPhotos.map((photo) => (
-                            <motion.div 
+                            <motion.div
                                 layout
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
-                                key={photo.id} 
+                                key={photo.id}
                                 className="group relative overflow-hidden rounded border border-border bg-neutral dark:bg-neutral/20 aspect-square sm:rounded-lg"
                             >
                                 <img src={photo.cloudinary_url} alt="Pending" className="h-full w-full object-cover" />
@@ -346,7 +346,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
             {/* Lightbox Modal */}
             <AnimatePresence>
                 {selectedPhoto && (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}

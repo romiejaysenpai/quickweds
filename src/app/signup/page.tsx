@@ -243,7 +243,7 @@ export default function SignUpPage() {
                             event.preventDefault();
                             router.push(getLoginHref());
                         }}
-                        className="text-primary font-bold hover:underline"
+                        className="inline-flex min-h-[44px] items-center font-bold text-primary hover:underline"
                     >
                         Log In
                     </Link>

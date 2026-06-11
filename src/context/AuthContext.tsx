@@ -1,11 +1,9 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import type { User } from '@supabase/supabase-js';
-import type { Session } from '@supabase/supabase-js';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { clearLocalSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
-import { getCachedSession, invalidateSessionCache } from '@/lib/session-cache';
+import { clearLocalSupabaseSession, getSafeSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
 
 interface AuthContextType {
     user: User | null;
@@ -43,12 +41,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             let activeSession = session || null;
             if (!activeSession) {
-                const { data: { session: loadedSession }, error } = await getCachedSession();
+                const { session: loadedSession, error } = await getSafeSupabaseSession();
                 if (error) {
-                    if (isInvalidRefreshTokenError(error)) {
-                        await clearLocalSupabaseSession();
-                        setUser(null);
-                    }
                     setIsAdmin(false);
                     setAdminChecked(true);
                     return;
@@ -90,13 +84,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     useEffect(() => {
+        const handleRejectedAuthRefresh = (event: PromiseRejectionEvent) => {
+            if (!isInvalidRefreshTokenError(event.reason)) return;
+
+            event.preventDefault();
+            void clearLocalSupabaseSession().finally(() => {
+                setUser(null);
+                setIsAdmin(false);
+                setAdminChecked(true);
+                setLoading(false);
+            });
+        };
+
+        window.addEventListener('unhandledrejection', handleRejectedAuthRefresh);
+
         // Check active sessions and sets the user
-        getCachedSession()
-            .then(async ({ data: { session }, error }) => {
+        getSafeSupabaseSession()
+            .then(async ({ session, error }) => {
                 if (error) {
-                    if (isInvalidRefreshTokenError(error)) {
-                        await clearLocalSupabaseSession();
-                    } else {
+                    if (!isInvalidRefreshTokenError(error)) {
                         console.error('Error loading auth session:', error);
                     }
                     setUser(null);
@@ -125,30 +131,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Listen for changes on auth state (logged in, signed out, etc.)
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            invalidateSessionCache();
             const currentUser = session?.user ?? null;
             setUser(currentUser);
             void checkAdminStatus(currentUser, session);
             setLoading(false);
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            window.removeEventListener('unhandledrejection', handleRejectedAuthRefresh);
+            subscription.unsubscribe();
+        };
     }, [checkAdminStatus]);
 
-    const logout = useCallback(async () => {
-        await supabase.auth.signOut();
-        invalidateSessionCache();
+    const logout = async () => {
+        try {
+            const { error } = await supabase.auth.signOut();
+
+            if (error && isInvalidRefreshTokenError(error)) {
+                await clearLocalSupabaseSession();
+            } else if (error) {
+                throw error;
+            }
+        } catch (error) {
+            if (isInvalidRefreshTokenError(error)) {
+                await clearLocalSupabaseSession();
+            } else {
+                throw error;
+            }
+        }
+
+        setUser(null);
         setIsAdmin(false);
         setAdminChecked(false);
-    }, []);
-
-    const value = useMemo(
-        () => ({ user, isAdmin, adminChecked, loading, logout }),
-        [user, isAdmin, adminChecked, loading, logout],
-    );
+    };
 
     return (
-        <AuthContext.Provider value={value}>
+        <AuthContext.Provider value={{ user, isAdmin, adminChecked, loading, logout }}>
             {children}
         </AuthContext.Provider>
     );

@@ -42,13 +42,13 @@ function isSchemaMissingError(error: any) {
 function getMissingColumnName(error: any): string | null {
     if (!error) return null;
     const message = String(error.message || error.details || '').toLowerCase();
-    
+
     const match1 = message.match(/could not find the '([^']+)' column/);
     if (match1 && match1[1]) return match1[1];
-    
+
     const match2 = message.match(/column "([^"]+)" of relation/);
     if (match2 && match2[1]) return match2[1];
-    
+
     const match3 = message.match(/column "([^"]+)" does not exist/);
     if (match3 && match3[1]) return match3[1];
 
@@ -374,7 +374,7 @@ async function handleCreatePlannerItem(req: NextRequest, parsedBody?: Record<str
         if (type === 'task' && isSchemaMissingError(result.error)) {
             const fallbackPayload = getTaskFallbackPayload(weddingId, values);
             let fallback = await db.from(table).insert(fallbackPayload).select('*').single();
-            
+
             let fbRetryCount = 0;
             while (fallback.error && isSchemaMissingError(fallback.error) && fbRetryCount < 5) {
                 const missingColumn = getMissingColumnName(fallback.error);
@@ -429,7 +429,7 @@ export async function PATCH(req: NextRequest) {
         const payload = getUpdatePayload(type, values);
         const currentPayload = { ...payload };
         let result = await db.from(table).update(currentPayload).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
-        
+
         // Dynamically strip missing columns (like due_date) and retry
         let retryCount = 0;
         while (result.error && isSchemaMissingError(result.error) && retryCount < 5) {
@@ -449,7 +449,7 @@ export async function PATCH(req: NextRequest) {
         if (type === 'task' && isSchemaMissingError(result.error)) {
             const fallbackPayload = getTaskUpdateFallbackPayload(values);
             let fallback = await db.from(table).update(fallbackPayload).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
-            
+
             let fbRetryCount = 0;
             while (fallback.error && isSchemaMissingError(fallback.error) && fbRetryCount < 5) {
                 const missingColumn = getMissingColumnName(fallback.error);

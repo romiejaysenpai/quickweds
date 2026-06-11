@@ -23,7 +23,7 @@
   --success-bg: #FFF3E6;
   --error-bg: #FDECEC;
   --error-text: #8B2F3C;
-  
+
   /* Safe Area Insets for Notched Devices */
   --safe-area-inset-top: env(safe-area-inset-top, 0px);
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
@@ -124,6 +124,12 @@
   --font-monsieur: var(--font-script, cursive);
   --font-homemade: var(--font-script, cursive);
   --font-herr: var(--font-script, cursive);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
@@ -639,38 +645,53 @@ html {
   h1, h2, h3, h4, h5, h6 {
     word-break: break-word;
     hyphens: auto;
+    overflow-wrap: anywhere;
   }
-  
+
   body {
     font-size: 16px;
   }
-  
-  /* Prevent overflow on small screens */
-  * {
+
+  p,
+  li,
+  summary,
+  label,
+  input,
+  textarea,
+  button,
+  a {
+    overflow-wrap: anywhere;
+  }
+
+  img,
+  video,
+  canvas,
+  iframe,
+  svg {
     max-width: 100%;
   }
-  
+
   /* Mobile-optimized headings */
   h1 {
     font-size: 1.75rem;
     line-height: 1.2;
   }
-  
+
   h2 {
     font-size: 1.5rem;
     line-height: 1.3;
   }
-  
+
   h3 {
     font-size: 1.25rem;
     line-height: 1.4;
   }
-  
+
   /* Remove decorative 500px elements visibility on xs screens */
   .glow-decoration {
     opacity: 0.3 !important;
   }
-  
+
   /* Better spacing for mobile forms */
   label {
     display: block;
@@ -695,11 +716,11 @@ html {
   body {
     overflow-y: auto;
   }
-  
+
   h1 {
     font-size: 1.5rem;
   }
-  
+
   main {
     padding-top: 1rem;
   }
@@ -719,7 +740,7 @@ a, button, input, select, textarea, [role="button"] {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Layout containment for repeated cards/list items — 
+/* Layout containment for repeated cards/list items —
    tells the browser changes inside won't affect siblings */
 .grid > div,
 .space-y-2 > div,
@@ -753,15 +774,15 @@ section:not(:first-child) {
   h1 {
     font-size: 1.5rem;
   }
-  
+
   h2 {
     font-size: 1.25rem;
   }
-  
+
   .soft-shadow {
     box-shadow: 0 5px 15px rgba(192, 128, 129, 0.08);
   }
-  
+
   /* Tighter padding on very small screens */
   body {
     padding: 0;

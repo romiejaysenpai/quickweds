@@ -1,6 +1,6 @@
 /**
  * Session Cache
- * 
+ *
  * Caches the result of supabase.auth.getSession() for a short TTL (30s)
  * to avoid redundant Supabase round-trips when multiple components/hooks
  * on the same page each call getSession() independently.
@@ -19,7 +19,7 @@ const CACHE_TTL_MS = 30_000; // 30 seconds
 /**
  * Returns the current Supabase session, using a short-lived cache
  * to prevent duplicate network requests within the same page load.
- * 
+ *
  * - First call fetches from Supabase and caches the result
  * - Subsequent calls within 30s return the cached result
  * - Concurrent calls share the same in-flight promise (deduplication)
