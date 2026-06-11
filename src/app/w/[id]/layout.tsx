@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
-import { supabase } from '@/lib/supabase';
-import WeddingFontProvider from '@/components/WeddingFontProvider';
+import { getCachedPublicWedding } from '@/lib/public-wedding';
+import type { Wedding } from '@/types/wedding';
 
 export async function generateMetadata(
     { params }: { params: Promise<{ id: string }> }
@@ -8,11 +8,7 @@ export async function generateMetadata(
     const resolvedParams = await params;
 
     try {
-        const { data: wedding } = await supabase
-            .from('weddings')
-            .select('bride_name, groom_name, wedding_date, hero_image, couple_photo')
-            .eq('id', resolvedParams.id)
-            .single();
+        const wedding = await getCachedPublicWedding(resolvedParams.id) as unknown as Wedding | null;
 
         if (!wedding) {
             return {
@@ -55,5 +51,5 @@ export default function WeddingLayout({
 }: {
     children: React.ReactNode;
 }) {
-    return <WeddingFontProvider>{children}</WeddingFontProvider>;
+    return children;
 }

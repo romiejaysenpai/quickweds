@@ -14,6 +14,22 @@ interface DetailsSectionProps {
     id: string;
 }
 
+function parseInvitationImages(value: Wedding['invitation_image']): string[] {
+    if (!value) return [];
+    if (typeof value !== 'string') return [];
+
+    try {
+        if (value.trim().startsWith('[')) {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed.filter((src): src is string => typeof src === 'string' && src.length > 0) : [];
+        }
+    } catch {
+        return value ? [value] : [];
+    }
+
+    return [value];
+}
+
 function DetailCard({ 
     icon: Icon, 
     title, 
@@ -132,6 +148,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
     const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
     const isDark = ['midnight', 'cinematic', 'royal', 'urban', 'glitch', 'film', 'artdeco'].includes(template) || invert;
     const isVintage = ['vintage', 'rustic', 'boho', 'film'].includes(template);
+    const inviteImages = parseInvitationImages(wedding.invitation_image);
 
     return (
         <section id={id} className={`py-24 md:py-40 relative z-10 ${visual.sectionClass}`} style={visual.sectionStyle}>
@@ -192,7 +209,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
             </div>
 
             {/* Invitation Card Spotlight Section */}
-            {wedding.invitation_image && (
+            {inviteImages.length > 0 && (
                 <div className="max-w-5xl mx-auto px-4 md:px-6 mt-24 md:mt-32">
                     <motion.div
                         initial={{ opacity: 0, y: 50 }}
@@ -214,19 +231,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
 
                         {/* Multi-image display logic */}
                         <div className="w-full flex flex-col gap-12 md:gap-24 items-center">
-                            {(() => {
-                                let inviteImages: string[] = [];
-                                try {
-                                    if (typeof wedding.invitation_image === 'string' && wedding.invitation_image.startsWith('[')) {
-                                        inviteImages = JSON.parse(wedding.invitation_image);
-                                    } else if (wedding.invitation_image) {
-                                        inviteImages = [wedding.invitation_image as string];
-                                    }
-                                } catch (e) {
-                                    if (wedding.invitation_image) inviteImages = [wedding.invitation_image as string];
-                                }
-
-                                return inviteImages.map((src, index) => (
+                            {inviteImages.map((src, index) => (
                                     <motion.div
                                         key={index}
                                         initial={{ opacity: 0, y: 40, rotateX: 10 }}
@@ -266,6 +271,8 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                                             <img 
                                                 src={src} 
                                                 alt={`Invitation Page ${index + 1}`} 
+                                                loading="lazy"
+                                                decoding="async"
                                                 className={`w-full h-auto ${isSharp || template === 'glitch' ? 'object-cover' : 'object-contain'} group-hover:scale-105 transition-transform duration-[4000ms] ease-out`} 
                                             />
                                             
@@ -280,7 +287,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
 
                                             {/* Overlays */}
                                             {isVintage && (
-                                                <div className="absolute inset-0 opacity-[0.05] pointer-events-none z-10 bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
+                                                <div className="absolute inset-0 opacity-[0.05] pointer-events-none z-10" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
                                             )}
                                             {template === 'glitch' && (
                                                 <div className="absolute inset-0 z-10 pointer-events-none opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
@@ -293,8 +300,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                                             </div>
                                         </div>
                                     </motion.div>
-                                ));
-                            })()}
+                            ))}
                         </div>
 
                         {/* Interaction Hint */}
@@ -304,7 +310,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                             transition={{ delay: 1 }}
                             className="mt-12 text-[10px] uppercase tracking-[0.2em] font-medium"
                         >
-                            {wedding.invitation_image?.toString().startsWith('[') && JSON.parse(wedding.invitation_image as string).length > 1 ? 'Scroll to see all pages' : 'Interact to explore invitation'}
+                            {inviteImages.length > 1 ? 'Scroll to see all pages' : 'Tap to view invitation details'}
                         </motion.p>
                     </motion.div>
                 </div>

@@ -565,3 +565,151 @@ export function getCollaboratorInviteHtml(input: {
     </html>
     `;
 }
+
+export type MarketingNurtureEmailInput = {
+    userName: string;
+    appUrl: string;
+    unsubscribeUrl: string;
+    step: number;
+};
+
+const MARKETING_NURTURE_STEPS = [
+    {
+        subject: 'Your wedding website can be ready today',
+        eyebrow: 'Start simple',
+        heading: 'Create the invitation guests can actually use',
+        body: [
+            'QuickWeds helps you turn the key wedding details into a polished website with RSVP, guest updates, photos, maps, and planning tools in one place.',
+            'Start with a template, add your story and venue details, then share one link with everyone.',
+        ],
+        cta: 'Build your wedding site',
+        path: '/builder',
+    },
+    {
+        subject: 'Make RSVPs easier before the guest questions start',
+        eyebrow: 'Guest list momentum',
+        heading: 'Collect RSVPs without chasing every reply',
+        body: [
+            'Your guests can RSVP from your invitation page, and you can keep responses organized from the dashboard.',
+            'Planner Pro gives you more room to send guest emails, reminders, and updates when the list gets bigger.',
+        ],
+        cta: 'Open your dashboard',
+        path: '/dashboard',
+    },
+    {
+        subject: 'A smoother way to organize the wedding details',
+        eyebrow: 'Planning tools',
+        heading: 'Keep tasks, budget, seating, and vendors together',
+        body: [
+            'Weddings get complicated fast. QuickWeds keeps the details close to the invitation, so you can move from guest list to planner without juggling separate tools.',
+            'Upgrade to Pro when you are ready for more planning capacity and fewer limits.',
+        ],
+        cta: 'See Planner Pro',
+        path: '/settings',
+    },
+    {
+        subject: 'Your Pro plan is built for the busy part of planning',
+        eyebrow: 'Go Pro',
+        heading: 'Unlock the tools couples need as the date gets closer',
+        body: [
+            'Planner Pro is for the moment when your guest list, reminders, checklists, suppliers, and seating plan all need more space.',
+            'It gives you more flexibility across owned weddings, planning tools, and guest communication.',
+        ],
+        cta: 'Upgrade to Pro',
+        path: '/settings',
+    },
+    {
+        subject: 'Give guests one beautiful place for every detail',
+        eyebrow: 'Guest experience',
+        heading: 'The less guests have to ask, the calmer planning feels',
+        body: [
+            'Use QuickWeds for the invitation, RSVP, venue details, schedule, gallery, gifts, and updates guests can revisit anytime.',
+            'Pro helps you keep that experience polished as your planning grows.',
+        ],
+        cta: 'Polish your invitation',
+        path: '/dashboard',
+    },
+    {
+        subject: 'Ready to take the limits off QuickWeds?',
+        eyebrow: 'Final nudge',
+        heading: 'Upgrade when you want QuickWeds to carry more of the work',
+        body: [
+            'If QuickWeds is becoming your planning hub, Pro is the clean next step.',
+            'You can keep building on your current wedding workspace and unlock more room for guest emails, planning details, and wedding management.',
+        ],
+        cta: 'Upgrade to Pro',
+        path: '/settings',
+    },
+] as const;
+
+export function getMarketingNurtureStepCount() {
+    return MARKETING_NURTURE_STEPS.length;
+}
+
+export function getMarketingNurtureEmail(input: MarketingNurtureEmailInput) {
+    const step = MARKETING_NURTURE_STEPS[input.step] || MARKETING_NURTURE_STEPS[0];
+    const safeUserName = escapeHtml(input.userName || 'there');
+    const safeAppUrl = input.appUrl.replace(/\/+$/, '');
+    const ctaUrl = `${safeAppUrl}${step.path}`;
+    const safeCtaUrl = escapeHtml(ctaUrl);
+    const safeUnsubscribeUrl = escapeHtml(input.unsubscribeUrl);
+
+    const bodyHtml = step.body.map((paragraph) => `
+                        <p style="margin: 0 0 18px; font-size: 16px; line-height: 1.7; color: ${SECONDARY_TEXT};">
+                            ${escapeHtml(paragraph)}
+                        </p>
+    `).join('');
+
+    return {
+        subject: step.subject,
+        html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${escapeHtml(step.subject)}</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: ${BG_COLOR}; color: ${TEXT_COLOR};">
+            <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 28px; overflow: hidden; box-shadow: 0 20px 40px rgba(209,108,120,0.12);">
+                <tr>
+                    <td style="padding: 46px 44px 22px;">
+                        <p style="margin: 0 0 12px; color: ${MAIN_COLOR}; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px;">
+                            ${escapeHtml(step.eyebrow)}
+                        </p>
+                        <h1 style="margin: 0; font-size: 30px; line-height: 1.2; color: ${TEXT_COLOR};">
+                            ${escapeHtml(step.heading)}
+                        </h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 0 44px 28px;">
+                        <p style="margin: 0 0 18px; font-size: 16px; line-height: 1.7; color: ${TEXT_COLOR};">
+                            Hi ${safeUserName},
+                        </p>
+                        ${bodyHtml}
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding: 0 44px 42px;">
+                        <a href="${safeCtaUrl}" style="display: inline-block; padding: 15px 24px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 15px;">
+                            ${escapeHtml(step.cta)}
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 26px 44px; background-color: #fafafa; border-top: 1px solid #eeeeee;">
+                        <p style="margin: 0 0 8px; font-size: 12px; line-height: 1.6; color: #8f747a;">
+                            You are receiving this because you created a QuickWeds account.
+                        </p>
+                        <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #8f747a;">
+                            <a href="${safeUnsubscribeUrl}" style="color: ${MAIN_COLOR}; text-decoration: underline;">Unsubscribe from QuickWeds marketing emails</a>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        `,
+    };
+}

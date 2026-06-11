@@ -32,6 +32,8 @@ export default function WeddingPartySection({ members }: WeddingPartySectionProp
                                     <img
                                         src={member.photo}
                                         alt={member.name}
+                                        loading="lazy"
+                                        decoding="async"
                                         className="w-full h-full object-cover rounded-[2rem] group-hover:scale-105 transition-transform duration-500"
                                     />
                                 ) : (

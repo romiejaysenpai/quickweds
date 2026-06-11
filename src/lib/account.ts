@@ -83,22 +83,33 @@ export async function getClientAccountProfile(token: string) {
     return data.profile as AccountProfile | null;
 }
 
-export async function setClientAccountType(token: string, accountType: AccountType) {
+export async function updateClientAccountProfile(
+    token: string,
+    payload: { account_type?: AccountType; onboarding_completed?: boolean },
+) {
     const response = await fetch('/api/account/profile', {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ account_type: accountType }),
+        body: JSON.stringify(payload),
     });
     const data = await response.json();
 
     if (!response.ok) {
-        throw new Error(data.error || 'Unable to save account type');
+        throw new Error(data.error || 'Unable to save account profile');
     }
 
     return data.profile as AccountProfile;
+}
+
+export async function setClientAccountType(token: string, accountType: AccountType) {
+    return updateClientAccountProfile(token, { account_type: accountType });
+}
+
+export async function completeClientOnboarding(token: string) {
+    return updateClientAccountProfile(token, { onboarding_completed: true });
 }
 
 export async function getClientAccountProfileForIntent(token: string, requestedPath?: string | null) {

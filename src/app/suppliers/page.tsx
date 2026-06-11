@@ -3,7 +3,7 @@ import SupplierDirectoryClient from '@/components/suppliers/SupplierDirectoryCli
 import { supabase } from '@/lib/supabase';
 import type { SupplierProfile } from '@/lib/suppliers';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Wedding Supplier Directory | QuickWeds',

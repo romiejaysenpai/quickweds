@@ -11,7 +11,7 @@ import {
   type SupplierProfile,
 } from '@/lib/suppliers';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 type PageProps = {
   params: Promise<{ slug: string }>;

@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Heart, Sparkles } from 'lucide-react';
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
 interface EntranceRevealProps {
@@ -88,8 +89,6 @@ export default function EntranceReveal({
     const textColor = isDarkTheme ? 'text-white' : 'text-[#4A4444]';
     const textMuted = isDarkTheme ? 'text-white/65' : 'text-[#4A4444]/65';
     const borderMuted = isDarkTheme ? 'border-white/18' : 'border-[#4A4444]/15';
-    const particleColor = isDarkTheme ? 'text-white/45' : `text-[${motifColor}]/40`;
-
     return (
         <AnimatePresence>
             {isVisible && (
@@ -103,14 +102,21 @@ export default function EntranceReveal({
                     <div className="absolute inset-0" style={{ backgroundColor: bgBase }} />
 
                     {heroImage ? (
-                        <motion.img
-                            src={heroImage}
-                            alt={`${coupleNames} invitation cover`}
-                            className="absolute inset-0 h-full w-full object-cover opacity-30"
+                        <motion.div
+                            className="absolute inset-0 opacity-30"
                             initial={{ scale: 1.08, filter: 'blur(14px)' }}
                             animate={{ scale: 1, filter: 'blur(0px)' }}
                             transition={{ duration: reduceMotion ? 0.5 : 2.4, ease: 'easeOut' }}
-                        />
+                        >
+                            <Image
+                                src={heroImage}
+                                alt={`${coupleNames} invitation cover`}
+                                fill
+                                priority
+                                sizes="100vw"
+                                className="object-cover"
+                            />
+                        </motion.div>
                     ) : null}
 
                     <div

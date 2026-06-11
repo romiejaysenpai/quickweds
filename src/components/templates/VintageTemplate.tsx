@@ -18,7 +18,7 @@ import { SharedNewSections } from './shared';
 export default function VintageTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     return (
         <div className="bg-[#fdfbf6] text-[#5d544b] font-serif relative pb-24">
-            <div className="fixed inset-0 pointer-events-none opacity-[0.03] grayscale bg-[url('https://www.transparenttextures.com/patterns/old-map.png')]" />
+            <div className="fixed inset-0 pointer-events-none opacity-[0.03] grayscale" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
             <section className="min-h-screen py-16 sm:py-20 md:py-24 lg:py-24 flex flex-col items-center justify-center px-4 sm:px-6 text-center relative overflow-hidden">
                 <div className="absolute inset-8 border-[0.5px] border-[#5d544b]/20 pointer-events-none rounded-[2rem]" />
                 <motion.div

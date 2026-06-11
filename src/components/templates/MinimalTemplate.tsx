@@ -21,7 +21,7 @@ export default function MinimalTemplate({ wedding, gallery, isExpired }: Templat
     return (
         <div className="bg-white text-neutral-800 pb-24">
             <section className="min-h-[90vh] flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/natural-paper.png')` }} />
+                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
                 
                 <div className="max-w-4xl text-center px-4 sm:px-6 md:px-12 relative z-10">
                     <motion.div 

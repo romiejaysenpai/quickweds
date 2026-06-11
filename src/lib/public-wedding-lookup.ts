@@ -11,6 +11,40 @@ type ResolveWeddingResult = {
     error: unknown;
 };
 
+function getMissingWeddingColumn(error: unknown) {
+    if (!error || typeof error !== 'object') return '';
+
+    const record = error as Record<string, unknown>;
+    const text = `${record.code || ''} ${record.message || ''} ${record.details || ''} ${record.hint || ''}`;
+    const normalized = text.toLowerCase();
+
+    if (
+        !normalized.includes('weddings.') ||
+        !(
+            normalized.includes('column') ||
+            normalized.includes('schema cache') ||
+            normalized.includes('does not exist') ||
+            normalized.includes('could not find') ||
+            normalized.includes('42703') ||
+            normalized.includes('pgrst204')
+        )
+    ) {
+        return '';
+    }
+
+    return text.match(/weddings\.([a-z0-9_]+)/i)?.[1] || '';
+}
+
+function selectWithoutColumn(select: string, column: string) {
+    if (select === '*') return select;
+
+    return select
+        .split(',')
+        .map((field) => field.trim())
+        .filter((field) => field && field !== column)
+        .join(',');
+}
+
 function isDeleted(record: Record<string, any> | null) {
     return Boolean(record && 'deleted_at' in record && record.deleted_at);
 }
@@ -21,6 +55,16 @@ async function queryById(db: any, identifier: string, select: string): Promise<R
         .select(select)
         .eq('id', identifier)
         .maybeSingle();
+
+    if (error) {
+        const missingColumn = isMissingPublicSlugColumnError(error)
+            ? 'public_slug'
+            : getMissingWeddingColumn(error);
+        const fallbackSelect = missingColumn ? selectWithoutColumn(select, missingColumn) : select;
+        if (fallbackSelect && fallbackSelect !== select) {
+            return queryById(db, identifier, fallbackSelect);
+        }
+    }
 
     if (error) return { wedding: null, error };
     if (!data || isDeleted(data)) return { wedding: null, error: null };
@@ -36,6 +80,11 @@ async function queryBySlug(db: any, identifier: string, select: string): Promise
 
     if (error) {
         if (isMissingPublicSlugColumnError(error)) return { wedding: null, error: null };
+        const missingColumn = getMissingWeddingColumn(error);
+        const fallbackSelect = missingColumn ? selectWithoutColumn(select, missingColumn) : select;
+        if (fallbackSelect && fallbackSelect !== select) {
+            return queryBySlug(db, identifier, fallbackSelect);
+        }
         return { wedding: null, error };
     }
 

@@ -68,12 +68,12 @@ export function SharedNewSections({ wedding, isExpired }: SharedNewSectionsProps
             />
             <GuestBook weddingId={wedding.id} />
             {wedding.spotify_playlist_url && (
-                <div className="fixed bottom-6 left-6 z-50">
+                <div className="fixed bottom-[calc(5.75rem+var(--safe-area-inset-bottom))] left-3 z-50 sm:bottom-6 sm:left-6">
                     <a
                         href={wedding.spotify_playlist_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 rounded-full border border-white/20 bg-[#1DB954] px-5 py-3 text-sm font-bold text-white shadow-[0_18px_40px_rgba(29,185,84,0.30)] backdrop-blur-sm transition-transform hover:scale-105"
+                        className="flex min-h-[44px] items-center gap-2 rounded-full border border-white/20 bg-[#1DB954] px-4 py-3 text-xs font-bold text-white shadow-[0_18px_40px_rgba(29,185,84,0.30)] backdrop-blur-sm transition-transform hover:scale-105 sm:px-5 sm:text-sm"
                     >
                         <Music className="w-4 h-4" /> Our Playlist
                     </a>

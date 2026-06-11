@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { getTypography, BENTO_PRESETS, getTemplateVisualProfile } from '@/lib/theme-engine';
@@ -19,9 +20,12 @@ function GalleryImage({ src, alt, className }: { src: string; alt: string; class
     return (
         <>
             <div className={`absolute inset-0 bg-black/5 animate-pulse transition-opacity duration-700 ${isLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} />
-            <img
+            <Image
                 src={src}
                 alt={alt}
+                fill
+                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                decoding="async"
                 onLoad={() => setIsLoaded(true)}
                 className={`h-full w-full object-cover transition-all duration-[1200ms] ease-out ${className || ''} ${isLoaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-xl scale-110'}`}
             />
@@ -79,6 +83,8 @@ function Lightbox({ images, index, onClose }: { images: string[]; index: number;
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     src={images[current]}
+                    alt={`Wedding gallery image ${current + 1}`}
+                    decoding="async"
                     className="max-w-[95vw] max-h-[80vh] sm:max-h-[85vh] object-contain rounded-lg sm:rounded-2xl"
                     onClick={(e) => e.stopPropagation()}
                 />
@@ -130,17 +136,17 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
                         </p>
                     </motion.div>
 
-                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${isBento ? 'md:grid-cols-4' : 'lg:grid-cols-3'} gap-4 sm:gap-6`}>
+                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${isBento ? 'md:grid-cols-4 md:auto-rows-[16rem] lg:auto-rows-[18rem]' : 'lg:grid-cols-3'} gap-4 sm:gap-6`}>
                         {gallery.map((img: string, i: number) => (
                             <motion.div
                                 key={i}
                                 initial={{ opacity: 0, y: 50 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1, duration: 0.5 }}
-                                className={`group cursor-pointer overflow-hidden p-2 transition-all duration-500 hover:-translate-y-1 ${visual.cardClass} ${layoutClasses[i % layoutClasses.length]}`}
+                                className={`group cursor-pointer overflow-hidden p-2 transition-all duration-500 hover:-translate-y-1 ${isBento ? 'md:h-full' : ''} ${visual.cardClass} ${layoutClasses[i % layoutClasses.length]}`}
                                 onClick={() => setLightboxIndex(i)}
                             >
-                                <div className={`relative h-full w-full overflow-hidden ${isSharp ? 'rounded-none' : 'rounded-[1.8rem]'}`}>
+                                <div className={`relative min-h-[18rem] w-full overflow-hidden sm:min-h-[22rem] md:min-h-[16rem] lg:min-h-[18rem] ${isBento ? 'md:h-full' : 'lg:aspect-[4/5]'} ${isSharp ? 'rounded-none' : 'rounded-[1.8rem]'}`}>
                                     <GalleryImage
                                         src={img}
                                         alt={`Wedding gallery image ${i + 1}`}

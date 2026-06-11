@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CheckCircle2, Loader2, Plus, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
 import UpgradeButton from '@/components/UpgradeButton';
+import { getCachedSession } from '@/lib/session-cache';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'needs_wedding' | 'needs_pro' | 'error';
 
@@ -59,7 +59,7 @@ export default function SupplierSaveButton({
         setState('saving');
         setMessage('');
 
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getCachedSession();
         const token = sessionData.session?.access_token;
 
         if (!token) {

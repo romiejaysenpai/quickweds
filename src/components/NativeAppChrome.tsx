@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { App } from '@capacitor/app';
 import { BookOpen, Heart, LayoutDashboard, Plus, Settings, Store } from 'lucide-react';
 import { isIosAppShell, isNativeAppShell } from '@/lib/capacitor';
-import { supabase } from '@/lib/supabase';
+import { getCachedSession } from '@/lib/session-cache';
 
 const PUBLIC_PREFIXES = ['/w/', '/seat/', '/privacy', '/terms', '/cookies', '/support'];
 const AUTH_PATHS = ['/login', '/signup', '/forgot-password', '/auth/callback', '/onboarding/account-type'];
@@ -62,7 +62,7 @@ export default function NativeAppChrome() {
     if (!isNative || currentPath !== '/') return;
 
     let cancelled = false;
-    void supabase.auth.getSession().then(({ data }) => {
+    void getCachedSession().then(({ data }) => {
       if (cancelled) return;
       router.replace(data.session ? '/dashboard' : '/login');
     }).catch(() => {

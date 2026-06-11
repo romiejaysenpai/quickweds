@@ -43,9 +43,11 @@ export default function ClassicTemplate({ wedding, gallery, isExpired }: Templat
             <section className="h-screen relative flex items-center justify-center overflow-hidden">
                 {wedding.hero_image ? (
                     <img
-                        src={wedding.hero_image}
+                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                        loading="eager"
+                        decoding="async"
                         className="absolute inset-0 w-full h-full object-cover brightness-75 scale-105"
-                        alt="Wedding Hero"
                     />
                 ) : (
                     <div 

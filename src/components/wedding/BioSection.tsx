@@ -56,8 +56,10 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
                     {!isSharp && <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-transparent blur-3xl -z-10 rounded-full" />}
                     <div className={`overflow-hidden group hover:-rotate-1 transition-transform duration-700 ${imageStyle}`}>
                         <img
-                            src={wedding.couple_photo || wedding.hero_image}
+                            src={wedding.couple_photo || wedding.hero_image || '/logo.png'}
                             alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                         />
                     </div>

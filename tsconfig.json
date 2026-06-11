@@ -36,6 +36,7 @@
     "quickweds-1",
     "quickweds-2",
     "playwright-report",
-    "test-results"
+    "test-results",
+    "web-to-mobile-magic-plugin"
   ]
 }

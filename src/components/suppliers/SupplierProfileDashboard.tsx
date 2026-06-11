@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { getClientAccountProfileForIntent, getRoleAwareRedirect } from '@/lib/account';
 import SupplierShareControls from '@/components/suppliers/SupplierShareControls';
+import { getCachedSession } from '@/lib/session-cache';
 import {
     PHILIPPINE_SUPPLIER_LOCATIONS,
     SUPPLIER_CATEGORIES,
@@ -111,7 +112,7 @@ export default function SupplierProfileDashboard() {
         const loadProfile = async () => {
             setLoading(true);
             setError('');
-            const { data: sessionData } = await supabase.auth.getSession();
+            const { data: sessionData } = await getCachedSession();
             const token = sessionData.session?.access_token;
             if (!token) {
                 setError('Please sign in again to manage your supplier profile.');
@@ -181,7 +182,7 @@ export default function SupplierProfileDashboard() {
             return;
         }
 
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getCachedSession();
         const token = sessionData.session?.access_token;
         if (!token || !user) {
             setError('Please sign in again to upload your business logo.');
@@ -228,7 +229,7 @@ export default function SupplierProfileDashboard() {
             return;
         }
 
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getCachedSession();
         const token = sessionData.session?.access_token;
         if (!token || !user) {
             setError('Please sign in again to upload gallery photos.');
@@ -270,7 +271,7 @@ export default function SupplierProfileDashboard() {
         setMessage('');
         setError('');
 
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getCachedSession();
         const token = sessionData.session?.access_token;
         if (!token) {
             setError('Please sign in again to save your profile.');
@@ -300,7 +301,7 @@ export default function SupplierProfileDashboard() {
     };
 
     const moderateSupplier = async (supplierId: string, action: 'approve' | 'reject' | 'deactivate' | 'feature' | 'unfeature') => {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getCachedSession();
         const token = sessionData.session?.access_token;
         if (!token) return;
 

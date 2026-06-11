@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Loader2, Send, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { getCachedSession } from '@/lib/session-cache';
 
 const DEFAULT_TITLE = 'New QuickWeds updates are live';
 const DEFAULT_MESSAGE = 'Your Planner now includes a richer checklist, 12-month wedding plan, calendar schedules, Google Calendar connection, Food & Drinks planning, Honeymoon planning, and improved photo uploads. Account Pro also unlocks planner access across owned weddings and more wedding websites.';
@@ -23,7 +23,7 @@ export default function AdminBroadcastPage() {
         setResult(null);
 
         try {
-            const { data } = await supabase.auth.getSession();
+            const { data } = await getCachedSession();
             const token = data.session?.access_token;
             if (!token) throw new Error('Please sign in as admin first.');
 

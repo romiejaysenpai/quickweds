@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, Image as ImageIcon, Gift, Clock, BookOpen, Send, HelpCircle, Shirt } from 'lucide-react';
+import { Heart, Calendar, Image as ImageIcon, Gift, Clock, BookOpen, Send, HelpCircle, Shirt, MapPin } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 
 interface TemplateNavigationProps {
@@ -10,21 +10,21 @@ interface TemplateNavigationProps {
 }
 
 const NAV_ITEMS = [
-    { id: 'bio', label: 'Story', icon: Heart },
     { id: 'details', label: 'Details', icon: Calendar },
-    { id: 'attire', label: 'Attire', icon: Shirt },
-    { id: 'timeline', label: 'Timeline', icon: Clock },
-    { id: 'gallery', label: 'Gallery', icon: ImageIcon },
-    { id: 'gift', label: 'Registry', icon: Gift },
-    { id: 'faq', label: 'FAQs', icon: HelpCircle },
     { id: 'rsvp', label: 'RSVP', icon: Send },
+    { id: 'timeline', label: 'Timeline', icon: Clock },
+    { id: 'venue', label: 'Venue', icon: MapPin },
+    { id: 'attire', label: 'Attire', icon: Shirt },
+    { id: 'gift', label: 'Registry', icon: Gift },
+    { id: 'bio', label: 'Story', icon: Heart },
+    { id: 'gallery', label: 'Gallery', icon: ImageIcon },
+    { id: 'faq', label: 'FAQs', icon: HelpCircle },
     { id: 'guestbook', label: 'Notes', icon: BookOpen },
 ];
 
 export default function TemplateNavigation({ wedding }: TemplateNavigationProps) {
     const [activeSections, setActiveSections] = useState<string[]>([]);
     const [currentSection, setCurrentSection] = useState<string>('');
-    const [isOpen, setIsOpen] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
@@ -38,8 +38,8 @@ export default function TemplateNavigation({ wedding }: TemplateNavigationProps)
             const scrollPosition = window.scrollY + window.innerHeight / 3;
             let current = '';
             
-            // Show navigation only when scrolled past the hero section (approx 500px)
-            if (window.scrollY > 500) {
+            // Show navigation once guests begin exploring, especially on phones.
+            if (window.scrollY > 180) {
                 setIsVisible(true);
             } else {
                 setIsVisible(false);
@@ -78,7 +78,6 @@ export default function TemplateNavigation({ wedding }: TemplateNavigationProps)
                 top: offsetPosition,
                 behavior: 'smooth'
             });
-            setIsOpen(false);
         }
     };
 
@@ -93,11 +92,11 @@ export default function TemplateNavigation({ wedding }: TemplateNavigationProps)
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 100, opacity: 0 }}
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2"
+                    className="fixed inset-x-2 bottom-[calc(1rem+var(--safe-area-inset-bottom))] z-[100] flex justify-center sm:inset-x-6 sm:bottom-6"
                 >
                     {/* Floating Dock Navigation */}
                     <nav
-                        className={`flex items-center gap-1 sm:gap-2 rounded-[2rem] border p-1.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] backdrop-blur-xl transition-all ${
+                        className={`no-scrollbar flex max-w-[calc(100vw-1rem)] items-center gap-1 overflow-x-auto rounded-[1.75rem] border p-1.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] backdrop-blur-xl transition-all sm:gap-2 sm:rounded-[2rem] ${
                             isDark ? 'bg-black/80 border-white/10' : 'bg-white/85 border-black/5'
                         }`}
                         style={{ borderColor: isDark ? `${motifColor}20` : `${motifColor}40` }}
@@ -108,8 +107,11 @@ export default function TemplateNavigation({ wedding }: TemplateNavigationProps)
                             return (
                                 <button
                                     key={item.id}
+                                    type="button"
+                                    aria-label={`Go to ${item.label}`}
+                                    title={item.label}
                                     onClick={() => scrollTo(item.id)}
-                                    className={`group relative flex flex-col items-center justify-center gap-1 rounded-[1.5rem] px-4 py-3 sm:px-5 sm:py-3.5 transition-all duration-300 ${
+                                    className={`group relative flex shrink-0 flex-col items-center justify-center gap-1 rounded-[1.35rem] px-3 py-3 transition-all duration-300 sm:rounded-[1.5rem] sm:px-5 sm:py-3.5 ${
                                         isActive 
                                             ? 'text-white scale-105 shadow-md' 
                                             : isDark ? 'text-white/40 hover:text-white hover:bg-white/5' : 'text-foreground/60 hover:text-foreground hover:bg-black/5'

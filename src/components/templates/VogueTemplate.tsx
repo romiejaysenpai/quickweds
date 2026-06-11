@@ -17,7 +17,7 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: any) {
         <div className="bg-white text-black font-sans selection:bg-black selection:text-white pb-24">
             <section className="min-h-screen grid grid-cols-1 md:grid-cols-2">
                 <div className="relative h-[60vh] md:h-full order-2 md:order-1">
-                    <img src={wedding.hero_image || wedding.couple_photo} className="absolute inset-0 w-full h-full object-cover grayscale contrast-125" />
+                    <img src={wedding.hero_image || wedding.couple_photo || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover grayscale contrast-125" />
                     <div className="absolute inset-0 bg-white/10 mix-blend-overlay" />
                 </div>
                 <div className="flex flex-col justify-between px-4 sm:px-6 md:px-24 py-12 sm:py-16 md:py-24 order-1 md:order-2 bg-white">
@@ -56,7 +56,7 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: any) {
                     </div>
                     <div className="w-full md:w-1/3 aspect-[3/4] relative">
                         <div className="absolute inset-0 bg-neutral -translate-x-4 translate-y-4" />
-                        <img src={wedding.couple_photo} className="w-full h-full object-cover relative z-10 grayscale hover:grayscale-0 transition-all duration-700" />
+                        <img src={wedding.couple_photo || wedding.hero_image || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="lazy" decoding="async" className="w-full h-full object-cover relative z-10 grayscale hover:grayscale-0 transition-all duration-700" />
                     </div>
                 </div>
             </section>

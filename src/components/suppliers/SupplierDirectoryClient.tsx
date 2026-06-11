@@ -7,6 +7,7 @@ import SupplierCard from '@/components/suppliers/SupplierCard';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { getClientAccountProfile, type AccountType } from '@/lib/account';
+import { getCachedSession } from '@/lib/session-cache';
 import {
     PHILIPPINE_SUPPLIER_LOCATIONS,
     SUPPLIER_CATEGORIES,
@@ -57,7 +58,7 @@ export default function SupplierDirectoryClient({ suppliers }: { suppliers: Supp
                 return;
             }
 
-            const { data: sessionData } = await supabase.auth.getSession();
+            const { data: sessionData } = await getCachedSession();
             const token = sessionData.session?.access_token;
             if (!token) return;
 

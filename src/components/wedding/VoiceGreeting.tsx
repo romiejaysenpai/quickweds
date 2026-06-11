@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
 interface VoiceGreetingProps {
@@ -43,14 +43,14 @@ export default function VoiceGreeting({ audioUrl, motifColor }: VoiceGreetingPro
                         initial={{ opacity: 0, x: 50 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 50 }}
-                        className="fixed bottom-24 right-6 sm:bottom-32 sm:right-10 z-[60]"
+                        className="fixed bottom-[calc(5.75rem+var(--safe-area-inset-bottom))] right-3 z-[60] sm:bottom-32 sm:right-10"
                     >
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={togglePlay}
                             className={`
-                                flex items-center gap-3 px-4 py-3 sm:px-6 sm:py-4 
+                                flex min-h-[44px] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-6 sm:py-4 
                                 rounded-full bg-white dark:bg-neutral border border-border/50 
                                 shadow-2xl soft-shadow transition-all group
                             `}
@@ -66,7 +66,7 @@ export default function VoiceGreeting({ audioUrl, motifColor }: VoiceGreetingPro
                                 )}
                             </div>
                             
-                            <div className="text-left">
+                            <div className="hidden text-left sm:block">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary opacity-60">A Message From</p>
                                 <p className="text-sm font-serif font-bold text-foreground">Bride & Groom</p>
                             </div>

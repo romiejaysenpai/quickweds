@@ -16,7 +16,7 @@ export default function EleganceTemplate({ wedding, gallery, isExpired }: any) {
     return (
         <div className="bg-[#faf9f6] text-[#3d3d3d] font-serif relative pb-24">
             <section className="min-h-screen py-20 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/cream-paper.png')` }} />
+                <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
                 
                 <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.5 }} className="z-10 bg-white/40 backdrop-blur-sm p-8 sm:p-12 md:p-16 lg:p-20 shadow-2xl border border-white relative">
                     <div className="absolute -top-6 -left-6 w-12 sm:w-16 h-12 sm:h-16 border-t-2 border-l-2 border-primary/40" />

@@ -15,7 +15,7 @@ import { SharedNewSections } from './shared';
 export default function FilmTemplate({ wedding, gallery, isExpired }: any) {
     return (
         <div className="bg-[#1a1a1a] text-[#ddd] font-mono relative pb-24">
-            <div className="fixed inset-0 opacity-[0.07] pointer-events-none z-0" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/camera-iris.png')` }} />
+            <div className="fixed inset-0 opacity-[0.07] pointer-events-none z-0" style={{ backgroundImage: 'var(--qw-film-texture)' }} />
 
             <section className="min-h-screen py-16 sm:py-20 md:py-24 lg:py-24 flex flex-col items-center justify-center px-4 sm:px-6 relative">
                 {/* Film Strip Borders */}
@@ -32,7 +32,7 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: any) {
                     className="bg-black p-3 sm:p-4 pb-12 sm:pb-14 md:pb-16 pt-3 sm:pt-4 max-w-lg w-full shadow-2xl rotate-1"
                 >
                     <div className="aspect-[4/5] bg-[#222] mb-3 sm:mb-4 relative overflow-hidden group">
-                        <img src={wedding.hero_image || wedding.couple_photo} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700 contrast-125" />
+                        <img src={wedding.hero_image || wedding.couple_photo || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700 contrast-125" />
                         <div className="absolute top-4 right-4 text-[10px] text-red-500 font-bold animate-pulse">● REC</div>
                     </div>
                     <div className="text-center font-serif text-black bg-white p-6 sm:p-7 md:p-8">

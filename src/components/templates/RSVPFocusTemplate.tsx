@@ -22,9 +22,11 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                 <div className="absolute inset-0 bg-gradient-to-b from-white via-primary/5 to-white" />
                 {wedding.hero_image && (
                     <img 
-                        src={wedding.hero_image} 
-                        className="absolute inset-0 w-full h-full object-cover opacity-10" 
+                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'} 
                         alt=""
+                        loading="eager"
+                        decoding="async"
+                        className="absolute inset-0 w-full h-full object-cover opacity-10" 
                     />
                 )}
                 

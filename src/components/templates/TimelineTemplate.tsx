@@ -20,7 +20,7 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
         <div className="bg-white font-serif pb-24">
             <section className="min-h-[90vh] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-white via-primary/5 to-white" />
-                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/cream-paper.png')` }} />
+                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
                 
                 <div className="absolute top-12 left-12 w-16 h-16 border-t-2 border-l-2" style={{ borderColor: motifColor + '40' }} />
                 <div className="absolute bottom-12 right-12 w-16 h-16 border-b-2 border-r-2" style={{ borderColor: motifColor + '40' }} />

@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { Wedding } from '@/types/wedding';
 import { useMemo, useSyncExternalStore } from 'react';
 import { derivePalette } from '@/lib/theme-engine';
@@ -11,10 +11,11 @@ const getServerSnapshot = () => false;
 
 export default function PremiumBackgroundLayer({ wedding }: { wedding: Wedding }) {
     const isMounted = useSyncExternalStore(subscribeToClient, getClientSnapshot, getServerSnapshot);
+    const reduceMotion = useReducedMotion();
 
     const motifColor = wedding.motif_color || '#D16C78';
     const palette = useMemo(() => derivePalette(motifColor), [motifColor]);
-    const hasVideo = !!wedding.teaser_video;
+    const hasVideo = !!wedding.teaser_video && !reduceMotion;
 
     // Generate random but deterministic positions for aurora blobs
     const blobs = useMemo(() => [
@@ -28,7 +29,7 @@ export default function PremiumBackgroundLayer({ wedding }: { wedding: Wedding }
     return (
         <div className="fixed inset-0 -z-[100] overflow-hidden bg-[#fcfaf7] pointer-events-none">
             {/* Base Surface Texture (Subtle Grain/Noise) */}
-            <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply z-50" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/natural-paper.png')` }} />
+            <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply z-50" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
 
             {hasVideo ? (
                 <>
@@ -39,7 +40,8 @@ export default function PremiumBackgroundLayer({ wedding }: { wedding: Wedding }
                         muted 
                         loop 
                         playsInline 
-                        className="absolute inset-0 w-full h-[120%] object-cover scale-125 blur-[100px] md:blur-[140px] opacity-[0.25] mix-blend-multiply" 
+                        preload="metadata"
+                        className="absolute inset-0 hidden h-[120%] w-full scale-125 object-cover opacity-[0.25] blur-[100px] mix-blend-multiply md:block md:blur-[140px]" 
                     />
                     <div 
                         className="absolute inset-0 opacity-10 mix-blend-color" 

@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
             .limit(50);
 
         if (error) throw error;
-        return NextResponse.json({ entries: data || [] }, { headers: limited.headers });
+        return NextResponse.json(
+            { entries: data || [] },
+            { headers: { ...limited.headers, 'Cache-Control': 'public, max-age=30, stale-while-revalidate=120' } }
+        );
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to load guest book.';
         console.error('Guest book load failed:', message);

@@ -31,6 +31,7 @@ const eslintConfig = defineConfig([
     "quickweds-2/**",
     "playwright-report/**",
     "test-results/**",
+    "web-to-mobile-magic-plugin/**",
     "deploy*.js",
     "find-weddings.js",
     "fix.js",

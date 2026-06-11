@@ -68,7 +68,7 @@ export default function MilestoneTimeline({ milestones, motifColor }: MilestoneT
                                     `}>
                                         {milestone.image && (
                                             <div className="mb-6 rounded-2xl overflow-hidden aspect-video relative">
-                                                <img src={milestone.image} alt={milestone.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
+                                                <img src={milestone.image} alt={milestone.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
                                                 <div className="absolute inset-0 bg-primary/10 mix-blend-overlay" />
                                             </div>
                                         )}

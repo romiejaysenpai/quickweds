@@ -35,7 +35,7 @@ export default function SakuraTemplate({ wedding, gallery, isExpired }: any) {
                     </div>
 
                     <div className="w-40 sm:w-48 md:w-56 lg:w-64 h-40 sm:h-48 md:h-56 lg:h-64 rounded-full overflow-hidden border-4 border-white shadow-lg mx-auto mb-8 sm:mb-10 md:mb-12 lg:mb-12">
-                        <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover" />
+                        <img src={wedding.couple_photo || wedding.hero_image || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="w-full h-full object-cover" />
                     </div>
 
                     <a href="#rsvp" className="px-6 sm:px-8 md:px-10 lg:px-10 py-3 sm:py-4 md:py-4 lg:py-4 min-h-[44px] flex items-center justify-center bg-[#ffb7c5] text-white rounded-2xl font-bold hover:bg-[#ff9eb0] transition-colors shadow-lg shadow-pink-200">

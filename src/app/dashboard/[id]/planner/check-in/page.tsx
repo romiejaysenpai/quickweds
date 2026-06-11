@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, Loader2, Search, Undo2, Users } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { getCachedSession } from '@/lib/session-cache';
 
 type CheckInGuest = {
     id: string;
@@ -38,7 +38,7 @@ export default function PlannerCheckInPage() {
     }, [guests, lookup]);
 
     async function getToken() {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await getCachedSession();
         return data.session?.access_token || '';
     }
 

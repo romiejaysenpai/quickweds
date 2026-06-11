@@ -9,6 +9,7 @@ import {
     Maximize2, CheckCircle2
 } from 'lucide-react';
 import { openExternalUrl } from '@/lib/native-actions';
+import { getCachedSession } from '@/lib/session-cache';
 
 interface Photo {
     id: string;
@@ -131,7 +132,7 @@ export default function PhotoSharingManager({ weddingId }: { weddingId: string }
         if (!window.confirm("Are you sure? Guests using this code won't be able to upload anymore.")) return;
         setDeletingCodeId(codeId);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await getCachedSession();
             if (!session?.access_token) {
                 throw new Error('Please sign in again to delete this sharing code.');
             }

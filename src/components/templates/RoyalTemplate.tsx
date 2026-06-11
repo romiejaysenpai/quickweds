@@ -17,13 +17,13 @@ import { SharedNewSections } from './shared';
 export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
     return (
         <div className="bg-[#121212] text-[#f2d0a4] relative overflow-hidden min-h-screen font-serif">
-            <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/damask-wallpaper.png')` }} />
+            <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'var(--qw-deco-texture)' }} />
 
             <section className="min-h-screen py-20 relative overflow-hidden flex items-center justify-center border-b border-primary/20">
                 {wedding.teaser_video ? (
                     <video src={wedding.teaser_video} className="absolute inset-0 w-full h-full object-cover opacity-30 grayscale contrast-125" autoPlay muted loop />
                 ) : (
-                    <img src={wedding.hero_image || wedding.couple_photo} className="absolute inset-0 w-full h-full object-cover opacity-20 grayscale brightness-50" />
+                    <img src={wedding.hero_image || wedding.couple_photo || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-20 grayscale brightness-50" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-[#121212]" />
 

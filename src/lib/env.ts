@@ -13,6 +13,12 @@ const envSchema = z.object({
     RESEND_FROM_EMAIL: z.string().min(5, 'Invalid from email'),
     RESEND_COUPLE_TEMPLATE_ID: z.string().optional(),
 
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(10, 'Invalid Supabase service role key').optional(),
+    SUPABASE_SERVICE_KEY: z.string().min(10, 'Invalid Supabase service key').optional(),
+    SUPABASE_SERVICE_ROLE: z.string().min(10, 'Invalid Supabase service role').optional(),
+    CRON_SECRET: z.string().min(16, 'Cron secret should be at least 16 characters').optional(),
+    MARKETING_NURTURE_SEND_LIMIT: z.coerce.number().int().positive().max(200).optional(),
+
     CLOUDINARY_URL: z.string().startsWith('cloudinary://', 'Invalid Cloudinary URL').optional(),
 
     VERCEL_PROJECT_ID: z.string().optional(),
@@ -43,6 +49,11 @@ export function validateEnv() {
         RESEND_API_KEY: process.env.RESEND_API_KEY,
         RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
         RESEND_COUPLE_TEMPLATE_ID: process.env.RESEND_COUPLE_TEMPLATE_ID,
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
+        SUPABASE_SERVICE_ROLE: process.env.SUPABASE_SERVICE_ROLE,
+        CRON_SECRET: process.env.CRON_SECRET,
+        MARKETING_NURTURE_SEND_LIMIT: process.env.MARKETING_NURTURE_SEND_LIMIT,
         CLOUDINARY_URL: process.env.CLOUDINARY_URL,
         VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID,
         VERCEL_TOKEN: process.env.VERCEL_TOKEN,

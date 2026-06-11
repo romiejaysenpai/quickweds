@@ -6,9 +6,10 @@ interface VenueMapProps {
     venueName: string;
     venueAddress?: string;
     mapsLink?: string;
+    id?: string;
 }
 
-export default function VenueMap({ venueName, venueAddress, mapsLink }: VenueMapProps) {
+export default function VenueMap({ venueName, venueAddress, mapsLink, id = 'venue' }: VenueMapProps) {
     if (!mapsLink && !venueAddress) return null;
 
     // Extract Google Maps embed URL from a share link, or create one from address
@@ -23,7 +24,7 @@ export default function VenueMap({ venueName, venueAddress, mapsLink }: VenueMap
     const venueNote = 'Celebrate with us in one lovely location, from vows to reception. We kindly ask that you arrive on time to fully enjoy the celebration.';
 
     return (
-        <section className="relative overflow-hidden px-4 py-20 sm:px-6 sm:py-24">
+        <section id={id} className="relative overflow-hidden px-4 py-20 sm:px-6 sm:py-24">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_12%,var(--primary)_0,transparent_28%),radial-gradient(circle_at_84%_88%,var(--primary)_0,transparent_26%)] opacity-[0.08]" />
             <div className="relative mx-auto max-w-6xl">
                 <div className="mb-10 text-center sm:mb-12">

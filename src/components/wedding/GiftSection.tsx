@@ -15,22 +15,32 @@ interface GiftSectionProps {
 
 export default function GiftSection({ wedding, invert = false, id }: GiftSectionProps) {
     const { registerSection, unregisterSection } = useSectionContext();
-    
-    useEffect(() => {
-        registerSection(id, 'Gift');
-        return () => unregisterSection(id);
-    }, [id, registerSection, unregisterSection]);
-    if (!wedding.gift_bank && !wedding.gift_qr_image && !wedding.gift_account_number) return null;
 
-    let registryLinks: { title: string; url: string }[] = [];
+    let registryLinks: { title?: string; label?: string; url: string }[] = [];
     let cashFunds: { title: string; description?: string; targetAmount: number; currency?: string; current?: number }[] = [];
-    let paymentLinks: { title: string; url: string }[] = [];
+    let paymentLinks: { title?: string; label?: string; type?: string; url: string }[] = [];
 
     try {
         if (wedding.gift_registry_links) registryLinks = typeof wedding.gift_registry_links === 'string' ? JSON.parse(wedding.gift_registry_links) : wedding.gift_registry_links;
         if (wedding.cash_funds) cashFunds = typeof wedding.cash_funds === 'string' ? JSON.parse(wedding.cash_funds) : wedding.cash_funds;
         if (wedding.payment_links) paymentLinks = typeof wedding.payment_links === 'string' ? JSON.parse(wedding.payment_links) : wedding.payment_links;
     } catch { }
+
+    const hasGiftDetails = Boolean(
+        wedding.gift_bank ||
+        wedding.gift_qr_image ||
+        wedding.gift_account_number ||
+        registryLinks.length > 0 ||
+        cashFunds.length > 0 ||
+        paymentLinks.length > 0
+    );
+
+    useEffect(() => {
+        if (hasGiftDetails) registerSection(id, 'Gift');
+        return () => unregisterSection(id);
+    }, [hasGiftDetails, id, registerSection, unregisterSection]);
+
+    if (!hasGiftDetails) return null;
 
     const template = wedding.template || 'classic';
     const motifColor = wedding.motif_color || '#D16C78';
@@ -149,12 +159,87 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                                                 }`}
                                         >
                                             <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-[0.03] transition-opacity" />
-                                            <span className="font-black text-sm md:text-base uppercase tracking-wider relative z-10">{link.title}</span>
+                                            <span className="font-black text-sm md:text-base uppercase tracking-wider relative z-10">{link.title || link.label || 'Registry'}</span>
                                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:bg-primary group-hover:text-white">
                                                 <span className="text-xs">↗</span>
                                             </div>
                                         </motion.a>
                                     ))}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {paymentLinks.length > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -40 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 1, delay: 0.25 }}
+                                className={`p-6 sm:p-10 md:p-14 ${cardClass}`}
+                            >
+                                <div className="mb-8 flex items-center justify-between">
+                                    <p className="text-[10px] uppercase tracking-[0.32em] font-black opacity-35">Digital Gifting</p>
+                                    <div className="ml-6 h-px flex-1 bg-primary/20" />
+                                </div>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    {paymentLinks.map((link, i) => (
+                                        <a
+                                            key={`${link.title || link.label || link.type || 'payment'}-${i}`}
+                                            href={link.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`flex min-h-[56px] items-center justify-between gap-4 border p-4 text-sm font-black uppercase tracking-[0.14em] transition-colors ${
+                                                isSharp ? 'rounded-none border-primary/20 hover:bg-primary/5' : 'rounded-2xl border-primary/10 bg-white/55 hover:bg-white'
+                                            }`}
+                                        >
+                                            <span className="break-words">{link.title || link.label || link.type || 'Payment Link'}</span>
+                                            <span aria-hidden="true" className="shrink-0 text-primary">↗</span>
+                                        </a>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {cashFunds.length > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -40 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 1, delay: 0.3 }}
+                                className={`p-6 sm:p-10 md:p-14 ${cardClass}`}
+                            >
+                                <div className="mb-8 flex items-center justify-between">
+                                    <p className="text-[10px] uppercase tracking-[0.32em] font-black opacity-35">Cash Funds</p>
+                                    <div className="ml-6 h-px flex-1 bg-primary/20" />
+                                </div>
+                                <div className="space-y-5">
+                                    {cashFunds.map((fund, i) => {
+                                        const current = Number(fund.current || 0);
+                                        const target = Number(fund.targetAmount || 0);
+                                        const progress = target > 0 ? Math.min(100, Math.max(0, Math.round((current / target) * 100))) : 0;
+                                        const currency = fund.currency || '';
+
+                                        return (
+                                            <div key={`${fund.title}-${i}`} className="rounded-2xl border border-primary/10 bg-white/55 p-5">
+                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                    <div>
+                                                        <h3 className="font-serif text-2xl leading-tight">{fund.title}</h3>
+                                                        {fund.description && <p className="mt-2 text-sm leading-6 opacity-65">{fund.description}</p>}
+                                                    </div>
+                                                    {target > 0 && (
+                                                        <p className="shrink-0 text-xs font-black uppercase tracking-[0.18em] opacity-45">
+                                                            {currency}{current.toLocaleString()} / {currency}{target.toLocaleString()}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                {target > 0 && (
+                                                    <div className="mt-5 h-2 overflow-hidden rounded-full bg-primary/10">
+                                                        <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </motion.div>
                         )}

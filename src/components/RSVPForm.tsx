@@ -25,6 +25,13 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
     const isSharp = wedding?.template === 'editorial' || wedding?.template === 'minimal' || wedding?.template === 'vogue';
     const isDark = wedding?.template === 'midnight' || wedding?.template === 'royal' || wedding?.template === 'urban';
     const isVintage = wedding?.template === 'vintage' || wedding?.template === 'film' || wedding?.template === 'rustic';
+    const fieldClass = `w-full min-h-[48px] rounded-2xl border px-4 py-3 text-base outline-none transition-all placeholder:text-text-secondary/30 focus:border-primary sm:px-6 sm:py-4 ${
+        isDark ? 'border-white/10 bg-white/[0.08] text-white placeholder:text-white/30' :
+        isSharp ? 'rounded-none border-black/10 bg-white text-foreground' :
+        isVintage ? 'border-[#d4c5b3] bg-white/70 text-foreground' :
+        'border-border bg-neutral text-foreground'
+    }`;
+    const labelClass = `ml-1 text-sm font-bold ${isDark ? 'text-white/70' : 'text-text-secondary'}`;
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [duplicateError, setDuplicateError] = useState(false);
@@ -117,7 +124,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
     }
 
     return (
-        <div className={`p-5 sm:p-8 md:p-12 rounded-[2rem] soft-shadow border transition-colors ${
+        <div className={`mx-auto w-full max-w-3xl p-4 sm:p-8 md:p-12 rounded-[1.5rem] sm:rounded-[2rem] soft-shadow border transition-colors ${
             isDark ? 'bg-black/40 border-primary/20 text-white backdrop-blur-md' : 
             isSharp ? 'bg-white border-black/5 rounded-none' :
             isVintage ? 'bg-[#fdfbf6] border-[#d4c5b3] rounded-3xl' :
@@ -144,93 +151,88 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6 text-left">
+            <form onSubmit={handleSubmit} className="space-y-5 text-left sm:space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-text-secondary ml-1">Guest Full Name *</label>
+                        <label className={labelClass}>Guest Full Name *</label>
                         <input
                             required
                             placeholder="Enter your full name"
                             value={formData.guestName}
                             onChange={(e) => setFormData(prev => ({ ...prev, guestName: e.target.value }))}
-                            className={`w-full px-6 py-4 rounded-2xl border focus:border-primary outline-none transition-all placeholder:text-text-secondary/30 ${
-                                isDark ? 'bg-white/5 border-white/10 text-white' :
-                                isSharp ? 'bg-neutral/30 border-black/5 rounded-none' :
-                                isVintage ? 'bg-white/50 border-[#d4c5b3] italic' :
-                                'bg-neutral border-border text-foreground'
-                            }`}
+                            className={fieldClass}
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-text-secondary ml-1">Email Address *</label>
+                        <label className={labelClass}>Email Address *</label>
                         <input
                             required
                             type="email"
                             placeholder="For your confirmation"
                             value={formData.guestEmail}
                             onChange={(e) => setFormData(prev => ({ ...prev, guestEmail: e.target.value }))}
-                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
+                            className={fieldClass}
                         />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-text-secondary ml-1">Will you attend?</label>
+                        <label className={labelClass}>Will you attend?</label>
                         <select
                             value={formData.attendance}
                             onChange={(e) => setFormData(prev => ({ ...prev, attendance: e.target.value }))}
-                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground"
+                            className={fieldClass}
                         >
                             <option value="Yes">Yes, gladly!</option>
                             <option value="No">Regretfully, no.</option>
                         </select>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-text-secondary ml-1">Number of Guests</label>
+                        <label className={labelClass}>Number of Guests</label>
                         <input
                                     type="number" min="1" max="100"
                                     inputMode="numeric"
                                     placeholder="0"
                                     value={formData.numGuests === 0 ? '' : formData.numGuests}
                                     onChange={(e) => setFormData(prev => ({ ...prev, numGuests: e.target.value === '' ? 0 : parseInt(e.target.value) }))}
-                                    className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    className={`${fieldClass} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                                 />
                     </div>
                 </div>
 
                 {formData.numGuests > 1 && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
-                        <label className="text-sm font-bold text-text-secondary ml-1 flex items-center gap-2">
+                        <label className={`${labelClass} flex items-center gap-2`}>
                             <Users className="w-4 h-4" /> Names of Additional Guests
                         </label>
                         <input
                             placeholder="e.g. Jane Doe, John Smith"
                             value={formData.plusOneNames}
                             onChange={(e) => setFormData(prev => ({ ...prev, plusOneNames: e.target.value }))}
-                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
+                            className={fieldClass}
                         />
                     </motion.div>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-text-secondary ml-1">Children Attending</label>
+                        <label className={labelClass}>Children Attending</label>
                         <input
                             type="number" min="0" max="100"
                             inputMode="numeric"
                             placeholder="0"
                             value={formData.childrenCount === 0 ? '' : formData.childrenCount}
                             onChange={(e) => setFormData(prev => ({ ...prev, childrenCount: e.target.value === '' ? 0 : parseInt(e.target.value) }))}
-                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className={`${fieldClass} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-text-secondary ml-1">Dietary Preference</label>
+                        <label className={labelClass}>Dietary Preference</label>
                         <select
                             value={formData.mealPreference}
                             onChange={(e) => setFormData(prev => ({ ...prev, mealPreference: e.target.value }))}
-                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground"
+                            className={fieldClass}
                         >
                             <option value="">Select...</option>
                             {DIETARY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -240,35 +242,35 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
 
                 {formData.mealPreference === 'Other (see message)' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
-                        <label className="text-sm font-bold text-text-secondary ml-1">Dietary Details / Allergies</label>
+                        <label className={labelClass}>Dietary Details / Allergies</label>
                         <input
                             placeholder="Please describe your dietary requirements"
                             value={formData.dietaryDetails}
                             onChange={(e) => setFormData(prev => ({ ...prev, dietaryDetails: e.target.value }))}
-                            className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
+                            className={fieldClass}
                         />
                     </motion.div>
                 )}
 
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-text-secondary ml-1 flex items-center gap-2">
+                    <label className={`${labelClass} flex items-center gap-2`}>
                         <Music className="w-4 h-4" /> Song Request
                     </label>
                     <input
                         placeholder="e.g. 'Dancing Queen' by ABBA"
                         value={formData.songRequest}
                         onChange={(e) => setFormData(prev => ({ ...prev, songRequest: e.target.value }))}
-                        className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
+                        className={fieldClass}
                     />
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-text-secondary ml-1">Message for the Couple</label>
+                    <label className={labelClass}>Message for the Couple</label>
                     <textarea
                         placeholder="Write a sweet note..."
                         value={formData.message}
                         onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
-                        className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground h-32 resize-none placeholder:text-text-secondary/30"
+                        className={`${fieldClass} h-32 resize-none`}
                     />
                 </div>
 

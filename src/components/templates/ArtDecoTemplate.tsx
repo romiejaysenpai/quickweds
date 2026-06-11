@@ -16,7 +16,7 @@ export default function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
     return (
         <div className="bg-[#1a1a1a] text-[#d4af37] font-serif selection:bg-[#d4af37] selection:text-black pb-24">
             {/* Geometric Patterns */}
-            <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/art-deco.png')` }} />
+            <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'var(--qw-deco-texture)' }} />
 
             <section className="min-h-screen py-16 sm:py-20 md:py-24 lg:py-24 flex items-center justify-center px-4 sm:px-6 relative overflow-hidden">
                 <div className="absolute inset-4 sm:inset-6 md:inset-8 lg:inset-12 border-[4px] border-[#d4af37]/40 pointer-events-none" />

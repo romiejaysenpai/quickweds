@@ -4,12 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Heart, Plus, Calendar, MapPin, ArrowRight, Loader2, Copy, CheckCheck, ExternalLink, Pencil, Trash2, Settings, LogOut, Users, BookOpen, Menu, X, Sparkles, LifeBuoy, PlayCircle, MessageCircle } from 'lucide-react';
+import { Heart, Plus, Calendar, MapPin, ArrowRight, Loader2, Copy, CheckCheck, ExternalLink, Pencil, Trash2, Settings, LogOut, Users, BookOpen, Menu, X, Sparkles, LifeBuoy, PlayCircle, MessageCircle, ImagePlus, Send, ClipboardList, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import UpgradeButton from '@/components/UpgradeButton';
 import { acceptWeddingInvite, listSharedWeddings } from '@/lib/wedding-features';
-import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro, type AccountProfile } from '@/lib/account';
+import { completeClientOnboarding, getClientAccountProfile, getRoleAwareRedirect, hasAccountPro, type AccountProfile } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { getWeddingPublicPath } from '@/lib/wedding-slugs';
@@ -168,6 +168,166 @@ function DashboardWelcomeHero({
                             </Link>
                         )}
 
+                    </div>
+                </div>
+            </div>
+        </motion.section>
+    );
+}
+
+function CoupleOnboardingSection({
+    onCompleted,
+}: {
+    onCompleted: (profile: AccountProfile) => void;
+}) {
+    const [selectedItem, setSelectedItem] = useState('site');
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    const onboardingItems = [
+        {
+            id: 'site',
+            title: 'Create your wedding site',
+            body: 'Choose a template and start shaping the guest experience.',
+            href: '/builder',
+            icon: Heart,
+        },
+        {
+            id: 'details',
+            title: 'Add details and photos',
+            body: 'Bring in the date, venue, story, gallery, and dress code.',
+            href: '/builder',
+            icon: ImagePlus,
+        },
+        {
+            id: 'share',
+            title: 'Share your RSVP link',
+            body: 'Once your site is ready, send guests one simple place to reply.',
+            href: '/user-guide',
+            icon: Send,
+        },
+        {
+            id: 'planner',
+            title: 'Open the planner',
+            body: 'Track tasks, guests, vendors, and budget from the dashboard.',
+            href: '/planner',
+            icon: ClipboardList,
+        },
+    ];
+
+    const selected = onboardingItems.find((item) => item.id === selectedItem) || onboardingItems[0];
+    const SelectedIcon = selected.icon;
+
+    const markComplete = async () => {
+        setSaving(true);
+        setError('');
+
+        try {
+            const { data } = await getCachedSession();
+            const token = data.session?.access_token;
+
+            if (!token) {
+                throw new Error('Please sign in again to update onboarding.');
+            }
+
+            const profile = await completeClientOnboarding(token);
+            onCompleted(profile);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unable to update onboarding.');
+            setSaving(false);
+        }
+    };
+
+    return (
+        <motion.section
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 overflow-hidden rounded-[1.5rem] border border-primary/15 bg-white shadow-xl shadow-primary/10 sm:mb-12 sm:rounded-[2rem]"
+        >
+            <div className="grid gap-0 lg:grid-cols-[0.92fr_1.08fr]">
+                <div className="bg-gradient-to-br from-primary via-primary-hover to-text-secondary p-5 text-white sm:p-7 lg:p-8">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Couple onboarding
+                    </span>
+                    <h2 className="mt-4 font-serif text-3xl font-black leading-tight sm:text-4xl">
+                        Your first QuickWeds wins.
+                    </h2>
+                    <p className="mt-3 text-sm font-semibold leading-7 text-white/78">
+                        Start with one clear move, then keep planning without the scattered tabs and half-remembered notes.
+                    </p>
+
+                    <div className="mt-6 rounded-2xl border border-white/20 bg-white/12 p-4 backdrop-blur">
+                        <div className="flex items-start gap-3">
+                            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-lg shadow-black/10">
+                                <SelectedIcon className="h-5 w-5" />
+                            </span>
+                            <div>
+                                <p className="font-serif text-xl font-bold">{selected.title}</p>
+                                <p className="mt-1 text-sm leading-6 text-white/75">{selected.body}</p>
+                            </div>
+                        </div>
+                        <Link
+                            href={selected.href}
+                            className="mt-4 inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:bg-neutral"
+                        >
+                            Open this step <ArrowRight className="h-4 w-4" />
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="p-5 sm:p-7 lg:p-8">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Setup checklist</p>
+                            <h3 className="mt-2 font-serif text-2xl font-bold text-foreground sm:text-3xl">
+                                Pick what you want to do next.
+                            </h3>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={markComplete}
+                            disabled={saving}
+                            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-primary transition hover:bg-primary hover:text-white disabled:opacity-60"
+                        >
+                            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                            Complete
+                        </button>
+                    </div>
+
+                    {error && (
+                        <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                        {onboardingItems.map((item, index) => {
+                            const Icon = item.icon;
+                            const isSelected = selectedItem === item.id;
+
+                            return (
+                                <button
+                                    key={item.id}
+                                    type="button"
+                                    onClick={() => setSelectedItem(item.id)}
+                                    className={`group min-h-[132px] rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 ${
+                                        isSelected ? 'border-primary/40 bg-primary/5' : 'border-border bg-neutral/40 hover:border-primary/25 hover:bg-white'
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
+                                            <Icon className="h-4 w-4" />
+                                        </span>
+                                        <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-black ${isSelected ? 'bg-primary text-white' : 'bg-white text-text-secondary/50 ring-1 ring-border'}`}>
+                                            {index + 1}
+                                        </span>
+                                    </div>
+                                    <p className="mt-4 font-serif text-lg font-bold leading-tight text-foreground">{item.title}</p>
+                                    <p className="mt-2 text-xs font-semibold leading-5 text-text-secondary">{item.body}</p>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -660,6 +820,10 @@ export default function DashboardRedirect() {
                     onOpenWorkspace={handleOpenWorkspace}
                     onOpenPlanner={handleOpenPlanner}
                 />
+
+                {accountProfile?.account_type === 'couple' && !accountProfile.onboarding_completed && (
+                    <CoupleOnboardingSection onCompleted={setAccountProfile} />
+                )}
 
                 {sharedWeddings.length > 0 && (
                     <section className="mb-8 sm:mb-12">

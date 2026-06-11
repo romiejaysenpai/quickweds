@@ -3,7 +3,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ weddingId: string }> }) {
     const { weddingId: rawWeddingId } = await params;

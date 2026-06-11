@@ -1001,7 +1001,7 @@ export default function Home() {
                   <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">One-time upgrade</p>
                   <div className="mt-2 flex flex-col gap-2 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
                     <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Planner Pro</h3>
-                    <p className="font-serif text-3xl font-bold text-primary">$29</p>
+                    <p className="font-serif text-3xl font-bold text-primary">$15</p>
                   </div>
                   <p className="mt-3 text-text-secondary">Built for finalizing the real wedding plan when guests, suppliers, seating, and reminders matter.</p>
                   <div className="mt-8 grid gap-3">

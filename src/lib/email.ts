@@ -1,5 +1,12 @@
 import { Resend } from 'resend';
-import { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtml, getCollaboratorInviteHtml } from './email-templates';
+import {
+    getGuestConfirmationHtml,
+    getCoupleNotificationHtml,
+    getThankYouNoteHtml,
+    getCollaboratorInviteHtml,
+    getMarketingNurtureEmail,
+    getMarketingNurtureStepCount,
+} from './email-templates';
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'QuickWeds <noreply@rsvp.quickweds.site>';
 
@@ -78,4 +85,11 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
     }
 }
 
-export { getGuestConfirmationHtml, getCoupleNotificationHtml, getThankYouNoteHtml, getCollaboratorInviteHtml };
+export {
+    getGuestConfirmationHtml,
+    getCoupleNotificationHtml,
+    getThankYouNoteHtml,
+    getCollaboratorInviteHtml,
+    getMarketingNurtureEmail,
+    getMarketingNurtureStepCount,
+};

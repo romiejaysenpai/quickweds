@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { getCachedSession } from '@/lib/session-cache';
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -83,7 +84,7 @@ export default function SettingsPage() {
     setUpdateError('');
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getCachedSession();
       const response = await fetch('/api/account/delete', {
         method: 'DELETE',
         headers: {

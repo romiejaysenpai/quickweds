@@ -21,7 +21,7 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
     return (
         <div className="bg-[#fcf8f1] text-[#5d2e0a] font-serif relative pb-24 selection:bg-[#8b4513]/20 overflow-x-hidden">
             {/* Organic Background Texture */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/natural-paper.png')` }} />
+            <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
             
             {/* Floating Organic Elements (Decorative) */}
             <motion.div 
@@ -79,9 +79,11 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
                             
                             <div className="aspect-[4/5] w-full rounded-[3.5rem] overflow-hidden border-[12px] border-white shadow-2xl relative z-10">
                                 <img 
-                                    src={wedding.hero_image || wedding.couple_photo} 
+                                    src={wedding.hero_image || wedding.couple_photo || '/logo.png'} 
+                                    alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                                    loading="eager"
+                                    decoding="async"
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[5s]" 
-                                    alt="Wedding Couple"
                                 />
                                 <div className="absolute inset-0 bg-[#8b4513]/10 mix-blend-multiply opacity-30 group-hover:opacity-0 transition-opacity duration-1000" />
                             </div>
@@ -154,4 +156,3 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
         </div>
     );
 }
-

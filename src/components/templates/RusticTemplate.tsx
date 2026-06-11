@@ -15,7 +15,7 @@ import { SharedNewSections } from './shared';
 export default function RusticTemplate({ wedding, gallery, isExpired }: any) {
     return (
         <div className="bg-[#f5ebe0] text-[#5e503f] font-serif relative pb-24">
-            <div className="fixed inset-0 pointer-events-none opacity-5" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/wood-pattern.png')` }} />
+            <div className="fixed inset-0 pointer-events-none opacity-5" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
 
             <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 relative">
                 <div className="absolute inset-4 border-[1px] border-[#5e503f]/20 pointer-events-none" />
@@ -43,7 +43,7 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: any) {
             <section className="py-16 sm:py-20 md:py-24 lg:py-24 px-4 sm:px-6 bg-white/60">
                 <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 md:gap-16 items-center">
                     <div className="aspect-square relative rotate-2 p-4 bg-white shadow-xl">
-                        <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover sepia-[0.3]" />
+                        <img src={wedding.couple_photo || wedding.hero_image || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="w-full h-full object-cover sepia-[0.3]" />
                         <div className="absolute -top-4 -left-4 w-24 h-24 bg-[#5e503f]/10 rounded-full blur-xl -z-10" />
                     </div>
                     <div className="space-y-4 sm:space-y-5 md:space-y-6">

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState, type CSSProperties } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Heart } from 'lucide-react';
 import DecorativeLayer from '@/components/DecorativeLayer';
 import { MonogramMark } from '@/components/MonogramMark';
@@ -13,37 +13,8 @@ import {
     TemplateNavigation,
     FAQSection,
 } from '@/components/wedding';
-import {
-    ClassicTemplate,
-    MinimalTemplate,
-    VintageTemplate,
-    EditorialTemplate,
-    RoyalTemplate,
-    WhimsicalTemplate,
-    UrbanTemplate,
-    TropicalTemplate,
-    MidnightTemplate,
-    SakuraTemplate,
-    VogueTemplate,
-    RusticTemplate,
-    FilmTemplate,
-    GlitchTemplate,
-    GardenTemplate,
-    RomanticTemplate,
-    LuxuryTemplate,
-    ElopementTemplate,
-    TraditionalTemplate,
-    TimelineTemplate,
-    RSVPFocusTemplate,
-    CinematicTemplate,
-    EleganceTemplate,
-    ArtDecoTemplate,
-    BohoTemplate
-} from '@/components/templates';
+import { getWeddingPageStyle, renderWeddingTemplate } from '@/components/templates/TemplateRenderer';
 import type { Wedding } from '@/types/wedding';
-
-type ThemeFontVars = Record<'--font-serif' | '--font-sans', string>;
-type WeddingPageStyle = CSSProperties & Record<'--primary', string> & ThemeFontVars;
 
 export default function PreviewPage() {
     const [wedding, setWedding] = useState<Wedding | null>(null);
@@ -78,105 +49,8 @@ export default function PreviewPage() {
     const isExpired = false;
     const template = wedding.template || 'classic';
 
-    const getTemplateContent = () => {
-        const props = { wedding, gallery, isExpired };
-        switch (template) {
-            case 'minimal': return <MinimalTemplate {...props} />;
-            case 'vintage': return <VintageTemplate {...props} />;
-            case 'artdeco': return <ArtDecoTemplate {...props} />;
-            case 'boho': return <BohoTemplate {...props} />;
-            case 'editorial': return <EditorialTemplate {...props} />;
-            case 'royal': return <RoyalTemplate {...props} />;
-            case 'whimsical': return <WhimsicalTemplate {...props} />;
-            case 'urban': return <UrbanTemplate {...props} />;
-            case 'tropical': return <TropicalTemplate {...props} />;
-            case 'midnight': return <MidnightTemplate {...props} />;
-            case 'sakura': return <SakuraTemplate {...props} />;
-            case 'vogue': return <VogueTemplate {...props} />;
-            case 'rustic': return <RusticTemplate {...props} />;
-            case 'film': return <FilmTemplate {...props} />;
-            case 'glitch': return <GlitchTemplate {...props} />;
-            case 'garden': return <GardenTemplate {...props} />;
-            case 'romantic': return <RomanticTemplate {...props} />;
-            case 'luxury': return <LuxuryTemplate {...props} />;
-            case 'elopement': return <ElopementTemplate {...props} />;
-            case 'traditional': return <TraditionalTemplate {...props} />;
-            case 'timeline': return <TimelineTemplate {...props} />;
-            case 'rsvpfocus': return <RSVPFocusTemplate {...props} />;
-            case 'cinematic': return <CinematicTemplate {...props} />;
-            case 'elegance': return <EleganceTemplate {...props} />;
-            default: return <ClassicTemplate {...props} />;
-        }
-    };
-
-    const getFontVariables = (style: string): ThemeFontVars => {
-        switch (style) {
-            case 'Elegant': return { '--font-serif': 'var(--font-playfair)', '--font-sans': 'var(--font-inter)' };
-            case 'Classic': return { '--font-serif': 'var(--font-cinzel)', '--font-sans': 'var(--font-cormorant)' };
-            case 'Modern': return { '--font-serif': 'var(--font-montserrat)', '--font-sans': 'var(--font-inter)' };
-            case 'Romantic': return { '--font-serif': 'var(--font-script)', '--font-sans': 'var(--font-playfair)' };
-            case 'Traditional': return { '--font-serif': 'var(--font-cormorant)', '--font-sans': 'var(--font-inter)' };
-            case 'Renaissance': return { '--font-serif': 'var(--font-eb)', '--font-sans': 'var(--font-cormorant)' };
-            case 'Luxe': return { '--font-serif': 'var(--font-bodoni)', '--font-sans': 'var(--font-inter)' };
-            case 'Poetic': return { '--font-serif': 'var(--font-prata)', '--font-sans': 'var(--font-lora)' };
-            case 'Storyteller': return { '--font-serif': 'var(--font-lora)', '--font-sans': 'var(--font-inter)' };
-            case 'Academic': return { '--font-serif': 'var(--font-cardo)', '--font-sans': 'var(--font-eb)' };
-            case 'Editorial': return { '--font-serif': 'var(--font-libre)', '--font-sans': 'var(--font-inter)' };
-            case 'Deco': return { '--font-serif': 'var(--font-marcellus)', '--font-sans': 'var(--font-montserrat)' };
-            case 'Ancient': return { '--font-serif': 'var(--font-forum)', '--font-sans': 'var(--font-cardo)' };
-            case 'Fairytale': return { '--font-serif': 'var(--font-alice)', '--font-sans': 'var(--font-montserrat)' };
-            case 'Artistic': return { '--font-serif': 'var(--font-spectral)', '--font-sans': 'var(--font-syne)' };
-            case 'Nature': return { '--font-serif': 'var(--font-fauna)', '--font-sans': 'var(--font-lora)' };
-            case 'Chic': return { '--font-serif': 'var(--font-tenor)', '--font-sans': 'var(--font-lora)' };
-            case 'Clean': return { '--font-serif': 'var(--font-questrial)', '--font-sans': 'var(--font-inter)' };
-            case 'Bold': return { '--font-serif': 'var(--font-syne)', '--font-sans': 'var(--font-inter)' };
-            case 'Calligraphy': return { '--font-serif': 'var(--font-alex)', '--font-sans': 'var(--font-playfair)' };
-            case 'SoftScript': return { '--font-serif': 'var(--font-allura)', '--font-sans': 'var(--font-eb)' };
-            case 'Whimsy': return { '--font-serif': 'var(--font-arizonia)', '--font-sans': 'var(--font-inter)' };
-            case 'Handwritten': return { '--font-serif': 'var(--font-dancing)', '--font-sans': 'var(--font-montserrat)' };
-            case 'Italian': return { '--font-serif': 'var(--font-italianno)', '--font-sans': 'var(--font-cinzel)' };
-            case 'PremiumScript': return { '--font-serif': 'var(--font-pinyon)', '--font-sans': 'var(--font-playfair)' };
-            case 'MinimalScript': return { '--font-serif': 'var(--font-sacramento)', '--font-sans': 'var(--font-inter)' };
-            case 'Ornate': return { '--font-serif': 'var(--font-tangerine)', '--font-sans': 'var(--font-cormorant)' };
-            case 'Paris': return { '--font-serif': 'var(--font-parisienne)', '--font-sans': 'var(--font-montserrat)' };
-            case 'Abril': return { '--font-serif': 'var(--font-abril)', '--font-sans': 'var(--font-inter)' };
-            case 'Upright': return { '--font-serif': 'var(--font-cormorant-upright)', '--font-sans': 'var(--font-lora)' };
-            case 'Vintage': return { '--font-serif': 'var(--font-old-standard)', '--font-sans': 'var(--font-eb-garamond)' };
-            case 'Josefin': return { '--font-serif': 'var(--font-playfair)', '--font-sans': 'var(--font-josefin)' };
-            case 'Caslon': return { '--font-serif': 'var(--font-caslon)', '--font-sans': 'var(--font-inter)' };
-            case 'Quattro': return { '--font-serif': 'var(--font-quattrocento)', '--font-sans': 'var(--font-lora)' };
-            case 'Saint': return { '--font-serif': 'var(--font-mrs-saint)', '--font-sans': 'var(--font-playfair)' };
-            case 'Monsieur': return { '--font-serif': 'var(--font-monsieur)', '--font-sans': 'var(--font-eb-garamond)' };
-            case 'Handmade': return { '--font-serif': 'var(--font-homemade)', '--font-sans': 'var(--font-inter)' };
-            case 'Mueller': return { '--font-serif': 'var(--font-herr)', '--font-sans': 'var(--font-playfair)' };
-            case 'Lavish': return { '--font-serif': 'var(--font-lavishly)', '--font-sans': 'var(--font-outfit)' };
-            case 'RoyalSC': return { '--font-serif': 'var(--font-cormorant-sc)', '--font-sans': 'var(--font-montserrat)' };
-            case 'ModernGrotesk': return { '--font-serif': 'var(--font-fraunces)', '--font-sans': 'var(--font-space)' };
-            case 'VogueEdit': return { '--font-serif': 'var(--font-bodoni)', '--font-sans': 'var(--font-outfit)' };
-            case 'Estate': return { '--font-serif': 'var(--font-fraunces)', '--font-sans': 'var(--font-inter)' };
-            default: return { '--font-serif': 'var(--font-playfair)', '--font-sans': 'var(--font-inter)' };
-        }
-    };
-
-    const fontVars = getFontVariables(wedding.font_style);
-    
-    const BACKGROUND_COLOR_MAP: Record<string, string> = {
-        white: '#FFFFFF',
-        cream: '#FFF8F4',
-        satin: '#FDF5E6',
-        paper: '#F4F1EA',
-        minimal: '#F9F9F9',
-        rose: '#FFF5F5',
-        linen: '#FAF9F6',
-    };
-    
-    const bgColor = BACKGROUND_COLOR_MAP[(wedding as any).background_style || 'cream'] || '#FFF8F4';
-    
-    const pageStyle: WeddingPageStyle = {
-        '--primary': wedding.motif_color,
-        backgroundColor: bgColor,
-        ...fontVars,
-    };
+    const getTemplateContent = () => renderWeddingTemplate({ wedding, gallery, isExpired });
+    const pageStyle = getWeddingPageStyle(wedding);
 
     return (
         <div

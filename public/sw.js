@@ -72,20 +72,6 @@ async function staleWhileRevalidate(request) {
   return cached || (await network) || caches.match('/offline');
 }
 
-async function networkFirstAsset(request) {
-  const cache = await caches.open(STATIC_CACHE);
-  try {
-    const response = await fetch(request);
-    if (response && response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch {
-    const cached = await cache.match(request);
-    return cached || caches.match('/offline');
-  }
-}
-
 async function networkFirstPage(request) {
   const cache = await caches.open(PAGE_CACHE);
   try {
@@ -130,7 +116,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.pathname.startsWith('/_next/static/') || request.destination === 'script' || request.destination === 'style') {
-    event.respondWith(networkFirstAsset(request));
+    event.respondWith(cacheFirst(request));
     return;
   }
 

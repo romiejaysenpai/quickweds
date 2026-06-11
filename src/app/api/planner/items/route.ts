@@ -350,7 +350,7 @@ async function handleCreatePlannerItem(req: NextRequest, parsedBody?: Record<str
             }
         }
 
-        let currentPayload = { ...payload };
+        const currentPayload = { ...payload };
         let result = await db.from(table).insert(currentPayload).select('*').single();
 
         // Dynamically strip missing columns (like due_date) and retry
@@ -372,7 +372,7 @@ async function handleCreatePlannerItem(req: NextRequest, parsedBody?: Record<str
         }
 
         if (type === 'task' && isSchemaMissingError(result.error)) {
-            let fallbackPayload = getTaskFallbackPayload(weddingId, values);
+            const fallbackPayload = getTaskFallbackPayload(weddingId, values);
             let fallback = await db.from(table).insert(fallbackPayload).select('*').single();
             
             let fbRetryCount = 0;
@@ -427,7 +427,7 @@ export async function PATCH(req: NextRequest) {
         }
 
         const payload = getUpdatePayload(type, values);
-        let currentPayload = { ...payload };
+        const currentPayload = { ...payload };
         let result = await db.from(table).update(currentPayload).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
         
         // Dynamically strip missing columns (like due_date) and retry
@@ -447,7 +447,7 @@ export async function PATCH(req: NextRequest) {
         if (!result.error) return NextResponse.json({ success: true, item: result.data, type });
 
         if (type === 'task' && isSchemaMissingError(result.error)) {
-            let fallbackPayload = getTaskUpdateFallbackPayload(values);
+            const fallbackPayload = getTaskUpdateFallbackPayload(values);
             let fallback = await db.from(table).update(fallbackPayload).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
             
             let fbRetryCount = 0;

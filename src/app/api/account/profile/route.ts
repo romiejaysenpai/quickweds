@@ -83,27 +83,44 @@ export async function PATCH(req: NextRequest) {
     try {
         const body = await req.json();
         const accountType = body.account_type;
+        const hasAccountType = Object.prototype.hasOwnProperty.call(body, 'account_type');
+        const hasOnboardingCompleted = Object.prototype.hasOwnProperty.call(body, 'onboarding_completed');
 
-        if (!isAccountType(accountType)) {
+        if (!hasAccountType && !hasOnboardingCompleted) {
+            return NextResponse.json({ error: 'No profile updates were provided.' }, { status: 400 });
+        }
+
+        if (hasAccountType && !isAccountType(accountType)) {
             return NextResponse.json({ error: 'Choose either couple or supplier.' }, { status: 400 });
+        }
+
+        if (hasOnboardingCompleted && typeof body.onboarding_completed !== 'boolean') {
+            return NextResponse.json({ error: 'Onboarding completion must be true or false.' }, { status: 400 });
         }
 
         const db = getAccountAdminClientOrNull() || getAccountUserClient(req);
         const existing = await getExistingProfile(db, user.id);
 
-        if (existing?.account_type && existing.account_type !== accountType) {
+        if (hasAccountType && existing?.account_type && existing.account_type !== accountType) {
             return NextResponse.json(
                 { error: 'This account already has an account type.' },
                 { status: 409 }
             );
         }
 
+        if (hasOnboardingCompleted && body.onboarding_completed && (existing?.account_type === 'supplier' || accountType === 'supplier')) {
+            return NextResponse.json(
+                { error: 'Supplier onboarding is not available in this flow.' },
+                { status: 400 }
+            );
+        }
+
         const payload = {
             user_id: user.id,
-            account_type: accountType,
-            onboarding_completed: true,
             updated_at: new Date().toISOString(),
-        };
+            ...(hasAccountType ? { account_type: accountType } : {}),
+            ...(hasOnboardingCompleted ? { onboarding_completed: body.onboarding_completed } : {}),
+        } as Partial<AccountProfile> & { user_id: string; updated_at: string };
 
         const { data, error: upsertError } = await db
             .from('user_app_profiles')
