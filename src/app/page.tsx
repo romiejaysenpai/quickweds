@@ -45,6 +45,7 @@ const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/stor
 const joySectionMobileImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/sdgsdfgsd.png';
 const navItemClass = 'inline-flex h-10 items-center px-1 text-sm font-bold leading-none text-text-secondary transition hover:text-primary';
 const footerItemClass = 'inline-flex h-9 items-center px-1 leading-none transition hover:text-primary';
+const plannerProDisplayPrice = '$15';
 
 const featureCards = [
   {
@@ -884,7 +885,7 @@ export default function Home() {
                   <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary sm:text-xs sm:tracking-[0.25em]">One-time upgrade</p>
                   <div className="mt-2 flex flex-col gap-2 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
                     <h3 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">Planner Pro</h3>
-                    <p className="font-serif text-3xl font-bold text-primary">$15</p>
+                    <p className="font-serif text-3xl font-bold text-primary">{plannerProDisplayPrice}</p>
                   </div>
                   <p className="mt-3 text-text-secondary">Built for finalizing the real wedding plan when guests, suppliers, seating, and reminders matter.</p>
                   <div className="mt-8 grid gap-3">
