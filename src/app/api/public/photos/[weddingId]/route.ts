@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
+import { getPhotoPortalSettings, isGalleryHiddenByReveal } from '@/lib/photo-portal';
 
 export const revalidate = 60;
 
@@ -20,19 +21,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ wedd
         if (!weddingRes.identifier || !weddingRes.wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
 
         const weddingId = weddingRes.wedding.id;
-        const [photosRes] = await Promise.all([
-            db.from('wedding_photos')
-                .select('id, cloudinary_url, caption, uploader_name')
+        const settings = await getPhotoPortalSettings(db, weddingId);
+        const galleryHidden = isGalleryHiddenByReveal(settings);
+        const photosRes = galleryHidden
+            ? { data: [], error: null }
+            : await db.from('wedding_photos')
+                .select('id, cloudinary_url, caption, message, uploader_name')
                 .eq('wedding_id', weddingId)
                 .eq('is_approved', true)
-                .order('created_at', { ascending: false }),
-        ]);
+                .eq('status', 'approved')
+                .order('created_at', { ascending: false });
 
         if (photosRes.error) throw photosRes.error;
 
         return NextResponse.json(
-            { wedding: weddingRes.wedding, photos: photosRes.data || [] },
-            { headers: { ...limited.headers, 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' } }
+            { wedding: weddingRes.wedding, photos: photosRes.data || [], settings, galleryHidden },
+            { headers: { ...limited.headers, 'Cache-Control': galleryHidden ? 'no-store' : 'public, max-age=60, stale-while-revalidate=300' } }
         );
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to load photos.';

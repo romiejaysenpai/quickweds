@@ -513,10 +513,34 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         setIsSavingSettings(false);
     };
 
+    const plannerGuestRequest = async (body: Record<string, unknown>) => {
+        const { data: sessionData } = await getCachedSession();
+        const token = sessionData.session?.access_token;
+        if (!token) throw new Error('Please sign in again to manage the guest list.');
+
+        const response = await fetch('/api/planner/guests', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ weddingId: id, ...body }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.error || 'Unable to update guest list.');
+        }
+        return result;
+    };
+
     const deleteRsvp = async (rsvpId: string) => {
         if (!confirm('Remove this guest from the list?')) return;
-        await supabase.from('rsvps').delete().eq('id', rsvpId);
-        setRsvps(prev => prev.filter(r => r.id !== rsvpId));
+        try {
+            await plannerGuestRequest({ action: 'delete', id: rsvpId });
+            setRsvps(prev => prev.filter(r => r.id !== rsvpId));
+        } catch (error) {
+            alert(error instanceof Error ? error.message : 'Unable to delete guest.');
+        }
     };
 
     const updateRsvp = async (rsvpId: string, patch: Partial<EnhancedRSVP>) => {
@@ -525,13 +549,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             normalizedPatch.invitation_sent_at = patch.invitation_sent ? new Date().toISOString() : null;
         }
 
-        const { data, error } = await supabase.from('rsvps').update(normalizedPatch).eq('id', rsvpId).select().single();
-        if (error) {
-            alert(`Error updating guest: ${error.message}`);
-            return;
+        try {
+            const result = await plannerGuestRequest({ action: 'update', id: rsvpId, patch: normalizedPatch });
+            setRsvps((prev) => prev.map((rsvp) => (rsvp.id === rsvpId ? result.guest : rsvp)));
+        } catch (error) {
+            alert(`Error updating guest: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
-
-        setRsvps((prev) => prev.map((rsvp) => (rsvp.id === rsvpId ? data : rsvp)));
     };
 
     const handleAddManualGuest = async (e: React.FormEvent) => {
@@ -545,8 +568,10 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             return;
         }
 
-        const { data, error } = await supabase.from('rsvps').insert({
-            wedding_id: id,
+        try {
+            const result = await plannerGuestRequest({
+                action: 'create',
+                guest: {
             guest_name: newGuest.guest_name,
             guest_email: newGuest.guest_email || null,
             rsvp_status: newGuest.rsvp_status,
@@ -561,17 +586,17 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             table_assignment: newGuest.table_assignment || null,
             manual_entry: true,
             attendance: newGuest.rsvp_status === 'confirmed' ? 'Yes' : newGuest.rsvp_status === 'declined' ? 'No' : null
-        }).select().single();
-
-        if (error) {
-            alert("Error adding guest: " + error.message);
-        } else {
+                },
+            });
+            const data = result.guest;
             setRsvps([data, ...rsvps]);
             if (data?.guest_email) {
                 setPlanUsage((current) => ({ ...current, guestEmailCount: current.guestEmailCount + 1 }));
             }
             setNewGuest(emptyGuestForm);
             setIsAddGuestModalOpen(false);
+        } catch (error) {
+            alert("Error adding guest: " + (error instanceof Error ? error.message : 'Unknown error'));
         }
     };
 
@@ -584,16 +609,14 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         }
 
         setImportingGuests(true);
-        const payload = rows.map((row) => ({
-            ...row,
-            wedding_id: id,
-        }));
-
-        const { data, error } = await supabase.from('rsvps').insert(payload).select('*');
-        setImportingGuests(false);
-
-        if (error) {
-            throw new Error(`${error.message}. Apply supabase-guest-list-enhancements.sql before using the new guest management fields.`);
+        let data: EnhancedRSVP[] = [];
+        try {
+            const result = await plannerGuestRequest({ action: 'import', guests: rows });
+            data = result.guests || [];
+        } catch (error) {
+            throw new Error(`${error instanceof Error ? error.message : 'Unable to import guests.'}. Apply supabase-guest-list-enhancements.sql before using the new guest management fields.`);
+        } finally {
+            setImportingGuests(false);
         }
 
         setRsvps((prev) => [...(data || []), ...prev]);
@@ -1453,9 +1476,15 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             <button
                                                 onClick={() => toggleNotification('notify_on_rsvp')}
                                                 disabled={isSavingSettings}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${wedding?.notify_on_rsvp !== false ? 'bg-primary' : 'bg-text-secondary/20'}`}
+                                                role="switch"
+                                                aria-checked={wedding?.notify_on_rsvp !== false}
+                                                aria-label="Toggle RSVP email alerts"
+                                                className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors focus:outline-none focus:ring-4 focus:ring-primary/15 disabled:opacity-60 ${
+                                                    wedding?.notify_on_rsvp !== false ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'
+                                                }`}
                                             >
-                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${wedding?.notify_on_rsvp !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                <span className={`flex items-center justify-center rounded-md transition ${wedding?.notify_on_rsvp === false ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Off</span>
+                                                <span className={`flex items-center justify-center rounded-md transition ${wedding?.notify_on_rsvp !== false ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
                                             </button>
                                         </div>
 
@@ -1472,9 +1501,15 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             <button
                                                 onClick={() => toggleNotification('notify_on_updates')}
                                                 disabled={isSavingSettings}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${wedding?.notify_on_updates !== false ? 'bg-accent' : 'bg-text-secondary/20'}`}
+                                                role="switch"
+                                                aria-checked={wedding?.notify_on_updates !== false}
+                                                aria-label="Toggle system update notifications"
+                                                className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors focus:outline-none focus:ring-4 focus:ring-accent/15 disabled:opacity-60 ${
+                                                    wedding?.notify_on_updates !== false ? 'border-accent/40 bg-accent/10 text-accent' : 'border-border bg-white text-text-secondary'
+                                                }`}
                                             >
-                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${wedding?.notify_on_updates !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                <span className={`flex items-center justify-center rounded-md transition ${wedding?.notify_on_updates === false ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Off</span>
+                                                <span className={`flex items-center justify-center rounded-md transition ${wedding?.notify_on_updates !== false ? 'bg-accent text-white shadow-sm' : ''}`}>On</span>
                                             </button>
                                         </div>
                                     </div>

@@ -55,7 +55,7 @@ async function safePlannerMaybeSingle(query: any, label: string) {
 async function findWeddingById(db: any, weddingId: string) {
     const baseQuery = () => db
         .from('weddings')
-        .select('*')
+        .select('id, user_id, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, template, hero_image, custom_domain, public_slug, total_budget, currency, notify_on_rsvp, notify_on_updates, is_premium, payment_status, deleted_at, public_seat_finder_token, seat_finder_enabled')
         .eq('id', weddingId);
 
     const { data, error } = await baseQuery()
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
         }
 
         if (accessRole === 'pending' || accessRole === 'denied') {
-            return NextResponse.json({ accessRole, wedding }, { status: 403 });
+            return NextResponse.json({ accessRole }, { status: 403 });
         }
 
         const accountProfile = await safePlannerMaybeSingle(

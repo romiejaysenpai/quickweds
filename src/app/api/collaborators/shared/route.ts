@@ -40,7 +40,7 @@ export async function GET(req: Request) {
     try {
         const { data: invites, error: inviteError } = await (supabase as any)
             .from('wedding_collaborators')
-            .select('*')
+            .select('id, wedding_id, email, role, status, created_at')
             .eq('email', email)
             .order('created_at', { ascending: false });
 

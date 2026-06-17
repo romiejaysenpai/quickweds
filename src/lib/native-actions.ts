@@ -3,6 +3,7 @@
 import { Browser } from '@capacitor/browser';
 import { Share } from '@capacitor/share';
 import { isNativeAppShell } from '@/lib/capacitor';
+import { copyToClipboard } from '@/lib/client-clipboard';
 
 export async function openExternalUrl(url: string) {
     if (!url) return;
@@ -43,6 +44,6 @@ export async function shareTextOrUrl({
     }
 
     if (url) {
-        await navigator.clipboard?.writeText(url);
+        await copyToClipboard(url);
     }
 }

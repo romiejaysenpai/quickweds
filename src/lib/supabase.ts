@@ -6,7 +6,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const invalidRefreshTokenPattern = /invalid refresh token|refresh token not found|refresh_token_not_found|refresh_token_already_used/i;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Missing Supabase environment variables!");
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
 
 function clearStoredSupabaseSessions() {

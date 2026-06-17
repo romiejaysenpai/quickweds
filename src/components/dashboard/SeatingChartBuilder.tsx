@@ -44,6 +44,7 @@ import {
 import UpgradeButton from '@/components/UpgradeButton';
 import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
 import { getCachedSession } from '@/lib/session-cache';
+import { copyToClipboard } from '@/lib/client-clipboard';
 
 const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), { ssr: false });
 const QRCodeCanvas = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeCanvas), { ssr: false });
@@ -945,7 +946,7 @@ export default function SeatingChartBuilder({
         const url = publicSeatFinderUrl || getClientSeatFinderUrl(publicSeatFinderToken);
         if (!url) return;
         try {
-            await navigator.clipboard.writeText(url);
+            await copyToClipboard(url);
             setSeatFinderStatus('Venue QR link copied.');
         } catch {
             setSeatFinderStatus(url);

@@ -570,7 +570,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                                 : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'
                                         }`}
                                     >
-                                        {!hasPlannerPro && (tab.tab === 'photos' || tab.tab === 'thanks') && (
+                                        {!hasPlannerPro && tab.tab === 'thanks' && (
                                             <span className={`absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full md:static md:h-auto md:w-auto md:rounded-none md:bg-transparent ${
                                                 isActive ? 'bg-white/20 md:text-white' : 'bg-primary/10 text-primary'
                                             }`}>
@@ -579,7 +579,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                         )}
                                         <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                         <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">{tab.label}</span>
-                                        {!hasPlannerPro && (tab.tab === 'photos' || tab.tab === 'thanks') && (
+                                        {!hasPlannerPro && tab.tab === 'thanks' && (
                                             <span className={`hidden md:inline-flex ml-auto rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
                                                 isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
                                             }`}>
@@ -595,7 +595,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
                 {/* Main Content Area */}
                 <div className="flex-1 min-w-0 overflow-x-hidden">
-                    {!hasPlannerPro && (activeTab === 'photos' || activeTab === 'thanks') ? (
+                    {!hasPlannerPro && activeTab === 'thanks' ? (
                         <LockedPlannerFeature
                             activeTab={activeTab}
                             accessRole={accessRole}
@@ -618,7 +618,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                     initialSeatFinderEnabled={wedding?.seat_finder_enabled !== false && Boolean(wedding?.public_seat_finder_token)}
                                 />
                             )}
-                            {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} />}
+                            {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
                             {activeTab === 'thanks' && <ThankYouNoteManager weddingId={weddingId} />}
                             {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
                         </>

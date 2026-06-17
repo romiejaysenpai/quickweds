@@ -1641,10 +1641,19 @@ export default function BuilderForm() {
                         <h4 className="text-sm font-bold text-foreground">Post-Wedding Mode</h4>
                         <p className="text-[10px] text-text-secondary">Switch your site to a &quot;Thank You&quot; page after the wedding.</p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" checked={formData.isThankYouMode} onChange={(e) => setFormData((prev: any) => ({ ...prev, isThankYouMode: e.target.checked }))} className="sr-only peer" />
-                        <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={formData.isThankYouMode}
+                        aria-label="Toggle post-wedding mode"
+                        onClick={() => setFormData((prev: any) => ({ ...prev, isThankYouMode: !prev.isThankYouMode }))}
+                        className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors focus:outline-none focus:ring-4 focus:ring-primary/15 ${
+                            formData.isThankYouMode ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'
+                        }`}
+                    >
+                        <span className={`flex items-center justify-center rounded-md transition ${!formData.isThankYouMode ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Off</span>
+                        <span className={`flex items-center justify-center rounded-md transition ${formData.isThankYouMode ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                    </button>
                 </div>
 
                 {formData.isThankYouMode && (

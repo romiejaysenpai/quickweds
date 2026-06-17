@@ -6,6 +6,12 @@ import { CheckCheck, Lock, Power, Save, ShieldCheck, Zap } from 'lucide-react';
 
 export default function AdminSettingsPage() {
     const [saved, setSaved] = useState(false);
+    const [settings, setSettings] = useState({
+        maintenanceMode: false,
+        supplierDirectory: true,
+        aiDescriptionGenerator: false,
+        allowNewSignups: true,
+    });
 
     const handleSave = () => {
         setSaved(true);
@@ -44,10 +50,7 @@ export default function AdminSettingsPage() {
                         </div>
                         <div className="flex items-center justify-between rounded-xl border border-border bg-white p-4">
                             <span className="text-sm font-semibold text-foreground">Enable Maintenance Mode</span>
-                            <label className="relative inline-flex cursor-pointer items-center">
-                                <input type="checkbox" className="peer sr-only" />
-                                <div className="peer h-6 w-11 rounded-full bg-border after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none" />
-                            </label>
+                            <SegmentedToggle checked={settings.maintenanceMode} label="Toggle maintenance mode" onChange={() => setSettings((current) => ({ ...current, maintenanceMode: !current.maintenanceMode }))} />
                         </div>
                     </div>
 
@@ -67,10 +70,7 @@ export default function AdminSettingsPage() {
                                     <span className="block text-sm font-semibold text-foreground">Supplier Directory</span>
                                     <span className="text-xs text-text-secondary">Allow couples to discover premium suppliers.</span>
                                 </div>
-                                <label className="relative inline-flex cursor-pointer items-center">
-                                    <input type="checkbox" defaultChecked className="peer sr-only" />
-                                    <div className="peer h-6 w-11 rounded-full bg-border after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none" />
-                                </label>
+                                <SegmentedToggle checked={settings.supplierDirectory} label="Toggle supplier directory" onChange={() => setSettings((current) => ({ ...current, supplierDirectory: !current.supplierDirectory }))} />
                             </div>
 
                             <div className="flex items-center justify-between rounded-xl border border-border bg-white p-4">
@@ -78,10 +78,7 @@ export default function AdminSettingsPage() {
                                     <span className="block text-sm font-semibold text-foreground">AI Description Generator</span>
                                     <span className="text-xs text-text-secondary">Enable GPT-powered suggestions for wedding websites.</span>
                                 </div>
-                                <label className="relative inline-flex cursor-pointer items-center">
-                                    <input type="checkbox" className="peer sr-only" />
-                                    <div className="peer h-6 w-11 rounded-full bg-border after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none" />
-                                </label>
+                                <SegmentedToggle checked={settings.aiDescriptionGenerator} label="Toggle AI description generator" onChange={() => setSettings((current) => ({ ...current, aiDescriptionGenerator: !current.aiDescriptionGenerator }))} />
                             </div>
                         </div>
                     </div>
@@ -101,10 +98,7 @@ export default function AdminSettingsPage() {
                                 <span className="block text-sm font-semibold text-foreground">Allow New Signups</span>
                                 <span className="text-xs text-text-secondary">When disabled, new users cannot create accounts.</span>
                             </div>
-                            <label className="relative inline-flex cursor-pointer items-center">
-                                <input type="checkbox" defaultChecked className="peer sr-only" />
-                                <div className="peer h-6 w-11 rounded-full bg-border after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none" />
-                            </label>
+                            <SegmentedToggle checked={settings.allowNewSignups} label="Toggle new signups" onChange={() => setSettings((current) => ({ ...current, allowNewSignups: !current.allowNewSignups }))} />
                         </div>
                     </div>
                 </div>
@@ -120,5 +114,23 @@ export default function AdminSettingsPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+function SegmentedToggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: () => void }) {
+    return (
+        <button
+            type="button"
+            role="switch"
+            aria-checked={checked}
+            aria-label={label}
+            onClick={onChange}
+            className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors focus:outline-none focus:ring-4 focus:ring-primary/15 ${
+                checked ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'
+            }`}
+        >
+            <span className={`flex items-center justify-center rounded-md transition ${!checked ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Off</span>
+            <span className={`flex items-center justify-center rounded-md transition ${checked ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+        </button>
     );
 }

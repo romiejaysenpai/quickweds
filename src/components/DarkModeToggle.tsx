@@ -89,27 +89,19 @@ export default function DarkModeToggle({ variant = 'default' }: DarkModeTogglePr
     return (
         <button
             onClick={toggleTheme}
-            className="relative w-14 h-8 rounded-full bg-neutral border border-border p-1 transition-colors hover:border-primary/30"
+            role="switch"
+            aria-checked={theme === 'dark'}
+            className={`grid h-9 w-[88px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors hover:border-primary/30 focus:outline-none focus:ring-4 focus:ring-primary/15 ${
+                theme === 'dark' ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'
+            }`}
             title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
         >
-            <motion.div
-                className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm"
-                initial={false}
-                animate={{
-                    x: theme === 'dark' ? 24 : 0,
-                }}
-                transition={{
-                    type: 'spring',
-                    stiffness: 500,
-                    damping: 30,
-                }}
-            >
-                {theme === 'light' ? (
-                    <Sun className="w-3.5 h-3.5 text-white" />
-                ) : (
-                    <Moon className="w-3.5 h-3.5 text-white" />
-                )}
-            </motion.div>
+            <span className={`flex items-center justify-center gap-1 rounded-md transition ${theme === 'light' ? 'bg-neutral text-foreground shadow-sm' : ''}`}>
+                <Sun className="h-3 w-3" /> Light
+            </span>
+            <span className={`flex items-center justify-center gap-1 rounded-md transition ${theme === 'dark' ? 'bg-primary text-white shadow-sm' : ''}`}>
+                <Moon className="h-3 w-3" /> Dark
+            </span>
         </button>
     );
 }

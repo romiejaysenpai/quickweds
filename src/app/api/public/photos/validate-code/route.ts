@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP, sanitizeInput } from '@/lib/rate-limiter';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
+import { getPhotoPortalSettings } from '@/lib/photo-portal';
 
 export const dynamic = 'force-dynamic';
 const MAX_UPLOADS_PER_SHARING_CODE = 3;
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest) {
         if (weddingError) throw weddingError;
         if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
         const weddingId = wedding.id;
+        const settings = await getPhotoPortalSettings(db, weddingId);
 
         const { data: sharingCode, error: codeError } = await db
             .from('photo_sharing_codes')
@@ -42,7 +44,10 @@ export async function POST(req: NextRequest) {
         }
 
         const currentUploads = Number(sharingCode.current_uploads ?? 0);
-        const codeLimit = Math.min(Number(sharingCode.max_uploads ?? MAX_UPLOADS_PER_SHARING_CODE), MAX_UPLOADS_PER_SHARING_CODE);
+        const configuredLimit = settings.disposable_camera_enabled
+            ? settings.photo_limit_per_guest
+            : MAX_UPLOADS_PER_SHARING_CODE;
+        const codeLimit = Math.min(Number(sharingCode.max_uploads ?? configuredLimit), configuredLimit);
         const remainingUploads = Math.max(0, codeLimit - currentUploads);
 
         return NextResponse.json(

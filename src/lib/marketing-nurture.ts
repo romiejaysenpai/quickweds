@@ -47,9 +47,9 @@ function getAppUrl() {
 }
 
 function getRunLimit(input?: number) {
-    const envLimit = Number(process.env.MARKETING_NURTURE_SEND_LIMIT || 50);
+    const envLimit = Number(process.env.MARKETING_NURTURE_SEND_LIMIT || 200);
     const requested = Number(input || envLimit);
-    if (!Number.isFinite(requested) || requested <= 0) return 50;
+    if (!Number.isFinite(requested) || requested <= 0) return 200;
     return Math.min(Math.floor(requested), 200);
 }
 

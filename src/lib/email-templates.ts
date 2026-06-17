@@ -597,15 +597,23 @@ const MARKETING_NURTURE_STEPS = [
         path: '/dashboard',
     },
     {
-        subject: 'A smoother way to organize the wedding details',
-        eyebrow: 'Planning tools',
-        heading: 'Keep tasks, budget, seating, and vendors together',
+        subject: 'Planner Pro is now $15, down from $29',
+        eyebrow: 'Limited-time offer',
+        heading: 'Unlock the full planner for $15',
         body: [
-            'Weddings get complicated fast. QuickWeds keeps the details close to the invitation, so you can move from guest list to planner without juggling separate tools.',
-            'Upgrade to Pro when you are ready for more planning capacity and fewer limits.',
+            'Quick update: Planner Pro was $29, and it is now $15 for a limited-time offer.',
+            'That unlocks the bigger planning workspace: unlimited guest emails, seating, reminders, collaborators, budgets, suppliers, photo tools, exports, and more.',
+            'If QuickWeds is becoming the place you manage the wedding, this is the best time to take the limits off.',
         ],
-        cta: 'See Planner Pro',
+        cta: 'Unlock Planner Pro for $15',
         path: '/settings',
+        offer: {
+            label: 'Limited-time price update',
+            oldPrice: '$29',
+            newPrice: '$15',
+            note: 'One-time upgrade. No subscription.',
+            highlights: ['Unlimited guest emails', 'Full planner tools', 'Seating, reminders, exports'],
+        },
     },
     {
         subject: 'Your Pro plan is built for the busy part of planning',
@@ -653,12 +661,61 @@ export function getMarketingNurtureEmail(input: MarketingNurtureEmailInput) {
     const ctaUrl = `${safeAppUrl}${step.path}`;
     const safeCtaUrl = escapeHtml(ctaUrl);
     const safeUnsubscribeUrl = escapeHtml(input.unsubscribeUrl);
+    const offer = 'offer' in step ? step.offer : null;
 
     const bodyHtml = step.body.map((paragraph) => `
                         <p style="margin: 0 0 18px; font-size: 16px; line-height: 1.7; color: ${SECONDARY_TEXT};">
                             ${escapeHtml(paragraph)}
                         </p>
     `).join('');
+    const offerHtml = offer ? `
+                <tr>
+                    <td style="padding: 0 44px 30px;">
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; background-color: #fff6f1; border: 1px solid rgba(209,108,120,0.26); border-radius: 22px; overflow: hidden;">
+                            <tr>
+                                <td style="padding: 22px 24px 8px;">
+                                    <p style="margin: 0 0 14px; color: ${MAIN_COLOR}; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 11px;">
+                                        ${escapeHtml(offer.label)}
+                                    </p>
+                                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                                        <tr>
+                                            <td style="vertical-align: bottom; padding: 0 16px 12px 0;">
+                                                <p style="margin: 0; font-size: 13px; line-height: 1.4; color: ${SECONDARY_TEXT}; font-weight: 700;">Was</p>
+                                                <p style="margin: 2px 0 0; font-size: 28px; line-height: 1; color: #9a858a; text-decoration: line-through; font-weight: 800;">
+                                                    ${escapeHtml(offer.oldPrice)}
+                                                </p>
+                                            </td>
+                                            <td style="vertical-align: bottom; padding: 0 0 12px;">
+                                                <p style="margin: 0; font-size: 13px; line-height: 1.4; color: ${SECONDARY_TEXT}; font-weight: 700;">Now</p>
+                                                <p style="margin: 2px 0 0; font-size: 46px; line-height: 0.95; color: ${TEXT_COLOR}; font-weight: 900; letter-spacing: 0;">
+                                                    ${escapeHtml(offer.newPrice)}
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: ${ACCENT_COLOR}; font-weight: 700;">
+                                        ${escapeHtml(offer.note)}
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 0 24px 22px;">
+                                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                                        ${offer.highlights.map((highlight) => `
+                                        <tr>
+                                            <td width="22" style="padding: 5px 0; vertical-align: top; color: ${MAIN_COLOR}; font-size: 15px; font-weight: 900;">+</td>
+                                            <td style="padding: 5px 0; color: ${SECONDARY_TEXT}; font-size: 14px; line-height: 1.5; font-weight: 700;">
+                                                ${escapeHtml(highlight)}
+                                            </td>
+                                        </tr>
+                                        `).join('')}
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+    ` : '';
 
     return {
         subject: step.subject,
@@ -673,7 +730,10 @@ export function getMarketingNurtureEmail(input: MarketingNurtureEmailInput) {
         <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: ${BG_COLOR}; color: ${TEXT_COLOR};">
             <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 28px; overflow: hidden; box-shadow: 0 20px 40px rgba(209,108,120,0.12);">
                 <tr>
-                    <td style="padding: 46px 44px 22px;">
+                    <td style="padding: 0; height: 8px; background-color: ${MAIN_COLOR}; line-height: 8px; font-size: 8px;">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td style="padding: 42px 44px 22px; background-color: #fffdfb;">
                         <p style="margin: 0 0 12px; color: ${MAIN_COLOR}; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px;">
                             ${escapeHtml(step.eyebrow)}
                         </p>
@@ -690,9 +750,10 @@ export function getMarketingNurtureEmail(input: MarketingNurtureEmailInput) {
                         ${bodyHtml}
                     </td>
                 </tr>
+                ${offerHtml}
                 <tr>
                     <td align="center" style="padding: 0 44px 42px;">
-                        <a href="${safeCtaUrl}" style="display: inline-block; padding: 15px 24px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 15px;">
+                        <a href="${safeCtaUrl}" style="display: inline-block; padding: 16px 26px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 14px; font-weight: 900; font-size: 15px; box-shadow: 0 12px 24px rgba(209,108,120,0.24);">
                             ${escapeHtml(step.cta)}
                         </a>
                     </td>

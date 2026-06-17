@@ -40,10 +40,7 @@ export default function EntranceReveal({
     template = 'classic',
 }: EntranceRevealProps) {
     const reduceMotion = useReducedMotion();
-    const [isVisible, setIsVisible] = useState(() => {
-        if (typeof window === 'undefined') return false;
-        return !window.sessionStorage.getItem(`quickweds_entrance_seen_${weddingId}`);
-    });
+    const [isVisible, setIsVisible] = useState(false);
 
     const particles = useMemo(
         () =>
@@ -56,6 +53,12 @@ export default function EntranceReveal({
             })),
         []
     );
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        setIsVisible(!window.sessionStorage.getItem(`quickweds_entrance_seen_${weddingId}`));
+    }, [weddingId]);
 
     useEffect(() => {
         if (typeof window === 'undefined' || !isVisible) return;
