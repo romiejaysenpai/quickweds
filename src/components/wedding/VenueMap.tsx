@@ -1,15 +1,18 @@
 'use client';
 
 import { MapPin } from 'lucide-react';
+import { getSectionTitleStyle } from '@/lib/theme-engine';
+import type { Wedding } from '@/types/wedding';
 
 interface VenueMapProps {
     venueName: string;
     venueAddress?: string;
     mapsLink?: string;
     id?: string;
+    wedding?: Wedding;
 }
 
-export default function VenueMap({ venueName, venueAddress, mapsLink, id = 'venue' }: VenueMapProps) {
+export default function VenueMap({ venueName, venueAddress, mapsLink, id = 'venue', wedding }: VenueMapProps) {
     if (!mapsLink && !venueAddress) return null;
 
     // Extract Google Maps embed URL from a share link, or create one from address
@@ -22,6 +25,9 @@ export default function VenueMap({ venueName, venueAddress, mapsLink, id = 'venu
 
     const embedUrl = getEmbedUrl();
     const venueNote = 'Celebrate with us in one lovely location, from vows to reception. We kindly ask that you arrive on time to fully enjoy the celebration.';
+    const titleStyle = wedding
+        ? getSectionTitleStyle(wedding, 'font-serif text-[#4A4444]')
+        : { className: 'font-serif text-[#4A4444]', style: undefined };
 
     return (
         <section id={id} className="relative overflow-hidden px-4 py-20 sm:px-6 sm:py-24">
@@ -31,10 +37,10 @@ export default function VenueMap({ venueName, venueAddress, mapsLink, id = 'venu
                     <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-[1.4rem] border border-white/60 bg-white/75 shadow-[0_16px_40px_rgba(58,42,45,0.10)] backdrop-blur-sm">
                         <MapPin className="h-6 w-6 text-primary opacity-80" />
                     </div>
-                    <p className="mb-3 text-[10px] font-black uppercase tracking-[0.34em] text-primary/60">Location</p>
-                    <h2 className="mb-4 font-serif text-4xl text-[#4A4444] md:text-6xl">The Venue</h2>
-                    <p className="font-serif text-lg italic text-foreground/65 sm:text-xl">{venueName}</p>
-                    {venueAddress && <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-foreground/50">{venueAddress}</p>}
+                    <p className="mb-3 text-[10px] font-black uppercase tracking-[0.34em] text-primary">Location</p>
+                    <h2 className={`mb-4 text-4xl md:text-6xl ${titleStyle.className}`} style={titleStyle.style}>Ceremony Location</h2>
+                    <p className="font-serif text-lg italic text-[#4A4444]/78 sm:text-xl">{venueName}</p>
+                    {venueAddress && <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-[#4A4444]/68">{venueAddress}</p>}
                 </div>
 
                 <div className="overflow-hidden rounded-[2rem] border border-white/65 bg-white/72 p-3 shadow-[0_28px_90px_rgba(58,42,45,0.12)] backdrop-blur-xl sm:rounded-[2.75rem] sm:p-4">
@@ -52,7 +58,7 @@ export default function VenueMap({ venueName, venueAddress, mapsLink, id = 'venu
                             />
                         ) : (
                             <div className="flex min-h-[260px] items-center justify-center px-6 text-center">
-                                <p className="font-serif text-lg italic text-foreground/60">{venueAddress}</p>
+                                <p className="font-serif text-lg italic text-[#4A4444]/72">{venueAddress}</p>
                             </div>
                         )}
                     </div>

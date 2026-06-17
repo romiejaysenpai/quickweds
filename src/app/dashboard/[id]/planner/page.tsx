@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -11,6 +11,7 @@ import UpgradeButton from '@/components/UpgradeButton';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
 import { getCachedSession } from '@/lib/session-cache';
+import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate } from '@/lib/entourage-proposal-templates';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
     loading: () => (
@@ -41,7 +42,7 @@ const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudg
     loading: () => <div className="h-full w-full animate-pulse rounded-full bg-neutral/50" />,
 });
 
-const PLANNER_TABS = ['checklist', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
+const PLANNER_TABS = ['checklist', 'entourage', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
 type PlannerTab = typeof PLANNER_TABS[number];
 type VendorPaymentStatus = 'not paid' | 'pending' | 'paid';
 
@@ -58,6 +59,13 @@ const PLANNER_TAB_DETAILS: {
         icon: ListTodo,
         headline: 'Checklist is part of Planner Pro',
         body: 'Plan every task from the first booking to the final wedding-week details.',
+    },
+    {
+        tab: 'entourage',
+        label: 'Entourage',
+        icon: UserCheck,
+        headline: 'Entourage proposals are part of your planner',
+        body: 'Invite your wedding party, sponsors, and special helpers, then track who accepted or declined.',
     },
     {
         tab: 'calendar',
@@ -334,6 +342,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const [foodDrinks, setFoodDrinks] = useState<any[]>([]);
     const [googleCalendar, setGoogleCalendar] = useState<any>(null);
     const [honeymoonItems, setHoneymoonItems] = useState<any[]>([]);
+    const [entourageInvitations, setEntourageInvitations] = useState<any[]>([]);
     const [accountIsPro, setAccountIsPro] = useState(false);
     const [confirmedGuests, setConfirmedGuests] = useState<number>(0);
     const [planUsage, setPlanUsage] = useState<PlannerUsage>(EMPTY_PLANNER_USAGE);
@@ -435,6 +444,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 setWedding(data.wedding || null);
                 setAccountIsPro(hasAccountPro(data.accountProfile));
                 setPlanUsage(data.planUsage || EMPTY_PLANNER_USAGE);
+                setEntourageInvitations(data.entourageInvitations || []);
 
                 if (!response.ok) {
                     setPlannerError(data.error || 'Unable to verify planner access.');
@@ -606,6 +616,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                         <>
                             <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
                             {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={loadPlannerData} />}
+                            {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={loadPlannerData} />}
                             {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} hasPlannerPro={hasPlannerPro} />}
                             {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
                             {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
@@ -709,6 +720,160 @@ function LockedPlannerFeature({
                     })}
                 </div>
             </section>
+        </div>
+    );
+}
+
+function readWeddingParty(value: unknown) {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string' || !value.trim()) return [];
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function getMemberKey(member: any, index: number) {
+    return String(member?.memberKey || member?.id || `${member?.name || 'member'}-${member?.role || 'role'}-${index}`).toLowerCase();
+}
+
+function getProposalStatusClasses(status: string) {
+    if (status === 'accepted') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    if (status === 'declined') return 'bg-red-50 text-red-700 border-red-100';
+    if (status === 'sent') return 'bg-amber-50 text-amber-700 border-amber-100';
+    return 'bg-neutral text-text-secondary border-border';
+}
+
+function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitations, reload }: any) {
+    const [sendingKey, setSendingKey] = useState<string | null>(null);
+    const members = readWeddingParty(wedding?.wedding_party);
+    const invitationByKey = new Map((invitations || []).map((invite: any) => [String(invite.member_key), invite]));
+    const rows = members.map((member: any, index: number) => {
+        const memberKey = getMemberKey(member, index);
+        const invite = invitationByKey.get(memberKey);
+        return { member, memberKey, invite };
+    });
+    const counts = rows.reduce((acc: Record<string, number>, row: any) => {
+        const status = row.invite?.status || 'draft';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+    }, { draft: 0, sent: 0, accepted: 0, declined: 0 });
+
+    async function sendProposal(member: any, memberKey: string) {
+        if (!member.email) return;
+        setSendingKey(memberKey);
+        try {
+            const { data: sessionData } = await getCachedSession();
+            const token = sessionData.session?.access_token;
+            if (!token) throw new Error('Please sign in again before sending this proposal.');
+
+            const template = getEntourageProposalTemplate(member.proposalTemplateKey || DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY);
+            const response = await fetch('/api/entourage/invitations/send', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    weddingId,
+                    memberKey,
+                    name: member.name,
+                    email: member.email,
+                    role: member.role || 'Wedding Entourage',
+                    message: member.proposalMessage || template.defaultMessage,
+                    templateKey: template.key,
+                }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'Unable to send proposal.');
+
+            setInvitations((current: any[]) => {
+                const next = current.filter((invite: any) => String(invite.member_key) !== memberKey);
+                return [data.invitation, ...next];
+            });
+            await reload();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : 'Unable to send proposal.');
+        } finally {
+            setSendingKey(null);
+        }
+    }
+
+    return (
+        <div className="rounded-2xl border border-border bg-white p-5 soft-shadow sm:rounded-[2.5rem] md:p-10">
+            <div className="flex flex-col gap-4 border-b border-border/50 pb-6 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 className="font-serif text-2xl font-bold text-foreground sm:text-3xl">Entourage Proposals</h2>
+                    <p className="mt-1 text-xs text-text-secondary sm:text-sm">Send proposal emails and track who accepted or declined.</p>
+                </div>
+                <Link href={`/builder?edit=${weddingId}`} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
+                    <Edit2 className="h-4 w-4" /> Edit in Builder
+                </Link>
+            </div>
+
+            <div className="my-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {[
+                    ['draft', 'Not Sent'],
+                    ['sent', 'Sent'],
+                    ['accepted', 'Accepted'],
+                    ['declined', 'Declined'],
+                ].map(([status, label]) => (
+                    <div key={status} className="rounded-2xl border border-border bg-neutral/40 p-4 text-center">
+                        <p className="font-serif text-3xl font-bold text-primary">{counts[status] || 0}</p>
+                        <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-text-secondary">{label}</p>
+                    </div>
+                ))}
+            </div>
+
+            {rows.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border bg-neutral/40 p-8 text-center">
+                    <Users className="mx-auto h-10 w-10 text-primary/50" />
+                    <p className="mt-4 font-serif text-lg font-bold text-foreground">No entourage members yet</p>
+                    <p className="mt-2 text-sm leading-7 text-text-secondary">Add your wedding party in the builder, then return here to send proposal emails.</p>
+                </div>
+            ) : (
+                <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
+                    {rows.map(({ member, memberKey, invite }: any) => {
+                        const status = invite?.status || 'draft';
+                        const template = getEntourageProposalTemplate(member.proposalTemplateKey || invite?.template_key || DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY);
+                        const canSend = Boolean(member.email);
+                        return (
+                            <div key={memberKey} className="grid gap-4 bg-white p-4 lg:grid-cols-[1fr_auto] lg:items-center">
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <h3 className="break-words font-serif text-lg font-bold text-foreground">{member.name || 'Unnamed member'}</h3>
+                                        <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${getProposalStatusClasses(status)}`}>{status === 'draft' ? 'Not Sent' : status}</span>
+                                    </div>
+                                    <p className="mt-1 text-sm text-text-secondary">{[member.role, member.email].filter(Boolean).join(' - ') || 'Role and email not set'}</p>
+                                    <p className="mt-2 text-xs leading-6 text-text-secondary">
+                                        {template.label} template
+                                        {invite?.sent_at ? ` - sent ${new Date(invite.sent_at).toLocaleDateString()}` : ''}
+                                        {invite?.responded_at ? ` - responded ${new Date(invite.responded_at).toLocaleDateString()}` : ''}
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
+                                    <button
+                                        type="button"
+                                        disabled={!canSend || sendingKey === memberKey}
+                                        onClick={() => void sendProposal(member, memberKey)}
+                                        className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {sendingKey === memberKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        {status === 'sent' || status === 'accepted' || status === 'declined' ? 'Resend' : 'Send Proposal'}
+                                    </button>
+                                    {!canSend && (
+                                        <Link href={`/builder?edit=${weddingId}`} className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary hover:border-primary/30 hover:text-primary">
+                                            Add Email
+                                        </Link>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }
@@ -1577,7 +1742,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
             <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-3 sm:gap-4 mb-4">
                 {/* Visual Usage */}
                 <div className="bg-neutral/30 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/50 grid gap-3 sm:grid-cols-[170px_1fr] sm:items-center shadow-inner">
-                    <div className="h-[150px] sm:h-[170px]">
+                    <div className="h-[150px] min-h-[1px] w-full min-w-[1px] sm:h-[170px]">
                         <LazyBudgetPieChart
                             data={chartData}
                             colors={COLORS}

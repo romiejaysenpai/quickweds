@@ -2,7 +2,7 @@
 
 import { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import VectorArtGuests from './VectorArtGuests';
 import { supabase } from '@/lib/supabase';
@@ -16,7 +16,13 @@ import { MONOGRAM_SHAPES, MonogramMark } from './MonogramMark';
 import DecorativeLayer from './DecorativeLayer';
 import { useLocalUndoRedo } from '@/components/UndoRedoProvider';
 import { hasAccountPro } from '@/lib/account';
-import { FREE_TEMPLATE_IDS, TEMPLATES } from '@/lib/template-catalog';
+import {
+    DEFAULT_TEMPLATE_STYLE,
+    FREE_TEMPLATE_IDS,
+    TEMPLATES,
+    getTemplateStyleVariants,
+    isTemplateStyleAvailable,
+} from '@/lib/template-catalog';
 import {
     SECTION_BLOCK_LIBRARY,
     buildPresetPayload,
@@ -31,6 +37,14 @@ import {
     sanitizeWeddingSlug,
 } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
+import { getMotifSectionTitleGradient, SECTION_TITLE_COLOR_STYLES, SECTION_TITLE_FONT_STYLES } from '@/lib/theme-engine';
+import { parseCsv } from '@/lib/guest-list';
+import {
+    DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY,
+    ENTOURAGE_PROPOSAL_TEMPLATES,
+    getEntourageProposalTemplate,
+    type EntourageProposalTemplateKey,
+} from '@/lib/entourage-proposal-templates';
 
 // Helper component for collapsible sections
 const Collapsible = memo(function Collapsible({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) {
@@ -128,6 +142,14 @@ const ACCENT_STYLES = [
     { id: 'dots', name: 'Dots', desc: 'Confetti texture' },
 ];
 
+const GALLERY_LAYOUTS = [
+    { id: 'auto', name: 'Auto', desc: 'Match the selected template.', cells: ['col-span-2', '', '', 'col-span-2'] },
+    { id: 'bento', name: 'Bento', desc: 'Editorial mixed-size photo blocks.', cells: ['col-span-2 row-span-2', '', '', 'col-span-2'] },
+    { id: 'vertical', name: 'Vertical', desc: 'Large stacked photos for scrolling down.', cells: ['col-span-2', 'col-span-2', 'col-span-2'] },
+    { id: 'horizontal', name: 'Side Scroll', desc: 'Swipe left and right on phones.', cells: ['', '', ''] },
+    { id: 'grid', name: 'Grid', desc: 'Clean equal-size preview tiles.', cells: ['', '', '', ''] },
+];
+
 const FONTS = [
     { id: 'Elegant', name: 'Elegant Serif', desc: 'Playfair Display + Inter', class: 'font-serif' },
     { id: 'Classic', name: 'Classic Royal', desc: 'Cinzel + Cormorant', class: 'font-classic' },
@@ -211,10 +233,17 @@ const INITIAL_FORM_DATA = {
     venueName: '',
     venueAddress: '',
     mapsLink: '',
+    receptionVenueName: '',
+    receptionVenueAddress: '',
+    receptionMapsLink: '',
     motifColor: '#C08081',
     fontStyle: 'Elegant',
+    sectionTitleFontStyle: 'default',
+    sectionTitleColorStyle: 'motif',
     backgroundStyle: 'gradient',
     template: 'classic',
+    templateStyle: DEFAULT_TEMPLATE_STYLE,
+    galleryLayout: 'auto',
     dressCode: '',
     dressCodeColor: '#000000',
     programTimeline: '',
@@ -233,6 +262,7 @@ const INITIAL_FORM_DATA = {
     logoColor: '#C08081',
     spotifyUrl: '',
     weddingParty: [] as any[],
+    includeEntourageSection: true,
     registryLinks: [] as any[],
     cashFunds: [] as any[],
     paymentLinks: [] as any[],
@@ -254,6 +284,22 @@ function readArrayField(value: unknown) {
     }
 }
 
+const ENTOURAGE_CSV_ALIASES: Record<'name' | 'role' | 'bio' | 'email', string[]> = {
+    name: ['name', 'full name', 'member name', 'entourage name', 'person', 'guest name'],
+    role: ['role', 'title', 'position', 'entourage role', 'wedding role'],
+    bio: ['bio', 'description', 'notes', 'note', 'short bio', 'message'],
+    email: ['email', 'email address', 'contact email'],
+};
+
+function normalizeCsvHeader(value: string) {
+    return value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+}
+
+function getEntourageCsvIndex(headers: string[], field: keyof typeof ENTOURAGE_CSV_ALIASES) {
+    const normalizedHeaders = headers.map(normalizeCsvHeader);
+    return normalizedHeaders.findIndex((header) => ENTOURAGE_CSV_ALIASES[field].includes(header));
+}
+
 function getErrorMessage(error: unknown) {
     if (!error) return 'Unknown error';
     if (error instanceof Error && error.message) return error.message;
@@ -263,6 +309,20 @@ function getErrorMessage(error: unknown) {
         return String(record.message || record.error_description || record.details || record.hint || record.code || JSON.stringify(record));
     }
     return String(error);
+}
+
+function createEntourageMemberKey() {
+    return `entourage-${uuidv4().slice(0, 12)}`;
+}
+
+function normalizeWeddingPartyMember(member: any) {
+    const templateKey = getEntourageProposalTemplate(member?.proposalTemplateKey || member?.templateKey).key;
+    return {
+        ...member,
+        memberKey: member?.memberKey || member?.id || createEntourageMemberKey(),
+        proposalTemplateKey: templateKey,
+        proposalMessage: member?.proposalMessage || getEntourageProposalTemplate(templateKey).defaultMessage,
+    };
 }
 
 function isMissingFaqColumnError(error: unknown) {
@@ -356,6 +416,7 @@ export default function BuilderForm() {
         giftQr: File | null;
         invitationImages: File[];
         galleryImages: File[];
+        receptionVenuePhotos: File[];
     }>({
         heroImage: null,
         couplePhoto: null,
@@ -363,6 +424,7 @@ export default function BuilderForm() {
         giftQr: null,
         invitationImages: [],
         galleryImages: [],
+        receptionVenuePhotos: [],
     });
 
     const [previews, setPreviews] = useState<{
@@ -372,6 +434,7 @@ export default function BuilderForm() {
         giftQr: string;
         invitationImages: string[];
         galleryImages: string[];
+        receptionVenuePhotos: string[];
     }>({
         heroImage: '',
         couplePhoto: '',
@@ -379,13 +442,23 @@ export default function BuilderForm() {
         giftQr: '',
         invitationImages: [],
         galleryImages: [],
+        receptionVenuePhotos: [],
     });
 
     const [isPremium, setIsPremium] = useState(true);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
     const [accountIsPro, setAccountIsPro] = useState(false);
     const [activeWeddingCount, setActiveWeddingCount] = useState(0);
+    const [entourageImportStatus, setEntourageImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const freeWebsiteLimitReached = !editId && !isAdmin && !accountIsPro && activeWeddingCount >= 3;
+
+    const applyMotifColor = useCallback((color: string) => {
+        setFormData((prev: any) => ({
+            ...prev,
+            motifColor: color,
+            sectionTitleColorStyle: 'motif',
+        }));
+    }, [setFormData]);
 
     const loadAccountLimitState = useCallback(async () => {
         if (!user) {
@@ -473,10 +546,17 @@ export default function BuilderForm() {
                         venueName: data.venue_name || '',
                         venueAddress: data.venue_address || '',
                         mapsLink: data.maps_link || '',
+                        receptionVenueName: data.reception_venue_name || '',
+                        receptionVenueAddress: data.reception_venue_address || '',
+                        receptionMapsLink: data.reception_maps_link || '',
                         motifColor: data.motif_color || '#C08081',
                         fontStyle: data.font_style || 'Elegant',
+                        sectionTitleFontStyle: data.section_title_font_style || 'default',
+                        sectionTitleColorStyle: data.section_title_color_style || 'motif',
                         backgroundStyle: data.background_style || 'gradient',
                         template: data.template || 'classic',
+                        templateStyle: data.template_style || DEFAULT_TEMPLATE_STYLE,
+                        galleryLayout: data.gallery_layout || 'auto',
                         dressCode: data.dress_code ? data.dress_code.split('||')[0] : '',
                         dressCodeColor: data.dress_code && data.dress_code.includes('||') ? data.dress_code.split('||')[1] : (data.motif_color || '#000000'),
                         programTimeline: data.program_timeline || '',
@@ -494,7 +574,8 @@ export default function BuilderForm() {
                         logoShape: data.logo_shape || 'minimal',
                         logoColor: data.logo_color || data.motif_color,
                         spotifyUrl: data.spotify_playlist_url || '',
-                        weddingParty: data.wedding_party || [],
+                        weddingParty: readArrayField(data.wedding_party).map(normalizeWeddingPartyMember),
+                        includeEntourageSection: data.include_entourage_section !== false,
                         registryLinks: data.gift_registry_links || [],
                         cashFunds: data.cash_funds || [],
                         paymentLinks: data.payment_links || [],
@@ -521,6 +602,7 @@ export default function BuilderForm() {
                         giftQr: data.gift_qr_image || '',
                         invitationImages: inviteImages,
                         galleryImages: data.gallery_images || [],
+                        receptionVenuePhotos: readArrayField(data.reception_venue_photos) as string[],
                     });
                 }
             };
@@ -552,7 +634,8 @@ export default function BuilderForm() {
     const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
     const handleArrayAdd = (field: string, item: any) => {
-        setFormData((prev: any) => ({ ...prev, [field]: [...(prev[field] || []), item] }));
+        const nextItem = field === 'weddingParty' ? normalizeWeddingPartyMember(item) : item;
+        setFormData((prev: any) => ({ ...prev, [field]: [...(prev[field] || []), nextItem] }));
     };
     const handleArrayRemove = (field: string, index: number) => {
         setFormData((prev: any) => ({ ...prev, [field]: (prev[field] || []).filter((_: any, i: number) => i !== index) }));
@@ -560,9 +643,67 @@ export default function BuilderForm() {
     const handleArrayChange = (field: string, index: number, key: string, value: string) => {
         setFormData((prev: any) => {
             const newArr = [...(prev[field] || [])];
-            newArr[index] = { ...newArr[index], [key]: value };
+            const currentItem = { ...newArr[index], [key]: value };
+            if (field === 'weddingParty' && key === 'proposalTemplateKey') {
+                currentItem.proposalMessage = getEntourageProposalTemplate(value).defaultMessage;
+            }
+            newArr[index] = currentItem;
             return { ...prev, [field]: newArr };
         });
+    };
+
+    const handleEntourageCsvImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const parsed = parseCsv(await file.text());
+            if (parsed.length < 2) {
+                throw new Error('Upload a CSV with a header row and at least one entourage member.');
+            }
+
+            const [headers, ...rows] = parsed;
+            const nameIndex = getEntourageCsvIndex(headers, 'name');
+            if (nameIndex < 0) {
+                throw new Error('CSV needs a name column. Accepted headers include name, full name, or member name.');
+            }
+
+            const roleIndex = getEntourageCsvIndex(headers, 'role');
+            const bioIndex = getEntourageCsvIndex(headers, 'bio');
+            const emailIndex = getEntourageCsvIndex(headers, 'email');
+            const importedMembers = rows
+                .map((row) => ({
+                    memberKey: createEntourageMemberKey(),
+                    name: (row[nameIndex] || '').trim(),
+                    role: roleIndex >= 0 ? (row[roleIndex] || '').trim() : '',
+                    bio: bioIndex >= 0 ? (row[bioIndex] || '').trim() : '',
+                    email: emailIndex >= 0 ? (row[emailIndex] || '').trim() : '',
+                    proposalTemplateKey: DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY,
+                    proposalMessage: getEntourageProposalTemplate(DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY).defaultMessage,
+                }))
+                .filter((member) => member.name.length > 0);
+
+            if (importedMembers.length === 0) {
+                throw new Error('No entourage names were found in the CSV.');
+            }
+
+            setFormData((prev: any) => ({
+                ...prev,
+                weddingParty: [...(prev.weddingParty || []), ...importedMembers.map(normalizeWeddingPartyMember)],
+                includeEntourageSection: true,
+            }));
+            setEntourageImportStatus({
+                type: 'success',
+                message: `Imported ${importedMembers.length} entourage member${importedMembers.length === 1 ? '' : 's'}.`,
+            });
+        } catch (error: unknown) {
+            setEntourageImportStatus({
+                type: 'error',
+                message: error instanceof Error ? error.message : 'Unable to import that CSV file.',
+            });
+        } finally {
+            event.target.value = '';
+        }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -677,6 +818,16 @@ export default function BuilderForm() {
                 };
                 reader.readAsDataURL(file);
             });
+        } else if (field === 'receptionVenuePhotos') {
+            const newFiles = Array.from(files);
+            setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, ...newFiles] }));
+            newFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setPreviews(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, reader.result as string] }));
+                };
+                reader.readAsDataURL(file);
+            });
         } else {
             const file = files[0];
             if (field === 'teaserVideo') {
@@ -706,6 +857,9 @@ export default function BuilderForm() {
         } else if (field === 'invitationImages' && index !== undefined) {
             setMediaFiles(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) }));
             setPreviews(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) }));
+        } else if (field === 'receptionVenuePhotos' && index !== undefined) {
+            setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) }));
+            setPreviews(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) }));
         } else {
             setMediaFiles(prev => ({ ...prev, [field]: null }));
             setPreviews(prev => ({ ...prev, [field]: '' }));
@@ -775,15 +929,19 @@ export default function BuilderForm() {
             const invitationPromises = mediaFiles.invitationImages.map((file, i) => uploadToSupabase(file, `invitation-${i}`));
             const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo, 'teaser') : Promise.resolve(null);
             const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToSupabase(file, `gallery-${i}`));
+            const receptionVenuePromises = mediaFiles.receptionVenuePhotos.map((file, i) => uploadToSupabase(file, `reception-venue-${i}`));
 
-            const [heroUrl, coupleUrl, giftQrUrl, invitationUrls, videoUrl, galleryUrls] = await Promise.all([
+            const [heroUrl, coupleUrl, giftQrUrl, invitationUrls, videoUrl, galleryUrls, receptionVenueUrls] = await Promise.all([
                 heroPromise,
                 couplePromise,
                 giftQrPromise,
                 Promise.all(invitationPromises),
                 videoPromise,
-                Promise.all(galleryPromises)
+                Promise.all(galleryPromises),
+                Promise.all(receptionVenuePromises)
             ]);
+
+            const normalizedWeddingParty = (formData.weddingParty || []).map(normalizeWeddingPartyMember);
 
             const payload: any = {
                 bride_name: formData.brideName,
@@ -793,10 +951,17 @@ export default function BuilderForm() {
                 venue_name: formData.venueName,
                 venue_address: formData.venueAddress,
                 maps_link: formData.mapsLink,
+                reception_venue_name: formData.receptionVenueName,
+                reception_venue_address: formData.receptionVenueAddress,
+                reception_maps_link: formData.receptionMapsLink,
                 motif_color: formData.motifColor,
                 font_style: formData.fontStyle,
+                section_title_font_style: formData.sectionTitleFontStyle,
+                section_title_color_style: formData.sectionTitleColorStyle,
                 background_style: formData.backgroundStyle,
                 template: formData.template,
+                template_style: formData.templateStyle || DEFAULT_TEMPLATE_STYLE,
+                gallery_layout: formData.galleryLayout || 'auto',
                 dress_code: formData.dressCode ? `${formData.dressCode}||${formData.dressCodeColor}` : '',
                 program_timeline: formData.programTimeline,
                 faq_items: formData.faqItems,
@@ -813,7 +978,8 @@ export default function BuilderForm() {
                 logo_shape: formData.logoShape,
                 logo_color: formData.logoColor || formData.motifColor,
                 spotify_playlist_url: formData.spotifyUrl,
-                wedding_party: formData.weddingParty,
+                wedding_party: normalizedWeddingParty,
+                include_entourage_section: formData.includeEntourageSection !== false,
                 gift_registry_links: formData.registryLinks,
                 cash_funds: formData.cashFunds,
                 payment_links: formData.paymentLinks,
@@ -833,6 +999,7 @@ export default function BuilderForm() {
             payload.invitation_image = JSON.stringify(finalInvitationImages);
             
             if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
+            if (mediaFiles.receptionVenuePhotos.length > 0 || editId) payload.reception_venue_photos = receptionVenueUrls.length > 0 ? receptionVenueUrls : previews.receptionVenuePhotos;
 
             const publicSlug = await resolvePublicSlug(weddingId);
             const baseSubmitPayload: any = {
@@ -844,7 +1011,7 @@ export default function BuilderForm() {
 
             let submitPayload = { ...baseSubmitPayload };
             let submitError: unknown = null;
-            for (let attempt = 0; attempt < 3; attempt += 1) {
+            for (let attempt = 0; attempt < 10; attempt += 1) {
                 const { error } = await supabase
                     .from('weddings')
                     .upsert(submitPayload, { onConflict: 'id' });
@@ -867,6 +1034,31 @@ export default function BuilderForm() {
                     delete fallbackPayload.public_slug;
                     canRetry = true;
                 }
+
+                if (isMissingOptionalWeddingColumnError(error, 'template_style')) {
+                    delete fallbackPayload.template_style;
+                    canRetry = true;
+                }
+
+                if (isMissingOptionalWeddingColumnError(error, 'gallery_layout')) {
+                    delete fallbackPayload.gallery_layout;
+                    canRetry = true;
+                }
+
+                [
+                    'reception_venue_name',
+                    'reception_venue_address',
+                    'reception_maps_link',
+                    'reception_venue_photos',
+                    'section_title_font_style',
+                    'section_title_color_style',
+                    'include_entourage_section',
+                ].forEach((column) => {
+                    if (isMissingOptionalWeddingColumnError(error, column)) {
+                        delete fallbackPayload[column];
+                        canRetry = true;
+                    }
+                });
 
                 if (!canRetry || JSON.stringify(fallbackPayload) === JSON.stringify(submitPayload)) {
                     break;
@@ -929,11 +1121,11 @@ export default function BuilderForm() {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Venue Name</label>
-                                <input required name="venueName" value={formData.venueName} onChange={handleChange} placeholder="The Grand Plaza" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Ceremony Location Name</label>
+                                <input required name="venueName" value={formData.venueName} onChange={handleChange} placeholder="The Grand Plaza Chapel" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Google Maps Link (Optional)</label>
+                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Ceremony Google Maps Link (Optional)</label>
                                 <div className="relative">
                                     <MapPin className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
                                     <input name="mapsLink" value={formData.mapsLink} onChange={handleChange} placeholder="https://maps.app.goo.gl/..." className="icon-field-left w-full pl-14 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
@@ -941,26 +1133,123 @@ export default function BuilderForm() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Venue Address</label>
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Ceremony Location Address</label>
                             <AutoResizeTextarea required name="venueAddress" value={formData.venueAddress} onChange={handleChange} placeholder="123 Wedding Lane..." className="w-full min-h-[96px] resize-none rounded-lg border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white sm:rounded-xl sm:py-4" />
                         </div>
 
-                        <div className="space-y-2 pt-4 border-t border-border">
-                            <div className="flex justify-between items-center mb-2 gap-2">
-                                <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Party</label>
-                                <button type="button" onClick={() => handleArrayAdd('weddingParty', { name: '', role: 'Bridesmaid', bio: '' })} className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline uppercase tracking-widest min-h-[44px] min-w-[44px]">
-                                    <Plus className="w-3 h-3" /> <span className="hidden sm:inline">Add Member</span>
-                                </button>
+                        <Collapsible title="Reception / Venue Details" isOpen={expandedSection === 'receptionVenue'} onToggle={() => toggleSection('receptionVenue')} icon={MapPin}>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Reception Venue Name</label>
+                                        <input name="receptionVenueName" value={formData.receptionVenueName} onChange={handleChange} placeholder="The Grand Plaza Ballroom" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Reception Google Maps Link</label>
+                                        <div className="relative">
+                                            <MapPin className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
+                                            <input name="receptionMapsLink" value={formData.receptionMapsLink} onChange={handleChange} placeholder="https://maps.app.goo.gl/..." className="icon-field-left w-full pl-14 pr-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Reception Venue Address</label>
+                                    <AutoResizeTextarea name="receptionVenueAddress" value={formData.receptionVenueAddress} onChange={handleChange} placeholder="Reception venue address..." className="w-full min-h-[96px] resize-none rounded-lg border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white sm:rounded-xl sm:py-4" />
+                                </div>
+                                <div className="space-y-3 rounded-2xl border border-border bg-white/70 p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-text-secondary">Venue Photos</p>
+                                            <p className="mt-1 text-xs text-text-secondary/70">Add photos guests can recognize when they arrive.</p>
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">{previews.receptionVenuePhotos.length} Photos</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                        {previews.receptionVenuePhotos.map((src: string, index: number) => (
+                                            <div key={`${src}-${index}`} className="relative aspect-square overflow-hidden rounded-xl border border-border bg-neutral group">
+                                                <img src={src} className="h-full w-full object-cover" alt={`Reception venue preview ${index + 1}`} />
+                                                <button type="button" onClick={() => removeFile('receptionVenuePhotos', index)} className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-colors hover:bg-red-500">
+                                                    <X className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <div className="relative aspect-square rounded-xl border-2 border-dashed border-primary/25 bg-neutral flex flex-col items-center justify-center hover:bg-primary/5 transition-colors">
+                                            <ImageIcon className="w-6 h-6 text-primary/40" />
+                                            <span className="mt-2 px-2 text-center text-[10px] font-bold uppercase tracking-widest text-text-secondary">Add Photos</span>
+                                            <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'receptionVenuePhotos')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            {formData.weddingParty?.length === 0 && <p className="text-sm text-text-secondary italic">No wedding party members added yet.</p>}
+                        </Collapsible>
+
+                        <div className="space-y-4 pt-4 border-t border-border">
+                            <div className="flex flex-col gap-4 rounded-2xl border border-primary/10 bg-white/70 p-4 sm:p-5">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <div>
+                                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary">Our Entourage</label>
+                                        <p className="mt-1 text-sm text-text-secondary">Add your maid of honor, best man, sponsors, bridesmaids, groomsmen, and other special people.</p>
+                                    </div>
+                                    <div className="flex flex-col gap-2 sm:items-end">
+                                        <div className="flex flex-wrap gap-2">
+                                            <label className="inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-primary transition-all hover:bg-primary hover:text-white">
+                                                <Upload className="h-3.5 w-3.5" />
+                                                Import CSV
+                                                <input type="file" accept=".csv,text/csv" onChange={handleEntourageCsvImport} className="hidden" />
+                                            </label>
+                                            <button type="button" onClick={() => handleArrayAdd('weddingParty', { name: '', role: '', bio: '', email: '', proposalTemplateKey: DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY })} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-xl">
+                                                <Plus className="w-3.5 h-3.5" /> Add Member
+                                            </button>
+                                        </div>
+                                        <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-text-secondary/70">
+                                            <FileSpreadsheet className="h-3 w-3" /> CSV: name, role, bio, email
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <label className="flex items-center justify-between gap-4 rounded-xl border border-border bg-neutral px-4 py-3">
+                                    <span>
+                                        <span className="block text-xs font-bold uppercase tracking-widest text-foreground">Show on wedding page</span>
+                                        <span className="mt-1 block text-xs text-text-secondary">Guests will see the section as &quot;Our Entourage&quot;.</span>
+                                    </span>
+                                    <input type="checkbox" checked={formData.includeEntourageSection !== false} onChange={(e) => setFormData((prev: any) => ({ ...prev, includeEntourageSection: e.target.checked }))} className="h-5 w-5 accent-primary" />
+                                </label>
+
+                                {entourageImportStatus && (
+                                    <p className={`rounded-xl px-4 py-3 text-sm ${entourageImportStatus.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                        {entourageImportStatus.message}
+                                    </p>
+                                )}
+                            </div>
+
+                            {formData.weddingParty?.length === 0 && <p className="text-sm text-text-secondary italic">No entourage members added yet.</p>}
                             {formData.weddingParty?.map((member: any, i: number) => (
                                 <div key={i} className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start p-3 sm:p-4 rounded-lg sm:rounded-xl border border-border bg-neutral/50">
                                     <div className="flex-1 space-y-2 sm:space-y-3 w-full">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                                            <input placeholder="Name" value={member.name} onChange={(e) => handleArrayChange('weddingParty', i, 'name', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:border-primary outline-none min-h-[44px]" />
-                                            <input placeholder="Role (e.g. Best Man)" value={member.role} onChange={(e) => handleArrayChange('weddingParty', i, 'role', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:border-primary outline-none min-h-[44px]" />
+                                            <input placeholder="Name" value={member.name || ''} onChange={(e) => handleArrayChange('weddingParty', i, 'name', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:border-primary outline-none min-h-[44px]" />
+                                            <input placeholder="Role (e.g. Maid of Honor)" value={member.role || ''} onChange={(e) => handleArrayChange('weddingParty', i, 'role', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:border-primary outline-none min-h-[44px]" />
                                         </div>
-                                        <input placeholder="Short Bio (Optional)" value={member.bio} onChange={(e) => handleArrayChange('weddingParty', i, 'bio', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:border-primary outline-none" />
+                                        <input placeholder="Short Bio (Optional)" value={member.bio || ''} onChange={(e) => handleArrayChange('weddingParty', i, 'bio', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border focus:border-primary outline-none" />
+                                        <div className="grid grid-cols-1 gap-2 rounded-xl border border-primary/10 bg-white p-3 sm:grid-cols-2 sm:gap-3">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Proposal Email</label>
+                                                <input type="email" placeholder="name@email.com" value={member.email || ''} onChange={(e) => handleArrayChange('weddingParty', i, 'email', e.target.value)} className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none transition-colors focus:border-primary min-h-[44px]" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Proposal Template</label>
+                                                <select value={member.proposalTemplateKey || DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY} onChange={(e) => handleArrayChange('weddingParty', i, 'proposalTemplateKey', e.target.value as EntourageProposalTemplateKey)} className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-primary min-h-[44px]">
+                                                    {ENTOURAGE_PROPOSAL_TEMPLATES.map((template) => (
+                                                        <option key={template.key} value={template.key}>{template.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1 sm:col-span-2">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Personal Proposal Message</label>
+                                                <AutoResizeTextarea value={member.proposalMessage || getEntourageProposalTemplate(member.proposalTemplateKey).defaultMessage} onChange={(e) => handleArrayChange('weddingParty', i, 'proposalMessage', e.target.value)} placeholder="Write a message they will see in the proposal email." className="w-full min-h-[84px] resize-none rounded-lg border border-border px-3 py-2 text-sm outline-none transition-colors focus:border-primary" />
+                                                <p className="text-[10px] leading-5 text-text-secondary">Send and track this proposal from Planner after saving.</p>
+                                            </div>
+                                        </div>
                                     </div>
                                     <button type="button" onClick={() => handleArrayRemove('weddingParty', i)} className="p-2 sm:p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
                                 </div>
@@ -968,7 +1257,11 @@ export default function BuilderForm() {
                         </div>
                     </div>
                 );
-            case 1:
+            case 1: {
+                const styleVariants = getTemplateStyleVariants(formData.template);
+                const selectedStyleAvailable = isTemplateStyleAvailable(formData.template, formData.templateStyle);
+                const activeTemplateMeta = TEMPLATES.find((tmpl) => tmpl.id === formData.template);
+
                 return (
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
@@ -987,7 +1280,11 @@ export default function BuilderForm() {
                                     <button
                                         key={tmpl.id}
                                         type="button"
-                                        onClick={() => !isLocked && setFormData((prev: any) => ({ ...prev, template: tmpl.id }))}
+                                        onClick={() => !isLocked && setFormData((prev: any) => ({
+                                            ...prev,
+                                            template: tmpl.id,
+                                            templateStyle: isTemplateStyleAvailable(tmpl.id, prev.templateStyle) ? prev.templateStyle : DEFAULT_TEMPLATE_STYLE,
+                                        }))}
                                         className={`group relative overflow-hidden rounded-[1.75rem] border text-left transition-all duration-300 min-h-[176px] ${
                                             isLocked
                                                 ? 'border-border/70 bg-neutral/60 opacity-70 cursor-not-allowed'
@@ -1050,6 +1347,63 @@ export default function BuilderForm() {
                                 );
                             })}
                         </div>
+                        <div className="space-y-3 rounded-[1.75rem] border border-border/70 bg-white/80 p-4 shadow-sm">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-text-secondary">
+                                        Style Variant
+                                    </p>
+                                    <p className="mt-1 text-sm text-text-secondary">
+                                        Keep the original look or apply a Nicepage-inspired wedding landing style to this template.
+                                    </p>
+                                </div>
+                                {activeTemplateMeta && (
+                                    <span
+                                        className="mt-1 h-3 w-3 shrink-0 rounded-full shadow-[0_0_0_5px_rgba(255,255,255,0.8)]"
+                                        style={{ backgroundColor: activeTemplateMeta.accent }}
+                                    />
+                                )}
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData((prev: any) => ({ ...prev, templateStyle: DEFAULT_TEMPLATE_STYLE }))}
+                                    className={`rounded-2xl border p-4 text-left transition-all ${
+                                        !formData.templateStyle || formData.templateStyle === DEFAULT_TEMPLATE_STYLE || !selectedStyleAvailable
+                                            ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/10'
+                                            : 'border-border bg-neutral/50 hover:border-primary/30 hover:bg-white'
+                                    }`}
+                                >
+                                    <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">Current</span>
+                                    <p className="mt-2 font-serif text-lg text-foreground">Original</p>
+                                    <p className="mt-1 text-xs leading-relaxed text-text-secondary">The existing QuickWeds template design. Existing weddings keep this by default.</p>
+                                </button>
+                                {styleVariants.map((variant) => (
+                                    <button
+                                        key={variant.id}
+                                        type="button"
+                                        onClick={() => setFormData((prev: any) => ({ ...prev, templateStyle: variant.id }))}
+                                        className={`rounded-2xl border p-4 text-left transition-all ${
+                                            formData.templateStyle === variant.id
+                                                ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/10'
+                                                : 'border-border bg-neutral/50 hover:border-primary/30 hover:bg-white'
+                                        }`}
+                                    >
+                                        <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">{variant.source}</span>
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: variant.accent }} />
+                                            <p className="font-serif text-lg text-foreground">{variant.name}</p>
+                                        </div>
+                                        <p className="mt-1 text-xs leading-relaxed text-text-secondary">{variant.desc}</p>
+                                    </button>
+                                ))}
+                            </div>
+                            {styleVariants.length === 0 && (
+                                <p className="rounded-2xl border border-dashed border-border bg-neutral/50 px-4 py-3 text-xs text-text-secondary">
+                                    Additional landing-page style variants will be added here as we adapt more wedding references.
+                                </p>
+                            )}
+                        </div>
                         {!isPremium && (
                             <div className="mt-4 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20">
                                 <div className="flex items-start gap-3">
@@ -1064,6 +1418,7 @@ export default function BuilderForm() {
                         )}
                     </div>
                 );
+            }
             case 2:
                 return (
                     <div className="space-y-6">
@@ -1074,7 +1429,7 @@ export default function BuilderForm() {
                                      <button
                                          key={color}
                                          type="button"
-                                         onClick={() => setFormData((prev: any) => ({ ...prev, motifColor: color }))}
+                                         onClick={() => applyMotifColor(color)}
                                          className={`w-10 h-10 rounded-xl border-2 transition-all ${formData.motifColor === color ? 'border-white ring-2 ring-primary shadow-xl scale-110' : 'border-border/50 hover:border-primary/50'}`}
                                          style={{ backgroundColor: color }}
                                          aria-label={`Select color ${color}`}
@@ -1088,14 +1443,14 @@ export default function BuilderForm() {
                                  <input
                                      type="color"
                                      value={formData.motifColor}
-                                     onChange={(e) => setFormData((prev: any) => ({ ...prev, motifColor: e.target.value }))}
+                                     onChange={(e) => applyMotifColor(e.target.value)}
                                      className="w-10 h-10 rounded-xl border border-border p-0 cursor-pointer bg-transparent"
                                      aria-label="Pick a custom color"
                                  />
                                  <input
                                      type="text"
                                      value={formData.motifColor}
-                                     onChange={(e) => setFormData((prev: any) => ({ ...prev, motifColor: e.target.value }))}
+                                     onChange={(e) => applyMotifColor(e.target.value)}
                                      placeholder="#HEX"
                                      className="flex-1 px-3 py-2 rounded-xl border border-border bg-neutral/30 text-sm font-mono outline-none focus:bg-white transition-all"
                                      pattern="^#[0-9A-Fa-f]{6}$"
@@ -1107,6 +1462,68 @@ export default function BuilderForm() {
                              <span className="text-[10px] uppercase tracking-[0.15em] text-text-secondary/60">
                                  Selected: <span className="font-mono text-foreground">{formData.motifColor}</span>
                              </span>
+                         </div>
+                         <div className="space-y-4 rounded-[1.75rem] border border-border bg-white/75 p-4 shadow-sm sm:p-5">
+                             <div>
+                                 <p className="text-xs font-bold uppercase tracking-widest text-text-secondary">Section Title Styles</p>
+                                 <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                     Section heading colors automatically match your motif. Choose another preset only when you want a deliberate contrast.
+                                 </p>
+                             </div>
+                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                 {SECTION_TITLE_FONT_STYLES.map((style) => (
+                                     <button
+                                         key={style.id}
+                                         type="button"
+                                         onClick={() => setFormData((prev: any) => ({ ...prev, sectionTitleFontStyle: style.id }))}
+                                         className={`rounded-2xl border p-4 text-left transition-all ${
+                                             formData.sectionTitleFontStyle === style.id
+                                                 ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10'
+                                                 : 'border-border bg-neutral/50 hover:border-primary/35 hover:bg-white'
+                                         }`}
+                                     >
+                                         <p className={`text-xl leading-tight text-foreground ${style.className || 'font-serif'}`}>Our Venue</p>
+                                         <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-text-secondary">{style.name}</p>
+                                     </button>
+                                 ))}
+                             </div>
+                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                                 {SECTION_TITLE_COLOR_STYLES.map((style) => {
+                                     const isSelected = formData.sectionTitleColorStyle === style.id;
+                                     const gradient = 'gradient' in style ? style.gradient : '';
+                                     const motifGradient = style.id === 'motif' ? getMotifSectionTitleGradient(formData.motifColor) : '';
+                                     const previewStyle = gradient || motifGradient
+                                         ? { backgroundImage: gradient || motifGradient }
+                                         : { color: formData.motifColor };
+                                     const usesGradient = Boolean(gradient || motifGradient);
+                                     return (
+                                         <button
+                                             key={style.id}
+                                             type="button"
+                                             onClick={() => setFormData((prev: any) => ({ ...prev, sectionTitleColorStyle: style.id }))}
+                                             className={`rounded-2xl border p-4 text-left transition-all ${
+                                                 isSelected
+                                                     ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10'
+                                                     : 'border-border bg-neutral/50 hover:border-primary/35 hover:bg-white'
+                                             }`}
+                                         >
+                                             <p className={`text-lg font-serif font-bold ${usesGradient ? 'bg-clip-text text-transparent' : ''}`} style={previewStyle}>
+                                                 Section Title
+                                             </p>
+                                             <div className="mt-3 flex gap-1.5">
+                                                 {style.swatches.map((swatch) => (
+                                                     <span
+                                                         key={`${style.id}-${swatch}`}
+                                                         className="h-5 w-5 rounded-full border border-white shadow-sm"
+                                                         style={{ background: swatch === 'var(--primary)' ? formData.motifColor : swatch }}
+                                                     />
+                                                 ))}
+                                             </div>
+                                             <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-text-secondary">{style.name}</p>
+                                         </button>
+                                     );
+                                 })}
+                             </div>
                          </div>
                          <Collapsible title="Typography & Fonts" isOpen={expandedSection === 'fonts'} onToggle={() => toggleSection('fonts')} icon={Layout}>
                             <div className="grid grid-cols-2 gap-2 no-scrollbar sm:max-h-[400px] sm:grid-cols-3 sm:gap-3 sm:overflow-y-auto sm:pr-2 md:gap-4 custom-scrollbar">
@@ -1432,6 +1849,42 @@ export default function BuilderForm() {
                             </div>
                         </div>
 
+                        <div className="space-y-3 rounded-[2rem] border border-border bg-white/70 p-4 shadow-sm sm:p-5">
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-widest text-text-secondary">Gallery Preview Style</p>
+                                <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                    Choose how uploaded photos appear on the wedding page. Auto keeps each template&apos;s default.
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                                {GALLERY_LAYOUTS.map((layout) => (
+                                    <button
+                                        key={layout.id}
+                                        type="button"
+                                        onClick={() => setFormData((prev: any) => ({ ...prev, galleryLayout: layout.id }))}
+                                        className={`rounded-2xl border p-3 text-left transition-all ${
+                                            formData.galleryLayout === layout.id
+                                                ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10'
+                                                : 'border-border bg-neutral/50 hover:border-primary/35 hover:bg-white'
+                                        }`}
+                                    >
+                                        <div className={`mb-3 grid h-20 grid-cols-2 gap-1 overflow-hidden rounded-xl border border-white/70 bg-white p-1 ${
+                                            layout.id === 'horizontal' ? 'grid-cols-3' : ''
+                                        }`}>
+                                            {layout.cells.map((cell, index) => (
+                                                <span
+                                                    key={`${layout.id}-${index}`}
+                                                    className={`rounded-md bg-primary/20 ${cell} ${layout.id === 'vertical' ? 'min-h-[1.1rem]' : ''}`}
+                                                />
+                                            ))}
+                                        </div>
+                                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-foreground">{layout.name}</span>
+                                        <span className="mt-1 block text-[10px] leading-4 text-text-secondary">{layout.desc}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="space-y-2 pt-4 border-t border-border">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Spotify Playlist URL (Optional)</label>
                             <div className="relative">
@@ -1527,106 +1980,137 @@ export default function BuilderForm() {
     );
             case 6:
     return (
-        <div className="space-y-6">
-            <h3 className="text-lg font-serif font-bold text-primary mb-4 flex items-center gap-2"><Heart className="w-5 h-5" /> Gift Options</h3>
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div>
+                <h3 className="flex items-center gap-2 text-xl font-serif font-bold text-foreground sm:text-2xl">
+                    <Heart className="h-5 w-5 text-primary" /> Gift Options
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-text-secondary">
+                    Keep gift details tidy for guests, whether they prefer direct transfers, registries, or cash funds.
+                </p>
+            </div>
 
             {/* Basic Bank Details */}
-            <div className="p-4 rounded-2xl border border-border bg-neutral/30 space-y-4">
-                <h4 className="text-sm font-bold text-foreground">Direct Bank Transfer</h4>
-                <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-[2rem] border border-border bg-white/75 p-4 shadow-sm sm:p-6">
+                <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h4 className="text-sm font-bold text-foreground">Direct Transfer</h4>
+                        <p className="mt-1 text-xs leading-5 text-text-secondary">Bank, wallet, or QR code details guests can use directly.</p>
+                    </div>
+                    <span className="inline-flex w-fit rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+                        Optional
+                    </span>
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Bank Name</label>
-                        <input name="giftBank" value={formData.giftBank} onChange={handleChange} placeholder="GCash" className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
+                        <input name="giftBank" value={formData.giftBank} onChange={handleChange} placeholder="GCash, Maya, BDO..." className="min-h-[48px] w-full rounded-xl border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white" />
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Number</label>
-                        <input name="giftAccountNumber" value={formData.giftAccountNumber} onChange={handleChange} placeholder="0917..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
+                        <input name="giftAccountNumber" value={formData.giftAccountNumber} onChange={handleChange} placeholder="0917..." className="min-h-[48px] w-full rounded-xl border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Name</label>
+                        <input name="giftAccountName" value={formData.giftAccountName} onChange={handleChange} placeholder="Account holder name" className="min-h-[48px] w-full rounded-xl border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white" />
                     </div>
                 </div>
-                <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Name</label>
-                    <input name="giftAccountName" value={formData.giftAccountName} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
-                </div>
-                <div className="space-y-2">
+                <div className="mt-5 space-y-2">
                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Upload QR Code (Optional)</label>
-                    <div className="relative h-32 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-white hover:bg-neutral/50 transition-colors">
-                        {previews.giftQr ? <img src={previews.giftQr} className="h-full object-contain" /> : <ImageIcon className="w-6 h-6 text-primary/40" />}
+                    <div className="relative flex min-h-[156px] items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-primary/20 bg-neutral transition-colors hover:bg-primary/5">
+                        {previews.giftQr ? (
+                            <img src={previews.giftQr} className="h-full max-h-[150px] w-full object-contain p-3" />
+                        ) : (
+                            <div className="flex flex-col items-center gap-2 text-center">
+                                <ImageIcon className="h-7 w-7 text-primary/40" />
+                                <span className="px-4 text-[10px] font-bold uppercase tracking-widest text-text-secondary">Upload QR code</span>
+                            </div>
+                        )}
                         <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'giftQr')} className="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
                 </div>
             </div>
 
             {/* Registry Links */}
-            <div className="space-y-3 pt-4 border-t border-border">
-                <div className="flex justify-between items-center">
-                    <h4 className="text-sm font-bold text-foreground">Registry Links</h4>
-                    <button type="button" onClick={() => handleArrayAdd('registryLinks', { title: 'Amazon Registry', url: '' })} className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline uppercase tracking-widest">
+            <div className="space-y-4 rounded-[2rem] border border-border bg-white/75 p-4 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h4 className="text-sm font-bold text-foreground">Registry Links</h4>
+                        <p className="mt-1 text-xs leading-5 text-text-secondary">Add store registries or wishlists with clean guest-facing labels.</p>
+                    </div>
+                    <button type="button" onClick={() => handleArrayAdd('registryLinks', { title: 'Amazon Registry', url: '' })} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary transition-all hover:bg-primary hover:text-white sm:w-auto">
                         <Plus className="w-3 h-3" /> Add Registry
                     </button>
                 </div>
                 {formData.registryLinks?.map((link: any, i: number) => (
-                    <div key={i} className="flex gap-2">
-                        <input placeholder="Store Name" value={link.title} onChange={(e) => handleArrayChange('registryLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                        <div className="relative flex-1">
-                            <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
-                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('registryLinks', i, 'url', e.target.value)} className="icon-field-left w-full pl-14 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
+                    <div key={i} className="grid grid-cols-1 gap-3 rounded-2xl border border-border bg-neutral/40 p-3 sm:grid-cols-[minmax(150px,0.45fr)_minmax(0,1fr)_44px] sm:items-center">
+                        <input placeholder="Store name" value={link.title} onChange={(e) => handleArrayChange('registryLinks', i, 'title', e.target.value)} className="min-h-[44px] w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none transition-all focus:border-primary" />
+                        <div className="relative min-w-0">
+                            <LinkIcon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
+                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('registryLinks', i, 'url', e.target.value)} className="icon-field-left min-h-[44px] w-full rounded-xl border border-border bg-white py-2 pl-12 pr-3 text-sm outline-none transition-all focus:border-primary" />
                         </div>
-                        <button type="button" onClick={() => handleArrayRemove('registryLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        <button type="button" onClick={() => handleArrayRemove('registryLinks', i)} className="flex min-h-[44px] w-full items-center justify-center rounded-xl text-red-500 transition-colors hover:bg-red-50 sm:w-11" title="Remove registry link"><Trash2 className="w-4 h-4" /></button>
                     </div>
                 ))}
             </div>
 
             {/* Cash Funds */}
-            <div className="space-y-3 pt-4 border-t border-border">
-                <div className="flex justify-between items-center">
-                    <h4 className="text-sm font-bold text-foreground">Cash Funds (Honeymoon, House, etc.)</h4>
-                    <button type="button" onClick={() => handleArrayAdd('cashFunds', { title: 'Honeymoon Fund', description: 'Help us travel to Bali!', targetAmount: 5000, currency: '$' })} className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline uppercase tracking-widest">
+            <div className="space-y-4 rounded-[2rem] border border-border bg-white/75 p-4 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h4 className="text-sm font-bold text-foreground">Cash Funds</h4>
+                        <p className="mt-1 text-xs leading-5 text-text-secondary">Create funds for honeymoon, home, or other shared goals.</p>
+                    </div>
+                    <button type="button" onClick={() => handleArrayAdd('cashFunds', { title: 'Honeymoon Fund', description: 'Help us travel to Bali!', targetAmount: 5000, currency: '$' })} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary transition-all hover:bg-primary hover:text-white sm:w-auto">
                         <Plus className="w-3 h-3" /> Add Fund
                     </button>
                 </div>
                 {formData.cashFunds?.map((fund: any, i: number) => (
-                    <div key={i} className="p-4 rounded-xl border border-border bg-neutral/50 space-y-3">
-                        <div className="flex justify-between items-start gap-3">
-                            <div className="flex-1 space-y-3">
-                                <input placeholder="Fund Title" value={fund.title} onChange={(e) => handleArrayChange('cashFunds', i, 'title', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
-                                <input placeholder="Short Description" value={fund.description} onChange={(e) => handleArrayChange('cashFunds', i, 'description', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
-                                <div className="grid grid-cols-2 gap-3">
+                    <div key={i} className="rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_44px]">
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <input placeholder="Fund title" value={fund.title} onChange={(e) => handleArrayChange('cashFunds', i, 'title', e.target.value)} className="min-h-[44px] w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none transition-all focus:border-primary" />
+                                <input placeholder="Short description" value={fund.description} onChange={(e) => handleArrayChange('cashFunds', i, 'description', e.target.value)} className="min-h-[44px] w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none transition-all focus:border-primary" />
+                                <div className="grid grid-cols-1 gap-3 md:col-span-2 sm:grid-cols-[minmax(0,1fr)_minmax(120px,0.35fr)]">
                                     <div className="relative">
-                                        <DollarSign className="w-3 h-3 absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
+                                        <DollarSign className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
                                         <input 
                                             type="number" 
                                             inputMode="decimal"
                                             placeholder="0" 
                                             value={fund.targetAmount} 
                                             onChange={(e) => handleArrayChange('cashFunds', i, 'targetAmount', e.target.value)} 
-                                            className="icon-field-left w-full pl-14 pr-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none min-h-[44px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                                            className="icon-field-left min-h-[44px] w-full rounded-xl border border-border bg-white py-2 pl-12 pr-3 text-sm tabular-nums outline-none transition-all focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                         />
                                     </div>
-                                    <input placeholder="Currency (e.g. $, PHP)" value={fund.currency} onChange={(e) => handleArrayChange('cashFunds', i, 'currency', e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-white focus:border-primary outline-none" />
+                                    <input placeholder="Currency" value={fund.currency} onChange={(e) => handleArrayChange('cashFunds', i, 'currency', e.target.value)} className="min-h-[44px] w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none transition-all focus:border-primary" />
                                 </div>
                             </div>
-                            <button type="button" onClick={() => handleArrayRemove('cashFunds', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => handleArrayRemove('cashFunds', i)} className="flex min-h-[44px] w-full items-center justify-center rounded-xl text-red-500 transition-colors hover:bg-red-50 sm:w-11" title="Remove cash fund"><Trash2 className="w-4 h-4" /></button>
                         </div>
                     </div>
                 ))}
             </div>
 
             {/* Payment Links */}
-            <div className="space-y-3 pt-4 border-t border-border">
-                <div className="flex justify-between items-center">
-                    <h4 className="text-sm font-bold text-foreground">Payment Links (PayPal, Venmo)</h4>
-                    <button type="button" onClick={() => handleArrayAdd('paymentLinks', { title: 'PayPal', url: '' })} className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline uppercase tracking-widest">
+            <div className="space-y-4 rounded-[2rem] border border-border bg-white/75 p-4 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h4 className="text-sm font-bold text-foreground">Payment Links</h4>
+                        <p className="mt-1 text-xs leading-5 text-text-secondary">Add PayPal, Venmo, GCash, Maya, or other direct links.</p>
+                    </div>
+                    <button type="button" onClick={() => handleArrayAdd('paymentLinks', { title: 'PayPal', url: '' })} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary transition-all hover:bg-primary hover:text-white sm:w-auto">
                         <Plus className="w-3 h-3" /> Add Link
                     </button>
                 </div>
                 {formData.paymentLinks?.map((link: any, i: number) => (
-                    <div key={i} className="flex gap-2">
-                        <input placeholder="Service (e.g. Venmo)" value={link.title} onChange={(e) => handleArrayChange('paymentLinks', i, 'title', e.target.value)} className="w-1/3 px-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
-                        <div className="relative flex-1">
-                            <LinkIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
-                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('paymentLinks', i, 'url', e.target.value)} className="icon-field-left w-full pl-14 pr-3 py-2 text-sm rounded-xl border border-border bg-neutral focus:border-primary outline-none min-h-[44px]" />
+                    <div key={i} className="grid grid-cols-1 gap-3 rounded-2xl border border-border bg-neutral/40 p-3 sm:grid-cols-[minmax(150px,0.45fr)_minmax(0,1fr)_44px] sm:items-center">
+                        <input placeholder="Service name" value={link.title} onChange={(e) => handleArrayChange('paymentLinks', i, 'title', e.target.value)} className="min-h-[44px] w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none transition-all focus:border-primary" />
+                        <div className="relative min-w-0">
+                            <LinkIcon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary/50 pointer-events-none" />
+                            <input placeholder="https://..." value={link.url} onChange={(e) => handleArrayChange('paymentLinks', i, 'url', e.target.value)} className="icon-field-left min-h-[44px] w-full rounded-xl border border-border bg-white py-2 pl-12 pr-3 text-sm outline-none transition-all focus:border-primary" />
                         </div>
-                        <button type="button" onClick={() => handleArrayRemove('paymentLinks', i)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        <button type="button" onClick={() => handleArrayRemove('paymentLinks', i)} className="flex min-h-[44px] w-full items-center justify-center rounded-xl text-red-500 transition-colors hover:bg-red-50 sm:w-11" title="Remove payment link"><Trash2 className="w-4 h-4" /></button>
                     </div>
                 ))}
             </div>

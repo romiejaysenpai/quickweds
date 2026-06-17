@@ -21,11 +21,11 @@ function getResendClient() {
 
 interface SendEmailParams {
     to: string | string[];
-    subject: string;
+    subject?: string;
     html?: string;
     template?: {
         id: string;
-        variables: Record<string, unknown>;
+        variables: Record<string, string | number>;
     };
 }
 
@@ -47,22 +47,22 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
 
     try {
         console.log(`Attempting to send email via Resend to ${validRecipients.length} recipient(s).`);
-        console.log(`Email Subject: "${subject}" | From: "${FROM_EMAIL}"`);
+        console.log(`Email Subject: "${subject || template?.id || 'template email'}" | From: "${FROM_EMAIL}"`);
 
-        if (template?.id) {
-            console.warn(`Template sending is not configured for Resend in this app yet. Falling back to HTML for template ID ${template.id}.`);
-        }
-
-        if (!html) {
+        if (!html && !template?.id) {
             throw new Error('HTML content is required for email sending');
         }
 
-        const { data, error } = await resend.emails.send({
+        const payload: any = {
             from: FROM_EMAIL,
             to: validRecipients,
-            subject,
-            html,
-        });
+            ...(subject ? { subject } : {}),
+            ...(template?.id
+                ? { template: { id: template.id, variables: template.variables } }
+                : { html: html || '' }),
+        };
+
+        const { data, error } = await resend.emails.send(payload);
 
         if (error) {
             console.error('Resend API error:', error);

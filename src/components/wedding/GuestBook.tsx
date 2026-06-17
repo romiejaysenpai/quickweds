@@ -72,9 +72,9 @@ export default function GuestBook({ weddingId }: GuestBookProps) {
         <section id="guestbook" className="py-24 px-6">
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-16">
-                    <MessageSquare className="w-12 h-12 text-primary mx-auto mb-6 opacity-30" />
+                    <MessageSquare className="w-12 h-12 text-primary mx-auto mb-6 opacity-70" />
                     <h2 className="text-4xl md:text-5xl font-serif text-[#4A4444] mb-4">Guest Book</h2>
-                    <p className="text-foreground/60 font-serif italic text-lg">Leave a message for the happy couple</p>
+                    <p className="text-[#4A4444]/72 font-serif italic text-lg">Leave a message for the happy couple</p>
                 </div>
 
                 {/* Submit Form */}
@@ -132,7 +132,7 @@ export default function GuestBook({ weddingId }: GuestBookProps) {
                                         </div>
                                         <div>
                                             <p className="font-bold text-sm">{entry.guest_name}</p>
-                                            <p className="text-[10px] uppercase tracking-widest opacity-40">
+                                            <p className="text-[10px] uppercase tracking-widest text-[#4A4444]/68">
                                                 {new Date(entry.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                             </p>
                                         </div>

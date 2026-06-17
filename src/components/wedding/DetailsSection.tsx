@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { Calendar, MapPin, Info } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
-import { derivePalette, getTypography, getTemplateVisualProfile, type TemplateVisualProfile } from '@/lib/theme-engine';
+import { derivePalette, getSectionTitleStyle, getTypography, getTemplateVisualProfile, type TemplateVisualProfile } from '@/lib/theme-engine';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
 import AttireSection from './AttireSection';
@@ -64,9 +64,9 @@ function DetailCard({
     // Dynamic styling based on template category
     const cardClass = visual.cardClass;
         
-    const textColorHeading = isDark ? "text-white/30" : "text-[#4A4444]/30";
+    const textColorHeading = isDark ? "text-white/72" : "text-[#4A4444]/68";
     const textColorValue = isDark ? "text-white" : "text-[#4A4444]";
-    const textColorSub = isDark ? "text-white/50" : "text-[#4A4444]/50";
+    const textColorSub = isDark ? "text-white/74" : "text-[#4A4444]/68";
 
     return (
         <motion.div 
@@ -106,7 +106,7 @@ function DetailCard({
                     <p className={`text-2xl md:text-3xl ${typography.heading} mb-3 leading-tight tracking-tight break-words w-full ${textColorValue}`}>
                         {value}
                     </p>
-                    <p className={`text-xs md:text-base mb-6 max-w-[280px] mx-auto font-medium leading-relaxed opacity-80 break-words ${textColorSub}`}>
+                    <p className={`text-xs md:text-base mb-6 max-w-[280px] mx-auto font-medium leading-relaxed break-words ${textColorSub}`}>
                         {subtitle}
                     </p>
                 </div>
@@ -144,6 +144,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
     const palette = derivePalette(motifColor, invert);
     const typography = getTypography(template);
     const visual = getTemplateVisualProfile(template, motifColor, invert);
+    const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     
     const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
     const isDark = ['midnight', 'cinematic', 'royal', 'urban', 'glitch', 'film', 'artdeco'].includes(template) || invert;
@@ -160,7 +161,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                     className="mb-12 text-center"
                 >
                     <p className={`mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>The essentials</p>
-                    <h2 className={`text-4xl md:text-6xl ${visual.headingClass}`}>{visual.detailTitle}</h2>
+                    <h2 className={`text-4xl md:text-6xl ${titleStyle.className}`} style={titleStyle.style}>{visual.detailTitle}</h2>
                     <div className={`mx-auto mt-6 ${visual.dividerClass}`} />
                 </motion.div>
             </div>
@@ -182,7 +183,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                     <DetailCard
                         delay={0.1}
                         icon={MapPin}
-                        title="The Venue"
+                        title="The Ceremony"
                         value={wedding.venue_name || 'Destination TBD'}
                         subtitle={wedding.venue_address || 'Coming soon to your inbox'}
                         link={wedding.maps_link}
@@ -225,8 +226,8 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                             transition={{ delay: 0.3, duration: 0.8 }}
                             className="mb-16 text-center"
                         >
-                            <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-30 block mb-3">Official Invitation</span>
-                            <h2 className={`text-4xl md:text-5xl ${typography.heading} ${isDark ? 'text-white/80' : 'text-[#4A4444]/80'}`}>The Invitation</h2>
+                            <span className={`text-[10px] uppercase tracking-[0.4em] font-bold block mb-3 ${isDark ? 'text-white/70' : 'text-[#4A4444]/68'}`}>Official Invitation</span>
+                            <h2 className={`text-4xl md:text-5xl ${typography.heading} ${titleStyle.className}`} style={titleStyle.style}>The Invitation</h2>
                         </motion.div>
 
                         {/* Multi-image display logic */}
@@ -279,7 +280,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                                             {/* Page Number Badge */}
                                             {inviteImages.length > 1 && (
                                                 <div className="absolute top-4 right-4 z-30">
-                                                    <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest backdrop-blur-md ${isDark ? 'bg-white/10 text-white/50' : 'bg-black/5 text-black/40'}`}>
+                                                    <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest backdrop-blur-md ${isDark ? 'bg-black/70 text-white' : 'bg-white/90 text-[#4A4444]'}`}>
                                                         Page {index + 1}
                                                     </div>
                                                 </div>
@@ -308,7 +309,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                             initial={{ opacity: 0 }}
                             whileInView={{ opacity: 0.4 }}
                             transition={{ delay: 1 }}
-                            className="mt-12 text-[10px] uppercase tracking-[0.2em] font-medium"
+                            className={`mt-12 text-[10px] uppercase tracking-[0.2em] font-bold ${isDark ? 'text-white/70' : 'text-[#4A4444]/68'}`}
                         >
                             {inviteImages.length > 1 ? 'Scroll to see all pages' : 'Tap to view invitation details'}
                         </motion.p>

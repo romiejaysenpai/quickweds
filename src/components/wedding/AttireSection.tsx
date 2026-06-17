@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Shirt } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 import { useSectionContext } from '@/context/SectionContext';
-import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
 
 function getDressCodeParts(wedding: Wedding) {
     const [attire = '', color = ''] = (wedding.dress_code || '').split('||');
@@ -88,6 +88,7 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
 
     const { attire, color } = getDressCodeParts(wedding);
     const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || color);
+    const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const isDark = ['royal', 'midnight', 'cinematic', 'urban', 'glitch', 'film'].includes(wedding.template || '');
     const palette = [
         color,
@@ -113,7 +114,7 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
                     <div>
                         <p className={`mb-2 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>Dress code</p>
                         <h3 className={`font-serif text-3xl leading-tight sm:text-4xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>Wedding Attire</h3>
-                        <p className={`mt-3 text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>
+                        <p className={`mt-3 text-sm leading-6 ${isDark ? 'text-white/76' : 'text-[#4A4444]/74'}`}>
                             We Kindly invite you to celebrate with us by dressing in attire that reflects our wedding colors.
                         </p>
                     </div>
@@ -141,7 +142,7 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
                         <AttireCharacters color={color} group="guests" />
                         <p className="mt-2 text-[10px] font-black uppercase tracking-[0.24em] text-primary">For Guests</p>
                         <h4 className={`mt-2 font-serif text-xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>{attire}</h4>
-                        <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>
+                        <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-white/76' : 'text-[#4A4444]/74'}`}>
                             Semi-formal attire that complements our wedding colors is warmly encouraged.
                         </p>
                     </div>
@@ -163,8 +164,8 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
                         <Shirt className="h-7 w-7 stroke-[1.6] text-primary" />
                     </div>
                     <p className={`mb-3 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>Dress code</p>
-                    <h2 className={`text-4xl sm:text-5xl md:text-6xl ${visual.headingClass}`}>Wedding Attire</h2>
-                    <p className={`mx-auto mt-5 max-w-2xl text-sm leading-7 sm:text-base ${isDark ? 'text-white/65' : 'text-[#4A4444]/70'}`}>
+                    <h2 className={`text-4xl sm:text-5xl md:text-6xl ${titleStyle.className}`} style={titleStyle.style}>Wedding Attire</h2>
+                    <p className={`mx-auto mt-5 max-w-2xl text-sm leading-7 sm:text-base ${isDark ? 'text-white/78' : 'text-[#4A4444]/76'}`}>
                         We Kindly invite you to celebrate with us by dressing in attire that reflects our wedding colors.
                     </p>
                 </motion.div>
@@ -192,7 +193,7 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
                         <AttireCharacters color={color} group="sponsors" />
                         <p className="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-primary">Principal Sponsors</p>
                         <h3 className={`mt-3 font-serif text-2xl sm:text-3xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>Formal wedding attire</h3>
-                        <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>
+                        <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/76' : 'text-[#4A4444]/74'}`}>
                             We invite our principal sponsors to wear elegant formal attire in shades that complement the wedding palette.
                         </p>
                     </motion.div>
@@ -207,7 +208,7 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
                         <AttireCharacters color={color} group="guests" />
                         <p className="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-primary">For Guests</p>
                         <h3 className={`mt-3 font-serif text-2xl sm:text-3xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>{attire}</h3>
-                        <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>
+                        <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/76' : 'text-[#4A4444]/74'}`}>
                             Semi-formal attire that complements our wedding colors is warmly encouraged.
                         </p>
                     </motion.div>

@@ -9,14 +9,23 @@ export interface Wedding {
     venue_name: string;
     venue_address?: string;
     maps_link?: string;
+    reception_venue_name?: string;
+    reception_venue_address?: string;
+    reception_maps_link?: string;
+    reception_venue_photos?: string[] | string;
     story?: string;
     quote?: string;
     hero_image?: string;
     couple_photo?: string;
     teaser_video?: string;
     gallery_images?: string | string[];
+    gallery_layout?: string;
     custom_domain?: string;
     template: string;
+    template_style?: string;
+    background_style?: string;
+    section_title_font_style?: string;
+    section_title_color_style?: string;
     font_style: string;
     motif_color: string;
     dress_code?: string;
@@ -48,6 +57,7 @@ export interface Wedding {
     plan_type?: string;
     // Wedding party
     wedding_party?: string | unknown[];
+    include_entourage_section?: boolean;
     spotify_playlist_url?: string;
     // Mode
     is_save_the_date?: boolean;
@@ -105,9 +115,14 @@ export interface GuestBookEntry {
 }
 
 export interface WeddingPartyMember {
+    memberKey?: string;
+    id?: string;
     name: string;
     role: string;
     bio?: string;
+    email?: string;
+    proposalTemplateKey?: 'heartfelt' | 'elegant' | 'simple';
+    proposalMessage?: string;
     photo?: string;
 }
 

@@ -51,7 +51,7 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: any) {
 
                 {/* Wave Bottom Decoration */}
                 <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none opacity-20">
-                    <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-[200%] h-20 sm:h-24 md:h-32 lg:h-32 fill-[#00695c] animate-marquee"><path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" /></svg>
+                    <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-20 sm:h-24 md:h-32 lg:h-32 fill-[#00695c]"><path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" /></svg>
                 </div>
             </section>
 
@@ -71,7 +71,7 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
             <BioSection id="bio" wedding={wedding} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
@@ -87,7 +87,7 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

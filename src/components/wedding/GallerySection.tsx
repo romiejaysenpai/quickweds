@@ -12,7 +12,31 @@ interface GallerySectionProps {
     masonry?: boolean;
     template?: string;
     motifColor?: string;
+    galleryLayout?: string;
     id: string;
+}
+
+type GalleryLayout = 'auto' | 'bento' | 'vertical' | 'horizontal' | 'grid';
+
+function normalizeGalleryLayout(layout?: string): GalleryLayout {
+    if (layout === 'bento' || layout === 'vertical' || layout === 'horizontal' || layout === 'grid') {
+        return layout;
+    }
+    return 'auto';
+}
+
+function getDefaultGalleryLayout(template: string, masonry: boolean): Exclude<GalleryLayout, 'auto'> {
+    const normalized = template.toLowerCase();
+    if (masonry || ['editorial', 'vogue', 'minimal', 'luxury', 'garden', 'tropical', 'sakura'].includes(normalized)) {
+        return 'bento';
+    }
+    if (['film', 'cinematic', 'urban', 'glitch'].includes(normalized)) {
+        return 'horizontal';
+    }
+    if (['boho', 'romantic', 'elopement', 'whimsical'].includes(normalized)) {
+        return 'vertical';
+    }
+    return 'grid';
 }
 
 function GalleryImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
@@ -90,7 +114,7 @@ function Lightbox({ images, index, onClose }: { images: string[]; index: number;
                 />
 
                 {/* Counter */}
-                <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 text-white/60 text-xs sm:text-sm font-mono">
+                <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs font-mono text-white sm:text-sm">
                     {current + 1} / {images.length}
                 </div>
             </motion.div>
@@ -98,7 +122,7 @@ function Lightbox({ images, index, onClose }: { images: string[]; index: number;
     );
 }
 
-export default function GallerySection({ gallery, masonry = false, template = 'classic', motifColor = '#D16C78', id }: GallerySectionProps) {
+export default function GallerySection({ gallery, masonry = false, template = 'classic', motifColor = '#D16C78', galleryLayout = 'auto', id }: GallerySectionProps) {
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const { registerSection, unregisterSection } = useSectionContext();
 
@@ -115,8 +139,49 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
     const visual = getTemplateVisualProfile(template, motifColor);
     
     const isSharp = visual.isSharp || ['editorial', 'vogue', 'urban', 'minimal'].includes(template);
-    const isBento = masonry || ['editorial', 'vogue', 'minimal', 'urban', 'boho', 'luxury', 'garden', 'tropical', 'sakura'].includes(template);
+    const selectedLayout = normalizeGalleryLayout(galleryLayout);
+    const resolvedLayout = selectedLayout === 'auto' ? getDefaultGalleryLayout(template, masonry) : selectedLayout;
+    const isBento = resolvedLayout === 'bento';
     const layoutClasses = isBento ? BENTO_PRESETS.gallery : Array(gallery.length).fill("");
+    const itemRadiusClass = isSharp ? 'rounded-none' : 'rounded-[1.8rem]';
+
+    const renderGalleryItem = (img: string, i: number, modeClass = '') => (
+        <motion.button
+            key={`${img}-${i}`}
+            type="button"
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(i * 0.06, 0.36), duration: 0.5 }}
+            className={`group cursor-pointer overflow-hidden p-2 text-left transition-all duration-500 hover:-translate-y-1 ${visual.cardClass} ${modeClass}`}
+            onClick={() => setLightboxIndex(i)}
+            aria-label={`Open wedding gallery image ${i + 1}`}
+        >
+            <div className={`relative w-full overflow-hidden ${itemRadiusClass} ${
+                resolvedLayout === 'horizontal'
+                    ? 'aspect-[4/5] min-h-[20rem]'
+                    : resolvedLayout === 'vertical'
+                        ? 'aspect-[4/5] min-h-[20rem] sm:aspect-[16/10]'
+                        : isBento
+                            ? 'min-h-[18rem] sm:min-h-[22rem] md:h-full md:min-h-[16rem] lg:min-h-[18rem]'
+                            : 'aspect-square min-h-[16rem] sm:min-h-[18rem] lg:aspect-[4/5]'
+            }`}>
+                <GalleryImage
+                    src={img}
+                    alt={`Wedding gallery image ${i + 1}`}
+                    className="group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/8 to-transparent opacity-100 transition-opacity duration-500 sm:opacity-0 sm:group-hover:opacity-100" />
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-4 opacity-100 transition-all duration-500 sm:translate-y-4 sm:p-5 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">
+                    <span className="rounded-full border border-white/55 bg-black/45 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md sm:px-4 sm:text-[10px] sm:tracking-[0.24em]">
+                        Memory {i + 1}
+                    </span>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary shadow-lg ring-1 ring-black/10">
+                        <ChevronRight className="h-5 w-5" />
+                    </div>
+                </div>
+            </div>
+        </motion.button>
+    );
 
     return (
         <>
@@ -136,35 +201,29 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
                         </p>
                     </motion.div>
 
-                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${isBento ? 'md:grid-cols-4 md:auto-rows-[16rem] lg:auto-rows-[18rem]' : 'lg:grid-cols-3'} gap-4 sm:gap-6`}>
-                        {gallery.map((img: string, i: number) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 50 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.1, duration: 0.5 }}
-                                className={`group cursor-pointer overflow-hidden p-2 transition-all duration-500 hover:-translate-y-1 ${isBento ? 'md:h-full' : ''} ${visual.cardClass} ${layoutClasses[i % layoutClasses.length]}`}
-                                onClick={() => setLightboxIndex(i)}
-                            >
-                                <div className={`relative min-h-[18rem] w-full overflow-hidden sm:min-h-[22rem] md:min-h-[16rem] lg:min-h-[18rem] ${isBento ? 'md:h-full' : 'lg:aspect-[4/5]'} ${isSharp ? 'rounded-none' : 'rounded-[1.8rem]'}`}>
-                                    <GalleryImage
-                                        src={img}
-                                        alt={`Wedding gallery image ${i + 1}`}
-                                        className="group-hover:scale-110"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-6 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                                        <span className="rounded-full border border-white/35 bg-white/15 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.24em] text-white backdrop-blur-md">
-                                            Memory {i + 1}
-                                        </span>
-                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-lg">
-                                            <ChevronRight className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
+                    {resolvedLayout === 'horizontal' ? (
+                        <div className="no-scrollbar -mx-4 flex snap-x gap-4 overflow-x-auto overscroll-x-contain px-4 pb-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
+                            {gallery.map((img: string, i: number) => renderGalleryItem(
+                                img,
+                                i,
+                                'w-[78vw] max-w-[22rem] shrink-0 snap-center sm:w-[42vw] md:w-[min(34vw,26rem)]'
+                            ))}
+                        </div>
+                    ) : resolvedLayout === 'vertical' ? (
+                        <div className="mx-auto max-w-4xl space-y-5 sm:space-y-7">
+                            {gallery.map((img: string, i: number) => renderGalleryItem(img, i, 'w-full'))}
+                        </div>
+                    ) : (
+                        <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 ${
+                            isBento ? 'md:grid-cols-4 md:auto-rows-[16rem] lg:auto-rows-[18rem]' : 'lg:grid-cols-3'
+                        }`}>
+                            {gallery.map((img: string, i: number) => renderGalleryItem(
+                                img,
+                                i,
+                                `${isBento ? 'md:h-full' : ''} ${layoutClasses[i % layoutClasses.length]}`
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 

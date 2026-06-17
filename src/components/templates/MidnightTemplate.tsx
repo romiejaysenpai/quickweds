@@ -38,7 +38,7 @@ export default function MidnightTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
             <BioSection id="bio" wedding={wedding} />
             <DetailsSection id="details" wedding={wedding} invert />
             {!wedding.is_thank_you_mode && (
@@ -54,7 +54,7 @@ export default function MidnightTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <GiftSection id="gift" wedding={wedding} invert />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

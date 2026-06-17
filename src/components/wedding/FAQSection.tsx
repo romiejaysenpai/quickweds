@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { HelpCircle, MessageCircleQuestion } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
-import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
 
 interface FAQItem {
     question: string;
@@ -46,6 +46,7 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
     const template = wedding?.template || 'classic';
     const motifColor = wedding?.motif_color || '#D16C78';
     const visual = getTemplateVisualProfile(template, motifColor);
+    const titleStyle = wedding ? getSectionTitleStyle(wedding, visual.headingClass) : { className: visual.headingClass, style: undefined };
     const isDark = ['royal', 'midnight', 'cinematic', 'urban', 'glitch', 'film'].includes(template);
 
     return (
@@ -61,8 +62,8 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
                         <MessageCircleQuestion className="h-7 w-7 stroke-[1.6] text-primary" />
                     </div>
                     <p className={`mb-3 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>Guest notes</p>
-                    <h2 className={`text-3xl sm:text-4xl md:text-5xl ${visual.headingClass}`}>Questions & Details</h2>
-                    <p className={`mx-auto mt-4 max-w-2xl text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>
+                    <h2 className={`text-3xl sm:text-4xl md:text-5xl ${titleStyle.className}`} style={titleStyle.style}>Questions & Details</h2>
+                    <p className={`mx-auto mt-4 max-w-2xl text-sm leading-6 ${isDark ? 'text-white/76' : 'text-[#4A4444]/74'}`}>
                         A clean accordion-style guide for the small details guests usually ask about.
                     </p>
                 </motion.div>
@@ -82,7 +83,7 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
                                 <span className="flex-1">{item.question}</span>
                                 <span className="ml-2 text-primary transition-transform group-open:rotate-45">+</span>
                             </summary>
-                            <p className={`mt-4 pl-8 text-sm leading-6 ${isDark ? 'text-white/65' : 'text-[#4A4444]/70'}`}>
+                            <p className={`mt-4 pl-8 text-sm leading-6 ${isDark ? 'text-white/78' : 'text-[#4A4444]/76'}`}>
                                 {item.answer}
                             </p>
                         </motion.details>

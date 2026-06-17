@@ -38,7 +38,7 @@ const VIEWPORTS = [
 const imageData =
   'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600"%3E%3Crect width="1200" height="1600" fill="%23f4d7c8"/%3E%3Ccircle cx="600" cy="620" r="260" fill="%23d16c78" opacity=".35"/%3E%3Cpath d="M260 1120c180-210 420-210 600 0" fill="none" stroke="%233a2a2d" stroke-width="32" stroke-linecap="round"/%3E%3C/svg%3E';
 
-function weddingForTemplate(template: string) {
+function weddingForTemplate(template: string, overrides: Record<string, unknown> = {}) {
   return {
     id: `template-${template}`,
     public_slug: `template-${template}`,
@@ -86,6 +86,7 @@ function weddingForTemplate(template: string) {
     payment_status: 'paid',
     plan_type: 'pro',
     wedding_party: JSON.stringify([{ name: 'Lena Park', role: 'Maid of Honor', bio: 'Best friend and dance floor captain.' }]),
+    include_entourage_section: true,
     spotify_playlist_url: 'https://open.spotify.com/',
     is_save_the_date: false,
     is_thank_you_mode: false,
@@ -95,10 +96,11 @@ function weddingForTemplate(template: string) {
     couple_email: 'couple@example.com',
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
+    ...overrides,
   };
 }
 
-async function mockWeddingPage(page: Page, template: string) {
+async function mockWeddingPage(page: Page, template: string, overrides: Record<string, unknown> = {}) {
   const weddingId = `template-${template}`;
   await page.addInitScript((id) => {
     window.sessionStorage.setItem(`quickweds_entrance_seen_${id}`, '1');
@@ -110,7 +112,7 @@ async function mockWeddingPage(page: Page, template: string) {
   await page.unroute('**/api/analytics/track').catch(() => {});
 
   await page.route('**/api/public/weddings/**', async (route) => {
-    await route.fulfill({ json: { wedding: weddingForTemplate(template) } });
+    await route.fulfill({ json: { wedding: weddingForTemplate(template, overrides) } });
   });
 
   await page.route('**/api/public/guest-book**', async (route) => {
@@ -144,7 +146,18 @@ test.describe('public wedding templates', () => {
         await expect(page.locator('#faq')).toBeVisible();
         await expect(page.locator('#guestbook')).toBeVisible();
         await expect(page.locator('#venue')).toBeVisible();
+        await expect(page.locator('#entourage')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Our Entourage' })).toBeVisible();
       }
     });
   }
+
+  test('hides the entourage section when couples opt out', async ({ page }) => {
+    await mockWeddingPage(page, 'classic', { include_entourage_section: false });
+    await page.goto('/w/template-classic', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#details');
+
+    await expect(page.locator('#entourage')).toHaveCount(0);
+    await expect(page.getByText('Lena Park')).toHaveCount(0);
+  });
 });

@@ -44,7 +44,7 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: any) {
                 <a href="#rsvp" className="mt-8 sm:mt-10 md:mt-12 px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center bg-red-600 text-white rounded-sm font-bold uppercase tracking-widest hover:bg-red-700 transition-colors">Action! (RSVP)</a>
             </section>
 
-            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
             <BioSection id="bio" wedding={wedding} />
             <DetailsSection id="details" wedding={wedding} invert />
             {!wedding.is_thank_you_mode && (
@@ -61,7 +61,7 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: any) {
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );

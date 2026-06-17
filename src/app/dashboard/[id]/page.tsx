@@ -1063,7 +1063,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-                                    <div className="h-44 relative">
+                                    <div className="relative h-44 min-h-[1px] w-full min-w-[1px]">
                                         <LazyBudgetPieChart
                                             data={budgetData}
                                             colors={COLORS}

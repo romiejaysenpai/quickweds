@@ -133,8 +133,8 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                 <div className="min-w-0 rounded-2xl border border-border bg-neutral/40 p-4 dark:bg-neutral/30">
                     <h4 className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60 mb-3">Visit Sources</h4>
                     {summary.sourceBreakdown.length > 0 ? (
-                        <div className="h-44">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <div className="h-44 min-h-[1px] w-full min-w-[1px]">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
                                 <BarChart data={summary.sourceBreakdown}>
                                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'currentColor' }} />
                                     <Tooltip contentStyle={{ backgroundColor: 'var(--white)', borderColor: 'var(--border)', borderRadius: '12px' }} />

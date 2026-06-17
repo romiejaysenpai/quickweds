@@ -43,17 +43,25 @@
 
 [data-theme='dark'],
 .dark {
-  --primary: #E69DA7; /* Softer Rose for dark context */
+  --primary: #E69DA7;
+  /* Softer Rose for dark context */
   --primary-hover: #D16C78;
   --primary-disabled: #6A4A4F;
   --secondary: #EAB2BE;
-  --accent: #E6CD9D; /* Brighter Gold */
-  --neutral: #1A1213; /* Deep Charcoal Rose */
-  --white: #251B1D; /* Soft Dark Background for cards */
-  --foreground: #FFF8F4; /* Warm Ivory Text */
-  --text-secondary: #C0A8AD; /* Muted Rose Beige */
-  --border: #3A2A2D; /* Darker Outline */
-  --background: #121212; /* True Dark Background */
+  --accent: #E6CD9D;
+  /* Brighter Gold */
+  --neutral: #1A1213;
+  /* Deep Charcoal Rose */
+  --white: #251B1D;
+  /* Soft Dark Background for cards */
+  --foreground: #FFF8F4;
+  /* Warm Ivory Text */
+  --text-secondary: #C0A8AD;
+  /* Muted Rose Beige */
+  --border: #3A2A2D;
+  /* Darker Outline */
+  --background: #121212;
+  /* True Dark Background */
   --success-bg: #1B2B21;
   --error-bg: #2B1B1B;
   --error-text: #E69B9B;
@@ -164,6 +172,7 @@ main section[id] {
 }
 
 @media (max-width: 767px) {
+
   html,
   body {
     max-width: 100%;
@@ -247,7 +256,10 @@ h6 {
 .paper-texture::after {
   content: "";
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-image: var(--qw-paper-texture);
   background-size: 26px 26px, 34px 34px, auto;
   opacity: 0.04;
@@ -544,8 +556,13 @@ html.native-app [data-web-only="true"] {
   min-height: 100svh;
 }
 
-[class*="template-"] h1 {
-  overflow-wrap: anywhere;
+[class*="template-"] h1,
+[class*="template-"] h2,
+[class*="template-"] h3 {
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: manual;
+  text-wrap: balance;
 }
 
 [class*="template-"] [class*="tracking-[1em]"],
@@ -571,15 +588,21 @@ html.native-app [data-web-only="true"] {
 }
 
 /* Touch-friendly interactive elements */
-button, a, input[type="button"], input[type="submit"] {
+button,
+a,
+input[type="button"],
+input[type="submit"] {
   min-height: 44px;
   min-width: 44px;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   min-height: 44px;
   padding: 0.75rem;
-  font-size: 16px; /* Prevents zoom on iOS focus */
+  font-size: 16px;
+  /* Prevents zoom on iOS focus */
 }
 
 .icon-field-left {
@@ -618,7 +641,8 @@ input, textarea, select {
 }
 
 /* Disable tap highlight on mobile */
-a, button {
+a,
+button {
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
 }
 
@@ -642,10 +666,17 @@ html {
 
 /* Mobile-specific text sizing improvements */
 @media (max-width: 640px) {
-  h1, h2, h3, h4, h5, h6 {
-    word-break: break-word;
-    hyphens: auto;
-    overflow-wrap: anywhere;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    word-break: normal;
+    hyphens: manual;
+    overflow-wrap: break-word;
+    text-wrap: balance;
   }
 
   body {
@@ -700,7 +731,29 @@ html {
   }
 }
 
+.qw-section-title {
+  max-width: min(100%, 12ch);
+  margin-inline: auto;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: manual;
+  text-wrap: balance;
+}
+
+@media (min-width: 640px) {
+  .qw-section-title {
+    max-width: min(100%, 16ch);
+  }
+}
+
+@media (min-width: 1024px) {
+  .qw-section-title {
+    max-width: min(100%, 22ch);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -729,7 +782,12 @@ html {
 /* ===== PERFORMANCE OPTIMIZATIONS ===== */
 
 /* Eliminate 300ms tap delay on all interactive elements */
-a, button, input, select, textarea, [role="button"] {
+a,
+button,
+input,
+select,
+textarea,
+[role="button"] {
   touch-action: manipulation;
 }
 
@@ -742,10 +800,10 @@ a, button, input, select, textarea, [role="button"] {
 
 /* Layout containment for repeated cards/list items —
    tells the browser changes inside won't affect siblings */
-.grid > div,
-.space-y-2 > div,
-.space-y-3 > div,
-.space-y-4 > div {
+.grid>div,
+.space-y-2>div,
+.space-y-3>div,
+.space-y-4>div {
   contain: layout style;
 }
 

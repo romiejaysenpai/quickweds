@@ -11,6 +11,7 @@
     "test:stress": "node scripts/stress-test.mjs",
     "test:stress:prod": "node scripts/stress-with-server.mjs",
     "test:predeploy": "npm run lint && npm run build && npm run test:smoke && npm run test:stress:prod",
+    "resend:sync-entourage": "node scripts/sync-resend-entourage-templates.mjs",
     "cap:sync": "cap sync ios",
     "cap:open:ios": "cap open ios",
     "migrate:power-features": "node scripts/apply-supabase-power-features.js"
