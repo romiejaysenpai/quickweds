@@ -72,15 +72,27 @@ export function isSchemaMissingError(error: any) {
     );
 }
 
+const PHOTO_PORTAL_SETTINGS_SELECT = 'disposable_camera_enabled, reveal_datetime, guest_name_required, allow_anonymous_uploads, require_approval, photo_limit_per_guest, film_frame_enabled, nostalgic_ui_enabled, date_stamp_enabled, enabled_filter_ids';
+const PHOTO_PORTAL_SETTINGS_SELECT_LEGACY = 'disposable_camera_enabled, reveal_datetime, guest_name_required, allow_anonymous_uploads, require_approval, photo_limit_per_guest, film_frame_enabled, nostalgic_ui_enabled';
+
 export async function getPhotoPortalSettings(db: any, weddingId: string): Promise<PhotoPortalSettings> {
     const result = await db
         .from('photo_portal_settings')
-        .select('disposable_camera_enabled, reveal_datetime, guest_name_required, allow_anonymous_uploads, require_approval, photo_limit_per_guest, film_frame_enabled, nostalgic_ui_enabled, date_stamp_enabled, enabled_filter_ids')
+        .select(PHOTO_PORTAL_SETTINGS_SELECT)
         .eq('wedding_id', weddingId)
         .maybeSingle();
 
     if (result.error) {
-        if (isSchemaMissingError(result.error)) return DEFAULT_PHOTO_PORTAL_SETTINGS;
+        if (isSchemaMissingError(result.error)) {
+            const legacyResult = await db
+                .from('photo_portal_settings')
+                .select(PHOTO_PORTAL_SETTINGS_SELECT_LEGACY)
+                .eq('wedding_id', weddingId)
+                .maybeSingle();
+
+            if (!legacyResult.error) return normalizePhotoPortalSettings(legacyResult.data);
+            if (isSchemaMissingError(legacyResult.error)) return DEFAULT_PHOTO_PORTAL_SETTINGS;
+        }
         throw result.error;
     }
 

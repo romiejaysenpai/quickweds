@@ -98,7 +98,7 @@ export async function PATCH(req: NextRequest) {
                 ...settings,
                 updated_at: new Date().toISOString(),
             }, { onConflict: 'wedding_id' })
-            .select('disposable_camera_enabled, reveal_datetime, guest_name_required, allow_anonymous_uploads, require_approval, photo_limit_per_guest, film_frame_enabled, nostalgic_ui_enabled')
+            .select('disposable_camera_enabled, reveal_datetime, guest_name_required, allow_anonymous_uploads, require_approval, photo_limit_per_guest, film_frame_enabled, nostalgic_ui_enabled, date_stamp_enabled, enabled_filter_ids')
             .single();
 
         if (error) throw error;

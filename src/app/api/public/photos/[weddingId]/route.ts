@@ -4,7 +4,7 @@ import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 import { getPhotoPortalSettings, isGalleryHiddenByReveal } from '@/lib/photo-portal';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ weddingId: string }> }) {
     const { weddingId: rawWeddingId } = await params;
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ wedd
 
         return NextResponse.json(
             { wedding: weddingRes.wedding, photos: photosRes.data || [], settings, galleryHidden },
-            { headers: { ...limited.headers, 'Cache-Control': galleryHidden ? 'no-store' : 'public, max-age=60, stale-while-revalidate=300' } }
+            { headers: { ...limited.headers, 'Cache-Control': 'no-store' } }
         );
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to load photos.';
