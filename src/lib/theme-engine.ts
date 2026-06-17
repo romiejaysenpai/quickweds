@@ -59,6 +59,88 @@ export interface TemplateVisualProfile {
     giftTitle: string;
 }
 
+export const SECTION_TITLE_FONT_STYLES = [
+    { id: 'default', name: 'Default', className: '' },
+    { id: 'editorial-serif', name: 'Editorial Serif', className: '[font-family:var(--font-bodoni)] uppercase tracking-[0.08em]' },
+    { id: 'romantic-script', name: 'Romantic Script', className: '[font-family:var(--font-script)] italic font-normal tracking-normal' },
+    { id: 'modern-sans', name: 'Modern Sans', className: '[font-family:var(--font-modern)] font-black uppercase tracking-[0.02em]' },
+] as const;
+
+export const SECTION_TITLE_COLOR_STYLES = [
+    { id: 'motif', name: 'Motif', swatches: ['var(--primary)', '#4A4444'] },
+    { id: 'rose-gold', name: 'Rose Gold', gradient: 'linear-gradient(90deg, #B85C7A 0%, #D6B87C 52%, #F2C1CC 100%)', swatches: ['#B85C7A', '#D6B87C', '#F2C1CC'] },
+    { id: 'champagne-blush', name: 'Champagne Blush', gradient: 'linear-gradient(90deg, #C5A059 0%, #EBD4C4 48%, #D16C78 100%)', swatches: ['#C5A059', '#EBD4C4', '#D16C78'] },
+    { id: 'sage-ivory', name: 'Sage & Ivory', gradient: 'linear-gradient(90deg, #537A57 0%, #AFC3A4 48%, #8F6A45 100%)', swatches: ['#537A57', '#AFC3A4', '#8F6A45'] },
+    { id: 'midnight-gold', name: 'Midnight Gold', gradient: 'linear-gradient(90deg, #111827 0%, #D6B87C 55%, #FFF3C4 100%)', swatches: ['#111827', '#D6B87C', '#FFF3C4'] },
+] as const;
+
+type SectionTitleWedding = {
+    section_title_font_style?: string | null;
+    section_title_color_style?: string | null;
+    motif_color?: string | null;
+};
+
+function normalizeSectionTitleColorStyleId(styleId?: string | null) {
+    if (!styleId || styleId === 'default') return 'motif';
+    return SECTION_TITLE_COLOR_STYLES.some((style) => style.id === styleId) ? styleId : 'motif';
+}
+
+function normalizeHexColor(color?: string | null) {
+    if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) return '#D16C78';
+    return color;
+}
+
+function mixHexColor(color: string, target: string, amount: number) {
+    const from = normalizeHexColor(color).replace('#', '');
+    const to = normalizeHexColor(target).replace('#', '');
+    const mix = (fromPart: string, toPart: string) => {
+        const fromValue = parseInt(fromPart, 16);
+        const toValue = parseInt(toPart, 16);
+        return Math.round(fromValue + (toValue - fromValue) * amount).toString(16).padStart(2, '0');
+    };
+
+    return `#${mix(from.slice(0, 2), to.slice(0, 2))}${mix(from.slice(2, 4), to.slice(2, 4))}${mix(from.slice(4, 6), to.slice(4, 6))}`;
+}
+
+function getHexLuminance(color: string) {
+    const normalized = normalizeHexColor(color).replace('#', '');
+    const rgb = [0, 2, 4].map((offset) => parseInt(normalized.slice(offset, offset + 2), 16) / 255);
+    const linear = rgb.map((channel) => channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+    return (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2]);
+}
+
+export function getMotifSectionTitleGradient(motifColor?: string | null) {
+    const motif = normalizeHexColor(motifColor);
+    const anchor = getHexLuminance(motif) > 0.82 ? mixHexColor(motif, '#8F4D5D', 0.68) : motif;
+    const deep = mixHexColor(anchor, '#3A2A2D', 0.2);
+    const soft = mixHexColor(anchor, '#FFFFFF', 0.42);
+
+    return `linear-gradient(90deg, ${deep} 0%, ${anchor} 48%, ${soft} 100%)`;
+}
+
+export function getSectionTitleStyle(wedding: SectionTitleWedding, defaultClassName = ''): { className: string; style?: CSSProperties } {
+    const fontStyle = SECTION_TITLE_FONT_STYLES.find((style) => style.id === wedding.section_title_font_style);
+    const colorStyleId = normalizeSectionTitleColorStyleId(wedding.section_title_color_style);
+    const colorStyle = SECTION_TITLE_COLOR_STYLES.find((style) => style.id === colorStyleId);
+    const classNames = [fontStyle?.className || defaultClassName];
+    const style: CSSProperties = {};
+
+    const gradient = colorStyle && 'gradient' in colorStyle ? colorStyle.gradient : '';
+
+    if (gradient) {
+        classNames.push('bg-clip-text text-transparent');
+        style.backgroundImage = gradient;
+    } else if (colorStyleId === 'motif') {
+        classNames.push('bg-clip-text text-transparent');
+        style.backgroundImage = getMotifSectionTitleGradient(wedding.motif_color);
+    }
+
+    return {
+        className: classNames.filter(Boolean).join(' '),
+        style: Object.keys(style).length > 0 ? style : undefined,
+    };
+}
+
 /**
  * Derives a full palette from a single motif color.
  */

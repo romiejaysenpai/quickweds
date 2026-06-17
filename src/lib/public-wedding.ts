@@ -14,14 +14,22 @@ export const PUBLIC_WEDDING_FIELDS = [
     'venue_name',
     'venue_address',
     'maps_link',
+    'reception_venue_name',
+    'reception_venue_address',
+    'reception_maps_link',
+    'reception_venue_photos',
     'story',
     'quote',
     'hero_image',
     'couple_photo',
     'teaser_video',
     'gallery_images',
+    'gallery_layout',
     'custom_domain',
     'template',
+    'template_style',
+    'section_title_font_style',
+    'section_title_color_style',
     'font_style',
     'motif_color',
     'dress_code',
@@ -44,6 +52,7 @@ export const PUBLIC_WEDDING_FIELDS = [
     'cash_funds',
     'payment_links',
     'wedding_party',
+    'include_entourage_section',
     'spotify_playlist_url',
     'is_save_the_date',
     'is_thank_you_mode',
@@ -54,13 +63,72 @@ export const PUBLIC_WEDDING_FIELDS = [
     'updated_at',
 ] as const;
 
+function normalizeWeddingParty(value: unknown) {
+    const parsePartyValue = (partyValue: unknown): unknown[] => {
+        if (Array.isArray(partyValue)) return partyValue;
+
+        if (partyValue && typeof partyValue === 'object') {
+            const record = partyValue as Record<string, unknown>;
+            if (Array.isArray(record.members)) return record.members;
+            if (Array.isArray(record.wedding_party)) return record.wedding_party;
+        }
+
+        if (typeof partyValue !== 'string' || partyValue.trim().length === 0) return [];
+
+        try {
+            return parsePartyValue(JSON.parse(partyValue));
+        } catch {
+            return [];
+        }
+    };
+
+    return parsePartyValue(value)
+        .filter((member): member is Record<string, unknown> => Boolean(member) && typeof member === 'object')
+        .map((member) => ({
+            memberKey: typeof member.memberKey === 'string' ? member.memberKey.trim() : '',
+            id: typeof member.id === 'string' ? member.id.trim() : '',
+            name: String(member.name || '').trim(),
+            role: String(member.role || '').trim(),
+            bio: typeof member.bio === 'string' ? member.bio.trim() : '',
+            email: typeof member.email === 'string' ? member.email.trim() : '',
+            proposalTemplateKey: typeof member.proposalTemplateKey === 'string' ? member.proposalTemplateKey : undefined,
+            proposalMessage: typeof member.proposalMessage === 'string' ? member.proposalMessage.trim() : '',
+            photo: typeof member.photo === 'string' ? member.photo.trim() : '',
+        }))
+        .filter((member) => member.name.length > 0);
+}
+
+function normalizeSectionTitleColorStyle(value: unknown) {
+    return typeof value === 'string' && value.trim() && value !== 'default' ? value : 'motif';
+}
+
 export function toPublicWedding(record: Record<string, unknown>) {
-    return PUBLIC_WEDDING_FIELDS.reduce<Record<string, unknown>>((publicWedding, field) => {
+    const publicWedding = PUBLIC_WEDDING_FIELDS.reduce<Record<string, unknown>>((publicWedding, field) => {
         if (field in record) {
             publicWedding[field] = record[field];
         }
         return publicWedding;
     }, {});
+
+    return {
+        ...publicWedding,
+        reception_venue_photos: publicWedding.reception_venue_photos ?? [],
+        gallery_images: publicWedding.gallery_images ?? [],
+        gallery_layout: typeof publicWedding.gallery_layout === 'string' && publicWedding.gallery_layout
+            ? publicWedding.gallery_layout
+            : 'auto',
+        template_style: typeof publicWedding.template_style === 'string' && publicWedding.template_style
+            ? publicWedding.template_style
+            : 'default',
+        section_title_font_style: typeof publicWedding.section_title_font_style === 'string' && publicWedding.section_title_font_style
+            ? publicWedding.section_title_font_style
+            : 'default',
+        section_title_color_style: normalizeSectionTitleColorStyle(publicWedding.section_title_color_style),
+        wedding_party: normalizeWeddingParty(publicWedding.wedding_party),
+        include_entourage_section: publicWedding.include_entourage_section === false ? false : true,
+        is_save_the_date: publicWedding.is_save_the_date === true,
+        is_thank_you_mode: publicWedding.is_thank_you_mode === true,
+    };
 }
 
 export function getSupabaseErrorMessage(error: unknown) {
@@ -94,14 +162,22 @@ function getTemplateTestWedding(rawIdentifier: string) {
         venue_name: 'The Glass Garden Estate',
         venue_address: '123 Celebration Lane, Napa, CA',
         maps_link: 'https://maps.google.com/?q=The+Glass+Garden+Estate',
+        reception_venue_name: 'The Glass Garden Reception Hall',
+        reception_venue_address: '125 Celebration Lane, Napa, CA',
+        reception_maps_link: 'https://maps.google.com/?q=The+Glass+Garden+Reception+Hall',
+        reception_venue_photos: JSON.stringify([imageData, imageData, imageData]),
         story: 'We met on a rainy afternoon and have been finding sunshine together ever since.',
         quote: 'Together is our favorite place to be.',
         hero_image: imageData,
         couple_photo: imageData,
         teaser_video: '',
         gallery_images: JSON.stringify([imageData, imageData, imageData, imageData, imageData, imageData]),
+        gallery_layout: 'auto',
         custom_domain: '',
         template,
+        template_style: 'default',
+        section_title_font_style: 'default',
+        section_title_color_style: 'motif',
         font_style: 'Elegant',
         motif_color: template === 'midnight' || template === 'royal' ? '#D6B87C' : '#D16C78',
         dress_code: 'Formal garden attire||Blush, sage, champagne',
@@ -127,6 +203,7 @@ function getTemplateTestWedding(rawIdentifier: string) {
         cash_funds: JSON.stringify([{ title: 'Honeymoon Fund', description: 'A little help for our first adventure.', targetAmount: 5000, current: 1200, currency: '$' }]),
         payment_links: JSON.stringify([{ label: 'PayPal', url: 'https://example.com/pay' }]),
         wedding_party: JSON.stringify([{ name: 'Lena Park', role: 'Maid of Honor', bio: 'Best friend and dance floor captain.' }]),
+        include_entourage_section: true,
         spotify_playlist_url: 'https://open.spotify.com/',
         is_save_the_date: false,
         is_thank_you_mode: false,

@@ -31,7 +31,15 @@ function safeParseArray<T>(value: unknown): T[] {
     }
 }
 
-export default function WeddingPageClient({ publicIdentifier, wedding }: { publicIdentifier: string; wedding: Wedding }) {
+export default function WeddingPageClient({
+    publicIdentifier,
+    wedding,
+    initialIsExpired,
+}: {
+    publicIdentifier: string;
+    wedding: Wedding;
+    initialIsExpired: boolean;
+}) {
     useEffect(() => {
         if (!publicIdentifier || !wedding?.id || typeof window === 'undefined') return;
 
@@ -50,7 +58,7 @@ export default function WeddingPageClient({ publicIdentifier, wedding }: { publi
         }
     }, [publicIdentifier, wedding?.id]);
 
-    const isExpired = new Date(wedding.rsvp_deadline) < new Date();
+    const isExpired = initialIsExpired;
     const gallery = safeParseArray<string>(wedding.gallery_images);
     const template = wedding.template || 'classic';
     const pageStyle = getWeddingPageStyle(wedding, { includeGradient: true });

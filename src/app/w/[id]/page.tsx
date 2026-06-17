@@ -6,6 +6,13 @@ import type { Wedding } from '@/types/wedding';
 
 export const revalidate = 60;
 
+function isRsvpDeadlineExpired(deadline: unknown) {
+    if (typeof deadline !== 'string' || deadline.trim().length === 0) return false;
+    const deadlineDate = new Date(deadline);
+    if (Number.isNaN(deadlineDate.getTime())) return false;
+    return deadlineDate < new Date();
+}
+
 function WeddingUnavailable({ message }: { message?: string }) {
     return (
         <div className="min-h-screen bg-[#FFF8F4] px-6 py-24 text-center text-foreground">
@@ -36,5 +43,11 @@ export default async function WeddingPage({ params }: { params: Promise<{ id: st
 
     if (!wedding) notFound();
 
-    return <WeddingPageClient publicIdentifier={id} wedding={wedding as unknown as Wedding} />;
+    return (
+        <WeddingPageClient
+            publicIdentifier={id}
+            wedding={wedding as unknown as Wedding}
+            initialIsExpired={isRsvpDeadlineExpired(wedding.rsvp_deadline)}
+        />
+    );
 }
