@@ -10,6 +10,37 @@ export const revalidate = 0;
 
 type PlannerAccessRole = 'owner' | 'partner' | 'coordinator' | 'pending' | 'denied';
 
+const WEDDING_REQUIRED_COLUMNS = [
+    'id',
+    'user_id',
+] as const;
+
+const WEDDING_OPTIONAL_COLUMNS = [
+    'bride_name',
+    'groom_name',
+    'wedding_date',
+    'wedding_time',
+    'venue_name',
+    'venue_address',
+    'template',
+    'hero_image',
+    'custom_domain',
+    'public_slug',
+    'total_budget',
+    'currency',
+    'guest_limit',
+    'notify_on_rsvp',
+    'notify_on_updates',
+    'is_premium',
+    'payment_status',
+    'deleted_at',
+    'public_seat_finder_token',
+    'seat_finder_enabled',
+    'planner_calendar_token',
+] as const;
+
+const WEDDING_OPTIONAL_COLUMN_SET = new Set<string>(WEDDING_OPTIONAL_COLUMNS);
+
 function isSchemaMissingError(error: any) {
     const text = `${error?.code || ''} ${error?.message || ''} ${error?.details || ''}`.toLowerCase();
     return (
@@ -52,31 +83,64 @@ async function safePlannerMaybeSingle(query: any, label: string) {
     return result.data || null;
 }
 
+function getMissingColumnName(error: any) {
+    const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`;
+    const quotedMatch = text.match(/'([^']+)'\s+column/i);
+    if (quotedMatch?.[1]) return quotedMatch[1];
+
+    const qualifiedMatch = text.match(/column\s+(?:public\.)?(?:weddings\.)?([a-zA-Z0-9_]+)\s+does not exist/i);
+    if (qualifiedMatch?.[1]) return qualifiedMatch[1];
+
+    const unqualifiedMatch = text.match(/column\s+([a-zA-Z0-9_]+)\s+does not exist/i);
+    if (unqualifiedMatch?.[1]) return unqualifiedMatch[1];
+
+    return null;
+}
+
 async function findWeddingById(db: any, weddingId: string) {
-    const baseQuery = () => db
-        .from('weddings')
-        .select('id, user_id, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, template, hero_image, custom_domain, public_slug, total_budget, currency, notify_on_rsvp, notify_on_updates, is_premium, payment_status, deleted_at, public_seat_finder_token, seat_finder_enabled')
-        .eq('id', weddingId);
+    const omittedColumns = new Set<string>();
+    let includeDeletedAtFilter = true;
 
-    const { data, error } = await baseQuery()
-        .is('deleted_at', null)
-        .maybeSingle();
+    for (let attempt = 0; attempt < WEDDING_OPTIONAL_COLUMNS.length + 3; attempt += 1) {
+        const selectColumns = [
+            ...WEDDING_REQUIRED_COLUMNS,
+            ...WEDDING_OPTIONAL_COLUMNS.filter((column) => !omittedColumns.has(column)),
+        ].join(', ');
 
-    if (!error) return { wedding: data, error: null };
+        let query = db
+            .from('weddings')
+            .select(selectColumns)
+            .eq('id', weddingId);
 
-    const message = String(error.message || '');
-    const shouldRetryWithoutDeletedAt =
-        message.includes('deleted_at') ||
-        message.includes('schema cache') ||
-        message.includes('column') ||
-        error.code === 'PGRST204';
+        if (includeDeletedAtFilter && !omittedColumns.has('deleted_at')) {
+            query = query.is('deleted_at', null);
+        }
 
-    if (!shouldRetryWithoutDeletedAt) {
+        const { data, error } = await query.maybeSingle();
+        if (!error) return { wedding: data, error: null };
+
+        if (!isSchemaMissingError(error)) {
+            return { wedding: null, error };
+        }
+
+        const missingColumn = getMissingColumnName(error);
+        if (missingColumn && WEDDING_OPTIONAL_COLUMN_SET.has(missingColumn) && !omittedColumns.has(missingColumn)) {
+            omittedColumns.add(missingColumn);
+            console.warn(`Planner wedding lookup retrying without missing weddings.${missingColumn} column.`);
+            continue;
+        }
+
+        if (includeDeletedAtFilter) {
+            includeDeletedAtFilter = false;
+            omittedColumns.add('deleted_at');
+            console.warn('Planner wedding lookup retrying without deleted_at filter.');
+            continue;
+        }
+
         return { wedding: null, error };
     }
 
-    const fallback = await baseQuery().maybeSingle();
-    return { wedding: fallback.data, error: fallback.error };
+    return { wedding: null, error: new Error('Unable to load wedding after retrying optional schema columns.') };
 }
 
 export async function GET(req: NextRequest) {
