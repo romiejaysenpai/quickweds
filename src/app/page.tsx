@@ -19,11 +19,13 @@ import {
   Moon,
   PartyPopper,
   Phone,
+  QrCode,
   Quote,
   ShieldCheck,
   Sparkles,
   Star,
   Sun,
+  UserCheck,
   UsersRound,
   X,
   Instagram,
@@ -56,12 +58,12 @@ const featureCards = [
   {
     icon: MailCheck,
     title: 'Smart RSVP Management',
-    body: 'Track responses instantly, send automated RSVP emails, get couple notifications, and schedule reminders without chasing guests.',
+    body: 'Track responses instantly, send automated RSVP emails, notify hosts, and remind pending guests without chasing every reply.',
   },
   {
     icon: UsersRound,
-    title: 'Guest List & Seating Manager',
-    body: 'Organize guests, plus-ones, groups, and seating plans without spreadsheet chaos.',
+    title: 'Guest List & Seating',
+    body: 'Organize guests, plus-ones, groups, table assignments, QR seat lookup, and event check-in without spreadsheet chaos.',
   },
   {
     icon: CircleDollarSign,
@@ -81,17 +83,44 @@ const featureCards = [
   {
     icon: Heart,
     title: 'Collaboration Tools',
-    body: 'Invite your partner, family, or planner so everyone can help without losing context.',
+    body: 'Invite your partner, coordinator, or family helpers so everyone can help without losing context.',
   },
   {
     icon: Camera,
     title: 'Photo Sharing Portal',
-    body: 'Let guests upload and share wedding memories in one private, easy-to-find place.',
+    body: 'Let guests upload memories through sharing codes, then review, approve, and reveal photos from your dashboard.',
   },
   {
     icon: PartyPopper,
     title: 'Post-Wedding Tools',
     body: 'Send thank-you messages, share albums, and stay connected after the celebration.',
+  },
+];
+
+const newFeatureCards = [
+  {
+    icon: UserCheck,
+    title: 'Entourage Proposals',
+    body: 'Invite sponsors, wedding party, and special helpers by email, then track who accepted or declined from Planner.',
+    meta: 'Proposal emails + response tracking',
+  },
+  {
+    icon: Camera,
+    title: 'Guest Photo Portal',
+    body: 'Collect guest uploads with QR-friendly sharing codes, moderation, filters, and disposable-camera reveal settings.',
+    meta: 'Codes, approval, reveal date',
+  },
+  {
+    icon: QrCode,
+    title: 'QR Seat Finder',
+    body: 'Generate guest codes, email seat links, print one venue QR, and check guests in at the reception.',
+    meta: 'Venue QR + check-in',
+  },
+  {
+    icon: LayoutDashboard,
+    title: 'Planner Pro Workspace',
+    body: 'Coordinate calendar sync, food and drink notes, honeymoon plans, thank-you notes, budgets, vendors, tasks, and seating.',
+    meta: 'One calm planning dashboard',
   },
 ];
 
@@ -104,18 +133,19 @@ const painPoints = [
 ];
 
 const solutionPoints = [
-  'Wedding website plus digital invitations',
-  'RSVP and guest management',
-  'Automated response emails, host notifications, and guest reminders',
-  'Budget and vendor tracking',
-  'Seating arrangement tools',
-  'Task and checklist planner',
-  'Collaborator access for your partner or coordinator',
+  'Wedding website plus multi-page digital invitations',
+  'RSVP, guest list, grouping, and guest email tools',
+  'Automated RSVP confirmations, host notifications, and reminders',
+  'Budget, vendor, food, honeymoon, and thank-you planning',
+  'Visual seating chart with QR Seat Finder and check-in',
+  'Guest photo portal with moderation and disposable-camera mode',
+  'Collaborator access for your partner, family, or coordinator',
 ];
 
 const quickWedsComparison = [
   ['All-in-one wedding planning system', 'Multiple tools required'],
-  ['Built-in seating and task management', 'No connected seating or task flow'],
+  ['Built-in seating, QR seat finder, and check-in', 'Manual table lists or separate tools'],
+  ['Guest photo portal and post-wedding follow-up', 'Scattered uploads and manual thank-you tracking'],
   ['Partner and planner collaboration', 'Limited collaboration'],
   ['No ads or distractions', 'Cluttered guest experience'],
   ['Fast, simple setup', 'Manual setup across apps'],
@@ -142,7 +172,7 @@ const testimonials = [
 const faqs = [
   {
     question: 'Is QuickWeds only a wedding website builder?',
-    answer: 'No. You can build and publish a free wedding website with RSVP tracking, QR sharing, a basic guest list, 50 guest emails, and Planner Lite. Planner Pro is the one-time upgrade for unlimited guest emails, full planner tools, seating, collaborators, reminders, photo tools, exports, and custom domains.',
+    answer: 'No. You can build and publish a free wedding website with RSVP tracking, QR sharing, a basic guest list, 50 guest emails, and Planner Lite. Planner Pro is the one-time upgrade for full planner tools, QR seating, collaborators, reminders, photo tools, exports, thank-you tools, and custom domains.',
   },
   {
     question: 'Can guests RSVP from their phones?',
@@ -154,7 +184,7 @@ const faqs = [
   },
   {
     question: 'Can my partner or planner help manage the wedding?',
-    answer: 'Yes. Free workspaces include 1 partner collaborator. Planner Pro unlocks coordinators and more helpers for managing budgets, vendors, tasks, seating, reminders, and post-wedding details.',
+    answer: 'Yes. Free workspaces include 1 partner collaborator. Planner Pro unlocks coordinators and more helpers for managing budgets, vendors, tasks, seating, reminders, guest photos, and post-wedding details.',
   },
   {
     question: 'Do I need technical skills to launch my site?',
@@ -162,7 +192,7 @@ const faqs = [
   },
   {
     question: 'Can I start free?',
-    answer: 'Yes. All templates, the builder, your wedding website, RSVP tools, QR sharing, basic guest tracking, 50 guest emails, and Planner Lite are free. Planner Pro unlocks unlimited planning, unlimited guest emails, seating, reminders, collaborators, exports, photo tools, and thank-you tools.',
+    answer: 'Yes. All templates, the builder, your wedding website, RSVP tools, QR sharing, basic guest tracking, 50 guest emails, and Planner Lite are free. Planner Pro unlocks unlimited planning, unlimited guest emails, QR seating, reminders, collaborators, exports, photo tools, and thank-you tools.',
   },
 ];
 
@@ -253,6 +283,47 @@ function WeddingTipsSection() {
               <p className="mt-2 text-sm leading-6 text-text-secondary">{tip.body}</p>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function NewFeaturesSection() {
+  return (
+    <section className="bg-white px-4 py-16 sm:px-6 sm:py-24">
+      <div className="mx-auto max-w-7xl">
+        <SectionHeading
+          eyebrow="New in QuickWeds"
+          title="More ways to keep the"
+          accent="real plan"
+          afterAccent=" organized."
+          body="Recent Planner Pro tools help couples move beyond the wedding website into entourage coordination, guest photos, seat finding, and post-wedding follow-up."
+        />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {newFeatureCards.map((feature) => {
+            const Icon = feature.icon;
+            return (
+              <div key={feature.title} className="group flex h-full flex-col rounded-2xl border border-border bg-neutral p-5 shadow-sm transition hover:-translate-y-1 hover:border-primary/30 hover:bg-white hover:shadow-xl hover:shadow-primary/10 sm:rounded-3xl sm:p-6">
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-primary shadow-sm ring-1 ring-border transition group-hover:bg-primary group-hover:text-white">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <span className="rounded-full border border-primary/10 bg-primary/5 px-3 py-1 text-right text-[9px] font-black uppercase tracking-[0.14em] text-primary">
+                    {feature.meta}
+                  </span>
+                </div>
+                <h3 className="font-serif text-xl font-bold text-foreground sm:text-2xl">{feature.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-text-secondary sm:text-base sm:leading-7">{feature.body}</p>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center sm:flex-row">
+          <PrimaryCta>Explore QuickWeds Free</PrimaryCta>
+          <p className="max-w-md text-sm font-semibold leading-6 text-text-secondary">
+            Start with your website and RSVP flow, then unlock the full planning workspace when you need it.
+          </p>
         </div>
       </div>
     </section>
@@ -739,6 +810,8 @@ export default function Home() {
           </div>
         </section>
 
+        <NewFeaturesSection />
+
         <section className="bg-white px-4 py-16 sm:px-6 sm:py-24">
           <div className="mx-auto grid max-w-6xl gap-8 rounded-[1.5rem] border border-border bg-neutral p-5 shadow-sm sm:rounded-[2rem] sm:p-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div className="text-center lg:text-left">
@@ -869,7 +942,7 @@ export default function Home() {
                     'QR sharing for invitations',
                     '50 guest emails per wedding',
                     'Planner Lite with starter limits',
-                    'Automatic RSVP emails and host notifications',
+                    'Automatic RSVP confirmations and host notifications',
                   ].map((item) => (
                     <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
                       <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
@@ -891,11 +964,11 @@ export default function Home() {
                   <div className="mt-8 grid gap-3">
                     {[
                       'Unlimited guest emails',
-                      'Full planner with unlimited tasks, budgets, suppliers, and calendar items',
-                      'Seating chart, guest check-in, and seat-link emails',
-                      'RSVP reminders and unlimited collaborators',
-                      'Google Calendar sync and custom domain',
-                      'Photo tools, thank-you tools, CSV exports, and advanced analytics',
+                      'Full planner with tasks, budgets, suppliers, food, calendar, and honeymoon items',
+                      'Seating chart, QR Seat Finder, guest check-in, and seat-link emails',
+                      'RSVP reminders, entourage proposals, and unlimited collaborators',
+                      'Google Calendar sync, custom domain, and CSV exports',
+                      'Photo portal controls, thank-you tools, and advanced analytics',
                     ].map((item) => (
                       <p key={item} className="flex items-center gap-3 rounded-2xl bg-neutral p-3 text-sm font-semibold sm:p-4 sm:text-base">
                         <CheckCircle2 className="h-5 w-5 flex-none text-primary" />
