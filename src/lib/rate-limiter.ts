@@ -21,6 +21,8 @@ export const RATE_LIMITS = {
     RSVP_SUBMIT: { maxRequests: 15, windowMs: 60 * 60 * 1000 },      // 15 per hour
     REMINDER_EMAIL: { maxRequests: 5, windowMs: 60 * 60 * 1000 },    // 5 per hour
     THANK_YOU_EMAIL: { maxRequests: 5, windowMs: 60 * 60 * 1000 },   // 5 per hour
+    ENTOURAGE_INVITE: { maxRequests: 20, windowMs: 60 * 60 * 1000 },  // 20 per hour
+    ENTOURAGE_RESPONSE: { maxRequests: 30, windowMs: 15 * 60 * 1000 }, // 30 per 15 minutes
     GUEST_BOOK: { maxRequests: 12, windowMs: 60 * 60 * 1000 },       // 12 per hour
     PHOTO_UPLOAD: { maxRequests: 20, windowMs: 60 * 60 * 1000 },     // 20 per hour
     SEAT_LOOKUP: { maxRequests: 30, windowMs: 15 * 60 * 1000 },      // 30 per 15 minutes

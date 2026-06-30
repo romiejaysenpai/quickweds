@@ -57,7 +57,12 @@ export default function EntranceReveal({
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        setIsVisible(!window.sessionStorage.getItem(`quickweds_entrance_seen_${weddingId}`));
+        const storageKey = `quickweds_entrance_seen_${weddingId}`;
+        const timer = window.setTimeout(() => {
+            setIsVisible(!window.sessionStorage.getItem(storageKey));
+        }, 0);
+
+        return () => window.clearTimeout(timer);
     }, [weddingId]);
 
     useEffect(() => {
@@ -90,7 +95,7 @@ export default function EntranceReveal({
         : `radial-gradient(circle at top, ${motifColor}22 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,248,244,0.8) 45%, rgba(255,248,244,1) 100%)`;
     
     const textColor = isDarkTheme ? 'text-white' : 'text-[#4A4444]';
-    const textMuted = isDarkTheme ? 'text-white/65' : 'text-[#4A4444]/65';
+    const textMuted = isDarkTheme ? 'text-white/78' : 'text-[#4A4444]/74';
     const borderMuted = isDarkTheme ? 'border-white/18' : 'border-[#4A4444]/15';
     return (
         <AnimatePresence>
@@ -257,7 +262,7 @@ export default function EntranceReveal({
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 1, duration: 0.65 }}
-                                        className={`mx-auto mt-4 max-w-lg text-sm leading-relaxed sm:text-base break-words ${isDarkTheme ? 'text-white/58' : 'text-[#4A4444]/70'}`}
+                                        className={`mx-auto mt-4 max-w-lg text-sm leading-relaxed sm:text-base break-words ${isDarkTheme ? 'text-white/78' : 'text-[#4A4444]/74'}`}
                                     >
                                         {venueName || 'A beautifully crafted celebration is about to unfold.'}
                                     </motion.p>
@@ -266,7 +271,7 @@ export default function EntranceReveal({
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 1.2, duration: 0.6 }}
-                                        className={`mt-10 flex items-center justify-center gap-3 ${isDarkTheme ? 'text-white/58' : 'text-[#4A4444]/50'}`}
+                                        className={`mt-10 flex items-center justify-center gap-3 ${isDarkTheme ? 'text-white/76' : 'text-[#4A4444]/68'}`}
                                     >
                                         <div className={`h-px w-10 ${isDarkTheme ? 'bg-white/16' : 'bg-black/10'}`} />
                                         <Heart className="h-3.5 w-3.5 fill-current" style={{ color: motifColor }} />

@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import { existsSync } from 'node:fs';
+
+const localChromeChannel = process.env.PLAYWRIGHT_CHANNEL
+  || (process.platform === 'darwin' && existsSync('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome') ? 'chrome' : undefined);
 
 export default defineConfig({
   testDir: './tests',
@@ -15,7 +19,10 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: localChromeChannel,
+      },
     },
   ],
   webServer: {

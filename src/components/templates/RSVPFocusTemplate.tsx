@@ -74,8 +74,8 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
             <DetailsSection id="details" wedding={wedding} />
             <BioSection id="bio" wedding={wedding} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
-            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <GiftSection id="gift" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"

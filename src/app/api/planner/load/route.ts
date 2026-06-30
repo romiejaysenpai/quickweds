@@ -202,8 +202,17 @@ export async function GET(req: NextRequest) {
             'account profile'
         );
 
+        const entourageInvitationsForAccess = await safePlannerList(
+            db
+                .from('entourage_invitations')
+                .select('id, wedding_id, member_key, name, email, role, message, template_key, status, sent_at, responded_at, created_at, updated_at')
+                .eq('wedding_id', resolvedWeddingId)
+                .order('created_at', { ascending: false }),
+            'entourage invitations'
+        );
+
         if (accessRole !== 'owner') {
-            return NextResponse.json({ accessRole, wedding, accountProfile, planUsage: EMPTY_PLANNER_USAGE, tasks: [], budgets: [], vendors: [], events: [], foodDrinks: [], googleCalendar: null, honeymoonItems: [], confirmedGuests: 0 });
+            return NextResponse.json({ accessRole, wedding, accountProfile, planUsage: EMPTY_PLANNER_USAGE, tasks: [], budgets: [], vendors: [], events: [], foodDrinks: [], googleCalendar: null, honeymoonItems: [], confirmedGuests: 0, entourageInvitations: entourageInvitationsForAccess });
         }
 
         const [tasks, budgets, vendors, events, foodDrinks, googleCalendarConnection, honeymoonItems, rsvps] = await Promise.all([
@@ -243,6 +252,7 @@ export async function GET(req: NextRequest) {
             } : { connected: false },
             honeymoonItems,
             confirmedGuests,
+            entourageInvitations: entourageInvitationsForAccess,
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : (typeof err === 'object' && err ? JSON.stringify(err) : 'Unable to load planner data');

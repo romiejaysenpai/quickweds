@@ -5,7 +5,7 @@ import { Quote } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
-import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
 
 interface BioSectionProps {
     wedding: Wedding;
@@ -23,6 +23,7 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
     const template = wedding.template || 'classic';
     const motifColor = wedding.motif_color || '#D16C78';
     const visual = getTemplateVisualProfile(template, motifColor);
+    const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const { isSharp, isDark, isVintage } = visual;
 
     // Apply negative margin to overlap the hero and break the "blocky" rhythm
@@ -72,7 +73,7 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
                     className="text-center md:text-left relative z-20"
                 >
                     <span className={`text-[10px] md:text-xs uppercase font-bold mb-6 block drop-shadow-sm ${visual.eyebrowClass}`}>Our Story</span>
-                    <h2 className={`text-4xl md:text-6xl mb-8 leading-tight ${visual.headingClass}`}>Meant to Be</h2>
+                    <h2 className={`text-4xl md:text-6xl mb-8 leading-tight ${titleStyle.className}`} style={titleStyle.style}>Meant to Be</h2>
                     <div className={`mb-10 md:mb-12 px-4 py-6 sm:px-6 sm:py-7 md:px-8 md:py-9 ${visual.cardClass}`}>
                         <p className={`text-lg md:text-xl leading-relaxed font-serif italic break-words text-center md:text-left ${textColorBody}`}>
                             {wedding.story || 'They say when you know, you know. For us, every moment since we met has been a beautiful step towards this day.'}
@@ -82,7 +83,7 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
                         whileHover={isSharp ? { x: 10 } : { scale: 1.02 }}
                         className={quoteBoxStyle}
                     >
-                        <Quote className="w-10 h-10 md:w-12 md:h-12 text-primary opacity-30 flex-shrink-0" />
+                        <Quote className="w-10 h-10 md:w-12 md:h-12 text-primary opacity-65 flex-shrink-0" />
                         <p className={`italic font-serif text-base md:text-xl leading-relaxed ${textColorHeading}`}>
                             {wedding.quote || "A successful marriage requires falling in love many times, always with the same person."}
                         </p>

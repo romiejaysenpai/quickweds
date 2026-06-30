@@ -14,6 +14,103 @@ import {
 import { SharedNewSections } from './shared';
 
 export default function EditorialTemplate({ wedding, gallery, isExpired }: any) {
+    if (wedding.template_style === 'editorial-photo') {
+        return (
+            <div className="bg-[#f7f3ee] pb-24 text-[#201c19]">
+                <section className="relative min-h-screen overflow-hidden px-5 py-10 md:px-10">
+                    <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl grid-cols-1 gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+                        <motion.div
+                            initial={{ opacity: 0, y: 18 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.9 }}
+                            className="relative min-h-[58vh] overflow-hidden bg-black lg:min-h-full"
+                        >
+                            <img
+                                src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                                alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                                loading="eager"
+                                decoding="async"
+                                className="h-full w-full object-cover opacity-90"
+                            />
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white md:p-10">
+                                <p className="text-[10px] font-black uppercase tracking-[0.42em] opacity-70">Wedding photography edition</p>
+                                <p className="mt-3 max-w-lg font-serif text-2xl italic leading-tight md:text-4xl">
+                                    {wedding.quote || 'Every frame, a quiet promise.'}
+                                </p>
+                            </div>
+                        </motion.div>
+                        <div className="flex flex-col justify-between border-y border-[#201c19]/15 py-8 lg:py-12">
+                            <div className="flex items-center justify-between gap-4">
+                                <p className="text-[10px] font-black uppercase tracking-[0.36em] text-[#201c19]/50">Issue 01</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.36em] text-[#201c19]/50">{new Date(wedding.wedding_date).getFullYear()}</p>
+                            </div>
+                            <motion.div
+                                initial={{ opacity: 0, x: 24 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.9, delay: 0.15 }}
+                                className="py-12"
+                            >
+                                {wedding.logo_initials && (
+                                    <MonogramMark
+                                        initials={wedding.logo_initials}
+                                        brideName={wedding.bride_name}
+                                        groomName={wedding.groom_name}
+                                        shape={wedding.logo_shape || 'minimal'}
+                                        color="#201c19"
+                                        motifColor={wedding.motif_color}
+                                        fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
+                                        size="sm"
+                                        className="mb-8"
+                                    />
+                                )}
+                                <h1 className="font-serif text-5xl leading-[0.86] tracking-tight sm:text-6xl md:text-7xl lg:text-8xl">
+                                    {wedding.bride_name.split(' ')[0]}
+                                    <span className="block font-light italic text-primary">&</span>
+                                    {wedding.groom_name.split(' ')[0]}
+                                </h1>
+                                <p className="mt-8 max-w-md text-base leading-7 text-[#5d554f]">
+                                    {wedding.story || 'A visual invitation to a day of vows, gathering, and beautifully kept memories.'}
+                                </p>
+                            </motion.div>
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.32em] text-primary">Date and place</p>
+                                    <p className="mt-2 font-serif text-2xl italic">
+                                        {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}
+                                    </p>
+                                    <p className="text-sm text-[#5d554f]">{wedding.venue_name}</p>
+                                </div>
+                                <a href="#rsvp" className="inline-flex min-h-[48px] items-center justify-center bg-[#201c19] px-7 text-[10px] font-black uppercase tracking-[0.3em] text-white transition-colors hover:bg-primary">
+                                    RSVP
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+                <BioSection id="bio" wedding={wedding} />
+                <DetailsSection id="details" wedding={wedding} />
+                {!wedding.is_thank_you_mode && (
+                    <CountdownTimer id="countdown"
+                        weddingDate={wedding.wedding_date}
+                        weddingTime={wedding.wedding_time}
+                        brideName={wedding.bride_name}
+                        groomName={wedding.groom_name}
+                        venueName={wedding.venue_name}
+                        venueAddress={wedding.venue_address}
+                        template={wedding.template}
+                        motifColor={wedding.motif_color}
+                    />
+                )}
+                <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+                <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+                <GiftSection id="gift" wedding={wedding} />
+                <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white pb-24">
             <section className="min-h-screen py-12 lg:py-0 grid grid-cols-1 lg:grid-cols-12 gap-0 relative overflow-hidden">
@@ -65,7 +162,7 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                 </div>
             </section>
 
-            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
             <BioSection id="bio" wedding={wedding} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
@@ -81,7 +178,7 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                 />
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

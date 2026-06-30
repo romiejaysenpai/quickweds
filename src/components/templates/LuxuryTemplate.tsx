@@ -13,6 +13,88 @@ import {
 import { SharedNewSections } from './shared';
 
 export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
+    if (wedding.template_style === 'luxury-planner') {
+        return (
+            <div className="bg-[#fbf7ef] text-[#2b2520] font-serif selection:bg-[#b9975b] selection:text-white pb-24">
+                <section className="relative min-h-screen overflow-hidden">
+                    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(185,151,91,0.10)_1px,transparent_1px),linear-gradient(rgba(185,151,91,0.08)_1px,transparent_1px)] bg-[size:72px_72px] opacity-50" />
+                    <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl grid-cols-1 items-center gap-10 px-6 py-16 lg:grid-cols-[0.92fr_1.08fr] lg:px-10">
+                        <motion.div
+                            initial={{ opacity: 0, y: 24 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1 }}
+                            className="order-2 lg:order-1"
+                        >
+                            <p className="text-[10px] font-bold uppercase tracking-[0.42em] text-[#b9975b]">
+                                Planners of a beautiful day
+                            </p>
+                            <h1 className="mt-8 text-5xl leading-[0.92] text-[#241f1b] sm:text-6xl md:text-7xl lg:text-8xl">
+                                {wedding.bride_name}
+                                <span className="block text-[0.55em] italic leading-none text-[#b9975b]">&</span>
+                                {wedding.groom_name}
+                            </h1>
+                            <div className="mt-8 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-[0.24em] text-[#6f645b]">
+                                <span>{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                <span className="h-px w-12 bg-[#b9975b]" />
+                                <span>{wedding.venue_name}</span>
+                            </div>
+                            <p className="mt-8 max-w-xl text-lg leading-8 text-[#6f645b]">
+                                {wedding.story || 'An elegant celebration shaped with intention, beauty, and every thoughtful detail in place.'}
+                            </p>
+                            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+                                <a href="#rsvp" className="inline-flex min-h-[48px] items-center justify-center bg-[#2b2520] px-8 text-xs font-bold uppercase tracking-[0.28em] text-white transition-all hover:bg-[#b9975b]">
+                                    RSVP
+                                </a>
+                                <a href="#details" className="inline-flex min-h-[48px] items-center justify-center border border-[#b9975b]/50 px-8 text-xs font-bold uppercase tracking-[0.28em] text-[#2b2520] transition-all hover:border-[#2b2520]">
+                                    Details
+                                </a>
+                            </div>
+                        </motion.div>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 1.04 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 1.2 }}
+                            className="order-1 lg:order-2"
+                        >
+                            <div className="relative mx-auto aspect-[4/5] max-h-[760px] overflow-hidden border border-[#b9975b]/25 bg-white p-3 shadow-[0_40px_120px_rgba(43,37,32,0.16)]">
+                                <img
+                                    src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                                    alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                                    loading="eager"
+                                    decoding="async"
+                                    className="h-full w-full object-cover"
+                                />
+                                <div className="absolute -bottom-px -left-px bg-[#fbf7ef] px-6 py-5">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#b9975b]">Est. {new Date(wedding.wedding_date).getFullYear()}</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                </section>
+
+                <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+                <BioSection id="bio" wedding={wedding} />
+                <DetailsSection id="details" wedding={wedding} />
+                {!wedding.is_thank_you_mode && (
+                    <CountdownTimer id="countdown"
+                        weddingDate={wedding.wedding_date}
+                        weddingTime={wedding.wedding_time}
+                        brideName={wedding.bride_name}
+                        groomName={wedding.groom_name}
+                        venueName={wedding.venue_name}
+                        venueAddress={wedding.venue_address}
+                        template={wedding.template}
+                        motifColor={wedding.motif_color}
+                    />
+                )}
+                <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+                <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+                <GiftSection id="gift" wedding={wedding} />
+                <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
+            </div>
+        );
+    }
+
     return (
         <div className="bg-[#0a0a0a] text-[#C5A059] font-serif selection:bg-[#C5A059] selection:text-black pb-24">
             <div className="fixed inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: `linear-gradient(#C5A059 1px, transparent 1px), linear-gradient(90deg, #C5A059 1px, transparent 1px)`, backgroundSize: '100px 100px' }} />
@@ -41,7 +123,7 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
             </section>
 
-            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
             <BioSection id="bio" wedding={wedding} />
             <DetailsSection id="details" wedding={wedding} invert />
             {!wedding.is_thank_you_mode && (
@@ -57,7 +139,7 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <GiftSection id="gift" wedding={wedding} invert />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

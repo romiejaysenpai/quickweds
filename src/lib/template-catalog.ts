@@ -10,6 +10,58 @@ export type TemplateCatalogItem = {
     previewGradient: string;
 };
 
+export type TemplateStyleVariant = {
+    id: string;
+    templateId: string;
+    name: string;
+    desc: string;
+    source: string;
+    accent: string;
+};
+
+export const DEFAULT_TEMPLATE_STYLE = 'default';
+
+export const TEMPLATE_STYLE_VARIANTS: TemplateStyleVariant[] = [
+    {
+        id: 'luxury-planner',
+        templateId: 'luxury',
+        name: 'Luxury Planner',
+        desc: 'Ivory, champagne, editorial spacing, and wedding-planner polish inspired by luxury landing pages.',
+        source: 'Nicepage wedding landing reference',
+        accent: '#B9975B',
+    },
+    {
+        id: 'editorial-photo',
+        templateId: 'editorial',
+        name: 'Editorial Photo',
+        desc: 'Photography-led hero composition with quiet captions and magazine-style image rhythm.',
+        source: 'Nicepage photographer references',
+        accent: '#2F2A27',
+    },
+    {
+        id: 'romantic-estate',
+        templateId: 'romantic',
+        name: 'Romantic Estate',
+        desc: 'Soft estate romance with airy type, warm neutrals, and refined storybook pacing.',
+        source: 'Nicepage romantic wedding references',
+        accent: '#B97983',
+    },
+];
+
+export function getTemplateStyleVariants(templateId?: string) {
+    return TEMPLATE_STYLE_VARIANTS.filter((variant) => variant.templateId === templateId);
+}
+
+export function isTemplateStyleAvailable(templateId?: string, styleId?: string) {
+    if (!styleId || styleId === DEFAULT_TEMPLATE_STYLE) return true;
+    return TEMPLATE_STYLE_VARIANTS.some((variant) => variant.templateId === templateId && variant.id === styleId);
+}
+
+export function getTemplateStyleLabel(styleId?: string) {
+    if (!styleId || styleId === DEFAULT_TEMPLATE_STYLE) return 'Original';
+    return TEMPLATE_STYLE_VARIANTS.find((variant) => variant.id === styleId)?.name || 'Original';
+}
+
 export const FREE_TEMPLATE_IDS = [
     'classic',
     'minimal',

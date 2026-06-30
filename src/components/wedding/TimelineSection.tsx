@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Clock, Gem, Mic2, Music2, PartyPopper } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
-import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
 
 interface TimelineSectionProps {
     timeline: string;
@@ -61,7 +61,7 @@ const TIMELINE_DESIGNS: Record<string, TimelineDesign> = {
         frameClass: 'rounded-none border border-black bg-white p-5 sm:p-8 md:p-12 shadow-[16px_16px_0_rgba(0,0,0,0.06)]',
         spineClass: 'bg-black/80',
         cardClass: 'rounded-none border border-black bg-white shadow-none',
-        timeClass: 'text-black/50',
+        timeClass: 'text-black/68',
         eventClass: 'text-black',
         iconFrameClass: 'rounded-none border border-black bg-white shadow-none',
         connectorClass: 'bg-black',
@@ -256,7 +256,7 @@ const TIMELINE_DESIGNS: Record<string, TimelineDesign> = {
         iconFrameClass: 'rounded-none border border-primary/60 bg-black shadow-[0_0_24px_rgba(255,77,90,0.22)]',
         connectorClass: 'bg-primary/70',
         reminderCardClass: 'rounded-none border border-white/10 bg-white/[0.05]',
-        reminderTextClass: 'text-white/65',
+        reminderTextClass: 'text-white/76',
         ornament: 'rails',
     },
     tropical: {
@@ -314,7 +314,7 @@ const TIMELINE_DESIGNS: Record<string, TimelineDesign> = {
         frameClass: 'rounded-none border border-black bg-white p-5 sm:p-8 md:p-12 shadow-[22px_22px_0_rgba(0,0,0,0.06)]',
         spineClass: 'bg-black',
         cardClass: 'rounded-none border border-black bg-white',
-        timeClass: 'text-black/45',
+        timeClass: 'text-black/68',
         eventClass: 'text-black',
         iconFrameClass: 'rounded-full border border-black bg-white shadow-none',
         connectorClass: 'bg-black',
@@ -350,7 +350,7 @@ const TIMELINE_DESIGNS: Record<string, TimelineDesign> = {
         iconFrameClass: 'rounded-sm border border-white/15 bg-black/65 shadow-lg',
         connectorClass: 'bg-primary/45',
         reminderCardClass: 'rounded-sm border border-white/10 bg-white/[0.06]',
-        reminderTextClass: 'text-white/66',
+        reminderTextClass: 'text-white/76',
         ornament: 'film',
     },
     glitch: {
@@ -366,7 +366,7 @@ const TIMELINE_DESIGNS: Record<string, TimelineDesign> = {
         iconFrameClass: 'rounded-none border border-cyan-300/55 bg-black shadow-[0_0_24px_rgba(78,242,224,0.24)]',
         connectorClass: 'bg-cyan-300/70',
         reminderCardClass: 'rounded-none border border-cyan-300/25 bg-cyan-300/[0.04]',
-        reminderTextClass: 'text-white/66',
+        reminderTextClass: 'text-white/76',
         ornament: 'signal',
     },
     vintage: {
@@ -393,7 +393,7 @@ const TIMELINE_DESIGNS: Record<string, TimelineDesign> = {
         frameClass: 'rounded-none border border-black/10 bg-white p-5 sm:p-8 md:p-12 shadow-[20px_20px_0_rgba(0,0,0,0.05)]',
         spineClass: 'bg-black/85',
         cardClass: 'rounded-none border border-black/10 bg-white',
-        timeClass: 'text-black/45',
+        timeClass: 'text-black/68',
         eventClass: 'text-black',
         iconFrameClass: 'rounded-none border border-black/15 bg-white shadow-none',
         connectorClass: 'bg-black/70',
@@ -434,6 +434,59 @@ const TIMELINE_DESIGNS: Record<string, TimelineDesign> = {
         ornament: 'botanical',
     },
 };
+
+const STYLE_VARIANT_TIMELINE_DESIGNS: Record<string, Partial<TimelineDesign>> = {
+    'luxury-planner': {
+        eyebrow: 'Planner-led flow',
+        title: 'The Celebration Plan',
+        headerBadgeClass: 'rounded-none border border-[#b9975b]/35 bg-[#fbf7ef] shadow-[0_20px_60px_rgba(43,37,32,0.10)]',
+        frameClass: 'rounded-none border border-[#b9975b]/30 bg-[#fbf7ef]/86 p-5 shadow-[0_28px_90px_rgba(43,37,32,0.14)] sm:p-8 md:p-12',
+        spineClass: 'bg-gradient-to-b from-transparent via-[#b9975b]/70 to-transparent',
+        cardClass: 'rounded-none border border-[#b9975b]/25 bg-white/78 shadow-sm',
+        timeClass: 'text-[#b9975b]',
+        eventClass: 'text-[#2b2520]',
+        iconFrameClass: 'rounded-none border border-[#b9975b]/45 bg-white shadow-md',
+        connectorClass: 'bg-[#b9975b]/45',
+        reminderCardClass: 'rounded-none border border-[#b9975b]/25 bg-white/72',
+        reminderTextClass: 'text-[#6f645b]',
+        ornament: 'rails',
+    },
+    'editorial-photo': {
+        eyebrow: 'Photo-led pacing',
+        title: 'The Event Sequence',
+        headerBadgeClass: 'rounded-none border border-black/20 bg-white',
+        frameClass: 'rounded-none border border-black/10 bg-[#f7f3ee] p-5 shadow-[20px_20px_0_rgba(0,0,0,0.05)] sm:p-8 md:p-12',
+        cardClass: 'rounded-none border border-black/10 bg-white',
+        timeClass: 'text-black/68',
+        eventClass: 'text-black',
+        iconFrameClass: 'rounded-none border border-black/15 bg-white shadow-none',
+        ornament: 'rails',
+    },
+    'romantic-estate': {
+        eyebrow: 'Estate rhythm',
+        title: 'The Romantic Program',
+        headerBadgeClass: 'rounded-full border border-[#efd3d8] bg-white/82 shadow-lg shadow-[#b97983]/10',
+        frameClass: 'rounded-[2.75rem] border border-[#efd3d8] bg-white/72 p-5 shadow-[0_28px_90px_rgba(185,121,131,0.14)] sm:p-8 md:p-12',
+        spineClass: 'bg-gradient-to-b from-transparent via-[#b97983]/50 to-transparent',
+        cardClass: 'rounded-[2rem] border border-[#efd3d8] bg-white/82',
+        timeClass: 'text-[#b97983]',
+        eventClass: 'text-[#55373b]',
+        iconFrameClass: 'rounded-full border border-[#efd3d8] bg-[#fff8f5] shadow-md',
+        connectorClass: 'bg-[#efd3d8]',
+        reminderCardClass: 'rounded-[2rem] border border-[#efd3d8] bg-[#fff8f5]/75',
+        reminderTextClass: 'text-[#816066]',
+        ornament: 'dots',
+    },
+};
+
+function getTimelineDesign(template: string, templateStyle?: string) {
+    const base = TIMELINE_DESIGNS[template] || TIMELINE_DESIGNS.classic;
+    const variant = templateStyle && templateStyle !== 'default' ? STYLE_VARIANT_TIMELINE_DESIGNS[templateStyle] : undefined;
+    return {
+        ...base,
+        ...(variant || {}),
+    };
+}
 
 function TimelineReminderIllustration({ variant, color }: { variant: 'time' | 'finish' | 'enjoy'; color: string }) {
     if (variant === 'finish') {
@@ -560,9 +613,11 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
     const hasAnyTime = items.some(i => i.time !== '');
 
     const template = wedding?.template || 'classic';
+    const templateStyle = wedding?.template_style;
     const motifColor = wedding?.motif_color || '#D16C78';
     const visual = getTemplateVisualProfile(template, motifColor);
-    const design = TIMELINE_DESIGNS[template] || TIMELINE_DESIGNS.classic;
+    const titleStyle = getSectionTitleStyle(wedding || {}, visual.headingClass);
+    const design = getTimelineDesign(template, templateStyle);
     const isSharp = visual.isSharp;
     const isDark = visual.isDark;
     const isVintage = ['vintage', 'rustic', 'boho', 'artdeco'].includes(template);
@@ -582,11 +637,21 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                         <Clock className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-primary' : 'text-primary'}`} />
                     </div>
                     <p className={`mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>{design.eyebrow}</p>
-                    <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-sm ${visual.headingClass}`}>
+                    <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-sm ${titleStyle.className}`} style={titleStyle.style}>
                         {design.title}
                     </h2>
+                    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                        <span className={`border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${isDark ? 'border-white/10 bg-white/5 text-white/75' : 'border-primary/10 bg-white/55 text-[#4A4444]/70'}`}>
+                            {items.length} {items.length === 1 ? 'moment' : 'moments'}
+                        </span>
+                        {hasAnyTime && (
+                            <span className={`border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${isDark ? 'border-white/10 bg-white/5 text-white/75' : 'border-primary/10 bg-white/55 text-[#4A4444]/70'}`}>
+                                Guest-friendly timing
+                            </span>
+                        )}
+                    </div>
                     {isVintage && (
-                        <div className="flex items-center justify-center gap-3 mt-4 opacity-40">
+                        <div className="flex items-center justify-center gap-3 mt-4 opacity-70">
                             <div className="h-px w-16 bg-primary" />
                             <span className="text-primary text-xs tracking-widest uppercase">✦</span>
                             <div className="h-px w-16 bg-primary" />
@@ -603,11 +668,14 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                 >
                     <TimelineOrnament type={design.ornament} color={motifColor} />
                     <div className="relative">
-                        <div className={`absolute left-1/2 top-5 bottom-5 w-px -translate-x-1/2 ${design.spineClass}`} />
+                        <div className={`absolute bottom-5 left-[1.375rem] top-5 w-px sm:left-6 md:left-1/2 md:-translate-x-1/2 ${design.spineClass}`} />
                         <div className="space-y-6 sm:space-y-8">
                             {items.map((item, idx) => {
                                 const Icon = timelineIcons[idx % timelineIcons.length];
                                 const isLeft = idx % 2 === 0;
+                                const cardAlignmentClass = isLeft
+                                    ? 'md:order-1 md:text-right'
+                                    : 'md:order-3 md:text-left';
 
                                 return (
                                     <motion.div
@@ -616,22 +684,24 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                                         whileInView={{ opacity: 1, y: 0 }}
                                         viewport={{ once: true }}
                                         transition={{ delay: idx * 0.06 }}
-                                        className="relative grid grid-cols-[minmax(0,1fr)_2.75rem_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_3.25rem_minmax(0,1fr)] sm:gap-4 md:grid-cols-[1fr_5rem_1fr] md:gap-5"
+                                        className="relative grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[3rem_minmax(0,1fr)] sm:gap-4 md:grid-cols-[1fr_5rem_1fr] md:gap-5"
                                     >
-                                        <div className={`min-w-0 ${isLeft ? 'order-1 text-right' : 'order-3 text-left'} p-3 backdrop-blur sm:p-4 ${design.cardClass}`}>
-                                            <p className={`text-[9px] font-black uppercase tracking-[0.16em] sm:text-[10px] sm:tracking-[0.28em] ${design.timeClass}`}>
-                                                {item.time || (hasAnyTime ? 'Soon' : `Part ${idx + 1}`)}
-                                            </p>
-                                            <p className={`mt-2 break-words font-serif text-sm leading-snug sm:text-lg md:text-xl ${design.eventClass}`}>
+                                        <div className={`order-2 min-w-0 p-4 text-left backdrop-blur sm:p-5 ${cardAlignmentClass} ${design.cardClass}`}>
+                                            <div className={`mb-3 inline-flex items-center gap-2 border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] sm:text-[10px] sm:tracking-[0.22em] ${isDark ? 'border-white/10 bg-white/5' : 'border-primary/10 bg-white/45'} ${design.timeClass}`}>
+                                                <span>{String(idx + 1).padStart(2, '0')}</span>
+                                                <span className={`h-px w-4 ${design.connectorClass}`} />
+                                                <span>{item.time || (hasAnyTime ? 'Soon' : `Part ${idx + 1}`)}</span>
+                                            </div>
+                                            <p className={`break-words font-serif text-base leading-snug sm:text-lg md:text-xl ${design.eventClass}`}>
                                                 {item.event}
                                             </p>
                                         </div>
 
-                                        <div className={`relative z-10 order-2 mx-auto flex h-11 w-11 items-center justify-center sm:h-12 sm:w-12 md:h-16 md:w-16 ${design.iconFrameClass}`} style={{ borderColor: `${motifColor}55`, color: motifColor }}>
+                                        <div className={`relative z-10 order-1 mx-auto flex h-11 w-11 items-center justify-center sm:h-12 sm:w-12 md:order-2 md:h-16 md:w-16 ${design.iconFrameClass}`} style={{ borderColor: `${motifColor}55`, color: motifColor }}>
                                             <Icon className={`h-5 w-5 stroke-[1.6] sm:h-6 sm:w-6 md:h-7 md:w-7 ${template === 'artdeco' ? '-rotate-45' : ''}`} />
                                         </div>
 
-                                        <div className={`${isLeft ? 'order-3' : 'order-1'} flex items-center justify-center`}>
+                                        <div className={`hidden md:flex ${isLeft ? 'order-3' : 'order-1'} items-center justify-center`}>
                                             <div className={`h-px w-8 sm:w-12 md:w-16 ${design.connectorClass}`} />
                                         </div>
                                     </motion.div>

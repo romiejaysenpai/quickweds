@@ -19,7 +19,7 @@ export default function HeroEnhancer({ wedding }: { wedding: Wedding }) {
     ), []);
 
     return (
-        <div className="absolute top-0 left-0 w-full h-[100dvh] pointer-events-none z-50 overflow-hidden mix-blend-screen">
+        <div className="absolute top-0 left-0 w-full h-[100dvh] pointer-events-none z-50 overflow-hidden">
             {/* Cinematic Gradient Overlay */}
             <div 
                 className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-neutral/90" 
@@ -69,13 +69,13 @@ export default function HeroEnhancer({ wedding }: { wedding: Wedding }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 2, duration: 1 }}
             >
-                <span className="text-[10px] sm:text-xs uppercase tracking-[0.4em] text-white/70 font-bold backdrop-blur-sm px-3 py-1 rounded-full bg-black/10">Scroll to Explore</span>
+                <span className="rounded-full border border-white/35 bg-black/55 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.4em] text-white shadow-[0_8px_24px_rgba(0,0,0,0.25)] backdrop-blur-md sm:text-xs">Scroll to Explore</span>
                 <motion.div
                     animate={{ y: [0, 10, 0] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-8 h-12 sm:h-14 rounded-full border border-white/30 flex items-start justify-center p-2 bg-black/10 backdrop-blur-md min-h-[44px] min-w-[32px]"
+                    className="flex h-12 min-h-[44px] w-8 min-w-[32px] items-start justify-center rounded-full border border-white/70 bg-black/45 p-2 text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-md sm:h-14"
                 >
-                    <ChevronDown className="w-4 h-5 sm:w-5 sm:h-6 text-white" />
+                    <ChevronDown className="h-5 w-4 text-white drop-shadow sm:h-6 sm:w-5" />
                 </motion.div>
             </motion.div>
         </div>

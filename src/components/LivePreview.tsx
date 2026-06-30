@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { getTemplateMeta } from '@/lib/template-catalog';
+import { getTemplateMeta, getTemplateStyleLabel } from '@/lib/template-catalog';
 
 export default function LivePreview({ formData, previews, isMobileView = false }: { formData: any; previews: any; isMobileView?: boolean }) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -20,10 +20,17 @@ export default function LivePreview({ formData, previews, isMobileView = false }
                 venue_name: formData.venueName || 'The Grand Conservatory',
                 venue_address: formData.venueAddress,
                 maps_link: formData.mapsLink,
+                reception_venue_name: formData.receptionVenueName,
+                reception_venue_address: formData.receptionVenueAddress,
+                reception_maps_link: formData.receptionMapsLink,
+                reception_venue_photos: previews.receptionVenuePhotos,
                 motif_color: formData.motifColor || '#C08081',
                 font_style: formData.fontStyle || 'Elegant',
+                section_title_font_style: formData.sectionTitleFontStyle || 'default',
+                section_title_color_style: formData.sectionTitleColorStyle || 'motif',
                 background_style: formData.backgroundStyle || 'cream',
                 template: formData.template || 'classic',
+                template_style: formData.templateStyle || 'default',
                 dress_code: formData.dressCode ? `${formData.dressCode}||${formData.dressCodeColor}` : '',
                 program_timeline: formData.programTimeline,
                 faq_items: formData.faqItems,
@@ -41,6 +48,7 @@ export default function LivePreview({ formData, previews, isMobileView = false }
                 logo_color: formData.logoColor || formData.motifColor,
                 spotify_playlist_url: formData.spotifyUrl,
                 wedding_party: formData.weddingParty,
+                include_entourage_section: formData.includeEntourageSection !== false,
                 gift_registry_links: formData.registryLinks,
                 cash_funds: formData.cashFunds,
                 payment_links: formData.paymentLinks,
@@ -53,6 +61,7 @@ export default function LivePreview({ formData, previews, isMobileView = false }
                 couple_photo: previews.couplePhoto,
                 gift_qr_image: previews.giftQr,
                 invitation_image: JSON.stringify(previews.invitationImages),
+                gallery_layout: formData.galleryLayout || 'auto',
                 gallery_images: formData.galleryImages ? "[]" : "[]", // actual array is passed in gallery
             };
 
@@ -91,6 +100,9 @@ export default function LivePreview({ formData, previews, isMobileView = false }
                     <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-text-secondary/60">Live Preview</p>
                         <p className="mt-1 text-sm font-semibold text-foreground">{templateMeta.name}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-text-secondary/50">
+                            {getTemplateStyleLabel(formData.templateStyle)}
+                        </p>
                     </div>
                     <span className="rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-primary shadow-sm">
                         {templateMeta.eyebrow}

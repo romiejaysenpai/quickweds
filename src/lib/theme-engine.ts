@@ -59,6 +59,88 @@ export interface TemplateVisualProfile {
     giftTitle: string;
 }
 
+export const SECTION_TITLE_FONT_STYLES = [
+    { id: 'default', name: 'Default', className: '' },
+    { id: 'editorial-serif', name: 'Editorial Serif', className: '[font-family:var(--font-bodoni)] uppercase tracking-[0.08em]' },
+    { id: 'romantic-script', name: 'Romantic Script', className: '[font-family:var(--font-script)] italic font-normal tracking-normal' },
+    { id: 'modern-sans', name: 'Modern Sans', className: '[font-family:var(--font-modern)] font-black uppercase tracking-[0.02em]' },
+] as const;
+
+export const SECTION_TITLE_COLOR_STYLES = [
+    { id: 'motif', name: 'Motif', swatches: ['var(--primary)', '#4A4444'] },
+    { id: 'rose-gold', name: 'Rose Gold', gradient: 'linear-gradient(90deg, #B85C7A 0%, #D6B87C 52%, #F2C1CC 100%)', swatches: ['#B85C7A', '#D6B87C', '#F2C1CC'] },
+    { id: 'champagne-blush', name: 'Champagne Blush', gradient: 'linear-gradient(90deg, #C5A059 0%, #EBD4C4 48%, #D16C78 100%)', swatches: ['#C5A059', '#EBD4C4', '#D16C78'] },
+    { id: 'sage-ivory', name: 'Sage & Ivory', gradient: 'linear-gradient(90deg, #537A57 0%, #AFC3A4 48%, #8F6A45 100%)', swatches: ['#537A57', '#AFC3A4', '#8F6A45'] },
+    { id: 'midnight-gold', name: 'Midnight Gold', gradient: 'linear-gradient(90deg, #111827 0%, #D6B87C 55%, #FFF3C4 100%)', swatches: ['#111827', '#D6B87C', '#FFF3C4'] },
+] as const;
+
+type SectionTitleWedding = {
+    section_title_font_style?: string | null;
+    section_title_color_style?: string | null;
+    motif_color?: string | null;
+};
+
+function normalizeSectionTitleColorStyleId(styleId?: string | null) {
+    if (!styleId || styleId === 'default') return 'motif';
+    return SECTION_TITLE_COLOR_STYLES.some((style) => style.id === styleId) ? styleId : 'motif';
+}
+
+function normalizeHexColor(color?: string | null) {
+    if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) return '#D16C78';
+    return color;
+}
+
+function mixHexColor(color: string, target: string, amount: number) {
+    const from = normalizeHexColor(color).replace('#', '');
+    const to = normalizeHexColor(target).replace('#', '');
+    const mix = (fromPart: string, toPart: string) => {
+        const fromValue = parseInt(fromPart, 16);
+        const toValue = parseInt(toPart, 16);
+        return Math.round(fromValue + (toValue - fromValue) * amount).toString(16).padStart(2, '0');
+    };
+
+    return `#${mix(from.slice(0, 2), to.slice(0, 2))}${mix(from.slice(2, 4), to.slice(2, 4))}${mix(from.slice(4, 6), to.slice(4, 6))}`;
+}
+
+function getHexLuminance(color: string) {
+    const normalized = normalizeHexColor(color).replace('#', '');
+    const rgb = [0, 2, 4].map((offset) => parseInt(normalized.slice(offset, offset + 2), 16) / 255);
+    const linear = rgb.map((channel) => channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+    return (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2]);
+}
+
+export function getMotifSectionTitleGradient(motifColor?: string | null) {
+    const motif = normalizeHexColor(motifColor);
+    const anchor = getHexLuminance(motif) > 0.82 ? mixHexColor(motif, '#8F4D5D', 0.68) : motif;
+    const deep = mixHexColor(anchor, '#3A2A2D', 0.2);
+    const soft = mixHexColor(anchor, '#FFFFFF', 0.42);
+
+    return `linear-gradient(90deg, ${deep} 0%, ${anchor} 48%, ${soft} 100%)`;
+}
+
+export function getSectionTitleStyle(wedding: SectionTitleWedding, defaultClassName = ''): { className: string; style?: CSSProperties } {
+    const fontStyle = SECTION_TITLE_FONT_STYLES.find((style) => style.id === wedding.section_title_font_style);
+    const colorStyleId = normalizeSectionTitleColorStyleId(wedding.section_title_color_style);
+    const colorStyle = SECTION_TITLE_COLOR_STYLES.find((style) => style.id === colorStyleId);
+    const classNames = [fontStyle?.className || defaultClassName];
+    const style: CSSProperties = {};
+
+    const gradient = colorStyle && 'gradient' in colorStyle ? colorStyle.gradient : '';
+
+    if (gradient) {
+        classNames.push('bg-clip-text text-transparent');
+        style.backgroundImage = gradient;
+    } else if (colorStyleId === 'motif') {
+        classNames.push('bg-clip-text text-transparent');
+        style.backgroundImage = getMotifSectionTitleGradient(wedding.motif_color);
+    }
+
+    return {
+        className: classNames.filter(Boolean).join(' '),
+        style: Object.keys(style).length > 0 ? style : undefined,
+    };
+}
+
 /**
  * Derives a full palette from a single motif color.
  */
@@ -126,9 +208,9 @@ export function getTemplateVisualProfile(template?: string, motifColor = '#D16C7
             cardClass: 'border border-primary/25 bg-black/35 shadow-[0_28px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl rounded-none',
             accentCardClass: 'border border-primary/35 bg-primary/10 shadow-[0_24px_70px_rgba(0,0,0,0.35)] rounded-none',
             imageFrameClass: 'rounded-none border-[10px] border-primary/30 shadow-[0_30px_90px_rgba(0,0,0,0.55)]',
-            eyebrowClass: 'text-primary/70 tracking-[0.42em]',
+            eyebrowClass: 'text-primary/85 tracking-[0.42em]',
             headingClass: 'font-serif uppercase tracking-[0.12em] text-primary',
-            bodyClass: 'text-white/70',
+            bodyClass: 'text-white/82',
             dividerClass: 'h-px w-28 bg-gradient-to-r from-transparent via-primary/70 to-transparent',
             ornament: t === 'artdeco' ? 'geometric' : 'royal',
             galleryTitle: 'The Gallery',
@@ -144,9 +226,9 @@ export function getTemplateVisualProfile(template?: string, motifColor = '#D16C7
             cardClass: 'rounded-none border border-black/10 bg-white shadow-none',
             accentCardClass: 'rounded-none border border-black bg-black text-white shadow-[18px_18px_0_rgba(0,0,0,0.08)]',
             imageFrameClass: 'rounded-none border border-black/10 grayscale hover:grayscale-0 shadow-[18px_18px_0_rgba(0,0,0,0.06)]',
-            eyebrowClass: 'text-black/45 tracking-[0.5em]',
+            eyebrowClass: 'text-black/65 tracking-[0.5em]',
             headingClass: 'font-sans font-black uppercase tracking-[-0.04em] text-black',
-            bodyClass: 'text-black/62',
+            bodyClass: 'text-black/74',
             dividerClass: 'h-[2px] w-24 bg-black',
             ornament: t === 'glitch' ? 'glitch' : 'editorial',
             galleryTitle: 'Photo Edit',
@@ -162,9 +244,9 @@ export function getTemplateVisualProfile(template?: string, motifColor = '#D16C7
             cardClass: 'rounded-[1.5rem] border border-white/10 bg-white/[0.06] shadow-[0_30px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl',
             accentCardClass: 'rounded-[1.5rem] border border-primary/30 bg-primary/10 shadow-[0_30px_90px_rgba(0,0,0,0.35)]',
             imageFrameClass: 'rounded-[1rem] border-[8px] border-black shadow-[0_28px_80px_rgba(0,0,0,0.55)] sepia-[0.12]',
-            eyebrowClass: 'text-primary/70 tracking-[0.42em]',
+            eyebrowClass: 'text-primary/85 tracking-[0.42em]',
             headingClass: 'font-serif tracking-tight text-white',
-            bodyClass: 'text-white/70',
+            bodyClass: 'text-white/82',
             dividerClass: 'h-px w-28 bg-gradient-to-r from-transparent via-primary/70 to-transparent',
             ornament: 'film',
             galleryTitle: 'Film Stills',
@@ -180,9 +262,9 @@ export function getTemplateVisualProfile(template?: string, motifColor = '#D16C7
             cardClass: 'rounded-[2rem] md:rounded-[3.25rem] border border-white/70 bg-white/68 shadow-[0_28px_90px_rgba(58,42,45,0.10)] backdrop-blur-xl',
             accentCardClass: 'rounded-[2rem] md:rounded-[3.25rem] border border-primary/20 bg-white/80 shadow-[0_24px_80px_rgba(58,42,45,0.09)]',
             imageFrameClass: 'rounded-[2.5rem] md:rounded-[4rem] border-[12px] border-white shadow-[0_30px_90px_rgba(58,42,45,0.16)]',
-            eyebrowClass: 'text-primary/70 tracking-[0.32em]',
+            eyebrowClass: 'text-primary/82 tracking-[0.32em]',
             headingClass: 'font-serif italic tracking-tight text-[#4A4444]',
-            bodyClass: 'text-[#4A4444]/68',
+            bodyClass: 'text-[#4A4444]/78',
             dividerClass: 'h-px w-24 bg-gradient-to-r from-transparent via-primary/45 to-transparent',
             ornament: mood === 'destination' ? 'tropical' : 'botanical',
             galleryTitle: mood === 'destination' ? 'Paradise Moments' : 'Captured Moments',
@@ -198,9 +280,9 @@ export function getTemplateVisualProfile(template?: string, motifColor = '#D16C7
             cardClass: 'rounded-sm border-[1px] border-primary/25 bg-[#fffaf0]/80 shadow-[0_24px_70px_rgba(74,58,49,0.14)] ring-4 ring-primary/5',
             accentCardClass: 'rounded-sm border-[4px] double border-primary/30 bg-[#fffaf0]/90 shadow-[0_24px_80px_rgba(74,58,49,0.16)]',
             imageFrameClass: 'rounded-sm border-[16px] border-[#f5ead8] shadow-[0_24px_70px_rgba(74,58,49,0.18)] sepia-[0.16]',
-            eyebrowClass: 'text-primary/65 tracking-[0.38em]',
+            eyebrowClass: 'text-primary/82 tracking-[0.38em]',
             headingClass: 'font-serif tracking-tight text-[#4A3A31]',
-            bodyClass: 'text-[#4A3A31]/70',
+            bodyClass: 'text-[#4A3A31]/80',
             dividerClass: 'h-px w-28 bg-gradient-to-r from-transparent via-primary/55 to-transparent',
             ornament: 'floral',
             galleryTitle: 'Keepsake Gallery',
@@ -215,9 +297,9 @@ export function getTemplateVisualProfile(template?: string, motifColor = '#D16C7
         cardClass: 'rounded-[2rem] md:rounded-[4rem] border border-white/65 bg-white/62 shadow-[0_28px_90px_rgba(58,42,45,0.10)] backdrop-blur-xl',
         accentCardClass: 'rounded-[2rem] md:rounded-[4rem] border border-primary/18 bg-white/78 shadow-[0_24px_80px_rgba(58,42,45,0.10)]',
         imageFrameClass: 'rounded-[2rem] md:rounded-[4rem] border-[12px] border-white shadow-[0_30px_90px_rgba(58,42,45,0.14)]',
-        eyebrowClass: 'text-primary/68 tracking-[0.36em]',
+        eyebrowClass: 'text-primary/82 tracking-[0.36em]',
         headingClass: 'font-serif tracking-tight text-[#4A4444]',
-        bodyClass: 'text-[#4A4444]/68',
+        bodyClass: 'text-[#4A4444]/78',
         dividerClass: 'h-px w-24 bg-gradient-to-r from-transparent via-primary/45 to-transparent',
         ornament: 'floral',
         galleryTitle: 'Our Gallery',

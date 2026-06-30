@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import RSVPForm from '@/components/RSVPForm';
 import type { Wedding } from '@/types/wedding';
-import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
 
 interface RSVPSectionProps {
     wedding: Wedding;
@@ -13,6 +13,7 @@ interface RSVPSectionProps {
 export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     const template = wedding.template || 'classic';
     const visual = getTemplateVisualProfile(template, wedding.motif_color || '#D16C78');
+    const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const isSharp = visual.isSharp || ['editorial', 'urban', 'minimal', 'vogue', 'glitch', 'film'].includes(template);
     const isDark = visual.isDark || ['royal', 'midnight', 'cinematic'].includes(template);
     const isVintage = visual.isVintage || ['vintage', 'rustic', 'boho', 'artdeco', 'sakura', 'garden'].includes(template);
@@ -37,20 +38,20 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                     <div className="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-primary/40" />
 
                     <div className="text-center mb-10 sm:mb-14">
-                        <span className="text-[10px] uppercase tracking-[1em] font-black opacity-40 block mb-4 text-primary">
+                        <span className="text-[10px] uppercase tracking-[1em] font-black block mb-4 text-primary">
                             Guest Confirmation
                         </span>
-                        <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif text-primary mb-6">
+                        <h2 className={`text-3xl sm:text-5xl md:text-6xl mb-6 ${titleStyle.className}`} style={titleStyle.style}>
                             Will You Join Us?
                         </h2>
-                        <p className="text-primary/50 italic text-sm sm:text-base max-w-lg mx-auto">
+                        <p className="text-white/78 italic text-sm sm:text-base max-w-lg mx-auto">
                             Kindly RSVP by <span className="text-primary font-bold not-italic">{deadline}</span>
                         </p>
                     </div>
 
                     {isExpired ? (
                         <div className="p-8 border border-primary/20 text-center">
-                            <p className="text-xl font-serif text-primary/60">RSVP has closed for this event.</p>
+                            <p className="text-xl font-serif text-white/80">RSVP has closed for this event.</p>
                         </div>
                     ) : (
                         <RSVPForm weddingId={wedding.id} wedding={wedding} />
@@ -73,14 +74,14 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                     {/* Header bar */}
                     <div className="border-b border-black/10 px-8 sm:px-14 py-8 sm:py-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                         <div>
-                            <span className="text-[10px] uppercase tracking-[1em] font-black opacity-30 block mb-2">
+                            <span className="text-[10px] uppercase tracking-[1em] font-black text-black/65 block mb-2">
                                 Issue No. 02
                             </span>
-                            <h2 className="text-3xl sm:text-5xl font-serif font-bold leading-none tracking-tighter">
+                            <h2 className={`text-3xl sm:text-5xl leading-none ${titleStyle.className}`} style={titleStyle.style}>
                                 RSVP
                             </h2>
                         </div>
-                        <p className="text-sm text-text-secondary uppercase tracking-widest font-bold border-l border-black/10 pl-6">
+                        <p className="text-sm text-black/70 uppercase tracking-widest font-bold border-l border-black/10 pl-6">
                             Deadline: {deadline}
                         </p>
                     </div>
@@ -88,7 +89,7 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                     <div className="px-8 sm:px-14 py-10 sm:py-14">
                         {isExpired ? (
                             <div className="py-12 border border-black/10 text-center">
-                                <p className="text-xl font-serif text-foreground/40 uppercase tracking-widest">
+                                <p className="text-xl font-serif text-black/70 uppercase tracking-widest">
                                     RSVP Closed
                                 </p>
                             </div>
@@ -121,26 +122,26 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                     <div className="mb-10 sm:mb-14">
                         <div className="flex items-center justify-center gap-3 mb-6">
                             <div className="h-px w-12 bg-primary/40" />
-                            <span className="text-primary text-xs tracking-[0.4em] uppercase font-bold opacity-60">~</span>
+                        <span className="text-primary text-xs tracking-[0.4em] uppercase font-bold">~</span>
                             <div className="h-px w-12 bg-primary/40" />
                         </div>
-                        <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif text-[#4A4444] mb-6 italic">
+                        <h2 className={`text-3xl sm:text-5xl md:text-6xl mb-6 ${titleStyle.className}`} style={titleStyle.style}>
                             Will You Join Us?
                         </h2>
-                        <p className="text-foreground/60 italic text-sm sm:text-base max-w-md mx-auto">
+                        <p className="text-[#4A4444]/72 italic text-sm sm:text-base max-w-md mx-auto">
                             We would be honoured to have you with us. <br />
                             Kindly reply by <span className="text-primary font-bold not-italic">{deadline}</span>
                         </p>
                         <div className="flex items-center justify-center gap-3 mt-6">
                             <div className="h-px w-16 bg-primary/20" />
-                            <span className="text-primary/30 text-xs">✦</span>
+                            <span className="text-primary/70 text-xs">✦</span>
                             <div className="h-px w-16 bg-primary/20" />
                         </div>
                     </div>
 
                     {isExpired ? (
                         <div className="py-12 border border-primary/10 text-center">
-                            <p className="text-xl font-serif text-foreground/40 italic">
+                            <p className="text-xl font-serif text-[#4A4444]/70 italic">
                                 RSVP has closed for this event.
                             </p>
                         </div>
@@ -176,13 +177,13 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                         </svg>
                     </div>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-serif mb-6 sm:mb-8 text-[#4A4444]">
+                    <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-7xl mb-6 sm:mb-8 ${titleStyle.className}`} style={titleStyle.style}>
                         Will You Join Us?
                     </h2>
-                    <p className="text-foreground/60 italic mb-2 text-base sm:text-lg md:text-xl max-w-lg mx-auto leading-relaxed">
+                    <p className="text-[#4A4444]/72 italic mb-2 text-base sm:text-lg md:text-xl max-w-lg mx-auto leading-relaxed">
                         We&apos;d love to have you with us.{' '}
                     </p>
-                    <p className="text-foreground/50 text-sm sm:text-base">
+                    <p className="text-[#4A4444]/68 text-sm sm:text-base">
                         Please RSVP by{' '}
                         <span className="text-primary font-bold not-italic">{deadline}</span>
                     </p>
@@ -190,7 +191,7 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
 
                 {isExpired ? (
                     <div className="p-6 sm:p-8 md:p-12 rounded-2xl sm:rounded-[3rem] bg-neutral/50 border border-primary/10 text-center">
-                        <p className="text-xl sm:text-2xl font-serif text-foreground/60">
+                        <p className="text-xl sm:text-2xl font-serif text-[#4A4444]/72">
                             RSVP has closed for this event.
                         </p>
                     </div>

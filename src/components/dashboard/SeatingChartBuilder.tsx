@@ -1659,54 +1659,119 @@ export default function SeatingChartBuilder({
                                     </div>
                                 )}
                             </div>
-                            <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-border bg-neutral/40 p-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 items-center gap-4 rounded-2xl border border-border bg-neutral/40 p-4 min-h-[100px]">
+                                {/* Left Column: Selection Info */}
+                                <div className="flex flex-col justify-center text-center md:text-left">
                                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Current Layout</p>
                                     <p className="mt-1 text-sm font-bold text-foreground">{layout.layout_name} - {layout.venue_width}&apos; x {layout.venue_height}&apos;</p>
-                                    {(selectedTableData || selectedObjectData) && (
-                                        <p className="mt-1 text-xs text-text-secondary">
-                                            Moving {selectedTableData?.table_name || selectedObjectData?.label}
+                                    {(selectedTableData || selectedObjectData) ? (
+                                        <p className="mt-1.5 text-xs text-text-secondary flex items-center justify-center md:justify-start gap-1.5">
+                                            <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
+                                            Selected: <span className="font-bold text-foreground truncate max-w-[150px]">{selectedTableData?.table_name || selectedObjectData?.label}</span>
                                         </p>
+                                    ) : (
+                                        <p className="mt-1 text-xs text-text-secondary italic">No item selected</p>
                                     )}
                                 </div>
-                                {selectedTableData && (
-                                    <div className="grid w-full max-w-[180px] grid-cols-3 grid-rows-3 gap-1.5 self-start sm:self-center" aria-label="Move selected table">
-                                        <button type="button" onClick={() => nudgeSelectedTable(0, -5)} className="col-start-2 row-start-1 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move table up">
-                                            <ArrowUp className="h-4 w-4" />
-                                        </button>
-                                        <button type="button" onClick={() => nudgeSelectedTable(-5, 0)} className="col-start-1 row-start-2 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move table left">
-                                            <ArrowLeft className="h-4 w-4" />
-                                        </button>
-                                        <div className="col-start-2 row-start-2 flex h-10 items-center justify-center rounded-xl border border-dashed border-primary/20 bg-white/60 text-[9px] font-black uppercase tracking-widest text-primary">
-                                            Move
+
+                                {/* Center Column: D-pad / Joystick Nudge Control */}
+                                <div className="flex justify-center items-center">
+                                    {(selectedTableData || selectedObjectData) ? (
+                                        <div className="relative flex items-center justify-center bg-white dark:bg-white/5 rounded-full p-2.5 shadow-md border border-border/60">
+                                            {/* Visual D-Pad Circle */}
+                                            <div className="grid grid-cols-3 grid-rows-3 gap-1.5 w-32 h-32 relative">
+                                                {/* UP BUTTON */}
+                                                <button
+                                                    type="button"
+                                                    onClick={selectedTableData ? () => nudgeSelectedTable(0, -5) : () => nudgeSelectedObject(0, -5)}
+                                                    className="col-start-2 row-start-1 flex items-center justify-center rounded-xl bg-neutral/20 hover:bg-primary text-foreground hover:text-white transition-all duration-200 ease-in-out active:scale-90 shadow-sm border border-border/40"
+                                                    aria-label="Move up"
+                                                >
+                                                    <ArrowUp className="h-5 w-5" />
+                                                </button>
+
+                                                {/* LEFT BUTTON */}
+                                                <button
+                                                    type="button"
+                                                    onClick={selectedTableData ? () => nudgeSelectedTable(-5, 0) : () => nudgeSelectedObject(-5, 0)}
+                                                    className="col-start-1 row-start-2 flex items-center justify-center rounded-xl bg-neutral/20 hover:bg-primary text-foreground hover:text-white transition-all duration-200 ease-in-out active:scale-90 shadow-sm border border-border/40"
+                                                    aria-label="Move left"
+                                                >
+                                                    <ArrowLeft className="h-5 w-5" />
+                                                </button>
+
+                                                {/* CENTER INDICATOR */}
+                                                <div className="col-start-2 row-start-2 flex flex-col items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20 shadow-inner select-none pointer-events-none">
+                                                    <Move className="h-4 w-4 animate-pulse" />
+                                                </div>
+
+                                                {/* RIGHT BUTTON */}
+                                                <button
+                                                    type="button"
+                                                    onClick={selectedTableData ? () => nudgeSelectedTable(5, 0) : () => nudgeSelectedObject(5, 0)}
+                                                    className="col-start-3 row-start-2 flex items-center justify-center rounded-xl bg-neutral/20 hover:bg-primary text-foreground hover:text-white transition-all duration-200 ease-in-out active:scale-90 shadow-sm border border-border/40"
+                                                    aria-label="Move right"
+                                                >
+                                                    <ArrowRight className="h-5 w-5" />
+                                                </button>
+
+                                                {/* DOWN BUTTON */}
+                                                <button
+                                                    type="button"
+                                                    onClick={selectedTableData ? () => nudgeSelectedTable(0, 5) : () => nudgeSelectedObject(0, 5)}
+                                                    className="col-start-2 row-start-3 flex items-center justify-center rounded-xl bg-neutral/20 hover:bg-primary text-foreground hover:text-white transition-all duration-200 ease-in-out active:scale-90 shadow-sm border border-border/40"
+                                                    aria-label="Move down"
+                                                >
+                                                    <ArrowDown className="h-5 w-5" />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <button type="button" onClick={() => nudgeSelectedTable(5, 0)} className="col-start-3 row-start-2 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move table right">
-                                            <ArrowRight className="h-4 w-4" />
-                                        </button>
-                                        <button type="button" onClick={() => nudgeSelectedTable(0, 5)} className="col-start-2 row-start-3 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move table down">
-                                            <ArrowDown className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                )}
-                                {selectedObjectData && (
-                                    <div className="grid w-full max-w-[180px] grid-cols-3 grid-rows-3 gap-1.5 self-start sm:self-center" aria-label="Move selected venue item">
-                                        <button type="button" onClick={() => nudgeSelectedObject(0, -5)} className="col-start-2 row-start-1 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move item up">
-                                            <ArrowUp className="h-4 w-4" />
-                                        </button>
-                                        <button type="button" onClick={() => nudgeSelectedObject(-5, 0)} className="col-start-1 row-start-2 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move item left">
-                                            <ArrowLeft className="h-4 w-4" />
-                                        </button>
-                                        <div className="col-start-2 row-start-2 flex h-10 items-center justify-center rounded-xl border border-dashed border-primary/20 bg-white/60 text-primary">
-                                            <Move className="h-4 w-4" />
+                                    ) : (
+                                        <div className="text-center py-2.5 px-4 rounded-xl bg-neutral/30 border border-dashed border-border text-xs text-text-secondary flex items-center gap-2">
+                                            <Layout className="h-4 w-4 opacity-65 animate-pulse" />
+                                            Select a table or object to nudge position
                                         </div>
-                                        <button type="button" onClick={() => nudgeSelectedObject(5, 0)} className="col-start-3 row-start-2 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move item right">
-                                            <ArrowRight className="h-4 w-4" />
-                                        </button>
-                                        <button type="button" onClick={() => nudgeSelectedObject(0, 5)} className="col-start-2 row-start-3 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary/30 hover:text-primary" aria-label="Move item down">
-                                            <ArrowDown className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
+
+                                {/* Right Column: Contextual Quick-Actions */}
+                                <div className="flex justify-center md:justify-end gap-2">
+                                    {(selectedTableData || selectedObjectData) ? (
+                                        <div className="flex gap-2">
+                                            {/* Deselect Button */}
+                                            <button
+                                                type="button"
+                                                onClick={() => { setSelectedTable(null); setSelectedObject(null); }}
+                                                className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary active:scale-95"
+                                            >
+                                                <X className="h-4 w-4" />
+                                                Deselect
+                                            </button>
+                                            {/* Rotation quick-button: rotate 15 degrees clockwise */}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (selectedTableData && selectedTableSize) {
+                                                        const newRotation = (selectedTableSize.rotation + 15) % 360;
+                                                        void updateTableStyle(selectedTableData.id, { rotation: newRotation });
+                                                    } else if (selectedObjectData) {
+                                                        const newRotation = (selectedObjectData.rotation + 15) % 360;
+                                                        updateVenueObject(selectedObjectData.id, { rotation: newRotation });
+                                                    }
+                                                }}
+                                                className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary active:scale-95"
+                                                aria-label="Rotate item 15 degrees clockwise"
+                                            >
+                                                <RotateCcw className="h-4 w-4 transform rotate-180" />
+                                                Rotate 15°
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-xs text-text-secondary hidden md:block italic">
+                                            Drag tables & shapes to design your floor plan
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
