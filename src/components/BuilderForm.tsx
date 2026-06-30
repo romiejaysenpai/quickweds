@@ -261,6 +261,8 @@ const INITIAL_FORM_DATA = {
     logoShape: 'minimal',
     logoColor: '#C08081',
     spotifyUrl: '',
+    backgroundMusicTitle: '',
+    backgroundMusicEnabled: false,
     weddingParty: [] as any[],
     includeEntourageSection: true,
     registryLinks: [] as any[],
@@ -413,6 +415,7 @@ export default function BuilderForm() {
         heroImage: File | null;
         couplePhoto: File | null;
         teaserVideo: File | null;
+        backgroundMusic: File | null;
         giftQr: File | null;
         invitationImages: File[];
         galleryImages: File[];
@@ -421,6 +424,7 @@ export default function BuilderForm() {
         heroImage: null,
         couplePhoto: null,
         teaserVideo: null,
+        backgroundMusic: null,
         giftQr: null,
         invitationImages: [],
         galleryImages: [],
@@ -431,6 +435,7 @@ export default function BuilderForm() {
         heroImage: string;
         couplePhoto: string;
         teaserVideo: string;
+        backgroundMusic: string;
         giftQr: string;
         invitationImages: string[];
         galleryImages: string[];
@@ -439,6 +444,7 @@ export default function BuilderForm() {
         heroImage: '',
         couplePhoto: '',
         teaserVideo: '',
+        backgroundMusic: '',
         giftQr: '',
         invitationImages: [],
         galleryImages: [],
@@ -574,6 +580,8 @@ export default function BuilderForm() {
                         logoShape: data.logo_shape || 'minimal',
                         logoColor: data.logo_color || data.motif_color,
                         spotifyUrl: data.spotify_playlist_url || '',
+                        backgroundMusicTitle: data.background_music_title || '',
+                        backgroundMusicEnabled: data.background_music_enabled || false,
                         weddingParty: readArrayField(data.wedding_party).map(normalizeWeddingPartyMember),
                         includeEntourageSection: data.include_entourage_section !== false,
                         registryLinks: data.gift_registry_links || [],
@@ -599,6 +607,7 @@ export default function BuilderForm() {
                         heroImage: data.hero_image || '',
                         couplePhoto: data.couple_photo || '',
                         teaserVideo: (data as any).teaser_video || '',
+                        backgroundMusic: (data as any).background_music_url || '',
                         giftQr: data.gift_qr_image || '',
                         invitationImages: inviteImages,
                         galleryImages: data.gallery_images || [],
@@ -838,9 +847,26 @@ export default function BuilderForm() {
                 }
             }
 
+            if (field === 'backgroundMusic') {
+                const limit = 15 * 1024 * 1024; // 15MB
+                if (!file.type.startsWith('audio/')) {
+                    alert('Please upload an audio file such as MP3, M4A, WAV, or OGG.');
+                    return;
+                }
+                if (file.size > limit) {
+                    alert('Background music must be 15MB or smaller. Please compress the audio file and try again.');
+                    return;
+                }
+                setFormData((prev: any) => ({
+                    ...prev,
+                    backgroundMusicEnabled: true,
+                    backgroundMusicTitle: prev.backgroundMusicTitle || file.name.replace(/\.[^.]+$/, ''),
+                }));
+            }
+
             setMediaFiles((prev: any) => ({ ...prev, [field]: file }));
 
-            if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'teaserVideo' || field === 'invitationImage') {
+            if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'teaserVideo' || field === 'backgroundMusic' || field === 'invitationImage') {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     setPreviews((prev: any) => ({ ...prev, [field]: reader.result as string }));
@@ -860,6 +886,10 @@ export default function BuilderForm() {
         } else if (field === 'receptionVenuePhotos' && index !== undefined) {
             setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) }));
             setPreviews(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) }));
+        } else if (field === 'backgroundMusic') {
+            setMediaFiles(prev => ({ ...prev, backgroundMusic: null }));
+            setPreviews(prev => ({ ...prev, backgroundMusic: '' }));
+            setFormData((prev: any) => ({ ...prev, backgroundMusicEnabled: false }));
         } else {
             setMediaFiles(prev => ({ ...prev, [field]: null }));
             setPreviews(prev => ({ ...prev, [field]: '' }));
@@ -928,15 +958,17 @@ export default function BuilderForm() {
             const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
             const invitationPromises = mediaFiles.invitationImages.map((file, i) => uploadToSupabase(file, `invitation-${i}`));
             const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo, 'teaser') : Promise.resolve(null);
+            const musicPromise = mediaFiles.backgroundMusic ? uploadToSupabase(mediaFiles.backgroundMusic, 'music') : Promise.resolve(null);
             const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToSupabase(file, `gallery-${i}`));
             const receptionVenuePromises = mediaFiles.receptionVenuePhotos.map((file, i) => uploadToSupabase(file, `reception-venue-${i}`));
 
-            const [heroUrl, coupleUrl, giftQrUrl, invitationUrls, videoUrl, galleryUrls, receptionVenueUrls] = await Promise.all([
+            const [heroUrl, coupleUrl, giftQrUrl, invitationUrls, videoUrl, musicUrl, galleryUrls, receptionVenueUrls] = await Promise.all([
                 heroPromise,
                 couplePromise,
                 giftQrPromise,
                 Promise.all(invitationPromises),
                 videoPromise,
+                musicPromise,
                 Promise.all(galleryPromises),
                 Promise.all(receptionVenuePromises)
             ]);
@@ -978,6 +1010,8 @@ export default function BuilderForm() {
                 logo_shape: formData.logoShape,
                 logo_color: formData.logoColor || formData.motifColor,
                 spotify_playlist_url: formData.spotifyUrl,
+                background_music_title: formData.backgroundMusicTitle,
+                background_music_enabled: Boolean(formData.backgroundMusicEnabled && (musicUrl || previews.backgroundMusic)),
                 wedding_party: normalizedWeddingParty,
                 include_entourage_section: formData.includeEntourageSection !== false,
                 gift_registry_links: formData.registryLinks,
@@ -992,6 +1026,7 @@ export default function BuilderForm() {
             if (mediaFiles.heroImage || editId) payload.hero_image = heroUrl || previews.heroImage;
             if (mediaFiles.couplePhoto || editId) payload.couple_photo = coupleUrl || previews.couplePhoto;
             if (mediaFiles.teaserVideo || editId) payload.teaser_video = videoUrl || (formData as any).teaser_video; 
+            if (mediaFiles.backgroundMusic || editId || previews.backgroundMusic) payload.background_music_url = musicUrl || previews.backgroundMusic;
             if (mediaFiles.giftQr || editId) payload.gift_qr_image = giftQrUrl || previews.giftQr;
             
             // Handle invitation images: merge new uploads with existing previews if editing
@@ -1053,6 +1088,9 @@ export default function BuilderForm() {
                     'section_title_font_style',
                     'section_title_color_style',
                     'include_entourage_section',
+                    'background_music_url',
+                    'background_music_title',
+                    'background_music_enabled',
                 ].forEach((column) => {
                     if (isMissingOptionalWeddingColumnError(error, column)) {
                         delete fallbackPayload[column];
@@ -1784,6 +1822,81 @@ export default function BuilderForm() {
                                     </div>
                                 )}
                                 <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                            </div>
+                        </div>
+
+
+                        <div className="space-y-4 rounded-[2rem] border border-primary/15 bg-white/75 p-5 shadow-sm">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                    <Music className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-text-secondary">Background Music</p>
+                                    <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                        Upload one song that guests can play while scrolling the wedding invitation.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-[1fr_0.85fr]">
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Song File</label>
+                                    <div className="relative min-h-[112px] rounded-2xl border-2 border-dashed border-border bg-neutral p-4 transition-colors hover:bg-neutral/80">
+                                        {mediaFiles.backgroundMusic || previews.backgroundMusic ? (
+                                            <div className="flex h-full min-h-[78px] items-center justify-between gap-4">
+                                                <div className="min-w-0">
+                                                    <Music className="mb-2 h-6 w-6 text-primary" />
+                                                    <p className="truncate text-sm font-bold text-foreground">
+                                                        {mediaFiles.backgroundMusic?.name || formData.backgroundMusicTitle || 'Uploaded wedding song'}
+                                                    </p>
+                                                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary">Ready for invitation page</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFile('backgroundMusic')}
+                                                    className="relative z-10 rounded-full border border-red-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-red-500 hover:bg-red-50"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex min-h-[78px] flex-col items-center justify-center text-center">
+                                                <Upload className="mb-2 h-7 w-7 text-primary/45" />
+                                                <p className="text-sm font-semibold text-text-secondary">Upload MP3, M4A, WAV, or OGG</p>
+                                                <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-text-secondary/70">Max 15MB</p>
+                                            </div>
+                                        )}
+                                        <input type="file" accept="audio/*" onChange={(e) => handleFileChange(e, 'backgroundMusic')} className="absolute inset-0 cursor-pointer opacity-0" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Song Title</label>
+                                        <input
+                                            name="backgroundMusicTitle"
+                                            value={formData.backgroundMusicTitle}
+                                            onChange={handleChange}
+                                            placeholder="Our Wedding Song"
+                                            className="w-full rounded-xl border border-border bg-neutral px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:bg-white"
+                                        />
+                                    </div>
+
+                                    <label className="flex min-h-[52px] cursor-pointer items-center justify-between gap-4 rounded-2xl border border-border bg-neutral/60 px-4 py-3">
+                                        <span>
+                                            <span className="block text-xs font-bold uppercase tracking-widest text-foreground">Play on page</span>
+                                            <span className="mt-1 block text-[10px] leading-4 text-text-secondary">Starts after the guest taps or interacts.</span>
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={Boolean(formData.backgroundMusicEnabled)}
+                                            disabled={!mediaFiles.backgroundMusic && !previews.backgroundMusic}
+                                            onChange={(event) => setFormData((prev: any) => ({ ...prev, backgroundMusicEnabled: event.target.checked }))}
+                                            className="h-5 w-5 rounded border-border text-primary focus:ring-primary"
+                                        />
+                                    </label>
+                                </div>
                             </div>
                         </div>
 

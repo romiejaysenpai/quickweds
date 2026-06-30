@@ -59,6 +59,9 @@ export interface Wedding {
     wedding_party?: string | unknown[];
     include_entourage_section?: boolean;
     spotify_playlist_url?: string;
+    background_music_url?: string;
+    background_music_title?: string;
+    background_music_enabled?: boolean;
     // Mode
     is_save_the_date?: boolean;
     is_thank_you_mode?: boolean;

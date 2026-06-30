@@ -54,6 +54,9 @@ export const PUBLIC_WEDDING_FIELDS = [
     'wedding_party',
     'include_entourage_section',
     'spotify_playlist_url',
+    'background_music_url',
+    'background_music_title',
+    'background_music_enabled',
     'is_save_the_date',
     'is_thank_you_mode',
     'thank_you_message',
@@ -126,6 +129,7 @@ export function toPublicWedding(record: Record<string, unknown>) {
         section_title_color_style: normalizeSectionTitleColorStyle(publicWedding.section_title_color_style),
         wedding_party: normalizeWeddingParty(publicWedding.wedding_party),
         include_entourage_section: publicWedding.include_entourage_section === false ? false : true,
+        background_music_enabled: publicWedding.background_music_enabled === true,
         is_save_the_date: publicWedding.is_save_the_date === true,
         is_thank_you_mode: publicWedding.is_thank_you_mode === true,
     };
@@ -142,6 +146,18 @@ export function getSupabaseErrorMessage(error: unknown) {
             .join(' ');
     }
     return String(error);
+}
+
+function isMissingOptionalColumnError(error: unknown, columns: readonly string[]) {
+    const message = getSupabaseErrorMessage(error).toLowerCase();
+    return columns.some((column) => message.includes(column.toLowerCase())) && (
+        message.includes('column') ||
+        message.includes('schema cache') ||
+        message.includes('could not find') ||
+        message.includes('does not exist') ||
+        message.includes('pgrst204') ||
+        message.includes('42703')
+    );
 }
 
 function getTemplateTestWedding(rawIdentifier: string) {
@@ -205,6 +221,9 @@ function getTemplateTestWedding(rawIdentifier: string) {
         wedding_party: JSON.stringify([{ name: 'Lena Park', role: 'Maid of Honor', bio: 'Best friend and dance floor captain.' }]),
         include_entourage_section: true,
         spotify_playlist_url: 'https://open.spotify.com/',
+        background_music_url: '',
+        background_music_title: 'Our Wedding Song',
+        background_music_enabled: false,
         is_save_the_date: false,
         is_thank_you_mode: false,
         thank_you_message: '',
@@ -225,6 +244,20 @@ async function loadPublicWedding(rawIdentifier: string) {
         rawIdentifier,
         PUBLIC_WEDDING_FIELDS.join(',')
     );
+
+    if (error && isMissingOptionalColumnError(error, ['background_music_url', 'background_music_title', 'background_music_enabled'])) {
+        const fallbackFields = PUBLIC_WEDDING_FIELDS.filter((field) => ![
+            'background_music_url',
+            'background_music_title',
+            'background_music_enabled',
+        ].includes(field));
+        const fallback = await resolvePublicWeddingByIdentifier(db, rawIdentifier, fallbackFields.join(','));
+
+        if (fallback.error) throw fallback.error;
+        if (!fallback.identifier || !fallback.wedding) return null;
+
+        return toPublicWedding(fallback.wedding);
+    }
 
     if (error) throw error;
     if (!identifier || !wedding) return null;

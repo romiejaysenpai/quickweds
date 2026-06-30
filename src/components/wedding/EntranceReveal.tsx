@@ -29,6 +29,11 @@ function formatDateLabel(date: string) {
     });
 }
 
+function requestBackgroundMusicStart() {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new Event('quickweds:start-background-music'));
+}
+
 export default function EntranceReveal({
     weddingId,
     initials,
@@ -82,6 +87,7 @@ export default function EntranceReveal({
         if (typeof window !== 'undefined') {
             window.sessionStorage.setItem(`quickweds_entrance_seen_${weddingId}`, '1');
         }
+        requestBackgroundMusicStart();
         setIsVisible(false);
     };
 

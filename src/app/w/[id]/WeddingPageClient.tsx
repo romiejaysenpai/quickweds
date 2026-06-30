@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import {
     HeroEnhancer,
     PremiumBackgroundLayer,
+    BackgroundMusicPlayer,
     EntranceReveal,
     VoiceGreeting,
     TemplateNavigation,
@@ -93,6 +94,14 @@ export default function WeddingPageClient({
 
                 {wedding.voice_greeting_url && (
                     <VoiceGreeting audioUrl={wedding.voice_greeting_url} motifColor={wedding.motif_color} />
+                )}
+
+                {wedding.background_music_enabled && wedding.background_music_url && (
+                    <BackgroundMusicPlayer
+                        audioUrl={wedding.background_music_url}
+                        title={wedding.background_music_title}
+                        motifColor={wedding.motif_color}
+                    />
                 )}
 
                 {wedding.accent_style && wedding.accent_style !== 'none' && (
