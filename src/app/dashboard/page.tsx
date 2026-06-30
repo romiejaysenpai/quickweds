@@ -28,6 +28,16 @@ function getFirstName(user: any) {
     return firstName || 'there';
 }
 
+function getErrorMessage(error: unknown) {
+    if (!error) return 'Unable to load your dashboard.';
+    if (error instanceof Error && error.message) return error.message;
+    if (typeof error === 'object') {
+        const record = error as Record<string, unknown>;
+        return String(record.message || record.details || record.hint || record.code || 'Unable to load your dashboard.');
+    }
+    return String(error);
+}
+
 function DashboardWelcomeHero({
     user,
     weddings,
@@ -449,6 +459,7 @@ export default function DashboardRedirect() {
     const [weddings, setWeddings] = useState<any[]>([]);
     const [sharedWeddings, setSharedWeddings] = useState<any[]>([]);
     const [fetching, setFetching] = useState(true);
+    const [dashboardError, setDashboardError] = useState('');
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [checkingRole, setCheckingRole] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -459,27 +470,47 @@ export default function DashboardRedirect() {
     const freeWebsiteLimitReached = !accountIsPro && weddings.length >= 3;
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-    const fetchWeddings = useCallback(async () => {
+    const fetchWeddings = useCallback(async (): Promise<{ owned: any[]; shared: any[] }> => {
         if (!user) {
             setFetching(false);
-            return;
+            return { owned: [], shared: [] };
         }
         setFetching(true);
+        setDashboardError('');
         try {
-            const { data, error } = await supabase
+            let { data, error } = await supabase
                 .from('weddings')
                 .select('*, rsvps(id)')
                 .eq('user_id', user.id)
                 .is('deleted_at', null)
                 .order('created_at', { ascending: false });
+
+            if (error) {
+                console.warn('Dashboard wedding query failed; retrying without RSVP relation:', error);
+                const fallback = await supabase
+                    .from('weddings')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .is('deleted_at', null)
+                    .order('created_at', { ascending: false });
+
+                data = fallback.data?.map((wedding) => ({ ...wedding, rsvps: [] })) || null;
+                error = fallback.error;
+            }
             
             if (error) throw error;
-            setWeddings(data || []);
+            const owned = data || [];
+            setWeddings(owned);
 
             const shared = await listSharedWeddings(user.email);
             setSharedWeddings(shared);
+            return { owned, shared };
         } catch (err) {
             console.error("Fetch Error:", err);
+            setDashboardError(getErrorMessage(err));
+            setWeddings([]);
+            setSharedWeddings([]);
+            return { owned: [], shared: [] };
         } finally {
             setFetching(false);
         }
@@ -544,15 +575,10 @@ export default function DashboardRedirect() {
                     return;
                 }
 
+                let profile: AccountProfile | null = null;
                 try {
-                    const profile = await getClientAccountProfile(token);
+                    profile = await getClientAccountProfile(token);
                     setAccountProfile(profile);
-                    if (profile?.account_type === 'supplier') {
-                        setCheckingRole(false);
-                        setFetching(false);
-                        router.replace(getRoleAwareRedirect(profile.account_type, '/dashboard'));
-                        return;
-                    }
                 } catch (profileErr) {
                     // Gracefully degrade — if account profile table is missing or API fails,
                     // treat user as a regular couple user and continue loading dashboard.
@@ -561,7 +587,10 @@ export default function DashboardRedirect() {
                 }
 
                 setCheckingRole(false);
-                await fetchWeddings();
+                const result = await fetchWeddings();
+                if (profile?.account_type === 'supplier' && result.owned.length === 0 && result.shared.length === 0) {
+                    router.replace(getRoleAwareRedirect(profile.account_type, '/dashboard'));
+                }
             } catch (err) {
                 console.error('Dashboard load failed:', err);
                 setCheckingRole(false);
@@ -867,6 +896,12 @@ export default function DashboardRedirect() {
                         </div>
                     </section>
                 )}
+
+                {dashboardError && weddings.length === 0 ? (
+                    <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-semibold leading-6 text-red-700">
+                        We could not load your saved wedding sites right now. {dashboardError}
+                    </div>
+                ) : null}
 
                 {weddings.length === 0 ? (
                     <motion.div

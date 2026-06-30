@@ -14,7 +14,7 @@ import CopyButton from '@/components/CopyButton';
 import DarkModeToggle from '@/components/DarkModeToggle';
 import UpgradeButton from '@/components/UpgradeButton';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
+import { getClientAccountProfile, hasAccountPro } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
@@ -216,11 +216,10 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 }
 
                 if (!isAdmin) {
-                    const accountProfile = await getClientAccountProfile(token);
-                    if (accountProfile?.account_type !== 'couple') {
-                        router.replace(getRoleAwareRedirect(accountProfile?.account_type, `/dashboard/${id}`));
-                        return;
-                    }
+                    await getClientAccountProfile(token).catch((profileErr) => {
+                        console.warn('Account profile check skipped before workspace load:', profileErr);
+                        return null;
+                    });
                 }
 
                 setCheckingRole(false);
