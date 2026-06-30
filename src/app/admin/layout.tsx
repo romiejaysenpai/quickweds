@@ -1,22 +1,28 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, isAdmin, adminChecked, loading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const isVerified = !loading && adminChecked && Boolean(user) && isAdmin;
 
     useEffect(() => {
         if (loading || !adminChecked) return;
 
-        if (!user || !isAdmin) {
+        if (!user) {
+            router.replace(`/login?next=${encodeURIComponent(pathname || '/admin')}`);
+            return;
+        }
+
+        if (!isAdmin) {
             router.replace('/dashboard');
         }
-    }, [adminChecked, isAdmin, loading, router, user]);
+    }, [adminChecked, isAdmin, loading, pathname, router, user]);
 
     if (!isVerified) {
         return (

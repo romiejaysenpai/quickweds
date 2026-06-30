@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { Megaphone, Settings, ShieldCheck, Users } from 'lucide-react';
+import { Bot, Megaphone, Settings, ShieldCheck, Users } from 'lucide-react';
 
 export default function AdminHubPage() {
     useEffect(() => {
@@ -49,6 +49,18 @@ export default function AdminHubPage() {
                             <h2 className="font-bold text-foreground">User Management</h2>
                             <p className="mt-2 text-xs leading-5 text-text-secondary">
                                 Manage user accounts, view statistics, and handle platform support requests.
+                            </p>
+                        </div>
+                    </Link>
+
+                    <Link href="/admin/support" className="group flex flex-col justify-between rounded-2xl border border-border bg-neutral/20 p-6 transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-md">
+                        <div>
+                            <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                                <Bot className="h-5 w-5" />
+                            </div>
+                            <h2 className="font-bold text-foreground">Support Agent</h2>
+                            <p className="mt-2 text-xs leading-5 text-text-secondary">
+                                Review tickets and generate safe investigation reports, PR drafts, and SQL change requests.
                             </p>
                         </div>
                     </Link>

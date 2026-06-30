@@ -29,6 +29,16 @@ function SupportPageContent() {
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const getClientContext = () => {
+    const browser = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const device = typeof window !== 'undefined'
+      ? `${window.innerWidth}x${window.innerHeight}`
+      : '';
+
+    return { pageUrl, browser, device };
+  };
+
   const handleInquiry = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmittingInquiry(true);
@@ -36,6 +46,13 @@ function SupportPageContent() {
     if (user?.email) {
       formData.append('userEmail', user.email);
     }
+    if (user?.id) {
+      formData.append('userId', user.id);
+    }
+    const clientContext = getClientContext();
+    formData.append('pageUrl', clientContext.pageUrl);
+    formData.append('browser', clientContext.browser);
+    formData.append('device', clientContext.device);
     
     await submitInquiry(formData);
     
@@ -50,6 +67,13 @@ function SupportPageContent() {
     if (user?.email) {
       formData.append('userEmail', user.email);
     }
+    if (user?.id) {
+      formData.append('userId', user.id);
+    }
+    const clientContext = getClientContext();
+    formData.append('pageUrl', clientContext.pageUrl);
+    formData.append('browser', clientContext.browser);
+    formData.append('device', clientContext.device);
     
     if (screenshot) {
       formData.append('screenshot', screenshot);
@@ -209,6 +233,32 @@ function SupportPageContent() {
                     <option value="feature">Feature Request</option>
                     <option value="review">App Review / General Feedback</option>
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-text-secondary mb-1" htmlFor="affectedFeature">Affected Feature</label>
+                  <select id="affectedFeature" name="affectedFeature" className="w-full rounded-xl border border-border bg-neutral px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20">
+                    <option value="">Select a feature...</option>
+                    <option value="dashboard">Dashboard</option>
+                    <option value="builder">Wedding builder</option>
+                    <option value="rsvp">RSVP</option>
+                    <option value="guest-list">Guest list</option>
+                    <option value="planner">Planner</option>
+                    <option value="photos">Photo sharing</option>
+                    <option value="emails">Emails / invitations</option>
+                    <option value="payments">Payments / plan</option>
+                    <option value="account">Account / login</option>
+                    <option value="suppliers">Supplier directory</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-text-secondary mb-1" htmlFor="errorCode">Error Code (Optional)</label>
+                  <input
+                    type="text"
+                    id="errorCode"
+                    name="errorCode"
+                    className="w-full rounded-xl border border-border bg-neutral px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                    placeholder="Example: 500, auth_session_missing"
+                  />
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-bold text-text-secondary mb-1" htmlFor="details">Details</label>

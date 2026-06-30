@@ -1,6 +1,7 @@
 'use server';
 
 import { sendEmail } from '@/lib/email';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { v2 as cloudinary } from 'cloudinary';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@quickweds.site';
@@ -76,11 +77,66 @@ function escapeHtml(value: string) {
         .replace(/'/g, '&#39;');
 }
 
+function getOptionalString(formData: FormData, key: string, maxLength: number) {
+    const value = String(formData.get(key) || '').trim();
+    return value ? value.slice(0, maxLength) : null;
+}
+
+async function createSupportTicket(input: {
+    userId?: string | null;
+    userEmail?: string | null;
+    subject: string;
+    message: string;
+    category: string;
+    affectedFeature?: string | null;
+    errorCode?: string | null;
+    browser?: string | null;
+    device?: string | null;
+    pageUrl?: string | null;
+    screenshotUrl?: string | null;
+    safeMetadata?: Record<string, unknown>;
+}) {
+    try {
+        const db = getSupabaseAdminClient() as any;
+        const { data, error } = await db
+            .from('support_tickets')
+            .insert({
+                user_id: input.userId || null,
+                user_email: input.userEmail || null,
+                subject: input.subject,
+                message: input.message,
+                category: input.category,
+                affected_feature: input.affectedFeature || null,
+                error_code: input.errorCode || null,
+                browser: input.browser || null,
+                device: input.device || null,
+                page_url: input.pageUrl || null,
+                screenshot_url: input.screenshotUrl || null,
+                safe_metadata: input.safeMetadata || {},
+                status: 'new',
+                priority: input.category === 'security' ? 'critical' : input.category === 'bug' ? 'high' : 'normal',
+            })
+            .select('id')
+            .single();
+
+        if (error) throw error;
+        return data?.id as string | undefined;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unable to create support ticket';
+        console.warn('[support] Ticket persistence skipped:', message);
+        return undefined;
+    }
+}
+
 export async function submitInquiry(formData: FormData) {
     const subject = String(formData.get('subject') || '').trim();
     const message = String(formData.get('message') || '').trim();
     const userEmail = String(formData.get('userEmail') || '').trim();
     const inquiryType = String(formData.get('inquiryType') || '').trim();
+    const userId = getOptionalString(formData, 'userId', 80);
+    const pageUrl = getOptionalString(formData, 'pageUrl', 300);
+    const browser = getOptionalString(formData, 'browser', 200);
+    const device = getOptionalString(formData, 'device', 200);
     const isCustomPlanInquiry = inquiryType === 'custom-plan' || /custom plan/i.test(subject);
 
     if (!subject || !message) {
@@ -96,6 +152,21 @@ export async function submitInquiry(formData: FormData) {
     const safeUserEmail = escapeHtml(userEmail || 'Unknown User');
     const emailType = isCustomPlanInquiry ? 'Custom Plan Inquiry' : 'New Support Inquiry';
     const brandColor = isCustomPlanInquiry ? '#8B5CF6' : '#D16C78';
+    const ticketId = await createSupportTicket({
+        userId,
+        userEmail,
+        subject,
+        message,
+        category: isCustomPlanInquiry ? 'custom-plan' : 'general',
+        affectedFeature: isCustomPlanInquiry ? 'pricing/custom plan' : 'general support',
+        browser,
+        device,
+        pageUrl,
+        safeMetadata: {
+            inquiryType: isCustomPlanInquiry ? 'custom-plan' : 'general',
+            source: 'support_page',
+        },
+    });
 
     const content = `
         <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 25px;">
@@ -104,6 +175,7 @@ export async function submitInquiry(formData: FormData) {
         
         <div style="background-color: #fdf8f9; border-left: 4px solid ${brandColor}; padding: 20px; margin-bottom: 30px; border-radius: 4px;">
             <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>From:</strong> <span style="color: ${brandColor};">${safeUserEmail}</span></p>
+            ${ticketId ? `<p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Ticket ID:</strong> ${escapeHtml(ticketId)}</p>` : ''}
             <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Type:</strong> ${isCustomPlanInquiry ? 'Custom Plan Request' : 'General Inquiry'}</p>
             <p style="margin: 0; font-size: 14px;"><strong>Subject:</strong> ${safeSubject}</p>
         </div>
@@ -126,7 +198,7 @@ export async function submitInquiry(formData: FormData) {
         html,
     });
 
-    return result;
+    return { ...result, ticketId };
 }
 
 export async function submitFeedback(formData: FormData) {
@@ -134,6 +206,12 @@ export async function submitFeedback(formData: FormData) {
     const details = formData.get('details') as string;
     const userEmail = formData.get('userEmail') as string;
     const screenshot = formData.get('screenshot') as File | null;
+    const userId = getOptionalString(formData, 'userId', 80);
+    const affectedFeature = getOptionalString(formData, 'affectedFeature', 120);
+    const errorCode = getOptionalString(formData, 'errorCode', 120);
+    const browser = getOptionalString(formData, 'browser', 200);
+    const device = getOptionalString(formData, 'device', 200);
+    const pageUrl = getOptionalString(formData, 'pageUrl', 300);
 
     if (!type || !details) {
         return { success: false, error: 'Type and details are required' };
@@ -158,6 +236,26 @@ export async function submitFeedback(formData: FormData) {
 
     const displayType = typeLabels[type] || type;
     const brandColor = typeColors[type] || '#D16C78';
+    const subject = `${displayType}: ${affectedFeature || 'QuickWeds app'}`;
+    const ticketId = await createSupportTicket({
+        userId,
+        userEmail,
+        subject,
+        message: details,
+        category: type === 'bug' ? 'bug' : type === 'feature' ? 'feature' : 'review',
+        affectedFeature,
+        errorCode,
+        browser,
+        device,
+        pageUrl,
+        screenshotUrl,
+        safeMetadata: {
+            source: 'support_page',
+            screenshotAttached: Boolean(screenshotUrl),
+        },
+    });
+    const safeDetails = escapeHtml(details);
+    const safeUserEmail = escapeHtml(userEmail || 'Unknown User');
 
     const content = `
         <p style="font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 25px;">
@@ -165,13 +263,14 @@ export async function submitFeedback(formData: FormData) {
         </p>
         
         <div style="background-color: #f8fafc; border-left: 4px solid ${brandColor}; padding: 20px; margin-bottom: 30px; border-radius: 4px;">
-            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>From:</strong> <span style="color: ${brandColor};">${userEmail || 'Unknown User'}</span></p>
+            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>From:</strong> <span style="color: ${brandColor};">${safeUserEmail}</span></p>
+            ${ticketId ? `<p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Ticket ID:</strong> ${escapeHtml(ticketId)}</p>` : ''}
             <p style="margin: 0; font-size: 14px;"><strong>Feedback Category:</strong> ${displayType}</p>
         </div>
         
         <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px;">Feedback Details:</h3>
         <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
-            <p style="white-space: pre-wrap; font-size: 15px; line-height: 1.7; color: #444; margin: 0;">${details}</p>
+            <p style="white-space: pre-wrap; font-size: 15px; line-height: 1.7; color: #444; margin: 0;">${safeDetails}</p>
         </div>
         
         ${screenshotUrl ? `
@@ -185,7 +284,7 @@ export async function submitFeedback(formData: FormData) {
         ` : ''}
         
         <div style="margin-top: 35px; text-align: center;">
-            <a href="mailto:${userEmail}" style="background-color: ${brandColor}; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">Contact User</a>
+            <a href="mailto:${encodeURIComponent(userEmail || '')}" style="background-color: ${brandColor}; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">Contact User</a>
         </div>
     `;
 
@@ -197,5 +296,5 @@ export async function submitFeedback(formData: FormData) {
         html,
     });
 
-    return result;
+    return { ...result, ticketId };
 }
