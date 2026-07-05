@@ -22,6 +22,9 @@
 # production
 /build
 
+# local/user uploaded media should live in object storage, not git
+/public/uploads/
+
 # misc
 .DS_Store
 *.pem
