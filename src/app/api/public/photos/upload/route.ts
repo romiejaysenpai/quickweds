@@ -1,9 +1,11 @@
 import { randomBytes } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP, sanitizeInput } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeInput } from '@/lib/rate-limit';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 import { getPhotoPortalSettings } from '@/lib/photo-portal';
+import { createUploadSession, hasUploadSessionStore, incrementUploadCount, validateUploadSession } from '@/lib/upload-sessions';
+import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +48,7 @@ export async function POST(req: NextRequest) {
         const uploaderName = rawUploaderName || 'Guest';
         const caption = sanitizeInput(String(form.get('caption') || ''), { maxLength: 500, allowNewlines: true });
         const guestIdentifierInput = sanitizeInput(String(form.get('guestIdentifier') || ''), { maxLength: 160 });
+        const uploadSessionInput = sanitizeInput(String(form.get('uploadSessionId') || ''), { maxLength: 80 });
         const rawEditMetadata = String(form.get('editMetadata') || '');
         const file = form.get('file');
 
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Wedding, sharing code, and photo are required.' }, { status: 400 });
         }
 
-        const limited = rateLimit.check(`${clientIP}:${weddingIdentifier}`);
+        const limited = await rateLimit.check(`${clientIP}:${weddingIdentifier}:${code || 'no-code'}`);
         if (limited.limited) return limited.response;
 
         if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
@@ -99,9 +102,28 @@ export async function POST(req: NextRequest) {
             ? settings.photo_limit_per_guest
             : MAX_UPLOADS_PER_SHARING_CODE;
         const codeLimit = Math.min(Number(sharingCode.max_uploads ?? configuredLimit), configuredLimit);
+        let uploadSessionId = uploadSessionInput;
 
         if (currentUploads >= codeLimit) {
             return NextResponse.json({ error: `This sharing code has reached its ${codeLimit}-photo limit.` }, { status: 403 });
+        }
+
+        if (hasUploadSessionStore()) {
+            const existingSession = uploadSessionId ? await validateUploadSession(uploadSessionId) : null;
+            let session = existingSession?.weddingId === weddingId ? existingSession : null;
+            if (!session) {
+                session = await createUploadSession(weddingId, guestIdentifier, 20);
+            }
+            uploadSessionId = session.sessionId;
+
+            const sessionCount = await incrementUploadCount(uploadSessionId);
+            if (!sessionCount.ok) {
+                return NextResponse.json({
+                    error: 'This upload session has reached its photo limit. Please refresh the page and try again later.',
+                    code: sessionCount.reason,
+                    uploadSessionId,
+                }, { status: 429 });
+            }
         }
 
         const reserved = await reservePhotoUpload(db, sharingCode.id, codeLimit);
@@ -179,8 +201,9 @@ export async function POST(req: NextRequest) {
             await releasePhotoUploadReservation(db, sharingCode.id);
             throw insertError;
         }
+        await invalidateDashboardCounters(weddingId);
 
-        return NextResponse.json({ success: true }, { headers: limited.headers });
+        return NextResponse.json({ success: true, uploadSessionId: uploadSessionId || null }, { headers: limited.headers });
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to upload photo.';
         console.error('Guest photo upload failed:', message);

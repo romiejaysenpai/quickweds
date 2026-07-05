@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getSeatFinderErrorPayload, getSeatFinderPartySize, isSeatFinderSchemaError } from '@/lib/seat-finder';
-import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limit';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 
 export const dynamic = 'force-dynamic';
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     const rateLimit = createRateLimitMiddleware('SEAT_LOOKUP');
-    const limited = rateLimit.check(`${getClientIP(req)}:${weddingIdentifier}`);
+        const limited = await rateLimit.check(`${getClientIP(req)}:${weddingIdentifier}`);
     if (limited.limited) return limited.response;
 
     try {

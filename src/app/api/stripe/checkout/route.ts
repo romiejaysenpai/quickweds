@@ -3,7 +3,7 @@ import { getStripe, PRICING } from '@/lib/stripe';
 import { checkoutSchema, validateRequest } from '@/lib/validations';
 import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
 import { getWeddingAccess } from '@/lib/wedding-access';
 
 export async function POST(req: NextRequest) {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     const rateLimit = createRateLimitMiddleware('CHECKOUT');
     const rateKey = getClientIP(req);
-    const limited = rateLimit.check(rateKey);
+    const limited = await rateLimit.check(rateKey);
     if (limited.limited) return limited.response;
 
     try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
 
 const GUEST_BOOK_COLUMNS = 'id, guest_name, message, photo_url, created_at';
 
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     if (!weddingId) return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
 
     const rateLimit = createRateLimitMiddleware('WEDDING_READ');
-    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}:guest-book`);
+    const limited = await rateLimit.check(`${getClientIP(req)}:${weddingId}:guest-book`);
     if (limited.limited) return limited.response;
 
     try {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     }
 
     const rateLimit = createRateLimitMiddleware('GUEST_BOOK');
-    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}`);
+    const limited = await rateLimit.check(`${getClientIP(req)}:${weddingId}`);
     if (limited.limited) return limited.response;
 
     try {

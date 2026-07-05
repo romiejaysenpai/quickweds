@@ -57,6 +57,16 @@ export default function SignUpPage() {
         try {
             const normalizedEmail = email.trim().toLowerCase();
             const trimmedName = name.trim();
+            const rateResponse = await fetch('/api/auth/rate-limit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'signup', email: normalizedEmail }),
+            });
+            if (!rateResponse.ok) {
+                const rateData = await rateResponse.json().catch(() => ({}));
+                throw new Error(rateData.error || 'Too many requests. Please try again later.');
+            }
+
             const { data, error } = await supabase.auth.signUp({
                 email: normalizedEmail,
                 password,

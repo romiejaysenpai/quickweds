@@ -5,6 +5,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { FREE_PLAN_LIMITS, hasPlannerProAccess } from '@/lib/planner-limits';
 import { sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limiter';
 import { getWeddingAccess } from '@/lib/wedding-access';
+import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 
 export const dynamic = 'force-dynamic';
 
@@ -182,6 +183,7 @@ export async function POST(req: NextRequest) {
 
             const { error } = await db.from('rsvps').delete().eq('id', id).eq('wedding_id', weddingId);
             if (error) throw error;
+            await invalidateDashboardCounters(weddingId);
             return NextResponse.json({ success: true, deletedId: id });
         }
 
@@ -200,6 +202,7 @@ export async function POST(req: NextRequest) {
 
             const { data, error } = await db.from('rsvps').update(payload).eq('id', id).eq('wedding_id', weddingId).select(RSVP_SELECT).single();
             if (error) throw error;
+            await invalidateDashboardCounters(weddingId);
             return NextResponse.json({ guest: data });
         }
 
@@ -215,6 +218,7 @@ export async function POST(req: NextRequest) {
 
             const { data, error } = await db.from('rsvps').insert(payload).select(RSVP_SELECT);
             if (error) throw error;
+            await invalidateDashboardCounters(weddingId);
             return NextResponse.json({ guests: data || [] });
         }
 
@@ -226,6 +230,7 @@ export async function POST(req: NextRequest) {
 
         const { data, error } = await db.from('rsvps').insert(payload).select(RSVP_SELECT).single();
         if (error) throw error;
+        await invalidateDashboardCounters(weddingId);
         return NextResponse.json({ guest: data });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to update guest list.';

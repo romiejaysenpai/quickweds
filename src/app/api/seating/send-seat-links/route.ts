@@ -5,7 +5,7 @@ import { isKnownAdminEmail } from '@/lib/admin';
 import { sendEmail } from '@/lib/email';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { hasPlannerProAccess, logPlannerEmailEvent } from '@/lib/planner-limits';
-import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
 import { getWeddingAccess } from '@/lib/wedding-access';
 import {
     getAppBaseUrl,
@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
     const resendAll = body.resendAll === true;
     if (!weddingId) return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
 
-    const rateLimit = createRateLimitMiddleware('SEAT_MUTATION');
-    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}:send`);
+    const rateLimit = createRateLimitMiddleware('EMAIL_RESEND');
+    const limited = await rateLimit.check(`${getClientIP(req)}:${weddingId}:${resendAll ? 'resend' : 'send'}`);
     if (limited.limited) return limited.response;
 
     try {

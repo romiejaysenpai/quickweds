@@ -15,12 +15,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const clientIP = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
             || (req.headers['x-real-ip'] as string)
             || 'unknown';
-        const result = rateLimit.check(clientIP !== 'unknown' ? `${clientIP}:${weddingId}` : weddingId);
+        const result = await rateLimit.check(clientIP !== 'unknown' ? `${clientIP}:${weddingId}` : weddingId);
 
         if (result.limited) {
             return res.status(429).json({
-                error: 'Rate limit exceeded',
-                message: 'Too many RSVP notifications. Please try again later.',
+                error: 'Too many requests. Please try again later.',
+                message: 'Too many requests. Please try again later.',
             });
         }
     }

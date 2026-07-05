@@ -1,8 +1,8 @@
 'use client';
 
-import { memo, useState, useEffect, useCallback, useRef } from 'react';
+import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import VectorArtGuests from './VectorArtGuests';
 import { supabase } from '@/lib/supabase';
@@ -45,6 +45,10 @@ import {
     getEntourageProposalTemplate,
     type EntourageProposalTemplateKey,
 } from '@/lib/entourage-proposal-templates';
+import {
+    evaluateWeddingPublishHealth,
+    type WeddingPublishHealthSummary,
+} from '@/lib/wedding-health';
 
 // Helper component for collapsible sections
 const Collapsible = memo(function Collapsible({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) {
@@ -115,6 +119,100 @@ const AutoResizeTextarea = memo(function AutoResizeTextarea({
         />
     );
 });
+
+function PublishHealthPanel({
+    health,
+    onGoToStep,
+}: {
+    health: WeddingPublishHealthSummary;
+    onGoToStep: (stepIndex: number) => void;
+}) {
+    const statusConfig = health.status === 'blocked'
+        ? {
+            label: 'Needs fixes',
+            className: 'border-red-200 bg-red-50 text-red-700',
+            barClassName: 'bg-red-500',
+        }
+        : health.status === 'needs_attention'
+            ? {
+                label: 'Almost ready',
+                className: 'border-amber-200 bg-amber-50 text-amber-700',
+                barClassName: 'bg-amber-500',
+            }
+            : {
+                label: 'Ready to publish',
+                className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                barClassName: 'bg-emerald-500',
+            };
+    const visibleItems = [
+        ...health.criticalItems,
+        ...health.warningItems,
+        ...health.suggestionItems,
+    ].slice(0, 8);
+
+    return (
+        <section className="rounded-2xl border border-border bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Publish Health Check</p>
+                    <h3 className="mt-2 font-serif text-2xl font-bold text-foreground">Invitation readiness</h3>
+                    <p className="mt-1 text-sm leading-6 text-text-secondary">
+                        Review launch blockers and important guest-experience gaps before publishing.
+                    </p>
+                </div>
+                <div className={`flex min-w-[132px] items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black ${statusConfig.className}`}>
+                    {health.status === 'ready' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                    {statusConfig.label}
+                </div>
+            </div>
+
+            <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-sm font-bold text-foreground">{health.score}% complete</span>
+                    <span className="text-xs font-semibold text-text-secondary">{health.completedChecks}/{health.totalChecks} checks passed</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-neutral">
+                    <div className={`h-full rounded-full transition-all ${statusConfig.barClassName}`} style={{ width: `${health.score}%` }} />
+                </div>
+            </div>
+
+            {visibleItems.length > 0 ? (
+                <div className="mt-5 space-y-2">
+                    {visibleItems.map((item) => {
+                        const severityClass = item.severity === 'critical'
+                            ? 'border-red-100 bg-red-50/70 text-red-700'
+                            : item.severity === 'warning'
+                                ? 'border-amber-100 bg-amber-50/70 text-amber-700'
+                                : 'border-border bg-neutral/40 text-text-secondary';
+                        return (
+                            <div key={item.id} className={`flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between ${severityClass}`}>
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.18em]">{item.severity}</span>
+                                        <span className="rounded-full bg-white/75 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em]">{item.stepLabel}</span>
+                                    </div>
+                                    <p className="mt-1 text-sm font-bold text-foreground">{item.title}</p>
+                                    <p className="mt-0.5 text-xs leading-5 opacity-80">{item.description}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => onGoToStep(item.stepIndex)}
+                                    className="inline-flex min-h-[38px] shrink-0 items-center justify-center rounded-lg border border-current/15 bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-current transition hover:-translate-y-px hover:shadow-sm"
+                                >
+                                    Fix
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
+                    All readiness checks passed. You can publish with confidence.
+                </div>
+            )}
+        </section>
+    );
+}
 
 const STEPS = [
     { id: 'details', title: 'Details', icon: Heart },
@@ -457,6 +555,14 @@ export default function BuilderForm() {
     const [activeWeddingCount, setActiveWeddingCount] = useState(0);
     const [entourageImportStatus, setEntourageImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const freeWebsiteLimitReached = !editId && !isAdmin && !accountIsPro && activeWeddingCount >= 3;
+    const publishHealth = useMemo(() => evaluateWeddingPublishHealth(formData, {
+        heroImage: Boolean(mediaFiles.heroImage || previews.heroImage),
+        couplePhoto: Boolean(mediaFiles.couplePhoto || previews.couplePhoto),
+        giftQr: Boolean(mediaFiles.giftQr || previews.giftQr),
+        backgroundMusic: Boolean(mediaFiles.backgroundMusic || previews.backgroundMusic),
+        galleryCount: mediaFiles.galleryImages.length + (Array.isArray(previews.galleryImages) ? previews.galleryImages.length : 0),
+        invitationCount: mediaFiles.invitationImages.length + (Array.isArray(previews.invitationImages) ? previews.invitationImages.length : 0),
+    }), [formData, mediaFiles, previews]);
 
     const applyMotifColor = useCallback((color: string) => {
         setFormData((prev: any) => ({
@@ -903,6 +1009,20 @@ export default function BuilderForm() {
             return;
         }
 
+        if (publishHealth.criticalItems.length > 0) {
+            const firstCriticalStep = Math.min(...publishHealth.criticalItems.map((item) => item.stepIndex));
+            alert(`Please fix ${publishHealth.criticalItems.length} launch blocker${publishHealth.criticalItems.length === 1 ? '' : 's'} before publishing. Start with: ${publishHealth.criticalItems[0].title}`);
+            if (Number.isFinite(firstCriticalStep)) {
+                setCurrentStep(firstCriticalStep);
+            }
+            return;
+        }
+
+        if (publishHealth.warningItems.length > 0) {
+            const proceed = window.confirm(`Your invitation is ${publishHealth.score}% complete and has ${publishHealth.warningItems.length} important warning${publishHealth.warningItems.length === 1 ? '' : 's'}.\n\nYou can publish now, but guests may have a better experience if you fix them first. Publish anyway?`);
+            if (!proceed) return;
+        }
+
         if (!user) {
             const wantToLogin = window.confirm("You need to be signed in to save and generate your wedding page. Would you like to log in now? Your progress will be saved.");
             if (wantToLogin) {
@@ -1107,6 +1227,26 @@ export default function BuilderForm() {
 
             if (submitError) throw submitError;
             if (submitPayload.public_slug) setExistingPublicSlug(submitPayload.public_slug);
+
+            try {
+                const { data: sessionData } = await supabase.auth.getSession();
+                const token = sessionData.session?.access_token;
+                if (token) {
+                    void fetch('/api/public/weddings/invalidate-cache', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                            weddingId,
+                            publicSlug: submitPayload.public_slug || publicSlug || existingPublicSlug,
+                        }),
+                    }).catch((error) => console.warn('Wedding cache invalidation request failed:', error));
+                }
+            } catch (cacheError) {
+                console.warn('Wedding cache invalidation skipped:', cacheError);
+            }
 
             // Success
             router.push(`/dashboard/${weddingId}?created=true`);
@@ -2513,6 +2653,10 @@ return (
                             {renderStep()}
                         </motion.div>
                     </AnimatePresence>
+
+                    {currentStep === STEPS.length - 1 && (
+                        <PublishHealthPanel health={publishHealth} onGoToStep={setCurrentStep} />
+                    )}
 
                     {currentStep === 1 && (
                         <MarketplacePanel

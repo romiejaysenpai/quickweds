@@ -1,8 +1,9 @@
 import 'server-only';
 
-import { unstable_cache } from 'next/cache';
+import { revalidateTag, unstable_cache } from 'next/cache';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
+import { redisDel, redisJsonGet, redisJsonSet } from '@/lib/redis';
 
 export const PUBLIC_WEDDING_FIELDS = [
     'id',
@@ -148,6 +149,10 @@ export function getSupabaseErrorMessage(error: unknown) {
     return String(error);
 }
 
+function publicWeddingCacheKey(rawIdentifier: string) {
+    return `quickweds:wedding:public:${rawIdentifier}`;
+}
+
 function isMissingOptionalColumnError(error: unknown, columns: readonly string[]) {
     const message = getSupabaseErrorMessage(error).toLowerCase();
     return columns.some((column) => message.includes(column.toLowerCase())) && (
@@ -238,6 +243,9 @@ async function loadPublicWedding(rawIdentifier: string) {
     const templateTestWedding = getTemplateTestWedding(rawIdentifier);
     if (templateTestWedding) return templateTestWedding;
 
+    const cached = await redisJsonGet<Record<string, unknown>>(publicWeddingCacheKey(rawIdentifier));
+    if (cached) return cached;
+
     const db = getSupabaseAdminClient() as any;
     const { wedding, error, identifier } = await resolvePublicWeddingByIdentifier(
         db,
@@ -256,13 +264,35 @@ async function loadPublicWedding(rawIdentifier: string) {
         if (fallback.error) throw fallback.error;
         if (!fallback.identifier || !fallback.wedding) return null;
 
-        return toPublicWedding(fallback.wedding);
+        const publicWedding = toPublicWedding(fallback.wedding);
+        await redisJsonSet(publicWeddingCacheKey(rawIdentifier), publicWedding, 10 * 60);
+        return publicWedding;
     }
 
     if (error) throw error;
     if (!identifier || !wedding) return null;
 
-    return toPublicWedding(wedding);
+    const publicWedding = toPublicWedding(wedding);
+    const cacheableWedding = publicWedding as Record<string, unknown>;
+    await Promise.all([
+        redisJsonSet(publicWeddingCacheKey(rawIdentifier), publicWedding, 10 * 60),
+        typeof cacheableWedding.public_slug === 'string' && cacheableWedding.public_slug !== rawIdentifier
+            ? redisJsonSet(publicWeddingCacheKey(cacheableWedding.public_slug), publicWedding, 10 * 60)
+            : Promise.resolve(false),
+        typeof cacheableWedding.id === 'string' && cacheableWedding.id !== rawIdentifier
+            ? redisJsonSet(publicWeddingCacheKey(cacheableWedding.id), publicWedding, 10 * 60)
+            : Promise.resolve(false),
+    ]);
+    return publicWedding;
+}
+
+export async function invalidateWeddingPublicCache(...identifiers: Array<string | null | undefined>) {
+    const keys = identifiers
+        .filter((identifier): identifier is string => typeof identifier === 'string' && identifier.trim().length > 0)
+        .map((identifier) => publicWeddingCacheKey(identifier.trim()));
+
+    await redisDel(...keys);
+    revalidateTag('public-wedding', 'max');
 }
 
 export const getCachedPublicWedding = unstable_cache(

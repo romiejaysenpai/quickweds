@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getSeatFinderErrorPayload, getSeatFinderPartySize, isSeatFinderSchemaError } from '@/lib/seat-finder';
-import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     if (!token) return NextResponse.json({ error: 'Seat token is required.' }, { status: 400 });
 
     const rateLimit = createRateLimitMiddleware('SEAT_LOOKUP');
-    const limited = rateLimit.check(`${getClientIP(req)}:guest-token`);
+    const limited = await rateLimit.check(`${getClientIP(req)}:guest-token`);
     if (limited.limited) return limited.response;
 
     try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
 import { z } from 'zod';
 
 // Validation schema for analytics events
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     // Rate limit by IP address
     const clientIP = getClientIP(req);
     const rateLimit = createRateLimitMiddleware('ANALYTICS_TRACK');
-    const rateLimitResult = rateLimit.check(clientIP);
+    const rateLimitResult = await rateLimit.check(clientIP);
 
     if (rateLimitResult.limited) {
         return rateLimitResult.response;

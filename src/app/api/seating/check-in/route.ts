@@ -3,8 +3,10 @@ import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getSeatFinderErrorPayload, getSeatFinderPartySize, isSeatFinderSchemaError } from '@/lib/seat-finder';
-import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
 import { getWeddingAccess } from '@/lib/wedding-access';
+import { acquireQrCheckInLock } from '@/lib/qr-check-in-lock';
+import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +68,7 @@ export async function GET(req: NextRequest) {
     if (!weddingId) return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
 
     const rateLimit = createRateLimitMiddleware('SEAT_LOOKUP');
-    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}:check-in-list`);
+    const limited = await rateLimit.check(`${getClientIP(req)}:${weddingId}:check-in-list`);
     if (limited.limited) return limited.response;
 
     try {
@@ -102,7 +104,7 @@ export async function POST(req: NextRequest) {
     if (!weddingId) return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
 
     const rateLimit = createRateLimitMiddleware('SEAT_MUTATION');
-    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}:check-in`);
+    const limited = await rateLimit.check(`${getClientIP(req)}:${weddingId}:check-in`);
     if (limited.limited) return limited.response;
 
     try {
@@ -110,7 +112,25 @@ export async function POST(req: NextRequest) {
         if (context.response) return context.response;
         const { db, user } = context;
         const guest = await resolveGuest(db, weddingId, body);
-        if (!guest) return NextResponse.json({ error: 'Guest not found.' }, { status: 404 });
+        if (!guest) return NextResponse.json({ error: 'Guest not found.', state: 'invalid_guest' }, { status: 404 });
+
+        if (body.undo !== true && guest.checked_in_at) {
+            return NextResponse.json({
+                success: true,
+                state: 'already_checked_in',
+                guest,
+            }, { headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
+        }
+
+        if (body.undo !== true) {
+            const lockAcquired = await acquireQrCheckInLock(weddingId, guest.id);
+            if (lockAcquired === false) {
+                return NextResponse.json({
+                    error: 'This QR was just scanned. Please wait a moment.',
+                    state: 'duplicate_scan_blocked',
+                }, { status: 409, headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
+            }
+        }
 
         const checkedInAt = body.undo === true ? null : new Date().toISOString();
         const { data: updated, error: updateError } = await db
@@ -135,8 +155,13 @@ export async function POST(req: NextRequest) {
                 notes: body.notes ? String(body.notes).slice(0, 500) : null,
             });
         }
+        await invalidateDashboardCounters(weddingId);
 
-        return NextResponse.json({ success: true, guest: updated }, { headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
+        return NextResponse.json({
+            success: true,
+            state: checkedInAt ? 'checked_in_success' : 'check_in_undone',
+            guest: updated,
+        }, { headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
     } catch (err) {
         const payload = getSeatFinderErrorPayload(err, 'Unable to update guest check-in.');
         console.error('Unable to update guest check-in:', payload.details || payload.error);

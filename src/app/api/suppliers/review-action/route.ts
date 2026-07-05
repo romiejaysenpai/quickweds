@@ -8,7 +8,7 @@ import {
     sendSupplierRejectedEmail,
 } from '@/lib/supplier-notifications';
 import type { SupplierProfile } from '@/lib/suppliers';
-import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limit';
 
 function escapeHtml(value: string) {
     return value
@@ -62,7 +62,7 @@ function renderReviewResult(title: string, message: string, status = 200) {
 
 export async function GET(req: NextRequest) {
     const rateLimit = createRateLimitMiddleware('SUPPLIER_REVIEW');
-    const limited = rateLimit.check(getClientIP(req));
+    const limited = await rateLimit.check(getClientIP(req));
     if (limited.limited) return limited.response;
 
     const params = req.nextUrl.searchParams;

@@ -85,6 +85,17 @@ type GuestFormState = {
     table_assignment: string;
 };
 
+type CachedDashboardCounters = {
+    confirmed: number;
+    declined: number;
+    pending: number;
+    totalGuests: number;
+    totalRsvps: number;
+    checkedInGuests: number;
+    photoUploadCount: number;
+    mealChoices: Record<string, number>;
+};
+
 const emptyGuestForm: GuestFormState = {
     guest_name: '',
     guest_email: '',
@@ -123,6 +134,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [isImportGuestModalOpen, setIsImportGuestModalOpen] = useState(false);
     const [importingGuests, setImportingGuests] = useState(false);
     const [planUsage, setPlanUsage] = useState<PlannerUsage>(EMPTY_PLANNER_USAGE);
+    const [cachedCounters, setCachedCounters] = useState<CachedDashboardCounters | null>(null);
     const [newGuest, setNewGuest] = useState<GuestFormState>(emptyGuestForm);
     const [copyToast, setCopyToast] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -262,15 +274,19 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 setAccountIsPro(hasAccountPro(workspaceResult.accountProfile));
                 setPlanUsage(workspaceResult.planUsage || EMPTY_PLANNER_USAGE);
 
-                const [rsvpsRes, vendorsRes, budgetsRes] = await Promise.all([
+                const [rsvpsRes, vendorsRes, budgetsRes, countersRes] = await Promise.all([
                     supabase.from('rsvps').select('*').eq('wedding_id', id).order('created_at', { ascending: false }),
                     supabase.from('planner_vendors').select('*').eq('wedding_id', id),
                     supabase.from('planner_budgets').select('*').eq('wedding_id', id),
+                    fetch(`/api/dashboard/counters?weddingId=${encodeURIComponent(id)}`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }).then((response) => response.ok ? response.json() : null).catch(() => null),
                 ]);
 
                 if (rsvpsRes.data) setRsvps(rsvpsRes.data);
                 if (vendorsRes.data) setVendors(vendorsRes.data);
                 if (budgetsRes.data) setBudgets(budgetsRes.data);
+                if (countersRes?.counters) setCachedCounters(countersRes.counters);
             } catch (err) {
                 console.error(err);
                 setCheckingRole(false);
@@ -321,18 +337,18 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         const budgetPercent = totalBudget > 0 ? Math.min(100, Math.round((totalCommitted / totalBudget) * 100)) : 0;
 
         return {
-            confirmed: confirmed.length,
-            declined: declined.length,
-            pending: pending.length,
-            totalGuests,
+            confirmed: cachedCounters?.confirmed ?? confirmed.length,
+            declined: cachedCounters?.declined ?? declined.length,
+            pending: cachedCounters?.pending ?? pending.length,
+            totalGuests: cachedCounters?.totalGuests ?? totalGuests,
             totalChildren,
             invitedCount,
             seatedCount,
             groupedCount,
-            meals,
+            meals: cachedCounters?.mealChoices ?? meals,
             groups,
             songs,
-            total: rsvps.length,
+            total: cachedCounters?.totalRsvps ?? rsvps.length,
             totalBudget,
             totalSpent: totalCommitted, // Using Committed as "Spent" for the dashboard overview
             remainingBudget,
@@ -340,7 +356,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             totalEst,
             totalSpentFromVendors
         };
-    }, [rsvps, vendors, wedding, budgets]);
+    }, [rsvps, vendors, wedding, budgets, cachedCounters]);
 
     // Filtered list
     const filteredRsvps = useMemo(() => {
@@ -536,6 +552,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         if (!confirm('Remove this guest from the list?')) return;
         try {
             await plannerGuestRequest({ action: 'delete', id: rsvpId });
+            setCachedCounters(null);
             setRsvps(prev => prev.filter(r => r.id !== rsvpId));
         } catch (error) {
             alert(error instanceof Error ? error.message : 'Unable to delete guest.');
@@ -550,6 +567,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
         try {
             const result = await plannerGuestRequest({ action: 'update', id: rsvpId, patch: normalizedPatch });
+            setCachedCounters(null);
             setRsvps((prev) => prev.map((rsvp) => (rsvp.id === rsvpId ? result.guest : rsvp)));
         } catch (error) {
             alert(`Error updating guest: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -588,6 +606,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 },
             });
             const data = result.guest;
+            setCachedCounters(null);
             setRsvps([data, ...rsvps]);
             if (data?.guest_email) {
                 setPlanUsage((current) => ({ ...current, guestEmailCount: current.guestEmailCount + 1 }));
@@ -618,6 +637,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
             setImportingGuests(false);
         }
 
+        setCachedCounters(null);
         setRsvps((prev) => [...(data || []), ...prev]);
         if (data?.length) {
             const importedGuestEmails = data.filter((row: EnhancedRSVP) => Boolean(row.guest_email)).length;

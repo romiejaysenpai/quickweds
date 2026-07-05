@@ -1,5 +1,4 @@
-// Simple in-memory rate limiter for serverless/Edge environments
-// Uses a sliding window algorithm
+// In-memory fallback for local development or temporary Redis outages.
 
 interface RateLimitEntry {
     count: number;
@@ -18,9 +17,10 @@ interface RateLimitConfig {
 export const RATE_LIMITS = {
     // Strict limits for email sending (prevent abuse)
     RSVP_NOTIFY: { maxRequests: 30, windowMs: 60 * 60 * 1000 },      // 30 per hour
-    RSVP_SUBMIT: { maxRequests: 15, windowMs: 60 * 60 * 1000 },      // 15 per hour
-    REMINDER_EMAIL: { maxRequests: 5, windowMs: 60 * 60 * 1000 },    // 5 per hour
-    THANK_YOU_EMAIL: { maxRequests: 5, windowMs: 60 * 60 * 1000 },   // 5 per hour
+    RSVP_SUBMIT: { maxRequests: 5, windowMs: 60 * 1000 },            // 5 per minute
+    REMINDER_EMAIL: { maxRequests: 3, windowMs: 10 * 60 * 1000 },    // 3 per 10 minutes
+    THANK_YOU_EMAIL: { maxRequests: 3, windowMs: 10 * 60 * 1000 },   // 3 per 10 minutes
+    EMAIL_RESEND: { maxRequests: 3, windowMs: 10 * 60 * 1000 },      // 3 per 10 minutes
     ENTOURAGE_INVITE: { maxRequests: 20, windowMs: 60 * 60 * 1000 },  // 20 per hour
     ENTOURAGE_RESPONSE: { maxRequests: 30, windowMs: 15 * 60 * 1000 }, // 30 per 15 minutes
     GUEST_BOOK: { maxRequests: 12, windowMs: 60 * 60 * 1000 },       // 12 per hour
@@ -39,8 +39,8 @@ export const RATE_LIMITS = {
     WEDDING_PAGE_VIEW: { maxRequests: 200, windowMs: 15 * 60 * 1000 }, // 200 per 15 minutes
     
     // Strict limits for authentication
-    LOGIN: { maxRequests: 5, windowMs: 15 * 60 * 1000 },             // 5 per 15 minutes
-    SIGNUP: { maxRequests: 3, windowMs: 15 * 60 * 1000 },            // 3 per 15 minutes
+    LOGIN: { maxRequests: 5, windowMs: 10 * 60 * 1000 },             // 5 per 10 minutes
+    SIGNUP: { maxRequests: 5, windowMs: 10 * 60 * 1000 },            // 5 per 10 minutes
     
     // Domain management (admin operations)
     DOMAIN_MANAGEMENT: { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
@@ -54,6 +54,7 @@ export const RATE_LIMITS = {
 } as const;
 
 export type RateLimitKey = keyof typeof RATE_LIMITS;
+type RateLimitResult = { allowed: boolean; remaining: number; resetTime: number; maxRequests: number };
 
 /**
  * Check if a request is within rate limits
@@ -64,7 +65,7 @@ export type RateLimitKey = keyof typeof RATE_LIMITS;
 export function checkRateLimit(
     identifier: string,
     limitKey: RateLimitKey = 'DEFAULT'
-): { allowed: boolean; remaining: number; resetTime: number; maxRequests: number } {
+): RateLimitResult {
     const config = RATE_LIMITS[limitKey];
     const now = Date.now();
     const key = `${limitKey}:${identifier}`;
@@ -119,19 +120,21 @@ export function createRateLimitMiddleware(limitKey: RateLimitKey) {
             const result = checkRateLimit(identifier, limitKey);
             
             if (!result.allowed) {
+                const retryAfter = Math.max(1, Math.ceil((result.resetTime - Date.now()) / 1000));
                 return {
                     limited: true,
                     response: new Response(
                         JSON.stringify({
-                            error: 'Rate limit exceeded',
-                            message: `Too many requests. Please try again after ${new Date(result.resetTime).toISOString()}`,
-                            retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000),
+                            error: 'Too many requests. Please try again later.',
+                            message: 'Too many requests. Please try again later.',
+                            retryAfter,
+                            resetTime: result.resetTime,
                         }),
                         {
                             status: 429,
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Retry-After': String(Math.ceil((result.resetTime - Date.now()) / 1000)),
+                                'Retry-After': String(retryAfter),
                                 'X-RateLimit-Limit': String(result.maxRequests),
                                 'X-RateLimit-Remaining': '0',
                                 'X-RateLimit-Reset': String(result.resetTime),

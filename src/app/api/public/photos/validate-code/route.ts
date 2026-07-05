@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP, sanitizeInput } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeInput } from '@/lib/rate-limit';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 import { getPhotoPortalSettings } from '@/lib/photo-portal';
 
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const rateLimit = createRateLimitMiddleware('PHOTO_UPLOAD');
     const clientIP = getClientIP(req);
-    const limited = rateLimit.check(`${clientIP}:${weddingIdentifier}:photo-code`);
+    const limited = await rateLimit.check(`${clientIP}:${weddingIdentifier}:photo-code`);
     if (limited.limited) return limited.response;
 
     try {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limit';
 import { getCachedPublicWedding, getSupabaseErrorMessage } from '@/lib/public-wedding';
 
 export const revalidate = 60;
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const rawIdentifier = String(id || '');
 
     const rateLimit = createRateLimitMiddleware('WEDDING_PAGE_VIEW');
-    const limited = rateLimit.check(`${getClientIP(req)}:${rawIdentifier}`);
+    const limited = await rateLimit.check(`${getClientIP(req)}:${rawIdentifier}`);
     if (limited.limited) return limited.response;
 
     try {

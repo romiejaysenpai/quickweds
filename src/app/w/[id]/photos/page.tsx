@@ -95,6 +95,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
     const [codeStatus, setCodeStatus] = useState<CodeStatus | null>(null);
     const [codeChecking, setCodeChecking] = useState(false);
+    const [uploadSessionId, setUploadSessionId] = useState('');
 
     useEffect(() => {
         const load = async () => {
@@ -301,6 +302,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
             formData.set('uploaderName', form.uploader_name);
             formData.set('caption', form.caption || '');
             formData.set('file', uploadFile);
+            if (uploadSessionId) formData.set('uploadSessionId', uploadSessionId);
             formData.set('editMetadata', JSON.stringify({
                 filter: selectedFilter,
                 hasText: Boolean(overlayText.trim()),
@@ -315,6 +317,9 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
 
             if (!response.ok) {
                 throw new Error(result.error || 'Failed to upload photo.');
+            }
+            if (typeof result.uploadSessionId === 'string' && result.uploadSessionId) {
+                setUploadSessionId(result.uploadSessionId);
             }
 
             // Success state

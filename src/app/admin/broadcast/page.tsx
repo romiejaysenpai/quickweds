@@ -5,14 +5,14 @@ import { Loader2, Send, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { getCachedSession } from '@/lib/session-cache';
 
-const DEFAULT_TITLE = 'New QuickWeds updates are live';
-const DEFAULT_MESSAGE = 'Your Planner now includes a richer checklist, 12-month wedding plan, calendar schedules, Google Calendar connection, Food & Drinks planning, Honeymoon planning, and improved photo uploads. Account Pro also unlocks planner access across owned weddings and more wedding websites.';
+const DEFAULT_TITLE = 'New QuickWeds update: invitation background music';
+const DEFAULT_MESSAGE = 'You can now upload a wedding song for your invitation page. Guests can tap to open the invitation, hear the music, and keep listening while they scroll through your wedding details.\n\nPlease send app feedback, questions, or error reports through the QuickWeds support form so we can keep improving the experience.';
 
 export default function AdminBroadcastPage() {
     const [title, setTitle] = useState(DEFAULT_TITLE);
     const [message, setMessage] = useState(DEFAULT_MESSAGE);
-    const [link, setLink] = useState('/dashboard');
-    const [sendEmail, setSendEmail] = useState(false);
+    const [link, setLink] = useState('/support');
+    const [sendEmail, setSendEmail] = useState(true);
     const [skipInApp, setSkipInApp] = useState(false);
     const [recipients, setRecipients] = useState('');
     const [loading, setLoading] = useState(false);

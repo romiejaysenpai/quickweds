@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limit';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 import { getPhotoPortalSettings, isGalleryHiddenByReveal } from '@/lib/photo-portal';
 
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ wedd
     const { weddingId: rawWeddingId } = await params;
 
     const rateLimit = createRateLimitMiddleware('WEDDING_READ');
-    const limited = rateLimit.check(`${getClientIP(req)}:${rawWeddingId}:photos`);
+    const limited = await rateLimit.check(`${getClientIP(req)}:${rawWeddingId}:photos`);
     if (limited.limited) return limited.response;
 
     try {

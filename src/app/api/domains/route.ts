@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { domainSchema, validateRequest } from '@/lib/validations';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
 
 type AccessCheckResult =
     | { ok: true; customDomain: string | null; isPremium: boolean }
@@ -67,7 +67,7 @@ function parseWeddingId(value: string | null) {
     return sanitizeWeddingId(value || '') || null;
 }
 
-function checkDomainRateLimit(req: Request, weddingId: string) {
+async function checkDomainRateLimit(req: Request, weddingId: string) {
     const rateLimit = createRateLimitMiddleware('DOMAIN_MANAGEMENT');
     return rateLimit.check(`${getClientIP(req)}:${weddingId}`);
 }
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Valid weddingId is required' }, { status: 400 });
         }
 
-        const limited = checkDomainRateLimit(req, weddingId);
+        const limited = await checkDomainRateLimit(req, weddingId);
         if (limited.limited) return limited.response;
 
         const access = await verifyWeddingAccess(req, weddingId);
@@ -142,7 +142,7 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Valid weddingId is required' }, { status: 400 });
         }
 
-        const limited = checkDomainRateLimit(req, weddingId);
+        const limited = await checkDomainRateLimit(req, weddingId);
         if (limited.limited) return limited.response;
 
         const access = await verifyWeddingAccess(req, weddingId);
@@ -190,7 +190,7 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ error: 'Valid weddingId is required' }, { status: 400 });
     }
 
-    const limited = checkDomainRateLimit(req, weddingId);
+    const limited = await checkDomainRateLimit(req, weddingId);
     if (limited.limited) return limited.response;
 
     const access = await verifyWeddingAccess(req, weddingId);

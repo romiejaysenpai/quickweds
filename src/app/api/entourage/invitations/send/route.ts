@@ -6,7 +6,7 @@ import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getWeddingAccess } from '@/lib/wedding-access';
 import { sendEmail } from '@/lib/email';
-import { createRateLimitMiddleware, getClientIP, sanitizeInput } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeInput } from '@/lib/rate-limit';
 import { getEntourageProposalTemplate } from '@/lib/entourage-proposal-templates';
 
 export const dynamic = 'force-dynamic';
@@ -30,7 +30,7 @@ function hashToken(token: string) {
 }
 
 export async function POST(req: NextRequest) {
-    const limited = createRateLimitMiddleware('ENTOURAGE_INVITE').check(getClientIP(req));
+    const limited = await createRateLimitMiddleware('ENTOURAGE_INVITE').check(getClientIP(req));
     if (limited.limited) return limited.response;
 
     const { user, error } = await getRequestUser(req);

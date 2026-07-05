@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { z } from 'zod';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +30,7 @@ async function findInvitationByToken(token: string) {
 }
 
 export async function GET(req: NextRequest) {
-    const limited = createRateLimitMiddleware('ENTOURAGE_RESPONSE').check(getClientIP(req));
+    const limited = await createRateLimitMiddleware('ENTOURAGE_RESPONSE').check(getClientIP(req));
     if (limited.limited) return limited.response;
 
     const token = new URL(req.url).searchParams.get('token') || '';
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const limited = createRateLimitMiddleware('ENTOURAGE_RESPONSE').check(getClientIP(req));
+    const limited = await createRateLimitMiddleware('ENTOURAGE_RESPONSE').check(getClientIP(req));
     if (limited.limited) return limited.response;
 
     const parsed = responseSchema.safeParse(await req.json().catch(() => ({})));

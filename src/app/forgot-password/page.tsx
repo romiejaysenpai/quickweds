@@ -19,7 +19,18 @@ export default function ForgotPasswordPage() {
         setLoading(true);
         setError('');
         try {
-            const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+            const normalizedEmail = email.trim().toLowerCase();
+            const rateResponse = await fetch('/api/auth/rate-limit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'password-reset', email: normalizedEmail }),
+            });
+            if (!rateResponse.ok) {
+                const rateData = await rateResponse.json().catch(() => ({}));
+                throw new Error(rateData.error || 'Too many requests. Please try again later.');
+            }
+
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
                 redirectTo: getPublicRedirectUrl('/reset-password'),
             });
             if (resetError) throw resetError;

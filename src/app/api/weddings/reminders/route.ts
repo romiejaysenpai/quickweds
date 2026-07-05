@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email';
 import { reminderSchema, validateRequest } from '@/lib/validations';
-import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeEmail, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeEmail, sanitizeWeddingId } from '@/lib/rate-limit';
 import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
@@ -18,11 +18,11 @@ export async function POST(req: NextRequest) {
     // Rate limit reminder requests by IP
     const rateLimit = createRateLimitMiddleware('REMINDER_EMAIL');
     const clientIP = getClientIP(req);
-    const result = rateLimit.check(clientIP);
+    const result = await rateLimit.check(`${clientIP}:rsvp-reminder`);
 
     if (result.limited) {
         return NextResponse.json(
-            { error: 'Rate limit exceeded. Please try again later.' },
+            { error: 'Too many requests. Please try again later.' },
             { status: 429 }
         );
     }

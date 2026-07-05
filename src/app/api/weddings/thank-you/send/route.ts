@@ -8,7 +8,7 @@ import {
     hasPlannerProAccess,
     logPlannerEmailEvent,
 } from '@/lib/planner-limits';
-import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
     try {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
         }
 
         const rateLimit = createRateLimitMiddleware('THANK_YOU_EMAIL');
-        const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}`);
+        const limited = await rateLimit.check(`${getClientIP(req)}:${weddingId}:thank-you`);
         if (limited.limited) return limited.response;
 
         const db = getSupabaseAdminClient() as any;

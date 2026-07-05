@@ -7,12 +7,12 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_TITLE = 'New QuickWeds updates are live';
+const DEFAULT_TITLE = 'New QuickWeds update: invitation background music';
 const DEFAULT_MESSAGE = [
-    'Your Planner now includes a richer checklist, 12-month wedding plan, calendar schedules, Google Calendar connection, Food & Drinks planning, Honeymoon planning, and improved photo uploads.',
-    'Account Pro also unlocks planner access across owned weddings and more wedding websites.',
+    'You can now upload a wedding song for your invitation page. Guests can tap to open the invitation, hear the music, and keep listening while they scroll through your wedding details.',
+    'Please send app feedback, questions, or error reports through the QuickWeds support form so we can keep improving the experience.',
 ].join(' ');
-const DEFAULT_LINK = '/dashboard';
+const DEFAULT_LINK = '/support';
 
 type BroadcastBody = {
     dryRun?: boolean;
@@ -29,24 +29,6 @@ function sanitizeText(value: unknown, fallback: string, maxLength: number) {
     if (typeof value !== 'string') return fallback;
     const trimmed = value.trim();
     return trimmed ? trimmed.slice(0, maxLength) : fallback;
-}
-
-function getUpdateEmailHtml(message: string, link: string) {
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.quickweds.site').replace(/\/+$/, '');
-    const normalizedLink = link.startsWith('/') ? link : '/' + link;
-    const href = appUrl + normalizedLink;
-
-    return [
-        '<div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; color: #3A2A2D;">',
-        '    <p style="margin: 0 0 8px; color: #D16C78; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px;">QuickWeds Update</p>',
-        '    <h1 style="margin: 0 0 16px; font-size: 28px; line-height: 1.2;">New planning tools are live</h1>',
-        '    <p style="font-size: 16px; line-height: 1.7; color: #7A5A61;">' + message + '</p>',
-        '    <p style="margin: 28px 0;">',
-        '        <a href="' + href + '" style="display: inline-block; background: #D16C78; color: #fff; padding: 14px 20px; border-radius: 12px; text-decoration: none; font-weight: 700;">Open QuickWeds</a>',
-        '    </p>',
-        '    <p style="font-size: 12px; line-height: 1.6; color: #9b7b82;">You are receiving this because you have a QuickWeds account.</p>',
-        '</div>',
-    ].join('\n');
 }
 
 function sleep(ms: number) {
@@ -78,6 +60,41 @@ function normalizeRecipients(values?: string[]) {
     return Array.from(new Set(values
         .map((value) => String(value || '').trim().toLowerCase())
         .filter((value) => value.includes('@'))));
+}
+
+function escapeHtml(value: string) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function getUpdateEmailHtml(title: string, message: string, link: string) {
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.quickweds.site').replace(/\/+$/, '');
+    const normalizedLink = link.startsWith('/') ? link : '/' + link;
+    const href = appUrl + normalizedLink;
+    const supportHref = appUrl + '/support';
+    const escapedTitle = escapeHtml(title);
+    const paragraphs = message
+        .split(/\n{2,}/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean)
+        .map((paragraph) => '    <p style="font-size: 16px; line-height: 1.7; color: #7A5A61;">' + escapeHtml(paragraph) + '</p>');
+
+    return [
+        '<div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; color: #3A2A2D;">',
+        '    <p style="margin: 0 0 8px; color: #D16C78; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px;">QuickWeds Update</p>',
+        '    <h1 style="margin: 0 0 16px; font-size: 28px; line-height: 1.2;">' + escapedTitle + '</h1>',
+        ...paragraphs,
+        '    <p style="margin: 28px 0;">',
+        '        <a href="' + href + '" style="display: inline-block; background: #D16C78; color: #fff; padding: 14px 20px; border-radius: 12px; text-decoration: none; font-weight: 700;">Send feedback or report an issue</a>',
+        '    </p>',
+        '    <p style="font-size: 13px; line-height: 1.7; color: #7A5A61;">If the button does not work, open this support link: <a href="' + supportHref + '" style="color: #D16C78; font-weight: 700;">' + supportHref + '</a></p>',
+        '    <p style="font-size: 12px; line-height: 1.6; color: #9b7b82;">You are receiving this because you have a QuickWeds account.</p>',
+        '</div>',
+    ].join('\n');
 }
 
 async function listAllAuthUsers(db: any, limit?: number) {
@@ -162,7 +179,7 @@ export async function POST(req: NextRequest) {
                 const result = await sendEmailWithRetry({
                     to: email,
                     subject: title,
-                    html: getUpdateEmailHtml(message, link),
+                    html: getUpdateEmailHtml(title, message, link),
                 });
 
                 if (result.success) {

@@ -74,9 +74,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const clientIP = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
     || (req.headers['x-real-ip'] as string)
     || 'unknown';
-  const limited = rateLimit.check(clientIP);
+  const limited = await rateLimit.check(clientIP);
   if (limited.limited) {
-    return res.status(429).json({ error: 'Rate limit exceeded' });
+    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
   }
 
   const { record } = req.body as { record?: SignupRecord };

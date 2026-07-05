@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { rsvpSubmissionSchema } from '@/lib/validations';
-import { createRateLimitMiddleware, getClientIP, sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, getClientIP, sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
 import { sendRsvpNotifications } from '@/lib/rsvp-notifications';
 import { isMissingPublicSlugColumnError } from '@/lib/wedding-slugs';
+import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 
 function getPrimaryPlusOneName(raw: string) {
     const [firstName] = raw
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     if (!weddingId) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
 
     const rateLimit = createRateLimitMiddleware('RSVP_SUBMIT');
-    const limited = rateLimit.check(`${getClientIP(req)}:${weddingId}`);
+    const limited = await rateLimit.check(`${getClientIP(req)}:${weddingId}`);
     if (limited.limited) return limited.response;
 
     const guestName = sanitizeInput(parsed.data.guestName, { maxLength: 200 });
@@ -107,6 +108,7 @@ export async function POST(req: NextRequest) {
             .single();
 
         if (insertError) throw insertError;
+        await invalidateDashboardCounters(weddingId);
 
         const notifications = await sendRsvpNotifications(db, {
             weddingId,
