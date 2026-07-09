@@ -50,11 +50,6 @@ export default function BackgroundMusicPlayer({ audioUrl, title, motifColor }: B
     };
 
     useEffect(() => {
-        setIsPlaying(false);
-        setHasInteracted(false);
-    }, [audioUrl]);
-
-    useEffect(() => {
         const handleStart = () => {
             void playAudio();
         };
@@ -81,10 +76,16 @@ export default function BackgroundMusicPlayer({ audioUrl, title, motifColor }: B
     return (
         <>
             <audio
+                key={audioUrl}
                 ref={audioRef}
                 src={audioUrl}
                 loop
                 preload="metadata"
+                onLoadStart={() => {
+                    setIsReady(false);
+                    setIsPlaying(false);
+                    setHasInteracted(false);
+                }}
                 onCanPlay={() => setIsReady(true)}
                 onPause={() => setIsPlaying(false)}
                 onPlay={() => setIsPlaying(true)}

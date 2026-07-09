@@ -152,7 +152,12 @@ export function getSeatEmailHtml({
             <p style="margin: 28px 0; text-align: center;">
                 <a href="${seatUrl}" style="display: inline-block; background: #D16C78; color: #fff; padding: 14px 20px; border-radius: 12px; text-decoration: none; font-weight: 700;">View My Seat</a>
             </p>
-            <p style="font-size: 12px; line-height: 1.6; color: #9b7b82;">Show this QR code at the venue or open the link to find your table.</p>
+            <div style="border-top: 1px solid #F1D6DA; margin-top: 24px; padding-top: 18px;">
+                <p style="margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: #7A5A61; font-weight: 700;">How to use this at the event</p>
+                <p style="margin: 0 0 8px; font-size: 12px; line-height: 1.6; color: #9b7b82;">1. Save this email or take a screenshot of the QR code before arriving.</p>
+                <p style="margin: 0 0 8px; font-size: 12px; line-height: 1.6; color: #9b7b82;">2. Show the QR code to reception or check-in staff so they can scan it and mark your party as arrived.</p>
+                <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #9b7b82;">3. If the QR will not scan, staff can type your backup guest code: <strong>${escapeHtml(guestCode)}</strong>.</p>
+            </div>
         </div>
     `;
 }

@@ -1,3 +1,12 @@
+import {
+    THANK_YOU_DEFAULT_MESSAGE,
+    getDefaultCoupleSignature,
+    getThankYouTemplate,
+    normalizeThankYouPhotoUrl,
+    normalizeThankYouStyle,
+    type ThankYouEmailInput,
+} from './thank-you-email';
+
 /**
  * Premium Email Templates for QuickWeds
  * These templates use inline CSS for maximum compatibility across email clients (Gmail, Outlook, Apple Mail).
@@ -31,6 +40,8 @@ interface EmailTemplateProps {
     weddingUrl: string;
     attendance: string;
     numGuests: number;
+    guestCode?: string;
+    checkInUrl?: string;
     message?: string;
     dietaryDetails?: string;
     songRequest?: string;
@@ -46,10 +57,14 @@ interface EmailTemplateProps {
 export function getGuestConfirmationHtml(props: EmailTemplateProps) {
     const {
         guestName, brideName, groomName, weddingDate, weddingTime,
-        venueName, venueAddress, mapsLink, weddingUrl, attendance, numGuests
+        venueName, venueAddress, mapsLink, weddingUrl, attendance, numGuests,
+        guestCode, checkInUrl
     } = props;
 
     const isAttending = attendance === 'Yes';
+    const safeGuestCode = guestCode ? escapeHtml(guestCode) : '';
+    const safeCheckInUrl = checkInUrl ? escapeHtml(checkInUrl) : '';
+    const qrImageUrl = checkInUrl ? `https://quickchart.io/qr?size=240&margin=2&text=${encodeURIComponent(checkInUrl)}` : '';
 
     return `
     <!DOCTYPE html>
@@ -112,6 +127,41 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
                                     </td>
                                 </tr>` : ''}
                             </table>
+                        </div>` : ''}
+
+                        ${isAttending && checkInUrl && guestCode ? `
+                        <div style="border-top: 1px solid rgba(209,108,120,0.1); padding-top: 24px; margin-top: 24px;">
+                            <h3 style="margin: 0 0 12px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; color: ${MAIN_COLOR};">
+                                Your Event Check-In QR
+                            </h3>
+                            <p style="margin: 0 0 18px; font-size: 15px; line-height: 1.6; color: ${SECONDARY_TEXT};">
+                                Save this email or take a screenshot of the QR code before the wedding day. When you arrive, show it to the reception or check-in staff so they can scan it and mark your party as arrived.
+                            </p>
+                            <div style="text-align: center; background-color: #ffffff; border: 1px solid rgba(209,108,120,0.16); border-radius: 20px; padding: 20px; margin: 0 0 16px;">
+                                <img src="${qrImageUrl}" alt="Wedding check-in QR code" width="220" height="220" style="display: inline-block; width: 220px; height: 220px; border: 0;" />
+                                <p style="margin: 14px 0 0; font-size: 12px; color: ${SECONDARY_TEXT}; text-transform: uppercase; letter-spacing: 1.3px; font-weight: bold;">Backup Guest Code</p>
+                                <p style="margin: 6px 0 0; font-size: 22px; color: ${TEXT_COLOR}; font-weight: bold; letter-spacing: 1px;">${safeGuestCode}</p>
+                            </div>
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size: 14px; color: ${SECONDARY_TEXT}; line-height: 1.6;">
+                                <tr>
+                                    <td width="22" valign="top" style="color: ${MAIN_COLOR}; font-weight: bold;">1.</td>
+                                    <td style="padding-bottom: 8px;">Keep this email available on your phone, or save a screenshot of the QR code.</td>
+                                </tr>
+                                <tr>
+                                    <td width="22" valign="top" style="color: ${MAIN_COLOR}; font-weight: bold;">2.</td>
+                                    <td style="padding-bottom: 8px;">Show the QR code when staff asks for check-in at the venue.</td>
+                                </tr>
+                                <tr>
+                                    <td width="22" valign="top" style="color: ${MAIN_COLOR}; font-weight: bold;">3.</td>
+                                    <td>If the QR will not scan, staff can type your backup guest code: <strong style="color: ${TEXT_COLOR};">${safeGuestCode}</strong>.</td>
+                                </tr>
+                            </table>
+                            <p style="margin: 16px 0 0; font-size: 12px; line-height: 1.6; color: #9b7b82;">
+                                This QR is for your RSVP party only. Please do not forward it to another guest.
+                            </p>
+                            <p style="margin: 12px 0 0; font-size: 12px; line-height: 1.6; color: #9b7b82; word-break: break-all;">
+                                Check-in link: <a href="${safeCheckInUrl}" style="color: ${MAIN_COLOR}; text-decoration: underline;">${safeCheckInUrl}</a>
+                            </p>
                         </div>` : ''}
                     </div>
                 </td>
@@ -441,19 +491,58 @@ export function getWelcomeEmailHtml(userName: string) {
     `;
 }
 
-export function getThankYouNoteHtml(input: {
-    recipientName: string;
-    brideName: string;
-    groomName: string;
-    weddingDate?: string;
-    personalizedMessage?: string;
-}) {
-    const { recipientName, brideName, groomName, weddingDate, personalizedMessage } = input;
+function textToEmailParagraphs(input: string, color: string) {
+    return input
+        .split(/\n{2,}/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean)
+        .map((paragraph) => `<p class="qw-email-paragraph qw-email-text" style="font-size: 17px; line-height: 1.75; margin: 0 0 18px; color: ${color};">${escapeHtml(paragraph).replace(/\n/g, '<br />')}</p>`)
+        .join('');
+}
+
+function getReadableTextColor(accentColor: string) {
+    const normalized = accentColor.replace('#', '');
+    const r = parseInt(normalized.slice(0, 2), 16);
+    const g = parseInt(normalized.slice(2, 4), 16);
+    const b = parseInt(normalized.slice(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 165 ? TEXT_COLOR : '#ffffff';
+}
+
+export function getThankYouNoteHtml(input: ThankYouEmailInput) {
+    const { recipientName, brideName, groomName, weddingDate } = input;
+    const template = getThankYouTemplate(input.templateId);
+    const style = normalizeThankYouStyle(template.id, input.style);
+    const fallbackSignature = getDefaultCoupleSignature(brideName, groomName);
+    const message = input.message || input.personalizedMessage || THANK_YOU_DEFAULT_MESSAGE.replace('[Couple Names]', fallbackSignature);
+    const coupleSignature = input.coupleSignature || fallbackSignature;
+    const safePhotoUrl = template.supportsPhoto ? normalizeThankYouPhotoUrl(input.photoUrl) : '';
     const safeRecipientName = escapeHtml(recipientName || 'Guest');
     const safeBrideName = escapeHtml(brideName || 'Bride');
     const safeGroomName = escapeHtml(groomName || 'Groom');
     const safeWeddingDate = weddingDate ? escapeHtml(weddingDate) : '';
-    const safeMessage = personalizedMessage ? escapeHtml(personalizedMessage) : '';
+    const safeCoupleSignature = escapeHtml(coupleSignature);
+    const safeEyebrow = escapeHtml(template.eyebrow);
+    const safeAccent = style.accentColor;
+    const safeFont = style.fontFamily;
+    const accentTextColor = getReadableTextColor(safeAccent);
+    const messageHtml = textToEmailParagraphs(message, TEXT_COLOR);
+    const photoHtml = safePhotoUrl ? `
+            <tr>
+                <td style="padding: 0;">
+                    <img src="${escapeHtml(safePhotoUrl)}" alt="${safeBrideName} and ${safeGroomName}" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;" />
+                </td>
+            </tr>
+    ` : '';
+    const floralRule = template.id === 'romantic-floral'
+        ? `<p style="margin: 14px 0 0; color: ${safeAccent}; font-size: 18px; letter-spacing: 6px;">&#10045; &#10045; &#10045;</p>`
+        : '';
+    const cardBackground = template.id === 'modern-minimal' ? '#ffffff' : template.id === 'simple-warm' ? '#FBFFF9' : BG_COLOR;
+    const borderStyle = template.id === 'modern-minimal'
+        ? '1px solid #e8e3df'
+        : `1px solid ${safeAccent}33`;
+    const headerBackground = template.id === 'modern-minimal' ? '#ffffff' : safeAccent;
+    const headerColor = template.id === 'modern-minimal' ? safeAccent : accentTextColor;
 
     return `
     <!DOCTYPE html>
@@ -462,29 +551,115 @@ export function getThankYouNoteHtml(input: {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Thank You</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                width: 100% !important;
+                -webkit-text-size-adjust: 100%;
+                -ms-text-size-adjust: 100%;
+            }
+            table {
+                border-collapse: collapse;
+                mso-table-lspace: 0pt;
+                mso-table-rspace: 0pt;
+            }
+            img {
+                border: 0;
+                height: auto;
+                line-height: 100%;
+                outline: none;
+                text-decoration: none;
+            }
+            .qw-email-shell {
+                width: 100% !important;
+                max-width: 600px !important;
+            }
+            .qw-email-text {
+                overflow-wrap: break-word;
+                word-break: normal;
+            }
+            @media screen and (max-width: 640px) {
+                .qw-email-shell {
+                    width: calc(100% - 24px) !important;
+                    margin: 12px auto !important;
+                    border-radius: 18px !important;
+                }
+                .qw-email-header {
+                    padding: 28px 18px 22px !important;
+                }
+                .qw-email-heading {
+                    font-size: 28px !important;
+                    line-height: 1.12 !important;
+                }
+                .qw-email-subtitle {
+                    font-size: 15px !important;
+                    line-height: 1.45 !important;
+                }
+                .qw-email-body {
+                    padding: 20px 12px 26px !important;
+                }
+                .qw-email-card {
+                    border-radius: 16px !important;
+                    padding: 22px 16px !important;
+                }
+                .qw-email-paragraph {
+                    font-size: 16px !important;
+                    line-height: 1.65 !important;
+                }
+                .qw-email-footer {
+                    padding: 0 18px 24px !important;
+                }
+            }
+            @media screen and (max-width: 360px) {
+                .qw-email-shell {
+                    width: calc(100% - 16px) !important;
+                    margin: 8px auto !important;
+                }
+                .qw-email-header {
+                    padding: 24px 14px 20px !important;
+                }
+                .qw-email-heading {
+                    font-size: 25px !important;
+                }
+                .qw-email-body {
+                    padding: 16px 8px 22px !important;
+                }
+                .qw-email-card {
+                    padding: 20px 14px !important;
+                }
+            }
+        </style>
     </head>
-    <body style="margin: 0; padding: 0; font-family: 'Georgia', serif; background-color: ${BG_COLOR}; color: ${TEXT_COLOR};">
-        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 20px 40px rgba(209,108,120,0.1);">
+    <body style="margin: 0; padding: 0; font-family: ${safeFont}; background-color: ${BG_COLOR}; color: ${TEXT_COLOR};">
+        <table class="qw-email-shell" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="width: 100%; max-width: 600px; margin: 32px auto; background-color: #ffffff; border-radius: 28px; overflow: hidden; box-shadow: 0 20px 40px rgba(58,42,45,0.10);">
+            ${photoHtml}
             <tr>
-                <td align="center" style="padding: 48px 40px 24px;">
-                    <div style="font-size: 56px; margin-bottom: 16px;">💖</div>
-                    <h1 style="margin: 0; font-size: 30px; font-weight: normal; color: ${MAIN_COLOR};">Thank You</h1>
-                    <p style="margin: 10px 0 0; font-size: 18px; color: ${SECONDARY_TEXT};">${safeBrideName} & ${safeGroomName}</p>
+                <td class="qw-email-header" align="center" style="padding: 44px 36px 30px; background-color: ${headerBackground}; color: ${headerColor}; border-bottom: ${borderStyle};">
+                    <p style="margin: 0 0 13px; font-size: 11px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: ${headerColor};">${safeEyebrow}</p>
+                    <h1 class="qw-email-heading qw-email-text" style="margin: 0; font-size: 34px; line-height: 1.15; font-weight: 400; color: ${headerColor};">Thank You</h1>
+                    <p class="qw-email-subtitle qw-email-text" style="margin: 12px 0 0; font-size: 18px; color: ${headerColor}; opacity: 0.88;">${safeBrideName} &amp; ${safeGroomName}</p>
+                    ${floralRule}
                 </td>
             </tr>
             <tr>
-                <td style="padding: 0 48px 48px;">
-                    <div style="background-color: ${BG_COLOR}; border-radius: 24px; padding: 32px; border: 1px solid rgba(209,108,120,0.15);">
-                        <p style="font-size: 17px; line-height: 1.7; margin: 0 0 16px;">Dear ${safeRecipientName},</p>
-                        <p style="font-size: 17px; line-height: 1.7; margin: 0 0 16px;">
-                            Thank you for celebrating our wedding with us${safeWeddingDate ? ` on <strong>${safeWeddingDate}</strong>` : ''}. Your presence made our day even more meaningful.
-                        </p>
-                        ${safeMessage ? `<p style="font-size: 16px; line-height: 1.7; margin: 0 0 16px; color: ${ACCENT_COLOR};"><em>${safeMessage}</em></p>` : ''}
-                        <p style="font-size: 17px; line-height: 1.7; margin: 0;">
-                            With gratitude and love,<br />
-                            <strong>${safeBrideName} & ${safeGroomName}</strong>
+                <td class="qw-email-body" style="padding: 36px 28px 42px;">
+                    <div class="qw-email-card" style="background-color: ${cardBackground}; border-radius: 22px; padding: 30px; border: ${borderStyle};">
+                        <p class="qw-email-paragraph qw-email-text" style="font-size: 17px; line-height: 1.7; margin: 0 0 18px; color: ${SECONDARY_TEXT};">Dear ${safeRecipientName},</p>
+                        ${messageHtml}
+                        ${safeWeddingDate ? `<p class="qw-email-text" style="font-size: 14px; line-height: 1.6; margin: 4px 0 22px; color: ${SECONDARY_TEXT};">A note from our wedding on <strong>${safeWeddingDate}</strong>.</p>` : ''}
+                        <p class="qw-email-paragraph qw-email-text" style="font-size: 17px; line-height: 1.7; margin: 24px 0 0; color: ${TEXT_COLOR};">
+                            <span style="display: block; color: ${SECONDARY_TEXT}; margin-bottom: 4px;">With love,</span>
+                            <strong style="font-size: 20px; color: ${safeAccent};">${safeCoupleSignature}</strong>
                         </p>
                     </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="qw-email-footer" align="center" style="padding: 0 36px 34px;">
+                    <p style="margin: 0; font-size: 12px; line-height: 1.6; color: ${SECONDARY_TEXT};">
+                        Sent with love through <strong style="color: ${safeAccent};">QuickWeds</strong>
+                    </p>
                 </td>
             </tr>
         </table>

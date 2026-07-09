@@ -1,9 +1,10 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, MapPin, QrCode, Search, Users } from 'lucide-react';
+import { ArrowLeft, Camera, Clock, Loader2, MapPin, QrCode, Search, Users } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 type LookupResponse = {
@@ -137,6 +138,16 @@ export default function PublicSeatFinderPage() {
                             <Users className="h-5 w-5 text-primary" />
                             <p className="mt-2 text-xs font-bold text-text-secondary">Party Size</p>
                             <p className="font-serif text-2xl font-bold">{result.guest.partySize}</p>
+                        </div>
+                        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                            <Link href={`/w/${weddingId}/photos`} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-bold text-white">
+                                <Camera className="h-4 w-4" />
+                                View Photos
+                            </Link>
+                            <Link href={`/w/${weddingId}#timeline`} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-border bg-white px-4 text-sm font-bold text-foreground">
+                                <Clock className="h-4 w-4" />
+                                View Timeline
+                            </Link>
                         </div>
                     </div>
                 )}

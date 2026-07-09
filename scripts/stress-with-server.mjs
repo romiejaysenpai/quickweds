@@ -2,11 +2,27 @@
 
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 const port = Number(process.env.STRESS_PORT || 3001);
 const host = process.env.STRESS_HOST || '127.0.0.1';
 const baseUrl = `http://${host}:${port}`;
 const startupTimeoutMs = Number(process.env.STRESS_SERVER_STARTUP_MS || 30_000);
+
+function findStandaloneServer() {
+  const standaloneDir = join('.next', 'standalone');
+  const rootServer = join(standaloneDir, 'server.js');
+  if (existsSync(rootServer)) return rootServer;
+
+  if (!existsSync(standaloneDir)) return rootServer;
+
+  const appEntry = readdirSync(standaloneDir, { withFileTypes: true }).find((entry) => {
+    return entry.isDirectory() && existsSync(join(standaloneDir, entry.name, 'server.js'));
+  });
+
+  return appEntry ? join(standaloneDir, appEntry.name, 'server.js') : rootServer;
+}
 
 function parseEnvFile(path) {
   if (!existsSync(path)) return {};
@@ -74,7 +90,7 @@ function runStressTest() {
   });
 }
 
-const server = spawnProcess('node', ['.next/standalone/server.js'], {
+const server = spawnProcess('node', [findStandaloneServer()], {
   env: {
     PORT: String(port),
     HOSTNAME: host,

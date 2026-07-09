@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import { hasStoredSupabaseSession } from '@/lib/supabase-auth';
 import { getCachedSession } from '@/lib/session-cache';
 import {
     getClientAccountProfileForIntent,
@@ -103,6 +104,15 @@ function AccountTypeOnboardingContent() {
     const [selectedGoal, setSelectedGoal] = useState(coupleGoals[0].id);
     const nextPath = useMemo(() => getSafeAppPath(searchParams?.get('next'), ''), [searchParams]);
     const selectedGoalDetail = coupleGoals.find((goal) => goal.id === selectedGoal) || coupleGoals[0];
+
+    useEffect(() => {
+        if (user || hasStoredSupabaseSession()) return;
+
+        const loginNext = nextPath
+            ? `/onboarding/account-type?next=${encodeURIComponent(nextPath)}`
+            : '/onboarding/account-type';
+        window.location.replace(`/login?next=${encodeURIComponent(loginNext)}`);
+    }, [nextPath, user]);
 
     useEffect(() => {
         if (authLoading || !adminChecked) return;

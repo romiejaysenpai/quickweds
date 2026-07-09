@@ -50,6 +50,23 @@ function clearStoredSupabaseAuth() {
     }
 }
 
+export function hasStoredSupabaseSession() {
+    if (typeof window === 'undefined') return false;
+
+    const hasAuthKey = (storage: Storage) => {
+        for (let index = 0; index < storage.length; index += 1) {
+            const key = storage.key(index);
+            if (!key) continue;
+            if ((key.startsWith('sb-') && key.endsWith('-auth-token')) || key.includes('supabase.auth.token')) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    return hasAuthKey(window.localStorage) || hasAuthKey(window.sessionStorage);
+}
+
 export async function clearLocalSupabaseSession() {
     // Clear storage first so signOut does not try to refresh a stale token.
     clearStoredSupabaseAuth();

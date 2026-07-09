@@ -169,7 +169,8 @@ function getTemplateTestWedding(rawIdentifier: string) {
     if (process.env.NODE_ENV === 'production') return null;
     if (!rawIdentifier.startsWith('template-')) return null;
 
-    const template = rawIdentifier.replace(/^template-/, '') || 'classic';
+    const includeEntourageSection = !rawIdentifier.endsWith('-no-entourage');
+    const template = rawIdentifier.replace(/^template-/, '').replace(/-no-entourage$/, '') || 'classic';
     const imageData =
         'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600"%3E%3Crect width="1200" height="1600" fill="%23f4d7c8"/%3E%3Ccircle cx="600" cy="620" r="260" fill="%23d16c78" opacity=".35"/%3E%3Cpath d="M260 1120c180-210 420-210 600 0" fill="none" stroke="%233a2a2d" stroke-width="32" stroke-linecap="round"/%3E%3C/svg%3E';
 
@@ -224,7 +225,7 @@ function getTemplateTestWedding(rawIdentifier: string) {
         cash_funds: JSON.stringify([{ title: 'Honeymoon Fund', description: 'A little help for our first adventure.', targetAmount: 5000, current: 1200, currency: '$' }]),
         payment_links: JSON.stringify([{ label: 'PayPal', url: 'https://example.com/pay' }]),
         wedding_party: JSON.stringify([{ name: 'Lena Park', role: 'Maid of Honor', bio: 'Best friend and dance floor captain.' }]),
-        include_entourage_section: true,
+        include_entourage_section: includeEntourageSection,
         spotify_playlist_url: 'https://open.spotify.com/',
         background_music_url: '',
         background_music_title: 'Our Wedding Song',

@@ -154,7 +154,7 @@ test.describe('public wedding templates', () => {
 
   test('hides the entourage section when couples opt out', async ({ page }) => {
     await mockWeddingPage(page, 'classic', { include_entourage_section: false });
-    await page.goto('/w/template-classic', { waitUntil: 'domcontentloaded' });
+    await page.goto('/w/template-classic-no-entourage', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#details');
 
     await expect(page.locator('#entourage')).toHaveCount(0);

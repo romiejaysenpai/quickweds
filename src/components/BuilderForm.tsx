@@ -37,6 +37,7 @@ import {
     sanitizeWeddingSlug,
 } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
+import { hasStoredSupabaseSession } from '@/lib/supabase-auth';
 import { getMotifSectionTitleGradient, SECTION_TITLE_COLOR_STYLES, SECTION_TITLE_FONT_STYLES } from '@/lib/theme-engine';
 import { parseCsv } from '@/lib/guest-list';
 import {
@@ -572,6 +573,11 @@ export default function BuilderForm() {
         }));
     }, [setFormData]);
 
+    useEffect(() => {
+        if (user || hasStoredSupabaseSession()) return;
+        window.location.replace('/login?next=%2Fbuilder');
+    }, [user]);
+
     const loadAccountLimitState = useCallback(async () => {
         if (!user) {
             setAccountIsPro(false);
@@ -609,7 +615,7 @@ export default function BuilderForm() {
 
     useEffect(() => {
         if (!authLoading && !user) {
-            router.push('/login');
+            router.replace('/login?next=%2Fbuilder');
         }
 
         setIsPremium(true);

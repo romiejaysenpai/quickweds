@@ -129,13 +129,14 @@ export async function getUserTriggeredEmailUsage(db: any, weddingId: string) {
         'recipient_count',
     );
 
-    const [reminderRecipients, sentThankYouNotes, seatLinksSent] = await Promise.all([
+    const [reminderRecipients, sentThankYouNotes, sentThankYouEmailLogs, seatLinksSent] = await Promise.all([
         safeSumRows(db.from('wedding_reminders').select('recipient_count').eq('wedding_id', weddingId), 'recipient_count'),
         safeCount(db.from('thank_you_notes').select('id', { count: 'exact', head: true }).eq('wedding_id', weddingId).eq('status', 'sent')),
+        safeCount(db.from('thank_you_email_logs').select('id', { count: 'exact', head: true }).eq('wedding_id', weddingId).eq('status', 'sent')),
         safeCount(db.from('rsvps').select('id', { count: 'exact', head: true }).eq('wedding_id', weddingId).not('seat_link_last_sent_at', 'is', null)),
     ]);
 
-    return Math.max(tracked, reminderRecipients + sentThankYouNotes + seatLinksSent);
+    return Math.max(tracked, reminderRecipients + sentThankYouNotes + sentThankYouEmailLogs + seatLinksSent);
 }
 
 export async function getPlannerUsage(db: any, weddingId: string): Promise<PlannerUsage> {

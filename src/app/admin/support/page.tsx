@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, ArrowLeft, Bot, Clipboard, Loader2, MailCheck, RefreshCw, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { copyToClipboard } from '@/lib/client-clipboard';
 
 type Investigation = {
     id: string;
@@ -134,7 +135,7 @@ export default function AdminSupportPage() {
         const report = selectedTicket?.latestInvestigation?.report_text;
         if (!report) return;
 
-        await navigator.clipboard.writeText(report);
+        await copyToClipboard(report);
         setCopied(true);
         window.setTimeout(() => setCopied(false), 1600);
     }

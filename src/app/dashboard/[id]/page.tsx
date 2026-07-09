@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle, Bell, BellOff, Info } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle, Bell, BellOff, Info, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -93,6 +93,13 @@ type CachedDashboardCounters = {
     totalRsvps: number;
     checkedInGuests: number;
     photoUploadCount: number;
+    vipCount?: number;
+    tableFill?: Array<{
+        tableName: string;
+        assignedGuests: number;
+        capacity: number | null;
+        fillPercent: number | null;
+    }>;
     mealChoices: Record<string, number>;
 };
 
@@ -783,6 +790,61 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             </span>
                                             <ArrowRight className="h-4 w-4 opacity-30" />
                                         </Link>
+                                        <Link
+                                            href={`/dashboard/${wedding.id}/wedding-day?from=dashboard`}
+                                            onClick={closeMobileMenu}
+                                            className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <Bell className="w-4 h-4" />
+                                                Wedding Day Mode
+                                            </span>
+                                            <ArrowRight className="h-4 w-4 opacity-20" />
+                                        </Link>
+                                        <Link
+                                            href={`/dashboard/${wedding.id}/check-in`}
+                                            onClick={closeMobileMenu}
+                                            className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                Check-In
+                                            </span>
+                                            <ArrowRight className="h-4 w-4 opacity-20" />
+                                        </Link>
+                                        <Link
+                                            href={`/dashboard/${wedding.id}/qr-kit?from=dashboard`}
+                                            onClick={closeMobileMenu}
+                                            className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <QrCode className="w-4 h-4" />
+                                                QR Kit
+                                            </span>
+                                            <ArrowRight className="h-4 w-4 opacity-20" />
+                                        </Link>
+                                        <Link
+                                            href={`/dashboard/${wedding.id}/photo-uploads`}
+                                            onClick={closeMobileMenu}
+                                            className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <Camera className="w-4 h-4" />
+                                                Photo Uploads
+                                            </span>
+                                            <ArrowRight className="h-4 w-4 opacity-20" />
+                                        </Link>
+                                        <Link
+                                            href={`/dashboard/${wedding.id}/thank-you?from=dashboard`}
+                                            onClick={closeMobileMenu}
+                                            className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <Mail className="w-4 h-4" />
+                                                Thank You
+                                            </span>
+                                            <ArrowRight className="h-4 w-4 opacity-20" />
+                                        </Link>
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -918,9 +980,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             <motion.section
                                 initial={{ opacity: 0, y: 18 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="relative isolate mb-8 overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-2xl shadow-primary/10 sm:mb-12 sm:rounded-[2.25rem]"
+                                className="relative isolate mb-5 overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-2xl shadow-primary/10 sm:mb-7 sm:rounded-[2.25rem]"
                             >
-                                <div className="p-4 sm:p-7 lg:p-9">
+                                <div className="p-4 sm:p-6 lg:p-7">
                                     <div className="relative z-10 flex items-start justify-between gap-4">
                                         <div className="min-w-0">
                                             <p className="inline-flex rounded-full bg-primary/5 px-3 py-1 text-[9px] font-black uppercase tracking-[0.22em] text-primary/70 ring-1 ring-primary/10 sm:text-[10px]">
@@ -935,7 +997,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </div>
                                     </div>
 
-                                    <div className="relative left-1/2 mt-5 h-[128px] w-screen max-w-[calc(100%+2rem)] -translate-x-1/2 overflow-visible sm:-mx-7 sm:left-auto sm:w-auto sm:max-w-none sm:translate-x-0 sm:mt-8 sm:h-[300px] lg:-mx-9 lg:h-[340px]">
+                                    <div className="relative left-1/2 mt-4 h-[128px] w-screen max-w-[calc(100%+2rem)] -translate-x-1/2 overflow-visible sm:-mx-6 sm:left-auto sm:w-auto sm:max-w-none sm:translate-x-0 sm:mt-6 sm:h-[240px] lg:-mx-7 lg:h-[270px]">
                                         <div className="absolute inset-0 bg-primary" />
                                         <div
                                             className="absolute inset-x-[-32%] top-[-58px] z-10 h-[112px] bg-white sm:inset-x-[-24%] sm:top-[-92px] sm:h-[168px]"
@@ -945,7 +1007,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         <img
                                             src={WELCOME_CHARACTER_URL}
                                             alt="QuickWeds welcome character"
-                                            className="absolute bottom-0 left-[-14px] z-[60] h-[152px] w-auto object-contain drop-shadow-2xl transition duration-500 hover:-translate-y-2 hover:scale-[1.03] sm:left-[-6px] sm:h-[300px] lg:left-4 lg:h-[360px]"
+                                            className="absolute bottom-0 left-[-14px] z-[60] h-[152px] w-auto object-contain drop-shadow-2xl transition duration-500 hover:-translate-y-2 hover:scale-[1.03] sm:left-[-6px] sm:h-[250px] lg:left-4 lg:h-[300px]"
                                         />
 
                                         <div className="absolute left-[52%] right-3 top-[-6px] z-50 rounded-[1.2rem] bg-white px-3 py-2 pr-4 shadow-[0_18px_50px_rgba(122,90,97,0.18)] ring-1 ring-primary/10 sm:left-[50%] sm:right-2 sm:top-8 sm:rounded-[1.75rem] sm:px-6 sm:py-5 sm:pr-7 lg:left-[43%] lg:right-6 lg:max-w-2xl">
@@ -957,11 +1019,17 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </div>
                                     </div>
 
-                                    <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
-                                        <Link href={`/dashboard/${wedding.id}/planner`} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold text-xs sm:text-sm shadow-xl shadow-primary/20 hover:-translate-y-0.5 transition-all">
+                                    <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-4">
+                                        <Link href={`/dashboard/${wedding.id}/planner`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-primary/15 transition-all hover:-translate-y-0.5 hover:bg-primary-hover sm:text-sm">
                                             <ListTodo className="w-4 h-4" /> Open Planner
                                         </Link>
-                                        <button type="button" onClick={() => openExternal(url)} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border bg-white text-text-secondary font-bold text-xs sm:text-sm hover:bg-neutral transition-all">
+                                        <Link href={`/dashboard/${wedding.id}/wedding-day?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
+                                            <Bell className="w-4 h-4" /> Wedding Day
+                                        </Link>
+                                        <Link href={`/dashboard/${wedding.id}/thank-you?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
+                                            <Mail className="w-4 h-4" /> Thank You
+                                        </Link>
+                                        <button type="button" onClick={() => openExternal(url)} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-bold text-text-secondary transition-all hover:-translate-y-0.5 hover:bg-neutral hover:text-foreground sm:text-sm">
                                             <ExternalLink className="w-4 h-4" /> Guest View
                                         </button>
                                     </div>
@@ -1531,16 +1599,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                 <span className={`flex items-center justify-center rounded-md transition ${wedding?.notify_on_updates !== false ? 'bg-accent text-white shadow-sm' : ''}`}>On</span>
                                             </button>
                                         </div>
-                                    </div>
-                                    <div className="mt-6 pt-6 border-t border-border">
-                                        <button
-                                            onClick={sendTestNotification}
-                                            disabled={isSavingSettings}
-                                            className="w-full py-3 rounded-xl bg-neutral hover:bg-neutral/80 text-text-secondary text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-border"
-                                        >
-                                            <Bell className="w-3.5 h-3.5" />
-                                            Send Test Notification
-                                        </button>
                                     </div>
                                 </div>
 

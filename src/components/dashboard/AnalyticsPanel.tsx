@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, BarChart3, Mail, Loader2, QrCode, Share2, TrendingUp, Users } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Cell } from 'recharts';
 import { getWeddingAnalyticsSummary } from '@/lib/wedding-features';
@@ -17,6 +18,32 @@ interface AnalyticsPanelProps {
 }
 
 const COLORS = ['#D16C78', '#CBB26A', '#5B8A72', '#4B6B8A'];
+
+function MeasuredChartFrame({ children }: { children: ReactNode }) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [canRenderChart, setCanRenderChart] = useState(false);
+
+    useEffect(() => {
+        const element = containerRef.current;
+        if (!element) return;
+
+        const updateSize = () => {
+            const { width, height } = element.getBoundingClientRect();
+            setCanRenderChart(width > 0 && height > 0);
+        };
+
+        updateSize();
+        const observer = new ResizeObserver(updateSize);
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, []);
+
+    return (
+        <div ref={containerRef} className="h-44 min-h-[1px] w-full min-w-[1px]">
+            {canRenderChart ? children : null}
+        </div>
+    );
+}
 
 export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount, hasPlannerPro = false, guestEmailsUsed = 0 }: AnalyticsPanelProps) {
     const [loading, setLoading] = useState(true);
@@ -133,7 +160,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                 <div className="min-w-0 rounded-2xl border border-border bg-neutral/40 p-4 dark:bg-neutral/30">
                     <h4 className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60 mb-3">Visit Sources</h4>
                     {summary.sourceBreakdown.length > 0 ? (
-                        <div className="h-44 min-h-[1px] w-full min-w-[1px]">
+                        <MeasuredChartFrame>
                             <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
                                 <BarChart data={summary.sourceBreakdown}>
                                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'currentColor' }} />
@@ -145,7 +172,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
-                        </div>
+                        </MeasuredChartFrame>
                     ) : (
                         <p className="text-sm text-text-secondary">Traffic data will appear after your wedding page starts receiving visits.</p>
                     )}

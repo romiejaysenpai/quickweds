@@ -17,14 +17,19 @@ const appUrl =
     ? configuredAppUrl
     : "https://quickweds.site";
 const siteName = "QuickWeds";
-const defaultTitle = "QuickWeds | Free Wedding Website Builder & Planner";
+const defaultTitle = "Free Wedding Website Builder & RSVP Planner | QuickWeds";
 const defaultDescription =
-  "Create a free wedding website with RSVP tracking, guest lists, seating charts, budgets, vendor planning, and a private planning dashboard for couples.";
+  "Create a free wedding website, send digital invitations, manage RSVPs, organize guests, seating, budgets, suppliers, photos, and wedding-day plans in QuickWeds.";
+const landingPreviewImageUrl =
+  "https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/Minimalist%20Neutral%20Multi%20Device%20Computer%20Mockup%20Website%20Launch%20Instagram%20Post.png";
 const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.NEXT_PUBLIC_GA_ID;
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
-  title: defaultTitle,
+  title: {
+    default: defaultTitle,
+    template: "%s | QuickWeds",
+  },
   description: defaultDescription,
   applicationName: siteName,
   manifest: "/manifest.webmanifest",
@@ -34,13 +39,24 @@ export const metadata: Metadata = {
     "wedding website builder",
     "online wedding planner",
     "digital wedding invitation",
+    "digital wedding invitations",
+    "online wedding invitation",
     "wedding planner",
     "wedding planning app",
+    "wedding planning website",
+    "wedding RSVP website",
     "RSVP tracker",
+    "online RSVP",
     "guest list manager",
     "seating chart planner",
     "wedding budget tracker",
     "wedding vendor planner",
+    "wedding supplier directory",
+    "Philippines wedding suppliers",
+    "wedding day coordinator tools",
+    "QR seat finder",
+    "guest photo sharing",
+    "thank you note builder",
     "QuickWeds",
   ],
   authors: [{ name: siteName }],
@@ -83,9 +99,9 @@ export const metadata: Metadata = {
     url: "/",
     images: [
       {
-        url: "/logo.png",
-        width: 1200,
-        height: 960,
+        url: landingPreviewImageUrl,
+        width: 1080,
+        height: 1080,
         alt: "QuickWeds wedding website builder and digital planner",
       },
     ],
@@ -94,7 +110,12 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: defaultTitle,
     description: defaultDescription,
-    images: ["/logo.png"],
+    images: [
+      {
+        url: landingPreviewImageUrl,
+        alt: "QuickWeds wedding website builder and digital planner",
+      },
+    ],
   },
   formatDetection: {
     email: false,

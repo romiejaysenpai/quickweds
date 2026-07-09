@@ -3,7 +3,9 @@ import Link from 'next/link';
 import {
   ArrowRight,
   Bell,
+  BarChart3,
   BookOpen,
+  Building2,
   Calendar,
   CheckCircle2,
   ClipboardList,
@@ -13,12 +15,17 @@ import {
   LayoutDashboard,
   MailCheck,
   Palette,
+  PartyPopper,
+  Plane,
   QrCode,
   Send,
+  ShieldCheck,
   Sparkles,
   Table2,
   Utensils,
   Wallet,
+  WandSparkles,
+  UserCheck,
   UsersRound,
 } from 'lucide-react';
 
@@ -146,6 +153,12 @@ const featureGuides = [
     text: 'Use the wedding checklist, 12-month plan, schedules, and reminders.',
   },
   {
+    title: 'Entourage Proposals',
+    href: '/user-guide/entourage-proposals',
+    icon: UserCheck,
+    text: 'Invite sponsors, wedding party, and helpers, then track proposal responses.',
+  },
+  {
     title: 'Budget Planner',
     href: '/user-guide/budget-planner',
     icon: Wallet,
@@ -170,6 +183,18 @@ const featureGuides = [
     text: 'Build the floor plan, assign guests, generate QR seat codes, and check in guests.',
   },
   {
+    title: 'Wedding Day Mode',
+    href: '/user-guide/wedding-day-mode',
+    icon: PartyPopper,
+    text: 'Prepare event-day links, toggles, reminders, coordinator notes, and reports.',
+  },
+  {
+    title: 'Event QR Kit',
+    href: '/user-guide/event-qr-kit',
+    icon: QrCode,
+    text: 'Download event QR codes for the website, RSVP, seat finder, photos, and thank-you links.',
+  },
+  {
     title: 'Photo Sharing',
     href: '/user-guide/photo-sharing',
     icon: Camera,
@@ -186,6 +211,36 @@ const featureGuides = [
     href: '/user-guide/qr-codes-sharing',
     icon: QrCode,
     text: 'Use guest links, RSVP QR codes, seat finder QR codes, and printed sharing.',
+  },
+  {
+    title: 'Honeymoon Planner',
+    href: '/user-guide/honeymoon-planner',
+    icon: Plane,
+    text: 'Track flights, hotels, agencies, activities, status, costs, and booking links.',
+  },
+  {
+    title: 'Collaboration Access',
+    href: '/user-guide/collaboration-access',
+    icon: ShieldCheck,
+    text: 'Invite a partner, coordinator, or helper to work inside the wedding workspace.',
+  },
+  {
+    title: 'Analytics and RSVP Reminders',
+    href: '/user-guide/analytics-reminders',
+    icon: BarChart3,
+    text: 'Review visits, QR scans, RSVP conversion, and pending guest reminder performance.',
+  },
+  {
+    title: 'Theme Marketplace and Presets',
+    href: '/user-guide/theme-marketplace-presets',
+    icon: WandSparkles,
+    text: 'Apply curated themes, reusable section blocks, and saved website presets.',
+  },
+  {
+    title: 'Supplier Profiles',
+    href: '/user-guide/supplier-profiles',
+    icon: Building2,
+    text: 'Create, edit, submit, and manage a wedding business directory profile.',
   },
 ];
 

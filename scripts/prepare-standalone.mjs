@@ -5,21 +5,35 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const standaloneDir = path.join(root, '.next', 'standalone');
 
-const copies = [
-  {
-    from: path.join(root, 'public'),
-    to: path.join(standaloneDir, 'public'),
-  },
-  {
-    from: path.join(root, '.next', 'static'),
-    to: path.join(standaloneDir, '.next', 'static'),
-  },
-];
+function findStandaloneServerDir() {
+  const rootServer = path.join(standaloneDir, 'server.js');
+  if (fs.existsSync(rootServer)) return standaloneDir;
+
+  const entries = fs.readdirSync(standaloneDir, { withFileTypes: true });
+  const appEntry = entries.find((entry) => {
+    return entry.isDirectory() && fs.existsSync(path.join(standaloneDir, entry.name, 'server.js'));
+  });
+
+  return appEntry ? path.join(standaloneDir, appEntry.name) : standaloneDir;
+}
 
 if (!fs.existsSync(standaloneDir)) {
   console.warn('Standalone output not found. Skipping standalone asset preparation.');
   process.exit(0);
 }
+
+const serverDir = findStandaloneServerDir();
+
+const copies = [
+  {
+    from: path.join(root, 'public'),
+    to: path.join(serverDir, 'public'),
+  },
+  {
+    from: path.join(root, '.next', 'static'),
+    to: path.join(serverDir, '.next', 'static'),
+  },
+];
 
 for (const { from, to } of copies) {
   if (!fs.existsSync(from)) {

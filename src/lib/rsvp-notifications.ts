@@ -17,6 +17,8 @@ type RsvpNotificationInput = {
     songRequest?: string;
     plusOneNames?: string;
     childrenCount?: number;
+    guestCode?: string | null;
+    seatLookupToken?: string | null;
 };
 
 function getRootDomain() {
@@ -36,6 +38,8 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
         songRequest = '',
         plusOneNames = '',
         childrenCount = 0,
+        guestCode = '',
+        seatLookupToken = '',
     } = input;
 
     let recipientEmail =
@@ -67,6 +71,7 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
         ? `https://${wedding.custom_domain}`
         : getWeddingPublicUrl(`https://${rootDomain}`, { ...wedding, id: weddingId });
     const dashboardUrl = `https://${rootDomain}/dashboard/${weddingId}`;
+    const checkInUrl = seatLookupToken ? `https://${rootDomain}/seat/${encodeURIComponent(seatLookupToken)}` : '';
 
     if (wedding.user_id) {
         try {
@@ -124,6 +129,8 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
                 venueAddress: wedding.venue_address,
                 mapsLink: wedding.maps_link,
                 weddingUrl: publicWeddingUrl,
+                guestCode: guestCode || undefined,
+                checkInUrl: checkInUrl || undefined,
             }),
         }));
     }

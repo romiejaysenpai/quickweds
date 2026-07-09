@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -26,14 +26,6 @@ const PhotoSharingManager = dynamic(() => import('@/components/dashboard/PhotoSh
         <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <p className="mt-4 text-sm font-bold text-text-secondary">Loading photo sharing...</p>
-        </div>
-    ),
-});
-const ThankYouNoteManager = dynamic(() => import('@/components/dashboard/ThankYouNoteManager'), {
-    loading: () => (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="mt-4 text-sm font-bold text-text-secondary">Loading thank-you tools...</p>
         </div>
     ),
 });
@@ -599,6 +591,14 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                     </button>
                                 );
                             })}
+                            <Link href={`/dashboard/${weddingId}/wedding-day?from=planner`} title="Open Wedding Day Mode" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground">
+                                <ClipboardCheck className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                                <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Wedding Day</span>
+                            </Link>
+                            <Link href={`/dashboard/${weddingId}/qr-kit?from=planner`} title="Open QR Kit" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground">
+                                <QrCode className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                                <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">QR Kit</span>
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -630,13 +630,36 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                 />
                             )}
                             {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
-                            {activeTab === 'thanks' && <ThankYouNoteManager weddingId={weddingId} />}
+                            {activeTab === 'thanks' && <ThankYouPlannerLauncher weddingId={weddingId} confirmedGuests={confirmedGuests} />}
                             {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
                         </>
                     )}
                 </div>
             </div>
         </div>
+    );
+}
+
+function ThankYouPlannerLauncher({ weddingId, confirmedGuests }: { weddingId: string; confirmedGuests: number }) {
+    return (
+        <section className="rounded-3xl border border-primary/15 bg-white p-5 shadow-xl shadow-primary/10 sm:p-8">
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <Mail className="h-6 w-6" />
+                    </div>
+                    <p className="mt-5 text-[10px] font-black uppercase tracking-[0.18em] text-primary">Post-wedding</p>
+                    <h2 className="mt-1 font-serif text-2xl font-bold text-foreground sm:text-3xl">Thank You Card Builder</h2>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
+                        Build a card-style email, send a test, and deliver it only to confirmed guests. Current confirmed headcount: {confirmedGuests}.
+                    </p>
+                </div>
+                <Link href={`/dashboard/${weddingId}/thank-you?from=planner`} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover">
+                    <Sparkles className="h-4 w-4" />
+                    Open Builder
+                </Link>
+            </div>
+        </section>
     );
 }
 

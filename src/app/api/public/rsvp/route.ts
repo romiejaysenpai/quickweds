@@ -5,6 +5,7 @@ import { createRateLimitMiddleware, getClientIP, sanitizeEmail, sanitizeInput, s
 import { sendRsvpNotifications } from '@/lib/rsvp-notifications';
 import { isMissingPublicSlugColumnError } from '@/lib/wedding-slugs';
 import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
+import { makeGuestCode, makeSeatLookupToken } from '@/lib/seat-finder';
 
 function getPrimaryPlusOneName(raw: string) {
     const [firstName] = raw
@@ -90,6 +91,11 @@ export async function POST(req: NextRequest) {
             plus_one_allowed: parsed.data.numGuests > 1 || Boolean(plusOneNames),
         };
 
+        if (parsed.data.attendance === 'Yes') {
+            insertData.seat_lookup_token = makeSeatLookupToken();
+            insertData.guest_code = makeGuestCode(guestName);
+        }
+
         if (mealPreference && mealPreference !== 'No Preference') insertData.meal_preference = mealPreference;
         if (dietaryDetails) insertData.dietary_details = dietaryDetails;
         if (message) insertData.message = message;
@@ -122,6 +128,8 @@ export async function POST(req: NextRequest) {
             songRequest,
             plusOneNames,
             childrenCount: parsed.data.childrenCount || 0,
+            guestCode: typeof insertData.guest_code === 'string' ? insertData.guest_code : '',
+            seatLookupToken: typeof insertData.seat_lookup_token === 'string' ? insertData.seat_lookup_token : '',
         });
 
         return NextResponse.json(
