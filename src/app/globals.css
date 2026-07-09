@@ -891,6 +891,11 @@ section:not(:first-child) {
     contain: layout paint style;
   }
 
+  .qw-falling-feature-pill.qw-mobile-js-scroll-fallback {
+    animation: none !important;
+    transform: var(--qw-pill-mobile-transform) !important;
+  }
+
   .qw-feature-pill-icon {
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.72),

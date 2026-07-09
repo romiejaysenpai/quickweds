@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 test('mobile feature pills begin below the hero and fall below the Core Features heading', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 667 });
   await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('[data-qw-pill-driver-ready="true"]')).toBeAttached();
 
   const readLayout = async (scrollY: number) => {
     await page.evaluate((nextScrollY) => {
@@ -82,4 +83,30 @@ test('desktop feature pills pause before beginning their scroll-linked fall', as
   expect(beforePause.range).toBe('300px 1320px');
   expect(afterPause.transform).toBe(beforePause.transform);
   expect(falling.transform).not.toBe(afterPause.transform);
+});
+
+test('mobile feature pills use the JavaScript fallback without scroll-timeline support', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeSupports = CSS.supports.bind(CSS);
+    CSS.supports = ((condition: string, value?: string) => (
+      condition === 'animation-timeline: scroll(root block)'
+        ? false
+        : value === undefined
+          ? nativeSupports(condition)
+          : nativeSupports(condition, value)
+    )) as typeof CSS.supports;
+  });
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('[data-qw-pill-driver-ready="true"]')).toBeAttached();
+
+  const pill = page.locator('[data-qw-feature-pill="Wedding Website"]');
+  await expect(pill).toHaveClass(/qw-mobile-js-scroll-fallback/);
+  const before = await pill.evaluate((element) => getComputedStyle(element).transform);
+
+  await page.evaluate(() => window.scrollTo(0, 950));
+  await page.waitForTimeout(100);
+  const after = await pill.evaluate((element) => getComputedStyle(element).transform);
+
+  expect(after).not.toBe(before);
 });

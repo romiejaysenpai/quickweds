@@ -30,7 +30,7 @@ import {
   Facebook,
   Loader2,
 } from 'lucide-react';
-import { motion, useInView, useMotionValue, useReducedMotion, useScroll, useTransform, type MotionStyle, type MotionValue } from 'framer-motion';
+import { motion, useInView, useReducedMotion, useScroll, useTransform, type MotionStyle, type MotionValue } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import DemoSection from '@/components/DemoSection';
 import { useAuth } from '@/context/AuthContext';
@@ -187,6 +187,7 @@ type FallingFeaturePillStyle = MotionStyle & {
   '--qw-pill-mobile-animation-end': string;
   '--qw-pill-animation-start': string;
   '--qw-pill-animation-end': string;
+  '--qw-pill-mobile-transform': string;
 };
 
 const newFeatureCards = [
@@ -584,48 +585,65 @@ function FallingFeaturePill({
   pill,
   index,
   scrollY,
+  mobileScrollY,
 }: {
   pill: (typeof fallingFeaturePills)[number];
   index: number;
   scrollY: MotionValue<number>;
+  mobileScrollY: number;
 }) {
   const reduceMotion = useReducedMotion();
   const [isMobile, setIsMobile] = useState(false);
+  const [needsJsScrollFallback, setNeedsJsScrollFallback] = useState(false);
+  const isMobileRef = useRef(false);
+  const viewportHeightRef = useRef(0);
   const Icon = pill.icon;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 639px)');
-    const updateIsMobile = () => setIsMobile(mediaQuery.matches);
+    const updateViewport = () => {
+      isMobileRef.current = mediaQuery.matches;
+      setIsMobile(mediaQuery.matches);
+      setNeedsJsScrollFallback(mediaQuery.matches && !CSS.supports('animation-timeline: scroll(root block)'));
+      viewportHeightRef.current = window.innerHeight;
+    };
 
-    updateIsMobile();
-    mediaQuery.addEventListener('change', updateIsMobile);
+    updateViewport();
+    mediaQuery.addEventListener('change', updateViewport);
+    window.addEventListener('resize', updateViewport);
 
-    return () => mediaQuery.removeEventListener('change', updateIsMobile);
+    return () => {
+      mediaQuery.removeEventListener('change', updateViewport);
+      window.removeEventListener('resize', updateViewport);
+    };
   }, []);
 
+  const mobileDelayDistance = Number((pill.delay * 180).toFixed(1));
+  const mobileFallDistance = 520 + ((index * 47) % 5) * 32;
   const delayedProgress = useTransform(scrollY, (latest) => {
-    const animationStart = isMobile ? 0 : 300;
-    const delayDistance = isMobile ? pill.delay * 70 : pill.delay * 280;
-    const fallDistance = isMobile ? 610 : 760;
+    const isMobile = isMobileRef.current;
+    const animationStart = isMobile ? 984 - viewportHeightRef.current * 0.52 : 300;
+    const delayDistance = isMobile ? mobileDelayDistance : pill.delay * 280;
+    const fallDistance = isMobile ? mobileFallDistance : 760;
 
     return Math.max(0, Math.min(1, (latest - animationStart - delayDistance) / fallDistance));
   });
   const pillX = useTransform(delayedProgress, (progress) => {
-    const startX = isMobile ? pill.mobileStartX : pill.startX;
-    const endX = isMobile ? pill.mobileEndX : pill.endX;
+    const startX = isMobileRef.current ? pill.mobileStartX : pill.startX;
+    const endX = isMobileRef.current ? pill.mobileEndX : pill.endX;
     const wave = Math.sin(progress * Math.PI) * pill.drift;
     return `${startX + (endX - startX) * progress + wave}vw`;
   });
   const pillY = useTransform(delayedProgress, (progress) => {
-    const startY = isMobile ? pill.mobileStartY : pill.startY;
-    const endY = isMobile ? pill.mobileEndY : pill.endY;
+    const startY = isMobileRef.current ? pill.mobileStartY : pill.startY;
+    const endY = isMobileRef.current ? pill.mobileEndY : pill.endY;
     const eased = 1 - Math.pow(1 - progress, 2.7);
     return `${startY + (endY - startY) * eased}px`;
   });
   const pillRotate = useTransform(delayedProgress, (progress) => pill.rotate * progress + Math.sin(progress * Math.PI) * (index % 2 === 0 ? 4 : -4));
   const pillOpacity = useTransform(delayedProgress, (progress) => {
     if (progress < 0.04) {
-      return isMobile ? 0.88 + progress * 3 : 0.58 + progress * 7;
+      return isMobileRef.current ? 0.88 + progress * 3 : 0.58 + progress * 7;
     }
 
     if (progress > 0.88) {
@@ -649,11 +667,20 @@ function FallingFeaturePill({
         : 'border border-primary/15 bg-white text-primary';
   const staticTop = `${pill.mobileStartY}px`;
   const staticLeft = `${8 + (index * 17) % 78}%`;
-  const mobileDelayDistance = Number((pill.delay * 180).toFixed(1));
-  const mobileFallDistance = 520 + ((index * 47) % 5) * 32;
   const mobileMidY = pill.mobileStartY + (pill.mobileEndY - pill.mobileStartY) * 0.72;
   const mobileDrift = (index % 2 === 0 ? 1 : -1) * (2.6 + (index % 3) * 1.1);
   const mobileRotationDirection = index % 2 === 0 ? 1 : -1;
+  const currentViewportHeight = typeof window === 'undefined' ? viewportHeightRef.current : window.innerHeight;
+  const mobileAnimationStart = 984 - currentViewportHeight * 0.52 + mobileDelayDistance;
+  const mobileProgress = Math.max(0, Math.min(1, (mobileScrollY - mobileAnimationStart) / mobileFallDistance));
+  const mobileEasedProgress = 1 - Math.pow(1 - mobileProgress, 2.7);
+  const mobileX = pill.mobileStartX
+    + (pill.mobileEndX - pill.mobileStartX) * mobileProgress
+    + Math.sin(mobileProgress * Math.PI) * pill.drift;
+  const mobileY = pill.mobileStartY + (pill.mobileEndY - pill.mobileStartY) * mobileEasedProgress;
+  const mobileRotate = pill.rotate * mobileProgress
+    + Math.sin(mobileProgress * Math.PI) * (index % 2 === 0 ? 4 : -4);
+  const mobileScale = 0.94 + Math.sin(mobileProgress * Math.PI) * 0.05;
   const pillStyle = {
     '--qw-pill-start-x': `${pill.startX}vw`,
     '--qw-pill-start-y': `${pill.startY}px`,
@@ -679,18 +706,19 @@ function FallingFeaturePill({
     '--qw-pill-mobile-animation-end': `calc(${984 + mobileFallDistance}px - 52svh + ${mobileDelayDistance}px)`,
     '--qw-pill-animation-start': `${Number((300 + pill.delay * 220).toFixed(1))}px`,
     '--qw-pill-animation-end': `${Number((1320 + pill.delay * 120).toFixed(1))}px`,
-    x: reduceMotion ? '-50%' : pillX,
-    y: reduceMotion ? staticTop : pillY,
+    '--qw-pill-mobile-transform': `translate3d(${mobileX}vw, ${mobileY}px, 0) rotate(${mobileRotate}deg) scale(${mobileScale})`,
+    x: isMobile ? undefined : reduceMotion ? '-50%' : pillX,
+    y: isMobile ? undefined : reduceMotion ? staticTop : pillY,
     left: reduceMotion ? staticLeft : '50%',
-    rotate: reduceMotion ? pill.rotate * 0.45 : pillRotate,
+    rotate: isMobile ? undefined : reduceMotion ? pill.rotate * 0.45 : pillRotate,
     opacity: reduceMotion ? 0.92 : pillOpacity,
-    scale: reduceMotion ? 1 : pillScale,
+    scale: isMobile ? undefined : reduceMotion ? 1 : pillScale,
   } satisfies FallingFeaturePillStyle;
 
   return (
     <motion.div
       data-qw-feature-pill={pill.title}
-      className={`qw-falling-feature-pill absolute left-1/2 top-0 z-20 inline-flex min-h-[36px] w-[22vw] max-w-[90px] origin-center items-center justify-center gap-1 rounded-xl border-2 px-1 py-1 shadow-[0_18px_42px_rgba(82,40,50,0.22),0_4px_12px_rgba(192,128,129,0.22)] ring-[3px] ring-offset-1 ring-offset-white/80 backdrop-blur-md before:pointer-events-none before:absolute before:inset-[2px] before:rounded-[inherit] before:border before:border-white/90 before:shadow-[inset_0_1px_0_rgba(255,255,255,1)] before:content-[''] will-change-transform sm:min-h-[44px] sm:w-auto sm:max-w-none sm:justify-start sm:gap-2.5 sm:rounded-full sm:px-3.5 sm:py-2 ${toneClass}`}
+      className={`qw-falling-feature-pill ${needsJsScrollFallback ? 'qw-mobile-js-scroll-fallback' : ''} absolute left-1/2 top-0 z-20 inline-flex min-h-[36px] w-[22vw] max-w-[90px] origin-center items-center justify-center gap-1 rounded-xl border-2 px-1 py-1 shadow-[0_18px_42px_rgba(82,40,50,0.22),0_4px_12px_rgba(192,128,129,0.22)] ring-[3px] ring-offset-1 ring-offset-white/80 backdrop-blur-md before:pointer-events-none before:absolute before:inset-[2px] before:rounded-[inherit] before:border before:border-white/90 before:shadow-[inset_0_1px_0_rgba(255,255,255,1)] before:content-[''] will-change-transform sm:min-h-[44px] sm:w-auto sm:max-w-none sm:justify-start sm:gap-2.5 sm:rounded-full sm:px-3.5 sm:py-2 ${toneClass}`}
       style={pillStyle}
       aria-hidden="true"
     >
@@ -704,49 +732,34 @@ function FallingFeaturePill({
 
 function FeaturePillBridge() {
   const bridgeRef = useRef<HTMLDivElement>(null);
-  const scrollY = useMotionValue(0);
+  const { scrollY } = useScroll();
+  const [mobileScrollY, setMobileScrollY] = useState(0);
+  const [driverReady, setDriverReady] = useState(false);
 
   useEffect(() => {
     let animationFrame = 0;
-    const phoneView = window.matchMedia('(max-width: 639px)');
+    let lastScrollY = -1;
+    setDriverReady(true);
 
-    const updateScrollY = () => {
-      animationFrame = 0;
-
-      if (phoneView.matches) {
-        return;
+    const updateMobileScroll = () => {
+      if (window.innerWidth < 640 && window.scrollY !== lastScrollY) {
+        lastScrollY = window.scrollY;
+        setMobileScrollY(lastScrollY);
       }
 
-      scrollY.set(window.scrollY);
+      animationFrame = window.requestAnimationFrame(updateMobileScroll);
     };
 
-    const scheduleScrollUpdate = () => {
-      if (animationFrame) {
-        return;
-      }
+    updateMobileScroll();
 
-      animationFrame = window.requestAnimationFrame(updateScrollY);
-    };
-
-    updateScrollY();
-    window.addEventListener('scroll', scheduleScrollUpdate, { passive: true });
-    window.addEventListener('resize', scheduleScrollUpdate);
-
-    return () => {
-      if (animationFrame) {
-        window.cancelAnimationFrame(animationFrame);
-      }
-
-      window.removeEventListener('scroll', scheduleScrollUpdate);
-      window.removeEventListener('resize', scheduleScrollUpdate);
-    };
-  }, [scrollY]);
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, []);
 
   return (
-    <div ref={bridgeRef} className="qw-feature-pill-bridge pointer-events-none absolute inset-x-0 top-[892px] z-30 h-[760px] overflow-visible sm:top-[calc(100svh+3rem)] sm:h-[800px] lg:top-[810px]" aria-hidden="true">
+    <div ref={bridgeRef} data-qw-pill-driver-ready={driverReady ? 'true' : 'false'} className="qw-feature-pill-bridge pointer-events-none absolute inset-x-0 top-[892px] z-30 h-[760px] overflow-visible sm:top-[calc(100svh+3rem)] sm:h-[800px] lg:top-[810px]" aria-hidden="true">
       <div className="relative mx-auto h-full max-w-7xl overflow-visible px-4 sm:px-6">
         {fallingFeaturePills.map((pill, index) => (
-          <FallingFeaturePill key={pill.title} pill={pill} index={index} scrollY={scrollY} />
+          <FallingFeaturePill key={pill.title} pill={pill} index={index} scrollY={scrollY} mobileScrollY={mobileScrollY} />
         ))}
       </div>
     </div>
