@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { 
     VideoSection, 
     BioSection, 
@@ -8,7 +7,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -30,7 +30,7 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: any) {
                         <p className="text-lg sm:text-xl md:text-xl italic text-[#40916c] mb-8 sm:mb-10 md:mb-12">Under the open sky</p>
 
                         <div className="mx-auto w-40 sm:w-44 md:w-48 h-40 sm:h-44 md:h-48 rounded-full overflow-hidden border-4 border-white shadow-lg mb-8 sm:mb-10 md:mb-12">
-                            <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover" />
+                            <SafeWeddingImage src={wedding.couple_photo || wedding.hero_image} alt={`${wedding.bride_name} and ${wedding.groom_name}`} fallbackText={wedding.logo_initials} className="w-full h-full object-cover" />
                         </div>
 
                         <a href="#rsvp" className="px-8 sm:px-10 py-3 min-h-[44px] flex items-center justify-center rounded-full bg-[#2d6a4f] text-white font-bold hover:bg-[#1b4332] shadow-lg shadow-[#2d6a4f]/20 transition-all transform hover:-translate-y-1">
@@ -47,8 +47,16 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: any) {
                         <p className="text-base sm:text-lg leading-relaxed text-[#40916c]">{wedding.story}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                        <img src={gallery[0]} className="rounded-xl object-cover w-full h-40 sm:h-48" />
-                        <img src={gallery[1]} className="rounded-xl object-cover w-full h-40 sm:h-48 mt-4 sm:mt-8" />
+                        {gallery[0] ? (
+                            <SafeWeddingImage src={gallery[0]} alt="Wedding memory 1" fallbackText={wedding.logo_initials} className="rounded-xl object-cover w-full h-40 sm:h-48" />
+                        ) : (
+                            <div className="h-40 w-full rounded-xl bg-white/50 sm:h-48" aria-hidden="true" />
+                        )}
+                        {gallery[1] ? (
+                            <SafeWeddingImage src={gallery[1]} alt="Wedding memory 2" fallbackText={wedding.logo_initials} className="mt-4 h-40 w-full rounded-xl object-cover sm:mt-8 sm:h-48" />
+                        ) : (
+                            <div className="mt-4 h-40 w-full rounded-xl bg-white/50 sm:mt-8 sm:h-48" aria-hidden="true" />
+                        )}
                     </div>
                 </div>
             </section>

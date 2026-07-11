@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
-    Mail, Plus, Trash2, Send, CheckCircle2, Loader2, 
-    Clock, Save, ArrowRight, Type, Eye, AlertCircle, X
+    Trash2, Send, CheckCircle2, Loader2,
+    Clock, Save, ArrowRight, Type, Eye, AlertCircle
 } from 'lucide-react';
+import { getSafeSupabaseSession } from '@/lib/supabase-auth';
 
 interface Template {
     id: string;
@@ -24,11 +25,26 @@ interface RSVP {
 
 interface ThankYouNote {
     id: string;
+    rsvp_id?: string | null;
     recipient_name: string;
     recipient_email: string;
-    status: 'draft' | 'scheduled' | 'sent' | 'failed';
+    status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
     gift_description?: string;
     created_at: string;
+}
+
+type ActiveView = 'send' | 'templates' | 'history';
+
+const MANAGER_TABS: Array<{ id: ActiveView; label: string }> = [
+    { id: 'send', label: 'Send Notes' },
+    { id: 'templates', label: 'Templates' },
+    { id: 'history', label: 'History' },
+];
+
+function noteMatchesGuest(note: ThankYouNote, guest: RSVP) {
+    return note.rsvp_id
+        ? note.rsvp_id === guest.id
+        : note.recipient_email === guest.guest_email;
 }
 
 export default function ThankYouNoteManager({ weddingId }: { weddingId: string }) {
@@ -36,17 +52,15 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
     const [templates, setTemplates] = useState<Template[]>([]);
     const [notes, setNotes] = useState<ThankYouNote[]>([]);
     const [guests, setGuests] = useState<RSVP[]>([]);
-    const [activeView, setActiveView] = useState<'send' | 'templates' | 'history'>('send');
+    const [activeView, setActiveView] = useState<ActiveView>('send');
+    const [sendingGuestId, setSendingGuestId] = useState<string | null>(null);
+    const [sendFeedback, setSendFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     
     // Template Builder State
     const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
     const [newTemplate, setNewTemplate] = useState({ name: '', subject: '', body: '' });
 
-    useEffect(() => {
-        loadData();
-    }, [weddingId]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const [templatesRes, notesRes, guestsRes] = await Promise.all([
@@ -63,7 +77,11 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
         } finally {
             setLoading(false);
         }
-    };
+    }, [weddingId]);
+
+    useEffect(() => {
+        void loadData();
+    }, [loadData]);
 
     const createTemplate = async () => {
         if (!newTemplate.name || !newTemplate.subject || !newTemplate.body) return alert("Please fill all fields");
@@ -80,8 +98,8 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
             setIsCreatingTemplate(false);
             setNewTemplate({ name: '', subject: '', body: '' });
             setActiveView('send');
-        } catch (err: any) {
-            alert("Failed to create template: " + (err.message || "Unknown error"));
+        } catch (err) {
+            alert("Failed to create template: " + (err instanceof Error ? err.message : "Unknown error"));
         }
     };
 
@@ -91,27 +109,83 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
             const { error } = await supabase.from('thank_you_templates').delete().eq('id', id);
             if (error) throw error;
             setTemplates(templates.filter(t => t.id !== id));
-        } catch (err) {
+        } catch {
             alert("Failed to delete template");
         }
     };
 
     const sendNote = async (guest: RSVP) => {
-        if (!guest.guest_email) return alert("Guest doesn't have an email address.");
-        
-        try {
-            const { error } = await supabase.from('thank_you_notes').insert({
-                wedding_id: weddingId,
-                recipient_name: guest.guest_name,
-                recipient_email: guest.guest_email,
-                status: 'sent' // In a real app, this would trigger an edge function
-            });
+        if (!guest.guest_email) {
+            setSendFeedback({ type: 'error', message: "This guest doesn't have an email address." });
+            return;
+        }
 
-            if (error) throw error;
-            loadData();
-            alert(`Thank you note recorded for ${guest.guest_name}`);
-        } catch (err: any) {
-            alert("Error: " + err.message);
+        setSendingGuestId(guest.id);
+        setSendFeedback(null);
+        try {
+            const existingNote = notes.find((note) =>
+                noteMatchesGuest(note, guest)
+                && (note.status === 'draft' || note.status === 'failed')
+            );
+
+            let noteId = existingNote?.id;
+            if (existingNote?.status === 'failed') {
+                const { error: retryError } = await supabase
+                    .from('thank_you_notes')
+                    .update({ status: 'draft', sent_at: null })
+                    .eq('id', existingNote.id)
+                    .eq('wedding_id', weddingId);
+                if (retryError) throw retryError;
+            }
+
+            if (!noteId) {
+                const { data: createdNote, error: createError } = await supabase
+                    .from('thank_you_notes')
+                    .insert({
+                        wedding_id: weddingId,
+                        rsvp_id: guest.id,
+                        recipient_name: guest.guest_name,
+                        recipient_email: guest.guest_email,
+                        status: 'draft',
+                    })
+                    .select('id')
+                    .single();
+
+                if (createError) throw createError;
+                noteId = createdNote?.id;
+            }
+
+            if (!noteId) throw new Error('The thank-you note could not be prepared.');
+
+            const { session, error: sessionError } = await getSafeSupabaseSession();
+            if (sessionError || !session?.access_token) throw new Error('Your session expired. Please sign in again.');
+
+            const response = await fetch('/api/weddings/thank-you/send', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ weddingId, noteId }),
+            });
+            const result = await response.json().catch(() => ({}));
+
+            if (!response.ok) throw new Error(result.error || 'The email provider did not accept this thank-you note.');
+            if (result.sentCount === 1 && result.statusUpdateFailedCount > 0) {
+                throw new Error('The email was accepted, but its history could not be updated. Do not resend it; refresh later or contact support.');
+            }
+            if (result.sentCount !== 1) throw new Error('The thank-you note was not sent. Please try again.');
+
+            await loadData();
+            setSendFeedback({ type: 'success', message: `Thank-you email sent to ${guest.guest_name}.` });
+        } catch (err) {
+            await loadData();
+            setSendFeedback({
+                type: 'error',
+                message: err instanceof Error ? err.message : 'Unable to send this thank-you email.',
+            });
+        } finally {
+            setSendingGuestId(null);
         }
     };
 
@@ -135,19 +209,13 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
                     </div>
                     
                     <div className="flex bg-neutral dark:bg-neutral/40 p-1 rounded-xl w-full md:w-auto border border-border/50 shadow-inner">
-                        {[
-                            { id: 'send', label: 'Action' },
-                            { id: 'templates', label: 'Lib' },
-                            { id: 'history', label: 'Alt' }
-                        ].map(tab => (
+                        {MANAGER_TABS.map(tab => (
                             <button 
                                 key={tab.id}
-                                onClick={() => setActiveView(tab.id as any)}
+                                onClick={() => setActiveView(tab.id)}
                                 className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeView === tab.id ? 'bg-white dark:bg-white/10 text-primary shadow-sm' : 'text-text-secondary hover:text-foreground'}`}
                             >
-                                {tab.id === 'send' && 'Send Notes'}
-                                {tab.id === 'templates' && 'Templates'}
-                                {tab.id === 'history' && 'History'}
+                                {tab.label}
                             </button>
                         ))}
                     </div>
@@ -158,6 +226,17 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xs font-black uppercase tracking-widest text-text-secondary flex items-center gap-2"><ArrowRight className="w-4 h-4" /> Confirmed Attendees ({guests.length})</h3>
                         </div>
+                        {sendFeedback && (
+                            <div
+                                className={`flex items-start gap-3 rounded-xl border p-4 text-sm ${sendFeedback.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'}`}
+                                role={sendFeedback.type === 'error' ? 'alert' : 'status'}
+                            >
+                                {sendFeedback.type === 'success'
+                                    ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+                                    : <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />}
+                                <span>{sendFeedback.message}</span>
+                            </div>
+                        )}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {guests.length === 0 ? (
                                 <div className="col-span-full py-12 text-center bg-neutral/30 dark:bg-neutral/10 rounded-2xl border border-dashed border-border opacity-50">
@@ -165,7 +244,12 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
                                 </div>
                             ) : (
                                 guests.map(guest => {
-                                    const noteSent = notes.some(n => n.recipient_email === guest.guest_email && n.status === 'sent');
+                                    const noteSent = notes.some(n => noteMatchesGuest(n, guest) && n.status === 'sent');
+                                    const noteProcessing = notes.some(n =>
+                                        noteMatchesGuest(n, guest)
+                                        && n.status === 'sending'
+                                    );
+                                    const isSending = sendingGuestId === guest.id || noteProcessing;
                                     return (
                                         <div key={guest.id} className="p-4 bg-white dark:bg-white/5 border border-border rounded-xl flex items-center justify-between group hover:border-primary/30 transition-all shadow-sm">
                                             <div className="min-w-0 pr-2">
@@ -174,10 +258,19 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
                                             </div>
                                             <button 
                                                 onClick={() => !noteSent && sendNote(guest)}
-                                                disabled={noteSent}
-                                                className={`p-2.5 rounded-lg transition-all ${noteSent ? 'bg-emerald-50 text-emerald-500 cursor-default' : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}
+                                                disabled={noteSent || noteProcessing || Boolean(sendingGuestId)}
+                                                aria-label={noteSent
+                                                    ? `Thank-you email sent to ${guest.guest_name}`
+                                                    : noteProcessing
+                                                        ? `Thank-you email to ${guest.guest_name} is being processed`
+                                                        : `Send thank-you email to ${guest.guest_name}`}
+                                                className={`p-2.5 rounded-lg transition-all disabled:cursor-not-allowed disabled:opacity-60 ${noteSent ? 'bg-emerald-50 text-emerald-500 cursor-default' : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}
                                             >
-                                                {noteSent ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                                                {noteSent
+                                                    ? <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+                                                    : isSending
+                                                        ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                                                        : <Send className="w-4 h-4" aria-hidden="true" />}
                                             </button>
                                         </div>
                                     );

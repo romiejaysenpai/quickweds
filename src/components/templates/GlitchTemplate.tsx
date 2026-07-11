@@ -8,7 +8,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -43,7 +44,7 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: any) {
                 </div>
 
                 <div className="absolute top-0 right-0 w-full lg:w-1/2 h-full opacity-30 mix-blend-screen pointer-events-none">
-                    <img src={wedding.hero_image} className="w-full h-full object-cover filter contrast-150 grayscale" />
+                    <SafeWeddingImage src={wedding.hero_image} alt={`${wedding.bride_name} and ${wedding.groom_name}`} fallbackText={wedding.logo_initials} className="w-full h-full object-cover filter contrast-150 grayscale" />
                     <div className="absolute inset-0 bg-gradient-to-l from-black to-transparent" />
                 </div>
             </section>

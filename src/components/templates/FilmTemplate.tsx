@@ -8,7 +8,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -32,7 +33,7 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: any) {
                     className="bg-black p-3 sm:p-4 pb-12 sm:pb-14 md:pb-16 pt-3 sm:pt-4 max-w-lg w-full shadow-2xl rotate-1"
                 >
                     <div className="aspect-[4/5] bg-[#222] mb-3 sm:mb-4 relative overflow-hidden group">
-                        <img src={wedding.hero_image || wedding.couple_photo} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700 contrast-125" />
+                        <SafeWeddingImage src={wedding.hero_image || wedding.couple_photo} alt={`${wedding.bride_name} and ${wedding.groom_name}`} fallbackText={wedding.logo_initials} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700 contrast-125" />
                         <div className="absolute top-4 right-4 text-[10px] text-red-500 font-bold animate-pulse">● REC</div>
                     </div>
                     <div className="text-center font-serif text-black bg-white p-6 sm:p-7 md:p-8">

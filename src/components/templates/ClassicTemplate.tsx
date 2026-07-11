@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 import {
     BioSection,
@@ -8,6 +8,7 @@ import {
     DetailsSection,
     GallerySection,
     GiftSection,
+    SafeWeddingImage,
     TimelineSection,
     VideoSection,
 } from '@/components/wedding';
@@ -42,10 +43,11 @@ export default function ClassicTemplate({ wedding, gallery, isExpired }: Templat
         <>
             <section className="h-screen relative flex items-center justify-center overflow-hidden">
                 {wedding.hero_image ? (
-                    <img
+                    <SafeWeddingImage
                         src={wedding.hero_image}
                         className="absolute inset-0 w-full h-full object-cover brightness-75 scale-105"
-                        alt="Wedding Hero"
+                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                        fallbackText={wedding.logo_initials}
                     />
                 ) : (
                     <div 

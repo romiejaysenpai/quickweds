@@ -18,6 +18,23 @@ function escapeHtml(input: string) {
         .replaceAll("'", '&#39;');
 }
 
+function escapeMultilineHtml(input: string) {
+    return escapeHtml(input).replace(/\r?\n/g, '<br />');
+}
+
+function safeEmailUrl(input?: string) {
+    const candidate = String(input || '').trim();
+    if (!candidate) return '';
+
+    try {
+        const url = new URL(candidate);
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') return '';
+        return escapeHtml(url.toString());
+    } catch {
+        return '';
+    }
+}
+
 interface EmailTemplateProps {
     guestName: string;
     guestEmail?: string;
@@ -50,6 +67,16 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
     } = props;
 
     const isAttending = attendance === 'Yes';
+    const safeGuestName = escapeHtml(guestName || 'Guest');
+    const safeBrideName = escapeHtml(brideName || 'Bride');
+    const safeGroomName = escapeHtml(groomName || 'Groom');
+    const safeWeddingDate = escapeHtml(weddingDate || 'Date to be confirmed');
+    const safeWeddingTime = weddingTime ? escapeHtml(weddingTime) : '';
+    const safeVenueName = venueName ? escapeHtml(venueName) : '';
+    const safeVenueAddress = venueAddress ? escapeMultilineHtml(venueAddress) : '';
+    const safeMapsLink = safeEmailUrl(mapsLink);
+    const safeWeddingUrl = safeEmailUrl(weddingUrl);
+    const safeNumGuests = Number.isFinite(numGuests) ? Math.max(1, Math.trunc(numGuests)) : 1;
 
     return `
     <!DOCTYPE html>
@@ -69,7 +96,7 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
                         ${isAttending ? "We're so excited!" : "We'll miss you!"}
                     </h1>
                     <p style="margin: 8px 0 0; font-size: 20px; color: ${SECONDARY_TEXT}; italic;">
-                        ${brideName} & ${groomName}'s Wedding
+                        ${safeBrideName} &amp; ${safeGroomName}&#39;s Wedding
                     </p>
                 </td>
             </tr>
@@ -79,11 +106,11 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
                 <td style="padding: 0 48px 40px;">
                     <div style="background-color: ${BG_COLOR}; border-radius: 24px; padding: 32px; border: 1px solid rgba(209,108,120,0.15);">
                         <p style="margin: 0 0 20px; font-size: 17px; line-height: 1.6;">
-                            Hi <strong>${guestName}</strong>,
+                            Hi <strong>${safeGuestName}</strong>,
                         </p>
                         <p style="margin: 0 0 24px; font-size: 17px; line-height: 1.6;">
                             ${isAttending
-            ? `Thank you for RSVPing! We've saved a spot for <strong>${numGuests} guest(s)</strong>. We can't wait to celebrate this special day with you.`
+            ? `Thank you for RSVPing! We've saved a spot for <strong>${safeNumGuests} guest(s)</strong>. We can't wait to celebrate this special day with you.`
             : `Thank you for letting us know. We're sorry you can't make it, but we'll be thinking of you as we celebrate!`}
                         </p>
 
@@ -98,17 +125,17 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
                                     <td width="24" valign="top" style="padding-top: 4px;">📅</td>
                                     <td style="padding-left: 12px; padding-bottom: 20px;">
                                         <p style="margin: 0; font-size: 14px; color: ${SECONDARY_TEXT};">Date & Time</p>
-                                        <p style="margin: 4px 0 0; font-size: 17px; font-weight: bold;">${weddingDate} ${weddingTime ? `@ ${weddingTime}` : ''}</p>
+                                        <p style="margin: 4px 0 0; font-size: 17px; font-weight: bold;">${safeWeddingDate} ${safeWeddingTime ? `@ ${safeWeddingTime}` : ''}</p>
                                     </td>
                                 </tr>
-                                ${venueName ? `
+                                ${safeVenueName ? `
                                 <tr>
                                     <td width="24" valign="top" style="padding-top: 4px;">📍</td>
                                     <td style="padding-left: 12px;">
                                         <p style="margin: 0; font-size: 14px; color: ${SECONDARY_TEXT};">The Venue</p>
-                                        <p style="margin: 4px 0 0; font-size: 17px; font-weight: bold;">${venueName}</p>
-                                        ${venueAddress ? `<p style="margin: 4px 0 0; font-size: 15px; color: ${SECONDARY_TEXT}; line-height: 1.4;">${venueAddress}</p>` : ''}
-                                        ${mapsLink ? `<a href="${mapsLink}" style="display: inline-block; margin-top: 12px; color: ${MAIN_COLOR}; font-size: 14px; font-weight: bold; text-decoration: none; border-bottom: 1px dashed ${MAIN_COLOR};">Open in Google Maps &rarr;</a>` : ''}
+                                        <p style="margin: 4px 0 0; font-size: 17px; font-weight: bold;">${safeVenueName}</p>
+                                        ${safeVenueAddress ? `<p style="margin: 4px 0 0; font-size: 15px; color: ${SECONDARY_TEXT}; line-height: 1.4;">${safeVenueAddress}</p>` : ''}
+                                        ${safeMapsLink ? `<a href="${safeMapsLink}" style="display: inline-block; margin-top: 12px; color: ${MAIN_COLOR}; font-size: 14px; font-weight: bold; text-decoration: none; border-bottom: 1px dashed ${MAIN_COLOR};">Open in Google Maps &rarr;</a>` : ''}
                                     </td>
                                 </tr>` : ''}
                             </table>
@@ -120,9 +147,9 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
             <!-- CTA Button -->
             <tr>
                 <td align="center" style="padding: 0 48px 48px;">
-                    <a href="${weddingUrl}" style="display: inline-block; padding: 18px 44px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 16px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 20px rgba(209,108,120,0.25);">
+                    ${safeWeddingUrl ? `<a href="${safeWeddingUrl}" style="display: inline-block; padding: 18px 44px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 16px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 20px rgba(209,108,120,0.25);">
                         View Full Invitation
-                    </a>
+                    </a>` : ''}
                     <p style="margin: 32px 0 0; font-size: 12px; color: ${SECONDARY_TEXT}; font-style: italic; opacity: 0.7;">
                         If you need to update your RSVP later, simply visit the link above.
                     </p>
@@ -156,6 +183,16 @@ export function getCoupleNotificationHtml(props: EmailTemplateProps) {
     } = props;
 
     const isAttending = attendance === 'Yes';
+    const safeGuestName = escapeHtml(guestName || 'Guest');
+    const safeGuestEmail = guestEmail ? escapeHtml(guestEmail) : '';
+    const joinedPlusOneNames = Array.isArray(plusOneNames) ? plusOneNames.join(', ') : plusOneNames || '';
+    const safePlusOneNames = joinedPlusOneNames ? escapeHtml(joinedPlusOneNames) : '';
+    const safeDietaryDetails = dietaryDetails ? escapeMultilineHtml(dietaryDetails) : '';
+    const safeSongRequest = songRequest ? escapeHtml(songRequest) : '';
+    const safeMessage = message ? escapeMultilineHtml(message) : '';
+    const safeWeddingUrl = safeEmailUrl(weddingUrl);
+    const safeNumGuests = Number.isFinite(numGuests) ? Math.max(1, Math.trunc(numGuests)) : 1;
+    const safeChildrenCount = Number.isFinite(childrenCount) ? Math.max(0, Math.trunc(childrenCount || 0)) : 0;
 
     return `
     <!DOCTYPE html>
@@ -186,9 +223,9 @@ export function getCoupleNotificationHtml(props: EmailTemplateProps) {
                             <td style="padding: 32px; text-align: center;">
                                 <p style="margin: 0; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; color: ${isAttending ? '#2d6a4f' : '#b91c1c'};">Status</p>
                                 <p style="margin: 12px 0 0; font-size: 28px; font-weight: bold; color: ${isAttending ? '#1b4332' : '#7f1d1d'};">
-                                    ${guestName} says ${isAttending ? 'YES!' : 'NO'}
+                                    ${safeGuestName} says ${isAttending ? 'YES!' : 'NO'}
                                 </p>
-                                ${isAttending ? `<p style="margin: 8px 0 0; font-size: 16px; color: #40916c;">Bringing a party of <strong>${numGuests}</strong></p>` : ''}
+                                ${isAttending ? `<p style="margin: 8px 0 0; font-size: 16px; color: #40916c;">Bringing a party of <strong>${safeNumGuests}</strong></p>` : ''}
                             </td>
                         </tr>
                     </table>
@@ -204,42 +241,42 @@ export function getCoupleNotificationHtml(props: EmailTemplateProps) {
                         </h3>
 
                         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size: 15px; border-collapse: separate; border-spacing: 0 16px;">
-                            ${guestEmail ? `
+                            ${safeGuestEmail ? `
                             <tr>
                                 <td width="130" style="color: ${SECONDARY_TEXT};">Email</td>
-                                <td style="font-weight: bold;">${guestEmail}</td>
+                                <td style="font-weight: bold;">${safeGuestEmail}</td>
                             </tr>` : ''}
                             
-                            ${plusOneNames ? `
+                            ${safePlusOneNames ? `
                             <tr>
                                 <td width="130" style="color: ${SECONDARY_TEXT};">Plus Ones</td>
-                                <td style="font-weight: bold;">${Array.isArray(plusOneNames) ? plusOneNames.join(', ') : plusOneNames}</td>
+                                <td style="font-weight: bold;">${safePlusOneNames}</td>
                             </tr>` : ''}
 
-                            ${childrenCount ? `
+                            ${safeChildrenCount ? `
                             <tr>
                                 <td width="130" style="color: ${SECONDARY_TEXT};">Children</td>
-                                <td style="font-weight: bold;">${childrenCount}</td>
+                                <td style="font-weight: bold;">${safeChildrenCount}</td>
                             </tr>` : ''}
 
-                            ${dietaryDetails ? `
+                            ${safeDietaryDetails ? `
                             <tr>
                                 <td width="130" style="color: ${SECONDARY_TEXT};" valign="top">Dietary</td>
-                                <td style="font-weight: bold; line-height: 1.4;">${dietaryDetails}</td>
+                                <td style="font-weight: bold; line-height: 1.4;">${safeDietaryDetails}</td>
                             </tr>` : ''}
 
-                            ${songRequest ? `
+                            ${safeSongRequest ? `
                             <tr>
                                 <td width="130" style="color: ${SECONDARY_TEXT};" valign="top">Song Request</td>
-                                <td style="font-weight: bold; color: ${MAIN_COLOR};">🎵 ${songRequest}</td>
+                                <td style="font-weight: bold; color: ${MAIN_COLOR};">🎵 ${safeSongRequest}</td>
                             </tr>` : ''}
                         </table>
 
-                        ${message ? `
+                        ${safeMessage ? `
                         <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #eeeeee;">
                             <p style="margin: 0 0 8px; font-size: 12px; color: ${SECONDARY_TEXT}; uppercase font-weight: bold;">Message for you:</p>
                             <p style="margin: 0; font-size: 16px; font-style: italic; line-height: 1.6; color: ${ACCENT_COLOR};">
-                                "${message}"
+                                &ldquo;${safeMessage}&rdquo;
                             </p>
                         </div>` : ''}
                     </div>
@@ -249,9 +286,9 @@ export function getCoupleNotificationHtml(props: EmailTemplateProps) {
             <!-- CTA -->
             <tr>
                 <td align="center" style="padding: 0 48px 48px;">
-                    <a href="${weddingUrl}" style="display: inline-block; padding: 18px 44px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 16px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 20px rgba(209,108,120,0.25);">
+                    ${safeWeddingUrl ? `<a href="${safeWeddingUrl}" style="display: inline-block; padding: 18px 44px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 16px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 20px rgba(209,108,120,0.25);">
                         Open Guest List Dashboard
-                    </a>
+                    </a>` : ''}
                 </td>
             </tr>
 
@@ -275,8 +312,16 @@ export function getCoupleNotificationHtml(props: EmailTemplateProps) {
 export function getGuestReminderHtml(props: EmailTemplateProps) {
     const {
         guestName, brideName, groomName, weddingDate, weddingTime,
-        venueName, venueAddress, mapsLink, weddingUrl, weddingTitle
+        venueName, venueAddress, weddingUrl
     } = props;
+    const safeGuestName = escapeHtml(guestName || 'Guest');
+    const safeBrideName = escapeHtml(brideName || 'Bride');
+    const safeGroomName = escapeHtml(groomName || 'Groom');
+    const safeWeddingDate = escapeHtml(weddingDate || 'Date to be confirmed');
+    const safeWeddingTime = weddingTime ? escapeHtml(weddingTime) : '';
+    const safeVenueName = venueName ? escapeHtml(venueName) : '';
+    const safeVenueAddress = venueAddress ? escapeMultilineHtml(venueAddress) : '';
+    const safeWeddingUrl = safeEmailUrl(weddingUrl);
 
     return `
     <!DOCTYPE html>
@@ -299,28 +344,28 @@ export function getGuestReminderHtml(props: EmailTemplateProps) {
             <!-- Content Body -->
             <tr>
                 <td style="padding: 48px;">
-                    <h2 style="margin: 0 0 16px; font-size: 24px; font-weight: normal; text-align: center;">Hi ${guestName},</h2>
+                    <h2 style="margin: 0 0 16px; font-size: 24px; font-weight: normal; text-align: center;">Hi ${safeGuestName},</h2>
                     <p style="margin: 0 0 32px; font-size: 18px; line-height: 1.6; text-align: center; color: ${SECONDARY_TEXT};">
                         Just a sweet reminder that the big day is almost here! We can't wait to celebrate with you.
                     </p>
 
                     <div style="background-color: ${BG_COLOR}; border-radius: 24px; padding: 40px; text-align: center; border: 1px dashed ${MAIN_COLOR};">
                         <p style="margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: ${MAIN_COLOR}; font-weight: bold;">Wedding of</p>
-                        <h3 style="margin: 8px 0 24px; font-size: 32px; font-weight: normal;">${brideName} & ${groomName}</h3>
+                        <h3 style="margin: 8px 0 24px; font-size: 32px; font-weight: normal;">${safeBrideName} &amp; ${safeGroomName}</h3>
                         
                         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 24px;">
                             <tr>
                                 <td style="padding-bottom: 24px;">
                                     <p style="margin: 0; font-size: 14px; color: ${SECONDARY_TEXT};">When</p>
-                                    <p style="margin: 4px 0 0; font-size: 18px; font-weight: bold;">${weddingDate} ${weddingTime ? `@ ${weddingTime}` : ''}</p>
+                                    <p style="margin: 4px 0 0; font-size: 18px; font-weight: bold;">${safeWeddingDate} ${safeWeddingTime ? `@ ${safeWeddingTime}` : ''}</p>
                                 </td>
                             </tr>
-                            ${venueName ? `
+                            ${safeVenueName ? `
                             <tr>
                                 <td>
                                     <p style="margin: 0; font-size: 14px; color: ${SECONDARY_TEXT};">Where</p>
-                                    <p style="margin: 4px 0 0; font-size: 18px; font-weight: bold;">${venueName}</p>
-                                    ${venueAddress ? `<p style="margin: 4px 0 0; font-size: 15px; color: ${SECONDARY_TEXT}; opacity: 0.8;">${venueAddress}</p>` : ''}
+                                    <p style="margin: 4px 0 0; font-size: 18px; font-weight: bold;">${safeVenueName}</p>
+                                    ${safeVenueAddress ? `<p style="margin: 4px 0 0; font-size: 15px; color: ${SECONDARY_TEXT}; opacity: 0.8;">${safeVenueAddress}</p>` : ''}
                                 </td>
                             </tr>` : ''}
                         </table>
@@ -331,9 +376,9 @@ export function getGuestReminderHtml(props: EmailTemplateProps) {
             <!-- CTA Button -->
             <tr>
                 <td align="center" style="padding: 0 48px 64px;">
-                    <a href="${weddingUrl}" style="display: inline-block; padding: 20px 48px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 16px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 20px rgba(209,108,120,0.25);">
+                    ${safeWeddingUrl ? `<a href="${safeWeddingUrl}" style="display: inline-block; padding: 20px 48px; background-color: ${MAIN_COLOR}; color: #ffffff; text-decoration: none; border-radius: 16px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 20px rgba(209,108,120,0.25);">
                         View Wedding Details & Map
-                    </a>
+                    </a>` : ''}
                 </td>
             </tr>
 
@@ -355,6 +400,8 @@ export function getGuestReminderHtml(props: EmailTemplateProps) {
  * Template: Welcome Email to New User
  */
 export function getWelcomeEmailHtml(userName: string) {
+    const safeUserName = escapeHtml(userName || 'there');
+
     return `
     <!DOCTYPE html>
     <html lang="en">
@@ -376,7 +423,7 @@ export function getWelcomeEmailHtml(userName: string) {
             <!-- Content Body -->
             <tr>
                 <td style="padding: 48px;">
-                    <h2 style="margin: 0 0 16px; font-size: 24px; font-weight: normal;">Hi ${userName},</h2>
+                    <h2 style="margin: 0 0 16px; font-size: 24px; font-weight: normal;">Hi ${safeUserName},</h2>
                     <p style="margin: 0 0 32px; font-size: 18px; line-height: 1.6; color: #7A5A61;">
                         We're so honored to be part of your wedding journey! QuickWeds was built to make your invitations as beautiful as your love story—without the stress.
                     </p>

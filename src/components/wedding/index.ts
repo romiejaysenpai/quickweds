@@ -16,3 +16,4 @@ export { default as PremiumBackgroundLayer } from './PremiumBackgroundLayer';
 export { default as EntranceReveal } from './EntranceReveal';
 export { default as VoiceGreeting } from './VoiceGreeting';
 export { default as TemplateNavigation } from './TemplateNavigation';
+export { default as SafeWeddingImage } from './SafeWeddingImage';

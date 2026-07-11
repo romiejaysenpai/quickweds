@@ -10,7 +10,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -23,7 +24,7 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                 {wedding.teaser_video ? (
                     <video src={wedding.teaser_video} className="absolute inset-0 w-full h-full object-cover opacity-30 grayscale contrast-125" autoPlay muted loop />
                 ) : (
-                    <img src={wedding.hero_image || wedding.couple_photo} className="absolute inset-0 w-full h-full object-cover opacity-20 grayscale brightness-50" />
+                    <SafeWeddingImage src={wedding.hero_image || wedding.couple_photo} alt={`${wedding.bride_name} and ${wedding.groom_name}`} fallbackText={wedding.logo_initials} className="absolute inset-0 w-full h-full object-cover opacity-20 grayscale brightness-50" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-[#121212]" />
 

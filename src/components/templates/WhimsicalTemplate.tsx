@@ -9,7 +9,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -56,7 +57,7 @@ export default function WhimsicalTemplate({ wedding, gallery, isExpired }: any) 
                 <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", damping: 12 }}>
                     <div className="mb-8 sm:mb-12 md:mb-16 lg:mb-16 relative group">
                         <div className="w-40 sm:w-48 md:w-56 lg:w-64 h-40 sm:h-48 md:h-56 lg:h-64 rounded-full border-[12px] border-white shadow-2xl overflow-hidden mx-auto rotate-6 group-hover:rotate-0 transition-transform duration-700">
-                            <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover scale-125" />
+                            <SafeWeddingImage src={wedding.couple_photo || wedding.hero_image} alt={`${wedding.bride_name} and ${wedding.groom_name}`} fallbackText={wedding.logo_initials} className="w-full h-full object-cover scale-125" />
                         </div>
                         <div className="absolute -top-8 -right-8 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-xl animate-bounce">
                             <Heart className="w-8 h-8 text-primary fill-primary" />

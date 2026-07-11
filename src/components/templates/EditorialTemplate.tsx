@@ -9,7 +9,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -22,13 +23,19 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                     <p className="rotate-90 whitespace-nowrap">ISSUE NO. 01</p>
                 </div>
                 <div className="col-span-1 lg:col-span-11 flex flex-col justify-end px-4 sm:px-6 md:px-12 lg:px-32 py-12 sm:py-16 md:py-24 lg:py-32 relative overflow-hidden group">
-                    <motion.img
+                    <motion.div
                         initial={{ scale: 1.1, filter: 'blur(20px)' }}
                         animate={{ scale: 1, filter: 'blur(0px)' }}
                         transition={{ duration: 1.5 }}
-                        src={wedding.hero_image || wedding.couple_photo}
                         className="absolute inset-0 w-full h-full object-cover -z-10 brightness-[0.6] group-hover:scale-105 transition-transform duration-1000"
-                    />
+                    >
+                        <SafeWeddingImage
+                            src={wedding.hero_image || wedding.couple_photo}
+                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                            fallbackText={wedding.logo_initials}
+                            className="h-full w-full object-cover"
+                        />
+                    </motion.div>
                     <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5, duration: 1 }} className="text-white relative z-10 max-w-6xl">
                         {wedding.logo_initials && (
                             <MonogramMark

@@ -8,7 +8,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -17,7 +18,7 @@ export default function ElopementTemplate({ wedding, gallery, isExpired }: any) 
         <div className="bg-neutral text-stone-700 font-serif relative pb-24 selection:bg-stone-200">
             <section className="min-h-screen py-20 flex items-center justify-center relative overflow-hidden bg-white">
                 <div className="absolute inset-0 opacity-40 mix-blend-multiply transition-opacity group-hover:opacity-60">
-                    <img src={wedding.hero_image || wedding.couple_photo} className="w-full h-full object-cover" />
+                    <SafeWeddingImage src={wedding.hero_image || wedding.couple_photo} alt={`${wedding.bride_name} and ${wedding.groom_name}`} fallbackText={wedding.logo_initials} className="w-full h-full object-cover" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent" />
 

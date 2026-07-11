@@ -6,6 +6,7 @@ import type { Wedding } from '@/types/wedding';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
 import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import SafeWeddingImage from './SafeWeddingImage';
 
 interface BioSectionProps {
     wedding: Wedding;
@@ -55,9 +56,10 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
                 >
                     {!isSharp && <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-transparent blur-3xl -z-10 rounded-full" />}
                     <div className={`overflow-hidden group hover:-rotate-1 transition-transform duration-700 ${imageStyle}`}>
-                        <img
+                        <SafeWeddingImage
                             src={wedding.couple_photo || wedding.hero_image}
                             alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                            fallbackText={wedding.logo_initials || `${wedding.bride_name?.[0] || ''}${wedding.groom_name?.[0] || ''}`}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                         />
                     </div>

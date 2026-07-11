@@ -9,7 +9,8 @@ import {
     TimelineSection, 
     GallerySection, 
     GiftSection,
-    CountdownTimer 
+    CountdownTimer,
+    SafeWeddingImage
 } from '../wedding';
 import type { TemplateProps } from '@/types/wedding';
 
@@ -21,7 +22,7 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
             <section className="min-h-[85vh] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-white via-primary/5 to-white" />
                 {wedding.hero_image && (
-                    <img 
+                    <SafeWeddingImage
                         src={wedding.hero_image} 
                         className="absolute inset-0 w-full h-full object-cover opacity-10" 
                         alt=""

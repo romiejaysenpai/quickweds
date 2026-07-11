@@ -8,7 +8,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -17,7 +18,7 @@ export default function CinematicTemplate({ wedding, gallery, isExpired }: any) 
         <div className="bg-black text-white font-sans selection:bg-primary/50 overflow-hidden pb-24">
             <section className="min-h-screen relative flex items-center justify-center">
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} transition={{ duration: 3 }} className="absolute inset-0">
-                    <img src={wedding.hero_image || wedding.couple_photo} className="w-full h-full object-cover grayscale brightness-75" />
+                    <SafeWeddingImage src={wedding.hero_image || wedding.couple_photo} alt={`${wedding.bride_name} and ${wedding.groom_name}`} fallbackText={wedding.logo_initials} className="w-full h-full object-cover grayscale brightness-75" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black" />
                 </motion.div>
 

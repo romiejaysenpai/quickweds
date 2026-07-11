@@ -33,14 +33,22 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
     const validRecipients = recipientList
         .map((recipient) => String(recipient || '').trim())
         .filter((recipient) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient));
+    const safeSubject = String(subject || '')
+        .replace(/[\r\n]+/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim()
+        .slice(0, 500);
 
     if (validRecipients.length === 0) {
         return { success: false, error: 'No valid email recipients provided' };
     }
+    if (!safeSubject) {
+        return { success: false, error: 'Email subject is required' };
+    }
 
     try {
         console.log(`Attempting to send email via Resend to ${validRecipients.length} recipient(s).`);
-        console.log(`Email Subject: "${subject}" | From: "${FROM_EMAIL}"`);
+        console.log(`Email Subject: "${safeSubject}" | From: "${FROM_EMAIL}"`);
 
         if (template?.id) {
             console.warn(`Template sending is not configured for Resend in this app yet. Falling back to HTML for template ID ${template.id}.`);
@@ -53,7 +61,7 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
         const { data, error } = await resend.emails.send({
             from: FROM_EMAIL,
             to: validRecipients,
-            subject,
+            subject: safeSubject,
             html,
         });
 

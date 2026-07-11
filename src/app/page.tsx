@@ -26,8 +26,6 @@ import {
   Sun,
   UsersRound,
   X,
-  Instagram,
-  Twitter,
   Facebook,
   Loader2,
 } from 'lucide-react';
@@ -44,7 +42,6 @@ const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/pc%20vew.png';
 const joySectionMobileImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/sdgsdfgsd.png';
 const navItemClass = 'inline-flex h-10 items-center px-1 text-sm font-bold leading-none text-text-secondary transition hover:text-primary';
-const footerItemClass = 'inline-flex h-9 items-center px-1 leading-none transition hover:text-primary';
 
 const featureCards = [
   {
@@ -1055,14 +1052,8 @@ export default function Home() {
                 The all-in-one wedding planning system for websites, RSVPs, guests, budgets, vendors, and more. Simplifying your journey to &quot;I do&quot;.
               </p>
               <div className="flex justify-center md:justify-start gap-4">
-                <a href="#" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">
-                  <Instagram className="h-5 w-5" />
-                </a>
-                <a href="#" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">
-                  <Twitter className="h-5 w-5" />
-                </a>
-                <a href="https://www.facebook.com/profile.php?id=61587661715324" target="_blank" rel="noopener noreferrer" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">
-                  <Facebook className="h-5 w-5" />
+                <a href="https://www.facebook.com/profile.php?id=61587661715324" target="_blank" rel="noopener noreferrer" aria-label="QuickWeds on Facebook" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">
+                  <Facebook className="h-5 w-5" aria-hidden="true" />
                 </a>
               </div>
             </div>

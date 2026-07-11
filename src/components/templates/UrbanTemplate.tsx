@@ -9,7 +9,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -20,12 +21,18 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
             <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
 
             <section className="min-h-screen py-20 flex bg-black relative group">
-                <motion.img
+                <motion.div
                     initial={{ scale: 1.2, opacity: 0 }}
                     animate={{ scale: 1, opacity: 0.5 }}
-                    src={wedding.hero_image}
                     className="absolute inset-0 w-full h-full object-cover grayscale brightness-50 group-hover:scale-105 transition-transform duration-[10s]"
-                />
+                >
+                    <SafeWeddingImage
+                        src={wedding.hero_image}
+                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                        fallbackText={wedding.logo_initials}
+                        className="h-full w-full object-cover"
+                    />
+                </motion.div>
                 <div className="z-10 px-4 sm:px-6 md:px-12 lg:px-32 py-12 sm:py-16 md:py-24 lg:py-32 flex flex-col justify-between w-full relative">
                     <div className="flex justify-between items-start border-b border-white/10 pb-6 sm:pb-8 md:pb-12 lg:pb-12">
                         <div className="space-y-2">

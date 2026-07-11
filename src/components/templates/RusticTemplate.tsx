@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { 
     VideoSection, 
     BioSection, 
@@ -8,7 +7,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -43,7 +43,7 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: any) {
             <section className="py-16 sm:py-20 md:py-24 lg:py-24 px-4 sm:px-6 bg-white/60">
                 <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 md:gap-16 items-center">
                     <div className="aspect-square relative rotate-2 p-4 bg-white shadow-xl">
-                        <img src={wedding.couple_photo || wedding.hero_image} className="w-full h-full object-cover sepia-[0.3]" />
+                        <SafeWeddingImage src={wedding.couple_photo || wedding.hero_image} alt={`${wedding.bride_name} and ${wedding.groom_name}`} fallbackText={wedding.logo_initials} className="w-full h-full object-cover sepia-[0.3]" />
                         <div className="absolute -top-4 -left-4 w-24 h-24 bg-[#5e503f]/10 rounded-full blur-xl -z-10" />
                     </div>
                     <div className="space-y-4 sm:space-y-5 md:space-y-6">

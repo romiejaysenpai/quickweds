@@ -23,6 +23,7 @@ const envSchema = z.object({
     GOOGLE_CALENDAR_CLIENT_ID: z.string().optional(),
     GOOGLE_CALENDAR_CLIENT_SECRET: z.string().optional(),
     GOOGLE_OAUTH_STATE_SECRET: z.string().optional(),
+    CRON_SECRET: z.string().min(32, 'Cron secret should be at least 32 characters').optional(),
 
     ADMIN_EMAIL: z.string().email('Invalid admin email').optional(),
     ADMIN_EMAILS: z.string().optional(),
@@ -51,6 +52,7 @@ export function validateEnv() {
         GOOGLE_CALENDAR_CLIENT_ID: process.env.GOOGLE_CALENDAR_CLIENT_ID,
         GOOGLE_CALENDAR_CLIENT_SECRET: process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
         GOOGLE_OAUTH_STATE_SECRET: process.env.GOOGLE_OAUTH_STATE_SECRET,
+        CRON_SECRET: process.env.CRON_SECRET,
         ADMIN_EMAIL: process.env.ADMIN_EMAIL,
         ADMIN_EMAILS: process.env.ADMIN_EMAILS,
         SUPPLIER_REVIEW_SECRET: process.env.SUPPLIER_REVIEW_SECRET,

@@ -8,15 +8,13 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
-import { derivePalette, getTypography } from '@/lib/theme-engine';
 
 export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
     const motifColor = wedding.motif_color || '#8b4513';
-    const palette = derivePalette(motifColor);
-    const typography = getTypography('boho');
 
     return (
         <div className="bg-[#fcf8f1] text-[#5d2e0a] font-serif relative pb-24 selection:bg-[#8b4513]/20 overflow-x-hidden">
@@ -78,10 +76,11 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
                             <div className="absolute -inset-8 border border-[#8b4513]/5 rounded-[5rem] group-hover:-rotate-3 transition-transform duration-1000 delay-75" />
                             
                             <div className="aspect-[4/5] w-full rounded-[3.5rem] overflow-hidden border-[12px] border-white shadow-2xl relative z-10">
-                                <img 
+                                <SafeWeddingImage
                                     src={wedding.hero_image || wedding.couple_photo} 
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[5s]" 
-                                    alt="Wedding Couple"
+                                    alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                                    fallbackText={wedding.logo_initials}
                                 />
                                 <div className="absolute inset-0 bg-[#8b4513]/10 mix-blend-multiply opacity-30 group-hover:opacity-0 transition-opacity duration-1000" />
                             </div>

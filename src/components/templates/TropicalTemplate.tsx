@@ -9,7 +9,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -59,7 +60,7 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: any) {
                 <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 sm:gap-12 md:gap-16 lg:gap-24 items-center">
                     <div className="w-full md:w-1/2 relative">
                         <div className="absolute -inset-4 border-2 border-[#00695c]/20 rounded-[4rem] rotate-3 -z-10" />
-                        <img src={wedding.hero_image || wedding.couple_photo} className="w-full aspect-[4/5] object-cover rounded-[3.5rem] soft-shadow" />
+                        <SafeWeddingImage src={wedding.hero_image || wedding.couple_photo} alt={`${wedding.bride_name} and ${wedding.groom_name}`} fallbackText={wedding.logo_initials} className="w-full aspect-[4/5] object-cover rounded-[3.5rem] soft-shadow" />
                     </div>
                     <div className="w-full md:w-1/2 space-y-8 sm:space-y-10 md:space-y-12 lg:space-y-12">
                         <Camera className="w-12 sm:w-14 md:w-16 lg:w-16 h-12 sm:h-14 md:h-16 lg:h-16 text-primary" />

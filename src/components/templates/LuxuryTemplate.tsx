@@ -8,7 +8,8 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    SafeWeddingImage
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -33,7 +34,7 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                     </motion.div>
                 </div>
                 <div className="md:col-span-7 h-[50vh] md:h-full relative overflow-hidden group">
-                    <img src={wedding.hero_image || wedding.couple_photo} className="absolute inset-0 w-full h-full object-cover grayscale brightness-50 group-hover:scale-110 transition-transform duration-[10s]" />
+                    <SafeWeddingImage src={wedding.hero_image || wedding.couple_photo} alt={`${wedding.bride_name} and ${wedding.groom_name}`} fallbackText={wedding.logo_initials} className="absolute inset-0 w-full h-full object-cover grayscale brightness-50 group-hover:scale-110 transition-transform duration-[10s]" />
                     <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-transparent hidden md:block" />
                     <div className="absolute top-12 right-12 text-right">
                         <p className="text-white text-7xl font-light opacity-20">{new Date(wedding.wedding_date).getFullYear()}</p>

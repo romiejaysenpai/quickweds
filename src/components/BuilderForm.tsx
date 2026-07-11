@@ -1338,15 +1338,15 @@ export default function BuilderForm() {
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Hero Image</label>
                                 <div className="relative h-44 rounded-2xl border-2 border-dashed border-border bg-neutral flex flex-col items-center justify-center overflow-hidden">
-                                    {previews.heroImage ? <img src={previews.heroImage} className="w-full h-full object-cover" /> : <ImageIcon className="w-8 h-8 text-primary/40" />}
-                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'heroImage')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    {previews.heroImage ? <img src={previews.heroImage} alt="Hero image preview" className="w-full h-full object-cover" /> : <ImageIcon className="w-8 h-8 text-primary/40" />}
+                                    <input type="file" accept="image/*" aria-label="Upload hero image" onChange={(e) => handleFileChange(e, 'heroImage')} className="absolute inset-0 opacity-0 cursor-pointer" />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Couple Photo</label>
                                 <div className="relative h-44 rounded-2xl border-2 border-dashed border-border bg-neutral flex flex-col items-center justify-center overflow-hidden">
-                                    {previews.couplePhoto ? <img src={previews.couplePhoto} className="w-full h-full object-cover" /> : <ImageIcon className="w-8 h-8 text-primary/40" />}
-                                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'couplePhoto')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    {previews.couplePhoto ? <img src={previews.couplePhoto} alt="Couple photo preview" className="w-full h-full object-cover" /> : <ImageIcon className="w-8 h-8 text-primary/40" />}
+                                    <input type="file" accept="image/*" aria-label="Upload couple photo" onChange={(e) => handleFileChange(e, 'couplePhoto')} className="absolute inset-0 opacity-0 cursor-pointer" />
                                 </div>
                             </div>
                         </div>
@@ -1366,7 +1366,7 @@ export default function BuilderForm() {
                                         {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
                                     </div>
                                 )}
-                                <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                <input type="file" accept="video/*" aria-label="Upload teaser video" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
                             </div>
                         </div>
 
@@ -1385,10 +1385,11 @@ export default function BuilderForm() {
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                 {previews.invitationImages.map((src: string, index: number) => (
                                     <div key={index} className="relative h-40 rounded-2xl border-2 border-border bg-white flex items-center justify-center overflow-hidden group hover:shadow-lg transition-all">
-                                        <img src={src} className="w-full h-full object-contain p-2" />
+                                        <img src={src} alt={`Invitation page ${index + 1} preview`} className="w-full h-full object-contain p-2" />
                                         <button 
                                             type="button" 
                                             onClick={() => removeFile('invitationImages', index)} 
+                                            aria-label={`Remove invitation page ${index + 1}`}
                                             className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all opacity-0 group-hover:opacity-100"
                                         >
                                             <X className="w-4 h-4" />
@@ -1402,7 +1403,7 @@ export default function BuilderForm() {
                                 <div className="relative h-40 rounded-2xl border-2 border-dashed border-primary/20 bg-white flex flex-col items-center justify-center overflow-hidden hover:border-primary transition-all group hover:bg-primary/5 cursor-pointer">
                                     <Plus className="w-8 h-8 text-primary/30 mb-2 group-hover:scale-110 transition-transform" />
                                     <span className="text-[10px] text-text-secondary font-bold uppercase tracking-widest text-center px-4">Add {previews.invitationImages.length > 0 ? 'Another Page' : 'Invitation Card'}</span>
-                                    <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'invitationImages')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    <input type="file" multiple accept="image/*" aria-label="Upload invitation pages" onChange={(e) => handleFileChange(e, 'invitationImages')} className="absolute inset-0 opacity-0 cursor-pointer" />
                                 </div>
                             </div>
                         </div>
@@ -1419,15 +1420,15 @@ export default function BuilderForm() {
                             <div className="grid grid-cols-4 gap-4">
                                 {previews.galleryImages.map((src: string, i: number) => (
                                     <div key={i} className="relative aspect-square rounded-xl overflow-hidden group border border-border">
-                                        <img src={src} className="w-full h-full object-cover" />
-                                        <button type="button" onClick={() => removeFile('galleryImages', i)} className="absolute top-1 right-1 w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center hover:bg-red-500 transition-colors">
+                                        <img src={src} alt={`Gallery photo ${i + 1} preview`} className="w-full h-full object-cover" />
+                                        <button type="button" onClick={() => removeFile('galleryImages', i)} aria-label={`Remove gallery photo ${i + 1}`} className="absolute top-1 right-1 w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center hover:bg-red-500 transition-colors">
                                             <X className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 ))}
                                 <div className="relative aspect-square rounded-xl border-2 border-dashed border-border bg-neutral flex items-center justify-center hover:bg-neutral/80 transition-colors">
                                     <ImageIcon className="w-6 h-6 text-primary/40" />
-                                    <input type="file" multiple accept="image/*" onChange={(e) => handleFileChange(e, 'galleryImages')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    <input type="file" multiple accept="image/*" aria-label="Upload gallery photos" onChange={(e) => handleFileChange(e, 'galleryImages')} className="absolute inset-0 opacity-0 cursor-pointer" />
                                 </div>
                             </div>
                         </div>
@@ -1550,8 +1551,8 @@ export default function BuilderForm() {
                 <div className="space-y-2">
                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Upload QR Code (Optional)</label>
                     <div className="relative h-32 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-white hover:bg-neutral/50 transition-colors">
-                        {previews.giftQr ? <img src={previews.giftQr} className="h-full object-contain" /> : <ImageIcon className="w-6 h-6 text-primary/40" />}
-                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'giftQr')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                        {previews.giftQr ? <img src={previews.giftQr} alt="Gift QR code preview" className="h-full object-contain" /> : <ImageIcon className="w-6 h-6 text-primary/40" />}
+                        <input type="file" accept="image/*" aria-label="Upload gift QR code" onChange={(e) => handleFileChange(e, 'giftQr')} className="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
                 </div>
             </div>

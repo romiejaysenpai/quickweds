@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -19,6 +19,12 @@ export default function SettingsPage() {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState('');
   const [updateError, setUpdateError] = useState('');
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/login?next=%2Fsettings');
+    }
+  }, [authLoading, router, user]);
 
   useEffect(() => {
     if (user) {
@@ -103,6 +109,17 @@ export default function SettingsPage() {
       setIsDeleting(false);
     }
   };
+
+  if (authLoading || !user) {
+    return (
+      <div className="mobile-safe-screen flex items-center justify-center bg-background px-4" aria-live="polite">
+        <div className="flex items-center gap-3 rounded-2xl border border-border bg-white px-5 py-4 text-sm font-semibold text-text-secondary shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+          Checking your account…
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6 pb-24">
