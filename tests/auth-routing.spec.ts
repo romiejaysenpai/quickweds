@@ -2,44 +2,33 @@ import { expect, test } from '@playwright/test';
 import { getPostLoginRedirect } from '../src/lib/account';
 
 test.describe('post-login routing', () => {
-    test('sends an existing couple to the welcome dashboard on default login', () => {
+    test('sends an existing couple with a wedding to the dashboard instead of the builder', () => {
         expect(getPostLoginRedirect({
-            user_id: 'returning-user', account_type: 'couple', onboarding_completed: true,
-            has_weddings: true, dashboard_path: '/dashboard/wedding-1',
-        }, '/dashboard')).toBe('/dashboard');
-    });
-
-    test('sends a returning couple to the welcome dashboard even when coming from builder', () => {
-        expect(getPostLoginRedirect({
-            user_id: 'returning-user', account_type: 'couple', onboarding_completed: true,
-            has_weddings: true, dashboard_path: '/dashboard/wedding-1',
+            user_id: 'returning-user',
+            account_type: 'couple',
+            onboarding_completed: true,
         }, '/builder')).toBe('/dashboard');
-    });
 
-    test('sends a returning couple to the welcome dashboard even with an explicit wedding path', () => {
         expect(getPostLoginRedirect({
-            user_id: 'returning-user', account_type: 'couple', onboarding_completed: true,
-            has_weddings: true, dashboard_path: '/dashboard/wedding-1',
-        }, '/dashboard/wedding-1/planner')).toBe('/dashboard');
+            user_id: 'returning-user',
+            account_type: 'couple',
+            onboarding_completed: true,
+        }, '/builder?edit=wedding-1')).toBe('/dashboard');
     });
 
     test('sends a first-time user to onboarding', () => {
         expect(getPostLoginRedirect({
-            user_id: 'new-user', account_type: null, onboarding_completed: false, has_weddings: false,
+            user_id: 'new-user',
+            account_type: null,
+            onboarding_completed: false,
         }, '/builder')).toBe('/onboarding/account-type?next=%2Fbuilder');
     });
 
-    test('sends a legacy user without account type to onboarding', () => {
+    test('preserves non-builder destinations for an existing couple', () => {
         expect(getPostLoginRedirect({
-            user_id: 'legacy-user', account_type: null, onboarding_completed: false,
-            has_weddings: true, dashboard_path: '/dashboard/wedding-1',
-        }, '/builder')).toBe('/onboarding/account-type?next=%2Fbuilder');
-    });
-
-    test('sends a returning couple without weddings to the welcome dashboard', () => {
-        expect(getPostLoginRedirect({
-            user_id: 'couple-no-weddings', account_type: 'couple', onboarding_completed: true,
-            has_weddings: false,
-        }, '/dashboard')).toBe('/dashboard');
+            user_id: 'returning-user',
+            account_type: 'couple',
+            onboarding_completed: true,
+        }, '/settings')).toBe('/settings');
     });
 });
