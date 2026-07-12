@@ -69,7 +69,20 @@ export async function GET(req: NextRequest) {
         const db = getAccountAdminClientOrNull() || getAccountUserClient(req);
         const profile = await ensureAccountProfile(db, user.id);
 
-        return NextResponse.json({ profile });
+        const { count: weddingCount, error: weddingCountError } = await db
+            .from('weddings')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .is('deleted_at', null);
+
+        if (weddingCountError) throw weddingCountError;
+
+        return NextResponse.json({
+            profile: {
+                ...profile,
+                has_weddings: (weddingCount || 0) > 0,
+            },
+        });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to load account profile';
         return NextResponse.json({ error: message }, { status: 500 });

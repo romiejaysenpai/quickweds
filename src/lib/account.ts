@@ -13,6 +13,7 @@ export type AccountProfile = {
     pro_unlocked_at?: string | null;
     created_at?: string;
     updated_at?: string;
+    has_weddings?: boolean;
 };
 
 export const ACCOUNT_ONBOARDING_PATH = '/onboarding/account-type';
@@ -64,6 +65,20 @@ export function getRoleAwareRedirect(accountType?: AccountType | null, requested
     const safeNext = getSafeAppPath(requestedPath, defaultPath);
 
     return isPathAllowedForAccountType(safeNext, accountType) ? safeNext : defaultPath;
+}
+
+export function getPostLoginRedirect(profile?: AccountProfile | null, requestedPath?: string | null) {
+    if (!profile?.account_type) {
+        return getRoleAwareRedirect(null, requestedPath);
+    }
+
+    const safeNext = getSafeAppPath(requestedPath, getDefaultRoleRedirect(profile.account_type));
+
+    if (profile.account_type === 'couple' && profile.has_weddings && safeNext.startsWith('/builder')) {
+        return '/dashboard';
+    }
+
+    return getRoleAwareRedirect(profile.account_type, safeNext);
 }
 
 export async function getClientAccountProfile(token: string) {
