@@ -69,6 +69,17 @@ export function getRoleAwareRedirect(accountType?: AccountType | null, requested
 }
 
 export function getPostLoginRedirect(profile?: AccountProfile | null, requestedPath?: string | null) {
+    const safeRequestedPath = getSafeAppPath(requestedPath, '/dashboard');
+
+    if (profile?.has_weddings && profile.dashboard_path) {
+        const isGenericLoginDestination =
+            safeRequestedPath === '/dashboard' ||
+            safeRequestedPath.startsWith('/builder') ||
+            safeRequestedPath.startsWith(ACCOUNT_ONBOARDING_PATH);
+
+        if (isGenericLoginDestination) return profile.dashboard_path;
+    }
+
     if (!profile?.account_type) return getRoleAwareRedirect(null, requestedPath);
 
     const defaultPath = profile.dashboard_path || getDefaultRoleRedirect(profile.account_type);

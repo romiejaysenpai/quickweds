@@ -9,6 +9,20 @@ test.describe('post-login routing', () => {
         }, '/dashboard')).toBe('/dashboard/wedding-1');
     });
 
+    test('ignores a stale builder destination for a returning couple', () => {
+        expect(getPostLoginRedirect({
+            user_id: 'returning-user', account_type: 'couple', onboarding_completed: true,
+            has_weddings: true, dashboard_path: '/dashboard/wedding-1',
+        }, '/builder')).toBe('/dashboard/wedding-1');
+    });
+
+    test('sends a legacy returning user without account type to their dashboard', () => {
+        expect(getPostLoginRedirect({
+            user_id: 'legacy-user', account_type: null, onboarding_completed: false,
+            has_weddings: true, dashboard_path: '/dashboard/wedding-1',
+        }, '/builder')).toBe('/dashboard/wedding-1');
+    });
+
     test('sends a first-time user to onboarding', () => {
         expect(getPostLoginRedirect({
             user_id: 'new-user', account_type: null, onboarding_completed: false, has_weddings: false,
