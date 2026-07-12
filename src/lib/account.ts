@@ -69,25 +69,16 @@ export function getRoleAwareRedirect(accountType?: AccountType | null, requested
 }
 
 export function getPostLoginRedirect(profile?: AccountProfile | null, requestedPath?: string | null) {
-    const safeRequestedPath = getSafeAppPath(requestedPath, '/dashboard');
-
-    if (profile?.has_weddings && profile.dashboard_path) {
-        const isGenericLoginDestination =
-            safeRequestedPath === '/dashboard' ||
-            safeRequestedPath.startsWith('/builder') ||
-            safeRequestedPath.startsWith(ACCOUNT_ONBOARDING_PATH);
-
-        if (isGenericLoginDestination) return profile.dashboard_path;
-    }
-
+    // New users without an account type go to onboarding.
     if (!profile?.account_type) return getRoleAwareRedirect(null, requestedPath);
 
-    const defaultPath = profile.dashboard_path || getDefaultRoleRedirect(profile.account_type);
-    const safeNext = getSafeAppPath(requestedPath, defaultPath);
+    // Returning users with weddings always land on the welcome dashboard so
+    // they can see all their weddings and choose which one to open — regardless
+    // of where the login flow started (builder, direct login, OAuth, etc.).
+    if (profile.has_weddings) return getDefaultRoleRedirect(profile.account_type);
 
-    if (profile.account_type === 'couple' && profile.has_weddings && (safeNext === '/dashboard' || safeNext.startsWith('/builder'))) {
-        return defaultPath;
-    }
+    const defaultPath = getDefaultRoleRedirect(profile.account_type);
+    const safeNext = getSafeAppPath(requestedPath, defaultPath);
 
     return getRoleAwareRedirect(profile.account_type, safeNext);
 }
