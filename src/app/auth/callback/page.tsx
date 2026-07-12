@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
-import { getClientAccountProfileForIntent, getClientAdminStatus, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
+import { getClientAccountProfileForIntent, getClientAdminStatus, getPostLoginRedirect, getSafeAppPath } from '@/lib/account';
 import { clearLocalSupabaseSession, getSafeSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
 
 export default function AuthCallbackPage() {
@@ -44,7 +44,7 @@ export default function AuthCallbackPage() {
             }).catch(err => console.error('OAuth Notification Error:', err));
         };
 
-        const resolvePostAuthPath = async (token: string, nextPath: string, userEmail?: string | null) => {
+        const resolvePostAuthPath = async (token: string, nextPath: string) => {
             if (await getClientAdminStatus(token)) {
                 const safeNext = getSafeAppPath(nextPath, '/dashboard');
                 return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
@@ -52,7 +52,7 @@ export default function AuthCallbackPage() {
 
             try {
                 const profile = await getClientAccountProfileForIntent(token, nextPath);
-                return getRoleAwareRedirect(profile?.account_type, nextPath);
+                return getPostLoginRedirect(profile, nextPath);
             } catch {
                 // Gracefully degrade — if account profile table is missing, go to default path
                 return getSafeAppPath(nextPath, '/dashboard');
@@ -63,7 +63,7 @@ export default function AuthCallbackPage() {
             console.log('User authenticated:', user.email);
             notifyNewOAuthUser(user);
             window.localStorage.removeItem('quickweds_auth_next');
-            router.replace(await resolvePostAuthPath(token, nextPath, user.email));
+            router.replace(await resolvePostAuthPath(token, nextPath));
         };
 
         const waitForSession = (nextPath: string) => {

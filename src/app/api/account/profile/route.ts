@@ -61,13 +61,42 @@ async function ensureAccountProfile(db: any, userId: string) {
     return data as AccountProfile;
 }
 
+async function addWeddingRouting(db: any, profile: AccountProfile, userId: string, email?: string | null) {
+    const { data: owned, error: ownedError } = await db
+        .from('weddings')
+        .select('id, created_at')
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: true })
+        .limit(1);
+    if (ownedError) throw ownedError;
+
+    let weddingId = owned?.[0]?.id as string | undefined;
+    if (!weddingId && email) {
+        const { data: shared, error: sharedError } = await db
+            .from('wedding_collaborators')
+            .select('wedding_id')
+            .eq('email', email.trim().toLowerCase())
+            .eq('status', 'accepted')
+            .limit(1);
+        if (sharedError) throw sharedError;
+        weddingId = shared?.[0]?.wedding_id as string | undefined;
+    }
+
+    return {
+        ...profile,
+        has_weddings: Boolean(weddingId),
+        dashboard_path: weddingId ? `/dashboard/${weddingId}` : null,
+    } satisfies AccountProfile;
+}
+
 export async function GET(req: NextRequest) {
     const { user, error } = await getRequestUser(req);
     if (!user) return NextResponse.json({ error }, { status: 401 });
 
     try {
         const db = getAccountAdminClientOrNull() || getAccountUserClient(req);
-        const profile = await ensureAccountProfile(db, user.id);
+        const profile = await addWeddingRouting(db, await ensureAccountProfile(db, user.id), user.id, user.email);
 
         return NextResponse.json({ profile });
     } catch (err) {

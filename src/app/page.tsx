@@ -30,7 +30,7 @@ import {
   Facebook,
   Loader2,
 } from 'lucide-react';
-import { motion, useInView, useReducedMotion, useScroll, useTransform, type MotionStyle, type MotionValue } from 'framer-motion';
+import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useTransform, type MotionStyle, type MotionValue } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import DemoSection from '@/components/DemoSection';
 import { useAuth } from '@/context/AuthContext';
@@ -594,6 +594,7 @@ function FallingFeaturePill({
 }) {
   const reduceMotion = useReducedMotion();
   const [isMobile, setIsMobile] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(0);
   const [needsJsScrollFallback, setNeedsJsScrollFallback] = useState(false);
   const isMobileRef = useRef(false);
   const viewportHeightRef = useRef(0);
@@ -606,6 +607,7 @@ function FallingFeaturePill({
       setIsMobile(mediaQuery.matches);
       setNeedsJsScrollFallback(mediaQuery.matches && !CSS.supports('animation-timeline: scroll(root block)'));
       viewportHeightRef.current = window.innerHeight;
+      setViewportHeight(window.innerHeight);
     };
 
     updateViewport();
@@ -670,8 +672,7 @@ function FallingFeaturePill({
   const mobileMidY = pill.mobileStartY + (pill.mobileEndY - pill.mobileStartY) * 0.72;
   const mobileDrift = (index % 2 === 0 ? 1 : -1) * (2.6 + (index % 3) * 1.1);
   const mobileRotationDirection = index % 2 === 0 ? 1 : -1;
-  const currentViewportHeight = typeof window === 'undefined' ? viewportHeightRef.current : window.innerHeight;
-  const mobileAnimationStart = 984 - currentViewportHeight * 0.52 + mobileDelayDistance;
+  const mobileAnimationStart = 984 - (viewportHeight || 667) * 0.52 + mobileDelayDistance;
   const mobileProgress = Math.max(0, Math.min(1, (mobileScrollY - mobileAnimationStart) / mobileFallDistance));
   const mobileEasedProgress = 1 - Math.pow(1 - mobileProgress, 2.7);
   const mobileX = pill.mobileStartX
@@ -734,26 +735,11 @@ function FeaturePillBridge() {
   const bridgeRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const [mobileScrollY, setMobileScrollY] = useState(0);
-  const [driverReady, setDriverReady] = useState(false);
+  const driverReady = true;
 
-  useEffect(() => {
-    let animationFrame = 0;
-    let lastScrollY = -1;
-    setDriverReady(true);
-
-    const updateMobileScroll = () => {
-      if (window.innerWidth < 640 && window.scrollY !== lastScrollY) {
-        lastScrollY = window.scrollY;
-        setMobileScrollY(lastScrollY);
-      }
-
-      animationFrame = window.requestAnimationFrame(updateMobileScroll);
-    };
-
-    updateMobileScroll();
-
-    return () => window.cancelAnimationFrame(animationFrame);
-  }, []);
+  useMotionValueEvent(scrollY, 'change', (latest) => {
+    if (window.innerWidth < 640) setMobileScrollY(latest);
+  });
 
   return (
     <div ref={bridgeRef} data-qw-pill-driver-ready={driverReady ? 'true' : 'false'} className="qw-feature-pill-bridge pointer-events-none absolute inset-x-0 top-[892px] z-30 h-[760px] overflow-visible sm:top-[calc(100svh+3rem)] sm:h-[800px] lg:top-[810px]" aria-hidden="true">

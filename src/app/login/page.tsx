@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Heart, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPublicRedirectUrl } from '@/lib/site-url';
-import { getClientAccountProfileForIntent, getClientAdminStatus, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
+import { getClientAccountProfileForIntent, getClientAdminStatus, getPostLoginRedirect, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
     'exchange-failed': 'Google sign in could not be completed. Please try again from this page.',
@@ -37,7 +37,7 @@ export default function LoginPage() {
         return getSafeAppPath(new URLSearchParams(window.location.search).get('next'), '/dashboard');
     };
 
-    const resolvePostAuthPath = async (token: string, nextPath: string, userEmail?: string | null) => {
+    const resolvePostAuthPath = async (token: string, nextPath: string) => {
         if (await getClientAdminStatus(token)) {
             const safeNext = getSafeAppPath(nextPath, '/dashboard');
             return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
@@ -45,7 +45,7 @@ export default function LoginPage() {
 
         try {
             const profile = await getClientAccountProfileForIntent(token, nextPath);
-            return getRoleAwareRedirect(profile?.account_type, nextPath);
+            return getPostLoginRedirect(profile, nextPath);
         } catch {
             // Gracefully degrade — if account profile table is missing, go to default path
             return getSafeAppPath(nextPath, '/dashboard');
@@ -89,7 +89,7 @@ export default function LoginPage() {
 
             const token = data.session?.access_token;
             const redirectPath = token
-                ? await resolvePostAuthPath(token, getSafeNextPath(), data.user?.email)
+                ? await resolvePostAuthPath(token, getSafeNextPath())
                 : getRoleAwareRedirect(null, getSafeNextPath());
 
             router.replace(redirectPath);

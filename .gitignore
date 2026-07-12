@@ -49,6 +49,7 @@ test-write.txt
 
 # env files
 .env*
+!.env.example
 
 # vercel
 .vercel
