@@ -47,8 +47,9 @@ export default function LoginPage() {
             const profile = await getClientAccountProfileForIntent(token, nextPath);
             return getPostLoginRedirect(profile, nextPath);
         } catch {
-            // Gracefully degrade — if account profile table is missing, go to default path
-            return getSafeAppPath(nextPath, '/dashboard');
+            // Gracefully degrade — if account profile table is missing or API fails,
+            // send to welcome dashboard (not builder) so returning users see their weddings.
+            return '/dashboard';
         }
     };
 
@@ -220,7 +221,7 @@ export default function LoginPage() {
                             className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-black text-white hover:bg-gray-800 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                                <path d="M17.05 20.28c-.96.95-2.05 1.72-3.17 1.72-1.21 0-1.63-.73-3.08-.73-1.47 0-1.94.71-3.08.73-1.08 0-2.31-.89-3.23-1.83C2.59 18.25 1 15.11 1 12.18c0-4.63 3.01-7.07 5.95-7.07 1.56 0 3.04.98 4.02.98.96 0 2.76-1.16 4.67-1.16 2.01 0 3.51.74 4.54 2.22-4.14 2-.96 7.42 2.62 9 a8.5 8.5 0 0 1-1.75 4.13zM12.03 5.09c.04-2.36 1.96-4.22 4.21-4.22.25 0 .5.03.73.08a4.1 4.1 0 0 1-4.94 4.14z"/>
+                                <path d="M17.05 20.28c-.96.95-2.05 1.72-3.17 1.72-1.21 0-1.63-.73-3.08-.73-1.47 0-1.94.71-3.08.73-1.08 0-2.31-.89-3.23-1.83C2.59 18.25 1 15.11 1 12.18c0-4.63 3.01-7.07 5.95-7.07 1.56 0 3.04.98 4.02.98.96 0 2.76-1.16 4.67-1.16 2.01 0 3.51.74 4.54 2.22-4.14 2-.96 7.42 2.62 9 a8.5 8.5 0 0 1-1.75 4.13zM12.03 5.09c.04-2.36 1.96-4.22 4.21-4.22.25 0 .5.03.73.08a4.1 4.1 0 0 1-4.94 4.14z" />
                             </svg>
                             Apple
                         </button>

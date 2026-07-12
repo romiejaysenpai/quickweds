@@ -54,8 +54,9 @@ export default function AuthCallbackPage() {
                 const profile = await getClientAccountProfileForIntent(token, nextPath);
                 return getPostLoginRedirect(profile, nextPath);
             } catch {
-                // Gracefully degrade — if account profile table is missing, go to default path
-                return getSafeAppPath(nextPath, '/dashboard');
+                // Gracefully degrade — if account profile table is missing or API fails,
+                // send to welcome dashboard (not builder) so returning users see their weddings.
+                return '/dashboard';
             }
         };
 
