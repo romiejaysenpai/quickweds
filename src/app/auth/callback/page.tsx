@@ -45,19 +45,13 @@ export default function AuthCallbackPage() {
         };
 
         const resolvePostAuthPath = async (token: string, nextPath: string) => {
-            if (await getClientAdminStatus(token)) {
-                const safeNext = getSafeAppPath(nextPath, '/dashboard');
-                return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
+            // Always send users to the welcome dashboard after login.
+            // The dashboard page handles showing the correct view based on user state.
+            // Only honor onboarding paths for new users.
+            if (nextPath.startsWith('/onboarding/account-type')) {
+                return nextPath;
             }
-
-            try {
-                const profile = await getClientAccountProfileForIntent(token, nextPath);
-                return getPostLoginRedirect(profile, nextPath);
-            } catch {
-                // Gracefully degrade — if account profile table is missing or API fails,
-                // send to welcome dashboard (not builder) so returning users see their weddings.
-                return '/dashboard';
-            }
+            return '/dashboard';
         };
 
         const finishSignIn = async (user: User, token: string, nextPath: string) => {

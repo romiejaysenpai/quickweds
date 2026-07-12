@@ -88,10 +88,14 @@ export default function LoginPage() {
             });
             if (error) throw error;
 
-            const token = data.session?.access_token;
-            const redirectPath = token
-                ? await resolvePostAuthPath(token, getSafeNextPath())
-                : getRoleAwareRedirect(null, getSafeNextPath());
+            // Always send returning users to the welcome dashboard.
+            // The dashboard page itself handles showing the correct view
+            // (wedding list, empty state, or onboarding) based on the user's profile.
+            // Only honor the `next` param for onboarding-related paths.
+            const nextPath = getSafeNextPath();
+            const redirectPath = nextPath.startsWith('/onboarding/account-type')
+                ? nextPath
+                : '/dashboard';
 
             router.replace(redirectPath);
         } catch (err: any) {
