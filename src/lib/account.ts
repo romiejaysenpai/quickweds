@@ -66,6 +66,20 @@ export function getRoleAwareRedirect(accountType?: AccountType | null, requested
     return isPathAllowedForAccountType(safeNext, accountType) ? safeNext : defaultPath;
 }
 
+export function getPostLoginRedirect(profile?: AccountProfile | null, requestedPath?: string | null) {
+    if (!profile?.account_type) {
+        return getRoleAwareRedirect(null, requestedPath);
+    }
+
+    const safeNext = getSafeAppPath(requestedPath, getDefaultRoleRedirect(profile.account_type));
+
+    if (profile.account_type === 'couple' && safeNext.startsWith('/builder')) {
+        return '/dashboard';
+    }
+
+    return getRoleAwareRedirect(profile.account_type, safeNext);
+}
+
 export async function getClientAccountProfile(token: string) {
     const response = await fetch('/api/account/profile', {
         headers: { Authorization: `Bearer ${token}` },
