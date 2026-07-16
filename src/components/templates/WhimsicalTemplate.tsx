@@ -1,15 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { Heart } from 'lucide-react';
-import { 
-    VideoSection, 
-    BioSection, 
-    DetailsSection, 
-    CountdownTimer, 
-    TimelineSection, 
-    GallerySection, 
-    GiftSection 
+import {
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    CountdownTimer,
+    TimelineSection,
+    GallerySection,
+    GiftSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -55,12 +56,23 @@ export default function WhimsicalTemplate({ wedding, gallery, isExpired }: any) 
             <section className="min-h-screen py-20 flex flex-col items-center justify-center px-4 sm:px-6 text-center relative z-10">
                 <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", damping: 12 }}>
                     <div className="mb-8 sm:mb-12 md:mb-16 lg:mb-16 relative group">
-                        <div className="w-40 sm:w-48 md:w-56 lg:w-64 h-40 sm:h-48 md:h-56 lg:h-64 rounded-full border-[12px] border-white shadow-2xl overflow-hidden mx-auto rotate-6 group-hover:rotate-0 transition-transform duration-700">
-                            <img src={wedding.couple_photo || wedding.hero_image || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="w-full h-full object-cover scale-125" />
+                        <div className="w-40 sm:w-48 md:w-56 lg:w-64 h-40 sm:h-48 md:h-56 lg:h-64 rounded-full border-[12px] border-white shadow-2xl overflow-hidden mx-auto rotate-6 group-hover:rotate-0 transition-transform duration-700 relative">
+                            <Image
+                                src={wedding.couple_photo || wedding.hero_image || '/logo.png'}
+                                alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                                priority
+                                fill
+                                sizes="250px"
+                                className="object-cover scale-125"
+                            />
                         </div>
-                        <div className="absolute -top-8 -right-8 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-xl animate-bounce">
+                        <motion.div
+                            animate={{ y: [0, -8, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                            className="absolute -top-8 -right-8 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-xl"
+                        >
                             <Heart className="w-8 h-8 text-primary fill-primary" />
-                        </div>
+                        </motion.div>
                     </div>
 
                     <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl lg:text-[12vw] font-serif leading-none tracking-tighter text-[#4A4444] mb-8 drop-shadow-[0_5px_15px_rgba(0,0,0,0.05)]">
@@ -71,7 +83,8 @@ export default function WhimsicalTemplate({ wedding, gallery, isExpired }: any) 
                     <motion.a
                         whileHover={{ scale: 1.1, rotate: -2 }}
                         href="#rsvp"
-                        className="px-6 sm:px-8 md:px-12 py-3 sm:py-4 md:py-5 min-h-[44px] flex items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-white font-black tracking-widest uppercase text-xs shadow-[0_10px_30px_rgba(227,166,193,0.4)]"
+                        aria-label="Count Me In - RSVP"
+                        className="px-6 sm:px-8 md:px-12 py-3 sm:py-4 md:py-5 min-h-[44px] inline-flex items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-white font-black tracking-widest uppercase text-xs shadow-[0_10px_30px_rgba(227,166,193,0.4)]"
                     >
                         Count Me In!
                     </motion.a>

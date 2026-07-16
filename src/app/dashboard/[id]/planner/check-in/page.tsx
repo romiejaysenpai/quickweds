@@ -1,10 +1,12 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, Loader2, Search, Undo2, Users } from 'lucide-react';
+import { ArrowLeft, Camera, CheckCircle2, Loader2, Search, Undo2 } from 'lucide-react';
 import { getCachedSession } from '@/lib/session-cache';
+import GuestQrScanner from '@/components/dashboard/GuestQrScanner';
 
 type CheckInGuest = {
     id: string;
@@ -16,6 +18,11 @@ type CheckInGuest = {
     partySize?: number;
 };
 
+async function getToken() {
+    const { data } = await getCachedSession();
+    return data.session?.access_token || '';
+}
+
 export default function PlannerCheckInPage() {
     const params = useParams<{ id: string }>();
     const weddingId = params?.id || '';
@@ -24,6 +31,9 @@ export default function PlannerCheckInPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [status, setStatus] = useState('');
+    const [scannerOpen, setScannerOpen] = useState(false);
+    const lastScanRef = useRef('');
 
     const checkedInCount = guests.filter((guest) => guest.checked_in_at).length;
     const filteredGuests = useMemo(() => {
@@ -37,12 +47,7 @@ export default function PlannerCheckInPage() {
         ].some((value) => String(value || '').toLowerCase().includes(query))).slice(0, 80);
     }, [guests, lookup]);
 
-    async function getToken() {
-        const { data } = await getCachedSession();
-        return data.session?.access_token || '';
-    }
-
-    async function loadGuests() {
+    const loadGuests = useCallback(async () => {
         const token = await getToken();
         if (!token) {
             setError('Please sign in again.');
@@ -64,17 +69,18 @@ export default function PlannerCheckInPage() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [weddingId]);
 
     useEffect(() => {
         if (weddingId) void loadGuests();
-    }, [weddingId]);
+    }, [weddingId, loadGuests]);
 
-    async function updateCheckIn(payload: { rsvpId?: string; lookup?: string; undo?: boolean }) {
+    const updateCheckIn = useCallback(async (payload: { rsvpId?: string; lookup?: string; undo?: boolean }) => {
         const token = await getToken();
         if (!token) return alert('Please sign in again.');
         setSaving(true);
         setError('');
+        setStatus('');
         try {
             const response = await fetch('/api/seating/check-in', {
                 method: 'POST',
@@ -82,10 +88,14 @@ export default function PlannerCheckInPage() {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ weddingId, source: 'staff_search', ...payload }),
+                body: JSON.stringify({ weddingId, source: payload.lookup ? 'qr_or_search' : 'staff_search', ...payload }),
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'Unable to update check-in.');
+            const guestName = data.guest?.guest_name || 'Guest';
+            if (data.state === 'already_checked_in') setStatus(`${guestName} was already checked in.`);
+            else if (data.state === 'check_in_undone') setStatus(`${guestName} check-in was undone.`);
+            else setStatus(`${guestName} is checked in.`);
             await loadGuests();
             if (payload.lookup) setLookup('');
         } catch (err) {
@@ -95,7 +105,21 @@ export default function PlannerCheckInPage() {
         } finally {
             setSaving(false);
         }
-    }
+    }, [loadGuests, weddingId]);
+
+    const closeScanner = useCallback(() => {
+        setScannerOpen(false);
+        lastScanRef.current = '';
+    }, []);
+
+    const handleScannerScan = useCallback((rawValue: string) => {
+        const value = rawValue.trim();
+        if (!value || value === lastScanRef.current) return;
+        lastScanRef.current = value;
+        setLookup(value);
+        setScannerOpen(false);
+        void updateCheckIn({ lookup: value });
+    }, [updateCheckIn]);
 
     async function submitLookup(event: FormEvent) {
         event.preventDefault();
@@ -123,7 +147,16 @@ export default function PlannerCheckInPage() {
                         </div>
                     </div>
 
-                    <form onSubmit={submitLookup} className="mt-6 flex flex-col gap-3 sm:flex-row">
+                    <form onSubmit={submitLookup} className="mt-6 grid gap-3 lg:grid-cols-[auto,1fr,auto]">
+                        <button
+                            type="button"
+                            onClick={() => setScannerOpen(true)}
+                            disabled={saving}
+                            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-5 text-sm font-black text-primary transition hover:bg-primary hover:text-white disabled:opacity-50"
+                        >
+                            <Camera className="h-4 w-4" />
+                            Scan Camera
+                        </button>
                         <input value={lookup} onChange={(event) => setLookup(event.target.value)} placeholder="Scan/paste QR link, guest code, or search name" className="min-h-[48px] flex-1 rounded-2xl border border-border bg-white px-4 text-sm font-bold outline-none focus:border-primary" />
                         <button disabled={saving || !lookup.trim()} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-bold text-white disabled:opacity-50">
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
@@ -131,7 +164,13 @@ export default function PlannerCheckInPage() {
                         </button>
                     </form>
 
-                    {error && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">{error}</div>}
+                    {scannerOpen && <GuestQrScanner onClose={closeScanner} onScan={handleScannerScan} busy={saving} />}
+
+                    {(error || status) && (
+                        <div className={`mt-4 rounded-2xl border p-4 text-sm font-semibold ${error ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+                            {error || status}
+                        </div>
+                    )}
 
                     <div className="mt-6 divide-y divide-border overflow-hidden rounded-2xl border border-border">
                         {loading ? (

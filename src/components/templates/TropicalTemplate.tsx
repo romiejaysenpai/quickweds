@@ -1,15 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { Camera } from 'lucide-react';
-import { 
-    VideoSection, 
-    BioSection, 
-    DetailsSection, 
-    CountdownTimer, 
-    TimelineSection, 
-    GallerySection, 
-    GiftSection 
+import {
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    CountdownTimer,
+    TimelineSection,
+    GallerySection,
+    GiftSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -43,23 +44,35 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: any) {
                     <motion.a
                         whileHover={{ y: -10, boxShadow: "0 20px 40px rgba(0,105,92,0.2)" }}
                         href="#rsvp"
-                        className="px-8 sm:px-12 md:px-20 lg:px-20 py-3 sm:py-4 md:py-6 lg:py-6 min-h-[44px] flex items-center justify-center bg-[#00695c] text-white rounded-full font-black tracking-widest uppercase text-xs"
+                        aria-label="Pack Your Bags - RSVP"
+                        className="px-8 sm:px-12 md:px-20 lg:px-20 py-3 sm:py-4 md:py-6 lg:py-6 min-h-[44px] flex items-center justify-center bg-[#00695c] text-white rounded-full font-black tracking-widest uppercase text-xs w-max mx-auto"
                     >
                         Pack Your Bags
                     </motion.a>
                 </motion.div>
 
                 {/* Wave Bottom Decoration */}
-                <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none opacity-20">
+                <motion.div
+                    animate={{ x: ["0%", "-5%", "0%"] }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute bottom-0 left-0 w-[110%] overflow-hidden leading-none opacity-20"
+                >
                     <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-20 sm:h-24 md:h-32 lg:h-32 fill-[#00695c]"><path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" /></svg>
-                </div>
+                </motion.div>
             </section>
 
             <section className="py-16 sm:py-24 md:py-32 lg:py-32 px-4 sm:px-6">
                 <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 sm:gap-12 md:gap-16 lg:gap-24 items-center">
-                    <div className="w-full md:w-1/2 relative">
+                    <div className="w-full md:w-1/2 relative aspect-[4/5]">
                         <div className="absolute -inset-4 border-2 border-[#00695c]/20 rounded-[4rem] rotate-3 -z-10" />
-                        <img src={wedding.hero_image || wedding.couple_photo || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="w-full aspect-[4/5] object-cover rounded-[3.5rem] soft-shadow" />
+                        <Image
+                            src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                            priority
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover rounded-[3.5rem] soft-shadow"
+                        />
                     </div>
                     <div className="w-full md:w-1/2 space-y-8 sm:space-y-10 md:space-y-12 lg:space-y-12">
                         <Camera className="w-12 sm:w-14 md:w-16 lg:w-16 h-12 sm:h-14 md:h-16 lg:h-16 text-primary" />

@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { MonogramMark } from '../MonogramMark';
 import { 
     VideoSection, 
@@ -18,24 +19,25 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
         return (
             <div className="bg-[#f7f3ee] pb-24 text-[#201c19]">
                 <section className="relative min-h-screen overflow-hidden px-5 py-10 md:px-10">
-                    <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl grid-cols-1 gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+                    <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl grid-cols-1 md:grid-cols-2 gap-8 lg:grid-cols-[1.08fr_0.92fr]">
                         <motion.div
                             initial={{ opacity: 0, y: 18 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.9 }}
-                            className="relative min-h-[58vh] overflow-hidden bg-black lg:min-h-full"
+                            className="relative min-h-[58vh] overflow-hidden bg-black md:min-h-full"
                         >
-                            <img
+                            <Image
                                 src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
                                 alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                                loading="eager"
-                                decoding="async"
-                                className="h-full w-full object-cover opacity-90"
+                                priority
+                                fill
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                                className="object-cover opacity-90"
                             />
                             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white md:p-10">
                                 <p className="text-[10px] font-black uppercase tracking-[0.42em] opacity-70">Wedding photography edition</p>
                                 <p className="mt-3 max-w-lg font-serif text-2xl italic leading-tight md:text-4xl">
-                                    {wedding.quote || 'Every frame, a quiet promise.'}
+                                    {wedding.quote ? <>&ldquo;{wedding.quote}&rdquo;</> : <>&ldquo;Every frame, a quiet promise.&rdquo;</>}
                                 </p>
                             </div>
                         </motion.div>
@@ -80,7 +82,7 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                                     </p>
                                     <p className="text-sm text-[#5d554f]">{wedding.venue_name}</p>
                                 </div>
-                                <a href="#rsvp" className="inline-flex min-h-[48px] items-center justify-center bg-[#201c19] px-7 text-[10px] font-black uppercase tracking-[0.3em] text-white transition-colors hover:bg-primary">
+                                <a href="#rsvp" aria-label="RSVP" className="inline-flex min-h-[48px] items-center justify-center bg-[#201c19] px-7 text-[10px] font-black uppercase tracking-[0.3em] text-white transition-colors hover:bg-primary">
                                     RSVP
                                 </a>
                             </div>
@@ -119,13 +121,21 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                     <p className="rotate-90 whitespace-nowrap">ISSUE NO. 01</p>
                 </div>
                 <div className="col-span-1 lg:col-span-11 flex flex-col justify-end px-4 sm:px-6 md:px-12 lg:px-32 py-12 sm:py-16 md:py-24 lg:py-32 relative overflow-hidden group">
-                    <motion.img
+                    <motion.div
                         initial={{ scale: 1.1, filter: 'blur(20px)' }}
                         animate={{ scale: 1, filter: 'blur(0px)' }}
                         transition={{ duration: 1.5 }}
-                        src={wedding.hero_image || wedding.couple_photo}
-                        className="absolute inset-0 w-full h-full object-cover -z-10 brightness-[0.6] group-hover:scale-105 transition-transform duration-1000"
-                    />
+                        className="absolute inset-0 -z-10"
+                    >
+                        <Image
+                            src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                            priority
+                            fill
+                            sizes="100vw"
+                            className="object-cover brightness-[0.6] group-hover:scale-105 transition-transform duration-1000"
+                        />
+                    </motion.div>
                     <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5, duration: 1 }} className="text-white relative z-10 max-w-6xl">
                         {wedding.logo_initials && (
                             <MonogramMark

@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { sendEmail } from '@/lib/email';
-import { getWelcomeEmailHtml } from '@/lib/email-templates';
+import { getWelcomeEmailReact } from '@/emails/quickweds-transactional';
 import { getPrimaryAdminEmail } from '@/lib/admin';
-import { createRateLimitMiddleware, sanitizeEmail, sanitizeInput } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, sanitizeEmail, sanitizeInput } from '@/lib/rate-limit';
 
 type SignupRecord = {
   email?: string;
@@ -118,7 +118,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const userWelcomePromise = sendEmail({
       to: userEmail,
       subject: `Welcome to QuickWeds, ${userName}!`,
-      html: getWelcomeEmailHtml(userName),
+      react: getWelcomeEmailReact(userName),
     });
 
     const ghlPromise = sendSignupToGhl(record, signupDate);

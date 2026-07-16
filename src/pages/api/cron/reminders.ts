@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/lib/email';
-import { getGuestReminderHtml } from '@/lib/email-templates';
+import { getGuestReminderReact } from '@/emails/quickweds-transactional';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 
 let supabaseAdmin: any = null;
@@ -77,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         let sentCount = 0;
         for (const guest of eligibleGuests) {
-          const html = getGuestReminderHtml({
+          const react = getGuestReminderReact({
             guestName: guest.guest_name,
             brideName: wedding.bride_name,
             groomName: wedding.groom_name,
@@ -93,7 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           await sendEmail({
             to: guest.guest_email,
             subject: `Reminder: ${wedding.bride_name} & ${wedding.groom_name}'s Wedding is Almost Here!`,
-            html
+            react
           });
 
           await supabase.from('rsvp_reminders').insert({

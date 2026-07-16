@@ -148,7 +148,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en">
       <body className={`
         ${inter.variable} ${montserrat.variable} ${playfair.variable}
         antialiased

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { rsvpNotifySchema } from '@/lib/validations';
-import { createRateLimitMiddleware, sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
 import { sendRsvpNotifications } from '@/lib/rsvp-notifications';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -61,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const db = getSupabaseAdminClient() as any;
         const { data: wedding, error: weddingError } = await db
             .from('weddings')
-            .select('id, user_id, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp')
+            .select('id, user_id, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos')
             .eq('id', safeWeddingId)
             .is('deleted_at', null)
             .maybeSingle();

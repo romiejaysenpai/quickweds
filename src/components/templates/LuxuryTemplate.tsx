@@ -1,14 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { 
-    VideoSection, 
-    BioSection, 
-    DetailsSection, 
-    CountdownTimer, 
-    TimelineSection, 
-    GallerySection, 
-    GiftSection 
+import Image from 'next/image';
+import {
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    CountdownTimer,
+    TimelineSection,
+    GallerySection,
+    GiftSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -23,7 +24,7 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                             initial={{ opacity: 0, y: 24 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 1 }}
-                            className="order-2 lg:order-1"
+                            className="order-2 lg:order-1 backdrop-blur-md bg-white/40 p-8 lg:p-12 rounded-3xl border border-white/50 shadow-xl"
                         >
                             <p className="text-[10px] font-bold uppercase tracking-[0.42em] text-[#b9975b]">
                                 Planners of a beautiful day
@@ -42,7 +43,7 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                                 {wedding.story || 'An elegant celebration shaped with intention, beauty, and every thoughtful detail in place.'}
                             </p>
                             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                                <a href="#rsvp" className="inline-flex min-h-[48px] items-center justify-center bg-[#2b2520] px-8 text-xs font-bold uppercase tracking-[0.28em] text-white transition-all hover:bg-[#b9975b]">
+                                <a href="#rsvp" aria-label="RSVP" className="inline-flex min-h-[48px] items-center justify-center bg-[#2b2520] px-8 text-xs font-bold uppercase tracking-[0.28em] text-white transition-all hover:bg-[#b9975b]">
                                     RSVP
                                 </a>
                                 <a href="#details" className="inline-flex min-h-[48px] items-center justify-center border border-[#b9975b]/50 px-8 text-xs font-bold uppercase tracking-[0.28em] text-[#2b2520] transition-all hover:border-[#2b2520]">
@@ -57,12 +58,13 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                             className="order-1 lg:order-2"
                         >
                             <div className="relative mx-auto aspect-[4/5] max-h-[760px] overflow-hidden border border-[#b9975b]/25 bg-white p-3 shadow-[0_40px_120px_rgba(43,37,32,0.16)]">
-                                <img
+                                <Image
                                     src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
                                     alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                                    loading="eager"
-                                    decoding="async"
-                                    className="h-full w-full object-cover"
+                                    priority
+                                    fill
+                                    sizes="(max-width: 1024px) 100vw, 50vw"
+                                    className="object-cover"
                                 />
                                 <div className="absolute -bottom-px -left-px bg-[#fbf7ef] px-6 py-5">
                                     <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#b9975b]">Est. {new Date(wedding.wedding_date).getFullYear()}</p>
@@ -111,11 +113,18 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                         <p className="text-lg sm:text-xl md:text-xl lg:text-xl font-serif italic mb-12 sm:mb-16 md:mb-20 max-w-sm text-[#C5A059]/60">
                             A celebration of rare elegance and timeless devotion.
                         </p>
-                        <a href="#rsvp" className="px-10 py-5 bg-[#C5A059] text-black font-bold uppercase tracking-[0.3em] text-xs hover:bg-white transition-all shadow-[0_20px_50px_rgba(197,160,89,0.3)]">Request Presence</a>
+                        <a href="#rsvp" aria-label="Request Presence - RSVP" className="px-10 py-5 bg-[#C5A059] text-black font-bold uppercase tracking-[0.3em] text-xs hover:bg-white transition-all shadow-[0_20px_50px_rgba(197,160,89,0.3)]">Request Presence</a>
                     </motion.div>
                 </div>
-                <div className="md:col-span-7 h-[50vh] md:h-full relative overflow-hidden group">
-                    <img src={wedding.hero_image || wedding.couple_photo || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover grayscale brightness-50 group-hover:scale-110 transition-transform duration-[10s]" />
+                <div className="md:col-span-7 h-[50vh] md:h-full relative overflow-hidden group z-0">
+                    <Image
+                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                        priority
+                        fill
+                        sizes="(max-width: 768px) 100vw, 60vw"
+                        className="object-cover grayscale brightness-50 group-hover:scale-110 transition-transform duration-[10s]"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-transparent hidden md:block" />
                     <div className="absolute top-12 right-12 text-right">
                         <p className="text-white text-7xl font-light opacity-20">{new Date(wedding.wedding_date).getFullYear()}</p>

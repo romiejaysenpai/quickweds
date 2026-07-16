@@ -48,6 +48,16 @@ export default function VintageTemplate({ wedding, gallery, isExpired }: Templat
                             })}
                         </p>
                     </div>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1.5, duration: 0.8 }}
+                        className="mt-12"
+                    >
+                        <a href="#rsvp" aria-label="RSVP" className="inline-flex min-h-[44px] items-center justify-center px-10 py-3 uppercase tracking-[0.2em] text-xs font-bold border border-[#5d544b]/40 text-[#5d544b] transition-all hover:bg-[#5d544b] hover:text-[#fdfbf6] rounded-sm">
+                            RSVP
+                        </a>
+                    </motion.div>
                 </motion.div>
             </section>
 

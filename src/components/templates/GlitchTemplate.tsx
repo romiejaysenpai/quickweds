@@ -1,14 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { 
-    VideoSection, 
-    BioSection, 
-    DetailsSection, 
-    CountdownTimer, 
-    TimelineSection, 
-    GallerySection, 
-    GiftSection 
+import Image from 'next/image';
+import {
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    CountdownTimer,
+    TimelineSection,
+    GallerySection,
+    GiftSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -21,7 +22,7 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: any) {
                 <div className="max-w-6xl z-10">
                     <motion.div initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ type: "spring", bounce: 0 }} className="border-l-4 border-green-400 pl-4 sm:pl-6 md:pl-8 mb-8 sm:mb-10 md:mb-12">
                         <p className="text-xs sm:text-sm md:text-base mb-3 sm:mb-4 typing-effect w-fit">INITIALIZING UNION PROTOCOL...</p>
-                        <h1 className="text-2xl sm:text-4xl md:text-6xl lg:text-9xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 mb-3 sm:mb-4 leading-none tracking-tighter filter hue-rotate-90 animate-pulse">
+                        <h1 className="text-2xl sm:text-4xl md:text-6xl lg:text-9xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 mb-3 sm:mb-4 leading-none tracking-tighter filter hue-rotate-90 animate-pulse drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]">
                             {wedding.bride_name}<br />{wedding.groom_name}
                         </h1>
                     </motion.div>
@@ -37,13 +38,20 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: any) {
                         </div>
                     </div>
 
-                    <a href="#rsvp" className="inline-block px-6 sm:px-8 py-3 min-h-[44px] flex items-center bg-green-400 text-black font-black uppercase hover:bg-white hover:text-black hover:shadow-[0_0_20px_rgba(74,222,128,0.5)] transition-all skew-x-[-12deg]">
+                    <a href="#rsvp" aria-label="Confirm Presence - RSVP" className="inline-block px-6 sm:px-8 py-3 min-h-[44px] flex w-max items-center bg-green-400 text-black font-black uppercase hover:bg-white hover:text-black hover:shadow-[0_0_20px_rgba(74,222,128,0.5)] transition-all skew-x-[-12deg]">
                         <span className="inline-block skew-x-[12deg]">Confirm_Presence</span>
                     </a>
                 </div>
 
-                <div className="absolute top-0 right-0 w-full lg:w-1/2 h-full opacity-30 mix-blend-screen pointer-events-none">
-                    <img src={wedding.hero_image || wedding.couple_photo || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="w-full h-full object-cover filter contrast-150 grayscale" />
+                <div className="absolute top-0 right-0 w-full lg:w-1/2 h-full opacity-60 mix-blend-screen pointer-events-none z-0">
+                    <Image
+                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                        priority
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-cover filter contrast-150 grayscale"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-l from-black to-transparent" />
                 </div>
             </section>

@@ -1,16 +1,17 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { Heart } from 'lucide-react';
 import { MonogramMark } from '../MonogramMark';
-import { 
-    VideoSection, 
-    BioSection, 
-    DetailsSection, 
-    CountdownTimer, 
-    TimelineSection, 
-    GallerySection, 
-    GiftSection 
+import {
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    CountdownTimer,
+    TimelineSection,
+    GallerySection,
+    GiftSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -23,7 +24,14 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                 {wedding.teaser_video ? (
                     <video src={wedding.teaser_video} className="absolute inset-0 w-full h-full object-cover opacity-30 grayscale contrast-125" autoPlay muted loop />
                 ) : (
-                    <img src={wedding.hero_image || wedding.couple_photo || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-20 grayscale brightness-50" />
+                    <Image
+                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                        priority
+                        fill
+                        sizes="100vw"
+                        className="object-cover opacity-20 grayscale brightness-50 z-0"
+                    />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-[#121212]" />
 
@@ -63,6 +71,18 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                         <p className="text-sm uppercase tracking-[1em] font-black">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                         <div className="w-24 h-[1px] bg-primary/40" />
                     </div>
+                </motion.div>
+
+                {/* RSVP CTA */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.5, duration: 1 }}
+                    className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20"
+                >
+                    <a href="#rsvp" aria-label="Attend Royal Celebration - RSVP" className="inline-flex min-h-[48px] items-center justify-center px-10 py-4 border-2 border-[#f2d0a4]/50 text-[#f2d0a4] font-bold uppercase tracking-[0.3em] text-xs hover:bg-[#f2d0a4] hover:text-[#121212] transition-all">
+                        Attend Celebration
+                    </a>
                 </motion.div>
             </section>
 

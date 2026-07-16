@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 import {
     BioSection,
@@ -37,26 +38,29 @@ const itemVariants = {
 
 export default function ClassicTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     const motifColor = wedding.motif_color || '#C5A059';
-    
+
     return (
         <>
             <section className="h-screen relative flex items-center justify-center overflow-hidden">
                 {wedding.hero_image ? (
-                    <img
-                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
-                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                        loading="eager"
-                        decoding="async"
-                        className="absolute inset-0 w-full h-full object-cover brightness-75 scale-105"
-                    />
+                    <div className="absolute inset-0 z-0">
+                        <Image
+                            src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                            priority
+                            fill
+                            sizes="100vw"
+                            className="object-cover brightness-75 scale-105"
+                        />
+                    </div>
                 ) : (
-                    <div 
-                        className="absolute inset-0" 
+                    <div
+                        className="absolute inset-0"
                         style={{ backgroundColor: motifColor + '20' }}
                     />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
-                
+
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -68,19 +72,19 @@ export default function ClassicTemplate({ wedding, gallery, isExpired }: Templat
                         initial="hidden"
                         animate="visible"
                     >
-                        <motion.span 
+                        <motion.span
                             variants={itemVariants}
                             className="text-xs sm:text-sm uppercase tracking-[0.4em] font-bold mb-6 sm:mb-7 md:mb-8 block opacity-80"
                         >
                             The Wedding of
                         </motion.span>
-                        
-                        <motion.h1 
+
+                        <motion.h1
                             variants={itemVariants}
                             className="text-3xl sm:text-5xl md:text-7xl lg:text-9xl font-serif mb-8 sm:mb-10 md:mb-12 leading-tight"
                         >
                             {wedding.bride_name} <br />
-                            <span 
+                            <span
                                 className="text-xl sm:text-3xl md:text-5xl italic font-light serif"
                                 style={{ color: motifColor }}
                             >
@@ -89,23 +93,33 @@ export default function ClassicTemplate({ wedding, gallery, isExpired }: Templat
                             <br />
                             {wedding.groom_name}
                         </motion.h1>
-                        
-                        <motion.div 
+
+                        <motion.div
                             variants={itemVariants}
                             className="w-12 sm:w-16 md:w-20 h-[1px] mx-auto mb-8 sm:mb-10 md:mb-12"
                             style={{ backgroundColor: motifColor }}
                         />
-                        
-                        <motion.p 
+
+                        <motion.p
                             variants={itemVariants}
-                            className="text-lg sm:text-xl md:text-2xl font-serif italic tracking-wide"
+                            className="text-lg sm:text-xl md:text-2xl font-serif italic tracking-wide mb-8"
                         >
                             {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'long' })}
                         </motion.p>
+
+                        <motion.div variants={itemVariants}>
+                            <a
+                                href="#rsvp"
+                                aria-label="Kindly Respond - RSVP"
+                                className="inline-flex min-h-[44px] items-center justify-center px-10 py-3 rounded-full border border-white/50 bg-black/20 backdrop-blur-sm text-white hover:bg-white hover:text-black transition-colors uppercase tracking-widest text-xs font-bold"
+                            >
+                                Kindly Respond
+                            </a>
+                        </motion.div>
                     </motion.div>
                 </motion.div>
-                
-                <motion.div 
+
+                <motion.div
                     className="absolute bottom-12 left-1/2 -translate-x-1/2"
                     animate={{ y: [0, 10, 0] }}
                     transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}

@@ -16,6 +16,11 @@ if (process.env.NODE_ENV !== 'production' || process.env.VALIDATE_ENV === 'true'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // A lockfile also exists in the parent directory. Pinning the project root
+  // keeps Turbopack from scanning and resolving modules from the wrong tree.
+  turbopack: {
+    root: process.cwd(),
+  },
   async headers() {
     return [
       {
@@ -67,6 +72,7 @@ const nextConfig: NextConfig = {
   },
   images: {
     formats: ['image/avif', 'image/webp'],
+    qualities: [75, 85],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       {

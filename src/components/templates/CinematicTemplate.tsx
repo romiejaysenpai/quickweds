@@ -1,14 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { 
-    VideoSection, 
-    BioSection, 
-    DetailsSection, 
-    CountdownTimer, 
-    TimelineSection, 
-    GallerySection, 
-    GiftSection 
+import Image from 'next/image';
+import {
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    CountdownTimer,
+    TimelineSection,
+    GallerySection,
+    GiftSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -16,9 +17,18 @@ export default function CinematicTemplate({ wedding, gallery, isExpired }: any) 
     return (
         <div className="bg-black text-white font-sans selection:bg-primary/50 overflow-hidden pb-24">
             <section className="min-h-screen relative flex items-center justify-center">
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} transition={{ duration: 3 }} className="absolute inset-0">
-                    <img src={wedding.hero_image || wedding.couple_photo || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="w-full h-full object-cover grayscale brightness-75" />
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} transition={{ duration: 3 }} className="absolute inset-0 z-0">
+                    <Image
+                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                        priority
+                        fill
+                        sizes="100vw"
+                        className="object-cover grayscale brightness-75"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black" />
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.4)_0%,transparent_70%)]" />
+
                 </motion.div>
 
                 <div className="z-10 text-center px-4 sm:px-6 max-w-6xl">

@@ -148,10 +148,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 main section[id] {
   scroll-margin-top: 5.5rem;
 }
@@ -667,9 +663,9 @@ button {
   outline-offset: 2px;
 }
 
-/* Smooth scrolling on mobile */
+/* Mobile selection and callout behavior. Individual navigation controls opt
+   into smooth scrolling so programmatic jumps are never artificially delayed. */
 html {
-  scroll-behavior: smooth;
   -webkit-touch-callout: none;
 }
 

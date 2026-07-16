@@ -1,35 +1,37 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { SharedNewSections } from './shared';
-import { 
-    VideoSection, 
-    BioSection, 
+import {
+    VideoSection,
+    BioSection,
     DetailsSection,
-    TimelineSection, 
-    GallerySection, 
+    TimelineSection,
+    GallerySection,
     GiftSection,
-    CountdownTimer 
+    CountdownTimer
 } from '../wedding';
 import type { TemplateProps } from '@/types/wedding';
 
 export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     const motifColor = wedding.motif_color || '#C5A059';
-    
+
     return (
         <div className="bg-white pb-24">
             <section className="min-h-[85vh] flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-white via-primary/5 to-white" />
                 {wedding.hero_image && (
-                    <img 
-                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'} 
-                        alt=""
-                        loading="eager"
-                        decoding="async"
-                        className="absolute inset-0 w-full h-full object-cover opacity-10" 
+                    <Image
+                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                        alt={`${wedding.bride_name} and ${wedding.groom_name} wedding`}
+                        priority
+                        fill
+                        sizes="100vw"
+                        className="object-cover opacity-10 z-0"
                     />
                 )}
-                
+
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -53,8 +55,9 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                         at {wedding.venue_name}
                     </p>
                     <div className="mt-8">
-                        <a 
-                            href="#rsvp" 
+                        <a
+                            href="#rsvp"
+                            aria-label="RSVP Here"
                             className="inline-flex items-center justify-center px-12 sm:px-16 py-5 sm:py-6 font-bold uppercase tracking-widest text-sm sm:text-base hover:scale-105 transition-all shadow-xl min-h-[56px]"
                             style={{ backgroundColor: motifColor, color: 'white' }}
                         >
@@ -65,7 +68,7 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                         Your presence is our greatest gift
                     </p>
                 </motion.div>
-                
+
                 <div className="absolute bottom-16 left-1/2 -translate-x-1/2 animate-bounce">
                     <div className="w-[1px] h-12 opacity-30" style={{ backgroundColor: motifColor }} />
                 </div>

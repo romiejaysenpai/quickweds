@@ -447,6 +447,11 @@ function isMissingOptionalWeddingColumnError(error: unknown, column: string) {
     );
 }
 
+const MAX_IMAGE_FILE_BYTES = 12 * 1024 * 1024;
+const MAX_FREE_VIDEO_FILE_BYTES = 50 * 1024 * 1024;
+const MAX_PREMIUM_VIDEO_FILE_BYTES = 100 * 1024 * 1024;
+const MAX_CONCURRENT_UPLOADS = 3;
+
 export default function BuilderForm() {
     const router = useRouter();
     const { user, isAdmin, loading: authLoading } = useAuth();
@@ -549,6 +554,15 @@ export default function BuilderForm() {
         galleryImages: [],
         receptionVenuePhotos: [],
     });
+    const previewObjectUrlsRef = useRef(new Set<string>());
+
+    useEffect(() => {
+        const objectUrls = previewObjectUrlsRef.current;
+        return () => {
+            for (const url of objectUrls) URL.revokeObjectURL(url);
+            objectUrls.clear();
+        };
+    }, []);
 
     const [isPremium, setIsPremium] = useState(true);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
@@ -911,52 +925,75 @@ export default function BuilderForm() {
         }
     };
 
+    const createLocalPreview = (file: File) => {
+        const url = URL.createObjectURL(file);
+        previewObjectUrlsRef.current.add(url);
+        return url;
+    };
+
+    const releaseLocalPreview = (url: string | undefined) => {
+        if (!url || !previewObjectUrlsRef.current.delete(url)) return;
+        URL.revokeObjectURL(url);
+    };
+
+    const validateImageFiles = (files: File[]) => {
+        const invalidType = files.find((file) => !file.type.startsWith('image/'));
+        if (invalidType) {
+            alert(`${invalidType.name} is not a supported image file.`);
+            return false;
+        }
+
+        const oversized = files.find((file) => file.size > MAX_IMAGE_FILE_BYTES);
+        if (oversized) {
+            alert(`${oversized.name} is larger than 12MB. Please resize or compress it before uploading.`);
+            return false;
+        }
+
+        return true;
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
         if (field === 'galleryImages') {
             const newFiles = Array.from(files);
+            if (!validateImageFiles(newFiles)) return;
             if (!isPremium && (mediaFiles.galleryImages.length + newFiles.length) > 12) {
                 alert("Free plan is limited to 12 photos. Please upgrade to Premium for unlimited gallery uploads.");
                 return;
             }
             setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...newFiles] }));
-            newFiles.forEach(file => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setPreviews(prev => ({ ...prev, galleryImages: [...prev.galleryImages, reader.result as string] }));
-                };
-                reader.readAsDataURL(file);
-            });
+            const previewUrls = newFiles.map(createLocalPreview);
+            setPreviews(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...previewUrls] }));
         } else if (field === 'invitationImages') {
             const newFiles = Array.from(files);
+            if (!validateImageFiles(newFiles)) return;
             setMediaFiles(prev => ({ ...prev, invitationImages: [...prev.invitationImages, ...newFiles] }));
-            newFiles.forEach(file => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setPreviews(prev => ({ ...prev, invitationImages: [...prev.invitationImages, reader.result as string] }));
-                };
-                reader.readAsDataURL(file);
-            });
+            const previewUrls = newFiles.map(createLocalPreview);
+            setPreviews(prev => ({ ...prev, invitationImages: [...prev.invitationImages, ...previewUrls] }));
         } else if (field === 'receptionVenuePhotos') {
             const newFiles = Array.from(files);
+            if (!validateImageFiles(newFiles)) return;
             setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, ...newFiles] }));
-            newFiles.forEach(file => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setPreviews(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, reader.result as string] }));
-                };
-                reader.readAsDataURL(file);
-            });
+            const previewUrls = newFiles.map(createLocalPreview);
+            setPreviews(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, ...previewUrls] }));
         } else {
             const file = files[0];
             if (field === 'teaserVideo') {
-                const limit = 50 * 1024 * 1024; // 50MB
-                if (!isPremium && file.size > limit) {
-                    alert("Free plan only supports videos up to 50MB. Please upgrade to Premium to upload larger files.");
+                if (!file.type.startsWith('video/')) {
+                    alert('Please upload a supported video file.');
                     return;
                 }
+                const limit = isPremium ? MAX_PREMIUM_VIDEO_FILE_BYTES : MAX_FREE_VIDEO_FILE_BYTES;
+                if (file.size > limit) {
+                    alert(`Videos must be ${isPremium ? '100MB' : '50MB'} or smaller. Please compress the video and try again.`);
+                    return;
+                }
+            }
+
+            if (['heroImage', 'couplePhoto', 'giftQr', 'invitationImage'].includes(field) && !validateImageFiles([file])) {
+                return;
             }
 
             if (field === 'backgroundMusic') {
@@ -979,11 +1016,11 @@ export default function BuilderForm() {
             setMediaFiles((prev: any) => ({ ...prev, [field]: file }));
 
             if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'teaserVideo' || field === 'backgroundMusic' || field === 'invitationImage') {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setPreviews((prev: any) => ({ ...prev, [field]: reader.result as string }));
-                };
-                reader.readAsDataURL(file);
+                const previewUrl = createLocalPreview(file);
+                setPreviews((prev: any) => {
+                    releaseLocalPreview(prev[field]);
+                    return { ...prev, [field]: previewUrl };
+                });
             }
         }
     };
@@ -991,20 +1028,35 @@ export default function BuilderForm() {
     const removeFile = (field: string, index?: number) => {
         if (field === 'galleryImages' && index !== undefined) {
             setMediaFiles(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }));
-            setPreviews(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }));
+            setPreviews(prev => {
+                releaseLocalPreview(prev.galleryImages[index]);
+                return { ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) };
+            });
         } else if (field === 'invitationImages' && index !== undefined) {
             setMediaFiles(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) }));
-            setPreviews(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) }));
+            setPreviews(prev => {
+                releaseLocalPreview(prev.invitationImages[index]);
+                return { ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) };
+            });
         } else if (field === 'receptionVenuePhotos' && index !== undefined) {
             setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) }));
-            setPreviews(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) }));
+            setPreviews(prev => {
+                releaseLocalPreview(prev.receptionVenuePhotos[index]);
+                return { ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) };
+            });
         } else if (field === 'backgroundMusic') {
             setMediaFiles(prev => ({ ...prev, backgroundMusic: null }));
-            setPreviews(prev => ({ ...prev, backgroundMusic: '' }));
+            setPreviews(prev => {
+                releaseLocalPreview(prev.backgroundMusic);
+                return { ...prev, backgroundMusic: '' };
+            });
             setFormData((prev: any) => ({ ...prev, backgroundMusicEnabled: false }));
         } else {
             setMediaFiles(prev => ({ ...prev, [field]: null }));
-            setPreviews(prev => ({ ...prev, [field]: '' }));
+            setPreviews((prev: any) => {
+                releaseLocalPreview(prev[field]);
+                return { ...prev, [field]: '' };
+            });
         }
     };
 
@@ -1061,21 +1113,40 @@ export default function BuilderForm() {
 
         try {
             const weddingId = editId || uuidv4().slice(0, 8);
+            let activeUploads = 0;
+            const uploadWaiters: Array<() => void> = [];
+            const acquireUploadSlot = async () => {
+                if (activeUploads < MAX_CONCURRENT_UPLOADS) {
+                    activeUploads += 1;
+                    return;
+                }
+                await new Promise<void>((resolve) => uploadWaiters.push(resolve));
+                activeUploads += 1;
+            };
+            const releaseUploadSlot = () => {
+                activeUploads -= 1;
+                uploadWaiters.shift()?.();
+            };
             const uploadToSupabase = async (file: File, folder: string) => {
                 const filename = `${folder}-${file.name.replace(/\s+/g, '_')}`;
                 const filePath = `${user.id}/${weddingId}/${filename}`;
 
-                const { error: uploadError } = await supabase.storage
-                    .from('quickweds')
-                    .upload(filePath, file, { upsert: true });
+                await acquireUploadSlot();
+                try {
+                    const { error: uploadError } = await supabase.storage
+                        .from('quickweds')
+                        .upload(filePath, file, { upsert: true, contentType: file.type });
 
-                if (uploadError) throw uploadError;
+                    if (uploadError) throw uploadError;
 
-                const { data: { publicUrl } } = supabase.storage
-                    .from('quickweds')
-                    .getPublicUrl(filePath);
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('quickweds')
+                        .getPublicUrl(filePath);
 
-                return publicUrl;
+                    return publicUrl;
+                } finally {
+                    releaseUploadSlot();
+                }
             };
 
             // Upload ALL media in parallel including video

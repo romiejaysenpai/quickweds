@@ -1,14 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { 
-    VideoSection, 
-    BioSection, 
-    DetailsSection, 
-    CountdownTimer, 
-    TimelineSection, 
-    GallerySection, 
-    GiftSection 
+import Image from 'next/image';
+import { Leaf } from 'lucide-react';
+import {
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    CountdownTimer,
+    TimelineSection,
+    GallerySection,
+    GiftSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -21,7 +23,9 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: any) {
             <section className="min-h-screen py-16 sm:py-20 md:py-24 lg:py-24 px-4 sm:px-6 flex flex-col items-center justify-center text-center relative z-10">
                 <div className="border-[1px] border-[#2d6a4f]/20 p-3 sm:p-4 rounded-t-full">
                     <div className="border-[1px] border-[#2d6a4f]/40 p-8 sm:p-12 pt-20 sm:pt-24 md:pt-32 rounded-t-full relative bg-white/60 backdrop-blur-sm shadow-xl">
-                        <div className="absolute top-8 sm:top-10 md:top-12 left-1/2 -translate-x-1/2 text-2xl sm:text-3xl md:text-4xl animate-bounce">🌿</div>
+                        <div className="absolute top-8 sm:top-10 md:top-12 left-1/2 -translate-x-1/2 text-2xl sm:text-3xl md:text-4xl animate-bounce text-[#40916c]">
+                            <Leaf className="w-8 h-8 sm:w-10 sm:h-10" />
+                        </div>
 
                         <p className="uppercase tracking-[0.3em] text-xs font-bold text-[#52b788] mb-6 sm:mb-8">Join the Wedding of</p>
                         <h1 className="text-3xl sm:text-4xl md:text-7xl font-serif text-[#1b4332] mb-6 sm:mb-8">
@@ -29,11 +33,18 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: any) {
                         </h1>
                         <p className="text-lg sm:text-xl md:text-xl italic text-[#40916c] mb-8 sm:mb-10 md:mb-12">Under the open sky</p>
 
-                        <div className="mx-auto w-40 sm:w-44 md:w-48 h-40 sm:h-44 md:h-48 rounded-full overflow-hidden border-4 border-white shadow-lg mb-8 sm:mb-10 md:mb-12">
-                            <img src={wedding.couple_photo || wedding.hero_image || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="w-full h-full object-cover" />
+                        <div className="mx-auto w-40 sm:w-44 md:w-48 h-40 sm:h-44 md:h-48 rounded-full overflow-hidden border-4 border-white shadow-lg mb-8 sm:mb-10 md:mb-12 relative">
+                            <Image
+                                src={wedding.couple_photo || wedding.hero_image || '/logo.png'}
+                                alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                                priority
+                                fill
+                                sizes="200px"
+                                className="object-cover"
+                            />
                         </div>
 
-                        <a href="#rsvp" className="px-8 sm:px-10 py-3 min-h-[44px] flex items-center justify-center rounded-full bg-[#2d6a4f] text-white font-bold hover:bg-[#1b4332] shadow-lg shadow-[#2d6a4f]/20 transition-all transform hover:-translate-y-1">
+                        <a href="#rsvp" aria-label="Save the Date - RSVP" className="px-8 sm:px-10 py-3 min-h-[44px] flex items-center justify-center rounded-full bg-[#2d6a4f] text-white font-bold hover:bg-[#1b4332] shadow-lg shadow-[#2d6a4f]/20 transition-all transform hover:-translate-y-1">
                             Save the Date
                         </a>
                     </div>
@@ -47,8 +58,16 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: any) {
                         <p className="text-base sm:text-lg leading-relaxed text-[#40916c]">{wedding.story}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                        {gallery[0] && <img src={gallery[0]} alt="Wedding gallery preview 1" loading="lazy" decoding="async" className="rounded-xl object-cover w-full h-40 sm:h-48" />}
-                        {gallery[1] && <img src={gallery[1]} alt="Wedding gallery preview 2" loading="lazy" decoding="async" className="rounded-xl object-cover w-full h-40 sm:h-48 mt-4 sm:mt-8" />}
+                        {gallery[0] && (
+                            <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden">
+                                <Image src={gallery[0]} alt="Wedding gallery preview 1" fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" />
+                            </div>
+                        )}
+                        {gallery[1] && (
+                            <div className="relative w-full h-40 sm:h-48 mt-4 sm:mt-8 rounded-xl overflow-hidden">
+                                <Image src={gallery[1]} alt="Wedding gallery preview 2" fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" />
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>

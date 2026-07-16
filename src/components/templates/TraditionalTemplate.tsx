@@ -75,7 +75,8 @@ export default function TraditionalTemplate({ wedding, gallery, isExpired }: Tem
                     >
                         <a 
                             href="#rsvp" 
-                            className="inline-flex items-center justify-center px-10 py-4 border-2 font-bold uppercase tracking-widest text-xs min-h-[44px] hover:text-white transition-all"
+                            aria-label="Request RSVP"
+                            className="inline-flex items-center justify-center px-10 py-4 border-2 font-bold uppercase tracking-widest text-xs min-h-[44px] hover:!bg-neutral-800 hover:!text-white transition-all"
                             style={{ borderColor: motifColor, color: motifColor }}
                         >
                             Request RSVP

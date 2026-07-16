@@ -1,7 +1,7 @@
 // Forced Redeploy Trigger: 2026-04-11T03:23:00+09:00
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { sendEmail } from '@/lib/email';
-import { getGuestReminderHtml } from '@/lib/email-templates';
+import { getGuestReminderReact } from '@/emails/quickweds-transactional';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (process.env.NODE_ENV !== 'development') {
@@ -28,12 +28,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       numGuests: 2,
     };
 
-    const html = getGuestReminderHtml(testProps);
-
     const result = await sendEmail({
       to: email,
       subject: "TEST: Your Wedding Reminder is Here! (QuickWeds)",
-      html: html
+      react: getGuestReminderReact(testProps),
     });
 
     if (result.success) {

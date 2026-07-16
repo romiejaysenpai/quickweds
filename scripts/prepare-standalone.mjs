@@ -23,11 +23,19 @@ if (!fs.existsSync(standaloneDir)) {
 }
 
 const serverDir = findStandaloneServerDir();
+const publicDir = path.join(root, 'public');
 
 const copies = [
   {
-    from: path.join(root, 'public'),
+    from: publicDir,
     to: path.join(serverDir, 'public'),
+    // Historical local uploads are intentionally not deployable. User media
+    // is served from Supabase Storage and this avoids copying almost 1 GB of
+    // ignored development files into a standalone artifact.
+    filter: (source) => {
+      const [topLevel] = path.relative(publicDir, source).split(path.sep);
+      return topLevel !== 'uploads';
+    },
   },
   {
     from: path.join(root, '.next', 'static'),
@@ -35,7 +43,7 @@ const copies = [
   },
 ];
 
-for (const { from, to } of copies) {
+for (const { from, to, filter } of copies) {
   if (!fs.existsSync(from)) {
     console.warn(`Missing source asset directory: ${path.relative(root, from)}`);
     continue;
@@ -43,6 +51,6 @@ for (const { from, to } of copies) {
 
   fs.rmSync(to, { recursive: true, force: true });
   fs.mkdirSync(path.dirname(to), { recursive: true });
-  fs.cpSync(from, to, { recursive: true });
+  fs.cpSync(from, to, { recursive: true, filter });
   console.log(`Copied ${path.relative(root, from)} -> ${path.relative(root, to)}`);
 }

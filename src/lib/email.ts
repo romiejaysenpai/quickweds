@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import type { ReactElement } from 'react';
 import {
     getGuestConfirmationHtml,
     getCoupleNotificationHtml,
@@ -19,17 +20,27 @@ function getResendClient() {
     return resendClient;
 }
 
+interface EmailAttachment {
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+    contentId?: string;
+}
+
 interface SendEmailParams {
     to: string | string[];
     subject?: string;
     html?: string;
+    react?: ReactElement;
     template?: {
         id: string;
         variables: Record<string, string | number>;
     };
+    attachments?: EmailAttachment[];
+    tags?: { name: string; value: string }[];
 }
 
-export async function sendEmail({ to, subject, html, template }: SendEmailParams) {
+export async function sendEmail({ to, subject, html, react, template, attachments, tags }: SendEmailParams) {
     const resend = getResendClient();
     if (!resend) {
         console.error('Email configuration missing. Set RESEND_API_KEY before sending.');
@@ -49,8 +60,8 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
         console.log(`Attempting to send email via Resend to ${validRecipients.length} recipient(s).`);
         console.log(`Email Subject: "${subject || template?.id || 'template email'}" | From: "${FROM_EMAIL}"`);
 
-        if (!html && !template?.id) {
-            throw new Error('HTML content is required for email sending');
+        if (!html && !react && !template?.id) {
+            throw new Error('HTML, React Email component, or template ID is required for email sending');
         }
 
         const payload: any = {
@@ -59,7 +70,11 @@ export async function sendEmail({ to, subject, html, template }: SendEmailParams
             ...(subject ? { subject } : {}),
             ...(template?.id
                 ? { template: { id: template.id, variables: template.variables } }
-                : { html: html || '' }),
+                : react
+                    ? { react }
+                    : { html: html || '' }),
+            ...(attachments && attachments.length > 0 ? { attachments } : {}),
+            ...(tags && tags.length > 0 ? { tags } : {}),
         };
 
         const { data, error } = await resend.emails.send(payload);

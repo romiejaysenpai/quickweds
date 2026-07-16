@@ -10,15 +10,12 @@ const ADMIN_EMAILS = [
     ...(process.env.ADMIN_EMAILS || '').split(','),
 ].map((email) => email.trim()).filter(Boolean);
 
-// Configure Cloudinary
-if (process.env.CLOUDINARY_URL) {
-    cloudinary.config({
-        cloudinary_url: process.env.CLOUDINARY_URL
-    });
-}
-
 async function uploadToCloudinary(file: File): Promise<string | null> {
     try {
+        const cloudinaryUrl = process.env.CLOUDINARY_URL;
+        if (!cloudinaryUrl) return null;
+
+        cloudinary.config({ cloudinary_url: cloudinaryUrl });
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         

@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { sendEmail } from '@/lib/email';
-import { getGuestConfirmationHtml, getCoupleNotificationHtml } from '@/lib/email-templates';
+import { getCoupleNotificationReact, getGuestConfirmationReact } from '@/emails/quickweds-transactional';
 import { getPrimaryAdminEmail } from '@/lib/admin';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 
@@ -23,6 +23,60 @@ type RsvpNotificationInput = {
 
 function getRootDomain() {
     return process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site';
+}
+
+function collectImageCandidates(value: unknown): string[] {
+    if (!value) return [];
+
+    if (Array.isArray(value)) {
+        return value.flatMap((item) => collectImageCandidates(item));
+    }
+
+    if (typeof value === 'object') {
+        const record = value as Record<string, unknown>;
+        return collectImageCandidates(record.url || record.src || record.image || record.photo);
+    }
+
+    if (typeof value !== 'string') return [];
+
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        try {
+            return collectImageCandidates(JSON.parse(trimmed));
+        } catch {
+            return [trimmed];
+        }
+    }
+
+    return [trimmed];
+}
+
+function normalizeEmailImageUrl(url: string, rootDomain: string) {
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('//')) return `https:${url}`;
+    if (url.startsWith('/')) return `https://${rootDomain}${url}`;
+    return '';
+}
+
+function getWeddingConfirmationImageUrl(wedding: Record<string, any>, rootDomain: string) {
+    const fields = [
+        wedding.hero_image,
+        wedding.couple_photo,
+        wedding.gallery_images,
+        wedding.invitation_image,
+        wedding.reception_venue_photos,
+    ];
+
+    for (const field of fields) {
+        for (const candidate of collectImageCandidates(field)) {
+            const normalized = normalizeEmailImageUrl(candidate, rootDomain);
+            if (normalized) return normalized;
+        }
+    }
+
+    return '';
 }
 
 export async function sendRsvpNotifications(db: any, input: RsvpNotificationInput) {
@@ -72,6 +126,7 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
         : getWeddingPublicUrl(`https://${rootDomain}`, { ...wedding, id: weddingId });
     const dashboardUrl = `https://${rootDomain}/dashboard/${weddingId}`;
     const checkInUrl = seatLookupToken ? `https://${rootDomain}/seat/${encodeURIComponent(seatLookupToken)}` : '';
+    const confirmationImageUrl = getWeddingConfirmationImageUrl(wedding, rootDomain);
 
     if (wedding.user_id) {
         try {
@@ -94,8 +149,9 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
         emailJobs.push(sendEmail({
             to: recipientEmail,
             subject: `${attendance === 'Yes' ? 'RSVP Confirmed' : 'RSVP Update'}: ${guestName} - ${wedding.bride_name} & ${wedding.groom_name}`,
-            html: getCoupleNotificationHtml({
+            react: getCoupleNotificationReact({
                 guestName,
+                guestEmail: guestEmail || undefined,
                 attendance,
                 numGuests,
                 message,
@@ -117,7 +173,7 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
         emailJobs.push(sendEmail({
             to: guestEmail,
             subject: attendance === 'Yes' ? "We can't wait to see you! (RSVP Confirmation)" : 'RSVP Confirmation',
-            html: getGuestConfirmationHtml({
+            react: getGuestConfirmationReact({
                 guestName,
                 attendance,
                 numGuests,
@@ -131,6 +187,7 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
                 weddingUrl: publicWeddingUrl,
                 guestCode: guestCode || undefined,
                 checkInUrl: checkInUrl || undefined,
+                confirmationImageUrl: confirmationImageUrl || undefined,
             }),
         }));
     }

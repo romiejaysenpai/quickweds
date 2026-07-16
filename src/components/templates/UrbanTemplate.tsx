@@ -1,15 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { Heart, Quote } from 'lucide-react';
-import { 
-    VideoSection, 
-    BioSection, 
-    DetailsSection, 
-    CountdownTimer, 
-    TimelineSection, 
-    GallerySection, 
-    GiftSection 
+import {
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    CountdownTimer,
+    TimelineSection,
+    GallerySection,
+    GiftSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -20,12 +21,21 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
             <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
 
             <section className="min-h-screen py-20 flex bg-black relative group">
-                <motion.img
+                <motion.div
                     initial={{ scale: 1.2, opacity: 0 }}
                     animate={{ scale: 1, opacity: 0.5 }}
-                    src={wedding.hero_image}
-                    className="absolute inset-0 w-full h-full object-cover grayscale brightness-50 group-hover:scale-105 transition-transform duration-[10s]"
-                />
+                    transition={{ duration: 1.5 }}
+                    className="absolute inset-0 z-0 overflow-hidden"
+                >
+                    <Image
+                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                        alt="Hero"
+                        priority
+                        fill
+                        sizes="100vw"
+                        className="object-cover grayscale brightness-50 group-hover:scale-105 transition-transform duration-[10s]"
+                    />
+                </motion.div>
                 <div className="z-10 px-4 sm:px-6 md:px-12 lg:px-32 py-12 sm:py-16 md:py-24 lg:py-32 flex flex-col justify-between w-full relative">
                     <div className="flex justify-between items-start border-b border-white/10 pb-6 sm:pb-8 md:pb-12 lg:pb-12">
                         <div className="space-y-2">
@@ -38,7 +48,7 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                     </div>
 
                     <motion.div initial={{ opacity: 0, x: -100 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1 }}>
-                        <h1 className="text-3xl sm:text-4xl md:text-8xl lg:text-[15vw] font-black uppercase leading-[0.75] mb-8 sm:mb-10 md:mb-12 lg:mb-12 tracking-tighter mix-blend-difference">
+                        <h1 className="text-3xl sm:text-4xl md:text-8xl lg:text-[15vw] font-black uppercase leading-[0.75] mb-8 sm:mb-10 md:mb-12 lg:mb-12 tracking-tighter mix-blend-difference drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                             {wedding.bride_name.split(' ')[0]}<br />
                             <span className="text-primary">+</span><br />
                             {wedding.groom_name.split(' ')[0]}
@@ -50,7 +60,7 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                     </motion.div>
 
                     <div className="flex justify-end">
-                        <a href="#rsvp" className="text-primary hover:text-white transition-all text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter hover:tracking-widest duration-500 min-h-[44px] flex items-center">
+                        <a href="#rsvp" aria-label="Enter Event - RSVP" className="text-primary hover:text-white transition-all text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter hover:tracking-widest duration-500 min-h-[44px] flex items-center">
                             ENTER EVENT →
                         </a>
                     </div>

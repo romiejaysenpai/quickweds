@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { Heart } from 'lucide-react';
 import { 
     VideoSection, 
@@ -36,7 +37,7 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                             <p className="mx-auto mt-8 max-w-lg text-lg italic leading-8 text-[#816066] lg:mx-0">
                                 {wedding.quote || 'Cordially invited to a tender evening of vows, dinner, and dancing.'}
                             </p>
-                            <a href="#rsvp" className="mt-10 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#b97983] px-8 text-xs font-bold uppercase tracking-[0.28em] text-white shadow-[0_18px_45px_rgba(185,121,131,0.25)] transition-all hover:bg-[#55373b]">
+                            <a href="#rsvp" aria-label="RSVP" className="mt-10 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#b97983] px-8 text-xs font-bold uppercase tracking-[0.28em] text-white shadow-[0_18px_45px_rgba(185,121,131,0.25)] transition-all hover:bg-[#55373b]">
                                 RSVP
                             </a>
                         </motion.div>
@@ -46,13 +47,14 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                             transition={{ duration: 1.1 }}
                             className="relative"
                         >
-                            <div className="mx-auto aspect-[5/6] max-h-[740px] overflow-hidden rounded-t-full border border-[#b97983]/25 bg-white p-3 shadow-[0_35px_100px_rgba(85,55,59,0.14)]">
-                                <img
+                            <div className="mx-auto aspect-[5/6] max-h-[740px] overflow-hidden rounded-t-full border border-[#b97983]/25 bg-white p-3 shadow-[0_35px_100px_rgba(85,55,59,0.14)] relative">
+                                <Image
                                     src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
                                     alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                                    loading="eager"
-                                    decoding="async"
-                                    className="h-full w-full rounded-t-full object-cover"
+                                    priority
+                                    fill
+                                    sizes="(max-width: 1024px) 100vw, 50vw"
+                                    className="rounded-t-full object-cover object-[center_20%]"
                                 />
                             </div>
                             <div className="absolute -bottom-5 left-1/2 w-[82%] -translate-x-1/2 bg-white/88 px-6 py-5 text-center shadow-[0_20px_60px_rgba(85,55,59,0.12)] backdrop-blur">
@@ -120,6 +122,7 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                         <motion.a
                             whileHover={{ scale: 1.05 }}
                             href="#rsvp"
+                            aria-label="Say Yes - RSVP"
                             className="text-lg font-serif italic border-b-2 border-primary pb-2 hover:opacity-50 transition-opacity"
                         >
                             Say Yes, We&apos;ll Be There

@@ -1,21 +1,23 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { 
-    VideoSection, 
-    BioSection, 
-    DetailsSection, 
-    CountdownTimer, 
-    TimelineSection, 
-    GallerySection, 
-    GiftSection 
+import Image from 'next/image';
+import {
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    CountdownTimer,
+    TimelineSection,
+    GallerySection,
+    GiftSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
 export default function MidnightTemplate({ wedding, gallery, isExpired }: any) {
     return (
         <div className="bg-[#0f0f0f] text-[#cfb53b] relative overflow-hidden pb-24 font-serif">
-            <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,rgba(207,181,59,0.05)_0%,transparent_70%)] pointer-events-none" />
+            <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,rgba(207,181,59,0.05)_0%,transparent_70%)] pointer-events-none z-0" />
+            <div className="fixed inset-0 pointer-events-none z-0" style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg width="120" height="120" xmlns="http://www.w3.org/2000/svg"><path d="M60 30 L62 58 L90 60 L62 62 L60 90 L58 62 L30 60 L58 58 Z" fill="%23cfb53b" fill-opacity="0.04"/></svg>')`, backgroundSize: '120px 120px' }} />
 
             <section className="min-h-screen grid grid-cols-1 lg:grid-cols-2 relative">
                 <div className="flex flex-col justify-center px-4 sm:px-6 md:px-12 lg:px-24 py-12 sm:py-16 md:py-20 lg:py-24 border-r border-[#cfb53b]/10 bg-gradient-to-b from-[#0f0f0f] to-[#151515]">
@@ -29,11 +31,18 @@ export default function MidnightTemplate({ wedding, gallery, isExpired }: any) {
                         <p className="text-lg sm:text-xl md:text-xl lg:text-xl font-serif italic text-white/60 mb-8 sm:mb-10 md:mb-12 lg:mb-12 max-w-md">
                             Join us for an evening of elegance, love, and starlight.
                         </p>
-                        <a href="#rsvp" className="px-6 sm:px-8 md:px-10 lg:px-10 py-3 sm:py-4 md:py-4 lg:py-4 min-h-[44px] flex items-center border border-[#cfb53b] text-[#cfb53b] hover:bg-[#cfb53b] hover:text-black transition-all uppercase text-xs font-black tracking-[0.2em]">RSVP Now</a>
+                        <a href="#rsvp" aria-label="RSVP Now" className="px-6 sm:px-8 md:px-10 lg:px-10 py-3 sm:py-4 md:py-4 lg:py-4 min-h-[44px] flex w-max items-center border border-[#cfb53b] text-[#cfb53b] hover:bg-[#cfb53b] hover:text-black transition-all uppercase text-xs font-black tracking-[0.2em]">RSVP Now</a>
                     </motion.div>
                 </div>
                 <div className="relative h-[50vh] lg:h-auto">
-                    <img src={wedding.hero_image || wedding.couple_photo || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover grayscale brightness-75 hover:grayscale-0 transition-all duration-1000" />
+                    <Image
+                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                        priority
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-cover grayscale brightness-75 hover:grayscale-0 transition-all duration-1000 z-0"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-transparent to-transparent lg:bg-gradient-to-r lg:from-[#0f0f0f]" />
                 </div>
             </section>

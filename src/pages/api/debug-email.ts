@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { sendEmail } from '@/lib/email';
-import { getGuestConfirmationHtml, getCoupleNotificationHtml } from '@/lib/email-templates';
+import { getCoupleNotificationReact, getGuestConfirmationReact } from '@/emails/quickweds-transactional';
 
 /**
  * Debug endpoint to test transactional email delivery.
@@ -58,22 +58,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             songRequest: 'Perfect - Ed Sheeran',
             plusOneNames: 'Juan Santos, Ana Santos',
             childrenCount: 1,
+            guestCode: 'QW-TEST-2486',
+            checkInUrl: 'https://quickweds.site/seat/test-react-email-guest-pass',
+            confirmationImageUrl: 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/Wedding%20Website%20Builder.png',
             dashboardUrl: 'https://www.quickweds.site/dashboard',
             weddingTitle: 'Sofia & Miguel',
         };
 
-        const guestHtml = getGuestConfirmationHtml(sampleData);
         const guestResult = await sendEmail({
             to: testEmail,
             subject: "We can't wait to see you! (RSVP Confirmation) - TEST",
-            html: guestHtml,
+            react: getGuestConfirmationReact(sampleData),
         });
 
-        const coupleHtml = getCoupleNotificationHtml(sampleData);
         const coupleResult = await sendEmail({
             to: testEmail,
             subject: 'New RSVP Received: Maria Santos - Sofia & Miguel - TEST',
-            html: coupleHtml,
+            react: getCoupleNotificationReact(sampleData),
         });
 
         const results = [

@@ -9,3 +9,4 @@ quickweds.db
 README.md
 Dockerfile
 .dockerignore
+public/uploads

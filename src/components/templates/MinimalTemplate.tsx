@@ -78,13 +78,24 @@ export default function MinimalTemplate({ wedding, gallery, isExpired }: Templat
                         </motion.p>
                         
                         <motion.p
-                            className="text-base sm:text-lg font-light text-neutral-400 mt-4"
+                            className="text-base sm:text-lg font-light text-neutral-500 mt-4"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 1.4, duration: 0.8 }}
                         >
                             {wedding.venue_name}
                         </motion.p>
+
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 1.6, duration: 0.8 }}
+                            className="mt-12"
+                        >
+                            <a href="#rsvp" aria-label="RSVP" className="inline-flex min-h-[44px] items-center justify-center px-10 py-3 uppercase tracking-widest text-xs font-bold border transition-all hover:bg-neutral-50" style={{ borderColor: motifColor, color: motifColor }}>
+                                RSVP
+                            </a>
+                        </motion.div>
                     </motion.div>
                 </div>
                 

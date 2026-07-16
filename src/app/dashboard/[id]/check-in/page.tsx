@@ -4,9 +4,10 @@ import type { FormEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Camera, CheckCircle2, Loader2, QrCode, RefreshCw, Search, Undo2, UserCheck, Users, X } from 'lucide-react';
+import { ArrowLeft, Camera, CheckCircle2, Loader2, RefreshCw, Search, Undo2, UserCheck, Users } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getCachedSession } from '@/lib/session-cache';
+import GuestQrScanner from '@/components/dashboard/GuestQrScanner';
 
 type CheckInGuest = {
     id: string;
@@ -16,10 +17,6 @@ type CheckInGuest = {
     guest_code?: string | null;
     checked_in_at?: string | null;
     partySize?: number;
-};
-
-type BarcodeDetectorConstructor = new (options?: { formats?: string[] }) => {
-    detect(source: CanvasImageSource): Promise<Array<{ rawValue?: string }>>;
 };
 
 async function getToken() {
@@ -39,12 +36,6 @@ export default function CheckInDashboardPage() {
     const [error, setError] = useState('');
     const [status, setStatus] = useState('');
     const [scannerOpen, setScannerOpen] = useState(false);
-    const [scannerStarting, setScannerStarting] = useState(false);
-    const [scannerError, setScannerError] = useState('');
-    const [scannerStatus, setScannerStatus] = useState('');
-    const videoRef = useRef<HTMLVideoElement | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
-    const scanTimerRef = useRef<number | null>(null);
     const lastScanRef = useRef('');
 
     const checkedInCount = guests.filter((guest) => guest.checked_in_at).length;
@@ -92,26 +83,10 @@ export default function CheckInDashboardPage() {
         if (user && weddingId) void loadGuests();
     }, [authLoading, user, weddingId, router, loadGuests]);
 
-    const stopScanner = useCallback(() => {
-        if (scanTimerRef.current) {
-            window.clearInterval(scanTimerRef.current);
-            scanTimerRef.current = null;
-        }
-
-        streamRef.current?.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
-        }
-
+    const closeScanner = useCallback(() => {
         setScannerOpen(false);
-        setScannerStarting(false);
-        setScannerStatus('');
         lastScanRef.current = '';
     }, []);
-
-    useEffect(() => stopScanner, [stopScanner]);
 
     const updateCheckIn = useCallback(async (payload: { rsvpId?: string; lookup?: string; undo?: boolean }) => {
         const token = await getToken();
@@ -146,84 +121,14 @@ export default function CheckInDashboardPage() {
         }
     }, [loadGuests, router, weddingId]);
 
-    useEffect(() => {
-        if (!scannerOpen) return;
-
-        let cancelled = false;
-
-        async function startCameraScanner() {
-            setScannerStarting(true);
-            setScannerError('');
-            setScannerStatus('Point the camera at the guest QR code.');
-
-            const BarcodeDetector = (window as typeof window & { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector;
-            if (!BarcodeDetector) {
-                setScannerError('Camera QR scanning is not supported in this browser. Use Chrome, Edge, or paste the QR link into the field.');
-                setScannerStarting(false);
-                return;
-            }
-
-            if (!navigator.mediaDevices?.getUserMedia) {
-                setScannerError('Camera access is not available on this device. Paste the QR link or guest code instead.');
-                setScannerStarting(false);
-                return;
-            }
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { ideal: 'environment' } },
-                    audio: false,
-                });
-
-                if (cancelled) {
-                    stream.getTracks().forEach((track) => track.stop());
-                    return;
-                }
-
-                streamRef.current = stream;
-
-                const video = videoRef.current;
-                if (!video) throw new Error('Camera preview is not ready.');
-
-                video.srcObject = stream;
-                await video.play();
-
-                const detector = new BarcodeDetector({ formats: ['qr_code'] });
-                scanTimerRef.current = window.setInterval(() => {
-                    if (!videoRef.current || saving) return;
-
-                    void detector.detect(videoRef.current).then((codes) => {
-                        const rawValue = String(codes[0]?.rawValue || '').trim();
-                        if (!rawValue || rawValue === lastScanRef.current) return;
-
-                        lastScanRef.current = rawValue;
-                        setLookup(rawValue);
-                        setScannerStatus('QR detected. Checking in guest...');
-                        stopScanner();
-                        void updateCheckIn({ lookup: rawValue });
-                    }).catch(() => {
-                        setScannerStatus('Keep the QR code inside the frame.');
-                    });
-                }, 650);
-            } catch (err) {
-                setScannerError(err instanceof Error ? err.message : 'Unable to open the camera. Check browser camera permissions.');
-            } finally {
-                setScannerStarting(false);
-            }
-        }
-
-        void startCameraScanner();
-
-        return () => {
-            cancelled = true;
-            if (scanTimerRef.current) {
-                window.clearInterval(scanTimerRef.current);
-                scanTimerRef.current = null;
-            }
-            streamRef.current?.getTracks().forEach((track) => track.stop());
-            streamRef.current = null;
-        };
-    }, [scannerOpen, saving, stopScanner, updateCheckIn]);
+    const handleScannerScan = useCallback((rawValue: string) => {
+        const value = rawValue.trim();
+        if (!value || value === lastScanRef.current) return;
+        lastScanRef.current = value;
+        setLookup(value);
+        setScannerOpen(false);
+        void updateCheckIn({ lookup: value });
+    }, [updateCheckIn]);
 
     async function submitLookup(event: FormEvent) {
         event.preventDefault();
@@ -263,7 +168,6 @@ export default function CheckInDashboardPage() {
                         <button
                             type="button"
                             onClick={() => {
-                                setScannerError('');
                                 setScannerOpen(true);
                             }}
                             disabled={saving}
@@ -285,38 +189,7 @@ export default function CheckInDashboardPage() {
                     </form>
 
                     {scannerOpen && (
-                        <div className="mt-4 overflow-hidden rounded-3xl border border-primary/20 bg-foreground text-white shadow-xl shadow-primary/10">
-                            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                    <QrCode className="h-4 w-4 text-primary" />
-                                    <p className="text-sm font-black">Guest QR Scanner</p>
-                                </div>
-                                <button type="button" onClick={stopScanner} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20" title="Close scanner">
-                                    <X className="h-4 w-4" />
-                                </button>
-                            </div>
-                            <div className="relative aspect-[4/3] bg-black sm:aspect-video">
-                                <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
-                                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                    <div className="h-48 w-48 rounded-3xl border-2 border-white/80 shadow-[0_0_0_999px_rgba(0,0,0,0.28)]" />
-                                </div>
-                                {scannerStarting && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/55">
-                                        <div className="text-center">
-                                            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                                            <p className="mt-3 text-sm font-bold">Opening camera...</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="px-4 py-3">
-                                {scannerError ? (
-                                    <p className="text-sm font-semibold leading-6 text-rose-200">{scannerError}</p>
-                                ) : (
-                                    <p className="text-sm font-semibold leading-6 text-white/75">{scannerStatus || 'Point the camera at the QR code from the guest seat-link email.'}</p>
-                                )}
-                            </div>
-                        </div>
+                        <GuestQrScanner onClose={closeScanner} onScan={handleScannerScan} busy={saving} />
                     )}
 
                     {(error || status) && (

@@ -1,14 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { 
-    VideoSection, 
-    BioSection, 
-    DetailsSection, 
-    CountdownTimer, 
-    TimelineSection, 
-    GallerySection, 
-    GiftSection 
+import Image from 'next/image';
+import {
+    VideoSection,
+    BioSection,
+    DetailsSection,
+    CountdownTimer,
+    TimelineSection,
+    GallerySection,
+    GiftSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -35,7 +36,7 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: any) {
                         <span className="text-lg sm:text-xl md:text-2xl">{wedding.venue_name}</span>
                     </div>
                     <div className="mt-8 sm:mt-10 md:mt-12">
-                        <a href="#rsvp" className="px-8 sm:px-10 md:px-12 py-3 sm:py-4 md:py-4 min-h-[44px] flex items-center justify-center bg-[#5e503f] text-[#f5ebe0] rounded-lg font-bold tracking-widest uppercase hover:bg-[#493e31] transition-colors shadow-lg">RSVP</a>
+                        <a href="#rsvp" aria-label="RSVP" className="px-8 sm:px-10 md:px-12 py-3 sm:py-4 md:py-4 min-h-[44px] inline-flex items-center justify-center bg-[#5e503f] text-[#f5ebe0] rounded-lg font-bold tracking-widest uppercase hover:bg-[#493e31] transition-colors shadow-lg">RSVP</a>
                     </div>
                 </div>
             </section>
@@ -43,7 +44,13 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: any) {
             <section className="py-16 sm:py-20 md:py-24 lg:py-24 px-4 sm:px-6 bg-white/60">
                 <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 md:gap-16 items-center">
                     <div className="aspect-square relative rotate-2 p-4 bg-white shadow-xl">
-                        <img src={wedding.couple_photo || wedding.hero_image || '/logo.png'} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" decoding="async" className="w-full h-full object-cover sepia-[0.3]" />
+                        <Image
+                            src={wedding.couple_photo || wedding.hero_image || '/logo.png'}
+                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover sepia-[0.3]"
+                        />
                         <div className="absolute -top-4 -left-4 w-24 h-24 bg-[#5e503f]/10 rounded-full blur-xl -z-10" />
                     </div>
                     <div className="space-y-4 sm:space-y-5 md:space-y-6">
