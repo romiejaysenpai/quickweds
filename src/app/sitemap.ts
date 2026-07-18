@@ -12,6 +12,11 @@ const publicRoutes: Array<{
   images?: string[];
 }> = [
   { path: '', changeFrequency: 'weekly', priority: 1, images: [landingPreviewImageUrl] },
+  { path: '/wedding-budget-planner', changeFrequency: 'weekly', priority: 0.9 },
+  { path: '/wedding-checklist', changeFrequency: 'weekly', priority: 0.9 },
+  { path: '/wedding-rsvp', changeFrequency: 'weekly', priority: 0.9 },
+  { path: '/wedding-seating-chart', changeFrequency: 'weekly', priority: 0.9 },
+  { path: '/wedding-website-builder', changeFrequency: 'weekly', priority: 0.9 },
   { path: '/tips', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/user-guide', changeFrequency: 'monthly', priority: 0.75 },
   { path: '/user-guide/wedding-website-builder', changeFrequency: 'monthly', priority: 0.8 },
