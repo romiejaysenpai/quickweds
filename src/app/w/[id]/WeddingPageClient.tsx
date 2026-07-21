@@ -145,6 +145,7 @@ export default function WeddingPageClient({
                                     brideName={wedding.bride_name}
                                     groomName={wedding.groom_name}
                                     shape={wedding.logo_shape}
+                                    animation={wedding.is_premium ? wedding.logo_animation : 'none'}
                                     color={wedding.logo_color}
                                     motifColor={wedding.motif_color}
                                     fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}

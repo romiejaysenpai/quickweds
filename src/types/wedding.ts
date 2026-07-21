@@ -23,6 +23,7 @@ export interface Wedding {
     custom_domain?: string;
     template: string;
     template_style?: string;
+    card_style?: string;
     background_style?: string;
     section_title_font_style?: string;
     section_title_color_style?: string;
@@ -32,15 +33,17 @@ export interface Wedding {
     contact_person?: string;
     hashtag?: string;
     rsvp_deadline: string;
+    rsvp_events?: WeddingRsvpEvent[] | string;
     program_timeline?: string;
     faq_items?: string | unknown[];
     invitation_image?: string; // Opt-in image
     accent_style?: string; // Vector design accent style
     // Monogram / Logo
     logo_initials?: string;
-    logo_shape?: 'circle' | 'square' | 'minimal';
+    logo_shape?: string;
     logo_color?: string;
     logo_font?: string;
+    logo_animation?: string;
     // Gift
     gift_bank?: string;
     gift_account_name?: string;
@@ -105,7 +108,24 @@ export interface RSVP {
     plus_one_names?: string;
     song_request?: string;
     children_count?: number;
+    household_name?: string;
+    household_members?: string[];
+    event_responses?: RsvpEventResponse[];
     created_at: string;
+}
+
+export interface WeddingRsvpEvent {
+    id: string;
+    name: string;
+    date?: string;
+    time?: string;
+    venue?: string;
+    description?: string;
+}
+
+export interface RsvpEventResponse {
+    eventId: string;
+    attendance: 'Yes' | 'No' | 'Maybe';
 }
 
 export interface GuestBookEntry {

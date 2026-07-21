@@ -143,7 +143,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
     
     const palette = derivePalette(motifColor, invert);
     const typography = getTypography(template);
-    const visual = getTemplateVisualProfile(template, motifColor, invert);
+    const visual = getTemplateVisualProfile(template, motifColor, invert, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     
     const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);

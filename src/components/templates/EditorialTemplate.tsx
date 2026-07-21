@@ -10,7 +10,9 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    AttireSection,
+    FAQSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -58,6 +60,7 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                                         brideName={wedding.bride_name}
                                         groomName={wedding.groom_name}
                                         shape={wedding.logo_shape || 'minimal'}
+                                        animation={wedding.is_premium ? wedding.logo_animation : 'none'}
                                         color="#201c19"
                                         motifColor={wedding.motif_color}
                                         fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
@@ -107,6 +110,8 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                 )}
                 <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
                 <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+                <AttireSection wedding={wedding} />
+                <FAQSection wedding={wedding} />
                 <GiftSection id="gift" wedding={wedding} />
                 <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
             </div>
@@ -143,8 +148,9 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                                 brideName={wedding.bride_name}
                                 groomName={wedding.groom_name}
                                 shape={wedding.logo_shape || 'editorial'}
+                                animation={wedding.is_premium ? wedding.logo_animation : 'none'}
                                 color="#ffffff"
-                    motifColor={wedding.motif_color}
+                                motifColor={wedding.motif_color}
                                 fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
                                 size="md"
                                 className="mb-8"
@@ -189,6 +195,8 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <AttireSection wedding={wedding} />
+            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

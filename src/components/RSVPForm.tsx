@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, CheckCircle2, Music, Users, AlertCircle } from 'lucide-react';
+import { Send, CheckCircle2, Music, Users, AlertCircle, CalendarDays } from 'lucide-react';
+import type { RsvpEventResponse, WeddingRsvpEvent } from '@/types/wedding';
 import { trackWeddingEvent } from '@/lib/wedding-features';
 import confetti from 'canvas-confetti';
 
@@ -19,9 +20,15 @@ const DIETARY_OPTIONS = [
 type WeddingPreview = {
     template?: string;
     motif_color?: string;
+    rsvp_events?: WeddingRsvpEvent[] | string;
 };
 
 export default function RSVPForm({ weddingId, wedding }: { weddingId: string, wedding?: WeddingPreview }) {
+    const events = (() => {
+        if (Array.isArray(wedding?.rsvp_events)) return wedding.rsvp_events.filter((event) => event?.id && event?.name);
+        if (typeof wedding?.rsvp_events !== 'string') return [];
+        try { const value = JSON.parse(wedding.rsvp_events); return Array.isArray(value) ? value.filter((event) => event?.id && event?.name) : []; } catch { return []; }
+    })() as WeddingRsvpEvent[];
     const isSharp = wedding?.template === 'editorial' || wedding?.template === 'minimal' || wedding?.template === 'vogue';
     const isDark = wedding?.template === 'midnight' || wedding?.template === 'royal' || wedding?.template === 'urban';
     const isVintage = wedding?.template === 'vintage' || wedding?.template === 'film' || wedding?.template === 'rustic';
@@ -47,6 +54,9 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
         plusOneNames: '',
         songRequest: '',
         childrenCount: 0,
+        householdName: '',
+        householdMembers: '',
+        eventResponses: events.map((event) => ({ eventId: event.id, attendance: 'Yes' as const })) as RsvpEventResponse[],
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -71,6 +81,9 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                     plusOneNames: formData.plusOneNames,
                     songRequest: formData.songRequest,
                     childrenCount: formData.childrenCount,
+                    householdName: formData.householdName.trim(),
+                    householdMembers: formData.householdMembers.split(/\n|,/).map((name) => name.trim()).filter(Boolean),
+                    eventResponses: formData.eventResponses,
                 }),
             });
             const result = await response.json().catch(() => ({}));
@@ -213,6 +226,38 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                             className={fieldClass}
                         />
                     </motion.div>
+                )}
+
+                <div className="space-y-2">
+                    <label className={`${labelClass} flex items-center gap-2`}><Users className="h-4 w-4" /> Household or family name</label>
+                    <input placeholder="e.g. The Santos Family" value={formData.householdName} onChange={(e) => setFormData((prev) => ({ ...prev, householdName: e.target.value }))} className={fieldClass} />
+                    <p className={`ml-1 text-xs ${isDark ? 'text-white/50' : 'text-text-secondary'}`}>Optional. Use this when one response represents a household.</p>
+                </div>
+
+                {formData.numGuests > 1 && (
+                    <div className="space-y-2">
+                        <label className={labelClass}>Household member names</label>
+                        <textarea placeholder={'One name per line\nJamie Santos\nAvery Santos'} value={formData.householdMembers} onChange={(e) => setFormData((prev) => ({ ...prev, householdMembers: e.target.value }))} className={`${fieldClass} min-h-28 resize-y`} />
+                    </div>
+                )}
+
+                {events.length > 0 && (
+                    <fieldset className={`space-y-3 rounded-2xl border p-4 sm:p-5 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-border bg-neutral/50'}`}>
+                        <legend className={`px-2 text-sm font-bold ${isDark ? 'text-white' : 'text-foreground'}`}>Choose events</legend>
+                        {events.map((event) => {
+                            const response = formData.eventResponses.find((item) => item.eventId === event.id)?.attendance || 'Yes';
+                            return <div key={event.id} className={`grid gap-3 border-b pb-4 last:border-0 last:pb-0 sm:grid-cols-[1fr_150px] ${isDark ? 'border-white/10' : 'border-border'}`}>
+                                <div>
+                                    <p className={`flex items-center gap-2 font-bold ${isDark ? 'text-white' : 'text-foreground'}`}><CalendarDays className="h-4 w-4 text-primary" /> {event.name}</p>
+                                    <p className={`mt-1 text-xs ${isDark ? 'text-white/55' : 'text-text-secondary'}`}>{[event.date, event.time, event.venue].filter(Boolean).join(' · ')}</p>
+                                    {event.description && <p className={`mt-1 text-xs ${isDark ? 'text-white/55' : 'text-text-secondary'}`}>{event.description}</p>}
+                                </div>
+                                <select aria-label={`Attendance for ${event.name}`} value={response} onChange={(e) => setFormData((prev) => ({ ...prev, eventResponses: prev.eventResponses.some((item) => item.eventId === event.id) ? prev.eventResponses.map((item) => item.eventId === event.id ? { ...item, attendance: e.target.value as RsvpEventResponse['attendance'] } : item) : [...prev.eventResponses, { eventId: event.id, attendance: e.target.value as RsvpEventResponse['attendance'] }] }))} className={fieldClass}>
+                                    <option value="Yes">Attending</option><option value="Maybe">Maybe</option><option value="No">Not attending</option>
+                                </select>
+                            </div>;
+                        })}
+                    </fieldset>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

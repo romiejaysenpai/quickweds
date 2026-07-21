@@ -615,7 +615,7 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
     const template = wedding?.template || 'classic';
     const templateStyle = wedding?.template_style;
     const motifColor = wedding?.motif_color || '#D16C78';
-    const visual = getTemplateVisualProfile(template, motifColor);
+    const visual = getTemplateVisualProfile(template, motifColor, false, wedding?.card_style);
     const titleStyle = getSectionTitleStyle(wedding || {}, visual.headingClass);
     const design = getTimelineDesign(template, templateStyle);
     const isSharp = visual.isSharp;

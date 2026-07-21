@@ -10,6 +10,50 @@ export type TemplateCatalogItem = {
     previewGradient: string;
 };
 
+export type TemplateFilter = 'all' | 'classic' | 'modern' | 'romantic' | 'destination' | 'bold';
+export type TemplateRecommendationInput = {
+    mood?: 'timeless' | 'soft' | 'clean' | 'dramatic' | 'playful';
+    venue?: 'ballroom' | 'garden' | 'beach' | 'city' | 'intimate';
+    priority?: 'photos' | 'schedule' | 'rsvp' | 'story';
+};
+
+const TEMPLATE_FILTERS: Record<Exclude<TemplateFilter, 'all'>, readonly string[]> = {
+    classic: ['classic', 'traditional', 'elegance', 'vintage', 'royal', 'artdeco'],
+    modern: ['minimal', 'timeline', 'rsvpfocus', 'vogue', 'editorial'],
+    romantic: ['romantic', 'whimsical', 'sakura', 'garden', 'rustic', 'boho'],
+    destination: ['elopement', 'tropical', 'cinematic', 'film'],
+    bold: ['luxury', 'midnight', 'urban', 'glitch', 'vogue', 'editorial'],
+};
+
+export function templateMatchesFilter(templateId: string, filter: TemplateFilter) {
+    return filter === 'all' || TEMPLATE_FILTERS[filter].includes(templateId);
+}
+
+export function recommendTemplateIds(input: TemplateRecommendationInput) {
+    const signals: Record<string, readonly string[]> = {
+        'mood:timeless': ['classic', 'traditional', 'elegance', 'royal'],
+        'mood:soft': ['romantic', 'sakura', 'garden', 'whimsical'],
+        'mood:clean': ['minimal', 'editorial', 'timeline', 'rsvpfocus'],
+        'mood:dramatic': ['luxury', 'midnight', 'cinematic', 'artdeco'],
+        'mood:playful': ['boho', 'tropical', 'whimsical', 'glitch'],
+        'venue:ballroom': ['classic', 'luxury', 'royal', 'artdeco'],
+        'venue:garden': ['garden', 'romantic', 'sakura', 'boho'],
+        'venue:beach': ['tropical', 'elopement', 'boho', 'cinematic'],
+        'venue:city': ['urban', 'editorial', 'vogue', 'minimal'],
+        'venue:intimate': ['elopement', 'minimal', 'romantic', 'vintage'],
+        'priority:photos': ['editorial', 'cinematic', 'film', 'vogue'],
+        'priority:schedule': ['timeline', 'minimal', 'classic', 'elegance'],
+        'priority:rsvp': ['rsvpfocus', 'minimal', 'timeline', 'classic'],
+        'priority:story': ['romantic', 'vintage', 'film', 'garden'],
+    };
+    const scores = new Map<string, number>();
+    for (const [key, value] of Object.entries(input)) {
+        if (!value) continue;
+        signals[`${key}:${value}`]?.forEach((id, rank) => scores.set(id, (scores.get(id) || 0) + 5 - rank));
+    }
+    return [...scores.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id).slice(0, 4);
+}
+
 export type TemplateStyleVariant = {
     id: string;
     templateId: string;

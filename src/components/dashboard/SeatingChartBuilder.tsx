@@ -3,20 +3,16 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import dynamic from 'next/dynamic';
 import {
     ArrowDown,
     ArrowLeft,
     ArrowRight,
     ArrowUp,
     BookOpen,
-    Camera,
     CheckCircle2,
     Circle,
-    Copy,
     Download,
     Edit2,
-    ExternalLink,
     Layout,
     Loader2,
     Mail,
@@ -44,11 +40,7 @@ import {
 import UpgradeButton from '@/components/UpgradeButton';
 import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
 import { getCachedSession } from '@/lib/session-cache';
-import { copyToClipboard } from '@/lib/client-clipboard';
-
-const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), { ssr: false });
-const QRCodeCanvas = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeCanvas), { ssr: false });
-import { openExternalUrl } from '@/lib/native-actions';
+import QrCodeActions from '@/components/dashboard/QrCodeActions';
 
 interface Table {
     id: string;
@@ -258,7 +250,6 @@ export default function SeatingChartBuilder({
     const [isChartFullscreen, setIsChartFullscreen] = useState(false);
     const [publicSeatFinderUrl, setPublicSeatFinderUrl] = useState('');
     const [publicSeatFinderToken, setPublicSeatFinderToken] = useState(initialSeatFinderEnabled ? (initialPublicSeatFinderToken || '') : '');
-    const [qrPreviewUrl, setQrPreviewUrl] = useState('');
     const [seatFinderSummary, setSeatFinderSummary] = useState<{
         attendingCount?: number;
         assignedCount?: number;
@@ -865,21 +856,6 @@ export default function SeatingChartBuilder({
         }
     };
 
-    const getSeatFinderQrDataUrl = () => {
-        const canvas = document.getElementById('public-seat-finder-qr-canvas') as HTMLCanvasElement | null;
-        if (!canvas) {
-            setSeatFinderStatus('Generate the venue QR first, then download it.');
-            return null;
-        }
-
-        try {
-            return canvas.toDataURL('image/png');
-        } catch {
-            setSeatFinderStatus('Unable to prepare QR download. Please try again.');
-            return null;
-        }
-    };
-
     const dataUrlToFile = (dataUrl: string, fileName: string) => {
         const [header, encoded] = dataUrl.split(',');
         const mime = header.match(/data:(.*?);base64/)?.[1] || 'image/png';
@@ -891,66 +867,14 @@ export default function SeatingChartBuilder({
         return new File([bytes], fileName, { type: mime });
     };
 
-    const downloadPublicSeatFinderQr = async () => {
-        const dataUrl = getSeatFinderQrDataUrl();
-        if (!dataUrl) {
-            return;
-        }
-        const fileName = `${layout.layout_name.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'venue'}-seat-finder-qr.png`;
-
-        try {
-            const file = dataUrlToFile(dataUrl, fileName);
-            const shareData = { files: [file], title: 'QuickWeds Venue QR' };
-            if (navigator.share && navigator.canShare?.(shareData)) {
-                await navigator.share(shareData);
-                setSeatFinderStatus('Venue QR ready to save or share.');
-                return;
-            }
-        } catch {
-            // Continue to browser download fallback.
-        }
-
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = fileName;
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-
-        setQrPreviewUrl(dataUrl);
-        const isPhoneBrowser = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
-        if (isPhoneBrowser) {
-            window.setTimeout(() => {
-                const opened = window.open(dataUrl, '_blank');
-                if (opened) opened.opener = null;
-            }, 250);
-            setSeatFinderStatus('If the QR did not download, use the opened QR image and save it to your phone.');
-        } else {
-            setSeatFinderStatus('Venue QR downloaded.');
-        }
-    };
-
-    const openPublicSeatFinder = () => {
+    const getPublicSeatFinderOpenUrl = () => {
         const url = publicSeatFinderUrl || getClientSeatFinderUrl(publicSeatFinderToken);
         if (!url) {
-            setSeatFinderStatus('Generate the venue QR first, then open the finder.');
-            return;
+            return '';
         }
         const openUrl = new URL(url, window.location.origin);
         openUrl.searchParams.set('returnTo', `/dashboard/${weddingId}/planner?tab=seating`);
-        void openExternalUrl(openUrl.toString());
-    };
-
-    const copyPublicSeatFinderUrl = async () => {
-        const url = publicSeatFinderUrl || getClientSeatFinderUrl(publicSeatFinderToken);
-        if (!url) return;
-        try {
-            await copyToClipboard(url);
-            setSeatFinderStatus('Venue QR link copied.');
-        } catch {
-            setSeatFinderStatus(url);
-        }
+        return openUrl.toString();
     };
 
     const getLayoutFileName = (suffix: string) => {
@@ -1467,20 +1391,20 @@ export default function SeatingChartBuilder({
                         </div>
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                             {displayedSeatFinderUrl && (
-                                <div className="flex items-center gap-3 rounded-2xl border border-border bg-white p-3">
-                                    <QRCodeSVG id="public-seat-finder-qr" value={displayedSeatFinderUrl} size={72} />
-                                    <QRCodeCanvas
-                                        id="public-seat-finder-qr-canvas"
-                                        value={displayedSeatFinderUrl}
-                                        size={720}
-                                        includeMargin
-                                        className="pointer-events-none absolute -left-[9999px] top-0 h-[720px] w-[720px]"
-                                    />
-                                    <div className="min-w-0">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Venue QR</p>
-                                        <p className="mt-1 max-w-[180px] truncate text-xs font-bold text-foreground">{displayedSeatFinderUrl}</p>
-                                    </div>
-                                </div>
+                                <QrCodeActions
+                                    value={displayedSeatFinderUrl}
+                                    openUrl={getPublicSeatFinderOpenUrl()}
+                                    title="Venue Seat Finder QR"
+                                    description="Guests scan this venue QR to find their assigned table or seat."
+                                    fileName={`${layout.layout_name.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'venue'}-seat-finder-qr.png`}
+                                    previewSize={72}
+                                    canvasSize={720}
+                                    compact
+                                    className="rounded-2xl border border-border bg-white p-3"
+                                    qrClassName="mx-auto flex justify-center rounded-xl bg-white"
+                                    actionsClassName="mt-3 grid grid-cols-2 gap-2"
+                                    onStatus={setSeatFinderStatus}
+                                />
                             )}
                             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                                 <button type="button" onClick={() => void generateSeatLinks()} disabled={seatFinderLoading !== null} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary hover:text-white disabled:opacity-50">
@@ -1499,22 +1423,6 @@ export default function SeatingChartBuilder({
                                     <CheckCircle2 className="h-4 w-4" />
                                     Check-In
                                 </a>
-                                {displayedSeatFinderUrl && (
-                                    <>
-                                        <button type="button" onClick={() => void copyPublicSeatFinderUrl()} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
-                                            <Copy className="h-4 w-4" />
-                                            Copy QR Link
-                                        </button>
-                                        <button type="button" onClick={downloadPublicSeatFinderQr} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
-                                            <Download className="h-4 w-4" />
-                                            Download QR
-                                        </button>
-                                        <button type="button" onClick={openPublicSeatFinder} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
-                                            <ExternalLink className="h-4 w-4" />
-                                            Open Finder
-                                        </button>
-                                    </>
-                                )}
                                 <a href={`/user-guide/seating-planner?returnTo=${encodeURIComponent(`/dashboard/${weddingId}/planner?tab=seating`)}`} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary hover:text-white">
                                     <BookOpen className="h-4 w-4" />
                                     Seating Guide
@@ -1915,24 +1823,6 @@ export default function SeatingChartBuilder({
             </div>
 
             <AnimatePresence>
-                {qrPreviewUrl && (
-                    <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-foreground/55 backdrop-blur-sm" onClick={() => setQrPreviewUrl('')} />
-                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 z-[60] w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-white p-6 text-center shadow-2xl">
-                            <button type="button" onClick={() => setQrPreviewUrl('')} className="absolute right-4 top-4 rounded-full p-2 text-text-secondary transition hover:bg-neutral">
-                                <X className="h-5 w-5" />
-                            </button>
-                            <Camera className="mx-auto h-8 w-8 text-primary" />
-                            <h3 className="mt-3 font-serif text-2xl font-bold text-foreground">Venue QR</h3>
-                            <p className="mt-2 text-xs leading-5 text-text-secondary">If your phone did not download automatically, long-press this QR image and save it to your photos.</p>
-                            <img src={qrPreviewUrl} alt="Venue seat finder QR code" className="mx-auto mt-5 h-56 w-56 rounded-2xl border border-border bg-white p-3" />
-                            <a href={qrPreviewUrl} download={`${layout.layout_name.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'venue'}-seat-finder-qr.png`} className="mt-5 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white">
-                                <Download className="h-4 w-4" />
-                                Save QR
-                            </a>
-                        </motion.div>
-                    </>
-                )}
                 {isTableModalOpen && (
                     <>
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-foreground/55 backdrop-blur-sm z-50" onClick={() => setIsTableModalOpen(false)} />

@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, Camera, CheckCircle2, Loader2, Search, Undo2 } from 'lucide-react';
 import { getCachedSession } from '@/lib/session-cache';
 import GuestQrScanner from '@/components/dashboard/GuestQrScanner';
+import type { GuestQrScanResult } from '@/components/dashboard/GuestQrScanner';
 
 type CheckInGuest = {
     id: string;
@@ -75,9 +76,16 @@ export default function PlannerCheckInPage() {
         if (weddingId) void loadGuests();
     }, [weddingId, loadGuests]);
 
-    const updateCheckIn = useCallback(async (payload: { rsvpId?: string; lookup?: string; undo?: boolean }) => {
+    const updateCheckIn = useCallback(async (
+        payload: { rsvpId?: string; lookup?: string; undo?: boolean },
+        options: { alertOnError?: boolean } = {},
+    ): Promise<GuestQrScanResult> => {
         const token = await getToken();
-        if (!token) return alert('Please sign in again.');
+        if (!token) {
+            const message = 'Please sign in again.';
+            if (options.alertOnError) alert(message);
+            return { ok: false, state: 'auth_required', message };
+        }
         setSaving(true);
         setError('');
         setStatus('');
@@ -91,17 +99,26 @@ export default function PlannerCheckInPage() {
                 body: JSON.stringify({ weddingId, source: payload.lookup ? 'qr_or_search' : 'staff_search', ...payload }),
             });
             const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.error || 'Unable to update check-in.');
+            if (!response.ok) {
+                const message = data.error || 'Unable to update check-in.';
+                throw Object.assign(new Error(message), { state: data.state });
+            }
             const guestName = data.guest?.guest_name || 'Guest';
-            if (data.state === 'already_checked_in') setStatus(`${guestName} was already checked in.`);
-            else if (data.state === 'check_in_undone') setStatus(`${guestName} check-in was undone.`);
-            else setStatus(`${guestName} is checked in.`);
+            const message = data.state === 'already_checked_in'
+                ? `${guestName} was already checked in.`
+                : data.state === 'check_in_undone'
+                    ? `${guestName} check-in was undone.`
+                    : `${guestName} is checked in.`;
+            setStatus(message);
             await loadGuests();
             if (payload.lookup) setLookup('');
+            return { ok: true, state: data.state, message };
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Unable to update check-in.';
+            const state = typeof err === 'object' && err && 'state' in err ? String((err as { state?: unknown }).state || '') : 'check_in_error';
             setError(message);
-            alert(message);
+            if (options.alertOnError) alert(message);
+            return { ok: false, state, message };
         } finally {
             setSaving(false);
         }
@@ -112,19 +129,22 @@ export default function PlannerCheckInPage() {
         lastScanRef.current = '';
     }, []);
 
-    const handleScannerScan = useCallback((rawValue: string) => {
+    const handleScannerScan = useCallback(async (rawValue: string): Promise<GuestQrScanResult> => {
         const value = rawValue.trim();
-        if (!value || value === lastScanRef.current) return;
+        if (!value || value === lastScanRef.current) {
+            return { ok: false, state: 'duplicate_scan_ignored', message: 'This QR was already scanned. Try another code.' };
+        }
         lastScanRef.current = value;
         setLookup(value);
-        setScannerOpen(false);
-        void updateCheckIn({ lookup: value });
+        const result = await updateCheckIn({ lookup: value });
+        if (!result.ok) lastScanRef.current = '';
+        return result;
     }, [updateCheckIn]);
 
     async function submitLookup(event: FormEvent) {
         event.preventDefault();
         if (!lookup.trim() || saving) return;
-        await updateCheckIn({ lookup: lookup.trim() });
+        await updateCheckIn({ lookup: lookup.trim() }, { alertOnError: true });
     }
 
     return (
@@ -190,7 +210,7 @@ export default function PlannerCheckInPage() {
                                 <button
                                     type="button"
                                     disabled={saving}
-                                    onClick={() => void updateCheckIn({ rsvpId: guest.id, undo: Boolean(guest.checked_in_at) })}
+                                    onClick={() => void updateCheckIn({ rsvpId: guest.id, undo: Boolean(guest.checked_in_at) }, { alertOnError: true })}
                                     className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold disabled:opacity-50 ${guest.checked_in_at ? 'border border-border bg-white text-text-secondary' : 'bg-emerald-600 text-white'}`}
                                 >
                                     {guest.checked_in_at ? <Undo2 className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}

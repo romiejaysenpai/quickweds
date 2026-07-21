@@ -43,7 +43,7 @@ export default function VenueDetailsSection({ wedding, id = 'reception-venue' }:
 
     if (!hasVenueDetails) return null;
 
-    const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || '#D16C78');
+    const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || '#D16C78', false, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const venueName = wedding.reception_venue_name || 'Reception Venue';
     const embedUrl = wedding.reception_venue_address

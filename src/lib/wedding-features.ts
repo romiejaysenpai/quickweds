@@ -58,6 +58,7 @@ export type BuilderPresetSource = Record<string, unknown> & {
     logoFont?: string;
     logoShape?: string;
     logoColor?: string;
+    logoAnimation?: string;
     registryLinks?: Array<{ title: string; url: string }>;
     paymentLinks?: Array<{ title: string; url: string }>;
     isThankYouMode?: boolean;
@@ -612,6 +613,7 @@ export function buildPresetPayload(formData: BuilderPresetSource) {
         logoFont: formData.logoFont,
         logoShape: formData.logoShape,
         logoColor: formData.logoColor,
+        logoAnimation: formData.logoAnimation,
         registryLinks: formData.registryLinks,
         paymentLinks: formData.paymentLinks,
         isThankYouMode: formData.isThankYouMode,

@@ -11,7 +11,9 @@ import {
     CountdownTimer,
     TimelineSection,
     GallerySection,
-    GiftSection
+    GiftSection,
+    AttireSection,
+    FAQSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -48,8 +50,9 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                                 brideName={wedding.bride_name}
                                 groomName={wedding.groom_name}
                                 shape={wedding.logo_shape || 'crest'}
+                                animation={wedding.is_premium ? wedding.logo_animation : 'none'}
                                 color={wedding.logo_color || wedding.motif_color}
-                    motifColor={wedding.motif_color}
+                                motifColor={wedding.motif_color}
                                 fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
                                 size="sm"
                                 inverted
@@ -108,6 +111,8 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
                 <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+                <AttireSection wedding={wedding} />
+                <FAQSection wedding={wedding} />
                 <GiftSection id="gift" wedding={wedding} invert />
                 <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
             </div>

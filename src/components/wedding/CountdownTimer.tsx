@@ -21,6 +21,7 @@ interface CountdownTimerProps {
     id: string;
     template?: string;
     motifColor?: string;
+    cardStyle?: string;
     invert?: boolean;
 }
 
@@ -64,6 +65,7 @@ export default function CountdownTimer({
     id,
     template = 'classic',
     motifColor = '#D16C78',
+    cardStyle,
     invert = false,
 }: CountdownTimerProps) {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -120,7 +122,7 @@ export default function CountdownTimer({
     // Suppress Hydration issue by displaying generic zeros/empty until mounted, allowing the DOM to match the server output
     if (!isMounted) return <div className="sr-only">Loading timer...</div>;
 
-    const visual = getTemplateVisualProfile(template, motifColor, invert);
+    const visual = getTemplateVisualProfile(template, motifColor, invert, cardStyle);
     const isEditorial = visual.mood === 'editorial';
     const isDark = visual.isDark;
     const sectionClasses = `${visual.sectionClass} ${className}`;

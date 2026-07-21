@@ -12,6 +12,7 @@ interface GallerySectionProps {
     masonry?: boolean;
     template?: string;
     motifColor?: string;
+    cardStyle?: string;
     galleryLayout?: string;
     id: string;
 }
@@ -122,7 +123,7 @@ function Lightbox({ images, index, onClose }: { images: string[]; index: number;
     );
 }
 
-export default function GallerySection({ gallery, masonry = false, template = 'classic', motifColor = '#D16C78', galleryLayout = 'auto', id }: GallerySectionProps) {
+export default function GallerySection({ gallery, masonry = false, template = 'classic', motifColor = '#D16C78', cardStyle, galleryLayout = 'auto', id }: GallerySectionProps) {
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const { registerSection, unregisterSection } = useSectionContext();
 
@@ -136,7 +137,7 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
     if (!gallery || gallery.length === 0) return null;
 
     const typography = getTypography(template);
-    const visual = getTemplateVisualProfile(template, motifColor);
+    const visual = getTemplateVisualProfile(template, motifColor, false, cardStyle);
     
     const isSharp = visual.isSharp || ['editorial', 'vogue', 'urban', 'minimal'].includes(template);
     const selectedLayout = normalizeGalleryLayout(galleryLayout);

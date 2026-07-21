@@ -31,9 +31,9 @@ function parseFAQItems(value: unknown): FAQItem[] {
     }
 }
 
-export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems: unknown; wedding?: any; id?: string }) {
+export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems?: unknown; wedding?: any; id?: string }) {
     const { registerSection, unregisterSection } = useSectionContext();
-    const items = parseFAQItems(faqItems);
+    const items = parseFAQItems(faqItems ?? wedding?.faq_items);
 
     useEffect(() => {
         if (items.length === 0) return;
@@ -45,7 +45,7 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
 
     const template = wedding?.template || 'classic';
     const motifColor = wedding?.motif_color || '#D16C78';
-    const visual = getTemplateVisualProfile(template, motifColor);
+    const visual = getTemplateVisualProfile(template, motifColor, false, wedding?.card_style);
     const titleStyle = wedding ? getSectionTitleStyle(wedding, visual.headingClass) : { className: visual.headingClass, style: undefined };
     const isDark = ['royal', 'midnight', 'cinematic', 'urban', 'glitch', 'film'].includes(template);
 

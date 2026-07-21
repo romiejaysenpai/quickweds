@@ -8,7 +8,9 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    AttireSection,
+    FAQSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -70,6 +72,8 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
             <BioSection id="bio" wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <DetailsSection id="details" wedding={wedding} />
+            <AttireSection wedding={wedding} />
+            <FAQSection wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}

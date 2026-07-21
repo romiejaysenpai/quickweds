@@ -10,7 +10,9 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    AttireSection,
+    FAQSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -93,6 +95,8 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                 )}
                 <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
                 <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+                <AttireSection wedding={wedding} />
+                <FAQSection wedding={wedding} />
                 <GiftSection id="gift" wedding={wedding} />
                 <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
             </div>
@@ -160,6 +164,8 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <AttireSection wedding={wedding} />
+            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

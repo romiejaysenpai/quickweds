@@ -23,4 +23,7 @@ export { default as TimelineTemplate } from './TimelineTemplate';
 export { default as RSVPFocusTemplate } from './RSVPFocusTemplate';
 export { default as CinematicTemplate } from './CinematicTemplate';
 export { default as EleganceTemplate } from './EleganceTemplate';
+export { default as NordicTemplate } from './NordicTemplate';
+export { default as CelestialTemplate } from './CelestialTemplate';
+export { default as RivieraTemplate } from './RivieraTemplate';
 export { SharedNewSections } from './shared';

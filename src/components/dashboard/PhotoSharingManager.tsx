@@ -2,19 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-    Camera, Check, CheckCircle2, Copy, Download, ExternalLink, ImageIcon,
+    Check, CheckCircle2, Download, ExternalLink, ImageIcon,
     Key, Loader2, LockKeyhole, Plus, RefreshCw, Save, Trash2, X
 } from 'lucide-react';
 import UpgradeButton from '@/components/UpgradeButton';
 import { getCachedSession } from '@/lib/session-cache';
-import { copyToClipboard } from '@/lib/client-clipboard';
 import { openExternalUrl } from '@/lib/native-actions';
-
-const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), { ssr: false });
-const QRCodeCanvas = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeCanvas), { ssr: false });
+import QrCodeActions from '@/components/dashboard/QrCodeActions';
 
 type PhotoStatus = 'pending' | 'approved' | 'rejected';
 type FilterKey = 'all' | PhotoStatus;
@@ -276,29 +272,6 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
         });
     }
 
-    function downloadQrCode() {
-        const canvas = document.getElementById('photo-sharing-qr-canvas') as HTMLCanvasElement | null;
-        if (!canvas) {
-            setQrStatus('QR code is still loading. Try again in a moment.');
-            return;
-        }
-
-        try {
-            const dataUrl = canvas.toDataURL('image/png');
-            const fileName = `${activeCode?.code?.toLowerCase() || 'photo-sharing'}-photo-upload-qr.png`;
-            const link = document.createElement('a');
-            link.href = dataUrl;
-            link.download = fileName;
-            link.rel = 'noopener noreferrer';
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setQrStatus('QR code downloaded.');
-        } catch {
-            setQrStatus('Unable to prepare QR download. Please try again.');
-        }
-    }
-
     function toggleFilter(filterId: string) {
         setSettings((current) => {
             const currentFilters = new Set(current.enabled_filter_ids.length > 0 ? current.enabled_filter_ids : DEFAULT_SETTINGS.enabled_filter_ids);
@@ -459,33 +432,23 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
                 </div>
 
                 {activeCode && (
-                    <div className="mb-4 grid gap-4 rounded-2xl border border-border bg-neutral/30 p-4 md:grid-cols-[auto,1fr] md:items-center">
-                        <div className="mx-auto rounded-2xl bg-white p-3 shadow-sm">
-                            <QRCodeSVG value={uploadUrlWithCode} size={132} />
-                            <QRCodeCanvas
-                                id="photo-sharing-qr-canvas"
-                                value={uploadUrlWithCode}
-                                size={720}
-                                includeMargin
-                                className="hidden"
-                            />
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">Current guest link</p>
-                            <p className="mt-2 break-all rounded-xl border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground">{uploadUrlWithCode}</p>
-                            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                                <button type="button" onClick={() => void copyToClipboard(uploadUrlWithCode)} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-foreground">
-                                    <Copy className="h-4 w-4" /> Copy Link
-                                </button>
-                                <button type="button" onClick={() => void openExternalUrl(uploadUrlWithCode)} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-foreground">
-                                    <ExternalLink className="h-4 w-4" /> Preview
-                                </button>
-                                <button type="button" onClick={downloadQrCode} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-foreground">
-                                    <Download className="h-4 w-4" /> Download QR
-                                </button>
-                            </div>
-                            {qrStatus && <p className="mt-2 text-xs font-semibold text-text-secondary">{qrStatus}</p>}
-                        </div>
+                    <div className="mb-4 rounded-2xl border border-border bg-neutral/30 p-4">
+                        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">Current guest link</p>
+                        <QrCodeActions
+                            value={uploadUrlWithCode}
+                            openUrl={uploadUrlWithCode}
+                            title="Photo Upload QR"
+                            description="Guests scan this QR to upload wedding photos."
+                            fileName={`${activeCode?.code?.toLowerCase() || 'photo-sharing'}-photo-upload-qr.png`}
+                            previewSize={132}
+                            canvasSize={720}
+                            showUrl
+                            className="grid gap-4 md:grid-cols-[auto,1fr] md:items-center"
+                            qrClassName="mx-auto rounded-2xl bg-white p-3 shadow-sm"
+                            actionsClassName="mt-3 flex flex-col gap-2 sm:flex-row md:col-start-2"
+                            onStatus={setQrStatus}
+                        />
+                        {qrStatus && <p className="mt-2 text-xs font-semibold text-text-secondary">{qrStatus}</p>}
                     </div>
                 )}
 

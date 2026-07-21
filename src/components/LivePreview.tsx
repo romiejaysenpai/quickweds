@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { getTemplateMeta, getTemplateStyleLabel } from '@/lib/template-catalog';
 
-export default function LivePreview({ formData, previews, isMobileView = false }: { formData: any; previews: any; isMobileView?: boolean }) {
+export default function LivePreview({ formData, previews, isMobileView = false, isPremium = false }: { formData: any; previews: any; isMobileView?: boolean; isPremium?: boolean }) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const templateMeta = getTemplateMeta(formData.template);
 
@@ -31,6 +31,7 @@ export default function LivePreview({ formData, previews, isMobileView = false }
                 background_style: formData.backgroundStyle || 'cream',
                 template: formData.template || 'classic',
                 template_style: formData.templateStyle || 'default',
+                card_style: formData.cardStyle || 'default',
                 dress_code: formData.dressCode ? `${formData.dressCode}||${formData.dressCodeColor}` : '',
                 program_timeline: formData.programTimeline,
                 faq_items: formData.faqItems,
@@ -39,6 +40,7 @@ export default function LivePreview({ formData, previews, isMobileView = false }
                 hashtag: formData.hashtag,
                 contact_person: formData.contactPerson,
                 rsvp_deadline: formData.rsvpDeadline || '2026-09-24',
+                rsvp_events: formData.rsvpEvents || [],
                 gift_bank: formData.giftBank,
                 gift_account_name: formData.giftAccountName,
                 gift_account_number: formData.giftAccountNumber,
@@ -46,12 +48,12 @@ export default function LivePreview({ formData, previews, isMobileView = false }
                 logo_font: formData.logoFont || 'Elegant',
                 logo_shape: formData.logoShape || 'minimal',
                 logo_color: formData.logoColor || formData.motifColor,
+                logo_animation: isPremium ? (formData.logoAnimation || 'none') : 'none',
                 spotify_playlist_url: formData.spotifyUrl,
                 background_music_url: previews.backgroundMusic,
                 background_music_title: formData.backgroundMusicTitle,
                 background_music_enabled: Boolean(formData.backgroundMusicEnabled && previews.backgroundMusic),
                 wedding_party: formData.weddingParty,
-                include_entourage_section: formData.includeEntourageSection !== false,
                 gift_registry_links: formData.registryLinks,
                 cash_funds: formData.cashFunds,
                 payment_links: formData.paymentLinks,
@@ -86,7 +88,7 @@ export default function LivePreview({ formData, previews, isMobileView = false }
         sendUpdate();
 
         return () => window.removeEventListener('message', handleMessage);
-    }, [formData, previews]);
+    }, [formData, previews, isPremium]);
 
     return (
         <div className={`relative overflow-hidden ${isMobileView ? '' : 'rounded-[2rem] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.85),rgba(255,248,244,0.72))] p-4 shadow-[0_30px_90px_rgba(58,42,45,0.12)] backdrop-blur-sm'}`}>

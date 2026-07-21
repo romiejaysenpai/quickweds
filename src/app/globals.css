@@ -67,6 +67,63 @@
   --error-text: #E69B9B;
 }
 
+/* Template-only continuation styling. Keeps shared lower sections visually tied
+   to the selected invitation without affecting the product landing page. */
+.template-lower-sections > section,
+.template-lower-sections > div:not(.fixed) {
+  position: relative;
+  isolation: isolate;
+}
+
+.template-lower-sections > section::before,
+.template-lower-sections > div:not(.fixed)::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 50%;
+  width: min(7rem, 28vw);
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, var(--template-motif), transparent);
+  opacity: .42;
+  pointer-events: none;
+}
+
+.template-lower-sections[data-template-mood="editorial"] > section::before,
+.template-lower-sections[data-template-mood="editorial"] > div:not(.fixed)::before {
+  left: clamp(1rem, 6vw, 5rem);
+  width: min(12rem, 40vw);
+  height: 3px;
+  transform: none;
+  background: #111;
+  opacity: .85;
+}
+
+.template-lower-sections[data-template-mood="dark"] > section::before,
+.template-lower-sections[data-template-mood="cinematic"] > section::before {
+  width: min(14rem, 46vw);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--template-motif) 65%, transparent);
+  opacity: .7;
+}
+
+.template-lower-sections[data-template-mood="organic"] > section::after,
+.template-lower-sections[data-template-mood="destination"] > section::after,
+.template-lower-sections[data-template-mood="playful"] > section::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -3rem;
+  top: 12%;
+  width: 9rem;
+  height: 9rem;
+  border: 1px solid color-mix(in srgb, var(--template-motif) 25%, transparent);
+  border-radius: 62% 38% 64% 36%;
+  transform: rotate(18deg);
+  opacity: .42;
+  pointer-events: none;
+}
+
 @theme {
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);

@@ -12,7 +12,8 @@ import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
 import MarketplacePanel from './builder/MarketplacePanel';
-import { MONOGRAM_SHAPES, MonogramMark } from './MonogramMark';
+import { MONOGRAM_SHAPES, MONOGRAM_ANIMATIONS, MonogramMark } from './MonogramMark';
+import { MonogramExporter } from './MonogramExporter';
 import DecorativeLayer from './DecorativeLayer';
 import { useLocalUndoRedo } from '@/components/UndoRedoProvider';
 import { hasAccountPro } from '@/lib/account';
@@ -38,7 +39,7 @@ import {
 } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
 import { hasStoredSupabaseSession } from '@/lib/supabase-auth';
-import { getMotifSectionTitleGradient, SECTION_TITLE_COLOR_STYLES, SECTION_TITLE_FONT_STYLES } from '@/lib/theme-engine';
+import { CARD_CONTAINER_STYLES, getMotifSectionTitleGradient, SECTION_TITLE_COLOR_STYLES, SECTION_TITLE_FONT_STYLES } from '@/lib/theme-engine';
 import { parseCsv } from '@/lib/guest-list';
 import {
     DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY,
@@ -339,6 +340,7 @@ const INITIAL_FORM_DATA = {
     fontStyle: 'Elegant',
     sectionTitleFontStyle: 'default',
     sectionTitleColorStyle: 'motif',
+    cardStyle: 'default',
     backgroundStyle: 'gradient',
     template: 'classic',
     templateStyle: DEFAULT_TEMPLATE_STYLE,
@@ -359,6 +361,7 @@ const INITIAL_FORM_DATA = {
     logoFont: 'Elegant',
     logoShape: 'minimal',
     logoColor: '#C08081',
+    logoAnimation: 'none',
     spotifyUrl: '',
     backgroundMusicTitle: '',
     backgroundMusicEnabled: false,
@@ -565,6 +568,7 @@ export default function BuilderForm() {
     }, []);
 
     const [isPremium, setIsPremium] = useState(true);
+    const [showMonogramProModal, setShowMonogramProModal] = useState(false);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
     const [accountIsPro, setAccountIsPro] = useState(false);
     const [activeWeddingCount, setActiveWeddingCount] = useState(0);
@@ -685,6 +689,7 @@ export default function BuilderForm() {
                         fontStyle: data.font_style || 'Elegant',
                         sectionTitleFontStyle: data.section_title_font_style || 'default',
                         sectionTitleColorStyle: data.section_title_color_style || 'motif',
+                        cardStyle: data.card_style || 'default',
                         backgroundStyle: data.background_style || 'gradient',
                         template: data.template || 'classic',
                         templateStyle: data.template_style || DEFAULT_TEMPLATE_STYLE,
@@ -705,6 +710,7 @@ export default function BuilderForm() {
                         logoFont: data.logo_font || 'Elegant',
                         logoShape: data.logo_shape || 'minimal',
                         logoColor: data.logo_color || data.motif_color,
+                        logoAnimation: data.logo_animation || 'none',
                         spotifyUrl: data.spotify_playlist_url || '',
                         backgroundMusicTitle: data.background_music_title || '',
                         backgroundMusicEnabled: data.background_music_enabled || false,
@@ -1187,6 +1193,7 @@ export default function BuilderForm() {
                 font_style: formData.fontStyle,
                 section_title_font_style: formData.sectionTitleFontStyle,
                 section_title_color_style: formData.sectionTitleColorStyle,
+                card_style: formData.cardStyle || 'default',
                 background_style: formData.backgroundStyle,
                 template: formData.template,
                 template_style: formData.templateStyle || DEFAULT_TEMPLATE_STYLE,
@@ -1206,6 +1213,7 @@ export default function BuilderForm() {
                 logo_font: formData.logoFont,
                 logo_shape: formData.logoShape,
                 logo_color: formData.logoColor || formData.motifColor,
+                logo_animation: formData.logoAnimation || 'none',
                 spotify_playlist_url: formData.spotifyUrl,
                 background_music_title: formData.backgroundMusicTitle,
                 background_music_enabled: Boolean(formData.backgroundMusicEnabled && (musicUrl || previews.backgroundMusic)),
@@ -1284,6 +1292,7 @@ export default function BuilderForm() {
                     'reception_venue_photos',
                     'section_title_font_style',
                     'section_title_color_style',
+                    'card_style',
                     'include_entourage_section',
                     'background_music_url',
                     'background_music_title',
@@ -1780,6 +1789,34 @@ export default function BuilderForm() {
                                  })}
                              </div>
                          </div>
+                          <div className="space-y-4 rounded-[1.75rem] border border-border bg-white/75 p-4 shadow-sm sm:p-5">
+                              <div>
+                                  <p className="text-xs font-bold uppercase tracking-widest text-text-secondary">Card & Section Container Style</p>
+                                  <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                      Choose how cards and sections are framed across your template (bordered cards, borderless glass, hairline rules, soft parchment, architectural arches, or full-bleed strips).
+                                  </p>
+                              </div>
+                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                  {CARD_CONTAINER_STYLES.map((style) => {
+                                      const isSelected = (formData.cardStyle || 'default') === style.id;
+                                      return (
+                                          <button
+                                              key={style.id}
+                                              type="button"
+                                              onClick={() => setFormData((prev: any) => ({ ...prev, cardStyle: style.id }))}
+                                              className={`rounded-2xl border p-4 text-left transition-all ${
+                                                  isSelected
+                                                      ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10'
+                                                      : 'border-border bg-neutral/50 hover:border-primary/35 hover:bg-white'
+                                              }`}
+                                          >
+                                              <p className="text-sm font-bold text-foreground">{style.name}</p>
+                                              <p className="mt-1 text-xs text-text-secondary leading-relaxed">{style.description}</p>
+                                          </button>
+                                      );
+                                  })}
+                              </div>
+                          </div>
                          <Collapsible title="Typography & Fonts" isOpen={expandedSection === 'fonts'} onToggle={() => toggleSection('fonts')} icon={Layout}>
                             <div className="grid grid-cols-2 gap-2 no-scrollbar sm:max-h-[400px] sm:grid-cols-3 sm:gap-3 sm:overflow-y-auto sm:pr-2 md:gap-4 custom-scrollbar">
                                 {FONTS.map((font, index) => {
@@ -1870,48 +1907,30 @@ export default function BuilderForm() {
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                         <div className="text-center mb-4">
                             <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Monogram & Branding</h2>
-                            <p className="text-text-secondary">Create your unique wedding brand identity.</p>
+                            <p className="text-text-secondary">Customize your wedding initials, choose luxury monogram styles & motion animations.</p>
                         </div>
-
-                        {!isPremium ? (
-                            <div className="bg-white rounded-[2rem] p-12 border-2 border-dashed border-primary/10 text-center flex flex-col items-center gap-6 shadow-sm">
-                                <div className="w-20 h-20 rounded-full bg-primary/5 flex items-center justify-center">
-                                    <Sparkles className="w-10 h-10 text-primary/40" />
-                                </div>
-                                <div className="max-w-md mx-auto">
-                                    <h3 className="text-2xl font-serif font-bold text-foreground mb-3">Premium Monogram Maker</h3>
-                                    <p className="text-text-secondary mb-8">
-                                        Unlock our custom monogram logo system to create a unique brand identity that appears throughout your invitation.
-                                    </p>
-                                    <UpgradeButton weddingId={editId || ''} className="scale-110 mb-6" />
-                                    <div className="flex justify-center gap-6 opacity-40 grayscale pointer-events-none">
-                                        <div className="w-16 h-16 rounded-full border-2 border-primary/30 flex items-center justify-center text-primary font-bold text-xl font-serif">A&B</div>
-                                        <div className="w-16 h-16 rounded-xl border-2 border-primary/30 flex items-center justify-center text-primary font-bold text-xl font-serif">A&B</div>
-                                        <div className="w-16 h-16 border-2 border-primary/30 flex items-center justify-center text-primary font-bold text-xl font-serif text-center leading-tight">A<br />&<br />B</div>
-                                    </div>
-                                </div>
+                        <div className="space-y-6">
+                            <div className="overflow-hidden rounded-[2.5rem] border border-primary/10 bg-[radial-gradient(circle_at_top,rgba(192,128,129,0.14),transparent_48%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,248,244,0.78))] p-6 text-center shadow-xl shadow-primary/10 sm:p-10">
+                                <p className="mb-4 text-[10px] font-black uppercase tracking-[0.28em] text-primary/60">Live Monogram Preview</p>
+                                <MonogramMark
+                                    initials={formData.logoInitials}
+                                    brideName={formData.brideName}
+                                    groomName={formData.groomName}
+                                    shape={formData.logoShape}
+                                    animation={isPremium ? formData.logoAnimation : 'none'}
+                                    color={formData.logoColor}
+                                    motifColor={formData.motifColor}
+                                    fontClassName={FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'}
+                                    size="lg"
+                                    className="mx-auto"
+                                />
+                                <div className="mx-auto mt-6 h-px w-28 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary/70">
+                                    {formData.brideName || 'Bride'} & {formData.groomName || 'Groom'}
+                                </p>
                             </div>
-                        ) : (
-                            <div className="space-y-6">
-                                <div className="overflow-hidden rounded-[2rem] border border-primary/10 bg-[radial-gradient(circle_at_top,rgba(192,128,129,0.14),transparent_48%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,248,244,0.78))] p-5 text-center shadow-xl shadow-primary/10 sm:p-8">
-                                    <p className="mb-4 text-[10px] font-black uppercase tracking-[0.28em] text-primary/60">Live Monogram</p>
-                                    <MonogramMark
-                                        initials={formData.logoInitials}
-                                        brideName={formData.brideName}
-                                        groomName={formData.groomName}
-                                        shape={formData.logoShape}
-                                        color={formData.logoColor}
-                                        motifColor={formData.motifColor}
-                                        fontClassName={FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'}
-                                        size="lg"
-                                        className="mx-auto"
-                                    />
-                                    <div className="mx-auto mt-6 h-px w-28 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-                                    <p className="mt-4 text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary/70">
-                                        {formData.brideName || 'Bride'} & {formData.groomName || 'Groom'}
-                                    </p>
-                                </div>
 
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Initials</label>
                                     <input
@@ -1919,20 +1938,92 @@ export default function BuilderForm() {
                                         value={formData.logoInitials}
                                         onChange={handleChange}
                                         placeholder={(formData.brideName?.[0] || 'A') + ' & ' + (formData.groomName?.[0] || 'B')}
-                                        className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
+                                        className="w-full px-4 py-3.5 rounded-xl border border-border bg-neutral focus:border-primary outline-none text-sm font-medium"
                                     />
                                 </div>
 
-                                <div className="space-y-3">
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Font</label>
+                                    <select
+                                        name="logoFont"
+                                        value={formData.logoFont}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3.5 rounded-xl border border-border bg-neutral focus:border-primary outline-none text-sm font-medium"
+                                    >
+                                        {FONTS.map(f => (
+                                            <option key={f.id} value={f.id}>{f.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/50 block">Monogram Color</label>
+                                <div className="flex flex-wrap gap-2.5">
+                                    {["#D16C78", "#D6B87C", "#B85C7A", "#3A2A2D", "#7A5A61", "#6B7A62", "#8F6A45", "#C5A059", "#CFB53B", "#537A57", "#8D7BC4", "#0B8F7B", "#A56D52", "#C7704D", "#A0616A", "#FFF8F4", "#F2C1CC", "#F8EEEA", "#EBD4C4"].map((color) => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            onClick={() => setFormData((prev: any) => ({ ...prev, logoColor: color }))}
+                                            className={`w-10 h-10 rounded-xl border-2 transition-all ${formData.logoColor === color ? 'border-white ring-2 ring-primary shadow-xl scale-110' : 'border-border/50 hover:border-primary/50'}`}
+                                            style={{ backgroundColor: color }}
+                                            aria-label={`Select monogram color ${color}`}
+                                        />
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-3 pt-2">
+                                    <input
+                                        type="color"
+                                        value={formData.logoColor || formData.motifColor}
+                                        onChange={(e) => setFormData((prev: any) => ({ ...prev, logoColor: e.target.value }))}
+                                        className="w-10 h-10 rounded-xl border border-border p-0 cursor-pointer bg-transparent"
+                                        aria-label="Pick a custom monogram color"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={formData.logoColor || ''}
+                                        onChange={(e) => setFormData((prev: any) => ({ ...prev, logoColor: e.target.value }))}
+                                        placeholder="Custom Hex (e.g. #000000)"
+                                        className="flex-1 px-4 py-3 rounded-xl border border-border bg-neutral/30 text-sm font-mono outline-none focus:bg-white transition-all min-h-[44px]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 pt-4">
+                                <div className="flex items-center justify-between">
                                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Style</label>
-                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                        {MONOGRAM_SHAPES.map((shape) => (
+                                    {!isPremium && (
+                                        <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                                            Pro unlocks 14+ luxury crest styles
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                                    {MONOGRAM_SHAPES.map((shape) => {
+                                        const isLocked = !isPremium && shape.isPro;
+                                        const isSelected = formData.logoShape === shape.id;
+                                        return (
                                             <button
                                                 key={shape.id}
                                                 type="button"
-                                                onClick={() => setFormData((prev: any) => ({ ...prev, logoShape: shape.id }))}
-                                                className={`rounded-2xl border p-3 text-left transition-all ${formData.logoShape === shape.id ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' : 'border-border bg-neutral/60 hover:border-primary/40 hover:bg-white'}`}
+                                                onClick={() => {
+                                                    if (isLocked) {
+                                                        setShowMonogramProModal(true);
+                                                    } else {
+                                                        setFormData((prev: any) => ({ ...prev, logoShape: shape.id }));
+                                                    }
+                                                }}
+                                                className={`relative rounded-2xl border p-3 text-left transition-all ${
+                                                    isSelected
+                                                        ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10 ring-2 ring-primary/20'
+                                                        : 'border-border bg-neutral/60 hover:border-primary/40 hover:bg-white'
+                                                }`}
                                             >
+                                                {shape.isPro && (
+                                                    <span className="absolute top-2 right-2 rounded-md bg-gradient-to-r from-amber-500 to-rose-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm">
+                                                        PRO
+                                                    </span>
+                                                )}
                                                 <MonogramMark
                                                     initials={formData.logoInitials}
                                                     brideName={formData.brideName}
@@ -1942,62 +2033,107 @@ export default function BuilderForm() {
                                                     motifColor={formData.motifColor}
                                                     fontClassName={FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'}
                                                     size="sm"
-                                                    className="mx-auto mb-3"
+                                                    className="mx-auto mb-2"
                                                 />
-                                                <span className="block text-[11px] font-black uppercase tracking-[0.16em] text-foreground">{shape.name}</span>
-                                                <span className="mt-1 block text-[10px] leading-4 text-text-secondary">{shape.desc}</span>
+                                                <span className="block text-[11px] font-black uppercase tracking-[0.14em] text-foreground truncate">{shape.name}</span>
+                                                <span className="mt-0.5 block text-[9px] leading-3.5 text-text-secondary line-clamp-2">{shape.desc}</span>
                                             </button>
-                                        ))}
-                                    </div>
+                                        );
+                                    })}
                                 </div>
+                            </div>
 
-                                <div className="space-y-2">
-                                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Font</label>
-                                        <select
-                                            name="logoFont"
-                                            value={formData.logoFont}
-                                            onChange={handleChange}
-                                            className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none"
-                                        >
-                                            {FONTS.map(f => (
-                                                <option key={f.id} value={f.id}>{f.name}</option>
-                                            ))}
-                                        </select>
+                            <div className="space-y-3 pt-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Motion Animation</label>
+                                    {!isPremium && (
+                                        <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                                            Pro unlocks Website Motion Animations
+                                        </span>
+                                    )}
                                 </div>
-
-                                <div className="space-y-4">
-                                    <label className="text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/50 mb-2 block">Monogram Color</label>
-                                    <div className="flex flex-wrap gap-2 mb-3">
-                                        {["#D16C78", "#D6B87C", "#B85C7A", "#3A2A2D", "#7A5A61", "#6B7A62", "#8F6A45", "#C5A059", "#CFB53B", "#537A57", "#8D7BC4", "#0B8F7B", "#A56D52", "#C7704D", "#A0616A", "#FFF8F4", "#F2C1CC", "#F8EEEA", "#EBD4C4"].map((color) => (
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                                    {MONOGRAM_ANIMATIONS.map((anim) => {
+                                        const isLocked = !isPremium && anim.isPro;
+                                        const isSelected = (formData.logoAnimation || 'none') === anim.id;
+                                        return (
                                             <button
-                                                key={color}
+                                                key={anim.id}
                                                 type="button"
-                                                onClick={() => setFormData((prev: any) => ({ ...prev, logoColor: color }))}
-                                                className={`w-10 h-10 rounded-xl border-2 transition-all ${formData.logoColor === color ? 'border-white ring-2 ring-primary shadow-xl scale-110' : 'border-border/50 hover:border-primary/50'}`}
-                                                style={{ backgroundColor: color }}
-                                                aria-label={`Select monogram color ${color}`}
-                                            />
-                                        ))}
+                                                onClick={() => {
+                                                    if (isLocked) {
+                                                        setShowMonogramProModal(true);
+                                                    } else {
+                                                        setFormData((prev: any) => ({ ...prev, logoAnimation: anim.id }));
+                                                    }
+                                                }}
+                                                className={`relative rounded-2xl border p-3 text-left transition-all ${
+                                                    isSelected
+                                                        ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10 ring-2 ring-primary/20'
+                                                        : 'border-border bg-neutral/60 hover:border-primary/40 hover:bg-white'
+                                                }`}
+                                            >
+                                                {anim.isPro && (
+                                                    <span className="absolute top-2 right-2 rounded-md bg-gradient-to-r from-amber-500 to-rose-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm">
+                                                        PRO
+                                                    </span>
+                                                )}
+                                                <span className="block text-xs font-black uppercase tracking-wider text-foreground mb-1">{anim.name}</span>
+                                                <span className="block text-[10px] text-text-secondary leading-normal">{anim.desc}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="pt-6">
+                                <MonogramExporter
+                                    initials={formData.logoInitials}
+                                    brideName={formData.brideName}
+                                    groomName={formData.groomName}
+                                    shape={formData.logoShape}
+                                    animation={formData.logoAnimation}
+                                    color={formData.logoColor}
+                                    motifColor={formData.motifColor}
+                                    fontClassName={FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'}
+                                    isPro={isPremium}
+                                    onRequirePro={() => setShowMonogramProModal(true)}
+                                />
+                            </div>
+                        </div>
+
+                        {showMonogramProModal && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md animate-in fade-in">
+                                <div className="relative w-full max-w-md rounded-3xl border border-primary/20 bg-white p-8 shadow-2xl text-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowMonogramProModal(false)}
+                                        className="absolute top-4 right-4 text-text-secondary hover:text-foreground"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-tr from-amber-100 to-rose-100">
+                                        <Sparkles className="h-8 w-8 text-amber-600 animate-pulse" />
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/50 mb-2 block">Custom Monogram Color</label>
-                                        <div className="flex items-center gap-3">
-                                            <input
-                                                type="color"
-                                                value={formData.logoColor || formData.motifColor}
-                                                onChange={(e) => setFormData((prev: any) => ({ ...prev, logoColor: e.target.value }))}
-                                                className="w-10 h-10 rounded-xl border border-border p-0 cursor-pointer bg-transparent"
-                                                aria-label="Pick a custom monogram color"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={formData.logoColor || ''}
-                                                onChange={(e) => setFormData((prev: any) => ({ ...prev, logoColor: e.target.value }))}
-                                                placeholder="Custom Hex (e.g. #000000)"
-                                                className="flex-1 px-4 py-3 rounded-xl border border-border bg-neutral/30 text-sm font-mono outline-none focus:bg-white transition-all min-h-[44px]"
-                                            />
+                                    <h3 className="font-serif text-2xl font-bold text-foreground mb-2">Unlock Premium Monograms</h3>
+                                    <p className="text-xs leading-relaxed text-text-secondary mb-6">
+                                        Upgrade to QuickWeds Pro to access 14+ luxury monogram crest styles, smooth motion animations for your website, and high-definition video exports (MP4/WebM) for video invitations and paper stationery!
+                                    </p>
+                                    <div className="space-y-3 mb-6 text-left text-xs text-foreground/80 font-medium">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                                            <span>14+ Exclusive Luxury & Botanical Crest Styles</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                                            <span>6 Motion Animations for your Generated Wedding Site</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                                            <span>Export HD Animated Video Files (MP4/WebM)</span>
                                         </div>
                                     </div>
+                                    <UpgradeButton weddingId={editId || ''} className="w-full justify-center py-3.5 text-sm" />
                                 </div>
                             </div>
                         )}
@@ -2331,18 +2467,18 @@ export default function BuilderForm() {
                         Optional
                     </span>
                 </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Bank Name</label>
-                        <input name="giftBank" value={formData.giftBank} onChange={handleChange} placeholder="GCash, Maya, BDO..." className="min-h-[48px] w-full rounded-xl border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white" />
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2 col-span-1">
+                        <label className="text-[10px] sm:text-xs uppercase tracking-widest font-bold text-text-secondary ml-1 truncate">Bank Name</label>
+                        <input name="giftBank" value={formData.giftBank} onChange={handleChange} placeholder="GCash, BDO..." className="w-full px-3 sm:px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-[13px] sm:text-base min-h-[44px]" />
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Number</label>
-                        <input name="giftAccountNumber" value={formData.giftAccountNumber} onChange={handleChange} placeholder="0917..." className="min-h-[48px] w-full rounded-xl border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white" />
+                    <div className="space-y-2 col-span-1">
+                        <label className="text-[10px] sm:text-xs uppercase tracking-widest font-bold text-text-secondary ml-1 truncate">Account #</label>
+                        <input name="giftAccountNumber" value={formData.giftAccountNumber} onChange={handleChange} placeholder="0917..." className="w-full px-3 sm:px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-[13px] sm:text-base min-h-[44px]" />
                     </div>
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="space-y-2 col-span-2">
                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Account Name</label>
-                        <input name="giftAccountName" value={formData.giftAccountName} onChange={handleChange} placeholder="Account holder name" className="min-h-[48px] w-full rounded-xl border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white" />
+                        <input name="giftAccountName" value={formData.giftAccountName} onChange={handleChange} placeholder="Account holder name" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
                     </div>
                 </div>
                 <div className="mt-5 space-y-2">

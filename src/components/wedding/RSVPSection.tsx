@@ -12,7 +12,7 @@ interface RSVPSectionProps {
 
 export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     const template = wedding.template || 'classic';
-    const visual = getTemplateVisualProfile(template, wedding.motif_color || '#D16C78');
+    const visual = getTemplateVisualProfile(template, wedding.motif_color || '#D16C78', false, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const isSharp = visual.isSharp || ['editorial', 'urban', 'minimal', 'vogue', 'glitch', 'film'].includes(template);
     const isDark = visual.isDark || ['royal', 'midnight', 'cinematic'].includes(template);

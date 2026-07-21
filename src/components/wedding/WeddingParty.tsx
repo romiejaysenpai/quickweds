@@ -14,7 +14,7 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
     const visibleMembers = (members || []).filter((member) => member?.name?.trim());
     if (!wedding || wedding.include_entourage_section === false || visibleMembers.length === 0) return null;
 
-    const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || '#D16C78');
+    const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || '#D16C78', false, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const motifColor = wedding.motif_color || '#D16C78';
     const invitationStyle = getEntourageInvitationStyle(visual, motifColor, wedding.template || 'classic');

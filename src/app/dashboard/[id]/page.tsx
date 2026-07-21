@@ -31,6 +31,7 @@ import {
     escapeCsvCell,
 } from '@/lib/guest-list';
 import { getCachedSession } from '@/lib/session-cache';
+import QrCodeActions from '@/components/dashboard/QrCodeActions';
 
 const AnalyticsPanel = dynamic(() => import('@/components/dashboard/AnalyticsPanel'), {
     loading: () => <DashboardPanelLoading label="Loading analytics..." />,
@@ -42,8 +43,6 @@ const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudg
     ssr: false,
     loading: () => <div className="h-full w-full animate-pulse rounded-full bg-neutral/50" />,
 });
-const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), { ssr: false });
-const QRCodeCanvas = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeCanvas), { ssr: false });
 const GuestImportModal = dynamic(() => import('@/components/dashboard/GuestImportModal'));
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/dahsboard%20quivkyt.png';
@@ -147,51 +146,9 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [checkingRole, setCheckingRole] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [qrStatus, setQrStatus] = useState('');
 
     const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
-
-    // Download QR Code function
-    const downloadQRCode = () => {
-        const canvas = document.getElementById('qr-canvas') as HTMLCanvasElement;
-        if (!canvas) return;
-
-        const pngUrl = canvas
-            .toDataURL("image/png")
-            .replace("image/png", "image/octet-stream");
-
-        const downloadLink = document.createElement("a");
-        downloadLink.href = pngUrl;
-        downloadLink.download = `wedding-qr-${wedding?.bride_name}-${wedding?.groom_name}.png`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-    };
-
-    // Share QR Code function (for mobile)
-    const shareQRCode = async () => {
-        const canvas = document.getElementById('qr-canvas') as HTMLCanvasElement;
-        if (!canvas) return;
-
-        try {
-            const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
-            if (!blob) return downloadQRCode();
-
-            const file = new File([blob], 'wedding-qr.png', { type: 'image/png' });
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: 'Wedding QR Code',
-                    text: `Scan this to view ${wedding?.bride_name} & ${wedding?.groom_name}'s wedding website!`
-                });
-            } else {
-                downloadQRCode();
-            }
-        } catch (err) {
-            console.error('Error sharing:', err);
-            downloadQRCode();
-        }
-    };
 
     // Feature: Confetti state
     const [showConfetti, setShowConfetti] = useState(false);
@@ -1440,52 +1397,26 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <h3 className="text-2xl sm:text-3xl font-serif font-bold text-center mb-2 leading-tight text-white">Digital & <span className="italic text-white underline decoration-white/30 underline-offset-8">Physical</span></h3>
                                     <p className="text-xs text-white/70 text-center mb-10 max-w-[220px]">Scan for the website, print on your invitations, or share via chat.</p>
 
-                                    <div className="relative group/qr mb-10">
-                                        <div className="absolute -inset-4 bg-white rounded-[3rem] blur-xl opacity-20 group-hover/qr:opacity-40 transition-opacity duration-700" />
-                                        <div className="relative bg-white p-8 rounded-[2.5rem] shadow-2xl hover:scale-105 transition-transform duration-500 cursor-pointer overflow-hidden border-4 border-white/10">
-                                            <div className="absolute inset-0 bg-primary/90 opacity-0 group-hover/qr:opacity-100 transition-opacity flex flex-col items-center justify-center text-white p-6 text-center">
-                                                <Smartphone className="w-10 h-10 mb-3 animate-bounce" />
-                                                <p className="text-[10px] font-black uppercase tracking-[0.2em]">Scan to Preview</p>
-                                            </div>
-
-                                            <QRCodeSVG
-                                                value={qrTrackingUrl}
-                                                size={160}
-                                                fgColor="#D16C78"
-                                                level="H"
-                                                includeMargin={false}
-                                                className="w-full h-auto"
-                                            />
-                                            <div className="hidden">
-                                                <QRCodeCanvas
-                                                    id="qr-canvas"
-                                                    value={qrTrackingUrl}
-                                                    size={1024}
-                                                    level="H"
-                                                    fgColor="#D16C78"
-                                                    includeMargin={true}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
                                     <div className="w-full space-y-3">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            <button
-                                                onClick={downloadQRCode}
-                                                className="flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl bg-white text-primary font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-neutral-50 active:scale-95 transition-all group/btn"
-                                            >
-                                                <Download className="w-4 h-4 group-hover/btn:translate-y-0.5 transition-transform" /> Download PNG
-                                            </button>
-                                            <button
-                                                onClick={shareQRCode}
-                                                className="flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl bg-white/20 backdrop-blur-md text-white border border-white/30 font-black uppercase tracking-widest text-[10px] hover:bg-white/30 active:scale-95 transition-all group/share"
-                                            >
-                                                <Share2 className="w-4 h-4 group-hover/share:scale-110 transition-transform" /> Share Image
-                                            </button>
-                                        </div>
+                                        <QrCodeActions
+                                            value={qrTrackingUrl}
+                                            openUrl={qrTrackingUrl}
+                                            title="Wedding Website QR"
+                                            description={`Scan this to view ${wedding?.bride_name || 'the couple'} & ${wedding?.groom_name || 'their partner'}'s wedding website.`}
+                                            fileName={`wedding-qr-${wedding?.bride_name || 'bride'}-${wedding?.groom_name || 'groom'}.png`.replace(/[^a-z0-9.-]+/gi, '-').toLowerCase()}
+                                            previewSize={160}
+                                            canvasSize={1024}
+                                            fgColor="#D16C78"
+                                            level="H"
+                                            compact
+                                            className="relative group/qr mb-10"
+                                            qrClassName="relative mx-auto w-fit rounded-[2.5rem] border-4 border-white/10 bg-white p-8 shadow-2xl transition-transform duration-500 hover:scale-105"
+                                            actionsClassName="grid grid-cols-2 gap-3"
+                                            onStatus={setQrStatus}
+                                        />
+                                        {qrStatus && <p className="text-center text-[10px] font-bold leading-5 text-white/65">{qrStatus}</p>}
 
-                                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/40 text-center sm:hidden">Tip: Long press QR code to save to gallery</p>
+                                        <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/40 text-center sm:hidden">Tip: use Preview, then long press QR code to save to gallery</p>
 
                                         <div className="grid grid-cols-2 gap-3">
                                             <button

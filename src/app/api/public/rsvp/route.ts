@@ -37,6 +37,10 @@ export async function POST(req: NextRequest) {
     const songRequest = sanitizeInput(parsed.data.songRequest || '', { maxLength: 500 });
     const plusOneNames = sanitizeInput(parsed.data.plusOneNames || '', { maxLength: 1000 });
     const message = sanitizeInput(parsed.data.message || '', { maxLength: 2000, allowNewlines: true });
+    const householdName = sanitizeInput(parsed.data.householdName || '', { maxLength: 200 });
+    const householdMembers = parsed.data.householdMembers
+        .map((name) => sanitizeInput(name, { maxLength: 200 }))
+        .filter(Boolean);
 
     if (!guestName) {
         return NextResponse.json({ error: 'Guest name is required.' }, { status: 400 });
@@ -44,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
+        const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
         let weddingResult = await db
             .from('weddings')
             .select(weddingSelect)
@@ -95,6 +99,14 @@ export async function POST(req: NextRequest) {
             insertData.seat_lookup_token = makeSeatLookupToken();
             insertData.guest_code = makeGuestCode(guestName);
         }
+        if (weddingResult.error && String(weddingResult.error.message || '').includes('rsvp_events')) {
+            weddingResult = await db
+                .from('weddings')
+                .select(weddingSelect.replace('rsvp_events, ', ''))
+                .eq('id', weddingId)
+                .is('deleted_at', null)
+                .maybeSingle();
+        }
 
         if (mealPreference && mealPreference !== 'No Preference') insertData.meal_preference = mealPreference;
         if (dietaryDetails) insertData.dietary_details = dietaryDetails;
@@ -106,12 +118,29 @@ export async function POST(req: NextRequest) {
         }
         if (songRequest) insertData.song_request = songRequest;
         if (parsed.data.childrenCount > 0) insertData.children_count = parsed.data.childrenCount;
+        if (householdName) insertData.household_name = householdName;
+        if (householdMembers.length > 0) insertData.household_members = householdMembers;
 
-        const { data: rsvp, error: insertError } = await db
+        const configuredEvents = Array.isArray(wedding.rsvp_events) ? wedding.rsvp_events : [];
+        const allowedEventIds = new Set(configuredEvents.map((event: { id?: unknown }) => String(event?.id || '')).filter(Boolean));
+        const eventResponses = parsed.data.eventResponses.filter((response) => allowedEventIds.has(response.eventId));
+        if (eventResponses.length > 0) insertData.event_responses = eventResponses;
+
+        let { data: rsvp, error: insertError } = await db
             .from('rsvps')
             .insert(insertData)
             .select('id')
             .single();
+
+        if (insertError && ['household_name', 'household_members', 'event_responses'].some((column) => String(insertError.message || '').includes(column))) {
+            const compatibleInsert = { ...insertData };
+            delete compatibleInsert.household_name;
+            delete compatibleInsert.household_members;
+            delete compatibleInsert.event_responses;
+            const fallbackInsert = await db.from('rsvps').insert(compatibleInsert).select('id').single();
+            rsvp = fallbackInsert.data;
+            insertError = fallbackInsert.error;
+        }
 
         if (insertError) throw insertError;
         await invalidateDashboardCounters(weddingId);

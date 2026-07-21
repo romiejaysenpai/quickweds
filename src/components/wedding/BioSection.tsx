@@ -23,7 +23,7 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
 
     const template = wedding.template || 'classic';
     const motifColor = wedding.motif_color || '#D16C78';
-    const visual = getTemplateVisualProfile(template, motifColor);
+    const visual = getTemplateVisualProfile(template, motifColor, false, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const { isSharp, isDark, isVintage } = visual;
 

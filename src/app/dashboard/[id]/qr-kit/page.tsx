@@ -1,18 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Check, Copy, Download, ExternalLink, Loader2, Printer, QrCode, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, Printer, QrCode, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { copyToClipboard } from '@/lib/client-clipboard';
-import { openExternalUrl } from '@/lib/native-actions';
 import { getCachedSession } from '@/lib/session-cache';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
-
-const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), { ssr: false });
-const QRCodeCanvas = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeCanvas), { ssr: false });
+import QrCodeActions from '@/components/dashboard/QrCodeActions';
 
 type QrType = {
     id: string;
@@ -52,7 +47,7 @@ export default function QrKitPage() {
     const [wedding, setWedding] = useState<WeddingSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [copiedId, setCopiedId] = useState('');
+    const [qrStatus, setQrStatus] = useState('');
     const openedFrom = searchParams?.get('from');
     const backHref = openedFrom === 'planner'
         ? `/dashboard/${weddingId}/planner`
@@ -104,30 +99,8 @@ export default function QrKitPage() {
         }));
     }, [wedding, weddingId]);
 
-    async function copyUrl(id: string, url: string) {
-        await copyToClipboard(url);
-        setCopiedId(id);
-        window.setTimeout(() => setCopiedId(''), 1800);
-    }
-
-    function downloadQr(id: string, label: string) {
-        const canvas = document.getElementById(`qr-canvas-${id}`) as HTMLCanvasElement | null;
-        if (!canvas) return;
-        const link = document.createElement('a');
-        link.href = canvas.toDataURL('image/png');
-        link.download = `${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-qr.png`;
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-    }
-
     function printPage() {
         window.print();
-    }
-
-    async function openQrUrl(url: string) {
-        await openExternalUrl(url);
     }
 
     if (loading) {
@@ -163,6 +136,7 @@ export default function QrKitPage() {
                     <h1 className="mt-2 font-serif text-3xl font-bold sm:text-4xl">Event QR Codes</h1>
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">Download individual PNGs or print this page for signage. Staff check-in stays behind login.</p>
                     {error && <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">{error}</div>}
+                    {qrStatus && <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/5 p-4 text-sm font-semibold text-primary print:hidden">{qrStatus}</div>}
                 </section>
 
                 <section className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -175,23 +149,20 @@ export default function QrKitPage() {
                                 </div>
                                 <QrCode className="h-5 w-5 text-primary" />
                             </div>
-                            <div className="mt-4 flex justify-center rounded-2xl border border-border bg-white p-4">
-                                <QRCodeSVG value={card.url} size={164} />
-                                <QRCodeCanvas id={`qr-canvas-${card.id}`} value={card.url} size={900} includeMargin className="hidden" />
-                            </div>
-                            <p className="mt-3 break-all rounded-xl border border-border bg-neutral/40 p-3 text-xs font-semibold text-text-secondary">{card.url}</p>
-                            <div className="mt-3 grid grid-cols-3 gap-2 print:hidden">
-                                <button type="button" onClick={() => void copyUrl(card.id, card.url)} className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-border bg-white text-text-secondary hover:text-primary" title="Copy link">
-                                    {copiedId === card.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                                </button>
-                                <button type="button" onClick={() => downloadQr(card.id, card.label)} className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-border bg-white text-text-secondary hover:text-primary" title="Download PNG">
-                                    <Download className="h-4 w-4" />
-                                </button>
-                                <button type="button" onClick={() => void openQrUrl(card.url)} className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-2 text-xs font-black text-text-secondary transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary" title={`Open ${card.label} URL`}>
-                                    <ExternalLink className="h-4 w-4" />
-                                    <span className="hidden sm:inline">Open</span>
-                                </button>
-                            </div>
+                            <QrCodeActions
+                                value={card.url}
+                                openUrl={card.url}
+                                title={card.label}
+                                description={card.description}
+                                fileName={`${card.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-qr.png`}
+                                previewSize={164}
+                                showUrl
+                                compact
+                                className="mt-4 print:[&_button]:hidden"
+                                qrClassName="flex justify-center rounded-2xl border border-border bg-white p-4"
+                                actionsClassName="mt-3 grid grid-cols-2 gap-2 print:hidden"
+                                onStatus={setQrStatus}
+                            />
                         </article>
                     ))}
                 </section>

@@ -44,7 +44,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
 
     const template = wedding.template || 'classic';
     const motifColor = wedding.motif_color || '#D16C78';
-    const visual = getTemplateVisualProfile(template, motifColor, invert);
+    const visual = getTemplateVisualProfile(template, motifColor, invert, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
     const isVintage = ['vintage', 'rustic', 'boho', 'film'].includes(template);

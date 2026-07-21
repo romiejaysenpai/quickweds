@@ -10,7 +10,9 @@ import {
     TimelineSection,
     GallerySection,
     GiftSection,
-    CountdownTimer
+    CountdownTimer,
+    AttireSection,
+    FAQSection
 } from '../wedding';
 import type { TemplateProps } from '@/types/wedding';
 
@@ -79,6 +81,8 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <AttireSection wedding={wedding} />
+            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"

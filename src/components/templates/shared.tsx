@@ -1,4 +1,5 @@
 import { Music } from 'lucide-react';
+import type { CSSProperties } from 'react';
 
 import {
     GuestBook,
@@ -56,13 +57,19 @@ interface SharedNewSectionsProps {
     id: string;
 }
 
-export function SharedNewSections({ wedding, isExpired }: SharedNewSectionsProps) {
+export function SharedNewSections({ wedding, isExpired, id }: SharedNewSectionsProps) {
     const partyMembers = parseWeddingParty(wedding);
-    const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || '#D16C78');
+    const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || '#D16C78', false, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
 
     return (
-        <>
+        <div
+            className="template-lower-sections"
+            data-template-id={wedding.template || id}
+            data-template-mood={visual.mood}
+            data-template-ornament={visual.ornament}
+            style={{ '--template-motif': wedding.motif_color || '#D16C78' } as CSSProperties}
+        >
             {wedding.is_thank_you_mode ? (
                 <section className={`px-6 py-8 md:py-14 ${visual.sectionClass}`} style={visual.sectionStyle}>
                     <div className={`mx-auto max-w-4xl px-8 py-14 text-center ${visual.cardClass}`}>
@@ -107,6 +114,6 @@ export function SharedNewSections({ wedding, isExpired }: SharedNewSectionsProps
                 </div>
             )}
             <RSVPSection wedding={wedding} isExpired={isExpired} />
-        </>
+        </div>
     );
 }

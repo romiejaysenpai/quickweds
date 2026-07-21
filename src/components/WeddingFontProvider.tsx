@@ -3,8 +3,11 @@ import type { CSSProperties, ReactNode } from 'react';
 /**
  * WeddingFontProvider
  *
- * Lazily loads the full set of 35+ wedding template fonts.
- * These fonts are ONLY needed on pages that render or preview wedding templates:
+ * Provides a compact, backward-compatible wedding font system.
+ * The app loads three web fonts (Inter, Playfair Display, and Montserrat); legacy
+ * font ids are intentionally mapped to those families or stable system fonts.
+ * This keeps existing weddings visually compatible without downloading dozens
+ * of near-duplicate font files on pages that render or preview templates:
  * - /builder (BuilderForm)
  * - /w/[slug] (public wedding pages)
  * - /preview

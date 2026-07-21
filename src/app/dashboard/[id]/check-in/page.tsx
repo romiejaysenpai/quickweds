@@ -8,6 +8,7 @@ import { ArrowLeft, Camera, CheckCircle2, Loader2, RefreshCw, Search, Undo2, Use
 import { useAuth } from '@/context/AuthContext';
 import { getCachedSession } from '@/lib/session-cache';
 import GuestQrScanner from '@/components/dashboard/GuestQrScanner';
+import type { GuestQrScanResult } from '@/components/dashboard/GuestQrScanner';
 
 type CheckInGuest = {
     id: string;
@@ -88,9 +89,12 @@ export default function CheckInDashboardPage() {
         lastScanRef.current = '';
     }, []);
 
-    const updateCheckIn = useCallback(async (payload: { rsvpId?: string; lookup?: string; undo?: boolean }) => {
+    const updateCheckIn = useCallback(async (payload: { rsvpId?: string; lookup?: string; undo?: boolean }): Promise<GuestQrScanResult> => {
         const token = await getToken();
-        if (!token) return router.push('/login');
+        if (!token) {
+            router.push('/login');
+            return { ok: false, state: 'auth_required', message: 'Please sign in again.' };
+        }
 
         setSaving(true);
         setError('');
@@ -105,29 +109,42 @@ export default function CheckInDashboardPage() {
                 body: JSON.stringify({ weddingId, source: payload.lookup ? 'qr_or_search' : 'staff_list', ...payload }),
             });
             const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.error || 'Unable to update check-in.');
+            if (!response.ok) {
+                const message = data.error || 'Unable to update check-in.';
+                throw Object.assign(new Error(message), { state: data.state });
+            }
 
             const guestName = data.guest?.guest_name || 'Guest';
-            if (data.state === 'already_checked_in') setStatus(`${guestName} was already checked in.`);
-            else if (data.state === 'check_in_undone') setStatus(`${guestName} check-in was undone.`);
-            else setStatus(`${guestName} is checked in.`);
+            const message = data.state === 'already_checked_in'
+                ? `${guestName} was already checked in.`
+                : data.state === 'check_in_undone'
+                    ? `${guestName} check-in was undone.`
+                    : `${guestName} is checked in.`;
+            setStatus(message);
 
             if (payload.lookup) setLookup('');
             await loadGuests();
+            return { ok: true, state: data.state, message };
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unable to update check-in.');
+            const message = err instanceof Error ? err.message : 'Unable to update check-in.';
+            const state = typeof err === 'object' && err && 'state' in err ? String((err as { state?: unknown }).state || '') : 'check_in_error';
+            setError(message);
+            return { ok: false, state, message };
         } finally {
             setSaving(false);
         }
     }, [loadGuests, router, weddingId]);
 
-    const handleScannerScan = useCallback((rawValue: string) => {
+    const handleScannerScan = useCallback(async (rawValue: string): Promise<GuestQrScanResult> => {
         const value = rawValue.trim();
-        if (!value || value === lastScanRef.current) return;
+        if (!value || value === lastScanRef.current) {
+            return { ok: false, state: 'duplicate_scan_ignored', message: 'This QR was already scanned. Try another code.' };
+        }
         lastScanRef.current = value;
         setLookup(value);
-        setScannerOpen(false);
-        void updateCheckIn({ lookup: value });
+        const result = await updateCheckIn({ lookup: value });
+        if (!result.ok) lastScanRef.current = '';
+        return result;
     }, [updateCheckIn]);
 
     async function submitLookup(event: FormEvent) {

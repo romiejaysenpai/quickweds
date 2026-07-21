@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
-import { Loader2, QrCode, X } from 'lucide-react';
+import { CheckCircle2, Info, Loader2, QrCode, X } from 'lucide-react';
 
 type BarcodeDetectorConstructor = new (options?: { formats?: string[] }) => {
     detect(source: CanvasImageSource): Promise<Array<{ rawValue?: string }>>;
@@ -10,8 +10,14 @@ type BarcodeDetectorConstructor = new (options?: { formats?: string[] }) => {
 
 type GuestQrScannerProps = {
     onClose: () => void;
-    onScan: (value: string) => void;
+    onScan: (value: string) => Promise<GuestQrScanResult>;
     busy?: boolean;
+};
+
+export type GuestQrScanResult = {
+    ok: boolean;
+    state?: string;
+    message: string;
 };
 
 async function openCameraStream() {
@@ -43,11 +49,19 @@ export default function GuestQrScanner({ onClose, onScan, busy = false }: GuestQ
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const animationFrameRef = useRef<number | null>(null);
+    const closeTimerRef = useRef<number | null>(null);
+    const busyRef = useRef(busy);
+    const processingRef = useRef(false);
     const lastScanRef = useRef('');
     const lastFrameAtRef = useRef(0);
     const [starting, setStarting] = useState(true);
     const [error, setError] = useState('');
     const [status, setStatus] = useState('Point the camera at the guest QR code.');
+    const [tone, setTone] = useState<'idle' | 'processing' | 'success' | 'info' | 'error'>('idle');
+
+    useEffect(() => {
+        busyRef.current = busy;
+    }, [busy]);
 
     useEffect(() => {
         let cancelled = false;
@@ -55,6 +69,10 @@ export default function GuestQrScanner({ onClose, onScan, busy = false }: GuestQ
         const detector = BarcodeDetector ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
 
         const stop = () => {
+            if (closeTimerRef.current) {
+                window.clearTimeout(closeTimerRef.current);
+                closeTimerRef.current = null;
+            }
             if (animationFrameRef.current) {
                 window.cancelAnimationFrame(animationFrameRef.current);
                 animationFrameRef.current = null;
@@ -67,7 +85,7 @@ export default function GuestQrScanner({ onClose, onScan, busy = false }: GuestQ
         const scanFrame = async (now: number) => {
             if (cancelled) return;
             animationFrameRef.current = window.requestAnimationFrame(scanFrame);
-            if (busy || now - lastFrameAtRef.current < 350) return;
+            if (busyRef.current || processingRef.current || now - lastFrameAtRef.current < 350) return;
             lastFrameAtRef.current = now;
 
             const video = videoRef.current;
@@ -95,19 +113,45 @@ export default function GuestQrScanner({ onClose, onScan, busy = false }: GuestQ
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const image = context.getImageData(0, 0, canvas.width, canvas.height);
             const code = jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' });
-            if (code?.data) {
-                handleDecodedValue(code.data.trim());
-            } else {
-                setStatus('Keep the QR code inside the frame.');
-            }
+            if (code?.data) handleDecodedValue(code.data.trim());
         };
 
         const handleDecodedValue = (rawValue: string) => {
             if (!rawValue || rawValue === lastScanRef.current) return;
             lastScanRef.current = rawValue;
+            processingRef.current = true;
+            setTone('processing');
+            setError('');
             setStatus('QR detected. Checking in guest...');
-            onScan(rawValue);
-            stop();
+            void onScan(rawValue).then((result) => {
+                if (cancelled) return;
+
+                const alreadyCheckedIn = result.state === 'already_checked_in';
+                const successful = result.ok && (result.state === 'checked_in_success' || alreadyCheckedIn);
+
+                setStatus(result.message);
+
+                if (successful) {
+                    setTone(alreadyCheckedIn ? 'info' : 'success');
+                    streamRef.current?.getTracks().forEach((track) => track.stop());
+                    streamRef.current = null;
+                    closeTimerRef.current = window.setTimeout(onClose, alreadyCheckedIn ? 1800 : 1200);
+                    return;
+                }
+
+                setTone('error');
+                setError(result.message);
+                lastScanRef.current = '';
+                processingRef.current = false;
+            }).catch((err) => {
+                if (cancelled) return;
+                const message = err instanceof Error ? err.message : 'Unable to check in guest. Try scanning again.';
+                setTone('error');
+                setError(message);
+                setStatus(message);
+                lastScanRef.current = '';
+                processingRef.current = false;
+            });
         };
 
         const start = async () => {
@@ -127,10 +171,14 @@ export default function GuestQrScanner({ onClose, onScan, busy = false }: GuestQ
                 video.setAttribute('playsinline', 'true');
                 video.muted = true;
                 await video.play();
+                setTone('idle');
                 setStatus('Point the camera at the guest QR code.');
                 animationFrameRef.current = window.requestAnimationFrame(scanFrame);
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'Unable to open the camera. Check browser camera permissions.');
+                const message = err instanceof Error ? err.message : 'Unable to open the camera. Check browser camera permissions.';
+                setTone('error');
+                setError(message);
+                setStatus(message);
             } finally {
                 setStarting(false);
             }
@@ -142,40 +190,52 @@ export default function GuestQrScanner({ onClose, onScan, busy = false }: GuestQ
             cancelled = true;
             stop();
         };
-    }, [busy, onScan]);
+    }, [onClose, onScan]);
+
+    const statusClass = tone === 'success'
+        ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-100'
+        : tone === 'info'
+            ? 'border-amber-300/40 bg-amber-400/15 text-amber-100'
+            : tone === 'error'
+                ? 'border-rose-300/40 bg-rose-500/15 text-rose-100'
+                : 'border-white/15 bg-white/10 text-white/80';
 
     return (
-        <div className="mt-4 overflow-hidden rounded-3xl border border-primary/20 bg-foreground text-white shadow-xl shadow-primary/10">
-            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+        <div className="fixed inset-0 z-[100] flex h-dvh flex-col overflow-hidden bg-black text-white">
+            <div className="relative z-10 flex min-h-[64px] items-center justify-between gap-3 border-b border-white/10 bg-black/75 px-4 py-3 backdrop-blur">
                 <div className="flex items-center gap-2">
                     <QrCode className="h-4 w-4 text-primary" />
                     <p className="text-sm font-black">Guest QR Scanner</p>
                 </div>
-                <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20" title="Close scanner">
+                <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20" title="Close scanner">
                     <X className="h-4 w-4" />
                 </button>
             </div>
-            <div className="relative aspect-[4/3] bg-black sm:aspect-video">
+            <div className="relative min-h-0 flex-1 bg-black">
                 <video ref={videoRef} playsInline muted autoPlay className="h-full w-full object-cover" />
                 <canvas ref={canvasRef} className="hidden" />
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <div className="h-48 w-48 rounded-3xl border-2 border-white/80 shadow-[0_0_0_999px_rgba(0,0,0,0.28)]" />
+                    <div className="h-64 w-64 max-w-[76vw] rounded-[2rem] border-2 border-white/85 shadow-[0_0_0_999px_rgba(0,0,0,0.34)] sm:h-80 sm:w-80" />
                 </div>
-                {starting && (
+                {(starting || tone === 'processing') && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/55">
                         <div className="text-center">
                             <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                            <p className="mt-3 text-sm font-bold">Opening camera...</p>
+                            <p className="mt-3 text-sm font-bold">{starting ? 'Opening camera...' : 'Checking in guest...'}</p>
                         </div>
                     </div>
                 )}
             </div>
-            <div className="px-4 py-3">
-                {error ? (
-                    <p className="text-sm font-semibold leading-6 text-rose-200">{error}</p>
-                ) : (
-                    <p className="text-sm font-semibold leading-6 text-white/75">{status}</p>
-                )}
+            <div className="relative z-10 border-t border-white/10 bg-black/80 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur">
+                <div className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${statusClass}`}>
+                    {tone === 'success' ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /> : tone === 'info' || tone === 'error' ? <Info className="mt-0.5 h-5 w-5 shrink-0" /> : <QrCode className="mt-0.5 h-5 w-5 shrink-0" />}
+                    <div>
+                        <p className="text-sm font-black leading-6">{error || status}</p>
+                        <p className="mt-1 text-xs leading-5 opacity-80">
+                            {tone === 'error' ? 'Keep this scanner open and try another QR code, or close it and search manually.' : 'Hold the QR code inside the frame.'}
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     );

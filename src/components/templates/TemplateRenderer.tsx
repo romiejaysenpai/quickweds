@@ -35,6 +35,9 @@ export const TEMPLATE_COMPONENTS = {
     elegance: dynamic(() => import('./EleganceTemplate')),
     artdeco: dynamic(() => import('./ArtDecoTemplate')),
     boho: dynamic(() => import('./BohoTemplate')),
+    nordic: dynamic(() => import('./NordicTemplate')),
+    celestial: dynamic(() => import('./CelestialTemplate')),
+    riviera: dynamic(() => import('./RivieraTemplate')),
 } satisfies Record<string, ComponentType<TemplateProps>>;
 
 const FONT_VARIABLES: Record<string, ThemeFontVars> = {

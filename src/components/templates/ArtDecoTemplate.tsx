@@ -8,41 +8,79 @@ import {
     CountdownTimer, 
     TimelineSection, 
     GallerySection, 
-    GiftSection 
+    GiftSection,
+    AttireSection,
+    FAQSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
 export default function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
+    const formattedDate = new Date(wedding.wedding_date).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
     return (
-        <div className="bg-[#1a1a1a] text-[#d4af37] font-serif selection:bg-[#d4af37] selection:text-black pb-24">
+        <div className="bg-[#141414] text-[#d4af37] font-serif selection:bg-[#d4af37] selection:text-black pb-24 relative overflow-hidden">
             {/* Geometric Patterns & Noise */}
+            <div className="fixed inset-0 opacity-15 pointer-events-none z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-950/40 via-transparent to-black" />
             <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'var(--qw-deco-texture)' }} />
-            <div className="fixed inset-0 opacity-[0.04] pointer-events-none z-0 mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }} />
 
-            <section className="min-h-screen py-16 sm:py-20 md:py-24 lg:py-24 flex items-center justify-center px-4 sm:px-6 relative overflow-hidden">
-                <div className="absolute inset-4 sm:inset-6 md:inset-8 lg:inset-12 border-[4px] border-[#d4af37]/40 pointer-events-none" />
-                <div className="absolute inset-8 sm:inset-10 md:inset-12 lg:inset-16 border-[1px] border-[#d4af37]/20 pointer-events-none" />
+            <section className="min-h-screen py-16 sm:py-24 flex items-center justify-center px-4 sm:px-6 relative">
+                {/* 1920s Art Deco Double Border Frame */}
+                <div className="absolute inset-4 sm:inset-8 border-[3px] border-[#d4af37]/50 pointer-events-none" />
+                <div className="absolute inset-7 sm:inset-11 border border-[#d4af37]/25 pointer-events-none" />
 
-                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5 }} className="z-10 text-center bg-black/80 backdrop-blur-md p-8 sm:p-12 md:p-16 lg:p-24 border border-[#d4af37]/30 max-w-5xl shadow-[0_0_100px_rgba(212,175,55,0.1)]">
-                    <span className="text-xs uppercase tracking-[1em] font-black opacity-60 mb-8 sm:mb-10 md:mb-12 lg:mb-12 block">THE GREAT CELEBRATION</span>
-                    <h1 className="text-4xl sm:text-5xl md:text-8xl lg:text-9xl mb-8 leading-none tracking-widest uppercase break-words px-2 w-full max-w-full overflow-hidden">
-                        {wedding.bride_name.split(' ')[0]} <br />
-                        <span className="text-2xl sm:text-2xl md:text-3xl italic normal-case block my-8">&</span>
+                {/* Decorative Art Deco Corner Accents */}
+                <div className="absolute top-4 left-4 sm:top-8 sm:left-8 w-8 h-8 border-t-4 border-l-4 border-[#d4af37]" />
+                <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-8 h-8 border-t-4 border-r-4 border-[#d4af37]" />
+                <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 w-8 h-8 border-b-4 border-l-4 border-[#d4af37]" />
+                <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-8 h-8 border-b-4 border-r-4 border-[#d4af37]" />
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="z-10 text-center bg-black/85 backdrop-blur-xl p-8 sm:p-14 md:p-20 border border-[#d4af37]/40 max-w-4xl shadow-[0_0_90px_rgba(212,175,55,0.18)]"
+                >
+                    <span className="text-xs uppercase tracking-[0.8em] font-sans font-bold opacity-70 mb-6 block text-amber-200">
+                        THE GREAT CELEBRATION
+                    </span>
+
+                    <h1 className="text-4xl sm:text-6xl md:text-8xl mb-6 leading-none tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-b from-[#fceabb] to-[#f8b500]">
+                        {wedding.bride_name.split(' ')[0]}
+                        <span className="text-2xl sm:text-3xl italic normal-case block my-4 text-[#d4af37] font-serif">&amp;</span>
                         {wedding.groom_name.split(' ')[0]}
                     </h1>
-                    <div className="w-40 sm:w-48 md:w-56 h-[2px] bg-[#d4af37] mx-auto mb-8 sm:mb-10 md:mb-12" />
-                    <p className="text-xl sm:text-2xl tracking-[0.5em] font-light uppercase">{new Date(wedding.wedding_date).getFullYear()}</p>
-                    <div className="mt-12 sm:mt-16">
-                        <a href="#rsvp" aria-label="Join The Party - RSVP" className="px-10 py-5 bg-[#d4af37] text-black font-black uppercase tracking-[0.3em] text-xs hover:bg-white transition-all shadow-xl min-h-[44px] inline-flex items-center justify-center">Join The Party</a>
+
+                    <div className="flex items-center justify-center gap-4 my-8">
+                        <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#d4af37]" />
+                        <span className="text-xs font-sans tracking-[0.4em] uppercase text-amber-300">{formattedDate} • {wedding.venue_name}</span>
+                        <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#d4af37]" />
                     </div>
+
+                    <p className="text-sm sm:text-base tracking-[0.2em] font-light max-w-md mx-auto opacity-80 mb-10 leading-relaxed">
+                        {wedding.story || 'An evening of jazz, timeless elegance, and monumental romance.'}
+                    </p>
+
+                    <a
+                        href="#rsvp"
+                        aria-label="RSVP"
+                        className="px-10 py-4 bg-gradient-to-r from-[#d4af37] to-[#fceabb] text-black font-sans font-bold uppercase tracking-[0.3em] text-xs hover:brightness-110 transition-all shadow-[0_0_30px_rgba(212,175,55,0.4)] inline-flex items-center justify-center"
+                    >
+                        Request Presence
+                    </a>
                 </motion.div>
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
             <BioSection id="bio" wedding={wedding} />
             <DetailsSection id="details" wedding={wedding} invert />
+            
             {!wedding.is_thank_you_mode && (
-                <CountdownTimer id="countdown"
+                <CountdownTimer
+                    id="countdown"
                     weddingDate={wedding.wedding_date}
                     weddingTime={wedding.wedding_time}
                     brideName={wedding.bride_name}
@@ -53,8 +91,11 @@ export default function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
                     motifColor={wedding.motif_color}
                 />
             )}
+
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <AttireSection wedding={wedding} />
+            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

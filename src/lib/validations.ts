@@ -78,6 +78,12 @@ export const rsvpSubmissionSchema = z.object({
     plusOneNames: z.string().max(1000).optional().default(''),
     childrenCount: z.coerce.number().int().min(0).max(20).optional().default(0),
     message: z.string().max(2000).optional().default(''),
+    householdName: z.string().max(200).optional().default(''),
+    householdMembers: z.array(z.string().min(1).max(200)).max(49).optional().default([]),
+    eventResponses: z.array(z.object({
+        eventId: z.string().min(1).max(100),
+        attendance: z.enum(['Yes', 'No', 'Maybe']),
+    })).max(20).optional().default([]),
 });
 
 // Helper function to validate and return error response
