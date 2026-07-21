@@ -26,4 +26,5 @@ export { default as EleganceTemplate } from './EleganceTemplate';
 export { default as NordicTemplate } from './NordicTemplate';
 export { default as CelestialTemplate } from './CelestialTemplate';
 export { default as RivieraTemplate } from './RivieraTemplate';
+export { default as PremiumTemplate } from './PremiumTemplate';
 export { SharedNewSections } from './shared';

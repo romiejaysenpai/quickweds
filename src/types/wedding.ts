@@ -43,7 +43,7 @@ export interface Wedding {
     logo_shape?: string;
     logo_color?: string;
     logo_font?: string;
-    logo_animation?: string;
+    logo_animation?: 'none' | 'draw' | 'bloom' | 'shimmer' | 'float' | 'reveal' | string;
     // Gift
     gift_bank?: string;
     gift_account_name?: string;

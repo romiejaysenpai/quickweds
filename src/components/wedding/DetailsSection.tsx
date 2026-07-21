@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Calendar, MapPin, Info } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 import { derivePalette, getSectionTitleStyle, getTypography, getTemplateVisualProfile, type TemplateVisualProfile } from '@/lib/theme-engine';
 import { useSectionContext } from '@/context/SectionContext';
@@ -46,7 +47,7 @@ function DetailCard({
     typography,
     visual
 }: {
-    icon: React.ElementType;
+    icon: LucideIcon;
     title: string;
     value: string;
     subtitle?: string;

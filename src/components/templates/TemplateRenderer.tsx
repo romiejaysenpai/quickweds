@@ -5,6 +5,8 @@ import type { CSSProperties, ComponentType } from 'react';
 
 import type { TemplateProps, Wedding } from '@/types/wedding';
 
+const PremiumTemplate = dynamic(() => import('./PremiumTemplate'));
+
 export type TemplateId = keyof typeof TEMPLATE_COMPONENTS;
 export type ThemeFontVars = Record<'--font-serif' | '--font-sans', string>;
 export type WeddingPageStyle = CSSProperties & Record<'--primary', string> & ThemeFontVars;
@@ -38,6 +40,25 @@ export const TEMPLATE_COMPONENTS = {
     nordic: dynamic(() => import('./NordicTemplate')),
     celestial: dynamic(() => import('./CelestialTemplate')),
     riviera: dynamic(() => import('./RivieraTemplate')),
+    heirloom: PremiumTemplate,
+    estate: PremiumTemplate,
+    moonlit: PremiumTemplate,
+    saffron: PremiumTemplate,
+    'cinema-noir': PremiumTemplate,
+    'modern-vow': PremiumTemplate,
+    atelier: PremiumTemplate,
+    wildflower: PremiumTemplate,
+    regency: PremiumTemplate,
+    lovescript: PremiumTemplate,
+    'coastal-vow': PremiumTemplate,
+    'orchid-noir': PremiumTemplate,
+    papercut: PremiumTemplate,
+    'marigold-house': PremiumTemplate,
+    'the-weekend': PremiumTemplate,
+    'winter-rose': PremiumTemplate,
+    gallery: PremiumTemplate,
+    'petal-note': PremiumTemplate,
+    'sunset-ceremony': PremiumTemplate,
 } satisfies Record<string, ComponentType<TemplateProps>>;
 
 const FONT_VARIABLES: Record<string, ThemeFontVars> = {

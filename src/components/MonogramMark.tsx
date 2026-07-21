@@ -1,13 +1,13 @@
 'use client';
 
-import React from 'react';
+import { forwardRef, useId } from 'react';
+import { type MonogramAnimation, type MonogramShape } from '@/lib/monogram';
 
 type MonogramMarkProps = {
     initials?: string | null;
     brideName?: string | null;
     groomName?: string | null;
-    shape?: string | null;
-    animation?: string | null;
+    shape?: MonogramShape | string | null;
     color?: string | null;
     motifColor?: string | null;
     fontClassName?: string;
@@ -15,378 +15,85 @@ type MonogramMarkProps = {
     size?: 'sm' | 'md' | 'lg';
     className?: string;
     inverted?: boolean;
+    animation?: MonogramAnimation | string | null;
 };
 
-const sizeClasses = {
-    sm: {
-        outer: 'h-16 w-16',
-        text: 'text-2xl',
-        ornament: 'text-[10px]',
-    },
-    md: {
-        outer: 'h-24 w-24',
-        text: 'text-3xl md:text-4xl',
-        ornament: 'text-xs',
-    },
-    lg: {
-        outer: 'h-32 w-32',
-        text: 'text-4xl md:text-5xl',
-        ornament: 'text-sm',
-    },
-};
-
-function getInitials(initials?: string | null, brideName?: string | null, groomName?: string | null) {
-    if (initials?.trim()) return initials.trim();
-    const brideInitial = brideName?.trim()?.[0] || 'A';
-    const groomInitial = groomName?.trim()?.[0] || 'B';
-    return `${brideInitial} & ${groomInitial}`;
-}
-
-function hexToRgb(hex: string) {
-    const normalized = hex.replace('#', '').trim();
-    if (!/^[0-9a-f]{3}([0-9a-f]{3})?$/i.test(normalized)) return null;
-    const value = normalized.length === 3
-        ? normalized.split('').map((char) => char + char).join('')
-        : normalized;
-    const number = Number.parseInt(value, 16);
-    return {
-        r: (number >> 16) & 255,
-        g: (number >> 8) & 255,
-        b: number & 255,
-    };
-}
-
-function colorWithAlpha(color: string, alpha: number) {
-    const rgb = hexToRgb(color);
-    if (!rgb) return color;
-    return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
-}
+const dimensions = { sm: 64, md: 96, lg: 128 };
 
 export const MONOGRAM_SHAPES = [
-    { id: 'minimal', name: 'Minimal', desc: 'Clean initials with subtle lines', isPro: false },
-    { id: 'circle', name: 'Classic Circle', desc: 'Soft ring frame', isPro: false },
-    { id: 'square', name: 'Rounded Seal', desc: 'Modern rounded frame', isPro: false },
-    { id: 'double-ring', name: 'Double Ring', desc: 'Layered wedding seal', isPro: false },
-    { id: 'oval', name: 'Oval Cameo', desc: 'Heirloom portrait frame', isPro: false },
-    // Pro Styles
-    { id: 'diamond', name: 'Diamond Geo', desc: 'Editorial rotated geometric mark', isPro: true },
-    { id: 'crest', name: 'Heritage Crest', desc: 'Formal heraldic luxury crest', isPro: true },
-    { id: 'laurel', name: 'Botanical Laurel', desc: 'Botanical leaf wreath ceremony mark', isPro: true },
-    { id: 'editorial', name: 'Magazine Editorial', desc: 'Fashion magazine masthead style', isPro: true },
-    { id: 'wax-seal', name: 'Wax Stamp Seal', desc: 'Embossed traditional wax seal emblem', isPro: true },
-    { id: 'gold-foil', name: 'Luxury Gold Foil', desc: 'Shimmering metallic gold border & text', isPro: true },
-    { id: 'royal-crown', name: 'Royal Crown Crest', desc: 'Regal crown emblem with ornate frame', isPro: true },
-    { id: 'art-deco', name: 'Art Deco Frame', desc: 'Vintage Gatsby 1920s geometric frame', isPro: true },
-    { id: 'romantic-heart', name: 'Romantic Heart', desc: 'Intertwined heart contour frame', isPro: true },
-    { id: 'vintage-wreath', name: 'Vintage Wreath', desc: 'Intricate floral circle wreath', isPro: true },
-];
+    { id: 'minimal', name: 'Minimal', desc: 'Clean initials only', pro: false },
+    { id: 'circle', name: 'Classic Circle', desc: 'Soft ring frame', pro: false },
+    { id: 'square', name: 'Rounded Seal', desc: 'Modern rounded frame', pro: false },
+    { id: 'double-ring', name: 'Double Ring', desc: 'Layered wedding seal', pro: false },
+    { id: 'oval', name: 'Oval Cameo', desc: 'Heirloom portrait frame', pro: false },
+    { id: 'diamond', name: 'Diamond', desc: 'Editorial geometric mark', pro: false },
+    { id: 'crest', name: 'Heritage Crest', desc: 'Formal luxury crest', pro: false },
+    { id: 'laurel', name: 'Laurel', desc: 'Botanical ceremony mark', pro: false },
+    { id: 'editorial', name: 'Editorial', desc: 'Magazine masthead style', pro: false },
+    { id: 'intertwined', name: 'Intertwined', desc: 'Layered letterform', pro: true },
+    { id: 'wax-seal', name: 'Wax Seal', desc: 'Textured ceremony seal', pro: true },
+    { id: 'arched', name: 'Arched', desc: 'Modern ceremony arch', pro: true },
+    { id: 'botanical-frame', name: 'Botanical Frame', desc: 'Fine floral surround', pro: true },
+    { id: 'ribbon', name: 'Ribbon', desc: 'Flowing formal banner', pro: true },
+    { id: 'monoline', name: 'Monoline', desc: 'Single-line luxury mark', pro: true },
+] as const;
 
 export const MONOGRAM_ANIMATIONS = [
-    { id: 'none', name: 'Static (None)', desc: 'Clean still monogram', isPro: false },
-    { id: 'draw', name: 'Line Drawing Trace', desc: 'Stroke trace reveal & path drawing', isPro: true },
-    { id: 'pulse', name: 'Glow & Scale Pulse', desc: 'Subtle breathing motion with soft radial glow', isPro: true },
-    { id: 'shimmer', name: 'Metallic Shimmer', desc: 'Sleek light-beam sweep across monogram', isPro: true },
-    { id: 'spin', name: 'Rotational Wreath', desc: 'Slow continuous rotation of floral frame', isPro: true },
-    { id: 'slide', name: 'Split Letter Entrance', desc: 'Initials slide in smoothly from sides', isPro: true },
-    { id: 'bounce', name: 'Floating Elegance', desc: 'Gentle vertical floating wave motion', isPro: true },
-];
+    { id: 'none', name: 'Still', desc: 'No motion' },
+    { id: 'draw', name: 'Draw', desc: 'Lines arrive gracefully' },
+    { id: 'bloom', name: 'Bloom', desc: 'A soft ceremonial reveal' },
+    { id: 'shimmer', name: 'Shimmer', desc: 'A subtle light pass' },
+    { id: 'float', name: 'Float', desc: 'A gentle lift' },
+    { id: 'reveal', name: 'Reveal', desc: 'A refined entrance' },
+] as const;
 
-export function MonogramMark({
-    initials,
-    brideName,
-    groomName,
-    shape = 'minimal',
-    animation = 'none',
-    color,
-    motifColor,
-    fontClassName = 'font-serif',
-    fontFamily,
-    size = 'md',
-    className = '',
-    inverted = false,
-}: MonogramMarkProps) {
-    const mark = getInitials(initials, brideName, groomName);
-    const accent = color || motifColor || '#C08081';
-    const sizeSet = sizeClasses[size];
-    const normalizedShape = shape || 'minimal';
-    const normalizedAnim = animation || 'none';
-    
-    const softFill = colorWithAlpha(accent, inverted ? 0.13 : 0.08);
-    const mediumFill = colorWithAlpha(accent, inverted ? 0.24 : 0.16);
-    const line = colorWithAlpha(accent, inverted ? 0.72 : 0.58);
-    const shadow = colorWithAlpha(accent, 0.18);
-    const textStyle = { color: accent, fontFamily };
-
-    // Animation Classes & Inline Keyframes
-    let animWrapperClass = '';
-    let animTextClass = '';
-    let animFrameClass = '';
-
-    if (normalizedAnim === 'pulse') {
-        animWrapperClass = 'animate-mono-pulse';
-    } else if (normalizedAnim === 'shimmer') {
-        animWrapperClass = 'animate-mono-shimmer relative overflow-hidden';
-    } else if (normalizedAnim === 'spin') {
-        animFrameClass = 'animate-mono-spin';
-    } else if (normalizedAnim === 'slide') {
-        animTextClass = 'animate-mono-slide';
-    } else if (normalizedAnim === 'bounce') {
-        animWrapperClass = 'animate-mono-bounce';
-    } else if (normalizedAnim === 'draw') {
-        animWrapperClass = 'animate-mono-draw';
-    }
-
-    const text = (
-        <span
-            className={`${sizeSet.text} ${fontClassName} relative z-10 uppercase leading-none tracking-normal ${animTextClass}`}
-            style={textStyle}
-        >
-            {mark}
-        </span>
-    );
-
-    // CSS Keyframe styles for custom animations
-    const animationKeyframes = (
-        <style jsx global>{`
-            @keyframes monoPulse {
-                0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0px transparent); }
-                50% { transform: scale(1.04); filter: drop-shadow(0 0 12px ${colorWithAlpha(accent, 0.45)}); }
-            }
-            @keyframes monoShimmer {
-                0% { background-position: -200% 0; }
-                100% { background-position: 200% 0; }
-            }
-            @keyframes monoSpin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            @keyframes monoSlide {
-                0% { opacity: 0; transform: translateY(12px) scale(0.92); }
-                100% { opacity: 1; transform: translateY(0) scale(1); }
-            }
-            @keyframes monoBounce {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-6px); }
-            }
-            @keyframes monoDraw {
-                0% { opacity: 0.2; stroke-dashoffset: 100; filter: blur(2px); }
-                100% { opacity: 1; stroke-dashoffset: 0; filter: blur(0); }
-            }
-            .animate-mono-pulse { animation: monoPulse 3.5s ease-in-out infinite; }
-            .animate-mono-shimmer {
-                background: linear-gradient(110deg, transparent 30%, ${colorWithAlpha(accent, 0.25)} 50%, transparent 70%);
-                background-size: 200% 100%;
-                animation: monoShimmer 3s infinite linear;
-            }
-            .animate-mono-spin { animation: monoSpin 24s linear infinite; }
-            .animate-mono-slide { animation: monoSlide 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-            .animate-mono-bounce { animation: monoBounce 4s ease-in-out infinite; }
-            .animate-mono-draw { animation: monoDraw 1.2s ease-out forwards; }
-        `}</style>
-    );
-
-    // Shape 1: Minimal
-    if (normalizedShape === 'minimal') {
-        return (
-            <div className={`relative inline-flex flex-col items-center justify-center ${sizeSet.outer} ${animWrapperClass} ${className}`}>
-                {animationKeyframes}
-                <span className="absolute h-px w-3/4 -translate-y-8" style={{ background: `linear-gradient(90deg, transparent, ${line}, transparent)` }} />
-                {text}
-                <span className="absolute h-px w-3/4 translate-y-8" style={{ background: `linear-gradient(90deg, transparent, ${line}, transparent)` }} />
-            </div>
-        );
-    }
-
-    // Shape 2: Editorial
-    if (normalizedShape === 'editorial') {
-        return (
-            <div className={`relative inline-flex min-h-20 min-w-32 flex-col items-center justify-center px-7 py-5 ${animWrapperClass} ${className}`}>
-                {animationKeyframes}
-                <span className={`${sizeSet.ornament} mb-2 font-black uppercase tracking-[0.34em]`} style={{ color: accent }}>The</span>
-                {text}
-                <span className="mt-3 h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${line}, transparent)` }} />
-            </div>
-        );
-    }
-
-    // Shape 3: Botanical Laurel
-    if (normalizedShape === 'laurel') {
-        return (
-            <div className={`relative inline-flex ${sizeSet.outer} items-center justify-center rounded-full ${animWrapperClass} ${className}`} style={{ backgroundColor: softFill }}>
-                {animationKeyframes}
-                <span className={`absolute left-2 top-1/2 -translate-y-1/2 text-4xl leading-none opacity-80 ${animFrameClass}`} style={{ color: accent }}>(</span>
-                <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-4xl leading-none opacity-80 ${animFrameClass}`} style={{ color: accent }}>)</span>
-                <span className={`absolute inset-3 rounded-full border ${animFrameClass}`} style={{ borderColor: line }} />
-                {text}
-            </div>
-        );
-    }
-
-    // Shape 4: Wax Stamp Seal (Pro)
-    if (normalizedShape === 'wax-seal') {
-        return (
-            <div
-                className={`relative inline-flex ${sizeSet.outer} items-center justify-center rounded-full border-4 shadow-2xl backdrop-blur-md ${animWrapperClass} ${className}`}
-                style={{
-                    borderColor: line,
-                    backgroundColor: mediumFill,
-                    boxShadow: `inset 0 2px 8px ${colorWithAlpha(accent, 0.4)}, 0 12px 30px ${shadow}`,
-                }}
-            >
-                {animationKeyframes}
-                <div className={`absolute inset-1.5 rounded-full border-2 border-dashed ${animFrameClass}`} style={{ borderColor: colorWithAlpha(accent, 0.5) }} />
-                <div className="absolute inset-3 rounded-full border border-white/40 bg-white/20" />
-                {text}
-            </div>
-        );
-    }
-
-    // Shape 5: Luxury Gold Foil (Pro)
-    if (normalizedShape === 'gold-foil') {
-        return (
-            <div
-                className={`relative inline-flex ${sizeSet.outer} items-center justify-center rounded-2xl border-2 shadow-2xl p-1 ${animWrapperClass} ${className}`}
-                style={{
-                    borderImage: `linear-gradient(135deg, ${accent}, #FFE599, ${accent}, #B8860B) 1`,
-                    background: `linear-gradient(135deg, ${colorWithAlpha(accent, 0.15)}, rgba(255,255,255,0.95), ${colorWithAlpha(accent, 0.12)})`,
-                    boxShadow: `0 14px 35px ${colorWithAlpha('#D4AF37', 0.25)}`,
-                }}
-            >
-                {animationKeyframes}
-                <div className={`absolute inset-2 rounded-xl border ${animFrameClass}`} style={{ borderColor: line }} />
-                <span className={`${sizeSet.text} ${fontClassName} relative z-10 uppercase leading-none tracking-normal ${animTextClass}`} style={{
-                    background: `linear-gradient(135deg, ${accent}, #D4AF37, ${accent})`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    fontFamily,
-                }}>
-                    {mark}
-                </span>
-            </div>
-        );
-    }
-
-    // Shape 6: Royal Crown Crest (Pro)
-    if (normalizedShape === 'royal-crown') {
-        return (
-            <div
-                className={`relative inline-flex ${sizeSet.outer} items-center justify-center rounded-t-3xl rounded-b-xl border bg-white/80 shadow-xl backdrop-blur-sm ${animWrapperClass} ${className}`}
-                style={{
-                    borderColor: line,
-                    background: `linear-gradient(180deg, ${softFill}, rgba(255,255,255,0.92))`,
-                    boxShadow: `0 16px 40px ${shadow}`,
-                }}
-            >
-                {animationKeyframes}
-                {/* Crown ornament */}
-                <div className="absolute -top-3 flex items-center justify-center gap-1">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
-                    <span className="h-3.5 w-3.5 rounded-full border" style={{ backgroundColor: accent, borderColor: line }} />
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
-                </div>
-                <span className={`absolute inset-2 rounded-t-2xl rounded-b-lg border ${animFrameClass}`} style={{ borderColor: colorWithAlpha(accent, 0.35) }} />
-                <span className="absolute bottom-2 h-px w-2/3" style={{ backgroundColor: line }} />
-                {text}
-            </div>
-        );
-    }
-
-    // Shape 7: Art Deco Frame (Pro)
-    if (normalizedShape === 'art-deco') {
-        return (
-            <div
-                className={`relative inline-flex ${sizeSet.outer} items-center justify-center border-2 bg-white/90 shadow-2xl ${animWrapperClass} ${className}`}
-                style={{
-                    borderColor: accent,
-                    boxShadow: `0 14px 35px ${shadow}`,
-                }}
-            >
-                {animationKeyframes}
-                {/* Stepped corner accents */}
-                <div className="absolute top-1 left-1 h-3 w-3 border-t-2 border-l-2" style={{ borderColor: accent }} />
-                <div className="absolute top-1 right-1 h-3 w-3 border-t-2 border-r-2" style={{ borderColor: accent }} />
-                <div className="absolute bottom-1 left-1 h-3 w-3 border-b-2 border-l-2" style={{ borderColor: accent }} />
-                <div className="absolute bottom-1 right-1 h-3 w-3 border-b-2 border-r-2" style={{ borderColor: accent }} />
-                <div className={`absolute inset-2 border ${animFrameClass}`} style={{ borderColor: line }} />
-                {text}
-            </div>
-        );
-    }
-
-    // Shape 8: Romantic Heart (Pro)
-    if (normalizedShape === 'romantic-heart') {
-        return (
-            <div
-                className={`relative inline-flex ${sizeSet.outer} items-center justify-center rounded-[40%] rotate-45 border bg-rose-50/80 shadow-xl backdrop-blur-sm ${animWrapperClass} ${className}`}
-                style={{
-                    borderColor: line,
-                    boxShadow: `0 16px 36px ${shadow}`,
-                    background: `linear-gradient(135deg, rgba(255,245,245,0.95), ${softFill})`,
-                }}
-            >
-                {animationKeyframes}
-                <span className={`absolute inset-2 rounded-[36%] border ${animFrameClass}`} style={{ borderColor: colorWithAlpha(accent, 0.3) }} />
-                <span className="-rotate-45">{text}</span>
-            </div>
-        );
-    }
-
-    // Shape 9: Vintage Floral Wreath (Pro)
-    if (normalizedShape === 'vintage-wreath') {
-        return (
-            <div className={`relative inline-flex ${sizeSet.outer} items-center justify-center rounded-full border-2 border-double ${animWrapperClass} ${className}`} style={{ borderColor: line, backgroundColor: softFill }}>
-                {animationKeyframes}
-                <svg className={`absolute inset-0 h-full w-full opacity-60 ${animFrameClass}`} viewBox="0 0 100 100" fill="none">
-                    <circle cx="50" cy="50" r="44" stroke={accent} strokeWidth="1" strokeDasharray="3 3" />
-                    <circle cx="50" cy="50" r="38" stroke={accent} strokeWidth="0.8" />
-                    <path d="M50 6 C52 10 52 14 50 18 C48 14 48 10 50 6 Z" fill={accent} />
-                    <path d="M50 82 C52 86 52 90 50 94 C48 90 48 86 50 82 Z" fill={accent} />
-                    <path d="M6 50 C10 52 14 52 18 50 C14 48 10 48 6 50 Z" fill={accent} />
-                    <path d="M82 50 C86 52 90 52 94 50 C90 48 86 48 82 50 Z" fill={accent} />
-                </svg>
-                {text}
-            </div>
-        );
-    }
-
-    // Default Shapes (Circle, Square, Double Ring, Oval, Diamond, Crest)
-    const shapeClass =
-        normalizedShape === 'circle' || normalizedShape === 'double-ring'
-            ? 'rounded-full'
-            : normalizedShape === 'square'
-                ? 'rounded-[1.6rem]'
-                : normalizedShape === 'oval'
-                    ? 'rounded-[48%]'
-                    : normalizedShape === 'diamond'
-                        ? 'rotate-45 rounded-[1.15rem]'
-                        : 'rounded-t-[2.4rem] rounded-b-[1.1rem]';
-
-    const textWrapperClass = normalizedShape === 'diamond' ? '-rotate-45' : '';
-
-    return (
-        <div
-            className={`relative inline-flex ${sizeSet.outer} items-center justify-center border bg-white/70 shadow-xl backdrop-blur-sm ${shapeClass} ${animWrapperClass} ${className}`}
-            style={{
-                borderColor: line,
-                color: accent,
-                background: normalizedShape === 'crest'
-                    ? `linear-gradient(180deg, ${mediumFill}, rgba(255,255,255,0.78))`
-                    : `linear-gradient(145deg, rgba(255,255,255,0.88), ${softFill})`,
-                boxShadow: `0 18px 45px ${shadow}`,
-            }}
-        >
-            {animationKeyframes}
-            <span className={`absolute inset-2 border ${shapeClass} ${animFrameClass}`} style={{ borderColor: colorWithAlpha(accent, 0.35) }} />
-            {normalizedShape === 'double-ring' && (
-                <span className={`absolute inset-4 rounded-full border ${animFrameClass}`} style={{ borderColor: colorWithAlpha(accent, 0.38) }} />
-            )}
-            {normalizedShape === 'crest' && (
-                <>
-                    <span className="absolute -top-2 h-4 w-10 rounded-t-full border-x border-t bg-white/80" style={{ borderColor: line }} />
-                    <span className="absolute bottom-3 h-px w-1/2" style={{ backgroundColor: line }} />
-                </>
-            )}
-            <span className={textWrapperClass}>{text}</span>
-        </div>
-    );
+function initialsFor(initials?: string | null, brideName?: string | null, groomName?: string | null) {
+    if (initials?.trim()) return initials.trim().slice(0, 8);
+    return `${brideName?.trim()?.[0] || 'A'} & ${groomName?.trim()?.[0] || 'B'}`;
 }
+
+function withAlpha(hex: string, alpha: string) {
+    return /^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${alpha}` : hex;
+}
+
+export const MonogramMark = forwardRef<SVGSVGElement, MonogramMarkProps>(function MonogramMark({
+    initials, brideName, groomName, shape = 'minimal', color, motifColor, fontClassName = 'font-serif',
+    fontFamily, size = 'md', className = '', inverted = false, animation = 'none',
+}, ref) {
+    const reactId = useId().replace(/:/g, '');
+    const accent = color || motifColor || '#C08081';
+    const mark = initialsFor(initials, brideName, groomName);
+    const safeShape = MONOGRAM_SHAPES.some((item) => item.id === shape) ? shape : 'minimal';
+    const safeAnimation = MONOGRAM_ANIMATIONS.some((item) => item.id === animation) ? animation : 'none';
+    const line = withAlpha(accent, inverted ? 'D9' : 'A8');
+    const soft = withAlpha(accent, inverted ? '38' : '16');
+    const strong = withAlpha(accent, inverted ? '70' : '28');
+    const width = dimensions[size];
+    const textStyle = { fontFamily: fontFamily || 'Georgia, serif' };
+    const baseText = <text x="120" y="132" textAnchor="middle" className={fontClassName} style={textStyle} fill={accent} fontSize="38" letterSpacing="-1">{mark}</text>;
+    const leaf = (x: number, y: number, rotate: number, key: string) => <ellipse key={key} cx={x} cy={y} rx="4" ry="10" transform={`rotate(${rotate} ${x} ${y})`} fill="none" stroke={line} strokeWidth="1.4" />;
+
+    let artwork: React.ReactNode;
+    switch (safeShape) {
+        case 'circle': artwork = <><circle cx="120" cy="120" r="88" fill={soft} stroke={line} strokeWidth="2" /><circle cx="120" cy="120" r="78" fill="none" stroke={strong} strokeWidth="1" />{baseText}</>; break;
+        case 'square': artwork = <><rect x="31" y="31" width="178" height="178" rx="38" fill={soft} stroke={line} strokeWidth="2" /><rect x="42" y="42" width="156" height="156" rx="30" fill="none" stroke={strong} />{baseText}</>; break;
+        case 'double-ring': artwork = <><circle cx="120" cy="120" r="91" fill="none" stroke={line} strokeWidth="2" /><circle cx="120" cy="120" r="78" fill={soft} stroke={line} strokeWidth="1.4" />{baseText}<circle cx="120" cy="34" r="2" fill={accent} /><circle cx="120" cy="206" r="2" fill={accent} /></>; break;
+        case 'oval': artwork = <><ellipse cx="120" cy="120" rx="77" ry="91" fill={soft} stroke={line} strokeWidth="2" /><ellipse cx="120" cy="120" rx="68" ry="82" fill="none" stroke={strong} />{baseText}</>; break;
+        case 'diamond': artwork = <><rect x="54" y="54" width="132" height="132" rx="18" transform="rotate(45 120 120)" fill={soft} stroke={line} strokeWidth="2" />{baseText}</>; break;
+        case 'crest': artwork = <><path d="M56 52h128v75c0 46-31 70-64 82-33-12-64-36-64-82V52Z" fill={soft} stroke={line} strokeWidth="2" /><path d="M78 70h84" stroke={strong} /><path d="M120 39l8 14h-16l8-14Z" fill={accent} />{baseText}</>; break;
+        case 'laurel': artwork = <><circle cx="120" cy="120" r="68" fill={soft} stroke={strong} /><path d="M78 172c-30-24-35-66-17-96M162 172c30-24 35-66 17-96" fill="none" stroke={line} strokeWidth="2" />{[...Array(5)].flatMap((_, i) => [leaf(72 + i * 2, 151 - i * 17, -48 + i * 8, `l${i}`), leaf(168 - i * 2, 151 - i * 17, 48 - i * 8, `r${i}`)])}{baseText}</>; break;
+        case 'editorial': artwork = <><path d="M36 72h168M36 170h168" stroke={line} strokeWidth="1.5" /><text x="120" y="55" textAnchor="middle" fill={accent} fontSize="10" letterSpacing="5">THE</text>{baseText}<text x="120" y="191" textAnchor="middle" fill={accent} fontSize="9" letterSpacing="3">WEDDING EDITION</text></>; break;
+        case 'intertwined': artwork = <><circle cx="120" cy="120" r="83" fill={soft} stroke={strong} /><text x="106" y="139" textAnchor="middle" style={textStyle} fill={accent} fontSize="74" fontStyle="italic">{mark[0] || 'A'}</text><text x="142" y="139" textAnchor="middle" style={textStyle} fill={accent} fontSize="74" fontStyle="italic">{mark.replace(/[^A-Za-z]/g, '')[1] || 'B'}</text><path d="M72 168h96" stroke={line} /></>; break;
+        case 'wax-seal': artwork = <><path d="M120 26 134 34l16-3 11 12 16 3 5 16 13 10-2 16 8 14-8 14 2 16-13 10-5 16-16 3-11 12-16-3-14 8-14-8-16 3-11-12-16-3-5-16-13-10 2-16-8-14 8-14-2-16 13-10 5-16 16-3 11-12 16 3 14-8Z" fill={soft} stroke={line} strokeWidth="2" />{baseText}<circle cx="120" cy="120" r="64" fill="none" stroke={strong} /></>; break;
+        case 'arched': artwork = <><path d="M47 202V113a73 73 0 0 1 146 0v89" fill={soft} stroke={line} strokeWidth="2" /><path d="M62 202V113a58 58 0 0 1 116 0v89" fill="none" stroke={strong} />{baseText}<path d="M85 169h70" stroke={line} /></>; break;
+        case 'botanical-frame': artwork = <><rect x="43" y="43" width="154" height="154" rx="77" fill={soft} stroke={strong} />{[...Array(6)].flatMap((_, i) => [leaf(60 + i * 9, 157 - i * 18, -50 + i * 8, `bl${i}`), leaf(180 - i * 9, 157 - i * 18, 50 - i * 8, `br${i}`)])}{baseText}</>; break;
+        case 'ribbon': artwork = <><path d="M37 86h166l-20 34 20 34H37l20-34-20-34Z" fill={soft} stroke={line} strokeWidth="2" /><path d="M57 120h126" stroke={strong} />{baseText}</>; break;
+        case 'monoline': artwork = <><path d="M55 74c28-35 102-35 130 0M55 166c28 35 102 35 130 0" fill="none" stroke={line} strokeWidth="2" strokeLinecap="round" />{baseText}<circle cx="120" cy="55" r="3" fill={accent} /><circle cx="120" cy="185" r="3" fill={accent} /></>; break;
+        default: artwork = <><path d="M50 83h140M50 157h140" stroke={line} strokeWidth="1.5" />{baseText}</>;
+    }
+
+    return <svg ref={ref} role="img" aria-label={`${mark} wedding monogram`} viewBox="0 0 240 240" width={width} height={width} className={`inline-block shrink-0 overflow-visible ${className}`} xmlns="http://www.w3.org/2000/svg">
+        <style>{`@keyframes mg-draw-${reactId}{0%{opacity:0;stroke-dashoffset:400}100%{opacity:1;stroke-dashoffset:0}}@keyframes mg-bloom-${reactId}{0%{opacity:0;transform:scale(.72)}100%{opacity:1;transform:scale(1)}}@keyframes mg-shimmer-${reactId}{0%{opacity:.45;filter:brightness(1)}55%{opacity:1;filter:brightness(1.45)}100%{opacity:1;filter:brightness(1)}}@keyframes mg-float-${reactId}{0%{transform:translateY(8px)}60%{transform:translateY(-4px)}100%{transform:translateY(0)}}@keyframes mg-reveal-${reactId}{0%{opacity:0;transform:translateY(18px)}100%{opacity:1;transform:translateY(0)}}.mg-${reactId}{transform-box:fill-box;transform-origin:center}.mg-${reactId}.draw{stroke-dasharray:400;animation:mg-draw-${reactId} 1.35s ease-out both}.mg-${reactId}.bloom{animation:mg-bloom-${reactId} 1.1s cubic-bezier(.2,.8,.2,1) both}.mg-${reactId}.shimmer{animation:mg-shimmer-${reactId} 1.35s ease-out both}.mg-${reactId}.float{animation:mg-float-${reactId} 1.8s ease-out both}.mg-${reactId}.reveal{animation:mg-reveal-${reactId} .95s cubic-bezier(.2,.8,.2,1) both}@media (prefers-reduced-motion:reduce){.mg-${reactId}{animation:none!important}}`}</style>
+        <g className={`mg-${reactId} ${safeAnimation}`}>{artwork}</g>
+    </svg>;
+});

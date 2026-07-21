@@ -2,9 +2,9 @@
 
 import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle, Download, Lock, Play } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import VectorArtGuests from './VectorArtGuests';
+import AttireIllustration from './AttireIllustration';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import GenerationLoading from './GenerationLoading';
@@ -51,6 +51,9 @@ import {
     evaluateWeddingPublishHealth,
     type WeddingPublishHealthSummary,
 } from '@/lib/wedding-health';
+import { parseDressCodeValue, serializeDressCodeValue } from '@/lib/dress-code';
+import { getSafeMonogramConfig } from '@/lib/monogram';
+import { createMonogramWebm, downloadMonogramImage, requestMonogramMp4 } from '@/lib/monogram-export';
 
 // Helper component for collapsible sections
 const Collapsible = memo(function Collapsible({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) {
@@ -229,6 +232,8 @@ const STEPS = [
     { id: 'faq', title: 'FAQs', icon: HelpCircle },
 ];
 
+const ATTIRE_COLOR_OPTIONS = ['#111827', '#1A365D', '#276749', '#744210', '#E53E3E', '#805AD5', '#D6BCFA', '#FBD38D', '#D16C78', '#D6B87C', '#6B7A62', '#F8EEEA'];
+
 const ACCENT_STYLES = [
     { id: 'none', name: 'None', desc: 'Clean layout' },
     { id: 'eucalyptus', name: 'Eucalyptus', desc: 'Soft botanical leaves' },
@@ -347,6 +352,8 @@ const INITIAL_FORM_DATA = {
     galleryLayout: 'auto',
     dressCode: '',
     dressCodeColor: '#000000',
+    sponsorDressCode: '',
+    sponsorDressCodeColor: '#1A365D',
     programTimeline: '',
     faqItems: [] as any[],
     story: '',
@@ -460,7 +467,11 @@ export default function BuilderForm() {
     const { user, isAdmin, loading: authLoading } = useAuth();
     const searchParams = useSearchParams();
     const editId = searchParams?.get('edit');
+    const userId = user?.id || null;
     const [currentStep, setCurrentStep] = useState(0);
+    const [loadedEditId, setLoadedEditId] = useState<string | null>(null);
+    const weddingLoadRef = useRef<{ id: string; requestId: number } | null>(null);
+    const weddingLoadRequestIdRef = useRef(0);
 
     // Scroll to top of the page when the step changes
     useEffect(() => {
@@ -476,7 +487,17 @@ export default function BuilderForm() {
     
     // Mobile UI state
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [isDesktopPreview, setIsDesktopPreview] = useState(false);
     const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(min-width: 1024px)');
+        const updatePreviewMode = () => setIsDesktopPreview(mediaQuery.matches);
+
+        updatePreviewMode();
+        mediaQuery.addEventListener('change', updatePreviewMode);
+        return () => mediaQuery.removeEventListener('change', updatePreviewMode);
+    }, []);
 
     const toggleSection = (id: string) => {
         setExpandedSection(prev => prev === id ? null : id);
@@ -490,6 +511,7 @@ export default function BuilderForm() {
         redo,
         canUndo,
         canRedo,
+        clear: initializeFormData,
     } = useLocalUndoRedo(INITIAL_FORM_DATA, 50);
 
     // Keyboard shortcuts for undo/redo
@@ -571,8 +593,12 @@ export default function BuilderForm() {
     const [showMonogramProModal, setShowMonogramProModal] = useState(false);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
     const [accountIsPro, setAccountIsPro] = useState(false);
+    const monogramExportRef = useRef<SVGSVGElement>(null);
+    const [monogramExporting, setMonogramExporting] = useState<'png' | 'jpg' | 'mp4' | null>(null);
+    const [monogramPreviewNonce, setMonogramPreviewNonce] = useState(0);
     const [activeWeddingCount, setActiveWeddingCount] = useState(0);
     const [entourageImportStatus, setEntourageImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+    const hasMonogramPro = isAdmin || accountIsPro;
     const freeWebsiteLimitReached = !editId && !isAdmin && !accountIsPro && activeWeddingCount >= 3;
     const publishHealth = useMemo(() => evaluateWeddingPublishHealth(formData, {
         heroImage: Boolean(mediaFiles.heroImage || previews.heroImage),
@@ -639,12 +665,12 @@ export default function BuilderForm() {
         setIsPremium(true);
 
         // BUG #12 FIX: Restore pending wedding data from sessionStorage after login redirect
-        if (user && !editId && typeof window !== 'undefined') {
+        if (userId && !editId && typeof window !== 'undefined') {
             const pendingData = window.sessionStorage.getItem('pending_wedding_data');
             if (pendingData) {
                 try {
                     const restored = JSON.parse(pendingData);
-                    setFormData({ ...INITIAL_FORM_DATA, ...restored });
+                    initializeFormData({ ...INITIAL_FORM_DATA, ...restored });
                     window.sessionStorage.removeItem('pending_wedding_data');
                     console.log('✅ Restored pending wedding form data from session');
                 } catch (e) {
@@ -654,27 +680,39 @@ export default function BuilderForm() {
             }
         }
 
-        if (user && editId) {
+        if (userId && editId && loadedEditId !== editId && weddingLoadRef.current?.id !== editId) {
+            const requestId = ++weddingLoadRequestIdRef.current;
+            weddingLoadRef.current = { id: editId, requestId };
+
             const fetchWedding = async () => {
-                const { data: sessionData } = await getCachedSession();
-                const token = sessionData.session?.access_token;
-                if (!token) return;
+                try {
+                    const { data: sessionData } = await getCachedSession();
+                    const token = sessionData.session?.access_token;
+                    if (!token) throw new Error('No active session while loading wedding');
 
-                const response = await fetch(`/api/planner/load?weddingId=${encodeURIComponent(editId)}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                const result = await response.json().catch(() => ({}));
-                const data = result.wedding;
+                    const response = await fetch(`/api/planner/load?weddingId=${encodeURIComponent(editId)}`, {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    });
+                    if (!response.ok) throw new Error(`Wedding load failed with status ${response.status}`);
 
-                if (data && (result.accessRole === 'owner' || result.accessRole === 'partner')) {
-                    // Builder features are included on the free plan. Paid status now unlocks Planner Pro.
-                    setIsPremium(true);
-                    setWeddingOwnerId(data.user_id || user.id);
-                    setExistingPublicSlug(typeof data.public_slug === 'string' ? data.public_slug : '');
+                    const result = await response.json().catch(() => ({}));
+                    const data = result.wedding;
 
-                    setFormData({
+                    // Ignore a response from an older edit route. More importantly,
+                    // this request is registered before it starts, so auth refreshes
+                    // cannot launch another load that overwrites unsaved builder edits.
+                    if (weddingLoadRef.current?.requestId !== requestId) return;
+
+                    if (data && (result.accessRole === 'owner' || result.accessRole === 'partner')) {
+                        // Builder features are included on the free plan. Paid status now unlocks Planner Pro.
+                        setIsPremium(true);
+                        setWeddingOwnerId(data.user_id || userId);
+                        setExistingPublicSlug(typeof data.public_slug === 'string' ? data.public_slug : '');
+                        const dressCodeSettings = parseDressCodeValue(data.dress_code, data.motif_color);
+
+                        initializeFormData({
                         brideName: data.bride_name || '',
                         groomName: data.groom_name || '',
                         weddingDate: data.wedding_date || '',
@@ -694,8 +732,10 @@ export default function BuilderForm() {
                         template: data.template || 'classic',
                         templateStyle: data.template_style || DEFAULT_TEMPLATE_STYLE,
                         galleryLayout: data.gallery_layout || 'auto',
-                        dressCode: data.dress_code ? data.dress_code.split('||')[0] : '',
-                        dressCodeColor: data.dress_code && data.dress_code.includes('||') ? data.dress_code.split('||')[1] : (data.motif_color || '#000000'),
+                        dressCode: dressCodeSettings.guests.attire,
+                        dressCodeColor: dressCodeSettings.guests.color,
+                        sponsorDressCode: dressCodeSettings.sponsors.attire,
+                        sponsorDressCodeColor: dressCodeSettings.sponsors.color,
                         programTimeline: data.program_timeline || '',
                         faqItems: readArrayField(data.faq_items),
                         story: data.story || '',
@@ -723,33 +763,45 @@ export default function BuilderForm() {
                         thankYouMessage: data.thank_you_message || '',
                         photoAlbumLink: data.photo_album_link || '',
                         accentStyle: data.accent_style || 'none',
-                    });
-                    let inviteImages: string[] = [];
-                    try {
-                        if (data.invitation_image && data.invitation_image.startsWith('[')) {
-                            inviteImages = JSON.parse(data.invitation_image);
-                        } else if (data.invitation_image) {
-                            inviteImages = [data.invitation_image];
+                        });
+                        let inviteImages: string[] = [];
+                        try {
+                            if (data.invitation_image && data.invitation_image.startsWith('[')) {
+                                inviteImages = JSON.parse(data.invitation_image);
+                            } else if (data.invitation_image) {
+                                inviteImages = [data.invitation_image];
+                            }
+                        } catch {
+                            if (data.invitation_image) inviteImages = [data.invitation_image];
                         }
-                    } catch (e) {
-                        if (data.invitation_image) inviteImages = [data.invitation_image];
+
+                        setPreviews({
+                            heroImage: data.hero_image || '',
+                            couplePhoto: data.couple_photo || '',
+                            teaserVideo: (data as any).teaser_video || '',
+                            backgroundMusic: (data as any).background_music_url || '',
+                            giftQr: data.gift_qr_image || '',
+                            invitationImages: inviteImages,
+                            galleryImages: data.gallery_images || [],
+                            receptionVenuePhotos: readArrayField(data.reception_venue_photos) as string[],
+                        });
                     }
 
-                    setPreviews({
-                        heroImage: data.hero_image || '',
-                        couplePhoto: data.couple_photo || '',
-                        teaserVideo: (data as any).teaser_video || '',
-                        backgroundMusic: (data as any).background_music_url || '',
-                        giftQr: data.gift_qr_image || '',
-                        invitationImages: inviteImages,
-                        galleryImages: data.gallery_images || [],
-                        receptionVenuePhotos: readArrayField(data.reception_venue_photos) as string[],
-                    });
+                    setLoadedEditId(editId);
+                } catch (error) {
+                    console.error('[builder] Failed to load wedding for editing', { editId, error });
+                    if (weddingLoadRef.current?.requestId === requestId) {
+                        setLoadedEditId(editId);
+                    }
+                } finally {
+                    if (weddingLoadRef.current?.requestId === requestId) {
+                        weddingLoadRef.current = null;
+                    }
                 }
             };
-            fetchWedding();
+            void fetchWedding();
         }
-    }, [user, authLoading, router, editId]);
+    }, [userId, authLoading, router, editId, loadedEditId, initializeFormData]);
 
     useEffect(() => {
         if (!user) {
@@ -1198,7 +1250,10 @@ export default function BuilderForm() {
                 template: formData.template,
                 template_style: formData.templateStyle || DEFAULT_TEMPLATE_STYLE,
                 gallery_layout: formData.galleryLayout || 'auto',
-                dress_code: formData.dressCode ? `${formData.dressCode}||${formData.dressCodeColor}` : '',
+                dress_code: serializeDressCodeValue({
+                    sponsors: { attire: formData.sponsorDressCode, color: formData.sponsorDressCodeColor },
+                    guests: { attire: formData.dressCode, color: formData.dressCodeColor },
+                }),
                 program_timeline: formData.programTimeline,
                 faq_items: formData.faqItems,
                 story: formData.story,
@@ -1211,9 +1266,9 @@ export default function BuilderForm() {
                 gift_account_number: formData.giftAccountNumber,
                 logo_initials: formData.logoInitials,
                 logo_font: formData.logoFont,
-                logo_shape: formData.logoShape,
+                logo_shape: getSafeMonogramConfig({ shape: formData.logoShape, animation: formData.logoAnimation }, hasMonogramPro).shape,
                 logo_color: formData.logoColor || formData.motifColor,
-                logo_animation: formData.logoAnimation || 'none',
+                logo_animation: getSafeMonogramConfig({ shape: formData.logoShape, animation: formData.logoAnimation }, hasMonogramPro).animation,
                 spotify_playlist_url: formData.spotifyUrl,
                 background_music_title: formData.backgroundMusicTitle,
                 background_music_enabled: Boolean(formData.backgroundMusicEnabled && (musicUrl || previews.backgroundMusic)),
@@ -1910,25 +1965,32 @@ export default function BuilderForm() {
                             <p className="text-text-secondary">Customize your wedding initials, choose luxury monogram styles & motion animations.</p>
                         </div>
                         <div className="space-y-6">
-                            <div className="overflow-hidden rounded-[2.5rem] border border-primary/10 bg-[radial-gradient(circle_at_top,rgba(192,128,129,0.14),transparent_48%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,248,244,0.78))] p-6 text-center shadow-xl shadow-primary/10 sm:p-10">
-                                <p className="mb-4 text-[10px] font-black uppercase tracking-[0.28em] text-primary/60">Live Monogram Preview</p>
-                                <MonogramMark
-                                    initials={formData.logoInitials}
-                                    brideName={formData.brideName}
-                                    groomName={formData.groomName}
-                                    shape={formData.logoShape}
-                                    animation={isPremium ? formData.logoAnimation : 'none'}
-                                    color={formData.logoColor}
-                                    motifColor={formData.motifColor}
-                                    fontClassName={FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'}
-                                    size="lg"
-                                    className="mx-auto"
-                                />
-                                <div className="mx-auto mt-6 h-px w-28 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-                                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary/70">
-                                    {formData.brideName || 'Bride'} & {formData.groomName || 'Groom'}
-                                </p>
-                            </div>
+                                <div className="overflow-hidden rounded-[2rem] border border-primary/10 bg-[radial-gradient(circle_at_top,rgba(192,128,129,0.14),transparent_48%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,248,244,0.78))] p-5 text-center shadow-xl shadow-primary/10 sm:p-8">
+                                    <p className="mb-4 text-[10px] font-black uppercase tracking-[0.28em] text-primary/60">Live Monogram</p>
+                                    <MonogramMark
+                                        key={`${formData.logoAnimation}-${monogramPreviewNonce}`}
+                                        ref={monogramExportRef}
+                                        initials={formData.logoInitials}
+                                        brideName={formData.brideName}
+                                        groomName={formData.groomName}
+                                        shape={getSafeMonogramConfig({ shape: formData.logoShape, animation: formData.logoAnimation }, hasMonogramPro).shape}
+                                        color={formData.logoColor}
+                                        motifColor={formData.motifColor}
+                                        fontClassName={FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'}
+                                        animation={hasMonogramPro ? formData.logoAnimation : 'none'}
+                                        size="lg"
+                                        className="mx-auto"
+                                    />
+                                    {hasMonogramPro && formData.logoAnimation !== 'none' && (
+                                        <button type="button" onClick={() => setMonogramPreviewNonce((value) => value + 1)} className="mx-auto mt-4 inline-flex items-center gap-2 rounded-xl border border-primary/25 bg-white/85 px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary/5">
+                                            <Play className="h-3.5 w-3.5 fill-current" /> Replay animated preview
+                                        </button>
+                                    )}
+                                    <div className="mx-auto mt-6 h-px w-28 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                                    <p className="mt-4 text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary/70">
+                                        {formData.brideName || 'Bride'} & {formData.groomName || 'Groom'}
+                                    </p>
+                                </div>
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
@@ -2000,7 +2062,7 @@ export default function BuilderForm() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                                     {MONOGRAM_SHAPES.map((shape) => {
-                                        const isLocked = !isPremium && shape.isPro;
+                                        const isLocked = !isPremium && shape.pro;
                                         const isSelected = formData.logoShape === shape.id;
                                         return (
                                             <button
@@ -2019,7 +2081,7 @@ export default function BuilderForm() {
                                                         : 'border-border bg-neutral/60 hover:border-primary/40 hover:bg-white'
                                                 }`}
                                             >
-                                                {shape.isPro && (
+                                                {shape.pro && (
                                                     <span className="absolute top-2 right-2 rounded-md bg-gradient-to-r from-amber-500 to-rose-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm">
                                                         PRO
                                                     </span>
@@ -2054,7 +2116,7 @@ export default function BuilderForm() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                                     {MONOGRAM_ANIMATIONS.map((anim) => {
-                                        const isLocked = !isPremium && anim.isPro;
+                                        const isLocked = !isPremium && anim.id !== 'none';
                                         const isSelected = (formData.logoAnimation || 'none') === anim.id;
                                         return (
                                             <button
@@ -2073,7 +2135,7 @@ export default function BuilderForm() {
                                                         : 'border-border bg-neutral/60 hover:border-primary/40 hover:bg-white'
                                                 }`}
                                             >
-                                                {anim.isPro && (
+                                                {anim.id !== 'none' && (
                                                     <span className="absolute top-2 right-2 rounded-md bg-gradient-to-r from-amber-500 to-rose-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm">
                                                         PRO
                                                     </span>
@@ -2134,6 +2196,12 @@ export default function BuilderForm() {
                                         </div>
                                     </div>
                                     <UpgradeButton weddingId={editId || ''} className="w-full justify-center py-3.5 text-sm" />
+                                </div>
+                                <div className="rounded-2xl border border-border bg-white p-4 sm:p-5">
+                                    <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-foreground">Invitation-ready downloads</p><p className="mt-1 text-xs text-text-secondary">PNG has transparency. JPG and MP4 use a pure-white background.</p></div>{!hasMonogramPro && <Lock className="h-4 w-4 text-text-secondary" />}</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(['png', 'jpg', 'mp4'] as const).map((format) => <button key={format} type="button" disabled={Boolean(monogramExporting)} onClick={() => handleMonogramExport(format)} className={`inline-flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50 ${!hasMonogramPro ? 'opacity-65' : ''}`}><Download className="h-3.5 w-3.5" />{monogramExporting === format ? `Preparing ${format.toUpperCase()}…` : `Download ${format.toUpperCase()}`}</button>)}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -2361,89 +2429,120 @@ export default function BuilderForm() {
                         </div>
                     </div >
                 );
-            case 5:
+            case 5: {
+    const attireGroups = [
+        {
+            id: 'sponsors',
+            label: 'Principal Sponsors',
+            description: 'Set the formal attire guidance and color reserved for principal sponsors.',
+            attireField: 'sponsorDressCode',
+            colorField: 'sponsorDressCodeColor',
+            variant: 'sponsors' as const,
+        },
+        {
+            id: 'guests',
+            label: 'Wedding Guests',
+            description: 'Set a separate attire instruction and color for all other guests.',
+            attireField: 'dressCode',
+            colorField: 'dressCodeColor',
+            variant: 'guests' as const,
+        },
+    ] as const;
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center mb-4">
                 <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Dress Code</h2>
-                <p className="text-text-secondary">Guide your guests with a polished attire note and matching visual palette.</p>
+                <p className="text-text-secondary">Create separate attire guidance for principal sponsors and wedding guests.</p>
             </div>
-            <div className="grid gap-6 rounded-[2rem] border border-border bg-white/70 p-4 shadow-sm sm:p-6 md:grid-cols-[1.05fr_0.95fr] md:items-stretch">
-                <div className="space-y-6 rounded-[1.5rem] bg-white p-4 sm:p-5">
-                    <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Attire Type</label>
-                        <input
-                            name="dressCode"
-                            value={formData.dressCode}
-                            onChange={handleChange}
-                            placeholder="e.g. Formal, Black Tie, Garden Chic"
-                            className="w-full rounded-xl border border-border bg-neutral px-4 py-3 outline-none transition-all focus:border-primary focus:bg-white"
-                        />
-                        <p className="text-[10px] leading-relaxed text-text-secondary ml-1">This appears on the invitation so guests know the expected style.</p>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Attire Color Theme</label>
-                        <div className="grid grid-cols-4 gap-3 sm:grid-cols-6">
-                            {['#111827', '#1A365D', '#276749', '#744210', '#E53E3E', '#805AD5', '#D6BCFA', '#FBD38D', '#D16C78', '#D6B87C', '#6B7A62', '#F8EEEA'].map((color) => (
-                                <button
-                                    key={color}
-                                    type="button"
-                                    onClick={() => setFormData((prev: any) => ({ ...prev, dressCodeColor: color }))}
-                                    className={`relative h-12 rounded-2xl border-2 transition-all ${formData.dressCodeColor === color ? 'border-white ring-2 ring-primary shadow-xl scale-105' : 'border-border/60 shadow-sm hover:border-primary/50'}`}
-                                    style={{ backgroundColor: color }}
-                                    aria-label={`Select attire color ${color}`}
+
+            <div className="space-y-6 rounded-[2rem] border border-border bg-white/70 p-4 shadow-sm sm:p-6">
+                {attireGroups.map((group) => {
+                    const attireValue = formData[group.attireField];
+                    const colorValue = formData[group.colorField];
+
+                    return (
+                        <section key={group.id} className="overflow-hidden rounded-[1.75rem] border border-border bg-white p-4 sm:p-5">
+                            <div className="mb-5 flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">{group.label}</p>
+                                    <p className="mt-2 text-sm leading-6 text-text-secondary">{group.description}</p>
+                                </div>
+                                <span className="h-11 w-11 shrink-0 rounded-2xl border-2 border-white shadow-lg" style={{ backgroundColor: colorValue }} />
+                            </div>
+
+                            <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
+                                <div className="space-y-5 rounded-2xl bg-neutral/45 p-4">
+                                    <div className="space-y-2">
+                                        <label htmlFor={`${group.id}-attire`} className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Type</label>
+                                        <input
+                                            id={`${group.id}-attire`}
+                                            name={group.attireField}
+                                            value={attireValue}
+                                            onChange={handleChange}
+                                            placeholder={group.id === 'sponsors' ? 'e.g. Black Tie, Barong and Formal Gown' : 'e.g. Formal, Cocktail, Garden Formal'}
+                                            className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Color Theme</label>
+                                        <div className="grid grid-cols-6 gap-2">
+                                            {ATTIRE_COLOR_OPTIONS.map((color) => (
+                                                <button
+                                                    key={color}
+                                                    type="button"
+                                                    onClick={() => setFormData((previous: any) => ({ ...previous, [group.colorField]: color }))}
+                                                    className={`relative h-9 rounded-xl border-2 transition-all ${colorValue === color ? 'scale-105 border-white ring-2 ring-primary shadow-lg' : 'border-border/60 shadow-sm hover:border-primary/50'}`}
+                                                    style={{ backgroundColor: color }}
+                                                    aria-label={`Select ${group.label.toLowerCase()} attire color ${color}`}
+                                                >
+                                                    {colorValue === color && <CheckCircle2 className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="color"
+                                                name={group.colorField}
+                                                value={colorValue}
+                                                onChange={handleChange}
+                                                className="h-11 w-11 cursor-pointer rounded-2xl border border-border bg-transparent p-0"
+                                                aria-label={`Pick a custom ${group.label.toLowerCase()} attire color`}
+                                            />
+                                            <input
+                                                type="text"
+                                                name={group.colorField}
+                                                value={colorValue}
+                                                onChange={handleChange}
+                                                placeholder="#HEX"
+                                                className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-3 font-mono text-sm outline-none transition-all focus:border-primary"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    className="relative flex min-h-[300px] flex-col justify-between overflow-hidden rounded-2xl border border-border bg-neutral p-4"
+                                    style={{ boxShadow: `0 20px 55px ${colorValue}18` }}
                                 >
-                                    {formData.dressCodeColor === color && (
-                                        <span className="absolute inset-0 flex items-center justify-center">
-                                            <CheckCircle2 className="h-5 w-5 text-white drop-shadow" />
-                                        </span>
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-3 pt-2">
-                            <input
-                                type="color"
-                                name="dressCodeColor"
-                                value={formData.dressCodeColor}
-                                onChange={handleChange}
-                                className="h-11 w-11 cursor-pointer rounded-2xl border border-border bg-transparent p-0"
-                                aria-label="Pick a custom attire color"
-                            />
-                            <input
-                                type="text"
-                                name="dressCodeColor"
-                                value={formData.dressCodeColor}
-                                onChange={handleChange}
-                                placeholder="#HEX"
-                                className="min-h-[44px] flex-1 rounded-xl border border-border bg-neutral px-4 py-3 font-mono text-sm outline-none transition-all focus:border-primary focus:bg-white"
-                            />
-                        </div>
-                        <p className="text-[10px] text-text-secondary ml-1 mt-2">The selected color updates the dress and accents in the preview art.</p>
-                    </div>
-                </div>
-                <div
-                    className="relative flex min-h-[310px] flex-col justify-between overflow-hidden rounded-[1.75rem] border border-border bg-neutral p-5"
-                    style={{ boxShadow: `0 24px 70px ${formData.dressCodeColor}18` }}
-                >
-                    <div className="absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at 50% 28%, ${formData.dressCodeColor}22, transparent 48%)` }} />
-                    <div className="relative flex items-center justify-between gap-4">
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-text-secondary/60">Live attire preview</p>
-                            <p className="mt-1 font-serif text-2xl font-bold text-foreground">{formData.dressCode || 'Formal Attire'}</p>
-                        </div>
-                        <div className="h-11 w-11 rounded-2xl border border-white/80 shadow-lg" style={{ backgroundColor: formData.dressCodeColor }} />
-                    </div>
-                    <div className="relative flex flex-1 items-center justify-center py-4">
-                        <VectorArtGuests color={formData.dressCodeColor} />
-                    </div>
-                    <div className="relative rounded-2xl border border-white/70 bg-white/75 px-4 py-3 text-center text-xs font-semibold leading-5 text-text-secondary backdrop-blur">
-                        Guests will see the attire note with a color-coordinated illustration on the wedding page.
-                    </div>
-                </div>
+                                    <div className="absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at 50% 30%, ${colorValue}22, transparent 48%)` }} />
+                                    <div className="relative">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-text-secondary/60">Live preview · {group.label}</p>
+                                        <p className="mt-1 font-serif text-xl font-bold text-foreground">{attireValue || 'Formal Attire'}</p>
+                                    </div>
+                                    <div className="relative flex flex-1 items-center justify-center py-2">
+                                        <AttireIllustration color={colorValue} variant={group.variant} className="max-w-[300px]" />
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    );
+                })}
             </div>
         </div>
     );
+            }
             case 6:
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -2768,6 +2867,48 @@ export default function BuilderForm() {
 }
     };
 
+    const monogramFilename = `${(formData.brideName || 'wedding').trim().replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-${(formData.groomName || 'monogram').trim().replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-monogram`;
+
+    const handleMonogramExport = async (format: 'png' | 'jpg' | 'mp4') => {
+        if (!hasMonogramPro) {
+            alert('PNG, JPG, and MP4 monogram downloads are available with Account Pro.');
+            return;
+        }
+        if (!monogramExportRef.current) {
+            alert('Your monogram preview is still loading. Please try again in a moment.');
+            return;
+        }
+        if (monogramExporting) return;
+        setMonogramExporting(format);
+        try {
+            if (format === 'png' || format === 'jpg') {
+                await downloadMonogramImage(monogramExportRef.current, format, monogramFilename);
+            } else {
+                const { data } = await getCachedSession();
+                const token = data.session?.access_token;
+                if (!token) throw new Error('Please sign in again to export an MP4.');
+                const video = await createMonogramWebm(monogramExportRef.current, formData.logoAnimation);
+                await requestMonogramMp4(video, token, monogramFilename);
+            }
+        } catch (error) {
+            alert(getErrorMessage(error));
+        } finally {
+            setMonogramExporting(null);
+        }
+    };
+
+if (editId && loadedEditId !== editId) {
+    return (
+        <div className="mx-auto flex min-h-[520px] w-full max-w-6xl items-center justify-center px-6">
+            <div className="text-center">
+                <Heart className="mx-auto h-9 w-9 animate-pulse text-primary" />
+                <p className="mt-4 font-serif text-xl text-foreground">Loading your wedding design…</p>
+                <p className="mt-1 text-sm text-text-secondary">Your saved details will be ready in a moment.</p>
+            </div>
+        </div>
+    );
+}
+
 return (
     <>
         <AnimatePresence>
@@ -2893,9 +3034,11 @@ return (
             </div>
 
             {/* Desktop Preview */}
-            <div className="hidden lg:block w-full lg:w-2/5 sticky top-8">
-                <LivePreview formData={formData} previews={previews} />
-            </div>
+            {isDesktopPreview && (
+                <div className="hidden lg:block w-full lg:w-2/5 sticky top-8">
+                    <LivePreview formData={formData} previews={previews} hasMonogramPro={hasMonogramPro} />
+                </div>
+            )}
 
             {/* Mobile Preview Toggle & Modal */}
             <div className="lg:hidden">
@@ -2931,7 +3074,7 @@ return (
                             </div>
                             <div className="flex-1 overflow-y-auto bg-neutral p-4 no-scrollbar">
                                 <div className="max-w-sm mx-auto">
-                                    <LivePreview formData={formData} previews={previews} isMobileView />
+                                    <LivePreview formData={formData} previews={previews} isMobileView hasMonogramPro={hasMonogramPro} />
                                 </div>
                             </div>
                         </motion.div>

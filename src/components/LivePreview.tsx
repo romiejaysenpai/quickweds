@@ -1,17 +1,40 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { getTemplateMeta, getTemplateStyleLabel } from '@/lib/template-catalog';
+import { serializeDressCodeValue } from '@/lib/dress-code';
+import { getSafeMonogramConfig } from '@/lib/monogram';
 
-export default function LivePreview({ formData, previews, isMobileView = false, isPremium = false }: { formData: any; previews: any; isMobileView?: boolean; isPremium?: boolean }) {
+const PREVIEW_STORAGE_KEY = 'quickweds-builder-preview';
+
+export default function LivePreview({
+    formData,
+    previews,
+    isMobileView = false,
+    hasMonogramPro = false,
+}: {
+    formData: any;
+    previews: any;
+    isMobileView?: boolean;
+    hasMonogramPro?: boolean;
+}) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const retryTimersRef = useRef<number[]>([]);
+    const payloadRevisionRef = useRef(0);
+    const previewChannel = isMobileView ? 'mobile' : 'desktop';
+    const previewInstanceId = `${previewChannel}-${useId().replaceAll(':', '')}`;
+    const previewStorageKey = `${PREVIEW_STORAGE_KEY}:${previewInstanceId}`;
     const templateMeta = getTemplateMeta(formData.template);
 
-    useEffect(() => {
-        const sendUpdate = () => {
-            if (!iframeRef.current || !iframeRef.current.contentWindow) return;
-            
-            const weddingMock = {
+    const previewPayload = useMemo(() => {
+        const monogram = getSafeMonogramConfig(
+            { shape: formData.logoShape, animation: formData.logoAnimation },
+            hasMonogramPro
+        );
+
+        return {
+            type: 'UPDATE_PREVIEW',
+            wedding: {
                 id: 'preview',
                 bride_name: formData.brideName || 'Isabella',
                 groom_name: formData.groomName || 'Julian',
@@ -32,7 +55,10 @@ export default function LivePreview({ formData, previews, isMobileView = false, 
                 template: formData.template || 'classic',
                 template_style: formData.templateStyle || 'default',
                 card_style: formData.cardStyle || 'default',
-                dress_code: formData.dressCode ? `${formData.dressCode}||${formData.dressCodeColor}` : '',
+                dress_code: serializeDressCodeValue({
+                    sponsors: { attire: formData.sponsorDressCode, color: formData.sponsorDressCodeColor },
+                    guests: { attire: formData.dressCode, color: formData.dressCodeColor },
+                }),
                 program_timeline: formData.programTimeline,
                 faq_items: formData.faqItems,
                 story: formData.story,
@@ -46,9 +72,9 @@ export default function LivePreview({ formData, previews, isMobileView = false, 
                 gift_account_number: formData.giftAccountNumber,
                 logo_initials: formData.logoInitials,
                 logo_font: formData.logoFont || 'Elegant',
-                logo_shape: formData.logoShape || 'minimal',
+                logo_shape: monogram.shape,
                 logo_color: formData.logoColor || formData.motifColor,
-                logo_animation: isPremium ? (formData.logoAnimation || 'none') : 'none',
+                logo_animation: monogram.animation,
                 spotify_playlist_url: formData.spotifyUrl,
                 background_music_url: previews.backgroundMusic,
                 background_music_title: formData.backgroundMusicTitle,
@@ -61,34 +87,57 @@ export default function LivePreview({ formData, previews, isMobileView = false, 
                 thank_you_message: formData.thankYouMessage,
                 photo_album_link: formData.photoAlbumLink,
                 accent_style: formData.accentStyle || 'none',
-                
                 hero_image: previews.heroImage,
                 couple_photo: previews.couplePhoto,
                 gift_qr_image: previews.giftQr,
                 invitation_image: JSON.stringify(previews.invitationImages),
                 gallery_layout: formData.galleryLayout || 'auto',
-                gallery_images: formData.galleryImages ? "[]" : "[]", // actual array is passed in gallery
-            };
-
-            iframeRef.current.contentWindow.postMessage({
-                type: 'UPDATE_PREVIEW',
-                wedding: weddingMock,
-                gallery: previews.galleryImages || [] // We need to handle gallery if previews have it
-            }, '*');
+                gallery_images: '[]',
+            },
+            gallery: previews.galleryImages || [],
         };
+    }, [formData, previews, hasMonogramPro]);
 
-        const handleMessage = (e: MessageEvent) => {
-            if (e.data?.type === 'PREVIEW_READY') {
-                sendUpdate();
-            }
+    const latestPayloadRef = useRef<typeof previewPayload & { previewRevision?: number }>(previewPayload);
+
+    const sendUpdate = useCallback(() => {
+        const payload = latestPayloadRef.current;
+        try {
+            window.sessionStorage.setItem(previewStorageKey, JSON.stringify(payload));
+        } catch {
+            // postMessage remains available if storage is unavailable.
+        }
+        iframeRef.current?.contentWindow?.postMessage(payload, window.location.origin);
+    }, [previewStorageKey]);
+
+    useLayoutEffect(() => {
+        payloadRevisionRef.current += 1;
+        latestPayloadRef.current = { ...previewPayload, previewRevision: payloadRevisionRef.current };
+        sendUpdate();
+    }, [previewPayload, sendUpdate]);
+
+    const syncAfterFrameLoad = useCallback(() => {
+        retryTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+        sendUpdate();
+        retryTimersRef.current = [
+            window.setTimeout(sendUpdate, 100),
+            window.setTimeout(sendUpdate, 350),
+        ];
+    }, [sendUpdate]);
+
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin || event.source !== iframeRef.current?.contentWindow) return;
+            if (event.data?.type === 'PREVIEW_READY') sendUpdate();
         };
 
         window.addEventListener('message', handleMessage);
-        // We also send update on any changes, iframe might already be ready
         sendUpdate();
-
-        return () => window.removeEventListener('message', handleMessage);
-    }, [formData, previews, isPremium]);
+        return () => {
+            window.removeEventListener('message', handleMessage);
+            retryTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+        };
+    }, [sendUpdate]);
 
     return (
         <div className={`relative overflow-hidden ${isMobileView ? '' : 'rounded-[2rem] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.85),rgba(255,248,244,0.72))] p-4 shadow-[0_30px_90px_rgba(58,42,45,0.12)] backdrop-blur-sm'}`}>
@@ -97,22 +146,15 @@ export default function LivePreview({ formData, previews, isMobileView = false, 
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                     <div className="absolute -left-12 top-8 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
                     <div className="absolute -right-12 bottom-8 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
-                </>
-            )}
-
-            {!isMobileView && (
-                <div className="mb-4 flex items-center justify-between px-1">
-                    <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-text-secondary/60">Live Preview</p>
-                        <p className="mt-1 text-sm font-semibold text-foreground">{templateMeta.name}</p>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-text-secondary/50">
-                            {getTemplateStyleLabel(formData.templateStyle)}
-                        </p>
+                    <div className="mb-4 flex items-center justify-between px-1">
+                        <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-text-secondary/60">Live Preview</p>
+                            <p className="mt-1 text-sm font-semibold text-foreground">{templateMeta.name}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-text-secondary/50">{getTemplateStyleLabel(formData.templateStyle)}</p>
+                        </div>
+                        <span className="rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-primary shadow-sm">{templateMeta.eyebrow}</span>
                     </div>
-                    <span className="rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-primary shadow-sm">
-                        {templateMeta.eyebrow}
-                    </span>
-                </div>
+                </>
             )}
 
             <div className={`relative mx-auto w-full max-w-[360px] overflow-hidden rounded-[2.6rem] border-[10px] border-[#171717] bg-[#111111] shadow-[0_35px_80px_rgba(0,0,0,0.35)] ${isMobileView ? 'h-[620px]' : 'h-[640px]'}`}>
@@ -120,9 +162,10 @@ export default function LivePreview({ formData, previews, isMobileView = false, 
                 <div className="absolute inset-[3px] overflow-hidden rounded-[2.1rem] bg-white">
                     <iframe
                         ref={iframeRef}
-                        src="/preview"
+                        src={`/preview?preview=${encodeURIComponent(previewInstanceId)}`}
                         allow="clipboard-write; clipboard-read"
-                        className="w-full h-full border-0 rounded-[2.1rem]"
+                        onLoad={syncAfterFrameLoad}
+                        className="h-full w-full rounded-[2.1rem] border-0"
                         title="Live Preview"
                     />
                 </div>

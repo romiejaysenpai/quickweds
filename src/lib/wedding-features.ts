@@ -57,8 +57,8 @@ export type BuilderPresetSource = Record<string, unknown> & {
     logoInitials?: string;
     logoFont?: string;
     logoShape?: string;
-    logoColor?: string;
     logoAnimation?: string;
+    logoColor?: string;
     registryLinks?: Array<{ title: string; url: string }>;
     paymentLinks?: Array<{ title: string; url: string }>;
     isThankYouMode?: boolean;
