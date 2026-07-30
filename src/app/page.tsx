@@ -818,7 +818,7 @@ function SidebarDot({ index, scrollYProgress, totalCards, title }: { index: numb
 
 function CoreFeaturesSidebar({ scrollYProgress }: { scrollYProgress: MotionValue<number> }) {
   return (
-    <div className="absolute right-0 top-[15vh] bottom-[15vh] w-12 lg:-right-4 lg:top-[10vh] lg:bottom-[10vh] lg:w-24 pointer-events-none z-50">
+    <div className="absolute right-1 top-[15vh] bottom-[15vh] w-8 sm:right-3 sm:w-12 lg:right-6 lg:top-[10vh] lg:bottom-[10vh] lg:w-24 pointer-events-none z-50">
       <div className="sticky top-[40vh] lg:top-[35vh] flex flex-col items-center">
         <div className="flex flex-col items-center gap-1.5 lg:gap-2 mb-2 lg:mb-3 opacity-60 lg:opacity-50 text-primary">
           <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-[0.25em] [writing-mode:vertical-lr] rotate-180">Scroll</span>
@@ -853,9 +853,9 @@ function CoreFeaturesSection() {
   });
 
   return (
-    <section ref={containerRef} id="features" className="sticky-feature-section -mt-28 overflow-visible bg-neutral px-4 pb-12 pt-44 sm:mt-0 sm:px-6 sm:pb-20 sm:pt-24 lg:pb-16 lg:pt-28">
+    <section ref={containerRef} id="features" className="relative sticky-feature-section -mt-28 overflow-visible bg-neutral px-4 pb-12 pt-44 sm:mt-0 sm:px-6 sm:pb-20 sm:pt-24 lg:pb-16 lg:pt-28">
+      <CoreFeaturesSidebar scrollYProgress={scrollYProgress} />
       <div className="mx-auto max-w-7xl relative">
-        <CoreFeaturesSidebar scrollYProgress={scrollYProgress} />
         <div className="relative z-40 mx-auto max-w-4xl text-center">
           <p className="mb-3 text-[11px] font-black uppercase tracking-[0.18em] text-primary sm:text-xs">Core features</p>
           <h2 className={`${landingSectionTitleClass} mx-auto max-w-[21rem] sm:max-w-4xl`} style={landingTitleStyle}>

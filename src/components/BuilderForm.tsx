@@ -1853,75 +1853,64 @@ export default function BuilderForm() {
                                 );
                             })}
                         </div>
-                        <div className="space-y-3 rounded-[1.75rem] border border-border/70 bg-white/80 p-4 shadow-sm">
+                        <div className="space-y-4 rounded-[1.75rem] border border-border/70 bg-white/80 p-4 shadow-sm sm:p-5">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-xs font-bold uppercase tracking-widest text-text-secondary">
-                                        Style Variant
+                                    <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                                        5 Design Variations
                                     </p>
                                     <p className="mt-1 text-sm text-text-secondary">
-                                        Keep the original look or apply a Nicepage-inspired wedding landing style to this template.
+                                        Select from 5 distinct variations for <strong className="text-foreground">{activeTemplateMeta?.name || 'this template'}</strong>. Switching variations changes layout, typography, section flow, gallery, buttons, RSVP, and mobile layout without losing your saved content.
                                     </p>
                                 </div>
                                 {activeTemplateMeta && (
                                     <span
-                                        className="mt-1 h-3 w-3 shrink-0 rounded-full shadow-[0_0_0_5px_rgba(255,255,255,0.8)]"
+                                        className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full shadow-[0_0_0_5px_rgba(255,255,255,0.8)]"
                                         style={{ backgroundColor: activeTemplateMeta.accent }}
                                     />
                                 )}
                             </div>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData((prev: any) => ({ ...prev, templateStyle: DEFAULT_TEMPLATE_STYLE }))}
-                                    className={`rounded-2xl border p-4 text-left transition-all ${
-                                        !formData.templateStyle || formData.templateStyle === DEFAULT_TEMPLATE_STYLE || !selectedStyleAvailable
-                                            ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/10'
-                                            : 'border-border bg-neutral/50 hover:border-primary/30 hover:bg-white'
-                                    }`}
-                                >
-                                    <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">Current</span>
-                                    <p className="mt-2 font-serif text-lg text-foreground">Original</p>
-                                    <p className="mt-1 text-xs leading-relaxed text-text-secondary">The existing QuickWeds template design. Existing weddings keep this by default.</p>
-                                </button>
-                                {styleVariants.map((variant) => (
-                                    <button
-                                        key={variant.id}
-                                        type="button"
-                                        onClick={() => setFormData((prev: any) => ({ ...prev, templateStyle: variant.id }))}
-                                        className={`rounded-2xl border p-4 text-left transition-all ${
-                                            formData.templateStyle === variant.id
-                                                ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/10'
-                                                : 'border-border bg-neutral/50 hover:border-primary/30 hover:bg-white'
-                                        }`}
-                                    >
-                                        <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">{variant.source}</span>
-                                        <div className="mt-2 flex items-center gap-2">
-                                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: variant.accent }} />
-                                            <p className="font-serif text-lg text-foreground">{variant.name}</p>
-                                        </div>
-                                        <p className="mt-1 text-xs leading-relaxed text-text-secondary">{variant.desc}</p>
-                                    </button>
-                                ))}
+                            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                                {styleVariants.map((variant) => {
+                                    const isSelected = formData.templateStyle === variant.id || (!formData.templateStyle && (variant.id === DEFAULT_TEMPLATE_STYLE || variant.id === 'classic_v1'));
+                                    return (
+                                        <button
+                                            key={variant.id}
+                                            type="button"
+                                            onClick={() => setFormData((prev: any) => ({ ...prev, templateStyle: variant.id }))}
+                                            className={`group relative rounded-2xl border p-4 text-left transition-all ${
+                                                isSelected
+                                                    ? 'border-primary/60 bg-primary/5 shadow-xl shadow-primary/10 ring-2 ring-primary/20'
+                                                    : 'border-border bg-neutral/40 hover:border-primary/40 hover:bg-white'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                                                <span className="text-[9px] font-black uppercase tracking-[0.22em] text-primary">
+                                                    Variation {variant.variationKey?.toUpperCase() || 'V1'}
+                                                </span>
+                                                {isSelected && (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-bold text-white">
+                                                        Selected
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: variant.accent }} />
+                                                <p className="font-serif text-lg font-bold text-foreground">{variant.name}</p>
+                                            </div>
+                                            <p className="mt-1 text-xs leading-relaxed text-text-secondary">{variant.desc}</p>
+                                            
+                                            <div className="mt-3 pt-3 border-t border-border/40 grid grid-cols-2 gap-1.5 text-[10px] text-text-secondary/80">
+                                                <div><span className="font-bold text-foreground/70">Hero:</span> {variant.heroLayout}</div>
+                                                <div><span className="font-bold text-foreground/70">Gallery:</span> {variant.galleryStyle}</div>
+                                                <div><span className="font-bold text-foreground/70">Button:</span> {variant.buttonStyle}</div>
+                                                <div><span className="font-bold text-foreground/70">Mobile:</span> {variant.mobileLayout}</div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            {styleVariants.length === 0 && (
-                                <p className="rounded-2xl border border-dashed border-border bg-neutral/50 px-4 py-3 text-xs text-text-secondary">
-                                    Additional landing-page style variants will be added here as we adapt more wedding references.
-                                </p>
-                            )}
                         </div>
-                        {!isPremium && (
-                            <div className="mt-4 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20">
-                                <div className="flex items-start gap-3">
-                                    <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                                    <div className="flex-1">
-                                        <h4 className="font-bold text-sm text-foreground mb-1">All templates are included</h4>
-                                        <p className="text-xs text-text-secondary mb-3">Choose any modern, luxury, or editorial style for free.</p>
-                                        <UpgradeButton weddingId={editId || ''} variant="outlined" className="text-xs px-4 py-2" />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 );
             }

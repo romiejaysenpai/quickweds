@@ -57,53 +57,292 @@ export function recommendTemplateIds(input: TemplateRecommendationInput) {
 export type TemplateStyleVariant = {
     id: string;
     templateId: string;
+    variationKey: 'v1' | 'v2' | 'v3' | 'v4' | 'v5';
     name: string;
     desc: string;
-    source: string;
+    source?: string;
     accent: string;
+    heroLayout: string;
+    typography: string;
+    sectionArrangement: string;
+    galleryStyle: string;
+    buttonStyle: string;
+    backgroundDesign: string;
+    rsvpStyle: string;
+    mobileLayout: string;
+    previewGradient?: string;
 };
 
 export const DEFAULT_TEMPLATE_STYLE = 'default';
 
+export const CLASSIC_VARIATIONS: TemplateStyleVariant[] = [
+    {
+        id: 'classic_v1',
+        templateId: 'classic',
+        variationKey: 'v1',
+        name: 'Timeless Grand Centered (V1)',
+        desc: 'Centered portrait hero overlay with elegant serif names, gold dividers, and glassmorphism pill buttons.',
+        accent: '#C08081',
+        heroLayout: 'Centered Overlay Hero with Gold Divider',
+        typography: 'Classic Serif (Cinzel / Playfair) & Clean Sans (Inter)',
+        sectionArrangement: 'Standard Story Flow (Hero -> Video -> Bio -> Details -> Countdown -> Timeline -> Gallery -> Attire -> FAQ -> Gift -> RSVP)',
+        galleryStyle: 'Balanced Masonry Grid with smooth light-box',
+        buttonStyle: 'Rounded Glassmorphism Pill (border border-white/50 bg-black/20 backdrop-blur)',
+        backgroundDesign: 'Soft Warm Cream with Subtle Top Radial Gradient',
+        rsvpStyle: 'Embedded Centered Glass Card Form',
+        mobileLayout: 'Standard Vertical Responsive Stack with Floating Action Bar',
+        previewGradient: 'linear-gradient(135deg, #fff9f5 0%, #f8eeea 55%, #ecd4d9 100%)',
+    },
+    {
+        id: 'classic_v2',
+        templateId: 'classic',
+        variationKey: 'v2',
+        name: 'Split-Screen Modern Editorial (V2)',
+        desc: 'High-contrast 50/50 split hero with photography on left, bold typography on right, and filmstrip gallery.',
+        accent: '#8F394A',
+        heroLayout: '50/50 Asymmetric Split-Screen Hero',
+        typography: 'Bold Display Serif (Fraunces / Bodoni) & High-Contrast Grotesk Sans',
+        sectionArrangement: 'Story-First Flow (Hero -> Bio -> Gallery -> Video -> Details -> Timeline -> RSVP -> FAQ -> Gift)',
+        galleryStyle: 'Horizontal Filmstrip / Carousel with subtle page counters',
+        buttonStyle: 'Sharp Gold-Bordered Box (rounded-none border-2 border-primary uppercase)',
+        backgroundDesign: 'High-Contrast Ivory & Noir Duo-Tone with clean accent borders',
+        rsvpStyle: 'Side-by-Side Photo & Interactive RSVP Form Card',
+        mobileLayout: 'Card-based full-width mobile sections with sticky top header',
+        previewGradient: 'linear-gradient(135deg, #2b1f24 0%, #4a2830 50%, #8f394a 100%)',
+    },
+    {
+        id: 'classic_v3',
+        templateId: 'classic',
+        variationKey: 'v3',
+        name: 'Floating Glass Romance (V3)',
+        desc: 'Atmospheric blurred hero with an elevated glassmorphism card, polaroid stack gallery, and soft script accents.',
+        accent: '#D9777F',
+        heroLayout: 'Elevated Floating Glassmorphism Hero Card',
+        typography: 'Soft Romantic Script (Pinyon Script / Alex Brush) & Light Serif',
+        sectionArrangement: 'Schedule & Venue Flow (Hero -> Details -> Countdown -> Timeline -> Bio -> Video -> Gallery -> RSVP -> Gift)',
+        galleryStyle: 'Polaroid Stack Collage with interactive tilt effects',
+        buttonStyle: 'Soft Gradient Pill with Hover Elevation (bg-gradient-to-r from-primary to-rose-400 shadow-lg)',
+        backgroundDesign: 'Textured Linen look with subtle floating vector flower accents',
+        rsvpStyle: 'Elevated Modal-Style Card with ornamental gold corners',
+        mobileLayout: 'Accordion-style expandable mobile sections with quick jump pill tabs',
+        previewGradient: 'linear-gradient(135deg, #fff0f3 0%, #fcd5ce 50%, #f8edeb 100%)',
+    },
+    {
+        id: 'classic_v4',
+        templateId: 'classic',
+        variationKey: 'v4',
+        name: 'Magazine Monogram Grid (V4)',
+        desc: 'Architectural header featuring large monogram mark, offset 3-photo hero grid, and magazine 2x3 gallery.',
+        accent: '#9A5B64',
+        heroLayout: 'Monogram Header & Asymmetric 3-Photo Hero Grid',
+        typography: 'Modern Editorial Sans (Syne / Outfit) & Bold Bodoni Headings',
+        sectionArrangement: 'Media Showcase Flow (Hero -> Video -> Gallery -> Bio -> Details -> Timeline -> Gift -> RSVP)',
+        galleryStyle: '2x3 Asymmetric Magazine Grid with full-width highlight banner',
+        buttonStyle: 'Underlined Accent Link with Motion Dot (border-b-2 border-primary uppercase font-serif)',
+        backgroundDesign: 'Ultra-clean Pure White Canvas with fine line dividers',
+        rsvpStyle: 'Step-by-Step Interactive RSVP Wizard Cards',
+        mobileLayout: 'Fullscreen Mobile Cards with touch-swipe navigation indicators',
+        previewGradient: 'linear-gradient(135deg, #f7f7f7 0%, #e3e3e3 50%, #9a5b64 100%)',
+    },
+    {
+        id: 'classic_v5',
+        templateId: 'classic',
+        variationKey: 'v5',
+        name: 'Minimalist Couture (V5)',
+        desc: 'Oversized typography header with inline countdown bar, minimal 3-column grid, and shadow pill buttons.',
+        accent: '#5A2A32',
+        heroLayout: 'Pure Typography Oversized Banner with Inline Countdown',
+        typography: 'Minimalist Sans Grotesk (Space Grotesk / Inter) & Serif Accents',
+        sectionArrangement: 'RSVP First Flow (Hero -> RSVP -> Countdown -> Details -> Timeline -> Bio -> Gallery -> Gift)',
+        galleryStyle: 'Clean Minimalist 3-Column Grid with hover zoom effects',
+        buttonStyle: 'Dual-tone Shadow Pill (rounded-2xl bg-foreground text-background shadow-[4px_4px_0px_0px_rgba(0,0,0,1)])',
+        backgroundDesign: 'Soft Motif-tinted gradient with organic wave section separators',
+        rsvpStyle: 'Minimalist Bottom Drawer RSVP Card with quick response buttons',
+        mobileLayout: 'Single-column clean scroll with extra large touch targets',
+        previewGradient: 'linear-gradient(135deg, #faf6f0 0%, #f0e6d8 50%, #5a2a32 100%)',
+    },
+];
+
 export const TEMPLATE_STYLE_VARIANTS: TemplateStyleVariant[] = [
+    ...CLASSIC_VARIATIONS,
     {
         id: 'luxury-planner',
         templateId: 'luxury',
+        variationKey: 'v2',
         name: 'Luxury Planner',
         desc: 'Ivory, champagne, editorial spacing, and wedding-planner polish inspired by luxury landing pages.',
         source: 'Nicepage wedding landing reference',
         accent: '#B9975B',
+        heroLayout: 'Full Bleed Luxury Frame',
+        typography: 'Luxe Serif & High Contrast Sans',
+        sectionArrangement: 'Editorial Schedule Flow',
+        galleryStyle: 'Masonry Grid',
+        buttonStyle: 'Gold Bordered Pill',
+        backgroundDesign: 'Ivory & Champagne',
+        rsvpStyle: 'Embedded Luxe Form',
+        mobileLayout: 'Responsive Stack',
     },
     {
         id: 'editorial-photo',
         templateId: 'editorial',
+        variationKey: 'v2',
         name: 'Editorial Photo',
         desc: 'Photography-led hero composition with quiet captions and magazine-style image rhythm.',
         source: 'Nicepage photographer references',
         accent: '#2F2A27',
+        heroLayout: 'Photo Focus Split',
+        typography: 'Editorial Serif',
+        sectionArrangement: 'Gallery Showcase Flow',
+        galleryStyle: 'Asymmetric Magazine Grid',
+        buttonStyle: 'Minimal Border Button',
+        backgroundDesign: 'Pure White Canvas',
+        rsvpStyle: 'Minimal Form Card',
+        mobileLayout: 'Full-width Cards',
     },
     {
         id: 'romantic-estate',
         templateId: 'romantic',
+        variationKey: 'v2',
         name: 'Romantic Estate',
         desc: 'Soft estate romance with airy type, warm neutrals, and refined storybook pacing.',
         source: 'Nicepage romantic wedding references',
         accent: '#B97983',
+        heroLayout: 'Floating Glass Card',
+        typography: 'Romantic Script & Serif',
+        sectionArrangement: 'Story First Flow',
+        galleryStyle: 'Polaroid Collage',
+        buttonStyle: 'Gradient Soft Pill',
+        backgroundDesign: 'Linen Texture with Floral Accents',
+        rsvpStyle: 'Modal Style Card',
+        mobileLayout: 'Expandable Accordion',
     },
 ];
 
-export function getTemplateStyleVariants(templateId?: string) {
-    return TEMPLATE_STYLE_VARIANTS.filter((variant) => variant.templateId === templateId);
+/**
+ * Returns 5 distinct design variations for any template.
+ * For templates with bespoke variation definitions (like `classic`), returns those.
+ * Generates 5 structured variations for other template IDs.
+ */
+export function getTemplateStyleVariants(templateId?: string): TemplateStyleVariant[] {
+    const targetId = (templateId || 'classic').toLowerCase();
+    const explicit = TEMPLATE_STYLE_VARIANTS.filter((variant) => variant.templateId === targetId);
+
+    if (explicit.length >= 5) {
+        return explicit;
+    }
+
+    // Default template accent map fallback
+    const templateMeta = TEMPLATES.find((t) => t.id === targetId);
+    const accent = templateMeta?.accent || '#C08081';
+
+    const defaultFive: TemplateStyleVariant[] = [
+        {
+            id: 'default',
+            templateId: targetId,
+            variationKey: 'v1',
+            name: `${templateMeta?.name || 'Classic'} Original (V1)`,
+            desc: 'The original signature layout with centered hero, standard section ordering, and standard gallery.',
+            accent,
+            heroLayout: 'Centered Hero Overlay',
+            typography: 'Signature Template Fonts',
+            sectionArrangement: 'Standard Linear Flow',
+            galleryStyle: 'Standard Grid',
+            buttonStyle: 'Signature Pill Button',
+            backgroundDesign: 'Signature Theme Background',
+            rsvpStyle: 'Standard Embedded RSVP Card',
+            mobileLayout: 'Standard Responsive Stack',
+        },
+        {
+            id: `${targetId}_v2`,
+            templateId: targetId,
+            variationKey: 'v2',
+            name: 'Split-Screen Modern Editorial (V2)',
+            desc: 'Asymmetric 50/50 split hero with photography focus, horizontal filmstrip gallery, and sharp border buttons.',
+            accent,
+            heroLayout: '50/50 Asymmetric Split Hero',
+            typography: 'High-Contrast Bold Display Serif & Grotesk Sans',
+            sectionArrangement: 'Story-First Priority Flow',
+            galleryStyle: 'Horizontal Filmstrip Carousel',
+            buttonStyle: 'Sharp Gold-Bordered Box Button',
+            backgroundDesign: 'High-Contrast Duo-Tone Background',
+            rsvpStyle: 'Side-by-Side Photo & Interactive Form',
+            mobileLayout: 'Card-based Mobile Sections with Sticky Header',
+        },
+        {
+            id: `${targetId}_v3`,
+            templateId: targetId,
+            variationKey: 'v3',
+            name: 'Floating Glass Romance (V3)',
+            desc: 'Elevated glassmorphism hero card over atmospheric backdrop with polaroid collage and soft script accents.',
+            accent,
+            heroLayout: 'Elevated Glassmorphism Floating Hero Card',
+            typography: 'Soft Romantic Script & Light Serif',
+            sectionArrangement: 'Schedule & Venue Priority Flow',
+            galleryStyle: 'Polaroid Stack Interactive Collage',
+            buttonStyle: 'Soft Gradient Pill with Hover Lift',
+            backgroundDesign: 'Textured Linen Canvas with Vector Accents',
+            rsvpStyle: 'Elevated Modal Card with Gold Corners',
+            mobileLayout: 'Accordion-style Mobile Sections with Quick Jump Tabs',
+        },
+        {
+            id: `${targetId}_v4`,
+            templateId: targetId,
+            variationKey: 'v4',
+            name: 'Magazine Monogram Grid (V4)',
+            desc: 'Monogram header banner with asymmetric 3-photo hero grid, 2x3 magazine layout, and underlined accent links.',
+            accent,
+            heroLayout: 'Monogram Header & Asymmetric 3-Photo Hero Grid',
+            typography: 'Modern Editorial Sans & Bold Bodoni Serif',
+            sectionArrangement: 'Media Showcase Priority Flow',
+            galleryStyle: '2x3 Asymmetric Magazine Grid',
+            buttonStyle: 'Underlined Accent Link with Motion Indicator',
+            backgroundDesign: 'Pure Light Minimalist Canvas',
+            rsvpStyle: 'Step-by-Step Interactive Form Cards',
+            mobileLayout: 'Fullscreen Mobile Swipe Cards',
+        },
+        {
+            id: `${targetId}_v5`,
+            templateId: targetId,
+            variationKey: 'v5',
+            name: 'Minimalist Couture (V5)',
+            desc: 'Pure typography hero banner with inline countdown bar, minimal 3-column grid, and dual-tone shadow pill buttons.',
+            accent,
+            heroLayout: 'Pure Typography Banner with Inline Countdown',
+            typography: 'Minimalist Sans Grotesk & Elegant Serif Accents',
+            sectionArrangement: 'RSVP-First Priority Flow',
+            galleryStyle: 'Minimalist 3-Column Grid with Zoom Effects',
+            buttonStyle: 'Dual-Tone Shadow Pill Button',
+            backgroundDesign: 'Soft Motif Gradient with Organic Wave Dividers',
+            rsvpStyle: 'Minimalist Bottom Drawer RSVP Card',
+            mobileLayout: 'Single-Column Clean Scroll with Big Touch Targets',
+        },
+    ];
+
+    // Combine explicit and dynamic variations to ensure 5 total unique variations
+    const map = new Map<string, TemplateStyleVariant>();
+    explicit.forEach((v) => map.set(v.id, v));
+    defaultFive.forEach((v) => {
+        if (!map.has(v.id)) map.set(v.id, v);
+    });
+
+    return Array.from(map.values()).slice(0, 5);
 }
 
 export function isTemplateStyleAvailable(templateId?: string, styleId?: string) {
-    if (!styleId || styleId === DEFAULT_TEMPLATE_STYLE) return true;
-    return TEMPLATE_STYLE_VARIANTS.some((variant) => variant.templateId === templateId && variant.id === styleId);
+    if (!styleId || styleId === DEFAULT_TEMPLATE_STYLE || styleId === 'classic_v1' || styleId === 'v1') return true;
+    const variants = getTemplateStyleVariants(templateId);
+    return variants.some((variant) => variant.id === styleId);
 }
 
 export function getTemplateStyleLabel(styleId?: string) {
-    if (!styleId || styleId === DEFAULT_TEMPLATE_STYLE) return 'Original';
-    return TEMPLATE_STYLE_VARIANTS.find((variant) => variant.id === styleId)?.name || 'Original';
+    if (!styleId || styleId === DEFAULT_TEMPLATE_STYLE) return 'Original (V1)';
+    const found = TEMPLATE_STYLE_VARIANTS.find((variant) => variant.id === styleId);
+    if (found) return found.name;
+    if (styleId.includes('_v2') || styleId === 'v2') return 'Split-Screen Modern (V2)';
+    if (styleId.includes('_v3') || styleId === 'v3') return 'Floating Glass Romance (V3)';
+    if (styleId.includes('_v4') || styleId === 'v4') return 'Magazine Monogram Grid (V4)';
+    if (styleId.includes('_v5') || styleId === 'v5') return 'Minimalist Couture (V5)';
+    return 'Original (V1)';
 }
 
 export const FREE_TEMPLATE_IDS = [
