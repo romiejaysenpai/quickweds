@@ -853,9 +853,9 @@ function CoreFeaturesSection() {
   });
 
   return (
-    <section ref={containerRef} id="features" className="relative sticky-feature-section -mt-28 overflow-visible bg-neutral px-4 pb-12 pt-44 sm:mt-0 sm:px-6 sm:pb-20 sm:pt-24 lg:pb-16 lg:pt-28">
+    <section ref={containerRef} id="features" className="relative sticky-feature-section -mt-28 overflow-visible bg-neutral px-3 pb-12 pt-44 sm:mt-0 sm:px-6 sm:pb-20 sm:pt-24 lg:px-8 lg:pb-16 lg:pt-28">
       <CoreFeaturesSidebar scrollYProgress={scrollYProgress} />
-      <div className="mx-auto max-w-7xl relative">
+      <div className="mx-auto max-w-[1380px] relative">
         <div className="relative z-40 mx-auto max-w-4xl text-center">
           <p className="mb-3 text-[11px] font-black uppercase tracking-[0.18em] text-primary sm:text-xs">Core features</p>
           <h2 className={`${landingSectionTitleClass} mx-auto max-w-[21rem] sm:max-w-4xl`} style={landingTitleStyle}>
@@ -865,7 +865,7 @@ function CoreFeaturesSection() {
 
         <div className="h-[140px] min-[390px]:h-[170px] sm:h-[450px] lg:h-[420px]" aria-hidden="true" />
 
-        <div className="sticky-feature-stack mx-auto max-w-[430px] pb-20 sm:max-w-[720px] sm:pb-32 lg:max-w-[1120px] lg:pb-24">
+        <div className="sticky-feature-stack mx-auto w-full max-w-full pb-20 sm:max-w-[860px] sm:pb-32 lg:max-w-[1260px] lg:pb-24">
           {featureCards.map((feature, index) => (
             <AnimatedFeatureCard key={feature.title} feature={feature} index={index} />
           ))}
