@@ -6,6 +6,14 @@ import { getWeddingAccess } from '@/lib/wedding-access';
 
 export const dynamic = 'force-dynamic';
 
+const ENTOURAGE_INVITATION_COLUMNS = 'id, wedding_id, member_key, name, email, role, message, template_key, card_theme, proposal_title, proposal_hero_image_url, response_details, status, sent_at, responded_at, created_at, updated_at';
+const LEGACY_ENTOURAGE_INVITATION_COLUMNS = 'id, wedding_id, member_key, name, email, role, message, template_key, status, sent_at, responded_at, created_at, updated_at';
+
+function isSchemaMissingError(error: any) {
+    const message = `${error?.code || ''} ${error?.message || ''} ${error?.details || ''}`.toLowerCase();
+    return error?.code === 'PGRST204' || error?.code === '42703' || message.includes('schema cache') || message.includes('column');
+}
+
 export async function GET(req: NextRequest) {
     const { user, error } = await getRequestUser(req);
     if (!user) return NextResponse.json({ error }, { status: 401 });
@@ -26,11 +34,16 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'You do not have permission to view entourage invitations.' }, { status: 403 });
         }
 
-        const { data, error: listError } = await db
+        const query = (columns: string) => db
             .from('entourage_invitations')
-            .select('id, wedding_id, member_key, name, email, role, message, template_key, status, sent_at, responded_at, created_at, updated_at')
+            .select(columns)
             .eq('wedding_id', weddingId)
             .order('created_at', { ascending: false });
+
+        let { data, error: listError } = await query(ENTOURAGE_INVITATION_COLUMNS);
+        if (listError && isSchemaMissingError(listError)) {
+            ({ data, error: listError } = await query(LEGACY_ENTOURAGE_INVITATION_COLUMNS));
+        }
 
         if (listError) throw listError;
 

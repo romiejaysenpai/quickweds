@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getRequestUser } from '@/lib/api-auth';
+import { getAuthenticatedRequest } from '@/lib/api-rate-limit';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { EMPTY_PLANNER_USAGE, getPlannerUsage } from '@/lib/planner-limits';
@@ -144,10 +144,9 @@ async function findWeddingById(db: any, weddingId: string) {
 }
 
 export async function GET(req: NextRequest) {
-    const { user, error } = await getRequestUser(req);
-    if (!user) {
-        return NextResponse.json({ error, accessRole: 'denied' }, { status: 401 });
-    }
+    const auth = await getAuthenticatedRequest(req, 'AUTHENTICATED_DEFAULT');
+    if (auth.response) return auth.response;
+    const { user } = auth;
 
     const { searchParams } = new URL(req.url);
     const weddingId = searchParams.get('weddingId');

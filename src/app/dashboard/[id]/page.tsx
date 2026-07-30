@@ -863,7 +863,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 )}
             </AnimatePresence>
 
-            <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-12 text-left">
+            <main className="qw-workspace max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-12 text-left">
                 {/* Mobile Tab Navigation (Fixed Bottom) */}
                 <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-white/90 backdrop-blur-md border-t border-border z-[100] flex justify-around items-center p-2 pb-safe shadow-2xl">
                     <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'home' ? 'text-primary' : 'text-text-secondary/50'}`}>
@@ -1409,8 +1409,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             fgColor="#D16C78"
                                             level="H"
                                             compact
-                                            className="relative group/qr mb-10"
-                                            qrClassName="relative mx-auto w-fit rounded-[2.5rem] border-4 border-white/10 bg-white p-8 shadow-2xl transition-transform duration-500 hover:scale-105"
+                                            className="relative group/qr mb-6"
+                                            qrClassName="relative mx-auto w-fit rounded-[2.5rem] border-4 border-white/10 bg-white p-6 sm:p-8 shadow-2xl transition-transform duration-500 hover:scale-105 mb-6"
                                             actionsClassName="grid grid-cols-2 gap-3"
                                             onStatus={setQrStatus}
                                         />

@@ -70,15 +70,11 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                     transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                     className="text-center mb-20 md:mb-32"
                 >
-                    <motion.span
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 0.6 }}
-                        transition={{ duration: 1, delay: 0.2 }}
-                        style={{ letterSpacing: '0.4em' }}
-                        className={`text-[10px] md:text-xs uppercase font-black mb-6 block ${visual.eyebrowClass}`}
-                    >
-                        Foundation for our Future
-                    </motion.span>
+                    <div className="mb-6 flex items-center justify-center">
+                        <span className={visual.badgeStyleClass || `text-[10px] md:text-xs uppercase font-black block ${visual.eyebrowClass}`}>
+                            {visual.badgePrefix ? `${visual.badgePrefix}REGISTRY` : 'Foundation for our Future'}
+                        </span>
+                    </div>
                     <h2 className={`text-5xl md:text-7xl mb-8 tracking-tight ${titleStyle.className}`} style={titleStyle.style}>{visual.giftTitle}</h2>
                     <p className={`text-xl md:text-2xl leading-relaxed font-serif italic max-w-3xl mx-auto opacity-80 break-words px-4 ${visual.bodyClass}`}>
                         Your presence is our greatest joy. If you wish to celebrate with a gift, our registries and funds are listed below.

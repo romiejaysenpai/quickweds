@@ -9,6 +9,8 @@
     "lint": "eslint",
     "test:smoke": "playwright test tests/predeploy-smoke.spec.ts",
     "test:stress": "node scripts/stress-test.mjs",
+    "test:stress:1000": "node scripts/stress-test-1000.mjs",
+    "test:stress:5000": "node scripts/stress-test-5000.mjs",
     "test:stress:prod": "node scripts/stress-with-server.mjs",
     "test:predeploy": "npm run lint && npm run build && npm run test:smoke && npm run test:stress:prod",
     "email:dev": "email dev --dir src/emails",

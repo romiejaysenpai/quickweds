@@ -157,7 +157,7 @@ export default function QrCodeActions({
                 {showUrl && (
                     <p className="mt-3 break-all rounded-xl border border-border bg-neutral/40 p-3 text-xs font-semibold text-text-secondary">{openUrl || value}</p>
                 )}
-                <div className={actionsClassName || 'mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap'}>
+                <div className={actionsClassName ? (/\bm[ty]?-/.test(actionsClassName) ? actionsClassName : `mt-4 ${actionsClassName}`) : 'mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap'}>
                     <button type="button" onClick={copyValue} className={actionButtonClass} title="Copy QR link">
                         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                         <span>{copied ? 'Copied' : 'Copy'}</span>

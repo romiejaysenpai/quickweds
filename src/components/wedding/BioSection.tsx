@@ -74,8 +74,13 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
                     transition={{ duration: 1, delay: 0.2 }}
                     className="text-center md:text-left relative z-20"
                 >
-                    <span className={`text-[10px] md:text-xs uppercase font-bold mb-6 block drop-shadow-sm ${visual.eyebrowClass}`}>Our Story</span>
-                    <h2 className={`text-4xl md:text-6xl mb-8 leading-tight ${titleStyle.className}`} style={titleStyle.style}>Meant to Be</h2>
+                    <div className="mb-6 flex items-center justify-center md:justify-start">
+                        <span className={visual.badgeStyleClass || `text-[10px] md:text-xs uppercase font-bold block drop-shadow-sm ${visual.eyebrowClass}`}>
+                            {visual.badgePrefix ? `${visual.badgePrefix}OUR STORY` : 'Our Story'}
+                        </span>
+                    </div>
+                    <h2 className={`text-4xl md:text-6xl mb-6 leading-tight ${titleStyle.className}`} style={titleStyle.style}>Meant to Be</h2>
+                    <div className={`mb-8 ${visual.dividerClass}`} />
                     <div className={`mb-10 md:mb-12 px-4 py-6 sm:px-6 sm:py-7 md:px-8 md:py-9 ${visual.cardClass}`}>
                         <p className={`text-lg md:text-xl leading-relaxed font-serif italic break-words text-center md:text-left ${textColorBody}`}>
                             {wedding.story || 'They say when you know, you know. For us, every moment since we met has been a beautiful step towards this day.'}

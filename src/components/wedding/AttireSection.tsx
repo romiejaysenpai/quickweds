@@ -94,7 +94,11 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
                     <div className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border ${isDark ? 'border-white/15 bg-white/10' : 'border-primary/15 bg-white/75'} shadow-sm`}>
                         <Shirt className="h-7 w-7 stroke-[1.6] text-primary" />
                     </div>
-                    <p className={`mb-3 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>Dress code</p>
+                    <div className="mb-3 flex items-center justify-center">
+                        <span className={visual.badgeStyleClass || `text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
+                            {visual.badgePrefix ? `${visual.badgePrefix}ATTIRE` : 'DRESS CODE'}
+                        </span>
+                    </div>
                     <h2 className={`text-4xl sm:text-5xl md:text-6xl ${visual.headingClass}`}>Wedding Attire</h2>
                     <p className={`mx-auto mt-5 max-w-2xl text-sm leading-7 sm:text-base ${isDark ? 'text-white/65' : 'text-[#4A4444]/70'}`}>We Kindly invite you to celebrate with us by dressing in attire that reflects our wedding colors.</p>
                 </motion.div>

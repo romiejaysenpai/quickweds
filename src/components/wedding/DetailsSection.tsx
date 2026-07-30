@@ -161,7 +161,11 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                     viewport={{ once: true, amount: 0.3 }}
                     className="mb-12 text-center"
                 >
-                    <p className={`mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>The essentials</p>
+                    <div className="mb-6 flex items-center justify-center">
+                        <span className={visual.badgeStyleClass || `mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
+                            {visual.badgePrefix ? `${visual.badgePrefix}ESSENTIALS` : 'The Essentials'}
+                        </span>
+                    </div>
                     <h2 className={`text-4xl md:text-6xl ${titleStyle.className}`} style={titleStyle.style}>{visual.detailTitle}</h2>
                     <div className={`mx-auto mt-6 ${visual.dividerClass}`} />
                 </motion.div>

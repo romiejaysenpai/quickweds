@@ -11,7 +11,8 @@ import UpgradeButton from '@/components/UpgradeButton';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
 import { getCachedSession } from '@/lib/session-cache';
-import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate } from '@/lib/entourage-proposal-templates';
+import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate, getEntourageCardTheme } from '@/lib/entourage-proposal-templates';
+import { EntourageProposalCustomizerSection } from '@/components/EntourageProposalCustomizerSection';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
     loading: () => (
@@ -771,6 +772,7 @@ function getProposalStatusClasses(status: string) {
 
 function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitations, reload }: any) {
     const [sendingKey, setSendingKey] = useState<string | null>(null);
+    const [customizingRowIndex, setCustomizingRowIndex] = useState<number | null>(null);
     const members = readWeddingParty(wedding?.wedding_party);
     const invitationByKey = new Map((invitations || []).map((invite: any) => [String(invite.member_key), invite]));
     const rows = members.map((member: any, index: number) => {
@@ -784,7 +786,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
         return acc;
     }, { draft: 0, sent: 0, accepted: 0, declined: 0 });
 
-    async function sendProposal(member: any, memberKey: string) {
+    async function sendProposal(member: any, memberKey: string, customOverrides?: any) {
         if (!member.email) return;
         setSendingKey(memberKey);
         try {
@@ -792,7 +794,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
             const token = sessionData.session?.access_token;
             if (!token) throw new Error('Please sign in again before sending this proposal.');
 
-            const template = getEntourageProposalTemplate(member.proposalTemplateKey || DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY);
+            const template = getEntourageProposalTemplate(customOverrides?.proposalTemplateKey || member.proposalTemplateKey || DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY);
             const response = await fetch('/api/entourage/invitations/send', {
                 method: 'POST',
                 headers: {
@@ -805,8 +807,14 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                     name: member.name,
                     email: member.email,
                     role: member.role || 'Wedding Entourage',
-                    message: member.proposalMessage || template.defaultMessage,
+                    message: customOverrides?.proposalMessage || member.proposalMessage || template.defaultMessage,
                     templateKey: template.key,
+                    cardTheme: customOverrides?.proposalCardTheme || member.proposalCardTheme || 'classic',
+                    proposalTitle: customOverrides?.proposalTitle || member.proposalTitle || template.defaultTitle,
+                    heroImageUrl: customOverrides ? (customOverrides.proposalHeroImage || '') : (member.proposalHeroImage || undefined),
+                    requestAttireSize: customOverrides?.requestAttireSize ?? member.requestAttireSize ?? true,
+                    requestDietaryNotes: customOverrides?.requestDietaryNotes ?? member.requestDietaryNotes ?? true,
+                    requestPhoneNumber: customOverrides?.requestPhoneNumber ?? member.requestPhoneNumber ?? false,
                 }),
             });
             const data = await response.json().catch(() => ({}));
@@ -829,7 +837,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
             <div className="flex flex-col gap-4 border-b border-border/50 pb-6 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h2 className="font-serif text-2xl font-bold text-foreground sm:text-3xl">Entourage Proposals</h2>
-                    <p className="mt-1 text-xs text-text-secondary sm:text-sm">Send proposal emails and track who accepted or declined.</p>
+                    <p className="mt-1 text-xs text-text-secondary sm:text-sm">Customize card themes, send proposal emails, and track responses.</p>
                 </div>
                 <Link href={`/builder?edit=${weddingId}`} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
                     <Edit2 className="h-4 w-4" /> Edit in Builder
@@ -858,16 +866,22 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                 </div>
             ) : (
                 <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
-                    {rows.map(({ member, memberKey, invite }: any) => {
+                    {rows.map(({ member, memberKey, invite }: any, index: number) => {
                         const status = invite?.status || 'draft';
                         const template = getEntourageProposalTemplate(member.proposalTemplateKey || invite?.template_key || DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY);
+                        const cardTheme = getEntourageCardTheme(member.proposalCardTheme || invite?.card_theme || 'classic');
                         const canSend = Boolean(member.email);
+                        const responseDetails = invite?.response_details;
+
                         return (
                             <div key={memberKey} className="grid gap-4 bg-white p-4 lg:grid-cols-[1fr_auto] lg:items-center">
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <h3 className="break-words font-serif text-lg font-bold text-foreground">{member.name || 'Unnamed member'}</h3>
                                         <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${getProposalStatusClasses(status)}`}>{status === 'draft' ? 'Not Sent' : status}</span>
+                                        <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${cardTheme.badgeBg} ${cardTheme.badgeText}`}>
+                                            {cardTheme.label}
+                                        </span>
                                     </div>
                                     <p className="mt-1 text-sm text-text-secondary">{[member.role, member.email].filter(Boolean).join(' - ') || 'Role and email not set'}</p>
                                     <p className="mt-2 text-xs leading-6 text-text-secondary">
@@ -875,8 +889,26 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                                         {invite?.sent_at ? ` - sent ${new Date(invite.sent_at).toLocaleDateString()}` : ''}
                                         {invite?.responded_at ? ` - responded ${new Date(invite.responded_at).toLocaleDateString()}` : ''}
                                     </p>
+
+                                    {/* Display response details if member accepted */}
+                                    {status === 'accepted' && responseDetails && (
+                                        <div className="mt-3 grid gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 text-xs text-emerald-950">
+                                            <p className="font-bold text-[10px] uppercase tracking-wider text-emerald-800">Accepted Response Details:</p>
+                                            {responseDetails.attireSize && <p>👔 <strong>Attire Size:</strong> {responseDetails.attireSize}</p>}
+                                            {responseDetails.dietaryNotes && <p>🥗 <strong>Dietary Notes:</strong> {responseDetails.dietaryNotes}</p>}
+                                            {responseDetails.phoneNumber && <p>📱 <strong>Phone Number:</strong> {responseDetails.phoneNumber}</p>}
+                                            {responseDetails.personalNote && <p>💬 <strong>Note to Couple:</strong> {responseDetails.personalNote}</p>}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCustomizingRowIndex(index)}
+                                        className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3.5 py-2 text-sm font-bold text-text-secondary hover:border-primary/40 hover:text-primary transition-colors"
+                                    >
+                                        <Sparkles className="h-4 w-4 text-primary" /> Open Proposal Editor
+                                    </button>
                                     <button
                                         type="button"
                                         disabled={!canSend || sendingKey === memberKey}
@@ -896,6 +928,37 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                         );
                     })}
                 </div>
+            )}
+
+            {customizingRowIndex !== null && rows[customizingRowIndex] && (
+                <EntourageProposalCustomizerSection
+                    member={{ ...rows[customizingRowIndex].member, proposalHeroImage: (rows[customizingRowIndex].invite as any)?.proposal_hero_image_url || rows[customizingRowIndex].member.proposalHeroImage }}
+                    coupleNames={[wedding?.bride_name || 'Bride', wedding?.groom_name || 'Groom'].join(' & ')}
+                    weddingDate={wedding?.wedding_date || 'To be announced'}
+                    venueName={wedding?.venue_name || 'To be announced'}
+                    couplePhotoUrl={wedding?.couple_photo || ''}
+                    weddingHeroImageUrl={wedding?.hero_image || ''}
+                    onUploadHeroImage={async (file) => {
+                        const { data: sessionData } = await getCachedSession();
+                        const userId = sessionData.session?.user?.id;
+                        if (!userId) throw new Error('Please sign in again before uploading an image.');
+
+                        const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-');
+                        const filePath = `${userId}/${weddingId}/entourage-proposals/${Date.now()}-${safeFileName}`;
+                        const { error: uploadError } = await supabase.storage
+                            .from('quickweds')
+                            .upload(filePath, file, { contentType: file.type });
+                        if (uploadError) throw uploadError;
+
+                        const { data } = supabase.storage.from('quickweds').getPublicUrl(filePath);
+                        return data.publicUrl;
+                    }}
+                    onClose={() => setCustomizingRowIndex(null)}
+                    onSave={(updatedMember) => {
+                        const targetRow = rows[customizingRowIndex];
+                        void sendProposal(updatedMember, targetRow.memberKey, updatedMember);
+                    }}
+                />
             )}
         </div>
     );

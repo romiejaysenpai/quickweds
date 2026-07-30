@@ -49,6 +49,12 @@ export const RATE_LIMITS = {
     ANALYTICS_TRACK: { maxRequests: 50, windowMs: 60 * 1000 },        // 50 per minute per IP
     ANALYTICS_BATCH: { maxRequests: 10, windowMs: 60 * 1000 },        // 10 batch requests per minute
     
+    // Authenticated API endpoints (planner, dashboard, settings, etc.)
+    AUTHENTICATED_DEFAULT: { maxRequests: 100, windowMs: 15 * 60 * 1000 },  // 100 per 15 minutes
+    
+    // Admin/moderation actions
+    ADMIN_ACTION: { maxRequests: 30, windowMs: 60 * 60 * 1000 },            // 30 per hour
+    
     // Default limit for unspecified endpoints
     DEFAULT: { maxRequests: 50, windowMs: 15 * 60 * 1000 },          // 50 per 15 minutes
 } as const;

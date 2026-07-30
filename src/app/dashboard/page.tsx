@@ -842,7 +842,7 @@ export default function DashboardRedirect() {
                 )}
             </AnimatePresence>
 
-            <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-6 sm:pt-12">
+            <main className="qw-dashboard max-w-6xl mx-auto px-3 sm:px-6 pt-6 sm:pt-12">
                 <DashboardWelcomeHero
                     user={user}
                     weddings={weddings}
