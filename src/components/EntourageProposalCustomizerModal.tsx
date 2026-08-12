@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Check, Heart, Mail, Sparkles, Shirt, UtensilsCrossed, Phone, Eye, Edit3 } from 'lucide-react';
 import {
     EntourageProposalTemplateKey,
@@ -31,6 +31,29 @@ export function EntourageProposalCustomizerModal({
     weddingDate = 'To be announced',
     venueName = 'To be announced',
 }: EntourageProposalCustomizerModalProps) {
+    if (!isOpen) return null;
+
+    return (
+        <EntourageProposalCustomizerModalContent
+            key={member.id}
+            onClose={onClose}
+            member={member}
+            onSave={onSave}
+            coupleNames={coupleNames}
+            weddingDate={weddingDate}
+            venueName={venueName}
+        />
+    );
+}
+
+function EntourageProposalCustomizerModalContent({
+    onClose,
+    member,
+    onSave,
+    coupleNames = 'Bride & Groom',
+    weddingDate = 'To be announced',
+    venueName = 'To be announced',
+}: Omit<EntourageProposalCustomizerModalProps, 'isOpen'>) {
     const [templateKey, setTemplateKey] = useState<EntourageProposalTemplateKey>(
         member.proposalTemplateKey || 'heartfelt'
     );
@@ -53,20 +76,6 @@ export function EntourageProposalCustomizerModal({
         member.requestPhoneNumber !== undefined ? member.requestPhoneNumber : false
     );
     const [activeViewTab, setActiveViewTab] = useState<'edit' | 'preview'>('edit');
-
-    useEffect(() => {
-        if (isOpen) {
-            setTemplateKey(member.proposalTemplateKey || 'heartfelt');
-            setCardTheme(member.proposalCardTheme || 'classic');
-            setTitle(member.proposalTitle || getEntourageProposalTemplate(member.proposalTemplateKey).defaultTitle);
-            setMessage(member.proposalMessage || getEntourageProposalTemplate(member.proposalTemplateKey).defaultMessage);
-            setRequestAttireSize(member.requestAttireSize !== undefined ? member.requestAttireSize : true);
-            setRequestDietaryNotes(member.requestDietaryNotes !== undefined ? member.requestDietaryNotes : true);
-            setRequestPhoneNumber(member.requestPhoneNumber !== undefined ? member.requestPhoneNumber : false);
-        }
-    }, [isOpen, member]);
-
-    if (!isOpen) return null;
 
     const activeTheme = getEntourageCardTheme(cardTheme);
 
@@ -302,7 +311,7 @@ export function EntourageProposalCustomizerModal({
                                     {/* Headline Banner */}
                                     <div className={`rounded-2xl ${activeTheme.bgClass} border ${activeTheme.borderClass} p-4`}>
                                         <h4 className={`font-serif text-base font-bold ${activeTheme.textPrimary}`}>
-                                            "{title}"
+                                            &quot;{title}&quot;
                                         </h4>
                                         <p className={`mt-2 text-xs leading-relaxed ${activeTheme.textSecondary}`}>
                                             {message}

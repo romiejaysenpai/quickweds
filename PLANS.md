@@ -1,14 +1,14 @@
 # QuickWeds implementation plans
 
-## Current active plan: restore instructions and publish the engineering loop
+## Current active plan: reconcile the engineering loop with updated main
 
 ### Goal
 
-Restore the misplaced repository guidance at the root, verify the existing engineering-loop changes in an isolated environment, and publish only those changes through a pull request to `main`.
+Reconcile PR #2 with the updated `main` branch, retain the newer root guidance, exclude the unrelated builder change, and verify the engineering loop before republishing the PR branch.
 
 ### Scope
 
-- In: root `AGENTS.md`/`PLANS.md`, engineering-loop scripts, Playwright isolation, CI, documentation, focused regression tests, commit, push, and PR.
+- In: the engineering-loop scripts, Playwright isolation, CI, documentation, focused regression tests, root planning guidance, conflict resolution, branch update, and PR.
 - Out: the pre-existing `src/components/BuilderForm.tsx` edit; production data, migrations/RLS, real email, Stripe, deployment, and merge.
 
 ### Data, security, and compatibility review
@@ -19,16 +19,17 @@ Restore the misplaced repository guidance at the root, verify the existing engin
 
 ### Verification
 
-- [x] Verify root instruction files preserve the misplaced content.
-- [x] Run `npm run verify` and repair any failures.
+- [x] Retain `main`'s newer `AGENTS.md` and the restored non-empty `PLANS.md`.
+- [x] Exclude the unrelated `src/components/BuilderForm.tsx` commit from the rebuilt PR branch.
+- [x] Run `npm run verify` and repair failures found in the updated `main` baseline.
 - [x] Review the final diff, secrets, migration scope, and excluded BuilderForm change.
-- [x] Commit only engineering-loop and instruction-file changes, push `codex/loopsetup`, and open a PR to `main` if permitted.
+- [ ] Force-update only `codex/loopsetup` with the conflict-free engineering-loop commits; do not merge or deploy.
 
 ### Completion notes
 
-- Result: published for review in PR #2; no merge or deployment performed.
-- Checks run: `npm run verify` passed (typecheck, lint with existing warnings only, 40 Playwright tests, and production build); `git diff --check` passed.
-- Follow-up: GitHub Actions, Vercel Preview, and human approval before merging.
+- Result: ready to republish — the branch is rebuilt from current `main`, excludes the builder change, and includes focused repairs for the baseline lint failures.
+- Checks run: `npm run verify` passed (typecheck, lint with existing warnings only, 40 Playwright tests, and production build); targeted lint and typecheck passed.
+- Follow-up: force-update PR #2, GitHub Actions, Vercel Preview, and human approval before merging.
 
 Use this file for a concise, current plan before multi-step, risky, cross-cutting, or production-facing work. It is a working document, not a changelog: replace the active plan when a task is complete. Small, isolated edits can skip it.
 

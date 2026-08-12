@@ -978,42 +978,46 @@ function NewFeatureDeckCard({
   );
 }
 
+function DeckProgressSegment({
+  scrollYProgress,
+  index,
+  total,
+}: {
+  scrollYProgress: MotionValue<number>;
+  index: number;
+  total: number;
+}) {
+  const segment = 1 / Math.max(total - 1, 1);
+  const center = index * segment;
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+  const inputRange = isFirst
+    ? [0, segment / 2]
+    : isLast
+      ? [center - segment / 2, 1]
+      : [center - segment / 2, center, center + segment / 2];
+  const widthOutput = isFirst
+    ? ["24px", "6px"]
+    : isLast
+      ? ["6px", "24px"]
+      : ["6px", "24px", "6px"];
+  const opacityOutput = isFirst
+    ? [1, 0.3]
+    : isLast
+      ? [0.3, 1]
+      : [0.3, 1, 0.3];
+  const width = useTransform(scrollYProgress, inputRange, widthOutput);
+  const opacity = useTransform(scrollYProgress, inputRange, opacityOutput);
+
+  return <motion.div style={{ width, opacity }} className="h-1.5 rounded-full bg-primary" />;
+}
+
 function DeckProgressIndicator({ scrollYProgress, total }: { scrollYProgress: MotionValue<number>; total: number }) {
   return (
     <div className="absolute -bottom-6 sm:-bottom-10 left-1/2 flex -translate-x-1/2 items-center gap-1.5 z-50">
-      {Array.from({ length: total }).map((_, i) => {
-        const segment = 1 / Math.max(total - 1, 1);
-        const center = i * segment;
-        
-        let inputRange: number[];
-        let widthOutput: string[];
-        let opacityOutput: number[];
-
-        if (i === 0) {
-          inputRange = [0, segment / 2];
-          widthOutput = ["24px", "6px"];
-          opacityOutput = [1, 0.3];
-        } else if (i === total - 1) {
-          inputRange = [center - segment / 2, 1];
-          widthOutput = ["6px", "24px"];
-          opacityOutput = [0.3, 1];
-        } else {
-          inputRange = [center - segment / 2, center, center + segment / 2];
-          widthOutput = ["6px", "24px", "6px"];
-          opacityOutput = [0.3, 1, 0.3];
-        }
-        
-        const width = useTransform(scrollYProgress, inputRange, widthOutput);
-        const opacity = useTransform(scrollYProgress, inputRange, opacityOutput);
-        
-        return (
-          <motion.div
-            key={i}
-            style={{ width, opacity }}
-            className="h-1.5 rounded-full bg-primary"
-          />
-        );
-      })}
+      {Array.from({ length: total }).map((_, index) => (
+        <DeckProgressSegment key={index} scrollYProgress={scrollYProgress} index={index} total={total} />
+      ))}
     </div>
   );
 }
