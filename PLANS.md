@@ -23,13 +23,13 @@ Reconcile PR #2 with the updated `main` branch, retain the newer root guidance, 
 - [x] Exclude the unrelated `src/components/BuilderForm.tsx` commit from the rebuilt PR branch.
 - [x] Run `npm run verify` and repair failures found in the updated `main` baseline.
 - [x] Review the final diff, secrets, migration scope, and excluded BuilderForm change.
-- [ ] Force-update only `codex/loopsetup` with the conflict-free engineering-loop commits; do not merge or deploy.
+- [x] Force-update only `codex/loopsetup` with the conflict-free engineering-loop commits; do not merge or deploy.
 
 ### Completion notes
 
-- Result: ready to republish — the branch is rebuilt from current `main`, excludes the builder change, and includes focused repairs for the baseline lint failures.
+- Result: republished for review — the branch is rebuilt from current `main`, excludes the builder change, and includes focused repairs for the baseline lint failures.
 - Checks run: `npm run verify` passed (typecheck, lint with existing warnings only, 40 Playwright tests, and production build); targeted lint and typecheck passed.
-- Follow-up: force-update PR #2, GitHub Actions, Vercel Preview, and human approval before merging.
+- Follow-up: GitHub Actions, Vercel Preview, and human approval before merging.
 
 Use this file for a concise, current plan before multi-step, risky, cross-cutting, or production-facing work. It is a working document, not a changelog: replace the active plan when a task is complete. Small, isolated edits can skip it.
 
