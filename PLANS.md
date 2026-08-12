@@ -24,13 +24,13 @@ Reconcile PR #2 with the updated `main` branch, retain the newer root guidance, 
 - [x] Run `npm run verify` and repair failures found in the updated `main` baseline.
 - [x] Review the final diff, secrets, migration scope, and excluded BuilderForm change.
 - [x] Force-update only `codex/loopsetup` with the conflict-free engineering-loop commits; do not merge or deploy.
-- [x] Diagnose the first GitHub Actions failure and add the pinned Linux-only CSS binary required by the Ubuntu runner.
+- [x] Diagnose the GitHub Actions native-binary failures and add the pinned Linux-only CSS binaries required by the Ubuntu runner.
 - [ ] Confirm the replacement GitHub Actions run passes, then require it plus one human approval for `main`.
 
 ### Completion notes
 
-- Result: republished for review — the branch is rebuilt from current `main`, excludes the builder change, includes focused repairs for the baseline lint failures, and supplies the Linux-only CSS binary missing from the first Actions run.
-- Checks run: `npm run verify` passed locally (typecheck, lint with existing warnings only, 40 Playwright tests, and production build); targeted lint and typecheck passed. The first GitHub Actions run failed only because its Linux optional dependency was absent; a replacement run is pending after the lockfile repair.
+- Result: republished for review — the branch is rebuilt from current `main`, excludes the builder change, includes focused repairs for the baseline lint failures, and supplies the Linux-only Lightning CSS and Tailwind CSS native binaries missing from the Actions runner.
+- Checks run: `npm run verify` passed locally (typecheck, lint with existing warnings only, 40 Playwright tests, and production build); targeted lint and typecheck passed. The first two GitHub Actions runs failed only because Windows-created lockfile entries omitted Linux optional dependencies; a replacement run is pending after both lockfile repairs.
 - Follow-up: GitHub Actions, Vercel Preview, required human approval, and no merge before merging.
 
 Use this file for a concise, current plan before multi-step, risky, cross-cutting, or production-facing work. It is a working document, not a changelog: replace the active plan when a task is complete. Small, isolated edits can skip it.
