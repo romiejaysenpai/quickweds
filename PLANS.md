@@ -22,13 +22,13 @@ Restore the misplaced repository guidance at the root, verify the existing engin
 - [x] Verify root instruction files preserve the misplaced content.
 - [x] Run `npm run verify` and repair any failures.
 - [x] Review the final diff, secrets, migration scope, and excluded BuilderForm change.
-- [ ] Commit only engineering-loop and instruction-file changes, push `codex/loopsetup`, and open a PR to `main` if permitted.
+- [x] Commit only engineering-loop and instruction-file changes, push `codex/loopsetup`, and open a PR to `main` if permitted.
 
 ### Completion notes
 
-- Result: ready to publish; commit, push, and PR remain in progress.
+- Result: published for review in PR #2; no merge or deployment performed.
 - Checks run: `npm run verify` passed (typecheck, lint with existing warnings only, 40 Playwright tests, and production build); `git diff --check` passed.
-- Follow-up: GitHub Actions, Vercel Preview, and human approval after the PR is opened.
+- Follow-up: GitHub Actions, Vercel Preview, and human approval before merging.
 
 Use this file for a concise, current plan before multi-step, risky, cross-cutting, or production-facing work. It is a working document, not a changelog: replace the active plan when a task is complete. Small, isolated edits can skip it.
 
