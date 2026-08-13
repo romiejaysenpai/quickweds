@@ -8,6 +8,7 @@ import AttireIllustration from './AttireIllustration';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import GenerationLoading from './GenerationLoading';
+import LoadingState from './ui/LoadingState';
 import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
@@ -3075,21 +3076,18 @@ export default function BuilderForm() {
 
 if (editId && loadedEditId !== editId) {
     return (
-        <div className="mx-auto flex min-h-[520px] w-full max-w-6xl items-center justify-center px-6">
-            <div className="text-center">
-                <Heart className="mx-auto h-9 w-9 animate-pulse text-primary" />
-                <p className="mt-4 font-serif text-xl text-foreground">Loading your wedding design…</p>
-                <p className="mt-1 text-sm text-text-secondary">Your saved details will be ready in a moment.</p>
-            </div>
-        </div>
+        <LoadingState
+            variant="panel"
+            label="Loading your wedding design…"
+            description="Your saved details will be ready in a moment."
+            className="mx-auto min-h-[520px] max-w-6xl"
+        />
     );
 }
 
 return (
     <>
-        <AnimatePresence>
-            {isGenerating && <GenerationLoading />}
-        </AnimatePresence>
+        {isGenerating && <GenerationLoading />}
 
         <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
             <div className="qw-builder w-full lg:w-3/5 bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-8 soft-shadow border border-primary/10 flex-shrink-0">

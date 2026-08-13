@@ -14,8 +14,12 @@ if (process.env.NODE_ENV !== 'production' || process.env.VALIDATE_ENV === 'true'
   }
 }
 
+const isVercelBuild = process.env.VERCEL === '1';
+
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  // Docker consumes standalone output, while Vercel's Next.js adapter creates
+  // its own serverless artifacts and requires the standard trace output.
+  ...(isVercelBuild ? {} : { output: 'standalone' }),
   // A lockfile also exists in the parent directory. Pinning the project root
   // keeps Turbopack from scanning and resolving modules from the wrong tree.
   turbopack: {

@@ -249,6 +249,10 @@ async function loadPublicWedding(rawIdentifier: string) {
     const templateTestWedding = getTemplateTestWedding(rawIdentifier);
     if (templateTestWedding) return templateTestWedding;
 
+    // CI/browser tests must never fall back to a configured Supabase project
+    // for unknown identifiers. Public template fixtures above remain available.
+    if (process.env.E2E_TEST_MODE === 'true') return null;
+
     const cached = await redisJsonGet<Record<string, unknown>>(publicWeddingCacheKey(rawIdentifier));
     if (cached) return cached;
 

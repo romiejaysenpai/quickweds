@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Loader2 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { getClientAccountProfileForIntent, getClientAdminStatus, getPostLoginRedirect, getSafeAppPath } from '@/lib/account';
 import { clearLocalSupabaseSession, getSafeSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
+import LoadingState from '@/components/ui/LoadingState';
 
 export default function AuthCallbackPage() {
     const router = useRouter();
@@ -171,7 +171,6 @@ export default function AuthCallbackPage() {
 
     return (
         <div className="mobile-safe-screen flex flex-col items-center justify-center bg-neutral px-4 text-center mobile-safe-bottom">
-            <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
             {error ? (
                 <div className="space-y-2 max-w-md">
                     <p className="text-error-text font-bold text-sm">Authentication Error</p>
@@ -179,7 +178,11 @@ export default function AuthCallbackPage() {
                     <p className="text-text-secondary font-serif italic text-xs">Redirecting to login...</p>
                 </div>
             ) : (
-                <p className="text-text-secondary font-serif italic">Completing secure sign in...</p>
+                <LoadingState
+                    label="Completing secure sign in…"
+                    description="Securing your session and preparing your dashboard."
+                    className="max-w-md"
+                />
             )}
             {process.env.NODE_ENV === 'development' && debug && (
                 <div className="mt-6 p-3 bg-neutral rounded-lg text-left max-w-md w-full">

@@ -3,15 +3,11 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Camera, Loader2 } from 'lucide-react';
+import { ArrowLeft, Camera } from 'lucide-react';
+import LoadingState from '@/components/ui/LoadingState';
 
 const PhotoSharingManager = dynamic(() => import('@/components/dashboard/PhotoSharingManager'), {
-    loading: () => (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center shadow-lg shadow-primary/5">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="mt-4 text-sm font-bold text-text-secondary">Loading photo uploads...</p>
-        </div>
-    ),
+    loading: () => <LoadingState variant="panel" label="Loading photo uploads…" className="min-h-[320px]" />,
 });
 
 export default function PhotoUploadsPage() {

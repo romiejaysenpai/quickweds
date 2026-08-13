@@ -11,7 +11,6 @@ import {
     CheckCircle2,
     ClipboardCheck,
     FileText,
-    Loader2,
     Mail,
     Plus,
     QrCode,
@@ -23,6 +22,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getCachedSession } from '@/lib/session-cache';
+import LoadingState from '@/components/ui/LoadingState';
 
 type WeddingDaySettings = {
     is_enabled: boolean;
@@ -259,10 +259,11 @@ export default function WeddingDayModePage() {
     if (loading) {
         return (
             <main className="flex min-h-screen items-center justify-center bg-[#FFF8F9] px-4">
-                <div className="text-center">
-                    <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-                    <p className="mt-3 text-sm font-bold text-text-secondary">Loading wedding day mode...</p>
-                </div>
+                <LoadingState
+                    label="Loading wedding day mode…"
+                    description="Preparing your event-day tools."
+                    className="max-w-lg"
+                />
             </main>
         );
     }
@@ -292,7 +293,7 @@ export default function WeddingDayModePage() {
                             disabled={saving}
                             className={`inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black uppercase tracking-widest text-white disabled:opacity-60 ${settings.is_enabled ? 'bg-emerald-600' : 'bg-primary'}`}
                         >
-                            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                            {saving ? <LoadingState variant="inline" label="Updating wedding day mode…" /> : <CheckCircle2 className="h-4 w-4" />}
                             {settings.is_enabled ? 'Mode On' : 'Turn On'}
                         </button>
                     </div>
@@ -383,11 +384,11 @@ export default function WeddingDayModePage() {
                         />
                         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                             <button type="submit" disabled={saving} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover disabled:opacity-60">
-                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                {saving ? <LoadingState variant="inline" label="Saving wedding day settings…" /> : <Save className="h-4 w-4" />}
                                 Save Settings
                             </button>
                             <button type="button" onClick={() => void sendPhotoReminder()} disabled={sendingReminder} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-5 text-sm font-black text-foreground transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary disabled:opacity-60">
-                                {sendingReminder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                                {sendingReminder ? <LoadingState variant="inline" label="Sending photo reminder…" /> : <Mail className="h-4 w-4" />}
                                 Send Photo Reminder
                             </button>
                         </div>

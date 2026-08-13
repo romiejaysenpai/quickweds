@@ -286,6 +286,30 @@ h6 {
   animation: marquee 40s linear infinite;
 }
 
+@keyframes qw-loading-progress {
+  0% {
+    transform: translateX(-130%);
+  }
+
+  100% {
+    transform: translateX(340%);
+  }
+}
+
+.qw-loading-progress-indeterminate {
+  width: 34%;
+  background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 35%, transparent);
+  animation: qw-loading-progress 1.35s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qw-loading-progress-indeterminate {
+    animation: none;
+    transform: translateX(95%);
+  }
+}
+
 @keyframes supplier-marquee {
   from {
     transform: translateX(calc(-100% / 3));

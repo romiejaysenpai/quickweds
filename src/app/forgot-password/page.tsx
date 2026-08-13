@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, Mail, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { Heart, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPublicRedirectUrl } from '@/lib/site-url';
+import LoadingState from '@/components/ui/LoadingState';
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
@@ -105,7 +106,7 @@ export default function ForgotPasswordPage() {
                                 disabled={loading}
                                 className="w-full py-5 rounded-2xl bg-primary text-white font-bold text-lg hover:bg-primary-hover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 disabled:bg-primary-disabled"
                             >
-                                {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Send Reset Link'}
+                                {loading ? <LoadingState variant="inline" label="Sending reset link…" className="[&>svg]:h-5 [&>svg]:w-5" /> : 'Send Reset Link'}
                             </button>
                         </form>
 

@@ -144,7 +144,7 @@ export default function EntourageProposalResponsePage({ params }: { params: Prom
                             {/* Headline Title */}
                             <div className={`rounded-2xl border ${activeTheme.borderClass} ${activeTheme.bgClass} p-6`}>
                                 <h2 className={`font-serif text-xl font-bold sm:text-2xl ${activeTheme.textPrimary}`}>
-                                    "{proposalTitle}"
+                                    &quot;{proposalTitle}&quot;
                                 </h2>
                                 {invitation.message && (
                                     <blockquote className={`mt-3 font-serif text-base leading-8 ${activeTheme.textSecondary}`}>
