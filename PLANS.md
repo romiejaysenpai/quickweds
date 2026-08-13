@@ -1,39 +1,46 @@
 # QuickWeds implementation plans
 
-## Current active plan: audit PR #2 release readiness
+## Current active plan: branded loading feedback
 
 ### Goal
 
-Verify PR #2 is clean, current, and ready for human approval: inspect checks and the final diff, remove the known-empty repair Vercel project, and resolve safe in-scope issues found.
+Give the core couple workflow consistent, accessible loading feedback that matches the QuickWeds visual system without adding dependencies or changing product data.
 
 ### Scope
 
-- In: PR #2 checks, branch currency, final diff, the known-empty `quickweds-loopsetup-repair` Vercel project, and focused repairs identified by the audit.
-- Out: production data, migrations/RLS, real email, Stripe, production deployment, merge, and unrelated application work.
+- In: shared loading and progress primitives; builder, authentication/onboarding, dashboard/planner route and action states; focused Playwright coverage.
+- Out: public wedding/RSVP/guest flows, supplier, support, and admin loading states; data, API, migration, RLS, cache, deployment, and native-shell behavior.
+
+### Current behavior
+
+- The core routes use repeated local `Loader2` spinners and inconsistent layout/labels.
+- Builder generation shows a full-screen, heavily animated overlay; normal loads do not expose real completion percentages.
+- There is no reusable loading component or App Router loading boundary for dashboard or builder navigation.
+
+### Proposed change
+
+1. Add lightweight reusable loading-state and progress-bar components styled entirely with existing tokens and reduced-motion support.
+2. Replace the targeted route, panel, full-page, and pending-button states; use indeterminate progress unless a real value is available.
+3. Add focused delayed-response Playwright checks and run type, lint, and diff validation.
 
 ### Data, security, and compatibility review
 
 - Data model/migration and RLS/grants: none.
-- Tests use only unreachable local Supabase placeholders, Stripe test-shaped placeholders, and a non-routable email domain; E2E mode prevents unknown public wedding reads from querying Supabase.
-- Existing wedding rendering remains unchanged outside `E2E_TEST_MODE=true`.
+- Auth/authorization: unchanged; loading states only reflect existing client-side work.
+- Public-site/template compatibility and cache invalidation: none; public wedding rendering is out of scope.
+- External effects: no changed email, payment, upload, or native behavior.
 
 ### Verification
 
-- [x] Inspect current GitHub Actions, Vercel Preview, branch protection, and PR state.
-- [x] Verify PR branch currency with `origin/main` and repair any integration issue.
-- [x] Remove the known-empty repair Vercel project without touching the intended `quickweds` project.
-- [x] Run focused verification, inspect final diff/secrets, and report any remaining human-only gate.
+- [x] Run focused Playwright loading checks for builder/onboarding.
+- [x] Run `npm run lint`, `npm run typecheck`, `npm run build`, and `git diff --check`.
+- [x] Review the final diff for motion, accessibility, responsive layout, scope, and secrets.
 
 ### Completion notes
 
-- Removed the unused vulnerable `kimi` package and updated the verified Next.js toolchain to `16.3.0`; `npm audit` now reports zero vulnerabilities.
-- Hardened `npm run verify` against stale `.next/dev` route declarations left by interrupted development servers.
-- Adjusted standalone output for Vercel builds after Vercel's Next.js adapter reported a missing legacy trace file; Docker and local standalone output are retained.
-- The branch includes the current `origin/main`, full verification passes, and the remaining PR gate is human approval; no production operation was performed.
-
-- Result: republished for review — the branch is rebuilt from current `main`, excludes the builder change, includes focused repairs for the baseline lint failures, and supplies the Linux-only Lightning CSS and Tailwind CSS native binaries missing from the Actions runner.
-- Checks run: `npm run verify` passed locally (typecheck, lint with existing warnings only, 40 Playwright tests, and production build); targeted lint and typecheck passed. The first two GitHub Actions runs failed only because Windows-created lockfile entries omitted Linux optional dependencies; a replacement run is pending after both lockfile repairs.
-- Follow-up: GitHub Actions, Vercel Preview, required human approval, and no merge before merging.
+- Result: implemented shared page, panel, inline, and progress loading feedback across the scoped workflows.
+- Checks run: `npm run typecheck`, `npm run lint` (existing warnings only), `npx playwright test tests/builder.spec.ts tests/onboarding.spec.ts --project=chromium --workers=1` (8 passed), `npm run build`, and `git diff --check`.
+- Follow-up: none.
 
 Use this file for a concise, current plan before multi-step, risky, cross-cutting, or production-facing work. It is a working document, not a changelog: replace the active plan when a task is complete. Small, isolated edits can skip it.
 

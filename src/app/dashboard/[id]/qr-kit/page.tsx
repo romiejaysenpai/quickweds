@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, Printer, QrCode, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Printer, QrCode, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getCachedSession } from '@/lib/session-cache';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 import QrCodeActions from '@/components/dashboard/QrCodeActions';
+import LoadingState from '@/components/ui/LoadingState';
 
 type QrType = {
     id: string;
@@ -106,10 +107,11 @@ export default function QrKitPage() {
     if (loading) {
         return (
             <main className="flex min-h-screen items-center justify-center bg-[#FFF8F9] px-4">
-                <div className="text-center">
-                    <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-                    <p className="mt-3 text-sm font-bold text-text-secondary">Loading QR kit...</p>
-                </div>
+                <LoadingState
+                    label="Loading QR kit…"
+                    description="Preparing QR codes for your wedding day."
+                    className="max-w-lg"
+                />
             </main>
         );
     }

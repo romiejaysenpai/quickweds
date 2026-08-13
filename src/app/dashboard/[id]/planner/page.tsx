@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -13,22 +13,13 @@ import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/
 import { getCachedSession } from '@/lib/session-cache';
 import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate, getEntourageCardTheme } from '@/lib/entourage-proposal-templates';
 import { EntourageProposalCustomizerSection } from '@/components/EntourageProposalCustomizerSection';
+import LoadingState from '@/components/ui/LoadingState';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
-    loading: () => (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="mt-4 text-sm font-bold text-text-secondary">Loading seating chart...</p>
-        </div>
-    ),
+    loading: () => <LoadingState variant="panel" label="Loading seating chart…" className="min-h-[320px]" />,
 });
 const PhotoSharingManager = dynamic(() => import('@/components/dashboard/PhotoSharingManager'), {
-    loading: () => (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="mt-4 text-sm font-bold text-text-secondary">Loading photo sharing...</p>
-        </div>
-    ),
+    loading: () => <LoadingState variant="panel" label="Loading photo sharing…" className="min-h-[320px]" />,
 });
 const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudgetPieChart'), {
     ssr: false,
@@ -486,9 +477,15 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
 
     if (checkingRole || loading) {
-        return <div className="min-h-screen flex items-center justify-center bg-background">
-            <Loader2 className="w-12 h-12 text-primary animate-spin" />
-        </div>;
+        return (
+            <main className="mobile-safe-screen flex items-center justify-center bg-background px-4 py-6">
+                <LoadingState
+                    label={checkingRole ? 'Confirming planner access…' : 'Loading your wedding planner…'}
+                    description="Getting your plans, people, and priorities ready."
+                    className="max-w-lg"
+                />
+            </main>
+        );
     }
 
     // Dev debug logging
@@ -915,7 +912,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                                         onClick={() => void sendProposal(member, memberKey)}
                                         className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        {sendingKey === memberKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        {sendingKey === memberKey ? <LoadingState variant="inline" label="Sending proposal…" /> : <Send className="h-4 w-4" />}
                                         {status === 'sent' || status === 'accepted' || status === 'declined' ? 'Resend' : 'Send Proposal'}
                                     </button>
                                     {!canSend && (
@@ -1299,7 +1296,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                                         <input value={editTask.notes} onChange={(e) => setEditTask({ ...editTask, notes: e.target.value })} placeholder="Notes" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                                                         <div className="flex flex-col gap-2 sm:flex-row lg:col-span-2">
                                                             <button type="button" disabled={savingTaskId === task.id || !editTask.title.trim()} onClick={() => void saveTaskDetails(task)} className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
-                                                                {savingTaskId === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                                                {savingTaskId === task.id ? <LoadingState variant="inline" label="Saving task…" /> : <Save className="h-4 w-4" />}
                                                                 Save Changes
                                                             </button>
                                                             <button type="button" onClick={cancelEditingTask} className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary hover:border-primary/30 hover:text-primary">
@@ -1338,7 +1335,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                                         className="flex min-h-[44px] w-full touch-manipulation items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 text-sm font-bold text-red-600 disabled:opacity-50 sm:w-auto sm:min-w-[44px] sm:bg-white sm:px-3 sm:hover:bg-red-50"
                                                         aria-label="Delete checklist item"
                                                     >
-                                                        {deletingTaskId === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                        {deletingTaskId === task.id ? <LoadingState variant="inline" label="Deleting task…" /> : <Trash2 className="h-4 w-4" />}
                                                         <span className="sm:hidden">{deletingTaskId === task.id ? 'Deleting...' : 'Delete'}</span>
                                                     </button>
                                                 </div>
@@ -2149,9 +2146,9 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
                 </select>
                 <input value={newItem.custom_supplier_name} onChange={(e) => setNewItem({ ...newItem, custom_supplier_name: e.target.value })} placeholder="Custom supplier" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                 <label className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/30 bg-white px-4 py-3 text-sm font-bold text-primary">
-                    {uploadingReference ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                    {uploadingReference ? <LoadingState variant="inline" label="Uploading reference image…" /> : <ImageIcon className="h-4 w-4" />}
                     {uploadingReference ? 'Uploading...' : newItem.reference_image_url ? 'Photo selected' : 'Upload from gallery'}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && void uploadReference(e.target.files[0])} />
+                    <input type="file" accept="image/*" disabled={uploadingReference} className="hidden" onChange={(e) => e.target.files?.[0] && void uploadReference(e.target.files[0])} />
                 </label>
                 <div className="flex min-h-[44px] items-center rounded-xl border border-border bg-white px-4 py-3 text-sm text-text-secondary">
                     {newItem.reference_image_url ? 'Reference photo uploaded' : 'No photo uploaded'}
@@ -2186,7 +2183,7 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
                                         className="flex min-h-[44px] min-w-[92px] touch-manipulation items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-sm font-bold text-red-600 disabled:opacity-50 sm:min-w-[44px] sm:bg-white sm:px-2 sm:hover:bg-red-50"
                                         aria-label="Delete food or drink item"
                                     >
-                                        {deletingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                        {deletingItemId === item.id ? <LoadingState variant="inline" label="Deleting food item…" /> : <Trash2 className="h-4 w-4" />}
                                         <span className="sm:hidden">{deletingItemId === item.id ? 'Deleting...' : 'Delete'}</span>
                                     </button>
                                 </div>

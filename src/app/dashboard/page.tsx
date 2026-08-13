@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Heart, Plus, Calendar, MapPin, ArrowRight, Loader2, Copy, CheckCheck, ExternalLink, Pencil, Trash2, Settings, LogOut, Users, BookOpen, Menu, X, Sparkles, LifeBuoy, PlayCircle, MessageCircle, ImagePlus, Send, ClipboardList, CheckCircle2 } from 'lucide-react';
+import { Heart, Plus, Calendar, MapPin, ArrowRight, Copy, CheckCheck, ExternalLink, Pencil, Trash2, Settings, LogOut, Users, BookOpen, Menu, X, Sparkles, LifeBuoy, PlayCircle, MessageCircle, ImagePlus, Send, ClipboardList, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import UpgradeButton from '@/components/UpgradeButton';
@@ -15,6 +15,7 @@ import NotificationBell from '@/components/dashboard/NotificationBell';
 import { getWeddingPublicPath } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
 import { openExternalUrl } from '@/lib/native-actions';
+import LoadingState from '@/components/ui/LoadingState';
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
 
@@ -300,7 +301,7 @@ function CoupleOnboardingSection({
                             disabled={saving}
                             className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-primary transition hover:bg-primary hover:text-white disabled:opacity-60"
                         >
-                            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                            {saving ? <LoadingState variant="inline" label="Saving onboarding progress…" /> : <CheckCircle2 className="h-4 w-4" />}
                             Complete
                         </button>
                     </div>
@@ -605,10 +606,13 @@ export default function DashboardRedirect() {
 
     if (loading || checkingRole || (fetching && weddings.length === 0)) {
         return (
-            <div className="mobile-safe-screen flex flex-col items-center justify-center bg-background gap-4">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                <p className="text-text-secondary font-serif italic text-sm">Loading your weddings...</p>
-            </div>
+            <main className="mobile-safe-screen flex items-center justify-center bg-background px-4 py-6">
+                <LoadingState
+                    label="Loading your weddings…"
+                    description="Getting your celebrations ready."
+                    className="max-w-lg"
+                />
+            </main>
         );
     }
 

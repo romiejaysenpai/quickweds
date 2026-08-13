@@ -11,7 +11,6 @@ import {
     ClipboardList,
     Heart,
     ImagePlus,
-    Loader2,
     PartyPopper,
     Send,
     Sparkles,
@@ -19,6 +18,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import LoadingState from '@/components/ui/LoadingState';
 import { hasStoredSupabaseSession } from '@/lib/supabase-auth';
 import { getCachedSession } from '@/lib/session-cache';
 import {
@@ -57,8 +57,12 @@ const coupleGoals = [
 
 function AccountTypeLoading() {
     return (
-        <div className="mobile-safe-screen flex items-center justify-center bg-neutral">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <div className="mobile-safe-screen flex items-center justify-center bg-neutral px-4">
+            <LoadingState
+                label="Loading your account…"
+                description="Getting your next step ready."
+                className="max-w-lg"
+            />
         </div>
     );
 }
@@ -288,7 +292,7 @@ function AccountTypeOnboardingContent() {
                                                 className="group rounded-2xl border border-primary/15 bg-neutral p-5 text-left transition hover:-translate-y-1 hover:border-primary/40 hover:bg-white hover:shadow-xl hover:shadow-primary/10 disabled:opacity-60 sm:p-6"
                                             >
                                                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
-                                                    {saving === 'couple' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Heart className="h-5 w-5" />}
+                                                    {saving === 'couple' ? <LoadingState variant="inline" label="Creating couple account…" /> : <Heart className="h-5 w-5" />}
                                                 </span>
                                                 <h3 className="mt-5 font-serif text-2xl font-bold text-foreground">I am a couple</h3>
                                                 <p className="mt-3 text-sm leading-7 text-text-secondary">
@@ -306,7 +310,7 @@ function AccountTypeOnboardingContent() {
                                                 className="group rounded-2xl border border-border bg-white p-5 text-left transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 disabled:opacity-60 sm:p-6"
                                             >
                                                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
-                                                    {saving === 'supplier' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Building2 className="h-5 w-5" />}
+                                                    {saving === 'supplier' ? <LoadingState variant="inline" label="Creating supplier account…" /> : <Building2 className="h-5 w-5" />}
                                                 </span>
                                                 <h3 className="mt-5 font-serif text-2xl font-bold text-foreground">I am a supplier</h3>
                                                 <p className="mt-3 text-sm leading-7 text-text-secondary">
@@ -421,7 +425,7 @@ function AccountTypeOnboardingContent() {
                                                 disabled={saving === 'complete'}
                                                 className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover disabled:opacity-70"
                                             >
-                                                {saving === 'complete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Heart className="h-4 w-4" />}
+                                                {saving === 'complete' ? <LoadingState variant="inline" label="Opening your site builder…" /> : <Heart className="h-4 w-4" />}
                                                 Create Your Free Site
                                             </button>
                                             <button

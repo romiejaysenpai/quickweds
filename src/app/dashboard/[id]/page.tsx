@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle, Bell, BellOff, Info, Camera } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle, Bell, BellOff, Info, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -32,6 +32,7 @@ import {
 } from '@/lib/guest-list';
 import { getCachedSession } from '@/lib/session-cache';
 import QrCodeActions from '@/components/dashboard/QrCodeActions';
+import LoadingState from '@/components/ui/LoadingState';
 
 const AnalyticsPanel = dynamic(() => import('@/components/dashboard/AnalyticsPanel'), {
     loading: () => <DashboardPanelLoading label="Loading analytics..." />,
@@ -48,12 +49,7 @@ const GuestImportModal = dynamic(() => import('@/components/dashboard/GuestImpor
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/dahsboard%20quivkyt.png';
 
 function DashboardPanelLoading({ label }: { label: string }) {
-    return (
-        <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-6 text-center soft-shadow">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="mt-3 text-sm font-bold text-text-secondary">{label}</p>
-        </div>
-    );
+    return <LoadingState variant="panel" label={label} />;
 }
 
 function getFirstName(user: any) {
@@ -627,7 +623,15 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     };
 
     if (checkingRole || loading) {
-        return <div className="mobile-safe-screen flex items-center justify-center bg-neutral/30"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
+        return (
+            <main className="mobile-safe-screen flex items-center justify-center bg-neutral/30 px-4 py-6">
+                <LoadingState
+                    label={checkingRole ? 'Confirming workspace access…' : 'Loading your wedding workspace…'}
+                    description="Bringing your guest list and planning details together."
+                    className="max-w-lg"
+                />
+            </main>
+        );
     }
 
     // DEBUG: Show access info in development
@@ -1478,7 +1482,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-white border border-border soft-shadow animate-in fade-in">
                                     <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4 flex items-center justify-between">
                                         Notifications
-                                        {isSavingSettings && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+                                        {isSavingSettings && <LoadingState variant="inline" label="Saving notification settings…" className="text-primary" />}
                                     </h3>
                                     <div className="space-y-5">
                                         <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/90 border border-border group transition-all hover:border-primary/20">

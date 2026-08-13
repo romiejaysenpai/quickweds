@@ -3,6 +3,8 @@ import { existsSync } from 'node:fs';
 
 const localChromeChannel = process.env.PLAYWRIGHT_CHANNEL
   || (process.platform === 'darwin' && existsSync('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome') ? 'chrome' : undefined);
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
+const webServerCommand = process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'npm run dev';
 
 // Keep browser checks independent of a developer's .env.local and production
 // integrations. Tests mock browser requests and use the development-only
@@ -30,7 +32,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -44,9 +46,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: webServerCommand,
     env: e2eSafeEnv,
-    url: 'http://localhost:3000',
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
     stderr: 'pipe',

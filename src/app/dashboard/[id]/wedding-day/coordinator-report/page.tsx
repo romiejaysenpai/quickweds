@@ -8,13 +8,13 @@ import {
     Eye,
     EyeOff,
     FileText,
-    Loader2,
     Phone,
     Printer,
     ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getCachedSession } from '@/lib/session-cache';
+import LoadingState from '@/components/ui/LoadingState';
 
 // Types representing the API payload structure
 type Wedding = {
@@ -320,10 +320,11 @@ export default function CoordinatorReportPage() {
     if (loading) {
         return (
             <main className="flex min-h-screen items-center justify-center bg-[#FFF8F4] px-4">
-                <div className="text-center">
-                    <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-                    <p className="mt-3 text-sm font-bold text-text-secondary">Generating handoff report...</p>
-                </div>
+                <LoadingState
+                    label="Generating handoff report…"
+                    description="Gathering the details your coordinator needs."
+                    className="max-w-lg"
+                />
             </main>
         );
     }

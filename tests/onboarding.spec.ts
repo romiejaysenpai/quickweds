@@ -62,12 +62,43 @@ test.describe('Couple onboarding', () => {
     await expect(page.getByRole('button', { name: /Login/i })).toBeVisible();
   });
 
+  test('shows and clears the branded loading state while account data is pending', async ({ page }) => {
+    await seedAuthSession(page);
+    await mockCommonAuthenticatedRoutes(page);
+
+    let releaseProfile: (() => void) | undefined;
+    const profileGate = new Promise<void>((resolve) => {
+      releaseProfile = resolve;
+    });
+
+    await page.route('**/api/account/profile', async (route) => {
+      await profileGate;
+      await route.fulfill({ json: { profile: { user_id: fakeUser.id, account_type: null, onboarding_completed: false } } });
+    });
+
+    await page.goto('/onboarding/account-type', { waitUntil: 'domcontentloaded' });
+
+    await expect(page.getByText('Loading your account…')).toBeVisible();
+    await expect(page.getByRole('progressbar', { name: 'Loading your account…' })).toBeVisible();
+
+    releaseProfile?.();
+
+    await expect(page.getByRole('button', { name: /I am a couple/i })).toBeVisible();
+    await expect(page.getByText('Loading your account…')).toBeHidden();
+  });
+
   test('couple account selection enters the guided goal sequence', async ({ page }) => {
     await seedAuthSession(page);
     await mockCommonAuthenticatedRoutes(page);
 
+    let releaseAccountUpdate: (() => void) | undefined;
+    const accountUpdateGate = new Promise<void>((resolve) => {
+      releaseAccountUpdate = resolve;
+    });
+
     await page.route('**/api/account/profile', async (route) => {
       if (route.request().method() === 'PATCH') {
+        await accountUpdateGate;
         await route.fulfill({
           json: {
             profile: {
@@ -84,7 +115,13 @@ test.describe('Couple onboarding', () => {
     });
 
     await page.goto('/onboarding/account-type');
-    await page.getByRole('button', { name: /I am a couple/i }).click();
+    const coupleButton = page.getByRole('button', { name: /I am a couple/i });
+    await coupleButton.click();
+
+    await expect(coupleButton).toBeDisabled();
+    await expect(coupleButton.getByRole('status')).toBeVisible();
+
+    releaseAccountUpdate?.();
 
     await expect(page.getByRole('heading', { name: /What would feel best to set up first/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Create our wedding site/i })).toBeVisible();

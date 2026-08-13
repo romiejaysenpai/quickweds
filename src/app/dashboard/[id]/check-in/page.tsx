@@ -4,10 +4,11 @@ import type { FormEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Camera, CheckCircle2, Loader2, RefreshCw, Search, Undo2, UserCheck, Users } from 'lucide-react';
+import { ArrowLeft, Camera, CheckCircle2, RefreshCw, Search, Undo2, UserCheck, Users } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getCachedSession } from '@/lib/session-cache';
 import GuestQrScanner from '@/components/dashboard/GuestQrScanner';
+import LoadingState from '@/components/ui/LoadingState';
 import type { GuestQrScanResult } from '@/components/dashboard/GuestQrScanner';
 
 type CheckInGuest = {
@@ -200,7 +201,7 @@ export default function CheckInDashboardPage() {
                             className="min-h-[54px] flex-1 rounded-2xl border border-border bg-white px-4 text-base font-bold outline-none focus:border-primary"
                         />
                         <button disabled={saving || !lookup.trim()} className="inline-flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 text-sm font-bold text-white disabled:opacity-50">
-                            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                            {saving ? <LoadingState variant="inline" label="Checking in guest…" /> : <Search className="h-4 w-4" />}
                             Check In
                         </button>
                     </form>
@@ -223,9 +224,7 @@ export default function CheckInDashboardPage() {
                         </h2>
                     </div>
                     {loading ? (
-                        <div className="flex min-h-[260px] items-center justify-center">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        </div>
+                        <LoadingState variant="panel" label="Loading your guests…" className="min-h-[260px] border-0 shadow-none" />
                     ) : filteredGuests.length === 0 ? (
                         <div className="p-10 text-center">
                             <UserCheck className="mx-auto h-10 w-10 text-text-secondary/40" />

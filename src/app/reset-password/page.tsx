@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { CheckCircle2, KeyRound, Loader2, TriangleAlert } from 'lucide-react';
+import { CheckCircle2, KeyRound, TriangleAlert } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getSafeSupabaseSession } from '@/lib/supabase-auth';
+import LoadingState from '@/components/ui/LoadingState';
 
 type RecoveryState = 'checking' | 'ready' | 'invalid' | 'complete';
 
@@ -101,12 +102,7 @@ export default function ResetPasswordPage() {
                     <p className="mt-2 text-sm text-text-secondary">Choose a secure password and get back to planning.</p>
                 </div>
 
-                {recoveryState === 'checking' && (
-                    <div className="flex items-center justify-center gap-3 py-10 text-sm font-semibold text-text-secondary" role="status">
-                        <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
-                        Checking your recovery link…
-                    </div>
-                )}
+                {recoveryState === 'checking' && <LoadingState variant="panel" label="Checking your recovery link…" showProgress={false} />}
 
                 {recoveryState === 'invalid' && (
                     <div className="space-y-6 text-center">
@@ -179,7 +175,7 @@ export default function ResetPasswordPage() {
                         </div>
 
                         <button type="submit" disabled={submitting} className="inline-flex min-h-[52px] w-full items-center justify-center gap-3 rounded-2xl bg-primary px-5 py-3 font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70">
-                            {submitting && <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />}
+                            {submitting && <LoadingState variant="inline" label="Updating password…" className="[&>svg]:h-5 [&>svg]:w-5" />}
                             {submitting ? 'Updating password…' : 'Update password'}
                         </button>
                     </form>
