@@ -1,6 +1,11 @@
 import { spawnSync } from 'node:child_process';
+import { rmSync } from 'node:fs';
 
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+
+// Next writes generated type declarations to .next. Start clean so a prior
+// interrupted development server cannot affect type-checking or production.
+rmSync('.next', { recursive: true, force: true });
 
 // These values intentionally target no real integration. They override a
 // developer's .env.local only for `npm run verify`, so verification cannot
@@ -19,6 +24,13 @@ const verificationEnv = {
 };
 
 for (const script of ['typecheck', 'lint', 'test', 'build']) {
+  // Playwright starts a Next development server that writes generated route
+  // types under .next/dev. Remove that disposable output before the production
+  // build so it never reads partial development-server artifacts.
+  if (script === 'build') {
+    rmSync('.next', { recursive: true, force: true });
+  }
+
   const result = spawnSync(npmCommand, ['run', script], {
     stdio: 'inherit',
     env: { ...process.env, ...verificationEnv },

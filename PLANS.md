@@ -1,15 +1,15 @@
 # QuickWeds implementation plans
 
-## Current active plan: reconcile the engineering loop with updated main
+## Current active plan: audit PR #2 release readiness
 
 ### Goal
 
-Reconcile PR #2 with the updated `main` branch, retain the newer root guidance, exclude the unrelated builder change, and verify the engineering loop before republishing the PR branch.
+Verify PR #2 is clean, current, and ready for human approval: inspect checks and the final diff, remove the known-empty repair Vercel project, and resolve safe in-scope issues found.
 
 ### Scope
 
-- In: the engineering-loop scripts, Playwright isolation, CI, documentation, focused regression tests, root planning guidance, conflict resolution, branch update, and PR.
-- Out: the pre-existing `src/components/BuilderForm.tsx` edit; production data, migrations/RLS, real email, Stripe, deployment, and merge.
+- In: PR #2 checks, branch currency, final diff, the known-empty `quickweds-loopsetup-repair` Vercel project, and focused repairs identified by the audit.
+- Out: production data, migrations/RLS, real email, Stripe, production deployment, merge, and unrelated application work.
 
 ### Data, security, and compatibility review
 
@@ -19,15 +19,16 @@ Reconcile PR #2 with the updated `main` branch, retain the newer root guidance, 
 
 ### Verification
 
-- [x] Retain `main`'s newer `AGENTS.md` and the restored non-empty `PLANS.md`.
-- [x] Exclude the unrelated `src/components/BuilderForm.tsx` commit from the rebuilt PR branch.
-- [x] Run `npm run verify` and repair failures found in the updated `main` baseline.
-- [x] Review the final diff, secrets, migration scope, and excluded BuilderForm change.
-- [x] Force-update only `codex/loopsetup` with the conflict-free engineering-loop commits; do not merge or deploy.
-- [x] Diagnose the GitHub Actions native-binary failures and add the pinned Linux-only CSS binaries required by the Ubuntu runner.
-- [ ] Confirm the replacement GitHub Actions run passes, then require it plus one human approval for `main`.
+- [x] Inspect current GitHub Actions, Vercel Preview, branch protection, and PR state.
+- [x] Verify PR branch currency with `origin/main` and repair any integration issue.
+- [x] Remove the known-empty repair Vercel project without touching the intended `quickweds` project.
+- [x] Run focused verification, inspect final diff/secrets, and report any remaining human-only gate.
 
 ### Completion notes
+
+- Removed the unused vulnerable `kimi` package and updated the verified Next.js toolchain to `16.3.0`; `npm audit` now reports zero vulnerabilities.
+- Hardened `npm run verify` against stale `.next/dev` route declarations left by interrupted development servers.
+- The branch includes the current `origin/main`, full verification passes, and the remaining PR gate is human approval; no production operation was performed.
 
 - Result: republished for review — the branch is rebuilt from current `main`, excludes the builder change, includes focused repairs for the baseline lint failures, and supplies the Linux-only Lightning CSS and Tailwind CSS native binaries missing from the Actions runner.
 - Checks run: `npm run verify` passed locally (typecheck, lint with existing warnings only, 40 Playwright tests, and production build); targeted lint and typecheck passed. The first two GitHub Actions runs failed only because Windows-created lockfile entries omitted Linux optional dependencies; a replacement run is pending after both lockfile repairs.
