@@ -28,6 +28,7 @@ Verify PR #2 is clean, current, and ready for human approval: inspect checks and
 
 - Removed the unused vulnerable `kimi` package and updated the verified Next.js toolchain to `16.3.0`; `npm audit` now reports zero vulnerabilities.
 - Hardened `npm run verify` against stale `.next/dev` route declarations left by interrupted development servers.
+- Adjusted standalone output for Vercel builds after Vercel's Next.js adapter reported a missing legacy trace file; Docker and local standalone output are retained.
 - The branch includes the current `origin/main`, full verification passes, and the remaining PR gate is human approval; no production operation was performed.
 
 - Result: republished for review — the branch is rebuilt from current `main`, excludes the builder change, includes focused repairs for the baseline lint failures, and supplies the Linux-only Lightning CSS and Tailwind CSS native binaries missing from the Actions runner.
