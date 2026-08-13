@@ -59,6 +59,11 @@ export const TEMPLATE_COMPONENTS = {
     gallery: PremiumTemplate,
     'petal-note': PremiumTemplate,
     'sunset-ceremony': PremiumTemplate,
+    solstice: PremiumTemplate,
+    paperie: PremiumTemplate,
+    'verdant-frame': PremiumTemplate,
+    'opal-evening': PremiumTemplate,
+    'couture-grid': PremiumTemplate,
 } satisfies Record<string, ComponentType<TemplateProps>>;
 
 const FONT_VARIABLES: Record<string, ThemeFontVars> = {
