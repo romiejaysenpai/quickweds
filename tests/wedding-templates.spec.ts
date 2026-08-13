@@ -1,32 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
+import { FREE_TEMPLATE_IDS, TEMPLATES } from '../src/lib/template-catalog';
+import { normalizeTemplateId } from '../src/components/templates/TemplateRenderer';
 
-const TEMPLATE_IDS = [
-  'classic',
-  'minimal',
-  'romantic',
-  'luxury',
-  'elopement',
-  'traditional',
-  'timeline',
-  'rsvpfocus',
-  'cinematic',
-  'elegance',
-  'artdeco',
-  'boho',
-  'whimsical',
-  'urban',
-  'tropical',
-  'midnight',
-  'sakura',
-  'vogue',
-  'rustic',
-  'film',
-  'glitch',
-  'vintage',
-  'editorial',
-  'royal',
-  'garden',
-] as const;
+const NEW_TEMPLATE_IDS = ['solstice', 'paperie', 'verdant-frame', 'opal-evening', 'couture-grid'];
+const TEMPLATE_IDS = [...FREE_TEMPLATE_IDS, ...NEW_TEMPLATE_IDS];
 
 const VIEWPORTS = [
   { name: 'mobile-360', width: 360, height: 740 },
@@ -125,6 +102,12 @@ async function mockWeddingPage(page: Page, template: string, overrides: Record<s
 }
 
 test.describe('public wedding templates', () => {
+  test('every catalog template has a public renderer', () => {
+    for (const template of TEMPLATES) {
+      expect(normalizeTemplateId(template.id), `${template.id} should have a renderer`).toBe(template.id);
+    }
+  });
+
   for (const viewport of VIEWPORTS) {
     test(`all templates render without horizontal overflow at ${viewport.name}`, async ({ page }) => {
       test.setTimeout(120_000);

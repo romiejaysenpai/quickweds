@@ -16,7 +16,7 @@ import type { TemplateProps, Wedding } from '@/types/wedding';
 
 import { SharedNewSections } from './shared';
 
-type PremiumLayout = 'invitation' | 'split' | 'cinematic' | 'editorial' | 'poster';
+type PremiumLayout = 'invitation' | 'split' | 'cinematic' | 'editorial' | 'poster' | 'sunburst' | 'postcard' | 'frame' | 'halo' | 'masthead';
 
 type PremiumTheme = {
     eyebrow: string;
@@ -51,6 +51,11 @@ const PREMIUM_THEMES: Record<string, PremiumTheme> = {
     gallery: { eyebrow: 'A gallery of us', mood: 'An artful day for our favorite masterpiece', primary: '#6C5A46', secondary: '#E8E1D7', surface: '#FBFAF8', ink: '#28221D', layout: 'editorial', baseTemplate: 'editorial', ornament: 'grid' },
     'petal-note': { eyebrow: 'A note for you', mood: 'Come celebrate the little things with us', primary: '#C8889A', secondary: '#F6E2E8', surface: '#FFF9FB', ink: '#542B3A', layout: 'invitation', baseTemplate: 'romantic', ornament: 'botanical' },
     'sunset-ceremony': { eyebrow: 'Meet us at golden hour', mood: 'A destination celebration at the edge of day', primary: '#D4774F', secondary: '#F5D3A5', surface: '#FFF6EC', ink: '#59301D', layout: 'split', baseTemplate: 'boho', ornament: 'sun' },
+    solstice: { eyebrow: 'A golden gathering', mood: 'Meet us where the sky turns to gold', primary: '#D9683D', secondary: '#F6BD67', surface: '#FFF0D8', ink: '#4C291E', layout: 'sunburst', baseTemplate: 'tropical', ornament: 'sun' },
+    paperie: { eyebrow: 'A keepsake invitation', mood: 'Folded with love and saved for the story', primary: '#786B9A', secondary: '#EEE9F5', surface: '#FFFDF8', ink: '#393146', layout: 'postcard', baseTemplate: 'vintage', ornament: 'ribbon' },
+    'verdant-frame': { eyebrow: 'Conservatory vows', mood: 'A garden room, a long table, and all our favorite people', primary: '#386B56', secondary: '#C8DDC3', surface: '#F8FBF5', ink: '#1F3A30', layout: 'frame', baseTemplate: 'garden', ornament: 'botanical' },
+    'opal-evening': { eyebrow: 'An opal night', mood: 'A little moonlight, a lot of love', primary: '#B8A6E8', secondary: '#302B57', surface: '#0A1023', ink: '#FCFAFF', layout: 'halo', baseTemplate: 'midnight', ornament: 'star' },
+    'couture-grid': { eyebrow: 'The wedding issue', mood: 'A celebration composed in our own sharp, beautiful way', primary: '#202020', secondary: '#E5E2DC', surface: '#FFFFFF', ink: '#181716', layout: 'masthead', baseTemplate: 'editorial', ornament: 'grid' },
 };
 
 function formatDate(date: string) {
@@ -89,6 +94,7 @@ function Ornament({ theme }: { theme: PremiumTheme }) {
 
 function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme }) {
     const image = wedding.hero_image || wedding.couple_photo;
+    const usesLightText = ['cinematic', 'poster', 'halo'].includes(theme.layout);
     const title = <><span className="block">{wedding.bride_name}</span><span className="my-1 block text-[0.42em] italic font-light" style={{ color: theme.primary }}>&amp;</span><span className="block">{wedding.groom_name}</span></>;
 
     const imagePanel = image ? (
@@ -110,22 +116,29 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
                         <div className="h-full overflow-hidden rounded-[1.55rem]">{imagePanel}</div>
                     </div>
                 )}
-                {(theme.layout === 'cinematic' || theme.layout === 'poster') && (
+                {(theme.layout === 'cinematic' || theme.layout === 'poster' || theme.layout === 'halo') && (
                     <div className="absolute inset-0">{imagePanel}<div className="absolute inset-0 bg-black/45" /></div>
                 )}
                 {theme.layout === 'invitation' && image && (
                     <div className="absolute inset-0 opacity-20"><div className="h-full w-full scale-110 blur-sm">{imagePanel}</div></div>
+                )}
+                {theme.layout === 'sunburst' && <div className="absolute -right-20 -top-28 h-[32rem] w-[32rem] rounded-full border-[3.5rem] opacity-35 sm:right-8" aria-hidden="true" style={{ borderColor: theme.primary }} />}
+                {theme.layout === 'masthead' && <div className="absolute inset-x-0 top-0 h-28 border-b border-black/10 bg-white/80" aria-hidden="true" />}
+                {theme.layout === 'frame' && (
+                    <div className="absolute inset-y-0 left-0 hidden w-[45%] p-5 md:block">
+                        <div className="h-full overflow-hidden rounded-br-[9rem] rounded-tl-[9rem] border-[14px] border-white shadow-2xl">{imagePanel}</div>
+                    </div>
                 )}
 
                 <motion.div
                     initial={{ opacity: 0, y: 22 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className={`relative z-10 flex min-h-[42rem] flex-col justify-center px-7 py-16 text-center sm:px-16 sm:py-20 ${theme.layout === 'split' ? 'md:w-[54%] md:text-left' : ''} ${(theme.layout === 'cinematic' || theme.layout === 'poster') ? 'text-white' : ''}`}
+                    className={`relative z-10 flex min-h-[42rem] flex-col justify-center px-7 py-16 text-center sm:px-16 sm:py-20 ${theme.layout === 'split' ? 'md:w-[54%] md:text-left' : ''} ${theme.layout === 'frame' ? 'md:ml-auto md:w-[56%] md:text-left' : ''} ${theme.layout === 'masthead' ? 'pt-32 md:items-start md:text-left' : ''} ${usesLightText ? 'text-white' : ''}`}
                 >
                     <p className="text-[10px] font-bold uppercase tracking-[0.32em] opacity-75 sm:text-xs">{theme.eyebrow}</p>
                     <div className="mx-auto my-7 h-px w-16 opacity-70 md:mx-0" style={{ backgroundColor: theme.primary }} />
-                    <h1 className={`font-serif leading-[0.82] tracking-[-0.055em] ${theme.layout === 'editorial' ? 'text-5xl sm:text-7xl lg:text-[8rem]' : 'text-5xl sm:text-7xl lg:text-8xl'}`}>
+                    <h1 className={`font-serif leading-[0.82] tracking-[-0.055em] ${theme.layout === 'editorial' || theme.layout === 'masthead' ? 'text-5xl sm:text-7xl lg:text-[8rem]' : 'text-5xl sm:text-7xl lg:text-8xl'}`}>
                         {title}
                     </h1>
                     <p className="mt-8 max-w-md text-sm leading-7 opacity-80 sm:text-base md:mx-0">{theme.mood}</p>
@@ -134,7 +147,17 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
                         <span className="opacity-60">{wedding.venue_name}</span>
                     </div>
                     {theme.layout === 'split' && <div className="mt-10 overflow-hidden rounded-[1.5rem] md:hidden"><div className="aspect-[4/3]">{imagePanel}</div></div>}
+                    {['sunburst', 'postcard', 'frame', 'halo', 'masthead'].includes(theme.layout) && (
+                        <div className={`mt-10 overflow-hidden border border-white/40 shadow-2xl md:hidden ${theme.layout === 'halo' ? 'aspect-square rounded-full' : theme.layout === 'frame' ? 'aspect-[4/3] rounded-t-[6rem]' : 'aspect-[4/3] rounded-[1.5rem]'}`}>
+                            {imagePanel}
+                        </div>
+                    )}
                 </motion.div>
+
+                {theme.layout === 'postcard' && <div className="absolute bottom-7 right-7 hidden w-[30%] rotate-3 overflow-hidden border-[10px] border-white bg-white p-1 shadow-2xl md:block"><div className="aspect-[4/5]">{imagePanel}</div></div>}
+                {theme.layout === 'sunburst' && <div className="absolute bottom-10 right-[10%] hidden aspect-square w-[28%] overflow-hidden rounded-full border-[14px] border-white/80 shadow-2xl md:block">{imagePanel}</div>}
+                {theme.layout === 'halo' && <div className="absolute inset-0 hidden items-center justify-center opacity-35 mix-blend-screen md:flex"><div className="aspect-square w-[42%] overflow-hidden rounded-full border border-white/40">{imagePanel}</div></div>}
+                {theme.layout === 'masthead' && <div className="absolute bottom-0 right-0 hidden h-[72%] w-[42%] overflow-hidden border-l-[18px] border-white md:block">{imagePanel}</div>}
             </div>
         </section>
     );
