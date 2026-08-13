@@ -30,15 +30,16 @@ Add these keys to your Vercel Environment Variables so the domain features work.
 
 ---
 
-## Step 4: Storage Configuration (Standard Limit)
+## Step 4: Storage upload limits
 
-By default, Supabase limits file uploads to 50MB. Our application is configured to respect this limit for video uploads:
+QuickWeds does not assume a Supabase default bucket limit. The app defaults are configured in `src/lib/media-upload.ts` and can be overridden at build time with public byte-value environment variables:
 
-1. Go to your [Supabase Storage Buckets](https://supabase.com/dashboard/project/_/storage/buckets).
-2. Find the `quickweds` bucket.
-3. If you ever need to support larger files, you can click the **three dots (...)** -> **Edit bucket** and change the **Maximum File Size**.
-4. Standard limit is **50MB**.
+- `NEXT_PUBLIC_MAX_IMAGE_UPLOAD_SIZE_BYTES` (default: 10 MiB)
+- `NEXT_PUBLIC_MAX_IMAGE_SOURCE_SIZE_BYTES` (default: 25 MiB before browser compression)
+- `NEXT_PUBLIC_MAX_VIDEO_UPLOAD_SIZE_BYTES` (default: 50 MiB)
+
+If you change an app limit, confirm that it is no greater than both the **Global file size limit** in Supabase Storage Settings and the `quickweds` bucket's optional **Restrict file size** setting. Bucket/global limits are configured in the Supabase Dashboard and take precedence over QuickWeds.
 
 
 ### Note on Storage Policies
-Ensure you have a storage bucket named `quickweds` in your Supabase project. If you are getting "Permission Denied" errors, make sure you have created an **RLS Policy** that allowed `INSERT` and `SELECT` for authenticated (or anonymous, depending on your needs) users.
+Ensure you have a storage bucket named `quickweds`. Do not add anonymous write policies for guest photos: Photo Portal guests receive a short-lived, object-scoped signed upload URL only after their sharing code has been validated.

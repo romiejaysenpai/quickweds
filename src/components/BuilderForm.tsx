@@ -54,6 +54,17 @@ import {
 import { parseDressCodeValue, serializeDressCodeValue } from '@/lib/dress-code';
 import { getSafeMonogramConfig } from '@/lib/monogram';
 import { createMonogramWebm, downloadMonogramImage, requestMonogramMp4 } from '@/lib/monogram-export';
+import { compressImageForUpload } from '@/lib/image-compression';
+import {
+    ACCEPTED_IMAGE_TYPES,
+    MAX_AUDIO_UPLOAD_SIZE,
+    MAX_IMAGE_SOURCE_SIZE,
+    MAX_VIDEO_UPLOAD_SIZE,
+    MEDIA_BUCKET,
+    fileTooLargeMessage,
+    formatFileSize,
+    storageErrorMessage,
+} from '@/lib/media-upload';
 
 // Helper component for collapsible sections
 const Collapsible = memo(function Collapsible({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) {
@@ -457,9 +468,6 @@ function isMissingOptionalWeddingColumnError(error: unknown, column: string) {
     );
 }
 
-const MAX_IMAGE_FILE_BYTES = 12 * 1024 * 1024;
-const MAX_FREE_VIDEO_FILE_BYTES = 50 * 1024 * 1024;
-const MAX_PREMIUM_VIDEO_FILE_BYTES = 100 * 1024 * 1024;
 const MAX_CONCURRENT_UPLOADS = 3;
 
 export default function BuilderForm() {
@@ -995,46 +1003,57 @@ export default function BuilderForm() {
     };
 
     const validateImageFiles = (files: File[]) => {
-        const invalidType = files.find((file) => !file.type.startsWith('image/'));
+        const invalidType = files.find((file) => !ACCEPTED_IMAGE_TYPES.has(file.type));
         if (invalidType) {
-            alert(`${invalidType.name} is not a supported image file.`);
+            alert(`${invalidType.name} is not supported. Use JPEG, PNG, WebP, or GIF.`);
             return false;
         }
 
-        const oversized = files.find((file) => file.size > MAX_IMAGE_FILE_BYTES);
+        const oversized = files.find((file) => file.size > MAX_IMAGE_SOURCE_SIZE);
         if (oversized) {
-            alert(`${oversized.name} is larger than 12MB. Please resize or compress it before uploading.`);
+            alert(fileTooLargeMessage(oversized, MAX_IMAGE_SOURCE_SIZE));
             return false;
         }
 
         return true;
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
         if (field === 'galleryImages') {
             const newFiles = Array.from(files);
             if (!validateImageFiles(newFiles)) return;
+            let optimizedFiles: File[];
+            try {
+                optimizedFiles = await Promise.all(newFiles.map((file) => compressImageForUpload(file)));
+            } catch (error) {
+                alert(error instanceof Error ? error.message : 'Image compression failed. Please try again.');
+                return;
+            }
             if (!isPremium && (mediaFiles.galleryImages.length + newFiles.length) > 12) {
                 alert("Free plan is limited to 12 photos. Please upgrade to Premium for unlimited gallery uploads.");
                 return;
             }
-            setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...newFiles] }));
-            const previewUrls = newFiles.map(createLocalPreview);
+            setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...optimizedFiles] }));
+            const previewUrls = optimizedFiles.map(createLocalPreview);
             setPreviews(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...previewUrls] }));
         } else if (field === 'invitationImages') {
             const newFiles = Array.from(files);
             if (!validateImageFiles(newFiles)) return;
-            setMediaFiles(prev => ({ ...prev, invitationImages: [...prev.invitationImages, ...newFiles] }));
-            const previewUrls = newFiles.map(createLocalPreview);
+            let optimizedFiles: File[];
+            try { optimizedFiles = await Promise.all(newFiles.map((file) => compressImageForUpload(file))); } catch (error) { alert(error instanceof Error ? error.message : 'Image compression failed. Please try again.'); return; }
+            setMediaFiles(prev => ({ ...prev, invitationImages: [...prev.invitationImages, ...optimizedFiles] }));
+            const previewUrls = optimizedFiles.map(createLocalPreview);
             setPreviews(prev => ({ ...prev, invitationImages: [...prev.invitationImages, ...previewUrls] }));
         } else if (field === 'receptionVenuePhotos') {
             const newFiles = Array.from(files);
             if (!validateImageFiles(newFiles)) return;
-            setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, ...newFiles] }));
-            const previewUrls = newFiles.map(createLocalPreview);
+            let optimizedFiles: File[];
+            try { optimizedFiles = await Promise.all(newFiles.map((file) => compressImageForUpload(file))); } catch (error) { alert(error instanceof Error ? error.message : 'Image compression failed. Please try again.'); return; }
+            setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, ...optimizedFiles] }));
+            const previewUrls = optimizedFiles.map(createLocalPreview);
             setPreviews(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, ...previewUrls] }));
         } else {
             const file = files[0];
@@ -1043,9 +1062,8 @@ export default function BuilderForm() {
                     alert('Please upload a supported video file.');
                     return;
                 }
-                const limit = isPremium ? MAX_PREMIUM_VIDEO_FILE_BYTES : MAX_FREE_VIDEO_FILE_BYTES;
-                if (file.size > limit) {
-                    alert(`Videos must be ${isPremium ? '100MB' : '50MB'} or smaller. Please compress the video and try again.`);
+                if (file.size > MAX_VIDEO_UPLOAD_SIZE) {
+                    alert(fileTooLargeMessage(file, MAX_VIDEO_UPLOAD_SIZE));
                     return;
                 }
             }
@@ -1054,14 +1072,23 @@ export default function BuilderForm() {
                 return;
             }
 
+            let uploadFile = file;
+            if (['heroImage', 'couplePhoto', 'giftQr', 'invitationImage'].includes(field)) {
+                try {
+                    uploadFile = await compressImageForUpload(file);
+                } catch (error) {
+                    alert(error instanceof Error ? error.message : 'Image compression failed. Please try again.');
+                    return;
+                }
+            }
+
             if (field === 'backgroundMusic') {
-                const limit = 15 * 1024 * 1024; // 15MB
                 if (!file.type.startsWith('audio/')) {
                     alert('Please upload an audio file such as MP3, M4A, WAV, or OGG.');
                     return;
                 }
-                if (file.size > limit) {
-                    alert('Background music must be 15MB or smaller. Please compress the audio file and try again.');
+                if (file.size > MAX_AUDIO_UPLOAD_SIZE) {
+                    alert(fileTooLargeMessage(file, MAX_AUDIO_UPLOAD_SIZE));
                     return;
                 }
                 setFormData((prev: any) => ({
@@ -1071,10 +1098,10 @@ export default function BuilderForm() {
                 }));
             }
 
-            setMediaFiles((prev: any) => ({ ...prev, [field]: file }));
+            setMediaFiles((prev: any) => ({ ...prev, [field]: uploadFile }));
 
             if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'teaserVideo' || field === 'backgroundMusic' || field === 'invitationImage') {
-                const previewUrl = createLocalPreview(file);
+                const previewUrl = createLocalPreview(uploadFile);
                 setPreviews((prev: any) => {
                     releaseLocalPreview(prev[field]);
                     return { ...prev, [field]: previewUrl };
@@ -1186,19 +1213,19 @@ export default function BuilderForm() {
                 uploadWaiters.shift()?.();
             };
             const uploadToSupabase = async (file: File, folder: string) => {
-                const filename = `${folder}-${file.name.replace(/\s+/g, '_')}`;
+                const filename = `${folder}-${uuidv4()}-${file.name.replace(/\s+/g, '_')}`;
                 const filePath = `${user.id}/${weddingId}/${filename}`;
 
                 await acquireUploadSlot();
                 try {
                     const { error: uploadError } = await supabase.storage
-                        .from('quickweds')
-                        .upload(filePath, file, { upsert: true, contentType: file.type });
+                        .from(MEDIA_BUCKET)
+                        .upload(filePath, file, { upsert: false, contentType: file.type, cacheControl: '3600' });
 
                     if (uploadError) throw uploadError;
 
                     const { data: { publicUrl } } = supabase.storage
-                        .from('quickweds')
+                        .from(MEDIA_BUCKET)
                         .getPublicUrl(filePath);
 
                     return publicUrl;
@@ -1396,11 +1423,7 @@ export default function BuilderForm() {
             const errorMessage = getErrorMessage(err);
             console.error('Submission error:', err, errorMessage);
             setIsGenerating(false);
-            if (errorMessage.includes('exceeded the maximum allowed size')) {
-                alert('Storage Limit Error: Your Supabase bucket has a 50MB default limit. Please compress your files or go to your Supabase Dashboard to check your storage settings.');
-            } else {
-                alert('Error creating invitation: ' + errorMessage);
-            }
+            alert(`Could not create invitation. ${storageErrorMessage(err)}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -2238,8 +2261,13 @@ export default function BuilderForm() {
                                 ) : (
                                     <div className="text-center group-hover:scale-105 transition-transform">
                                         <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                        <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
-                                        {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
+                                        <span className="text-sm text-text-secondary font-medium">Upload Video</span>
+                                        <p className="mt-1 text-xs font-bold text-amber-700">
+                                            Maximum file size: {formatFileSize(MAX_VIDEO_UPLOAD_SIZE)}
+                                        </p>
+                                        <p className="mt-1 max-w-xs text-[11px] leading-4 text-text-secondary">
+                                            Videos over this limit cannot be uploaded. Trim or compress the video before selecting it.
+                                        </p>
                                     </div>
                                 )}
                                 <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />

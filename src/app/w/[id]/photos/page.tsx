@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Image as ImageIcon, Upload, X, Loader2, CheckCircle2, Maximize2, RotateCcw, Type } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { compressImageForUpload } from '@/lib/image-compression';
+import { ACCEPTED_IMAGE_TYPES, MAX_IMAGE_SOURCE_SIZE, fileTooLargeMessage, storageErrorMessage } from '@/lib/media-upload';
 
 type WeddingLite = {
     id: string;
@@ -75,6 +78,8 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
     
     // Upload State
     const [submitting, setSubmitting] = useState(false);
+    const [uploadStage, setUploadStage] = useState<string | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -95,7 +100,6 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
     const [codeStatus, setCodeStatus] = useState<CodeStatus | null>(null);
     const [codeChecking, setCodeChecking] = useState(false);
-    const [uploadSessionId, setUploadSessionId] = useState('');
 
     useEffect(() => {
         const load = async () => {
@@ -169,7 +173,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                         ? `This sharing code can upload ${data.remainingUploads} more photo${data.remainingUploads === 1 ? '' : 's'}.`
                         : `This sharing code has reached its ${data.maxUploads}-photo limit.`,
                 });
-            } catch (error) {
+            } catch {
                 if (!isActive) return;
                 setCodeStatus({
                     valid: false,
@@ -193,14 +197,15 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            if (!file.type.startsWith('image/')) {
-                alert('Please choose an image file.');
+            if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
+                setUploadError('This format is not supported. Use a JPEG, PNG, WebP, or GIF photo.');
                 return;
             }
-            if (file.size > 10 * 1024 * 1024) {
-                alert('Please choose a photo smaller than 10 MB.');
+            if (file.size > MAX_IMAGE_SOURCE_SIZE) {
+                setUploadError(fileTooLargeMessage(file, MAX_IMAGE_SOURCE_SIZE));
                 return;
             }
+            setUploadError(null);
             setSelectedFile(file);
             setSelectedFilter('none');
             setOverlayText('');
@@ -208,11 +213,13 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
             window.setTimeout(() => setShowCaptureFlash(false), 360);
             if (navigator.vibrate) navigator.vibrate(45);
             // Create a local blob URL for live preview
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
             setPreviewUrl(URL.createObjectURL(file));
         }
     };
 
     const clearSelection = () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
         setSelectedFile(null);
         setPreviewUrl(null);
         setSelectedFilter('none');
@@ -286,41 +293,50 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
 
     async function submitPhoto(e: React.FormEvent) {
         e.preventDefault();
-        if (!selectedFile) return alert('Please select a photo first.');
+        if (!selectedFile) return setUploadError('Please select a photo first.');
         
         const normalizedCode = form.code.trim().toUpperCase();
-        if (!normalizedCode) return alert('A sharing code is required to upload.');
-        if (codeStatus?.valid === false) return alert(codeStatus.message || 'Please enter a valid sharing code.');
-        if (codeStatus?.remainingUploads === 0) return alert(codeStatus.message || 'This sharing code has reached its upload limit.');
+        if (!normalizedCode) return setUploadError('A sharing code is required to upload.');
+        if (codeStatus?.valid === false) return setUploadError(codeStatus.message || 'Please enter a valid sharing code.');
+        if (codeStatus?.remainingUploads === 0) return setUploadError(codeStatus.message || 'This sharing code has reached its upload limit.');
 
         setSubmitting(true);
+        setUploadError(null);
         try {
-            const uploadFile = await buildEditedImageFile(selectedFile);
-            const formData = new FormData();
-            formData.set('weddingId', weddingId);
-            formData.set('code', normalizedCode);
-            formData.set('uploaderName', form.uploader_name);
-            formData.set('caption', form.caption || '');
-            formData.set('file', uploadFile);
-            if (uploadSessionId) formData.set('uploadSessionId', uploadSessionId);
-            formData.set('editMetadata', JSON.stringify({
+            setUploadStage('Preparing your secure upload…');
+            const editedFile = await buildEditedImageFile(selectedFile);
+            const uploadFile = await compressImageForUpload(editedFile);
+            const guestIdentifierKey = `quickweds-photo-guest:${weddingId}`;
+            const guestIdentifier = window.sessionStorage.getItem(guestIdentifierKey) || crypto.randomUUID();
+            window.sessionStorage.setItem(guestIdentifierKey, guestIdentifier);
+            const editMetadata = {
                 filter: selectedFilter,
                 hasText: Boolean(overlayText.trim()),
                 dateStamp: Boolean(settings?.date_stamp_enabled),
-            }));
-
-            const response = await fetch('/api/public/photos/upload', {
+            };
+            const prepareResponse = await fetch('/api/public/photos/upload', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    operation: 'prepare', weddingId, code: normalizedCode,
+                    uploaderName: form.uploader_name, caption: form.caption || '', guestIdentifier,
+                    file: { name: uploadFile.name, type: uploadFile.type, size: uploadFile.size }, editMetadata,
+                }),
             });
-            const result = await response.json().catch(() => ({}));
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Failed to upload photo.');
-            }
-            if (typeof result.uploadSessionId === 'string' && result.uploadSessionId) {
-                setUploadSessionId(result.uploadSessionId);
-            }
+            const prepared = await prepareResponse.json().catch(() => ({}));
+            if (!prepareResponse.ok) throw new Error(prepared.error || 'Unable to prepare this photo upload.');
+            setUploadStage('Uploading directly to secure storage…');
+            const { error: storageError } = await supabase.storage
+                .from(prepared.bucket)
+                .uploadToSignedUrl(prepared.path, prepared.token, uploadFile, { contentType: uploadFile.type, cacheControl: '3600' });
+            if (storageError) throw storageError;
+            setUploadStage('Saving your photo…');
+            const completeResponse = await fetch('/api/public/photos/upload', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ operation: 'complete', intentId: prepared.intentId }),
+            });
+            const result = await completeResponse.json().catch(() => ({}));
+            if (!completeResponse.ok) throw new Error(result.error || 'The photo uploaded but could not be saved. Please retry.');
 
             // Success state
             const nextCurrentUploads = codeStatus?.valid ? codeStatus.currentUploads + 1 : null;
@@ -352,9 +368,10 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
             }, 3000);
 
         } catch (error: unknown) {
-            alert(error instanceof Error ? error.message : 'Failed to upload photo.');
+            setUploadError(storageErrorMessage(error, selectedFile));
         } finally {
             setSubmitting(false);
+            setUploadStage(null);
         }
     }
 
@@ -649,11 +666,12 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                                         className="mt-4 flex min-h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-primary px-6 py-4 text-base font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0 sm:text-lg"
                                     >
                                         {submitting ? (
-                                            <><Loader2 className="w-5 h-5 animate-spin" /> Uploading...</>
+                                            <><Loader2 className="w-5 h-5 animate-spin" /> {uploadStage || 'Uploading…'}</>
                                         ) : (
                                             <>{disposableMode ? 'Add to Roll' : 'Send to Couple'} <Upload className="w-5 h-5" /></>
                                         )}
                                     </button>
+                                    {uploadError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{uploadError}</p>}
                                 </div>
                             </motion.form>
                         )}
