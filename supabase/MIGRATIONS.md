@@ -8,12 +8,12 @@ The template/RSVP consolidation migration is `20260717143000_consolidate_templat
 
 ## Current reconciliation gate
 
-The repository still has 33 root-level `supabase-*.sql` historical scripts and only seven pre-existing ordered migrations. Those scripts contain overlapping schema and policy definitions, so they are not a reproducible baseline and must not be bulk-converted or executed as a batch.
+The repository still has 33 root-level `supabase-*.sql` historical scripts and only eight ordered migrations. A read-only production catalog inspection found 49 public tables and nine recorded production migrations whose identities do not match this directory. Those scripts contain overlapping schema and policy definitions, so they are not a reproducible baseline and must not be bulk-converted or executed as a batch.
 
 Before applying any migration to a shared environment:
 
 1. Provision or nominate a disposable staging Supabase project; do not link the active QuickWeds project unless it is explicitly confirmed as staging.
-2. Capture the staging schema with `supabase db pull --linked`, compare it with this directory, and review every table, function, grant, storage policy, trigger, and RLS policy that the application exposes.
+2. Create a schema-only export from the production catalog, use it to build one reviewed baseline migration, then capture the resulting staging schema with `supabase db pull --linked`. Review every table, function, grant, storage policy, trigger, index, and RLS policy that the application exposes.
 3. Apply pending migrations to staging only, then run two-user cross-wedding RLS and storage-policy tests using non-production accounts and data.
 4. Capture the resulting schema as the reviewed migration baseline in a separate PR. Archive/reclassify the root-level scripts only after that baseline is verified.
 

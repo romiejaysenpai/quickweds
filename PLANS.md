@@ -9,7 +9,7 @@ Create an isolated staging project, establish a reproducible schema baseline, ap
 ### Current behavior
 
 - The repository is on `codex/production-readiness-audit`; the idempotency migration is committed and pushed in draft PR #4.
-- The existing QuickWeds Supabase project is production-candidate and will not be linked, queried, or changed.
+- The existing QuickWeds Supabase project is production-candidate and will not be linked or changed. Its catalog metadata was read once through the authenticated Supabase connector; no application rows, storage objects, or customer data were queried or copied.
 - The Supabase organization has two active projects. The user explicitly approved creating an isolated `quickweds-staging` project in `ap-southeast-2` if it is needed.
 - A preview-specific Vercel environment exposes a separate public Supabase URL but does not provide usable database/service credentials, so it cannot be used for schema or RLS tests.
 
@@ -45,14 +45,14 @@ Create an isolated staging project, establish a reproducible schema baseline, ap
 - [x] Provision and confirm an isolated staging project/ref.
 - [x] Capture schema/migration state and dry-run ordered migration application.
 - [x] Verify the additive idempotency migration and security advisors in an isolated staging harness.
-- [ ] Run migration and two-user RLS/storage tests on a disposable staging/local Supabase project.
+- [ ] Build and apply a reviewed schema-only baseline, then run two-user RLS/storage tests on disposable staging.
 - [x] Verify `NODE_TLS_REJECT_UNAUTHORIZED=0` is absent from Vercel production/preview/development and GitHub Actions CI configuration.
 
 ### Completion notes
 
 - Result: partial staging verification complete. `quickweds-staging` was temporarily linked for isolated tests; production was not linked or altered.
 - Staging result: `quickweds-staging` was provisioned in `ap-southeast-2`. The ordered migration bootstrap fails immediately because `public.rsvps` is missing; source tracking contains no core `weddings`/`rsvps` table creation. The additive idempotency migration itself passed disposable-harness constraint, lease, grant/RLS, and security-advisor verification. See `supabase/STAGING_RECONCILIATION.md`.
-- Remaining schema/RLS gate: a schema-only export of the existing QuickWeds project is required to build a reviewed initial baseline. Do not copy production data or execute root-level SQL as a batch. Full User A/User B application-policy and storage tests remain blocked until that baseline is applied to staging.
+- Remaining schema/RLS gate: production catalog metadata confirms 49 public tables, 99 public RLS policies, 8 storage-object policies, 13 public functions, 4 triggers, and a nine-entry remote migration history that does not match the eight local files. `weddings` alone has 14 simultaneous policies, including broad raw-row `SELECT USING (true)` policies. A schema-only dump is still required to construct a reviewed DDL baseline; do not copy production data or execute root-level SQL as a batch. Full User A/User B application-policy and storage tests remain blocked until that baseline is applied to staging.
 - Current changes: `20260815120000_add_rsvp_and_email_idempotency.sql` adds a nullable RSVP submission key with a partial unique index plus RLS-protected service-role delivery leases. RSVP, thank-you, and photo-reminder routes now use those primitives. `supabase/MIGRATIONS.md` documents the required schema-reconciliation gate.
 - Checks: PASS typecheck, clean-install lint (0 errors; 590 pre-existing warnings), production build on Next 16.3.0, full template matrix (5 Playwright tests), `npm audit --omit=dev` (0 production vulnerabilities), and diff whitespace check. `npm ci` exceeded the tool's 64-second foreground limit, but installed the declared Next 16.3.0 tree used by all subsequent checks.
 - Blocking verification: Docker is not installed and the ordered migration set cannot bootstrap staging without the missing core schema baseline. Database migration execution against the full application schema, two-user RLS/storage tests, real auth, Resend, Stripe, OAuth, and webhooks remain intentionally unverified.
