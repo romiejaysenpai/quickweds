@@ -1,62 +1,61 @@
 # QuickWeds implementation plans
 
-## Current active plan: database reproducibility and delivery idempotency remediation
+## Current active plan: disposable Supabase staging and RLS verification
 
 ### Goal
 
-Make the audited RSVP and transactional-email concurrency paths safe through additive, source-controlled database changes, and establish the reliable path to reconcile the wider Supabase migration history without touching production.
+Create an isolated staging project, establish a reproducible schema baseline, apply the approved additive idempotency migration, and prove cross-account RLS and storage isolation without touching production.
 
 ### Current behavior
 
-- The repository is on `codex/production-readiness-audit`; audit commit `db5dbf7` is pushed in draft PR #4.
-- Public RSVP checks for a matching guest name and then inserts, which is not atomic.
-- Photo-reminder and other email flows send mail before writing a deduplication log, which permits duplicate sends under concurrent requests.
-- There are 33 root-level historical `supabase-*.sql` files but only seven ordered migrations. The accessible QuickWeds Supabase project is active but unlinked and not known to be staging; no safe staging project or local Supabase configuration exists.
+- The repository is on `codex/production-readiness-audit`; the idempotency migration is committed and pushed in draft PR #4.
+- The existing QuickWeds Supabase project is production-candidate and will not be linked, queried, or changed.
+- The Supabase organization has two active projects. The user explicitly approved creating an isolated `quickweds-staging` project in `ap-southeast-2` if it is needed.
+- A preview-specific Vercel environment exposes a separate public Supabase URL but does not provide usable database/service credentials, so it cannot be used for schema or RLS tests.
 
 ### Scope
 
-- In: additive ordered migrations for RSVP submission keys and server-only email-delivery reservations; affected API routes; migration inventory/operating documentation; focused checks.
-- Out: applying migrations to any shared database, production/staging deployment, historical data rewrites, blanket conversion of conflicting legacy SQL, sending real email, Stripe/OAuth/storage changes, and merging to `main`.
+- In: project provisioning, local link/configuration, read-only schema capture, controlled staging migration application, non-production test identities/data, RLS/storage/advisor checks, and migration-reconciliation documentation.
+- Out: production project linkage/mutation, historical production data migration, real customer email, Stripe charges/webhooks, OAuth production settings, production deployment, and merging to `main`.
 
 ### Proposed change
 
-1. Inventory raw SQL and ordered migrations, marking legacy scripts non-deployable until an authoritative schema dump is captured from a disposable staging clone.
-2. Add backwards-compatible migrations: a nullable RSVP submission key with a partial unique index, plus an RLS-protected server-only email-delivery reservation table with narrowly granted RPCs.
-3. Update RSVP and affected email send routes to use these database invariants, mapping duplicate inserts to a safe conflict response and reserving a delivery before mailing.
-4. Add practical migration/RLS test scaffolding where it can run against a future staging/local Supabase instance; run available static/type/lint/build checks and inspect the final diff.
-5. Stop before any shared-database action. Request an explicit staging decision only for schema capture, migration application, and two-user RLS/storage/integration verification.
+1. Provision `quickweds-staging` with a generated database password, verify its distinct project reference, and link only this workspace to it.
+2. Capture its initial schema and migration history; apply the ordered migrations only after a dry run and record any failure caused by the incomplete historical baseline.
+3. Use non-production User A/User B and disposable weddings/RSVPs to test ownership isolation, public RSVP constraints, service-only email reservation RPCs, and existing storage policies.
+4. Run Supabase security advisors, retain a reviewed staging schema dump/reconciliation record, and update source documentation with verified versus blocked components.
 
 ### Data, security, and compatibility review
 
-- Data model/migration: additive only. Existing RSVP rows remain `NULL` keyed and are neither altered nor deduplicated. New reservations are isolated in a new table. Migrations must deploy before route changes.
+- Data model/migration: apply only ordered migrations to the new empty staging database. If the incomplete baseline prevents application, stop and record the exact first dependency rather than executing root-level scripts.
 - RLS/grants: reservation table enables RLS, has no `anon`/`authenticated` policies or grants, and exposes execution only to `service_role`; no browser receives a privileged credential.
 - Auth/authorization: public RSVP remains intentionally server mediated. Reminder sends retain wedding-management authorization before reservation/delivery.
 - Secrets/webhooks: Resend remains server-side; new reservation data stores the selected RSVP identifier, not a recipient address.
 - Public-site/template compatibility: no builder, template, or published-site field is changed.
 - Cache/invalidation: RSVP counters invalidate only after a successful insert.
-- External effects: no real email or shared-database change occurs in this branch. Future staging checks must use safe test recipients.
+- External effects: a new isolated staging project, test accounts, and test data will be created. No real email will be sent, and the project is not linked to Vercel production.
 
 ### Risks and rollback
 
-- The partial RSVP index protects new submissions but cannot repair historic duplicates; do not backfill without reviewed data analysis.
-- Function/RLS behavior cannot be verified until a disposable staging/local Supabase instance has an authoritative schema baseline.
-- Root SQL remains historically conflicting. Do not run it wholesale; capture schema state, generate/review an ordered baseline, then archive or relocate it in a separate reconciliation change.
+- Provisioning can incur project compute cost; user explicitly authorized it only for an isolated staging project.
+- Root SQL remains historically conflicting. If the ordered migration set cannot bootstrap staging, do not run root scripts wholesale; capture the exact dependency failures and build a reviewed baseline in a separate change.
 
 ### Verification
 
-- [x] Inspect exact RSVP/email route and schema dependencies.
-- [x] Add and review ordered additive migration(s), including grants/RLS/function search paths.
-- [x] Run `git diff --check`, typecheck, lint, and production build against the clean declared Next.js version.
+- [x] Provision and confirm an isolated staging project/ref.
+- [x] Capture schema/migration state and dry-run ordered migration application.
+- [x] Verify the additive idempotency migration and security advisors in an isolated staging harness.
 - [ ] Run migration and two-user RLS/storage tests on a disposable staging/local Supabase project.
-- [x] Run the complete 25-template, four-viewport matrix after the clean install.
 - [x] Verify `NODE_TLS_REJECT_UNAUTHORIZED=0` is absent from Vercel production/preview/development and GitHub Actions CI configuration.
 
 ### Completion notes
 
-- Result: source remediation complete and awaiting staging verification. No shared Supabase project was linked or altered.
+- Result: partial staging verification complete. `quickweds-staging` was temporarily linked for isolated tests; production was not linked or altered.
+- Staging result: `quickweds-staging` was provisioned in `ap-southeast-2`. The ordered migration bootstrap fails immediately because `public.rsvps` is missing; source tracking contains no core `weddings`/`rsvps` table creation. The additive idempotency migration itself passed disposable-harness constraint, lease, grant/RLS, and security-advisor verification. See `supabase/STAGING_RECONCILIATION.md`.
+- Remaining schema/RLS gate: a schema-only export of the existing QuickWeds project is required to build a reviewed initial baseline. Do not copy production data or execute root-level SQL as a batch. Full User A/User B application-policy and storage tests remain blocked until that baseline is applied to staging.
 - Current changes: `20260815120000_add_rsvp_and_email_idempotency.sql` adds a nullable RSVP submission key with a partial unique index plus RLS-protected service-role delivery leases. RSVP, thank-you, and photo-reminder routes now use those primitives. `supabase/MIGRATIONS.md` documents the required schema-reconciliation gate.
 - Checks: PASS typecheck, clean-install lint (0 errors; 590 pre-existing warnings), production build on Next 16.3.0, full template matrix (5 Playwright tests), `npm audit --omit=dev` (0 production vulnerabilities), and diff whitespace check. `npm ci` exceeded the tool's 64-second foreground limit, but installed the declared Next 16.3.0 tree used by all subsequent checks.
-- Blocking verification: Docker is not installed, no staging Supabase project exists, and the one active QuickWeds project is not linked or confirmed as staging. Database migration execution, two-user RLS/storage tests, real auth, Resend, Stripe, OAuth, and webhooks remain intentionally unverified.
+- Blocking verification: Docker is not installed and the ordered migration set cannot bootstrap staging without the missing core schema baseline. Database migration execution against the full application schema, two-user RLS/storage tests, real auth, Resend, Stripe, OAuth, and webhooks remain intentionally unverified.
 - TLS: the unsafe setting exists only in this agent process, not the repository or user/machine environment. It is absent from all linked Vercel environment-variable scopes, repository Actions variables/secrets, and `.github/workflows/verify.yml`; TLS verification was enabled in a clean validation process.
 - Branch/baseline: `codex/production-readiness-audit`, created from a clean `codex/loopsetup` worktree; no production data, migration, email, payment, or deployment action was performed.
 - Low-risk fixes made:

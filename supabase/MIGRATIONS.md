@@ -18,3 +18,9 @@ Before applying any migration to a shared environment:
 4. Capture the resulting schema as the reviewed migration baseline in a separate PR. Archive/reclassify the root-level scripts only after that baseline is verified.
 
 `20260815120000_add_rsvp_and_email_idempotency.sql` is deliberately additive: it gives new RSVP records an atomic submission key and adds server-only delivery leases. It does not backfill or alter historical RSVP data. Deploy that migration before deploying the API code that depends on it.
+
+An empty-project staging bootstrap has confirmed that the first ordered
+migration assumes `public.rsvps` already exists, while no tracked SQL creates
+the core `public.weddings` or `public.rsvps` tables. See
+`supabase/STAGING_RECONCILIATION.md` for the exact failure and the required
+schema-only baseline-capture procedure.
