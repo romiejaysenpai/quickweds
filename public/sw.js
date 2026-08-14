@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'quickweds-pwa-v3';
+const CACHE_VERSION = 'quickweds-pwa-v4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
@@ -20,6 +20,13 @@ const PRECACHE_URLS = [
 const DENYLIST_PREFIXES = [
   '/api/',
   '/auth/callback',
+  '/dashboard',
+  '/admin',
+  '/settings',
+  '/builder',
+  '/onboarding',
+  '/login',
+  '/signup',
   '/payment/',
   '/_vercel/',
 ];
@@ -76,7 +83,10 @@ async function networkFirstPage(request) {
   const cache = await caches.open(PAGE_CACHE);
   try {
     const response = await fetch(request);
-    if (response && response.ok) {
+    const url = new URL(request.url);
+    const isPrivatePath = DENYLIST_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
+    const forbidsStorage = response.headers.get('Cache-Control')?.includes('no-store') || response.headers.has('Set-Cookie');
+    if (response && response.ok && !isPrivatePath && !forbidsStorage) {
       cache.put(request, response.clone());
     }
     return response;

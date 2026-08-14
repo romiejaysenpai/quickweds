@@ -12,6 +12,7 @@ import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/
 import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
 import { getCachedSession } from '@/lib/session-cache';
 import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate } from '@/lib/entourage-proposal-templates';
+import { uploadAuthenticatedFile } from '@/lib/authenticated-upload';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
     loading: () => (
@@ -1998,12 +1999,12 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
         }
         setUploadingReference(true);
         try {
-            const safeName = file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
-            const path = `planner-food/${weddingId}/${Date.now()}-${safeName}`;
-            const { error } = await supabase.storage.from('quickweds').upload(path, file, { contentType: file.type, upsert: true });
-            if (error) throw error;
-            const { data } = supabase.storage.from('quickweds').getPublicUrl(path);
-            setNewItem((current) => ({ ...current, reference_image_url: data.publicUrl }));
+            const publicUrl = await uploadAuthenticatedFile({
+                purpose: 'planner-food-reference',
+                weddingId,
+                file,
+            });
+            setNewItem((current) => ({ ...current, reference_image_url: publicUrl }));
         } catch (err) {
             console.error('Food reference upload failed:', err);
             alert(err instanceof Error ? err.message : 'Unable to upload food reference photo.');

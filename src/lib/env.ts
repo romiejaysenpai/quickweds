@@ -17,6 +17,9 @@ const envSchema = z.object({
     SUPABASE_SERVICE_KEY: z.string().min(10, 'Invalid Supabase service key').optional(),
     SUPABASE_SERVICE_ROLE: z.string().min(10, 'Invalid Supabase service role').optional(),
     CRON_SECRET: z.string().min(16, 'Cron secret should be at least 16 characters').optional(),
+    AGENTOPS_API_KEY: z.string().min(32, 'AgentOps API key should be at least 32 characters').optional(),
+    UPSTASH_REDIS_REST_URL: z.string().url('Invalid Upstash Redis URL').optional(),
+    UPSTASH_REDIS_REST_TOKEN: z.string().min(16, 'Invalid Upstash Redis token').optional(),
     MARKETING_NURTURE_SEND_LIMIT: z.coerce.number().int().positive().max(200).optional(),
 
     CLOUDINARY_URL: z.string().startsWith('cloudinary://', 'Invalid Cloudinary URL').optional(),
@@ -53,6 +56,9 @@ export function validateEnv() {
         SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
         SUPABASE_SERVICE_ROLE: process.env.SUPABASE_SERVICE_ROLE,
         CRON_SECRET: process.env.CRON_SECRET,
+        AGENTOPS_API_KEY: process.env.AGENTOPS_API_KEY,
+        UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+        UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
         MARKETING_NURTURE_SEND_LIMIT: process.env.MARKETING_NURTURE_SEND_LIMIT,
         CLOUDINARY_URL: process.env.CLOUDINARY_URL,
         VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID,
@@ -79,6 +85,10 @@ export function validateEnv() {
         });
         console.error('\nPlease check your environment variables against .env.example');
         throw new Error('Environment validation failed');
+    }
+
+    if (process.env.NODE_ENV === 'production' && (!result.data.UPSTASH_REDIS_REST_URL || !result.data.UPSTASH_REDIS_REST_TOKEN)) {
+        throw new Error('UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are required in production for distributed rate limiting.');
     }
 
     console.log('Environment variables validated successfully');

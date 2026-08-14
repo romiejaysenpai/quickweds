@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import { deleteManagedWeddingAssets, deleteWeddingPhotoObject } from '@/lib/media-deletion';
 
 async function safeDelete(db: any, table: string, column: string, value: string) {
     const { error } = await db.from(table).delete().eq(column, value);
@@ -20,6 +21,14 @@ async function safeUpdate(db: any, table: string, payload: Record<string, unknow
 export async function DELETE(req: NextRequest) {
     const { user, error } = await getRequestUser(req);
     if (!user) return NextResponse.json({ error }, { status: 401 });
+    if (req.headers.get('x-quickweds-delete-confirmation') !== 'DELETE') {
+        return NextResponse.json({ error: 'Explicit account deletion confirmation is required.' }, { status: 400 });
+    }
+
+    const lastSignInAt = Date.parse(user.last_sign_in_at || '');
+    if (!Number.isFinite(lastSignInAt) || Date.now() - lastSignInAt > 15 * 60 * 1000) {
+        return NextResponse.json({ error: 'For your security, sign in again before deleting your account.' }, { status: 403 });
+    }
 
     try {
         const db = getSupabaseAdminClient() as any;
@@ -27,7 +36,7 @@ export async function DELETE(req: NextRequest) {
 
         const { data: weddings, error: weddingsError } = await db
             .from('weddings')
-            .select('id')
+            .select('id, hero_image, couple_photo, teaser_video, background_music_url, gift_qr_image, invitation_image, gallery_images, reception_venue_photos')
             .eq('user_id', user.id);
 
         if (weddingsError) {
@@ -52,6 +61,19 @@ export async function DELETE(req: NextRequest) {
         ]);
 
         if (weddingIds.length > 0) {
+            const { data: weddingPhotos, error: weddingPhotosError } = await db
+                .from('wedding_photos')
+                .select('id, wedding_id, cloudinary_public_id, cloudinary_url')
+                .in('wedding_id', weddingIds);
+            if (weddingPhotosError) throw weddingPhotosError;
+
+            for (const photo of weddingPhotos || []) {
+                await deleteWeddingPhotoObject(db, photo);
+            }
+            for (const wedding of weddings || []) {
+                await deleteManagedWeddingAssets(db, wedding);
+            }
+
             const { error: deleteWeddingsError } = await db
                 .from('weddings')
                 .delete()

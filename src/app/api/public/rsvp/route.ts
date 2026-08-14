@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { rsvpSubmissionSchema } from '@/lib/validations';
@@ -13,6 +14,17 @@ function getPrimaryPlusOneName(raw: string) {
         .map((name) => name.trim())
         .filter(Boolean);
     return firstName || '';
+}
+
+function getSubmissionKey(guestName: string, guestEmail: string) {
+    const normalizedName = guestName.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+    const normalizedEmail = guestEmail.trim().toLocaleLowerCase();
+    return createHash('sha256').update(`${normalizedName}\u0000${normalizedEmail}`).digest('hex');
+}
+
+function isUniqueViolation(error: unknown) {
+    const record = error as { code?: unknown; message?: unknown } | null;
+    return record?.code === '23505' || String(record?.message || '').toLowerCase().includes('duplicate key');
 }
 
 export async function POST(req: NextRequest) {
@@ -46,9 +58,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Guest name is required.' }, { status: 400 });
     }
 
+    let claimedSubmissionKey = '';
+    let rsvpWasCreated = false;
+
     try {
         const db = getSupabaseAdminClient() as any;
-        const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
+        const weddingSelect = 'id, user_id, public_slug, is_published, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
         let weddingResult = await db
             .from('weddings')
             .select(weddingSelect)
@@ -68,7 +83,7 @@ export async function POST(req: NextRequest) {
         const { data: wedding, error: weddingError } = weddingResult;
 
         if (weddingError) throw weddingError;
-        if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
+        if (!wedding || wedding.is_published !== true) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
 
         const { data: existing, error: duplicateError } = await db
             .from('rsvps')
@@ -83,6 +98,20 @@ export async function POST(req: NextRequest) {
                 error: "You have already RSVP'd for this wedding. If you need to make changes, please contact the couple directly.",
                 code: 'duplicate_rsvp',
             }, { status: 409 });
+        }
+
+        claimedSubmissionKey = getSubmissionKey(guestName, guestEmail);
+        const { error: submissionClaimError } = await db
+            .from('public_rsvp_submission_keys')
+            .insert({ wedding_id: weddingId, submission_key: claimedSubmissionKey });
+        if (submissionClaimError) {
+            if (isUniqueViolation(submissionClaimError)) {
+                return NextResponse.json({
+                    error: "You have already RSVP'd for this wedding. If you need to make changes, please contact the couple directly.",
+                    code: 'duplicate_rsvp',
+                }, { status: 409 });
+            }
+            throw submissionClaimError;
         }
 
         const insertData: Record<string, unknown> = {
@@ -143,6 +172,13 @@ export async function POST(req: NextRequest) {
         }
 
         if (insertError) throw insertError;
+        rsvpWasCreated = true;
+        const { error: keyUpdateError } = await db
+            .from('public_rsvp_submission_keys')
+            .update({ rsvp_id: String(rsvp.id) })
+            .eq('wedding_id', weddingId)
+            .eq('submission_key', claimedSubmissionKey);
+        if (keyUpdateError) console.error('Unable to link RSVP duplicate-protection key:', keyUpdateError.message);
         await invalidateDashboardCounters(weddingId);
 
         const notifications = await sendRsvpNotifications(db, {
@@ -166,6 +202,18 @@ export async function POST(req: NextRequest) {
             { headers: limited.headers }
         );
     } catch (error) {
+        if (claimedSubmissionKey && !rsvpWasCreated) {
+            try {
+                const db = getSupabaseAdminClient() as any;
+                await db
+                    .from('public_rsvp_submission_keys')
+                    .delete()
+                    .eq('wedding_id', weddingId)
+                    .eq('submission_key', claimedSubmissionKey);
+            } catch (cleanupError) {
+                console.error('Unable to release RSVP duplicate-protection key:', cleanupError instanceof Error ? cleanupError.message : 'unknown error');
+            }
+        }
         const message = error instanceof Error ? error.message : 'Unable to submit RSVP.';
         console.error('Public RSVP submit failed:', message);
         return NextResponse.json({ error: 'Unable to submit RSVP.' }, { status: 500 });

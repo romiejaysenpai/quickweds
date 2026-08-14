@@ -26,6 +26,7 @@ const WEDDING_OPTIONAL_COLUMNS = [
     'hero_image',
     'custom_domain',
     'public_slug',
+    'is_published',
     'total_budget',
     'currency',
     'guest_limit',

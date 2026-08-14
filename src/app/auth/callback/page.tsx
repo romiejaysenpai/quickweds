@@ -26,22 +26,11 @@ export default function AuthCallbackPage() {
             return getSafeNextPath(storedNext);
         };
 
-        const notifyNewOAuthUser = (user: User) => {
-            const isNewUser = new Date(user.created_at).getTime() > Date.now() - 30000;
-
-            if (!isNewUser) return;
-
-            void fetch('/api/admin/notify-signup', {
+        const notifyVerifiedSignup = (token: string) => {
+            void fetch('/api/auth/signup-notification', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    record: {
-                        email: user.email,
-                        full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'OAuth User',
-                        source: 'oauth_signup',
-                    }
-                })
-            }).catch(err => console.error('OAuth Notification Error:', err));
+                headers: { Authorization: `Bearer ${token}` },
+            }).catch(() => undefined);
         };
 
         const resolvePostAuthPath = async (token: string, nextPath: string) => {
@@ -56,7 +45,7 @@ export default function AuthCallbackPage() {
 
         const finishSignIn = async (user: User, token: string, nextPath: string) => {
             console.log('User authenticated:', user.email);
-            notifyNewOAuthUser(user);
+            notifyVerifiedSignup(token);
             window.localStorage.removeItem('quickweds_auth_next');
             router.replace(await resolvePostAuthPath(token, nextPath));
         };

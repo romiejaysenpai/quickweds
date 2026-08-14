@@ -26,9 +26,37 @@ export {
 };
 export type { RateLimitKey };
 
-type RateLimitResult = { allowed: boolean; remaining: number; resetTime: number; maxRequests: number };
+type RateLimitResult = {
+    allowed: boolean;
+    remaining: number;
+    resetTime: number;
+    maxRequests: number;
+    unavailable?: boolean;
+};
 
 const upstashLimiters = new Map<RateLimitKey, Ratelimit>();
+
+// In production these routes can cause an external side effect or reveal
+// sensitive data. A per-instance fallback does not provide a real limit, so
+// deny requests until the shared limiter is healthy instead of silently
+// weakening the control.
+const DISTRIBUTED_LIMIT_KEYS = new Set<RateLimitKey>([
+    'RSVP_SUBMIT',
+    'REMINDER_EMAIL',
+    'THANK_YOU_EMAIL',
+    'EMAIL_RESEND',
+    'ENTOURAGE_INVITE',
+    'GUEST_BOOK',
+    'PHOTO_UPLOAD',
+    'SEAT_LOOKUP',
+    'SEAT_MUTATION',
+    'CHECKOUT',
+    'SUPPLIER_REVIEW',
+    'SIGNUP_NOTIFY',
+    'LOGIN',
+    'SIGNUP',
+    'DOMAIN_MANAGEMENT',
+]);
 
 function hashIdentifier(identifier: string) {
     return createHash('sha256').update(identifier).digest('hex').slice(0, 32);
@@ -59,11 +87,25 @@ function getUpstashLimiter(limitKey: RateLimitKey) {
     return limiter;
 }
 
+function unavailableRateLimit(limitKey: RateLimitKey): RateLimitResult {
+    return {
+        allowed: false,
+        remaining: 0,
+        resetTime: Date.now() + 60_000,
+        maxRequests: RATE_LIMITS[limitKey].maxRequests,
+        unavailable: true,
+    };
+}
+
 export async function checkRateLimitAsync(identifier: string, limitKey: RateLimitKey = 'DEFAULT'): Promise<RateLimitResult> {
     const safeIdentifier = hashIdentifier(`${limitKey}:${identifier || 'anonymous'}`);
     const limiter = getUpstashLimiter(limitKey);
 
-    if (!limiter) return checkRateLimit(safeIdentifier, limitKey);
+    if (!limiter) {
+        return process.env.NODE_ENV === 'production' && DISTRIBUTED_LIMIT_KEYS.has(limitKey)
+            ? unavailableRateLimit(limitKey)
+            : checkRateLimit(safeIdentifier, limitKey);
+    }
 
     try {
         const result = await limiter.limit(safeIdentifier);
@@ -75,7 +117,9 @@ export async function checkRateLimitAsync(identifier: string, limitKey: RateLimi
         };
     } catch (error) {
         logRedisFailure(`rate limit ${limitKey}`, error);
-        return checkRateLimit(safeIdentifier, limitKey);
+        return process.env.NODE_ENV === 'production' && DISTRIBUTED_LIMIT_KEYS.has(limitKey)
+            ? unavailableRateLimit(limitKey)
+            : checkRateLimit(safeIdentifier, limitKey);
     }
 }
 
@@ -85,20 +129,22 @@ export function createRateLimitMiddleware(limitKey: RateLimitKey) {
             const result = await checkRateLimitAsync(identifier, limitKey);
             if (!result.allowed) {
                 const retryAfter = Math.max(1, Math.ceil((result.resetTime - Date.now()) / 1000));
+                const unavailable = Boolean(result.unavailable);
                 return {
                     limited: true,
                     response: new Response(
                         JSON.stringify({
-                            error: 'Too many requests. Please try again later.',
-                            message: 'Too many requests. Please try again later.',
+                            error: unavailable ? 'This action is temporarily unavailable. Please try again shortly.' : 'Too many requests. Please try again later.',
+                            message: unavailable ? 'This action is temporarily unavailable. Please try again shortly.' : 'Too many requests. Please try again later.',
                             retryAfter,
                             resetTime: result.resetTime,
                         }),
                         {
-                            status: 429,
+                            status: unavailable ? 503 : 429,
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Retry-After': String(retryAfter),
+                                'Cache-Control': 'no-store',
                                 'X-RateLimit-Limit': String(result.maxRequests),
                                 'X-RateLimit-Remaining': '0',
                                 'X-RateLimit-Reset': String(result.resetTime),

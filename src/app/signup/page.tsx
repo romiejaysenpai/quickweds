@@ -78,21 +78,13 @@ export default function SignUpPage() {
             });
             if (error) throw error;
 
-            // Trigger admin notification & welcome email manually
-            // We pass the record object to match the expected Supabase webhook format
-            void fetch('/api/admin/notify-signup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    record: {
-                        email: normalizedEmail,
-                        full_name: trimmedName,
-                        source: 'email_signup',
-                    }
-                })
-            }).catch(err => console.error('Notification Error:', err));
-
             const token = data.session?.access_token;
+            if (token) {
+                void fetch('/api/auth/signup-notification', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            }
             const redirectPath = token
                 ? await resolvePostAuthPath(token, getSafeNextPath(), data.user?.email)
                 : getRoleAwareRedirect(null, getSafeNextPath());

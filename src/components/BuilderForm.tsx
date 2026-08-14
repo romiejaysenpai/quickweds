@@ -55,12 +55,12 @@ import { parseDressCodeValue, serializeDressCodeValue } from '@/lib/dress-code';
 import { getSafeMonogramConfig } from '@/lib/monogram';
 import { createMonogramWebm, downloadMonogramImage, requestMonogramMp4 } from '@/lib/monogram-export';
 import { compressImageForUpload } from '@/lib/image-compression';
+import { uploadAuthenticatedFile } from '@/lib/authenticated-upload';
 import {
     ACCEPTED_IMAGE_TYPES,
     MAX_AUDIO_UPLOAD_SIZE,
     MAX_IMAGE_SOURCE_SIZE,
     MAX_VIDEO_UPLOAD_SIZE,
-    MEDIA_BUCKET,
     fileTooLargeMessage,
     formatFileSize,
     storageErrorMessage,
@@ -391,6 +391,7 @@ const INITIAL_FORM_DATA = {
     isThankYouMode: false,
     thankYouMessage: '',
     photoAlbumLink: '',
+    isPublished: true,
     accentStyle: 'none',
 };
 
@@ -770,6 +771,7 @@ export default function BuilderForm() {
                         isThankYouMode: data.is_thank_you_mode || false,
                         thankYouMessage: data.thank_you_message || '',
                         photoAlbumLink: data.photo_album_link || '',
+                        isPublished: data.is_published === true,
                         accentStyle: data.accent_style || 'none',
                         });
                         let inviteImages: string[] = [];
@@ -1212,37 +1214,28 @@ export default function BuilderForm() {
                 activeUploads -= 1;
                 uploadWaiters.shift()?.();
             };
-            const uploadToSupabase = async (file: File, folder: string) => {
-                const filename = `${folder}-${uuidv4()}-${file.name.replace(/\s+/g, '_')}`;
-                const filePath = `${user.id}/${weddingId}/${filename}`;
-
+            const uploadToSupabase = async (file: File) => {
                 await acquireUploadSlot();
                 try {
-                    const { error: uploadError } = await supabase.storage
-                        .from(MEDIA_BUCKET)
-                        .upload(filePath, file, { upsert: false, contentType: file.type, cacheControl: '3600' });
-
-                    if (uploadError) throw uploadError;
-
-                    const { data: { publicUrl } } = supabase.storage
-                        .from(MEDIA_BUCKET)
-                        .getPublicUrl(filePath);
-
-                    return publicUrl;
+                    return await uploadAuthenticatedFile({
+                        purpose: 'builder-media',
+                        weddingId,
+                        file,
+                    });
                 } finally {
                     releaseUploadSlot();
                 }
             };
 
             // Upload ALL media in parallel including video
-            const heroPromise = mediaFiles.heroImage ? uploadToSupabase(mediaFiles.heroImage, 'hero') : Promise.resolve(null);
-            const couplePromise = mediaFiles.couplePhoto ? uploadToSupabase(mediaFiles.couplePhoto, 'couple') : Promise.resolve(null);
-            const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
-            const invitationPromises = mediaFiles.invitationImages.map((file, i) => uploadToSupabase(file, `invitation-${i}`));
-            const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo, 'teaser') : Promise.resolve(null);
-            const musicPromise = mediaFiles.backgroundMusic ? uploadToSupabase(mediaFiles.backgroundMusic, 'music') : Promise.resolve(null);
-            const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToSupabase(file, `gallery-${i}`));
-            const receptionVenuePromises = mediaFiles.receptionVenuePhotos.map((file, i) => uploadToSupabase(file, `reception-venue-${i}`));
+            const heroPromise = mediaFiles.heroImage ? uploadToSupabase(mediaFiles.heroImage) : Promise.resolve(null);
+            const couplePromise = mediaFiles.couplePhoto ? uploadToSupabase(mediaFiles.couplePhoto) : Promise.resolve(null);
+            const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr) : Promise.resolve(null);
+            const invitationPromises = mediaFiles.invitationImages.map((file) => uploadToSupabase(file));
+            const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo) : Promise.resolve(null);
+            const musicPromise = mediaFiles.backgroundMusic ? uploadToSupabase(mediaFiles.backgroundMusic) : Promise.resolve(null);
+            const galleryPromises = mediaFiles.galleryImages.map((file) => uploadToSupabase(file));
+            const receptionVenuePromises = mediaFiles.receptionVenuePhotos.map((file) => uploadToSupabase(file));
 
             const [heroUrl, coupleUrl, giftQrUrl, invitationUrls, videoUrl, musicUrl, galleryUrls, receptionVenueUrls] = await Promise.all([
                 heroPromise,
@@ -1307,6 +1300,7 @@ export default function BuilderForm() {
                 is_thank_you_mode: formData.isThankYouMode,
                 thank_you_message: formData.thankYouMessage,
                 photo_album_link: formData.photoAlbumLink,
+                is_published: formData.isPublished === true,
                 accent_style: formData.accentStyle,
             };
 
@@ -1354,6 +1348,11 @@ export default function BuilderForm() {
 
                 if (isMissingPublicSlugColumnError(error) || isMissingOptionalWeddingColumnError(error, 'public_slug')) {
                     delete fallbackPayload.public_slug;
+                    canRetry = true;
+                }
+
+                if (isMissingOptionalWeddingColumnError(error, 'is_published')) {
+                    delete fallbackPayload.is_published;
                     canRetry = true;
                 }
 
@@ -3037,7 +3036,28 @@ return (
                     </AnimatePresence>
 
                     {currentStep === STEPS.length - 1 && (
-                        <PublishHealthPanel health={publishHealth} onGoToStep={setCurrentStep} />
+                        <>
+                            <div className="flex items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+                                <div>
+                                    <p className="text-sm font-black text-foreground">Wedding site visibility</p>
+                                    <p className="mt-1 text-xs leading-5 text-text-secondary">
+                                        {formData.isPublished ? 'Your wedding site and public RSVP tools will be available after saving.' : 'Your wedding site, RSVP form, gallery, and guest book will stay private after saving.'}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={formData.isPublished}
+                                    aria-label="Toggle wedding site visibility"
+                                    onClick={() => setFormData((previous: any) => ({ ...previous, isPublished: !previous.isPublished }))}
+                                    className={`grid h-10 w-[88px] shrink-0 grid-cols-2 rounded-xl border p-0.5 text-[10px] font-black uppercase tracking-wider transition-colors focus:outline-none focus:ring-4 focus:ring-primary/15 ${formData.isPublished ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'}`}
+                                >
+                                    <span className={`flex items-center justify-center rounded-lg transition ${!formData.isPublished ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Private</span>
+                                    <span className={`flex items-center justify-center rounded-lg transition ${formData.isPublished ? 'bg-primary text-white shadow-sm' : ''}`}>Live</span>
+                                </button>
+                            </div>
+                            <PublishHealthPanel health={publishHealth} onGoToStep={setCurrentStep} />
+                        </>
                     )}
 
                     {currentStep === 1 && (

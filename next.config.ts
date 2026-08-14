@@ -1,17 +1,13 @@
 import type { NextConfig } from "next";
 import { validateEnv } from "./src/lib/env";
 
-// Validate environment variables on build/startup
-if (process.env.NODE_ENV !== 'production' || process.env.VALIDATE_ENV === 'true') {
-  try {
-    // Only validate in non-build contexts or when explicitly requested
-    if (typeof window === 'undefined') {
-      // Don't throw during config load, just warn
-      validateEnv();
-    }
-  } catch (e) {
+// Validate environment variables on build/startup. Production fails closed;
+// development logs a warning so local UI work can still proceed.
+try {
+  if (typeof window === 'undefined') validateEnv();
+} catch (e) {
+  if (process.env.NODE_ENV === 'production') throw e;
     console.warn('⚠️  Environment validation warning:', (e as Error).message);
-  }
 }
 
 const nextConfig: NextConfig = {
@@ -22,7 +18,26 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
   async headers() {
+    const securityHeaders = [
+      { key: 'Content-Security-Policy', value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://*.ingest.sentry.io https://api.stripe.com https://www.google-analytics.com https://analytics.google.com; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; worker-src 'self' blob:" },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
+      { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+    ];
     return [
+      {
+        source: '/api/:path*',
+        headers: [
+          ...securityHeaders,
+          { key: 'Cache-Control', value: 'no-store, max-age=0' },
+        ],
+      },
+      {
+        source: '/:path*',
+        headers: securityHeaders,
+      },
       {
         source: '/:path*.(png|jpg|jpeg|webp|avif|gif|svg|ico|woff|woff2)',
         headers: [

@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
         }
 
         const checkedInAt = body.undo === true ? null : new Date().toISOString();
-        const { data: updated, error: updateError } = await db
+        let updateQuery = db
             .from('rsvps')
             .update({
                 checked_in_at: checkedInAt,
@@ -143,17 +143,38 @@ export async function POST(req: NextRequest) {
             .eq('id', guest.id)
             .eq('wedding_id', weddingId)
             .select('id, guest_name, table_assignment, guest_code, checked_in_at')
-            .single();
+            .maybeSingle();
+
+        updateQuery = body.undo === true
+            ? updateQuery.not('checked_in_at', 'is', null)
+            : updateQuery.is('checked_in_at', null);
+
+        const { data: updated, error: updateError } = await updateQuery;
         if (updateError) throw updateError;
 
+        if (!updated) {
+            const currentGuest = await resolveGuest(db, weddingId, { rsvpId: guest.id });
+            return NextResponse.json({
+                success: true,
+                state: body.undo === true ? 'already_checked_out' : 'already_checked_in',
+                guest: currentGuest || guest,
+            }, { headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
+        }
+
         if (checkedInAt) {
-            await db.from('guest_check_ins').insert({
+            const { error: checkInLogError } = await db.from('guest_check_ins').insert({
                 wedding_id: weddingId,
                 rsvp_id: guest.id,
                 checked_in_by: user.id,
                 source: body.source || 'staff_search',
                 notes: body.notes ? String(body.notes).slice(0, 500) : null,
             });
+            if (checkInLogError) {
+                // The guest state has already changed atomically. Do not return an
+                // error that invites a duplicate scan; record the missing audit
+                // entry for operational follow-up instead.
+                console.error('Unable to write guest check-in audit record:', checkInLogError.message);
+            }
         }
         await invalidateDashboardCounters(weddingId);
 

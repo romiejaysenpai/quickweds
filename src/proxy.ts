@@ -34,17 +34,21 @@ export async function proxy(req: NextRequest) {
         return NextResponse.next();
     }
 
-    // Get hostname...
-    const hostname = req.headers
-        .get('host')!
-        .replace('.localhost:3000', `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site'}`);
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site').trim().toLowerCase();
+    const rawHost = (req.headers.get('host') || '').trim().toLowerCase();
+    const hostname = rawHost.startsWith('[')
+        ? rawHost.slice(1, rawHost.indexOf(']'))
+        : rawHost.split(':')[0];
+    const isRootDomain = hostname === rootDomain || hostname.endsWith(`.${rootDomain}`);
+    const isPreviewDomain = hostname === 'vercel.app' || hostname.endsWith('.vercel.app')
+        || hostname === 'vercel.pub' || hostname.endsWith('.vercel.pub');
+    const isLocalHost = hostname === 'localhost' || hostname.endsWith('.localhost') || hostname === '127.0.0.1' || hostname === '::1';
 
     // Allow vercel preview URLs, localhost, and base domain
     if (
-        hostname.includes('vercel.app') ||
-        hostname.includes('vercel.pub') ||
-        hostname.includes('localhost') ||
-        hostname.endsWith(process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site')
+        isPreviewDomain ||
+        isLocalHost ||
+        isRootDomain
     ) {
         return NextResponse.next();
     }

@@ -2,16 +2,19 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
 import { getWelcomeEmailHtml } from '@/lib/email-templates';
 import type { NextRequest } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 
 // ─── Auth ────────────────────────────────────────────────────
-const getApiKey = () =>
-    process.env.AGENTOPS_API_KEY || process.env.CRON_SECRET || '';
+const getApiKey = () => process.env.AGENTOPS_API_KEY?.trim() || '';
 
 export function isAgentAuthorized(req: NextRequest): boolean {
     const key = getApiKey();
     if (!key) return false;
     const header = req.headers.get('authorization') || '';
-    return header === `Bearer ${key}`;
+    const expected = `Bearer ${key}`;
+    const supplied = Buffer.from(header);
+    const expectedValue = Buffer.from(expected);
+    return supplied.length === expectedValue.length && timingSafeEqual(supplied, expectedValue);
 }
 
 // ─── Types ───────────────────────────────────────────────────
@@ -335,6 +338,13 @@ export async function executeLifecycleTask(
     task: LifecycleTask,
     dryRun = false
 ): Promise<{ success: boolean; action: string; emailId?: string; error?: string }> {
+    if (!task.optedIn || task.suppressed) {
+        return { success: false, action: 'skipped', error: 'Recipient has opted out of this automation.' };
+    }
+    if (task.requiresApproval) {
+        return { success: false, action: 'skipped', error: 'This lifecycle action requires manual approval.' };
+    }
+
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.quickweds.site').replace(/\/+$/, '');
     const stageConfig = STAGE_EMAILS[task.lifecycleStage];
 
@@ -348,13 +358,13 @@ export async function executeLifecycleTask(
 
     if (task.lifecycleStage === 'welcome') {
         subject = stageConfig.subject;
-        html = getWelcomeEmailHtml(task.userName || 'there');
+        html = getWelcomeEmailHtml(escapeHtml(task.userName || 'there'));
     } else {
         subject = stageConfig.subject;
         html = lifecycleEmailHtml({
             emoji: stageConfig.emoji,
             heading: stageConfig.heading,
-            userName: task.userName || 'there',
+            userName: escapeHtml(task.userName || 'there'),
             bodyLines: stageConfig.bodyLines,
             ctaText: stageConfig.ctaText,
             ctaUrl: `${appUrl}${stageConfig.ctaPath}`,
@@ -365,11 +375,27 @@ export async function executeLifecycleTask(
         return { success: true, action: `dry_run:${task.lifecycleStage}` };
     }
 
+    const { error: deliveryClaimError } = await (db as any)
+        .from('agentops_lifecycle_deliveries')
+        .insert({ task_id: task.id, user_id: task.userId, lifecycle_stage: task.lifecycleStage, status: 'processing' });
+    if (deliveryClaimError) {
+        if (String((deliveryClaimError as { code?: string }).code || '') === '23505') {
+            return { success: true, action: `already_processed:${task.lifecycleStage}` };
+        }
+        throw deliveryClaimError;
+    }
+
     const result = await sendEmail({
         to: task.email,
         subject,
         html,
     });
+
+    const { error: deliveryUpdateError } = await (db as any)
+        .from('agentops_lifecycle_deliveries')
+        .update({ status: result.success ? 'sent' : 'failed', sent_at: result.success ? new Date().toISOString() : null })
+        .eq('task_id', task.id);
+    if (deliveryUpdateError) console.error('Unable to record lifecycle delivery result:', deliveryUpdateError.message);
 
     return {
         success: result.success,
@@ -377,4 +403,13 @@ export async function executeLifecycleTask(
         emailId: result.success ? (result as any).id : undefined,
         error: result.success ? undefined : (result as any).error,
     };
+}
+
+function escapeHtml(value: string) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }

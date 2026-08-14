@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
+import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 
 const GUEST_BOOK_COLUMNS = 'id, guest_name, message, photo_url, created_at';
 
@@ -14,6 +15,9 @@ export async function GET(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
+        const { wedding, error: weddingError } = await resolvePublicWeddingByIdentifier(db, weddingId, 'id');
+        if (weddingError) throw weddingError;
+        if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
         const { data, error } = await db
             .from('guest_book')
             .select(GUEST_BOOK_COLUMNS)
@@ -49,12 +53,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const { data: wedding, error: weddingError } = await db
-            .from('weddings')
-            .select('id')
-            .eq('id', weddingId)
-            .is('deleted_at', null)
-            .maybeSingle();
+        const { wedding, error: weddingError } = await resolvePublicWeddingByIdentifier(db, weddingId, 'id');
 
         if (weddingError) throw weddingError;
         if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });

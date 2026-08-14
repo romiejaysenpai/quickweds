@@ -89,6 +89,7 @@ export default function SettingsPage() {
         method: 'DELETE',
         headers: {
           ...(sessionData.session?.access_token ? { Authorization: `Bearer ${sessionData.session.access_token}` } : {}),
+          'X-QuickWeds-Delete-Confirmation': 'DELETE',
         },
       });
       const data = await response.json();
