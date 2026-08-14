@@ -49,7 +49,7 @@ Make the audited RSVP and transactional-email concurrency paths safe through add
 - [x] Run `git diff --check`, typecheck, lint, and production build against the clean declared Next.js version.
 - [ ] Run migration and two-user RLS/storage tests on a disposable staging/local Supabase project.
 - [x] Run the complete 25-template, four-viewport matrix after the clean install.
-- [ ] Remove `NODE_TLS_REJECT_UNAUTHORIZED=0` from the runtime that injects it before deployment.
+- [x] Verify `NODE_TLS_REJECT_UNAUTHORIZED=0` is absent from Vercel production/preview/development and GitHub Actions CI configuration.
 
 ### Completion notes
 
@@ -57,7 +57,7 @@ Make the audited RSVP and transactional-email concurrency paths safe through add
 - Current changes: `20260815120000_add_rsvp_and_email_idempotency.sql` adds a nullable RSVP submission key with a partial unique index plus RLS-protected service-role delivery leases. RSVP, thank-you, and photo-reminder routes now use those primitives. `supabase/MIGRATIONS.md` documents the required schema-reconciliation gate.
 - Checks: PASS typecheck, clean-install lint (0 errors; 590 pre-existing warnings), production build on Next 16.3.0, full template matrix (5 Playwright tests), `npm audit --omit=dev` (0 production vulnerabilities), and diff whitespace check. `npm ci` exceeded the tool's 64-second foreground limit, but installed the declared Next 16.3.0 tree used by all subsequent checks.
 - Blocking verification: Docker is not installed, no staging Supabase project exists, and the one active QuickWeds project is not linked or confirmed as staging. Database migration execution, two-user RLS/storage tests, real auth, Resend, Stripe, OAuth, and webhooks remain intentionally unverified.
-- TLS: the unsafe setting exists only in this agent process, not the repository or user/machine environment. Read-only Vercel production/preview/development variable listings did not show variable names, so deployment/runtime injection still needs owner-side confirmation/removal before release.
+- TLS: the unsafe setting exists only in this agent process, not the repository or user/machine environment. It is absent from all linked Vercel environment-variable scopes, repository Actions variables/secrets, and `.github/workflows/verify.yml`; TLS verification was enabled in a clean validation process.
 - Branch/baseline: `codex/production-readiness-audit`, created from a clean `codex/loopsetup` worktree; no production data, migration, email, payment, or deployment action was performed.
 - Low-risk fixes made:
   1. Removed recipient addresses, subjects, and provider IDs from shared transactional-email logs (`src/lib/email.ts`).
