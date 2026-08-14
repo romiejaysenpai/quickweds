@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { sendEmail, getCollaboratorInviteHtml } from '@/lib/email';
 import { sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware } from '@/lib/rate-limit';
 import { FREE_PLAN_LIMITS, hasPlannerProAccess } from '@/lib/planner-limits';
 import { isKnownAdminEmail } from '@/lib/admin';
 
@@ -109,6 +110,10 @@ export async function POST(req: Request) {
     if (authError || !user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const rateLimit = createRateLimitMiddleware('EMAIL_RESEND');
+    const limited = await rateLimit.check(`${user.id}:collaborator-invite`);
+    if (limited.limited) return limited.response;
 
     try {
         const body = await req.json();

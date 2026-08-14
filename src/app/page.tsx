@@ -1412,10 +1412,7 @@ export default function Home() {
     if (!target) return;
 
     window.history.pushState(null, '', `#${sectionId}`);
-    const previousScrollBehavior = document.documentElement.style.scrollBehavior;
-    document.documentElement.style.scrollBehavior = 'auto';
-    target.scrollIntoView({ block: 'start' });
-    document.documentElement.style.scrollBehavior = previousScrollBehavior;
+    target.scrollIntoView({ behavior: 'auto', block: 'start' });
   };
   const openDemo = () => {
     setIsDemoOpen(true);

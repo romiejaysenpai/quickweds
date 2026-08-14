@@ -3,8 +3,11 @@ import { existsSync } from 'node:fs';
 
 const localChromeChannel = process.env.PLAYWRIGHT_CHANNEL
   || (process.platform === 'darwin' && existsSync('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome') ? 'chrome' : undefined);
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
-const webServerCommand = process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'npm run dev';
+// Keep test execution isolated from a developer's application server. A generic
+// port such as 3000 can belong to an unrelated workspace, in which case
+// Playwright would otherwise exercise the wrong application.
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100';
+const webServerCommand = process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'next dev -H 127.0.0.1 -p 3100';
 
 // Keep browser checks independent of a developer's .env.local and production
 // integrations. Tests mock browser requests and use the development-only
@@ -49,7 +52,7 @@ export default defineConfig({
     command: webServerCommand,
     env: e2eSafeEnv,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: process.env.PLAYWRIGHT_REUSE_EXISTING_SERVER === 'true',
     stdout: 'pipe',
     stderr: 'pipe',
   },

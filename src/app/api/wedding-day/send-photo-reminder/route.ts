@@ -6,7 +6,7 @@ import { getPhotoReminderEmailHtml } from '@/lib/photo-reminder-email';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getPublicAppUrl } from '@/lib/site-url';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
-import { sanitizeWeddingId } from '@/lib/rate-limit';
+import { createRateLimitMiddleware, sanitizeWeddingId } from '@/lib/rate-limit';
 import { getWeddingAccess } from '@/lib/wedding-access';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +29,10 @@ export async function POST(req: NextRequest) {
     try {
         const { user, error } = await getRequestUser(req);
         if (!user) return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+
+        const rateLimit = createRateLimitMiddleware('REMINDER_EMAIL');
+        const limited = await rateLimit.check(`${user.id}:${weddingId}:photo-reminder`);
+        if (limited.limited) return limited.response;
 
         const db = getSupabaseAdminClient() as any;
         const access = await getWeddingAccess(db, user, weddingId, {

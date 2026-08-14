@@ -35,16 +35,19 @@ export async function proxy(req: NextRequest) {
     }
 
     // Get hostname...
-    const hostname = req.headers
-        .get('host')!
-        .replace('.localhost:3000', `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site'}`);
+    const hostname = req.nextUrl.hostname.toLowerCase();
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site').toLowerCase();
 
     // Allow vercel preview URLs, localhost, and base domain
     if (
         hostname.includes('vercel.app') ||
         hostname.includes('vercel.pub') ||
-        hostname.includes('localhost') ||
-        hostname.endsWith(process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site')
+        hostname === 'localhost' ||
+        hostname.endsWith('.localhost') ||
+        hostname === '127.0.0.1' ||
+        hostname === '::1' ||
+        hostname === rootDomain ||
+        hostname.endsWith(`.${rootDomain}`)
     ) {
         return NextResponse.next();
     }

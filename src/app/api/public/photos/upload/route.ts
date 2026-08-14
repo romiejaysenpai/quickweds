@@ -126,11 +126,6 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        const reserved = await reservePhotoUpload(db, sharingCode.id, codeLimit);
-        if (!reserved) {
-            return NextResponse.json({ error: `This sharing code has reached its ${codeLimit}-photo limit.` }, { status: 403 });
-        }
-
         if (settings.disposable_camera_enabled) {
             const { count, error: countError } = await db
                 .from('wedding_photos')
@@ -143,6 +138,11 @@ export async function POST(req: NextRequest) {
             if (Number(count || 0) >= settings.photo_limit_per_guest) {
                 return NextResponse.json({ error: `You have reached the ${settings.photo_limit_per_guest}-photo limit for this roll.` }, { status: 403 });
             }
+        }
+
+        const reserved = await reservePhotoUpload(db, sharingCode.id, codeLimit);
+        if (!reserved) {
+            return NextResponse.json({ error: `This sharing code has reached its ${codeLimit}-photo limit.` }, { status: 403 });
         }
 
         const extension = EXTENSIONS[file.type] || 'jpg';
