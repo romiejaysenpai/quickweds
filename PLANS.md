@@ -1,54 +1,63 @@
 # QuickWeds implementation plans
 
-## Current active plan: production-readiness audit and stabilization
+## Current active plan: database reproducibility and delivery idempotency remediation
 
 ### Goal
 
-Establish an evidence-based production-readiness gate for QuickWeds: inspect every application surface, run all locally safe checks, correct reproducible low-risk defects, and document anything that needs credentials, staging data, or human approval.
+Make the audited RSVP and transactional-email concurrency paths safe through additive, source-controlled database changes, and establish the reliable path to reconcile the wider Supabase migration history without touching production.
 
 ### Current behavior
 
-- The repository is currently on `codex/production-readiness-audit`, created from clean branch `codex/loopsetup`.
-- Existing test, build, deployment, data, and service configuration have not yet been audited in this pass.
+- The repository is on `codex/production-readiness-audit`; audit commit `db5dbf7` is pushed in draft PR #4.
+- Public RSVP checks for a matching guest name and then inserts, which is not atomic.
+- Photo-reminder and other email flows send mail before writing a deduplication log, which permits duplicate sends under concurrent requests.
+- There are 33 root-level historical `supabase-*.sql` files but only seven ordered migrations. The accessible QuickWeds Supabase project is active but unlinked and not known to be staging; no safe staging project or local Supabase configuration exists.
 
 ### Scope
 
-- In: repository structure, dependencies, Next.js configuration, routes/server actions, Supabase migrations and RLS, storage, auth, payment, email, public site/RSVP paths, automated tests, build, static security checks, responsive/E2E coverage, and deployment configuration.
-- Out: production data mutation, destructive migrations, sending real customer email, production load testing, production deployment, and merging to `main`.
+- In: additive ordered migrations for RSVP submission keys and server-only email-delivery reservations; affected API routes; migration inventory/operating documentation; focused checks.
+- Out: applying migrations to any shared database, production/staging deployment, historical data rewrites, blanket conversion of conflicting legacy SQL, sending real email, Stripe/OAuth/storage changes, and merging to `main`.
 
 ### Proposed change
 
-1. Record a clean baseline; inspect application architecture, scripts, dependency health, Next.js guidance, environment requirements, and existing test coverage.
-2. Run type, lint, unit/integration, E2E, and production-build checks; investigate each failure to its root cause and apply the smallest compatible fix.
-3. Audit APIs, auth, data access, RLS/migrations, storage, payments, email, and public endpoints for ownership, validation, idempotency, rate limiting, secrets, and error handling.
-4. Exercise safe local critical journeys and responsive states; perform non-destructive concurrency and performance analysis.
-5. Re-run relevant checks, inspect the final diff, write this plan's evidence and remaining risks, commit the verified work, and prepare a PR-ready summary without merging or deploying.
+1. Inventory raw SQL and ordered migrations, marking legacy scripts non-deployable until an authoritative schema dump is captured from a disposable staging clone.
+2. Add backwards-compatible migrations: a nullable RSVP submission key with a partial unique index, plus an RLS-protected server-only email-delivery reservation table with narrowly granted RPCs.
+3. Update RSVP and affected email send routes to use these database invariants, mapping duplicate inserts to a safe conflict response and reserving a delivery before mailing.
+4. Add practical migration/RLS test scaffolding where it can run against a future staging/local Supabase instance; run available static/type/lint/build checks and inspect the final diff.
+5. Stop before any shared-database action. Request an explicit staging decision only for schema capture, migration application, and two-user RLS/storage/integration verification.
 
 ### Data, security, and compatibility review
 
-- Data model/migration: no changes planned unless a clearly verified additive, backward-compatible defect requires one.
-- RLS/grants: inspect every migration/policy and application query; do not weaken RLS or use service-role credentials in clients.
-- Auth/authorization: explicitly review tenant/wedding ownership for user, collaborator, guest, token, and public access paths.
-- Secrets/webhooks: scan tracked code/configuration only; secrets will never be printed. Verify Stripe/Resend/Supabase boundaries and webhook validation without invoking production services.
-- Public-site/template compatibility: public rendering, publishing, RSVP, upload, and cached paths will be inspected without altering existing wedding data.
-- Cache/invalidation: review configuration and public-site invalidation paths if present.
-- External effects: no real emails, payments, or production data mutations; any test requiring external credentials is documented as not verified.
+- Data model/migration: additive only. Existing RSVP rows remain `NULL` keyed and are neither altered nor deduplicated. New reservations are isolated in a new table. Migrations must deploy before route changes.
+- RLS/grants: reservation table enables RLS, has no `anon`/`authenticated` policies or grants, and exposes execution only to `service_role`; no browser receives a privileged credential.
+- Auth/authorization: public RSVP remains intentionally server mediated. Reminder sends retain wedding-management authorization before reservation/delivery.
+- Secrets/webhooks: Resend remains server-side; new reservation data stores the selected RSVP identifier, not a recipient address.
+- Public-site/template compatibility: no builder, template, or published-site field is changed.
+- Cache/invalidation: RSVP counters invalidate only after a successful insert.
+- External effects: no real email or shared-database change occurs in this branch. Future staging checks must use safe test recipients.
 
 ### Risks and rollback
 
-- This is an intentionally broad audit; untestable external integrations and production-only controls cannot be represented as verified by local checks.
-- Every code change will remain small, reversible, and isolated on this branch; no production deployment or merge is authorized.
+- The partial RSVP index protects new submissions but cannot repair historic duplicates; do not backfill without reviewed data analysis.
+- Function/RLS behavior cannot be verified until a disposable staging/local Supabase instance has an authoritative schema baseline.
+- Root SQL remains historically conflicting. Do not run it wholesale; capture schema state, generate/review an ordered baseline, then archive or relocate it in a separate reconciliation change.
 
 ### Verification
 
-- [x] Inspect routes, database/RLS, external integrations, environment contracts, and existing test coverage.
-- [x] Run `npm run typecheck`, `npm run lint`, focused E2E groups, `npm run build`, and `git diff --check`.
-- [x] Perform safe local API/auth/public journey and responsive verification where the environment supports it.
-- [x] Review final diff, dependency/security findings, performance/concurrency analysis, and deployment configuration.
+- [x] Inspect exact RSVP/email route and schema dependencies.
+- [x] Add and review ordered additive migration(s), including grants/RLS/function search paths.
+- [x] Run `git diff --check`, typecheck, lint, and production build against the clean declared Next.js version.
+- [ ] Run migration and two-user RLS/storage tests on a disposable staging/local Supabase project.
+- [x] Run the complete 25-template, four-viewport matrix after the clean install.
+- [ ] Remove `NODE_TLS_REJECT_UNAUTHORIZED=0` from the runtime that injects it before deployment.
 
 ### Completion notes
 
-- Result: completed with production blockers documented; do not deploy until the database/RLS and external-service gate is completed in a safe staging environment.
+- Result: source remediation complete and awaiting staging verification. No shared Supabase project was linked or altered.
+- Current changes: `20260815120000_add_rsvp_and_email_idempotency.sql` adds a nullable RSVP submission key with a partial unique index plus RLS-protected service-role delivery leases. RSVP, thank-you, and photo-reminder routes now use those primitives. `supabase/MIGRATIONS.md` documents the required schema-reconciliation gate.
+- Checks: PASS typecheck, clean-install lint (0 errors; 590 pre-existing warnings), production build on Next 16.3.0, full template matrix (5 Playwright tests), `npm audit --omit=dev` (0 production vulnerabilities), and diff whitespace check. `npm ci` exceeded the tool's 64-second foreground limit, but installed the declared Next 16.3.0 tree used by all subsequent checks.
+- Blocking verification: Docker is not installed, no staging Supabase project exists, and the one active QuickWeds project is not linked or confirmed as staging. Database migration execution, two-user RLS/storage tests, real auth, Resend, Stripe, OAuth, and webhooks remain intentionally unverified.
+- TLS: the unsafe setting exists only in this agent process, not the repository or user/machine environment. Read-only Vercel production/preview/development variable listings did not show variable names, so deployment/runtime injection still needs owner-side confirmation/removal before release.
 - Branch/baseline: `codex/production-readiness-audit`, created from a clean `codex/loopsetup` worktree; no production data, migration, email, payment, or deployment action was performed.
 - Low-risk fixes made:
   1. Removed recipient addresses, subjects, and provider IDs from shared transactional-email logs (`src/lib/email.ts`).

@@ -18,6 +18,7 @@ import {
     normalizeThankYouPayload,
     sanitizeThankYouWeddingId,
 } from '@/lib/thank-you-server';
+import { claimEmailDelivery, completeEmailDelivery, EMAIL_DELIVERY_TYPES } from '@/lib/database-idempotency';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,6 +90,17 @@ export async function POST(req: NextRequest) {
         const emailErrors: string[] = [];
 
         for (const guest of targets) {
+            const leaseToken = await claimEmailDelivery(db, {
+                weddingId,
+                deliveryType: EMAIL_DELIVERY_TYPES.thankYou,
+                recipientKey: guest.id,
+            });
+
+            if (!leaseToken) {
+                duplicateRaces += 1;
+                continue;
+            }
+
             const html = getThankYouNoteHtml({
                 recipientName: guest.guest_name,
                 brideName: wedding.bride_name,
@@ -105,6 +117,18 @@ export async function POST(req: NextRequest) {
                 to: guest.guest_email,
                 subject: payload.subject,
                 html,
+            });
+
+            // Complete the lease before legacy logging. If the process crashes after
+            // Resend accepts mail, the active lease prevents a concurrent retry from
+            // issuing the same delivery while the result is being reconciled.
+            await completeEmailDelivery(db, {
+                weddingId,
+                deliveryType: EMAIL_DELIVERY_TYPES.thankYou,
+                recipientKey: guest.id,
+                leaseToken,
+                succeeded: result.success,
+                providerMessageId: result.success ? result.id : null,
             });
 
             try {
@@ -140,7 +164,7 @@ export async function POST(req: NextRequest) {
         await logPlannerEmailEvent(db, {
             weddingId,
             eventType: 'thank_you',
-            recipientCount: targets.length,
+            recipientCount: sent + failed,
             successCount: sent,
             userId: user.id,
         });

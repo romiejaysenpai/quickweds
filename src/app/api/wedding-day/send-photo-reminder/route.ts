@@ -8,6 +8,7 @@ import { getPublicAppUrl } from '@/lib/site-url';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 import { createRateLimitMiddleware, sanitizeWeddingId } from '@/lib/rate-limit';
 import { getWeddingAccess } from '@/lib/wedding-access';
+import { claimEmailDelivery, completeEmailDelivery, EMAIL_DELIVERY_TYPES } from '@/lib/database-idempotency';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,6 +91,17 @@ export async function POST(req: NextRequest) {
                 continue;
             }
 
+            const leaseToken = await claimEmailDelivery(db, {
+                weddingId,
+                deliveryType: EMAIL_DELIVERY_TYPES.photoUploadReminder,
+                recipientKey: rsvp.id,
+            });
+
+            if (!leaseToken) {
+                skipped += 1;
+                continue;
+            }
+
             const result = await sendEmail({
                 to: email,
                 subject: `Share your photos from ${coupleName}'s wedding`,
@@ -99,6 +111,17 @@ export async function POST(req: NextRequest) {
                     photoUploadUrl: uploadUrl,
                     weddingDate: access.wedding.wedding_date,
                 }),
+            });
+
+            // Persist the outcome before writing the user-facing automation log so
+            // an overlapping request cannot send the same email during log writes.
+            await completeEmailDelivery(db, {
+                weddingId,
+                deliveryType: EMAIL_DELIVERY_TYPES.photoUploadReminder,
+                recipientKey: rsvp.id,
+                leaseToken,
+                succeeded: result.success,
+                providerMessageId: result.success ? result.id : null,
             });
 
             const status = result.success ? 'sent' : 'failed';

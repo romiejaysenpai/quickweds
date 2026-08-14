@@ -6,6 +6,7 @@ import { sendRsvpNotifications } from '@/lib/rsvp-notifications';
 import { isMissingPublicSlugColumnError } from '@/lib/wedding-slugs';
 import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 import { makeGuestCode, makeSeatLookupToken } from '@/lib/seat-finder';
+import { createRsvpSubmissionKey } from '@/lib/database-idempotency';
 
 function getPrimaryPlusOneName(raw: string) {
     const [firstName] = raw
@@ -13,6 +14,11 @@ function getPrimaryPlusOneName(raw: string) {
         .map((name) => name.trim())
         .filter(Boolean);
     return firstName || '';
+}
+
+function isUniqueViolation(error: unknown) {
+    const record = error as { code?: string; message?: string };
+    return record?.code === '23505' || String(record?.message || '').toLowerCase().includes('duplicate key');
 }
 
 export async function POST(req: NextRequest) {
@@ -89,6 +95,7 @@ export async function POST(req: NextRequest) {
             wedding_id: weddingId,
             guest_name: guestName,
             guest_email: guestEmail || null,
+            submission_key: createRsvpSubmissionKey(weddingId, guestName),
             attendance: parsed.data.attendance,
             num_guests: parsed.data.numGuests || 1,
             rsvp_status: parsed.data.attendance === 'Yes' ? 'confirmed' : 'declined',
@@ -142,7 +149,15 @@ export async function POST(req: NextRequest) {
             insertError = fallbackInsert.error;
         }
 
-        if (insertError) throw insertError;
+        if (insertError) {
+            if (isUniqueViolation(insertError)) {
+                return NextResponse.json({
+                    error: "You have already RSVP'd for this wedding. If you need to make changes, please contact the couple directly.",
+                    code: 'duplicate_rsvp',
+                }, { status: 409 });
+            }
+            throw insertError;
+        }
         await invalidateDashboardCounters(weddingId);
 
         const notifications = await sendRsvpNotifications(db, {
