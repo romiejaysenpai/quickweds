@@ -1,10 +1,10 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle, Download, Lock, Play } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AttireIllustration from './AttireIllustration';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import GenerationLoading from './GenerationLoading';
@@ -12,9 +12,7 @@ import LoadingState from './ui/LoadingState';
 import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
-import MarketplacePanel from './builder/MarketplacePanel';
 import { MONOGRAM_SHAPES, MONOGRAM_ANIMATIONS, MonogramMark } from './MonogramMark';
-import { MonogramExporter } from './MonogramExporter';
 import DecorativeLayer from './DecorativeLayer';
 import { useLocalUndoRedo } from '@/components/UndoRedoProvider';
 import { hasAccountPro } from '@/lib/account';
@@ -49,7 +47,6 @@ import {
     getEntourageCardTheme,
     type EntourageProposalTemplateKey,
 } from '@/lib/entourage-proposal-templates';
-import { EntourageProposalCustomizerSection } from './EntourageProposalCustomizerSection';
 import {
     evaluateWeddingPublishHealth,
     type WeddingPublishHealthSummary,
@@ -57,6 +54,11 @@ import {
 import { parseDressCodeValue, serializeDressCodeValue } from '@/lib/dress-code';
 import { getSafeMonogramConfig } from '@/lib/monogram';
 import { createMonogramWebm, downloadMonogramImage, requestMonogramMp4 } from '@/lib/monogram-export';
+
+const AttireIllustration = dynamic(() => import('./AttireIllustration'), { ssr: false });
+const MarketplacePanel = dynamic(() => import('./builder/MarketplacePanel'), { ssr: false });
+const MonogramExporter = dynamic(() => import('./MonogramExporter').then(m => m.MonogramExporter), { ssr: false });
+const EntourageProposalCustomizerSection = dynamic(() => import('./EntourageProposalCustomizerSection').then(m => m.EntourageProposalCustomizerSection), { ssr: false });
 
 // Helper component for collapsible sections
 const Collapsible = memo(function Collapsible({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) {

@@ -15,6 +15,25 @@ export const config = {
     ],
 };
 
+type DomainCacheEntry = {
+    weddingId: string | null;
+    expiresAt: number;
+};
+
+const domainCache = new Map<string, DomainCacheEntry>();
+const MAX_DOMAIN_CACHE_SIZE = 500;
+
+function setDomainCache(hostname: string, weddingId: string | null, ttlMs: number) {
+    if (domainCache.size >= MAX_DOMAIN_CACHE_SIZE) {
+        const firstKey = domainCache.keys().next().value;
+        if (firstKey) domainCache.delete(firstKey);
+    }
+    domainCache.set(hostname, {
+        weddingId,
+        expiresAt: Date.now() + ttlMs,
+    });
+}
+
 export async function proxy(req: NextRequest) {
     const url = req.nextUrl;
     const path = url.pathname;
@@ -53,7 +72,17 @@ export async function proxy(req: NextRequest) {
     }
 
     // It is a custom domain requested!
-    // Query Supabase directly from Edge using REST API
+    // Query Supabase directly from Edge using REST API with edge in-memory caching
+    const cached = domainCache.get(hostname);
+    const now = Date.now();
+
+    if (cached && cached.expiresAt > now) {
+        if (cached.weddingId) {
+            return NextResponse.rewrite(new URL(`/w/${cached.weddingId}`, req.url));
+        }
+        return NextResponse.next();
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -67,13 +96,16 @@ export async function proxy(req: NextRequest) {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ p_domain: hostname }),
-                cache: 'no-store',
             });
             const data = await res.json();
             if (data && data.length > 0) {
                 const weddingId = data[0].id;
-                // Rewrite to the dynamically generated wedding page
+                // Cache valid domain mapping for 5 minutes
+                setDomainCache(hostname, weddingId, 5 * 60 * 1000);
                 return NextResponse.rewrite(new URL(`/w/${weddingId}`, req.url));
+            } else {
+                // Negative cache for 60 seconds to mitigate repeated misses
+                setDomainCache(hostname, null, 60 * 1000);
             }
         } catch (e) {
             console.error('Error fetching custom domain mapping from Supabase:', e);

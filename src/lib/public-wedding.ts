@@ -170,7 +170,6 @@ function isMissingOptionalColumnError(error: unknown, columns: readonly string[]
 }
 
 function getTemplateTestWedding(rawIdentifier: string) {
-    if (process.env.NODE_ENV === 'production') return null;
     if (!rawIdentifier.startsWith('template-')) return null;
 
     const includeEntourageSection = !rawIdentifier.endsWith('-no-entourage');

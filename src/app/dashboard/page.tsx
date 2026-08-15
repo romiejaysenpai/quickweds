@@ -471,6 +471,8 @@ export default function DashboardRedirect() {
     const freeWebsiteLimitReached = !accountIsPro && weddings.length >= 3;
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
+    const DASHBOARD_SELECT_FIELDS = 'id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, hero_image, motif_color, template, is_thank_you_mode, rsvp_deadline, created_at';
+
     const fetchWeddings = useCallback(async (): Promise<{ owned: any[]; shared: any[] }> => {
         if (!user) {
             setFetching(false);
@@ -481,7 +483,7 @@ export default function DashboardRedirect() {
         try {
             let { data, error } = await supabase
                 .from('weddings')
-                .select('*, rsvps(id)')
+                .select(`${DASHBOARD_SELECT_FIELDS}, rsvps(id)`)
                 .eq('user_id', user.id)
                 .is('deleted_at', null)
                 .order('created_at', { ascending: false });
@@ -490,7 +492,7 @@ export default function DashboardRedirect() {
                 console.warn('Dashboard wedding query failed; retrying without RSVP relation:', error);
                 const fallback = await supabase
                     .from('weddings')
-                    .select('*')
+                    .select(DASHBOARD_SELECT_FIELDS)
                     .eq('user_id', user.id)
                     .is('deleted_at', null)
                     .order('created_at', { ascending: false });
