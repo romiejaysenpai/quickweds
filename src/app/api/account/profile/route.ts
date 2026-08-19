@@ -115,7 +115,30 @@ export async function PATCH(req: NextRequest) {
         const hasAccountType = Object.prototype.hasOwnProperty.call(body, 'account_type');
         const hasOnboardingCompleted = Object.prototype.hasOwnProperty.call(body, 'onboarding_completed');
 
-        if (!hasAccountType && !hasOnboardingCompleted) {
+        const allowedSurveyKeys = [
+            'wedding_date',
+            'wedding_date_status',
+            'wedding_country',
+            'wedding_city',
+            'planning_stage',
+            'primary_needs',
+            'estimated_guest_count',
+            'user_role',
+            'acquisition_source',
+            'onboarding_completed_at',
+            'onboarding_draft',
+        ] as const;
+
+        const surveyUpdates: Record<string, any> = {};
+        for (const key of allowedSurveyKeys) {
+            if (Object.prototype.hasOwnProperty.call(body, key)) {
+                surveyUpdates[key] = body[key];
+            }
+        }
+
+        const hasSurveyUpdates = Object.keys(surveyUpdates).length > 0;
+
+        if (!hasAccountType && !hasOnboardingCompleted && !hasSurveyUpdates) {
             return NextResponse.json({ error: 'No profile updates were provided.' }, { status: 400 });
         }
 
@@ -149,6 +172,7 @@ export async function PATCH(req: NextRequest) {
             updated_at: new Date().toISOString(),
             ...(hasAccountType ? { account_type: accountType } : {}),
             ...(hasOnboardingCompleted ? { onboarding_completed: body.onboarding_completed } : {}),
+            ...surveyUpdates,
         } as Partial<AccountProfile> & { user_id: string; updated_at: string };
 
         const { data, error: upsertError } = await db

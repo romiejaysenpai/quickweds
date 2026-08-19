@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -14,6 +14,7 @@ import { getCachedSession } from '@/lib/session-cache';
 import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate, getEntourageCardTheme } from '@/lib/entourage-proposal-templates';
 import { EntourageProposalCustomizerSection } from '@/components/EntourageProposalCustomizerSection';
 import LoadingState from '@/components/ui/LoadingState';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
     loading: () => <LoadingState variant="panel" label="Loading seating chart…" className="min-h-[320px]" />,
@@ -527,114 +528,179 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            {/* Top Navigation Bar */}
-            <div className="bg-white/80 dark:bg-white/90 backdrop-blur-md border-b border-border sticky top-0 z-40 overflow-hidden">
-                <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
-                    <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-                        <button onClick={() => router.push(`/dashboard/${weddingId}`)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]">
-                            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
-                        </button>
-                        <div className="min-w-0">
-                            <h1 className="text-base sm:text-lg md:text-xl font-serif font-bold text-foreground truncate">Wedding Planner</h1>
+        <DashboardShell
+            weddingId={weddingId}
+            weddingTitle={wedding?.couple_name || (wedding?.bride_name && wedding?.groom_name ? `${wedding.bride_name} & ${wedding.groom_name}` : undefined)}
+            weddingSlug={wedding?.public_slug}
+        >
+            <div className="min-h-screen bg-background">
+                {/* Top Navigation Bar with Breadcrumbs */}
+                <div className="bg-white/85 dark:bg-white/90 backdrop-blur-md border-b border-border sticky top-0 z-40">
+                    <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                            <button
+                                onClick={() => router.push(`/dashboard/${weddingId}`)}
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 border border-border/80"
+                                title="Back to Workspace"
+                            >
+                                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
+                            </button>
+                            <div className="min-w-0">
+                                <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-text-secondary">
+                                    <Link href="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+                                    <span>/</span>
+                                    <Link href={`/dashboard/${weddingId}`} className="hover:text-primary transition-colors truncate max-w-[140px] md:max-w-[200px]">
+                                        {wedding?.couple_name || (wedding?.bride_name && wedding?.groom_name ? `${wedding.bride_name} & ${wedding.groom_name}` : 'Workspace')}
+                                    </Link>
+                                    <span>/</span>
+                                    <span className="text-foreground">Planner Suite</span>
+                                </div>
+                                <h1 className="text-base sm:text-lg md:text-xl font-serif font-bold text-foreground truncate sm:hidden">Wedding Planner</h1>
+                            </div>
                         </div>
-                    </div>
-                    {/* Home button (go to QuickWeds landing) */}
-                    <Link href="/" className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-neutral text-foreground text-sm font-bold border border-border hover:bg-neutral-hover transition-all min-h-[44px]">
-                        <Home className="w-4 h-4" />
-                        <span>Home</span>
-                    </Link>
-                    {/* Mobile home icon */}
-                    <Link href="/" className="sm:hidden w-9 h-9 rounded-full hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]" aria-label="Home">
-                        <Home className="w-5 h-5 text-text-secondary" />
-                    </Link>
-                </div>
-            </div>
 
-            <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-6">
-                {/* Sidebar - Mobile: Grid, Desktop: Vertical stack */}
-                <div className="w-full md:w-56 lg:w-64 shrink-0">
-                    <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl p-2 sm:p-4 md:p-6 soft-shadow border border-border sticky top-20 md:top-24 flex-shrink-0">
-                        <div className="grid grid-cols-3 md:flex md:flex-col gap-2 md:gap-2">
-                            {PLANNER_TAB_DETAILS.map((tab) => {
-                                const Icon = tab.icon;
-                                const isActive = activeTab === tab.tab;
-
-                                return (
-                                    <button
-                                        key={tab.tab}
-                                        onClick={() => setActiveTab(tab.tab)}
-                                        className={`relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${
-                                            isActive
-                                                ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
-                                                : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'
-                                        }`}
-                                    >
-                                        {!hasPlannerPro && tab.tab === 'thanks' && (
-                                            <span className={`absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full md:static md:h-auto md:w-auto md:rounded-none md:bg-transparent ${
-                                                isActive ? 'bg-white/20 md:text-white' : 'bg-primary/10 text-primary'
-                                            }`}>
-                                                <LockKeyhole className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
-                                            </span>
-                                        )}
-                                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                        <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">{tab.label}</span>
-                                        {!hasPlannerPro && tab.tab === 'thanks' && (
-                                            <span className={`hidden md:inline-flex ml-auto rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
-                                                isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                                            }`}>
-                                                Pro
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                            <Link href={`/dashboard/${weddingId}/wedding-day?from=planner`} title="Open Wedding Day Mode" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground">
-                                <ClipboardCheck className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Wedding Day</span>
-                            </Link>
-                            <Link href={`/dashboard/${weddingId}/qr-kit?from=planner`} title="Open QR Kit" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground">
-                                <QrCode className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">QR Kit</span>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content Area */}
-                <div className="flex-1 min-w-0 overflow-x-hidden">
-                    {!hasPlannerPro && activeTab === 'thanks' ? (
-                        <LockedPlannerFeature
-                            activeTab={activeTab}
-                            accessRole={accessRole}
-                            weddingId={weddingId}
-                            onSelectTab={setActiveTab}
-                        />
-                    ) : (
-                        <>
-                            <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
-                            {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={loadPlannerData} />}
-                            {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={loadPlannerData} />}
-                            {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} hasPlannerPro={hasPlannerPro} />}
-                            {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
-                            {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'seating' && (
-                                <SeatingChartBuilder
-                                    weddingId={weddingId}
-                                    hasPlannerPro={hasPlannerPro}
-                                    initialPublicSeatFinderToken={wedding?.public_seat_finder_token || ''}
-                                    initialSeatFinderEnabled={wedding?.seat_finder_enabled !== false && Boolean(wedding?.public_seat_finder_token)}
-                                />
+                        <div className="flex items-center gap-2">
+                            {wedding?.public_slug && (
+                                <Link
+                                    href={`/w/${wedding.public_slug}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/20 bg-primary/5 text-primary text-xs font-bold hover:bg-primary/10 transition-colors"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>Guest View</span>
+                                </Link>
                             )}
-                            {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
-                            {activeTab === 'thanks' && <ThankYouPlannerLauncher weddingId={weddingId} confirmedGuests={confirmedGuests} />}
-                            {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
-                        </>
-                    )}
+                            <Link href="/" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral text-foreground text-xs font-bold border border-border hover:bg-neutral-hover transition-all min-h-[36px]">
+                                <Home className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Landing</span>
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* Desktop Horizontal Segmented Tab Bar */}
+                    <div className="hidden md:block border-t border-border/60 bg-white/70 backdrop-blur-xs px-3 sm:px-6">
+                        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto py-2 no-scrollbar">
+                            <div className="flex items-center gap-1.5">
+                                {PLANNER_TAB_DETAILS.map((tab) => {
+                                    const Icon = tab.icon;
+                                    const isActive = activeTab === tab.tab;
+
+                                    return (
+                                        <button
+                                            key={tab.tab}
+                                            onClick={() => setActiveTab(tab.tab)}
+                                            className={`relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                                isActive
+                                                    ? 'bg-primary text-white shadow-md shadow-primary/25 scale-[1.02]'
+                                                    : 'text-text-secondary hover:bg-neutral/80 hover:text-foreground'
+                                            }`}
+                                        >
+                                            <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                                            <span>{tab.label}</span>
+                                            {!hasPlannerPro && tab.tab === 'thanks' && (
+                                                <span className={`rounded-full px-1.5 py-0.2 text-[8px] font-black uppercase tracking-wider ${
+                                                    isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                                                }`}>
+                                                    Pro
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex items-center gap-2 pl-4 border-l border-border/80">
+                                <Link
+                                    href={`/dashboard/${weddingId}/wedding-day?from=planner`}
+                                    title="Open Wedding Day Mode"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-text-secondary hover:bg-neutral hover:text-primary transition-colors whitespace-nowrap"
+                                >
+                                    <ClipboardCheck className="w-3.5 h-3.5 text-primary" />
+                                    <span>Wedding Day</span>
+                                </Link>
+                                <Link
+                                    href={`/dashboard/${weddingId}/qr-kit?from=planner`}
+                                    title="Open QR Kit"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-text-secondary hover:bg-neutral hover:text-primary transition-colors whitespace-nowrap"
+                                >
+                                    <QrCode className="w-3.5 h-3.5 text-primary" />
+                                    <span>QR Kit</span>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Tab Grid Bar */}
+                <div className="md:hidden max-w-7xl mx-auto px-3 pt-4">
+                    <div className="bg-white rounded-2xl p-2.5 soft-shadow border border-border grid grid-cols-3 gap-1.5">
+                        {PLANNER_TAB_DETAILS.map((tab) => {
+                            const Icon = tab.icon;
+                            const isActive = activeTab === tab.tab;
+
+                            return (
+                                <button
+                                    key={tab.tab}
+                                    onClick={() => setActiveTab(tab.tab)}
+                                    className={`relative flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl font-bold transition-all min-h-[44px] ${
+                                        isActive
+                                            ? 'bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]'
+                                            : 'text-text-secondary hover:bg-neutral hover:text-foreground'
+                                    }`}
+                                >
+                                    <Icon className="w-4 h-4 flex-shrink-0" />
+                                    <span className="text-[10px] text-center">{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                        <Link href={`/dashboard/${weddingId}/wedding-day?from=planner`} className="flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral hover:text-foreground">
+                            <ClipboardCheck className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-[10px] text-center">Wedding Day</span>
+                        </Link>
+                        <Link href={`/dashboard/${weddingId}/qr-kit?from=planner`} className="flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral hover:text-foreground">
+                            <QrCode className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-[10px] text-center">QR Kit</span>
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 md:py-8">
+                    {/* Main Content Area */}
+                    <div className="w-full min-w-0">
+                        {!hasPlannerPro && activeTab === 'thanks' ? (
+                            <LockedPlannerFeature
+                                activeTab={activeTab}
+                                accessRole={accessRole}
+                                weddingId={weddingId}
+                                onSelectTab={setActiveTab}
+                            />
+                        ) : (
+                            <>
+                                <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
+                                {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={loadPlannerData} />}
+                                {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={loadPlannerData} />}
+                                {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} hasPlannerPro={hasPlannerPro} />}
+                                {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                                {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
+                                {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                                {activeTab === 'seating' && (
+                                    <SeatingChartBuilder
+                                        weddingId={weddingId}
+                                        hasPlannerPro={hasPlannerPro}
+                                        initialPublicSeatFinderToken={wedding?.public_seat_finder_token || ''}
+                                        initialSeatFinderEnabled={wedding?.seat_finder_enabled !== false && Boolean(wedding?.public_seat_finder_token)}
+                                    />
+                                )}
+                                {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
+                                {activeTab === 'thanks' && <ThankYouPlannerLauncher weddingId={weddingId} confirmedGuests={confirmedGuests} />}
+                                {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+        </DashboardShell>
     );
 }
 

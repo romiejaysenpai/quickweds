@@ -109,7 +109,7 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
                             variants={itemVariants}
                             className="text-lg sm:text-xl md:text-2xl font-serif italic tracking-wide mb-8"
                         >
-                            {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                            {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                         </motion.p>
 
                         <motion.div variants={itemVariants}>
@@ -195,7 +195,7 @@ export function ClassicV2({ wedding, gallery, isExpired }: TemplateProps) {
                     </h1>
                     <div className="w-16 h-0.5 mb-6" style={{ backgroundColor: motifColor }} />
                     <p className="text-lg sm:text-xl font-sans tracking-wide text-foreground/80 mb-2">
-                        {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'full' })}
+                        {new Date(wedding.wedding_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
                     <p className="text-sm font-sans text-text-secondary uppercase tracking-widest mb-8">
                         {wedding.venue_name} • {wedding.venue_address || 'Ceremony Location'}
@@ -278,7 +278,7 @@ export function ClassicV3({ wedding, gallery, isExpired }: TemplateProps) {
                     </h1>
                     <div className="w-12 h-1 bg-primary/40 rounded-full mx-auto mb-6" />
                     <p className="text-lg font-serif italic mb-2">
-                        {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'full' })}
+                        {new Date(wedding.wedding_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
                     <p className="text-xs uppercase tracking-widest text-text-secondary mb-8">
                         {wedding.venue_name}
@@ -338,7 +338,7 @@ export function ClassicV4({ wedding, gallery, isExpired }: TemplateProps) {
                         {wedding.bride_name} <span className="font-light italic lowercase font-serif text-3xl sm:text-5xl text-primary">&</span> {wedding.groom_name}
                     </h1>
                     <p className="text-xs uppercase tracking-[0.4em] font-bold text-text-secondary">
-                        {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'long' })} • {wedding.venue_name}
+                        {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • {wedding.venue_name}
                     </p>
                 </div>
 
@@ -419,7 +419,7 @@ export function ClassicV5({ wedding, gallery, isExpired }: TemplateProps) {
                 </h1>
                 <div className="max-w-md mx-auto p-6 rounded-2xl bg-white shadow-sm border border-border/50 mb-8">
                     <p className="text-sm font-semibold uppercase tracking-wider text-text-secondary mb-1">
-                        {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'full' })}
+                        {new Date(wedding.wedding_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
                     <p className="text-xs text-text-secondary/80">{wedding.venue_name}</p>
                 </div>

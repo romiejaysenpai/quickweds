@@ -14,8 +14,18 @@ import {
     FAQSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
+import type { TemplateProps } from '@/types/wedding';
 
-export default function SakuraTemplate({ wedding, gallery, isExpired }: any) {
+const sakuraPetals = [
+    { id: 1, left: '10%', duration: 12, delay: 0 },
+    { id: 2, left: '25%', duration: 15, delay: 2 },
+    { id: 3, left: '45%', duration: 14, delay: 4 },
+    { id: 4, left: '65%', duration: 16, delay: 1 },
+    { id: 5, left: '85%', duration: 13, delay: 3 },
+    { id: 6, left: '95%', duration: 18, delay: 5 },
+];
+
+export default function SakuraTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     const formattedDate = new Date(wedding.wedding_date).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
@@ -23,56 +33,94 @@ export default function SakuraTemplate({ wedding, gallery, isExpired }: any) {
     });
 
     return (
-        <div className="bg-[#fff0f5] text-[#8e405a] relative font-serif pb-24 selection:bg-[#ffb7c5] selection:text-white">
+        <div className="bg-[#fff0f5] text-[#8e405a] relative font-serif pb-24 selection:bg-[#ffb7c5] selection:text-white overflow-hidden">
             {/* Sakura Petal Background Overlay */}
             <div className="fixed inset-0 pointer-events-none opacity-30 z-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-pink-200/40 via-transparent to-pink-50" />
 
-            <section className="min-h-screen py-20 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative overflow-hidden">
+            {/* Drifting Sakura Petals Animation */}
+            <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
+                {sakuraPetals.map((p) => (
+                    <motion.div
+                        key={p.id}
+                        initial={{ y: -50, x: 0, rotate: 0, opacity: 0 }}
+                        animate={{
+                            y: '105vh',
+                            x: [0, 30, -20, 15, 0],
+                            rotate: [0, 90, 180, 270, 360],
+                            opacity: [0, 0.7, 0.7, 0.4, 0]
+                        }}
+                        transition={{
+                            duration: p.duration,
+                            repeat: Infinity,
+                            delay: p.delay,
+                            ease: 'linear'
+                        }}
+                        className="absolute text-pink-300 text-lg sm:text-xl select-none"
+                        style={{ left: p.left }}
+                    >
+                        🌸
+                    </motion.div>
+                ))}
+            </div>
+
+            <section className="min-h-screen py-20 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative z-10">
                 <div className="w-72 h-72 bg-gradient-to-br from-pink-300/30 to-transparent rounded-full absolute -top-24 -left-24 blur-3xl pointer-events-none" />
                 <div className="w-64 h-64 bg-gradient-to-tl from-rose-200/40 to-transparent rounded-full absolute bottom-0 right-0 blur-3xl pointer-events-none" />
 
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.94 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1 }}
-                    className="relative z-10 bg-white/70 backdrop-blur-md p-8 sm:p-14 md:p-20 rounded-[3.5rem] border border-white/80 max-w-4xl shadow-[0_20px_70px_rgba(255,183,197,0.3)] space-y-6"
+                    initial={{ opacity: 0, scale: 0.94, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+                    className="relative z-10 bg-white/80 backdrop-blur-xl p-8 sm:p-14 md:p-20 rounded-[3.5rem] border border-white max-w-4xl shadow-[0_20px_70px_rgba(255,183,197,0.35)] space-y-6"
                 >
-                    <div className="text-3xl opacity-80">🌸</div>
+                    <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-pink-100/80 text-pink-700 text-xs uppercase tracking-[0.35em] font-sans font-bold">
+                        <span>🌸 Spring Blossom Union</span>
+                    </div>
 
-                    <p className="font-serif italic text-lg sm:text-xl text-[#8e405a]/70">
-                        Spring Blossom Union
-                    </p>
-
-                    <h1 className="text-4xl sm:text-6xl md:text-8xl font-serif text-[#8e405a] leading-none">
+                    <h1 className="text-4xl sm:text-6xl md:text-8xl font-serif text-[#8e405a] leading-tight">
                         {wedding.bride_name}
-                        <span className="block text-xl sm:text-2xl font-sans font-light uppercase tracking-widest text-[#8e405a]/50 my-3">and</span>
+                        <span className="block text-xl sm:text-2xl font-sans font-light uppercase tracking-widest text-[#8e405a]/50 my-2">and</span>
                         {wedding.groom_name}
                     </h1>
 
-                    <div className="inline-block border-y border-[#8e405a]/25 py-3 px-8 my-4">
+                    <div className="inline-block border-y border-[#8e405a]/25 py-3 px-8 my-2">
                         <p className="font-sans text-xs uppercase tracking-[0.35em] text-[#8e405a] font-bold">
                             {formattedDate} • {wedding.venue_name}
                         </p>
                     </div>
 
-                    <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-white shadow-xl mx-auto relative">
-                        <Image
-                            src={wedding.couple_photo || wedding.hero_image || '/logo.png'}
-                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                            priority
-                            fill
-                            sizes="200px"
-                            className="object-cover"
-                        />
-                    </div>
+                    {(wedding.couple_photo || wedding.hero_image) && (
+                        <div className="w-44 h-44 sm:w-52 sm:h-52 rounded-full overflow-hidden border-4 border-white shadow-xl mx-auto relative p-1 bg-pink-100">
+                            <div className="w-full h-full rounded-full overflow-hidden relative">
+                                <Image
+                                    src={wedding.couple_photo || wedding.hero_image || '/logo.png'}
+                                    alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                                    priority
+                                    fill
+                                    sizes="220px"
+                                    className="object-cover"
+                                />
+                            </div>
+                        </div>
+                    )}
 
-                    <div className="pt-4">
+                    <p className="text-sm sm:text-base italic leading-relaxed text-[#8e405a]/80 max-w-lg mx-auto">
+                        {wedding.story || 'Like cherry blossoms celebrating spring, we invite you to share in the joy and beauty of our union.'}
+                    </p>
+
+                    <div className="pt-4 flex flex-wrap gap-4 justify-center">
                         <a
                             href="#rsvp"
                             aria-label="RSVP"
-                            className="px-10 py-4 inline-flex items-center justify-center bg-gradient-to-r from-[#ffb7c5] to-[#ff9eb0] text-white rounded-2xl font-sans font-bold uppercase tracking-widest text-xs hover:brightness-105 transition-all shadow-lg shadow-pink-200/80"
+                            className="px-10 py-4 inline-flex items-center justify-center bg-gradient-to-r from-[#ff9eb0] to-[#ffb7c5] text-white rounded-full font-sans font-bold uppercase tracking-widest text-xs hover:brightness-105 transition-all shadow-lg shadow-pink-300/60 min-h-[46px]"
                         >
                             Join Our Celebration
+                        </a>
+                        <a
+                            href="#details"
+                            className="px-8 py-4 inline-flex items-center justify-center border border-pink-300 text-[#8e405a] rounded-full font-sans font-medium uppercase tracking-widest text-xs hover:bg-pink-50 transition-all min-h-[46px]"
+                        >
+                            Event Details
                         </a>
                     </div>
                 </motion.div>
@@ -96,7 +144,7 @@ export default function SakuraTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
 
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

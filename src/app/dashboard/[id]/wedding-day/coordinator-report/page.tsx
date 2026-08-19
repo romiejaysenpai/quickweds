@@ -414,12 +414,12 @@ export default function CoordinatorReportPage() {
                             </p>
                             <h2 className="mt-2 font-serif text-3xl sm:text-4xl font-bold leading-tight">{coupleNames}</h2>
                             <p className="mt-2 text-sm text-text-secondary print:text-black">
-                                Generated on {new Date().toLocaleDateString(undefined, { dateStyle: 'long' })} at {new Date().toLocaleTimeString(undefined, { timeStyle: 'short' })}
+                                Generated on {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                             </p>
                         </div>
                         <div className="text-left md:text-right text-sm leading-6 shrink-0 print:text-black">
                             {wedding?.wedding_date && (
-                                <p><strong>Wedding Date:</strong> {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
+                                <p><strong>Wedding Date:</strong> {new Date(wedding.wedding_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
                             )}
                             {wedding?.wedding_time && (
                                 <p><strong>Time:</strong> {wedding.wedding_time}</p>

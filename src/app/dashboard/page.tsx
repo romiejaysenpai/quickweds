@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Heart, Plus, Calendar, MapPin, ArrowRight, Copy, CheckCheck, ExternalLink, Pencil, Trash2, Settings, LogOut, Users, BookOpen, Menu, X, Sparkles, LifeBuoy, PlayCircle, MessageCircle, ImagePlus, Send, ClipboardList, CheckCircle2 } from 'lucide-react';
+import { Heart, Plus, Calendar, MapPin, ArrowRight, Copy, CheckCheck, ExternalLink, Pencil, Trash2, Settings, LogOut, Users, BookOpen, Menu, X, Sparkles, LifeBuoy, PlayCircle, MessageCircle, ImagePlus, Send, ClipboardList, CheckCircle2, Globe, Layers, DollarSign, Camera, QrCode, Utensils } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import UpgradeButton from '@/components/UpgradeButton';
@@ -16,6 +16,7 @@ import { getWeddingPublicPath } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
 import { openExternalUrl } from '@/lib/native-actions';
 import LoadingState from '@/components/ui/LoadingState';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
 
@@ -42,11 +43,13 @@ function getErrorMessage(error: unknown) {
 function DashboardWelcomeHero({
     user,
     weddings,
+    profile,
     onOpenWorkspace,
     onOpenPlanner,
 }: {
     user: any;
     weddings: any[];
+    profile?: AccountProfile | null;
     onOpenWorkspace: () => void;
     onOpenPlanner: () => void;
 }) {
@@ -77,112 +80,297 @@ function DashboardWelcomeHero({
 
     const message = hasWeddings
         ? `Your ${weddingLabel} and ${rsvpCount} RSVP${rsvpCount === 1 ? '' : 's'} are ready. Check replies, open planner, or share your guest link.`
-        : 'Start your wedding website today. Choose a template, add your details, and publish your guest link when you are ready.';
+        : profile?.planning_stage
+            ? `Welcome! Your workspace is tuned for "${profile.planning_stage}". Start building your wedding site or organize your ${profile.primary_needs?.[0] || 'plans'}.`
+            : 'Start your wedding website today. Choose a template, add your details, and publish your guest link when you are ready.';
 
     return (
         <motion.section
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative isolate mb-8 overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-2xl shadow-primary/10 sm:mb-12 sm:rounded-[2.25rem]"
+            className="relative isolate mb-6 overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-xl shadow-primary/5 sm:mb-8 sm:rounded-[2rem] lg:mb-8"
         >
-            <div className="p-4 sm:p-7 lg:p-9">
+            <div className="p-4 sm:p-6 lg:p-6">
                 <div className="relative z-[80] flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                        <p className="inline-flex rounded-full bg-primary/5 px-3 py-1 text-[9px] font-black uppercase tracking-[0.22em] text-primary/70 ring-1 ring-primary/10 sm:text-[10px]">
+                        <p className="inline-flex rounded-full bg-primary/5 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-[0.22em] text-primary/70 ring-1 ring-primary/10">
                             {todayLabel}
                         </p>
-                        <h1 className="mt-3 max-w-3xl font-serif text-[2rem] font-black leading-[1.05] text-foreground sm:text-4xl lg:text-5xl">
+                        <h1 className="mt-1.5 max-w-3xl font-serif text-[1.75rem] font-black leading-[1.1] text-foreground sm:text-3xl lg:text-3xl">
                             {greeting}, <span className="text-primary">{firstName}</span><span className="text-accent">.</span>
                         </h1>
                     </div>
 
-                    <div className="hidden shrink-0 items-center gap-3 sm:flex">
+                    <div className="hidden shrink-0 items-center gap-2 sm:flex">
                         {hasWeddings ? (
-                            <button type="button" onClick={onOpenPlanner} title="Open planner" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
-                                <Calendar className="h-5 w-5" />
+                            <button
+                                type="button"
+                                onClick={onOpenPlanner}
+                                title="Wedding Planner"
+                                aria-label="Open Wedding Planner"
+                                className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral/80 text-primary border border-border/80 shadow-sm transition hover:-translate-y-0.5 hover:bg-primary hover:text-white hover:border-primary active:scale-95"
+                            >
+                                <Calendar className="h-4 w-4" />
                             </button>
                         ) : (
-                            <Link href="/builder" title="Open builder" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
-                                <Calendar className="h-5 w-5" />
+                            <Link
+                                href="/builder"
+                                title="Start Planning (Create Website)"
+                                aria-label="Start Planning"
+                                className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral/80 text-primary border border-border/80 shadow-sm transition hover:-translate-y-0.5 hover:bg-primary hover:text-white hover:border-primary active:scale-95"
+                            >
+                                <Calendar className="h-4 w-4" />
                             </Link>
                         )}
+
                         {hasWeddings ? (
-                            <button type="button" onClick={onOpenWorkspace} title="Open workspace" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
-                                <Users className="h-5 w-5" />
+                            <button
+                                type="button"
+                                onClick={onOpenWorkspace}
+                                title="Guest List & Workspace"
+                                aria-label="Open Guest List and Wedding Workspace"
+                                className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral/80 text-primary border border-border/80 shadow-sm transition hover:-translate-y-0.5 hover:bg-primary hover:text-white hover:border-primary active:scale-95"
+                            >
+                                <Users className="h-4 w-4" />
                             </button>
                         ) : (
-                            <Link href="/user-guide" title="Open guide" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
-                                <Users className="h-5 w-5" />
+                            <Link
+                                href="/user-guide"
+                                title="User Guide & Guest Management"
+                                aria-label="Open User Guide"
+                                className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral/80 text-primary border border-border/80 shadow-sm transition hover:-translate-y-0.5 hover:bg-primary hover:text-white hover:border-primary active:scale-95"
+                            >
+                                <Users className="h-4 w-4" />
                             </Link>
                         )}
-                        <Link href={hasWeddings && latestWedding ? `/builder?edit=${latestWedding.id}` : '/builder'} title="Customize website" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
-                            <Settings className="h-5 w-5" />
+
+                        <Link
+                            href="/settings"
+                            title="Account Settings"
+                            aria-label="Open Account Settings"
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral/80 text-primary border border-border/80 shadow-sm transition hover:-translate-y-0.5 hover:bg-primary hover:text-white hover:border-primary active:scale-95"
+                        >
+                            <Settings className="h-4 w-4" />
                         </Link>
                     </div>
                 </div>
 
-                <div className="relative left-1/2 mt-5 h-[128px] w-screen max-w-[calc(100%+2rem)] -translate-x-1/2 overflow-visible sm:-mx-7 sm:left-auto sm:w-auto sm:max-w-none sm:translate-x-0 sm:mt-8 sm:h-[300px] lg:-mx-9 lg:h-[340px]">
+                <div className="relative left-1/2 mt-3 h-[120px] w-screen max-w-[calc(100%+2rem)] -translate-x-1/2 overflow-visible sm:-mx-6 sm:left-auto sm:w-auto sm:max-w-none sm:translate-x-0 sm:mt-4 sm:h-[185px] lg:-mx-6 lg:h-[200px]">
                     <div className="absolute inset-0 bg-primary" />
                     <div
-                        className="absolute inset-x-[-32%] top-[-58px] z-10 h-[112px] bg-white sm:inset-x-[-24%] sm:top-[-92px] sm:h-[168px]"
+                        className="absolute inset-x-[-32%] top-[-58px] z-10 h-[112px] bg-white sm:inset-x-[-24%] sm:top-[-80px] sm:h-[140px] lg:top-[-85px] lg:h-[150px]"
                         style={{ borderRadius: '0 0 50% 50% / 0 0 74% 74%' }}
                     />
 
                     <img
                         src={WELCOME_CHARACTER_URL}
                         alt="QuickWeds welcome character"
-                        className="absolute bottom-0 left-[-14px] z-[60] h-[152px] w-auto object-contain drop-shadow-2xl transition duration-500 hover:-translate-y-2 hover:scale-[1.03] sm:left-[-6px] sm:h-[300px] lg:left-4 lg:h-[360px]"
+                        className="absolute bottom-0 left-[-14px] z-[60] h-[140px] w-auto object-contain drop-shadow-2xl transition duration-500 hover:-translate-y-1 hover:scale-[1.02] sm:left-0 sm:h-[205px] lg:left-2 lg:h-[225px]"
                     />
 
-                    <div className="absolute left-[52%] right-3 top-[-6px] z-50 rounded-[1.2rem] bg-white px-3 py-2 pr-4 shadow-[0_18px_50px_rgba(122,90,97,0.18)] ring-1 ring-primary/10 sm:left-[50%] sm:right-2 sm:top-8 sm:rounded-[1.75rem] sm:px-6 sm:py-5 sm:pr-7 lg:left-[43%] lg:right-6 lg:max-w-2xl">
-                        <span className="absolute left-[-13px] top-1/2 h-0 w-0 -translate-y-1/2 border-y-[12px] border-r-[14px] border-y-transparent border-r-white" />
-                        <p className="text-[12px] font-black text-primary sm:text-base">QuickWeds</p>
-                        <p className="mt-1 text-[11px] font-semibold leading-[1.45] text-text-secondary sm:mt-2 sm:text-base sm:leading-7">{message}</p>
+                    <div className="absolute left-[48%] right-2 top-[-4px] z-50 rounded-[1.2rem] border border-primary/25 bg-white px-3 py-2 pr-3.5 shadow-[0_12px_36px_rgba(122,90,97,0.14)] ring-1 ring-primary/10 sm:left-[42%] sm:right-3 sm:top-2 sm:rounded-[1.4rem] sm:px-5 sm:py-3 sm:pr-5 lg:left-[34%] lg:right-5 lg:max-w-2xl">
+                        <span className="absolute -left-[8px] top-1/2 -translate-y-1/2 h-4 w-4 rotate-45 border-b border-l border-primary/25 bg-white" />
+                        <div className="relative z-10">
+                            <p className="text-[11px] font-black text-primary sm:text-xs uppercase tracking-wider">QuickWeds Space</p>
+                            <p className="mt-0.5 text-[11px] font-medium leading-relaxed text-text-secondary sm:text-sm sm:leading-snug">{message}</p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
-                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="mt-3.5 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                         {focusItems.map((item) => {
                             const Icon = item.icon;
                             return (
-                                <div key={item.label} className="group rounded-xl border border-border bg-white p-2 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 sm:rounded-2xl sm:p-3">
-                                    <div className="mb-1.5 flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white sm:h-8 sm:w-8 sm:rounded-xl">
-                                        <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                                <div key={item.label} className="group rounded-xl border border-border bg-white p-2 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md hover:shadow-primary/10 sm:p-2.5">
+                                    <div className="mb-1 flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white sm:h-7 sm:w-7 sm:rounded-lg">
+                                        <Icon className="h-3.5 w-3.5" />
                                     </div>
-                                    <p className="text-[7px] font-black uppercase leading-tight tracking-[0.12em] text-text-secondary/60 sm:text-[9px]">{item.label}</p>
-                                    <p className="mt-0.5 font-serif text-base font-bold leading-none text-foreground sm:text-xl">{item.value}</p>
+                                    <p className="text-[7px] font-bold uppercase leading-tight tracking-[0.12em] text-text-secondary/60 sm:text-[8px]">{item.label}</p>
+                                    <p className="mt-0.5 font-serif text-sm font-bold leading-none text-foreground sm:text-base">{item.value}</p>
                                 </div>
                             );
                         })}
                     </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+                    <div className="flex flex-col gap-2 sm:flex-row lg:flex-row">
                         {hasWeddings ? (
-                            <button type="button" onClick={onOpenWorkspace} className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover">
-                                Continue Workspace <ArrowRight className="h-4 w-4" />
+                            <button type="button" onClick={onOpenWorkspace} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover">
+                                Continue Workspace <ArrowRight className="h-3.5 w-3.5" />
                             </button>
                         ) : (
-                            <Link href="/builder" className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover">
-                                Create Your Free Site <ArrowRight className="h-4 w-4" />
+                            <Link href="/builder" className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover">
+                                Create Your Free Site <ArrowRight className="h-3.5 w-3.5" />
                             </Link>
                         )}
                         {hasWeddings ? (
-                            <button type="button" onClick={onOpenPlanner} className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-border bg-white px-6 py-3 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5">
-                                <Calendar className="h-4 w-4" />
+                            <button type="button" onClick={onOpenPlanner} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-5 py-2.5 text-xs sm:text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5">
+                                <Calendar className="h-3.5 w-3.5" />
                                 Open Planner
                             </button>
                         ) : (
-                            <Link href="/user-guide" className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border border-border bg-white px-6 py-3 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5">
-                                <BookOpen className="h-4 w-4" />
+                            <Link href="/user-guide" className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-5 py-2.5 text-xs sm:text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5">
+                                <BookOpen className="h-3.5 w-3.5" />
                                 View Guide
                             </Link>
                         )}
-
                     </div>
                 </div>
             </div>
         </motion.section>
+    );
+}
+
+function PersonalizedRecommendationsSection({
+    profile,
+    weddings,
+}: {
+    profile: AccountProfile | null;
+    weddings: any[];
+}) {
+    if (!profile) return null;
+    const primaryNeeds = profile.primary_needs || [];
+    const planningStage = profile.planning_stage || '';
+    const latestWeddingId = weddings[0]?.id;
+
+    const toolMap: Record<string, { title: string; desc: string; href: string; icon: any; tag: string }> = {
+        'Seating arrangement': {
+            title: 'Seating Planner & Table Layouts',
+            desc: 'Assign guests to tables, manage dietary preferences, and export floorplans.',
+            href: latestWeddingId ? `/dashboard/${latestWeddingId}/planner?tab=seating` : '/planner',
+            icon: Layers,
+            tag: 'Top Priority',
+        },
+        'Budget tracking': {
+            title: 'Budget Planner & Payment Tracker',
+            desc: 'Track expenses, vendor deposits, remaining balances, and category breakdowns.',
+            href: latestWeddingId ? `/dashboard/${latestWeddingId}/planner?tab=budget` : '/planner',
+            icon: DollarSign,
+            tag: 'Finance',
+        },
+        'Wedding checklist': {
+            title: 'Milestone Checklist',
+            desc: 'Step-by-step tasks scheduled from engagement through the wedding day.',
+            href: latestWeddingId ? `/dashboard/${latestWeddingId}/planner?tab=checklist` : '/planner',
+            icon: ClipboardList,
+            tag: 'Tasks',
+        },
+        'Guest list & RSVP': {
+            title: 'Guest List & Live RSVP Manager',
+            desc: 'Track attending guests, plus-ones, meal options, and instant RSVP notifications.',
+            href: latestWeddingId ? `/dashboard/${latestWeddingId}` : '/builder',
+            icon: Users,
+            tag: 'RSVP',
+        },
+        'Wedding-day coordination': {
+            title: 'Wedding Day Mode & Coordinator Portal',
+            desc: 'Live schedule run-sheet, emergency vendor contacts, and staff check-in.',
+            href: latestWeddingId ? `/dashboard/${latestWeddingId}/wedding-day` : '/planner',
+            icon: Sparkles,
+            tag: 'Event Day',
+        },
+        'Invitations / QR codes': {
+            title: 'Event QR Kit & Printable Signage',
+            desc: 'Generate high-res QR codes for table stands, seating finders, and website links.',
+            href: latestWeddingId ? `/dashboard/${latestWeddingId}/qr-kit` : '/planner',
+            icon: QrCode,
+            tag: 'Print & QR',
+        },
+        'Guest photos': {
+            title: 'Guest Photo Upload Portal',
+            desc: 'Collect raw candid photos from guests in real-time with photo moderation.',
+            href: latestWeddingId ? `/dashboard/${latestWeddingId}/photo-uploads` : '/planner',
+            icon: Camera,
+            tag: 'Memories',
+        },
+        'Vendor management': {
+            title: 'Vendor & Supplier Manager',
+            desc: 'Store supplier quotes, contracts, contact numbers, and payment status.',
+            href: latestWeddingId ? `/dashboard/${latestWeddingId}/planner?tab=vendors` : '/suppliers',
+            icon: Utensils,
+            tag: 'Suppliers',
+        },
+        'Wedding website': {
+            title: 'Wedding Website Builder',
+            desc: 'Customize templates, love story, countdown timers, photo galleries, and registry.',
+            href: latestWeddingId ? `/dashboard/${latestWeddingId}` : '/builder',
+            icon: Globe,
+            tag: 'Website',
+        },
+    };
+
+    const matchedTools = primaryNeeds
+        .map((need) => toolMap[need])
+        .filter(Boolean);
+
+    if (planningStage === 'Wedding is coming soon') {
+        if (!matchedTools.some((t) => t?.title.includes('Seating'))) matchedTools.unshift(toolMap['Seating arrangement']);
+        if (!matchedTools.some((t) => t?.title.includes('Wedding Day'))) matchedTools.push(toolMap['Wedding-day coordination']);
+    }
+
+    if (planningStage === 'Just starting') {
+        if (!matchedTools.some((t) => t?.title.includes('Budget'))) matchedTools.unshift(toolMap['Budget tracking']);
+        if (!matchedTools.some((t) => t?.title.includes('Checklist'))) matchedTools.push(toolMap['Wedding checklist']);
+    }
+
+    const displayTools = matchedTools.slice(0, 3);
+    if (displayTools.length === 0) return null;
+
+    return (
+        <section className="mb-8 sm:mb-12">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Personalized For You</span>
+                        {planningStage && (
+                            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[9px] font-bold text-primary">
+                                {planningStage}
+                            </span>
+                        )}
+                    </div>
+                    <h2 className="text-lg sm:text-2xl font-serif font-bold text-foreground mt-0.5">
+                        Recommended Next Steps
+                    </h2>
+                </div>
+                <p className="text-xs text-text-secondary">
+                    Based on your onboarding preferences
+                </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {displayTools.map((tool) => {
+                    const Icon = tool.icon;
+                    return (
+                        <Link
+                            key={tool.title}
+                            href={tool.href}
+                            className="group relative flex flex-col justify-between rounded-2xl border border-border bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10"
+                        >
+                            <div>
+                                <div className="flex items-center justify-between gap-2 mb-3">
+                                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
+                                        <Icon className="h-5 w-5" />
+                                    </span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider text-text-secondary/70 bg-neutral px-2 py-0.5 rounded-md">
+                                        {tool.tag}
+                                    </span>
+                                </div>
+                                <h3 className="font-serif text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                                    {tool.title}
+                                </h3>
+                                <p className="mt-1 text-xs leading-relaxed text-text-secondary">
+                                    {tool.desc}
+                                </p>
+                            </div>
+                            <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-primary pt-3 border-t border-border/60">
+                                <span>Open Tool</span>
+                                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                            </div>
+                        </Link>
+                    );
+                })}
+            </div>
+        </section>
     );
 }
 
@@ -620,48 +808,58 @@ export default function DashboardRedirect() {
 
 
     return (
-        <div className="mobile-safe-screen bg-background pb-16 sm:pb-20 mobile-safe-bottom">
-            {/* Top nav */}
-            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-white/90 sm:p-4">
-                <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-2 sm:px-4">
-                    <div className="flex items-center gap-8">
-                        <Link href="/" className="flex min-w-[88px] flex-shrink-0 items-center sm:min-w-[104px]" aria-label="QuickWeds">
-                            <img src="/logo.png" alt="QuickWeds Logo" className="h-8 w-auto object-contain transition-transform hover:scale-105 sm:h-12" />
-                        </Link>
-                    </div>
-
-                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
-                        {freeWebsiteLimitReached ? (
-                            <UpgradeButton
-                                scope="account"
-                                plan="account_pro"
-                                label="Upgrade"
-                                className="min-h-[42px] min-w-[82px] flex-shrink-0 justify-center whitespace-nowrap rounded-lg !px-3 !py-2 text-xs sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:!px-6 sm:!py-2.5 sm:text-sm"
-                            />
-                        ) : (
-                            <Link
-                                href="/builder"
-                                className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
-                            >
-                                <Plus className="w-4 h-4 flex-shrink-0" />
-                                <span className="hidden sm:inline">Create New Wedding</span>
-                                <span className="sm:hidden">New</span>
+        <DashboardShell weddings={weddings}>
+            <div className="mobile-safe-screen bg-background pb-16 sm:pb-20 mobile-safe-bottom flex-1">
+                {/* Top nav */}
+                <div className="sticky top-0 z-40 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-white/90 sm:p-4">
+                    <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-2 sm:px-4">
+                        <div className="flex items-center gap-4">
+                            {/* Mobile brand logo */}
+                            <Link href="/" className="flex md:hidden min-w-[88px] flex-shrink-0 items-center sm:min-w-[104px]" aria-label="QuickWeds">
+                                <img src="/logo.png" alt="QuickWeds Logo" className="h-8 w-auto object-contain transition-transform hover:scale-105 sm:h-12" />
                             </Link>
-                        )}
-                        
-                        <NotificationBell />
 
-                        <button
-                            type="button"
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary hover:bg-primary/5 hover:text-primary"
-                            aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-                        >
-                            {isMobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
-                        </button>
+                            {/* Desktop contextual title */}
+                            <div className="hidden md:flex items-center gap-2">
+                                <span className="font-serif font-bold text-lg text-foreground">Dashboard</span>
+                                <span className="text-text-secondary/40">/</span>
+                                <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">All Celebrations</span>
+                            </div>
+                        </div>
+
+                        <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
+                            {freeWebsiteLimitReached ? (
+                                <UpgradeButton
+                                    scope="account"
+                                    plan="account_pro"
+                                    label="Upgrade"
+                                    className="min-h-[42px] min-w-[82px] flex-shrink-0 justify-center whitespace-nowrap rounded-lg !px-3 !py-2 text-xs sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:!px-6 sm:!py-2.5 sm:text-sm"
+                                />
+                            ) : (
+                                <Link
+                                    href="/builder"
+                                    className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
+                                >
+                                    <Plus className="w-4 h-4 flex-shrink-0" />
+                                    <span className="hidden sm:inline">Create New Wedding</span>
+                                    <span className="sm:hidden">New</span>
+                                </Link>
+                            )}
+                            
+                            <NotificationBell />
+
+                            {/* Mobile-only Hamburger Menu Button */}
+                            <button
+                                type="button"
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="flex md:hidden h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary hover:bg-primary/5 hover:text-primary"
+                                aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                            >
+                                {isMobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
             {/* Right Side Burger Menu (Drawer) */}
             <AnimatePresence>
@@ -848,12 +1046,18 @@ export default function DashboardRedirect() {
                 )}
             </AnimatePresence>
 
-            <main className="qw-dashboard max-w-6xl mx-auto px-3 sm:px-6 pt-6 sm:pt-12">
+            <main className="qw-dashboard max-w-7xl mx-auto px-3 sm:px-6 pt-6 sm:pt-10">
                 <DashboardWelcomeHero
                     user={user}
                     weddings={weddings}
+                    profile={accountProfile}
                     onOpenWorkspace={handleOpenWorkspace}
                     onOpenPlanner={handleOpenPlanner}
+                />
+
+                <PersonalizedRecommendationsSection
+                    profile={accountProfile}
+                    weddings={weddings}
                 />
 
                 {accountProfile?.account_type === 'couple' && !accountProfile.onboarding_completed && (
@@ -1088,5 +1292,6 @@ export default function DashboardRedirect() {
                 )}
             </main>
         </div>
+        </DashboardShell>
     );
 }

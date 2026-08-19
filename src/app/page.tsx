@@ -1427,8 +1427,18 @@ export default function Home() {
       />
       <nav className="fixed inset-x-0 top-3 z-50 px-3 sm:top-4 sm:px-0">
         <div className="mobile-safe-px mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between gap-2 rounded-full border border-white/80 bg-[#fffaf7]/90 px-3 shadow-[0_10px_35px_rgba(87,55,62,0.10)] backdrop-blur-xl sm:h-20 sm:w-[94%] sm:gap-4 sm:px-8 lg:px-10">
-          <Link href="/" className="flex min-w-0 shrink items-center gap-2" aria-label="QuickWeds home">
-            <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-7 w-auto max-w-[128px] object-contain min-[390px]:h-8 min-[390px]:max-w-[150px] sm:h-11 sm:max-w-none" priority />
+          <Link href="/" className="group flex min-w-0 shrink items-center gap-2 sm:gap-2.5" aria-label="QuickWeds home">
+            <Image
+              src="/icon.png"
+              alt="QuickWeds Logo"
+              width={48}
+              height={48}
+              className="h-8 w-8 rounded-xl object-contain shadow-xs transition-transform group-hover:scale-105 min-[390px]:h-9 min-[390px]:w-9 sm:h-11 sm:w-11"
+              priority
+            />
+            <span className="font-serif text-lg font-black tracking-tight text-foreground transition-colors group-hover:text-primary min-[390px]:text-xl sm:text-2xl">
+              QuickWeds
+            </span>
           </Link>
 
           <div className="hidden items-center gap-7 lg:flex">

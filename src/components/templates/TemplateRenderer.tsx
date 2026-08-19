@@ -59,6 +59,27 @@ export const TEMPLATE_COMPONENTS = {
     gallery: PremiumTemplate,
     'petal-note': PremiumTemplate,
     'sunset-ceremony': PremiumTemplate,
+    // 20 New Trending Styles
+    kinfolk: PremiumTemplate,
+    neobrutalist: PremiumTemplate,
+    highfashion: PremiumTemplate,
+    glassbotanical: PremiumTemplate,
+    cyberromantic: PremiumTemplate,
+    amalfi: PremiumTemplate,
+    japandi: PremiumTemplate,
+    desertmirage: PremiumTemplate,
+    chateau: PremiumTemplate,
+    travelogue: PremiumTemplate,
+    gothicnoir: PremiumTemplate,
+    discofever: PremiumTemplate,
+    baroque: PremiumTemplate,
+    lofifilm: PremiumTemplate,
+    stargazer: PremiumTemplate,
+    cottagecore: PremiumTemplate,
+    bauhaus: PremiumTemplate,
+    nordicdrift: PremiumTemplate,
+    sunsetriviera: PremiumTemplate,
+    storybook: PremiumTemplate,
 } satisfies Record<string, ComponentType<TemplateProps>>;
 
 const FONT_VARIABLES: Record<string, ThemeFontVars> = {

@@ -55,7 +55,7 @@ import { parseDressCodeValue, serializeDressCodeValue } from '@/lib/dress-code';
 import { getSafeMonogramConfig } from '@/lib/monogram';
 import { createMonogramWebm, downloadMonogramImage, requestMonogramMp4 } from '@/lib/monogram-export';
 
-const AttireIllustration = dynamic(() => import('./AttireIllustration'), { ssr: false });
+import AttireIllustration from './AttireIllustration';
 const MarketplacePanel = dynamic(() => import('./builder/MarketplacePanel'), { ssr: false });
 const MonogramExporter = dynamic(() => import('./MonogramExporter').then(m => m.MonogramExporter), { ssr: false });
 const EntourageProposalCustomizerSection = dynamic(() => import('./EntourageProposalCustomizerSection').then(m => m.EntourageProposalCustomizerSection), { ssr: false });
@@ -2702,7 +2702,7 @@ export default function BuilderForm() {
                                 </div>
 
                                 <div
-                                    className="relative flex min-h-[240px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral p-3 sm:min-h-[300px] sm:rounded-2xl sm:p-4"
+                                    className="relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral/80 p-3.5 sm:min-h-[320px] sm:rounded-2xl sm:p-5"
                                     style={{ boxShadow: `0 20px 55px ${colorValue}18` }}
                                 >
                                     <div className="absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at 50% 30%, ${colorValue}22, transparent 48%)` }} />
@@ -2711,7 +2711,7 @@ export default function BuilderForm() {
                                         <p className="mt-1 font-serif text-xl font-bold text-foreground">{attireValue || 'Formal Attire'}</p>
                                     </div>
                                     <div className="relative flex flex-1 items-center justify-center py-2">
-                                        <AttireIllustration color={colorValue} variant={group.variant} className="max-w-[300px]" />
+                                        <AttireIllustration color={colorValue} variant={group.variant} className="max-w-[340px]" />
                                     </div>
                                 </div>
                             </div>

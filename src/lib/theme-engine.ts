@@ -195,17 +195,17 @@ function normalizeTemplate(template?: string) {
 export function getTemplateMood(template?: string): TemplateMood {
     const t = normalizeTemplate(template);
 
-    if (t === 'celestial') return 'celestial';
-    if (t === 'nordic') return 'nordic';
-    if (t === 'riviera') return 'riviera';
+    if (t === 'celestial' || t === 'stargazer') return 'celestial';
+    if (t === 'nordic' || t === 'nordicdrift' || t === 'japandi') return 'nordic';
+    if (t === 'riviera' || t === 'amalfi' || t === 'sunsetriviera') return 'riviera';
 
-    if (['royal', 'midnight', 'artdeco', 'luxury'].includes(t)) return 'dark';
-    if (['cinematic', 'film'].includes(t)) return 'cinematic';
-    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus'].includes(t)) return 'editorial';
-    if (['boho', 'garden', 'rustic', 'sakura'].includes(t)) return 'organic';
-    if (['tropical', 'elopement'].includes(t)) return 'destination';
-    if (['vintage', 'traditional'].includes(t)) return 'vintage';
-    if (['whimsical', 'romantic'].includes(t)) return 'playful';
+    if (['royal', 'midnight', 'artdeco', 'luxury', 'gothicnoir', 'baroque'].includes(t)) return 'dark';
+    if (['cinematic', 'film', 'lofifilm', 'cyberromantic'].includes(t)) return 'cinematic';
+    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus', 'kinfolk', 'neobrutalist', 'highfashion', 'bauhaus'].includes(t)) return 'editorial';
+    if (['boho', 'garden', 'rustic', 'sakura', 'glassbotanical', 'desertmirage', 'cottagecore'].includes(t)) return 'organic';
+    if (['tropical', 'elopement', 'travelogue'].includes(t)) return 'destination';
+    if (['vintage', 'traditional', 'chateau'].includes(t)) return 'vintage';
+    if (['whimsical', 'romantic', 'discofever', 'storybook'].includes(t)) return 'playful';
 
     return 'classic';
 }
@@ -309,10 +309,10 @@ export function getTemplateVisualProfile(
 ): TemplateVisualProfile {
     const t = normalizeTemplate(template);
     const mood = getTemplateMood(t);
-    const isDark = invert || mood === 'dark' || mood === 'cinematic' || ['urban', 'glitch', 'artdeco', 'luxury', 'midnight', 'celestial'].includes(t);
-    const isSharp = mood === 'editorial' || ['artdeco', 'luxury', 'urban', 'glitch', 'vogue'].includes(t);
-    const isVintage = mood === 'vintage' || ['rustic', 'boho', 'film', 'traditional'].includes(t);
-    const isOrganic = mood === 'organic' || mood === 'destination' || mood === 'playful';
+    const isDark = invert || mood === 'dark' || mood === 'cinematic' || ['urban', 'glitch', 'artdeco', 'luxury', 'midnight', 'celestial', 'gothicnoir', 'highfashion', 'cyberromantic', 'stargazer'].includes(t);
+    const isSharp = mood === 'editorial' || ['artdeco', 'luxury', 'urban', 'glitch', 'vogue', 'highfashion', 'bauhaus', 'neobrutalist', 'kinfolk'].includes(t);
+    const isVintage = mood === 'vintage' || ['rustic', 'boho', 'film', 'traditional', 'chateau', 'baroque', 'discofever', 'lofifilm', 'storybook'].includes(t);
+    const isOrganic = mood === 'organic' || mood === 'destination' || mood === 'playful' || ['glassbotanical', 'cottagecore', 'amalfi', 'japandi', 'desertmirage'].includes(t);
 
     const base = {
         mood,

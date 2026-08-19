@@ -18,6 +18,7 @@ import {
 import { getCachedSession } from '@/lib/session-cache';
 import { getThankYouNoteHtml } from '@/lib/email-templates';
 import LoadingState from '@/components/ui/LoadingState';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 import {
     THANK_YOU_COLOR_OPTIONS,
     THANK_YOU_DEFAULT_MESSAGE,
@@ -257,13 +258,14 @@ export default function ThankYouBuilderPage() {
     }
 
     return (
-        <main className="min-h-screen overflow-x-hidden bg-[#FFF8F9] px-3 py-4 text-foreground sm:px-5 sm:py-6">
-            <div className="mx-auto w-full max-w-7xl min-w-0">
-                <div className="mb-4">
-                    <Link href={backHref} className="inline-flex min-h-[40px] max-w-full items-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
-                        <ArrowLeft className="h-4 w-4" /> {backLabel}
-                    </Link>
-                </div>
+        <DashboardShell weddingId={weddingId}>
+            <main className="min-h-screen overflow-x-hidden bg-[#FFF8F9] px-3 py-4 text-foreground sm:px-5 sm:py-6 flex-1">
+                <div className="mx-auto w-full max-w-7xl min-w-0">
+                    <div className="mb-4">
+                        <Link href={backHref} className="inline-flex min-h-[40px] max-w-full items-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
+                            <ArrowLeft className="h-4 w-4" /> {backLabel}
+                        </Link>
+                    </div>
 
                 <section className="mb-4 overflow-hidden rounded-lg border border-primary/15 bg-white p-3 shadow-xl shadow-primary/10 sm:p-5 lg:p-6">
                     <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -478,6 +480,7 @@ export default function ThankYouBuilderPage() {
                 </div>
             </div>
         </main>
+        </DashboardShell>
     );
 }
 

@@ -33,6 +33,7 @@ import {
 import { getCachedSession } from '@/lib/session-cache';
 import QrCodeActions from '@/components/dashboard/QrCodeActions';
 import LoadingState from '@/components/ui/LoadingState';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 
 const AnalyticsPanel = dynamic(() => import('@/components/dashboard/AnalyticsPanel'), {
     loading: () => <DashboardPanelLoading label="Loading analytics..." />,
@@ -662,51 +663,66 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const currencySymbol = wedding?.currency === 'USD' ? '$' : wedding?.currency === 'JPY' ? '¥' : '₱';
 
     return (
-        <div className="mobile-safe-screen bg-background pb-20 mobile-safe-bottom">
-            {/* Dev debug banner */}
-            {process.env.NODE_ENV === 'development' && accessDebug && (
-                <div className="fixed top-0 left-0 right-0 z-50 bg-accent text-white p-2 text-xs text-center">
-                    {accessDebug}
-                </div>
-            )}
-
-            {/* Confetti Celebration */}
-            <ConfettiCelebration trigger={showConfetti} />
-
-            {/* Header */}
-            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-white/90 sm:p-4">
-                <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-2 sm:px-4">
-                    <div className="flex items-center gap-8">
-                        <Link href="/" className="flex min-w-[88px] flex-shrink-0 items-center sm:min-w-[104px]" aria-label="QuickWeds">
-                            <img src="/logo.png" alt="QuickWeds Logo" className="h-8 w-auto object-contain transition-transform hover:scale-105 sm:h-12" />
-                        </Link>
+        <DashboardShell
+            weddingId={wedding.id}
+            weddingTitle={wedding.couple_name || `${wedding.bride_name} & ${wedding.groom_name}`}
+            weddingSlug={wedding.public_slug}
+            canManageWorkspace={canManageWorkspace}
+        >
+            <div className="mobile-safe-screen bg-background pb-20 mobile-safe-bottom flex-1">
+                {/* Dev debug banner */}
+                {process.env.NODE_ENV === 'development' && accessDebug && (
+                    <div className="fixed top-0 left-0 right-0 z-50 bg-accent text-white p-2 text-xs text-center">
+                        {accessDebug}
                     </div>
+                )}
 
-                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
-                        {canManageWorkspace && (
-                            <Link
-                                href={`/builder?edit=${wedding.id}`}
-                                className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
-                            >
-                                <Sparkles className="w-4 h-4 flex-shrink-0" />
-                                <span className="hidden sm:inline">Edit Design</span>
-                                <span className="sm:hidden">Edit</span>
+                {/* Confetti Celebration */}
+                <ConfettiCelebration trigger={showConfetti} />
+
+                {/* Header */}
+                <div className="sticky top-0 z-40 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-white/90 sm:p-4">
+                    <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-2 sm:px-4">
+                        <div className="flex items-center gap-4">
+                            {/* Mobile Logo */}
+                            <Link href="/" className="flex md:hidden min-w-[88px] flex-shrink-0 items-center sm:min-w-[104px]" aria-label="QuickWeds">
+                                <img src="/logo.png" alt="QuickWeds Logo" className="h-8 w-auto object-contain transition-transform hover:scale-105 sm:h-12" />
                             </Link>
-                        )}
 
-                        <NotificationBell />
+                            {/* Desktop Title & Couple Name */}
+                            <div className="hidden md:flex items-center gap-2">
+                                <span className="font-serif font-bold text-lg text-foreground truncate max-w-xs">{wedding.couple_name || `${wedding.bride_name} & ${wedding.groom_name}`}</span>
+                                <span className="text-text-secondary/40">/</span>
+                                <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">Workspace</span>
+                            </div>
+                        </div>
 
-                        <button
-                            type="button"
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary hover:bg-primary/5 hover:text-primary"
-                            aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-                        >
-                            {isMobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
-                        </button>
+                        <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
+                            {canManageWorkspace && (
+                                <Link
+                                    href={`/builder?edit=${wedding.id}`}
+                                    className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
+                                >
+                                    <Sparkles className="w-4 h-4 flex-shrink-0" />
+                                    <span className="hidden sm:inline">Edit Design</span>
+                                    <span className="sm:hidden">Edit</span>
+                                </Link>
+                            )}
+
+                            <NotificationBell />
+
+                            {/* Mobile-only Hamburger Menu Button */}
+                            <button
+                                type="button"
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="flex md:hidden h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary hover:bg-primary/5 hover:text-primary"
+                                aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                            >
+                                {isMobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
             {/* Right Side Burger Menu (Drawer) */}
             <AnimatePresence>
@@ -867,7 +883,39 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 )}
             </AnimatePresence>
 
-            <main className="qw-workspace max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-12 text-left">
+            <main className="qw-workspace max-w-7xl mx-auto px-3 sm:px-6 pt-3 sm:pt-6 text-left">
+                {/* Desktop Workspace Header & Breadcrumbs */}
+                <div className="hidden md:flex items-center justify-between gap-4 mb-5 pb-3.5 border-b border-border/80">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary">
+                        <Link href="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+                        <span className="text-text-secondary/40">/</span>
+                        <span className="font-bold text-foreground truncate max-w-[220px]">{wedding.bride_name} & {wedding.groom_name}</span>
+                        <span className="text-text-secondary/40">/</span>
+                        <span className="text-primary font-bold">Workspace</span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-[11px] font-bold">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                            Website Live
+                        </span>
+                        <CopyButton
+                            text={url}
+                            label="Copy Link"
+                            variant="minimal"
+                            className="h-8.5 px-3 rounded-xl border border-border bg-white text-xs font-bold text-text-secondary hover:text-primary hover:border-primary/30 transition-all shadow-2xs"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => openExternal(url)}
+                            className="inline-flex h-8.5 items-center gap-1.5 px-3 rounded-xl border border-border bg-white text-xs font-bold text-text-secondary hover:bg-neutral hover:text-foreground transition-all shadow-2xs"
+                        >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Guest View
+                        </button>
+                    </div>
+                </div>
+
                 {/* Mobile Tab Navigation (Fixed Bottom) */}
                 <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-white/90 backdrop-blur-md border-t border-border z-[100] flex justify-around items-center p-2 pb-safe shadow-2xl">
                     <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'home' ? 'text-primary' : 'text-text-secondary/50'}`}>
@@ -892,10 +940,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     </button>
                 </div>
 
-
-
                 {/* Desktop Tab Navigation */}
-                <div className="hidden sm:flex items-center gap-1 mb-8 p-1.5 bg-neutral/50 dark:bg-neutral/70 rounded-2xl border border-border w-fit">
+                <div className="hidden sm:flex items-center gap-1 mb-6 p-1.5 bg-neutral/50 dark:bg-neutral/70 rounded-2xl border border-border w-fit">
                     {[
                         { id: 'home', label: 'Overview', icon: LayoutDashboard },
                         { id: 'guests', label: 'Guests', icon: Users },
@@ -918,8 +964,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     ))}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12">
-                    <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mb-8 sm:mb-12">
+                    <div className="lg:col-span-8 space-y-6 sm:space-y-8">
 
 
 
@@ -941,57 +987,59 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             <motion.section
                                 initial={{ opacity: 0, y: 18 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="relative isolate mb-5 overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-2xl shadow-primary/10 sm:mb-7 sm:rounded-[2.25rem]"
+                                className="relative isolate mb-4 overflow-hidden rounded-2xl border border-border bg-white shadow-md shadow-primary/5 sm:mb-5 sm:rounded-3xl"
                             >
-                                <div className="p-4 sm:p-6 lg:p-7">
+                                <div className="p-3.5 sm:p-4 lg:p-4">
                                     <div className="relative z-10 flex items-start justify-between gap-4">
                                         <div className="min-w-0">
-                                            <p className="inline-flex rounded-full bg-primary/5 px-3 py-1 text-[9px] font-black uppercase tracking-[0.22em] text-primary/70 ring-1 ring-primary/10 sm:text-[10px]">
+                                            <p className="inline-flex rounded-full bg-primary/5 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.2em] text-primary/70 ring-1 ring-primary/10">
                                                 {wedding.wedding_date}
                                             </p>
-                                            <h1 className="mt-3 max-w-3xl font-serif text-[1.5rem] sm:text-[2rem] font-black leading-[1.1] text-foreground sm:text-4xl">
+                                            <h1 className="mt-1 max-w-3xl font-serif text-base font-black leading-snug text-foreground sm:text-lg lg:text-xl">
                                                 Workspace: <span className="text-primary">{wedding.bride_name} & {wedding.groom_name}</span><span className="text-accent">.</span>
                                             </h1>
-                                            <p className="mt-2 text-xs sm:text-sm text-text-secondary max-w-sm">
+                                            <p className="mt-0.5 text-[11px] sm:text-xs text-text-secondary max-w-md">
                                                 Welcome back, {getFirstName(user)}! Your wedding workspace is ready for updates.
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="relative left-1/2 mt-4 h-[128px] w-screen max-w-[calc(100%+2rem)] -translate-x-1/2 overflow-visible sm:-mx-6 sm:left-auto sm:w-auto sm:max-w-none sm:translate-x-0 sm:mt-6 sm:h-[240px] lg:-mx-7 lg:h-[270px]">
+                                    <div className="relative left-1/2 mt-2.5 h-[98px] w-screen max-w-[calc(100%+2rem)] -translate-x-1/2 overflow-visible sm:-mx-4 sm:left-auto sm:w-auto sm:max-w-none sm:translate-x-0 sm:mt-3 sm:h-[106px] lg:-mx-4 lg:h-[114px]">
                                         <div className="absolute inset-0 bg-primary" />
                                         <div
-                                            className="absolute inset-x-[-32%] top-[-58px] z-10 h-[112px] bg-white sm:inset-x-[-24%] sm:top-[-92px] sm:h-[168px]"
+                                            className="absolute inset-x-[-32%] top-[-46px] z-10 h-[88px] bg-white sm:inset-x-[-24%] sm:top-[-48px] sm:h-[92px] lg:top-[-50px] lg:h-[96px]"
                                             style={{ borderRadius: '0 0 50% 50% / 0 0 74% 74%' }}
                                         />
 
                                         <img
                                             src={WELCOME_CHARACTER_URL}
                                             alt="QuickWeds welcome character"
-                                            className="absolute bottom-0 left-[-14px] z-[60] h-[152px] w-auto object-contain drop-shadow-2xl transition duration-500 hover:-translate-y-2 hover:scale-[1.03] sm:left-[-6px] sm:h-[250px] lg:left-4 lg:h-[300px]"
+                                            className="absolute bottom-0 left-[-10px] z-[60] h-[112px] w-auto object-contain drop-shadow-xl transition duration-500 hover:-translate-y-1 hover:scale-[1.02] sm:left-1 sm:h-[122px] lg:left-2 lg:h-[130px]"
                                         />
 
-                                        <div className="absolute left-[52%] right-3 top-[-6px] z-50 rounded-[1.2rem] bg-white px-3 py-2 pr-4 shadow-[0_18px_50px_rgba(122,90,97,0.18)] ring-1 ring-primary/10 sm:left-[50%] sm:right-2 sm:top-8 sm:rounded-[1.75rem] sm:px-6 sm:py-5 sm:pr-7 lg:left-[43%] lg:right-6 lg:max-w-2xl">
-                                            <span className="absolute left-[-13px] top-1/2 h-0 w-0 -translate-y-1/2 border-y-[12px] border-r-[14px] border-y-transparent border-r-white" />
-                                            <p className="text-[12px] font-black text-primary sm:text-base">Workspace Pro</p>
-                                            <p className="mt-1 text-[11px] font-semibold leading-[1.45] text-text-secondary sm:mt-2 sm:text-base sm:leading-7">
-                                                Track budgets, vendors, seating, and RSVPs all in one place. Your special day is coming soon!
-                                            </p>
+                                        <div className="absolute left-[45%] right-2 top-[-3px] z-50 rounded-xl border border-primary/25 bg-white px-3 py-1.5 pr-3 shadow-[0_10px_28px_rgba(122,90,97,0.13)] ring-1 ring-primary/10 sm:left-[33%] sm:right-3 sm:top-1.5 sm:rounded-2xl sm:px-4 sm:py-2 sm:pr-4 lg:left-[24%] lg:right-3 lg:max-w-xl">
+                                            <span className="absolute -left-[7px] top-1/2 -translate-y-1/2 h-3.5 w-3.5 rotate-45 border-b border-l border-primary/25 bg-white" />
+                                            <div className="relative z-10">
+                                                <p className="text-[10px] font-black text-primary sm:text-[11px] uppercase tracking-wider">Workspace Pro</p>
+                                                <p className="mt-0.5 text-[10px] font-medium leading-tight text-text-secondary sm:text-xs sm:leading-snug">
+                                                    Track budgets, vendors, seating, and RSVPs all in one place. Your special day is coming soon!
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-4">
-                                        <Link href={`/dashboard/${wedding.id}/planner`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-primary/15 transition-all hover:-translate-y-0.5 hover:bg-primary-hover sm:text-sm">
-                                            <ListTodo className="w-4 h-4" /> Open Planner
+                                    <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:mt-3">
+                                        <Link href={`/dashboard/${wedding.id}/planner`} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-primary/15 transition-all hover:-translate-y-0.5 hover:bg-primary-hover">
+                                            <ListTodo className="w-3.5 h-3.5" /> Open Planner
                                         </Link>
-                                        <Link href={`/dashboard/${wedding.id}/wedding-day?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
-                                            <Bell className="w-4 h-4" /> Wedding Day
+                                        <Link href={`/dashboard/${wedding.id}/wedding-day?from=dashboard`} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white">
+                                            <Bell className="w-3.5 h-3.5" /> Wedding Day
                                         </Link>
-                                        <Link href={`/dashboard/${wedding.id}/thank-you?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
-                                            <Mail className="w-4 h-4" /> Thank You
+                                        <Link href={`/dashboard/${wedding.id}/thank-you?from=dashboard`} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-primary/20 bg-white px-3 py-1.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white">
+                                            <Mail className="w-3.5 h-3.5" /> Thank You
                                         </Link>
-                                        <button type="button" onClick={() => openExternal(url)} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-bold text-text-secondary transition-all hover:-translate-y-0.5 hover:bg-neutral hover:text-foreground sm:text-sm">
-                                            <ExternalLink className="w-4 h-4" /> Guest View
+                                        <button type="button" onClick={() => openExternal(url)} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-bold text-text-secondary transition-all hover:-translate-y-0.5 hover:bg-neutral hover:text-foreground">
+                                            <ExternalLink className="w-3.5 h-3.5" /> Guest View
                                         </button>
                                     </div>
                                 </div>
@@ -1318,32 +1366,32 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="overflow-x-auto">
+                                    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                                         <table className="w-full text-left text-xs sm:text-sm">
-                                            <thead className="bg-neutral text-text-secondary/60 text-[8px] sm:text-[10px] uppercase tracking-widest font-black sticky top-0">
+                                            <thead className="bg-neutral/95 backdrop-blur-xs text-text-secondary/70 text-[9px] sm:text-[10px] uppercase tracking-widest font-black sticky top-0 z-10 border-b border-border/80 shadow-2xs">
                                                 <tr>
-                                                    <th className="px-3 sm:px-6 py-2 sm:py-3">Guest</th>
-                                                    <th className="px-3 sm:px-6 py-2 sm:py-3">Status</th>
-                                                    <th className="px-3 sm:px-6 py-2 sm:py-3 hidden sm:table-cell">Details</th>
-                                                    <th className="px-3 sm:px-6 py-2 sm:py-3"></th>
+                                                    <th className="px-3 sm:px-6 py-2.5 sm:py-3.5">Guest</th>
+                                                    <th className="px-3 sm:px-6 py-2.5 sm:py-3.5">Status</th>
+                                                    <th className="px-3 sm:px-6 py-2.5 sm:py-3.5 hidden sm:table-cell">Group & Table</th>
+                                                    <th className="px-3 sm:px-6 py-2.5 sm:py-3.5 text-right">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-border/50">
                                                 {filteredRsvps.slice(0, visibleCount).map((rsvp) => (
                                                     <tr key={rsvp.id} className="hover:bg-neutral/30 transition-colors group/row">
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-5">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
                                                             <div className="flex items-center gap-3 sm:gap-4">
-                                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-primary/5 dark:bg-primary/20 flex items-center justify-center text-primary font-black text-[10px] sm:text-xs">
+                                                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-primary/5 dark:bg-primary/20 flex items-center justify-center text-primary font-black text-[10px] sm:text-xs">
                                                                     {rsvp.guest_name.charAt(0)}
                                                                 </div>
                                                                 <div>
                                                                     <p className="font-bold text-foreground text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{rsvp.guest_name}</p>
                                                                     <p className="text-[10px] text-text-secondary/40 truncate italic max-w-[120px] sm:max-w-none">{rsvp.guest_email || 'No email provided'}</p>
-                                                                    {rsvp.num_guests > 1 && <span className="text-[7px] bg-primary/5 text-primary px-1.5 py-0.5 rounded font-black mt-1 inline-block uppercase tracking-widest">+{rsvp.num_guests - 1} party</span>}
+                                                                    {rsvp.num_guests > 1 && <span className="text-[7px] bg-primary/5 text-primary px-1.5 py-0.5 rounded font-black mt-0.5 inline-block uppercase tracking-widest">+{rsvp.num_guests - 1} party</span>}
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-5">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
                                                             <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter sm:tracking-widest ${
                                                                 (rsvp.rsvp_status === 'confirmed' || rsvp.attendance === 'Yes') ? 'bg-emerald-50 text-emerald-600' :
                                                                 (rsvp.rsvp_status === 'declined' || rsvp.attendance === 'No') ? 'bg-red-50 text-red-600' :
@@ -1353,14 +1401,14 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                                   (rsvp.rsvp_status === 'declined' || rsvp.attendance === 'No') ? 'NO' : '?' }
                                                             </span>
                                                         </td>
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-5 hidden sm:table-cell">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
                                                             <div className="text-[10px] text-text-secondary">
                                                                 <p className="font-black uppercase tracking-widest text-[8px] text-text-secondary/60">{getGuestGroupLabel(rsvp.guest_group)}</p>
-                                                                <p className="mt-1">{rsvp.table_assignment || 'No Table'}</p>
+                                                                <p className="mt-0.5">{rsvp.table_assignment || 'No Table'}</p>
                                                             </div>
                                                         </td>
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-5 text-right">
-                                                            <button onClick={() => deleteRsvp(rsvp.id)} className="text-text-secondary/20 hover:text-red-500 transition-colors">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-right">
+                                                            <button onClick={() => deleteRsvp(rsvp.id)} className="text-text-secondary/20 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50">
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
                                                         </td>
@@ -1381,7 +1429,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         )}
                     </div>
 
-                    <div className="space-y-6 sm:space-y-8">
+                    <div className="lg:col-span-4 space-y-6 sm:space-y-8 lg:sticky lg:top-6 self-start">
                         {/* QR & Share Hub */}
                         {(activeTab === 'home') && (
                             <div className="p-6 sm:p-10 rounded-[2.5rem] bg-primary text-white shadow-2xl relative overflow-hidden group animate-in fade-in slide-in-from-right-4">
@@ -1722,5 +1770,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 onImport={handleImportGuests}
             />
         </div>
+        </DashboardShell>
     );
 }

@@ -16,7 +16,7 @@ import type { TemplateProps, Wedding } from '@/types/wedding';
 
 import { SharedNewSections } from './shared';
 
-type PremiumLayout = 'invitation' | 'split' | 'cinematic' | 'editorial' | 'poster';
+type PremiumLayout = 'invitation' | 'split' | 'cinematic' | 'editorial' | 'poster' | 'bento' | 'arch';
 
 type PremiumTheme = {
     eyebrow: string;
@@ -27,7 +27,7 @@ type PremiumTheme = {
     ink: string;
     layout: PremiumLayout;
     baseTemplate: string;
-    ornament: 'botanical' | 'arch' | 'ribbon' | 'star' | 'sun' | 'grid';
+    ornament: 'botanical' | 'arch' | 'ribbon' | 'star' | 'sun' | 'grid' | 'tile' | 'disco' | 'filmstrip' | 'aura' | 'washi' | 'bauhaus' | 'stamp';
 };
 
 const PREMIUM_THEMES: Record<string, PremiumTheme> = {
@@ -51,22 +51,86 @@ const PREMIUM_THEMES: Record<string, PremiumTheme> = {
     gallery: { eyebrow: 'A gallery of us', mood: 'An artful day for our favorite masterpiece', primary: '#6C5A46', secondary: '#E8E1D7', surface: '#FBFAF8', ink: '#28221D', layout: 'editorial', baseTemplate: 'editorial', ornament: 'grid' },
     'petal-note': { eyebrow: 'A note for you', mood: 'Come celebrate the little things with us', primary: '#C8889A', secondary: '#F6E2E8', surface: '#FFF9FB', ink: '#542B3A', layout: 'invitation', baseTemplate: 'romantic', ornament: 'botanical' },
     'sunset-ceremony': { eyebrow: 'Meet us at golden hour', mood: 'A destination celebration at the edge of day', primary: '#D4774F', secondary: '#F5D3A5', surface: '#FFF6EC', ink: '#59301D', layout: 'split', baseTemplate: 'boho', ornament: 'sun' },
+
+    // 20 New Trending Styles
+    kinfolk: { eyebrow: 'The Minimal Atelier', mood: 'Understated elegance, quiet luxury, and timeless serenity', primary: '#8E8A82', secondary: '#F3EFEA', surface: '#FBF9F5', ink: '#1C1B19', layout: 'editorial', baseTemplate: 'minimal', ornament: 'grid' },
+    neobrutalist: { eyebrow: 'Bold & Unapologetic', mood: "We're getting hitched! High contrast, big energy, pure joy", primary: '#FF5E5B', secondary: '#FFE169', surface: '#FFFDF7', ink: '#0A0A0A', layout: 'bento', baseTemplate: 'urban', ornament: 'bauhaus' },
+    highfashion: { eyebrow: 'Monochrome Maison', mood: 'Haute couture editorial, timeless black & white drama', primary: '#D4AF37', secondary: '#262626', surface: '#111111', ink: '#F5F5F5', layout: 'split', baseTemplate: 'vogue', ornament: 'grid' },
+    glassbotanical: { eyebrow: 'The Lucent Flora', mood: 'Frosted crystal luminescence and floating botanical petals', primary: '#7FA073', secondary: '#E8F5E9', surface: '#F7FCF9', ink: '#2E382E', layout: 'invitation', baseTemplate: 'garden', ornament: 'botanical' },
+    cyberromantic: { eyebrow: 'Iridescent Y2K Glam', mood: 'Chrome glows, holographic dreamscapes, and future romance', primary: '#FF80BF', secondary: '#2A1B3D', surface: '#0B0C10', ink: '#F8FAFC', layout: 'cinematic', baseTemplate: 'glitch', ornament: 'aura' },
+    amalfi: { eyebrow: 'La Dolce Vita', mood: 'Capri lemon groves, majolica tiles, and sunlit coastal vows', primary: '#1C4E80', secondary: '#FDF3D6', surface: '#FFFDF7', ink: '#1E252B', layout: 'split', baseTemplate: 'riviera', ornament: 'tile' },
+    japandi: { eyebrow: 'Zen & Naturalis', mood: 'Washi textures, organic simplicity, and quiet breathing room', primary: '#8B9A82', secondary: '#EAE6DD', surface: '#F2EFE9', ink: '#282828', layout: 'editorial', baseTemplate: 'nordic', ornament: 'washi' },
+    desertmirage: { eyebrow: 'Sun-Bleached Dune', mood: 'Warm terracotta arches, desert agave, and golden hour light', primary: '#C86D51', secondary: '#F5E4D3', surface: '#FBF3E8', ink: '#3D2C28', layout: 'arch', baseTemplate: 'boho', ornament: 'sun' },
+    chateau: { eyebrow: 'Toile de Jouy', mood: 'Gilded ballroom chandeliers, Sèvres blue, and Parisian romance', primary: '#335C81', secondary: '#F0E6D2', surface: '#FAF8F5', ink: '#2B2D42', layout: 'invitation', baseTemplate: 'royal', ornament: 'arch' },
+    travelogue: { eyebrow: 'The Grand Voyage', mood: 'Passport stamps, vintage airmail, and a lifetime of adventures together', primary: '#C0392B', secondary: '#E6EFF5', surface: '#F8F6F0', ink: '#2C3E50', layout: 'poster', baseTemplate: 'vintage', ornament: 'stamp' },
+    gothicnoir: { eyebrow: 'Midnight Masquerade', mood: 'Deep bordeaux velvet, obsidian shadows, and candlelit romance', primary: '#9E2A2B', secondary: '#25161C', surface: '#0D0E11', ink: '#EDEDED', layout: 'cinematic', baseTemplate: 'midnight', ornament: 'ribbon' },
+    discofever: { eyebrow: 'The Golden Groove', mood: '70s dancefloor warmth, spinning vinyl records, and golden sparkle', primary: '#E39B00', secondary: '#FCE7C8', surface: '#FFF8EE', ink: '#382218', layout: 'poster', baseTemplate: 'whimsical', ornament: 'disco' },
+    baroque: { eyebrow: 'The Gilded Dynasty', mood: 'Heritage crests, royal navy velvet, and 24-karat gold filigree', primary: '#D4AF37', secondary: '#1A2744', surface: '#FAF7F2', ink: '#0A192F', layout: 'invitation', baseTemplate: 'artdeco', ornament: 'arch' },
+    lofifilm: { eyebrow: 'Film Strip Nostalgia', mood: '35mm grain, Kodak warm amber glow, and honest candid memories', primary: '#FF9F1C', secondary: '#382818', surface: '#181818', ink: '#EAEAEA', layout: 'cinematic', baseTemplate: 'film', ornament: 'filmstrip' },
+    stargazer: { eyebrow: 'The Cosmic Union', mood: 'Zodiac constellations, lunar glow, and love written in the stardust', primary: '#F5D061', secondary: '#22193E', surface: '#0B0F19', ink: '#F8FAFC', layout: 'cinematic', baseTemplate: 'celestial', ornament: 'star' },
+    cottagecore: { eyebrow: 'The Herbarium Notebook', mood: 'Pressed wildflower petals, botanical gardens, and handwritten vows', primary: '#5E7153', secondary: '#EBE2DC', surface: '#FAF6F0', ink: '#3A3335', layout: 'invitation', baseTemplate: 'garden', ornament: 'botanical' },
+    bauhaus: { eyebrow: 'Modern Artiste', mood: 'Bauhaus geometry, bold color blocks, and structured artistic love', primary: '#1D4ED8', secondary: '#FEE2E2', surface: '#F8FAFC', ink: '#0F172A', layout: 'bento', baseTemplate: 'editorial', ornament: 'bauhaus' },
+    nordicdrift: { eyebrow: 'Hygge Hearth', mood: 'Alpine pines, cozy fireplaces, and warm Scandinavian minimalism', primary: '#D97706', secondary: '#E2E8F0', surface: '#F7F5F0', ink: '#1A202C', layout: 'split', baseTemplate: 'nordic', ornament: 'arch' },
+    sunsetriviera: { eyebrow: 'Golden Hour Glow', mood: 'Multi-color sunset mesh gradients, champagne toasts, and warm ocean breeze', primary: '#F43F5E', secondary: '#FFE4E6', surface: '#FFF8F6', ink: '#1E1B4B', layout: 'split', baseTemplate: 'riviera', ornament: 'aura' },
+    storybook: { eyebrow: 'Memory Collage', mood: 'Washi tapes, keepsake polaroids, and our sweetest story chapters', primary: '#E07A5F', secondary: '#FBECE7', surface: '#F8F4EB', ink: '#2B2D42', layout: 'invitation', baseTemplate: 'romantic', ornament: 'washi' },
 };
 
 function formatDate(date: string) {
+    if (!date) return '';
     const value = new Date(date);
-    return Number.isNaN(value.getTime()) ? date : value.toLocaleDateString(undefined, { dateStyle: 'long' });
+    return Number.isNaN(value.getTime())
+        ? date
+        : value.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 function Ornament({ theme }: { theme: PremiumTheme }) {
     const color = theme.primary;
 
     if (theme.ornament === 'star') {
-        return <div className="absolute inset-0 opacity-70" aria-hidden="true" style={{ backgroundImage: `radial-gradient(${color} 1px, transparent 1px)`, backgroundSize: '32px 32px', maskImage: 'linear-gradient(to bottom, black, transparent 70%)' }} />;
+        return <div className="absolute inset-0 opacity-70" aria-hidden="true" style={{ backgroundImage: `radial-gradient(${color} 1.5px, transparent 1.5px)`, backgroundSize: '32px 32px', maskImage: 'linear-gradient(to bottom, black, transparent 70%)' }} />;
     }
 
     if (theme.ornament === 'grid') {
         return <div className="absolute inset-0 opacity-30" aria-hidden="true" style={{ backgroundImage: `linear-gradient(${color}22 1px, transparent 1px), linear-gradient(90deg, ${color}22 1px, transparent 1px)`, backgroundSize: '44px 44px', maskImage: 'linear-gradient(to bottom, black, transparent 78%)' }} />;
+    }
+
+    if (theme.ornament === 'tile') {
+        return <div className="absolute inset-0 opacity-25" aria-hidden="true" style={{ backgroundImage: `radial-gradient(circle, ${color} 2px, transparent 3px), linear-gradient(45deg, transparent 48%, ${color}33 49%, ${color}33 51%, transparent 52%)`, backgroundSize: '40px 40px', maskImage: 'linear-gradient(to bottom, black, transparent 85%)' }} />;
+    }
+
+    if (theme.ornament === 'aura') {
+        return <>
+            <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full opacity-40 blur-3xl animate-pulse" aria-hidden="true" style={{ backgroundColor: color }} />
+            <div className="absolute -right-20 bottom-10 h-80 w-80 rounded-full opacity-35 blur-3xl" aria-hidden="true" style={{ backgroundColor: theme.secondary }} />
+        </>;
+    }
+
+    if (theme.ornament === 'disco') {
+        return <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full opacity-30" aria-hidden="true" style={{ background: `radial-gradient(circle, ${color} 0 15%, transparent 16% 25%, ${color} 26% 35%, transparent 36% 48%, ${color} 49% 60%, transparent 61%)` }} />;
+    }
+
+    if (theme.ornament === 'filmstrip') {
+        return (
+            <div className="absolute inset-x-0 top-0 flex justify-between px-4 py-2 opacity-40" aria-hidden="true">
+                <div className="flex gap-3">{Array.from({ length: 12 }).map((_, i) => <div key={i} className="h-3 w-4 rounded-sm border border-white/40 bg-white/20" />)}</div>
+                <div className="flex gap-3">{Array.from({ length: 12 }).map((_, i) => <div key={i} className="h-3 w-4 rounded-sm border border-white/40 bg-white/20" />)}</div>
+            </div>
+        );
+    }
+
+    if (theme.ornament === 'bauhaus') {
+        return <>
+            <div className="absolute -left-12 -top-12 h-44 w-44 rounded-full opacity-30" aria-hidden="true" style={{ backgroundColor: color }} />
+            <div className="absolute -right-8 top-20 h-36 w-36 rotate-12 border-4 opacity-25" aria-hidden="true" style={{ borderColor: color }} />
+        </>;
+    }
+
+    if (theme.ornament === 'washi') {
+        return <div className="absolute left-8 top-4 h-6 w-24 -rotate-3 rounded-sm opacity-40 shadow-sm" aria-hidden="true" style={{ backgroundColor: color }} />;
+    }
+
+    if (theme.ornament === 'stamp') {
+        return <div className="absolute right-8 top-8 h-20 w-28 -rotate-6 border-2 border-dashed opacity-40" aria-hidden="true" style={{ borderColor: color }} />;
     }
 
     if (theme.ornament === 'arch') {
@@ -102,12 +166,22 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
 
     return (
         <section className="relative isolate overflow-hidden px-5 py-5 sm:px-8 sm:py-8" style={{ backgroundColor: theme.surface, color: theme.ink }}>
-            <div className="relative mx-auto min-h-[42rem] max-w-[1440px] overflow-hidden rounded-[2rem] border border-white/30 shadow-[0_30px_100px_rgba(29,22,20,0.18)] sm:min-h-[46rem]" style={{ backgroundColor: theme.surface }}>
+            <div className={`relative mx-auto min-h-[42rem] max-w-[1440px] overflow-hidden rounded-[2rem] border border-white/30 shadow-[0_30px_100px_rgba(29,22,20,0.18)] sm:min-h-[46rem] ${theme.layout === 'bento' ? 'border-2 border-black/80 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]' : ''}`} style={{ backgroundColor: theme.surface }}>
                 <Ornament theme={theme} />
 
                 {theme.layout === 'split' && (
                     <div className="absolute inset-y-0 right-0 hidden w-[52%] p-5 md:block">
                         <div className="h-full overflow-hidden rounded-[1.55rem]">{imagePanel}</div>
+                    </div>
+                )}
+                {theme.layout === 'arch' && (
+                    <div className="absolute inset-y-0 right-0 hidden w-[48%] p-6 md:block">
+                        <div className="h-full overflow-hidden rounded-t-full rounded-b-2xl border-4 shadow-xl" style={{ borderColor: theme.primary }}>{imagePanel}</div>
+                    </div>
+                )}
+                {theme.layout === 'bento' && (
+                    <div className="absolute inset-y-0 right-0 hidden w-[48%] p-6 md:block">
+                        <div className="h-full overflow-hidden rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">{imagePanel}</div>
                     </div>
                 )}
                 {(theme.layout === 'cinematic' || theme.layout === 'poster') && (
@@ -121,19 +195,19 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
                     initial={{ opacity: 0, y: 22 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className={`relative z-10 flex min-h-[42rem] flex-col justify-center px-7 py-16 text-center sm:px-16 sm:py-20 ${theme.layout === 'split' ? 'md:w-[54%] md:text-left' : ''} ${(theme.layout === 'cinematic' || theme.layout === 'poster') ? 'text-white' : ''}`}
+                    className={`relative z-10 flex min-h-[42rem] flex-col justify-center px-7 py-16 text-center sm:px-16 sm:py-20 ${(theme.layout === 'split' || theme.layout === 'arch' || theme.layout === 'bento') ? 'md:w-[52%] md:text-left' : ''} ${(theme.layout === 'cinematic' || theme.layout === 'poster') ? 'text-white' : ''}`}
                 >
-                    <p className="text-[10px] font-bold uppercase tracking-[0.32em] opacity-75 sm:text-xs">{theme.eyebrow}</p>
+                    <p className={`text-[10px] font-bold uppercase tracking-[0.32em] opacity-75 sm:text-xs ${theme.layout === 'bento' ? 'bg-black text-white px-3 py-1 rounded-sm w-fit mx-auto md:mx-0' : ''}`}>{theme.eyebrow}</p>
                     <div className="mx-auto my-7 h-px w-16 opacity-70 md:mx-0" style={{ backgroundColor: theme.primary }} />
                     <h1 className={`font-serif leading-[0.82] tracking-[-0.055em] ${theme.layout === 'editorial' ? 'text-5xl sm:text-7xl lg:text-[8rem]' : 'text-5xl sm:text-7xl lg:text-8xl'}`}>
                         {title}
                     </h1>
                     <p className="mt-8 max-w-md text-sm leading-7 opacity-80 sm:text-base md:mx-0">{theme.mood}</p>
-                    <div className="mt-10 flex flex-col gap-2 text-[10px] font-bold uppercase tracking-[0.25em] opacity-80 sm:text-xs">
+                    <div className={`mt-10 flex flex-col gap-2 text-[10px] font-bold uppercase tracking-[0.25em] opacity-80 sm:text-xs ${theme.layout === 'bento' ? 'p-3 border border-black/40 rounded-lg bg-white/80 w-fit mx-auto md:mx-0' : ''}`}>
                         <span>{formatDate(wedding.wedding_date)}</span>
                         <span className="opacity-60">{wedding.venue_name}</span>
                     </div>
-                    {theme.layout === 'split' && <div className="mt-10 overflow-hidden rounded-[1.5rem] md:hidden"><div className="aspect-[4/3]">{imagePanel}</div></div>}
+                    {(theme.layout === 'split' || theme.layout === 'arch' || theme.layout === 'bento') && <div className="mt-10 overflow-hidden rounded-[1.5rem] md:hidden"><div className="aspect-[4/3]">{imagePanel}</div></div>}
                 </motion.div>
             </div>
         </section>
