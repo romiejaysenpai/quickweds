@@ -23,7 +23,7 @@ type WeddingPreview = {
     rsvp_events?: WeddingRsvpEvent[] | string;
 };
 
-export default function RSVPForm({ weddingId, wedding }: { weddingId: string, wedding?: WeddingPreview }) {
+export default function RSVPForm({ weddingId, wedding, submissionSource = 'hosted' }: { weddingId: string, wedding?: WeddingPreview, submissionSource?: 'hosted' | 'embed' }) {
     const events = (() => {
         if (Array.isArray(wedding?.rsvp_events)) return wedding.rsvp_events.filter((event) => event?.id && event?.name);
         if (typeof wedding?.rsvp_events !== 'string') return [];
@@ -71,6 +71,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     weddingId,
+                    submissionSource,
                     guestName: formData.guestName.trim(),
                     guestEmail: formData.guestEmail.trim(),
                     attendance: formData.attendance,
@@ -109,7 +110,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
             }());
 
             void trackWeddingEvent(weddingId, 'rsvp_submitted', {
-                source: 'rsvp_form',
+                source: submissionSource === 'embed' ? 'rsvp_embed' : 'rsvp_form',
                 attendance: formData.attendance,
             });
         } catch (err) {

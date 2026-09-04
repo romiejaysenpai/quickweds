@@ -68,6 +68,7 @@ export const weddingBuilderSchema = z.object({
 // RSVP Submission Validation
 export const rsvpSubmissionSchema = z.object({
     weddingId: z.string().min(1, 'Wedding ID is required'),
+    submissionSource: z.enum(['hosted', 'embed']).optional().default('hosted'),
     guestName: z.string().min(1, 'Guest name is required').max(200),
     guestEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
     attendance: z.enum(['Yes', 'No', 'Maybe']),

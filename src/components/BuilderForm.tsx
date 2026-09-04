@@ -650,13 +650,13 @@ export default function BuilderForm() {
         if (!user) {
             setAccountIsPro(false);
             setActiveWeddingCount(0);
-            return { isPro: false, activeCount: 0 };
+            return { isPro: false, activeCount: 0, websiteMode: 'quickweds' as const };
         }
 
         const [profileResult, countResult] = await Promise.all([
             supabase
                 .from('user_app_profiles')
-                .select('is_pro, payment_status')
+                .select('is_pro, payment_status, website_mode')
                 .eq('user_id', user.id)
                 .maybeSingle(),
             supabase
@@ -678,7 +678,11 @@ export default function BuilderForm() {
         const activeCount = countResult.count || 0;
         setAccountIsPro(isPro);
         setActiveWeddingCount(activeCount);
-        return { isPro, activeCount };
+        const profileWebsiteMode = profileResult.data?.website_mode;
+        const websiteMode = ['quickweds', 'external', 'private'].includes(profileWebsiteMode)
+            ? profileWebsiteMode
+            : 'quickweds';
+        return { isPro, activeCount, websiteMode };
     }, [user]);
 
     useEffect(() => {
@@ -1175,9 +1179,11 @@ export default function BuilderForm() {
             return;
         }
 
+        let initialWebsiteMode: 'quickweds' | 'external' | 'private' = 'quickweds';
         if (!editId && !isAdmin) {
             try {
                 const limitState = await loadAccountLimitState();
+                initialWebsiteMode = limitState.websiteMode;
                 if (!limitState.isPro && limitState.activeCount >= 3) {
                     alert('Free accounts can create up to 3 active wedding websites. Unlock Account Pro to create more.');
                     return;
@@ -1323,6 +1329,7 @@ export default function BuilderForm() {
             const publicSlug = await resolvePublicSlug(weddingId);
             const baseSubmitPayload: any = {
                 ...payload,
+                ...(!editId ? { website_mode: initialWebsiteMode, rsvp_embed_enabled: false } : {}),
                 ...(publicSlug ? { public_slug: publicSlug } : {}),
                 id: weddingId,
                 user_id: editId && weddingOwnerId ? weddingOwnerId : user.id,
@@ -1374,6 +1381,8 @@ export default function BuilderForm() {
                     'card_style',
                     'include_entourage_section',
                     'background_music_url',
+                    'website_mode',
+                    'rsvp_embed_enabled',
                     'background_music_title',
                     'background_music_enabled',
                 ].forEach((column) => {

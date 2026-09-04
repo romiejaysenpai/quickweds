@@ -27,13 +27,13 @@ function getRecipients(profile: Pick<SupplierProfile, 'email'>, ownerEmail?: str
 
 function getEmailShell(title: string, body: string, buttonLabel: string, buttonUrl: string) {
     return `
-        <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; border: 1px solid #eadeda; border-radius: 24px; background: #ffffff;">
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; border: 1px solid #eadeda; border-radius: 24px; background: #ffffff;">
             <p style="margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #D16C78;">QuickWeds Supplier Directory</p>
-            <h1 style="margin: 0 0 16px; color: #34272b; font-size: 28px;">${escapeHtml(title)}</h1>
-            <div style="margin: 0 0 24px; color: #6f6266; line-height: 1.7; font-size: 15px;">
+            <h1 style="margin: 0 0 16px; color: #34272b; font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 30px; line-height: 1.15; letter-spacing: -0.3px;">${escapeHtml(title)}</h1>
+            <div style="margin: 0 0 24px; color: #6f6266; line-height: 1.7; font-size: 16px;">
                 ${body}
             </div>
-            <a href="${buttonUrl}" style="display: inline-block; background: #D16C78; color: #ffffff; text-decoration: none; border-radius: 12px; padding: 14px 18px; font-weight: 700;">${escapeHtml(buttonLabel)}</a>
+            <a href="${buttonUrl}" style="display: inline-block; background: #D16C78; color: #ffffff; text-decoration: none; border-radius: 12px; padding: 14px 20px; font-weight: 700; font-size: 15px; letter-spacing: 0.02em;">${escapeHtml(buttonLabel)}</a>
         </div>
     `;
 }

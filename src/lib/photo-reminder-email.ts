@@ -40,7 +40,7 @@ export function getPhotoReminderEmailHtml({
                     <tr>
                         <td style="padding:34px 28px 22px; text-align:center;">
                             <p style="margin:0; color:#D16C78; font-size:11px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase;">QuickWeds Photo Drop</p>
-                            <h1 style="margin:14px 0 0; font-family:Georgia, serif; font-size:32px; line-height:1.15; color:#2F2327;">Share your favorite moments</h1>
+                            <h1 style="margin:14px 0 0; font-family:Georgia, 'Times New Roman', serif; font-size:32px; line-height:1.15; letter-spacing:-0.3px; color:#2F2327;">Share your favorite moments</h1>
                             <p style="margin:14px 0 0; font-size:15px; line-height:1.7; color:#7A5A61;">Hi ${safeGuestName}, ${safeCoupleName} would love to collect the photos and memories you captured${safeWeddingDate ? ` from ${safeWeddingDate}` : ''}.</p>
                         </td>
                     </tr>

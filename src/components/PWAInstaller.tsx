@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Download, Bell, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { isNativeCapacitorApp } from '@/lib/capacitor';
 
 type BeforeInstallPromptEvent = Event & {
@@ -25,6 +26,7 @@ function wasRecentlyDismissed() {
 }
 
 export default function PWAInstaller() {
+  const pathname = usePathname() || '';
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -33,6 +35,7 @@ export default function PWAInstaller() {
   const supportsInstall = useMemo(() => typeof window !== 'undefined' && 'serviceWorker' in navigator, []);
 
   useEffect(() => {
+    if (pathname.startsWith('/embed/')) return;
     if (isNativeCapacitorApp()) return;
     if (!supportsInstall) return;
 
@@ -77,7 +80,7 @@ export default function PWAInstaller() {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
       window.removeEventListener('appinstalled', onAppInstalled);
     };
-  }, [supportsInstall]);
+  }, [pathname, supportsInstall]);
 
   const dismiss = () => {
     window.localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
@@ -94,7 +97,7 @@ export default function PWAInstaller() {
     setShowPrompt(false);
   };
 
-  if (!supportsInstall || isStandalone || !showPrompt || !installPrompt) return null;
+  if (pathname.startsWith('/embed/') || !supportsInstall || isStandalone || !showPrompt || !installPrompt) return null;
 
   return (
     <div className="fixed inset-x-3 bottom-3 z-[120] mx-auto max-w-md pb-[var(--safe-area-inset-bottom)] sm:bottom-5">

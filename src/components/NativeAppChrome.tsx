@@ -8,7 +8,7 @@ import { BookOpen, Heart, LayoutDashboard, Plus, Settings, Store } from 'lucide-
 import { isIosAppShell, isNativeAppShell } from '@/lib/capacitor';
 import { getCachedSession } from '@/lib/session-cache';
 
-const PUBLIC_PREFIXES = ['/w/', '/seat/', '/privacy', '/terms', '/cookies', '/support'];
+const PUBLIC_PREFIXES = ['/w/', '/embed/', '/seat/', '/privacy', '/terms', '/cookies', '/support'];
 const AUTH_PATHS = ['/login', '/signup', '/forgot-password', '/auth/callback', '/onboarding/account-type'];
 
 function shouldShowNativeTabs(pathname: string) {

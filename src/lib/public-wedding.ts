@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { revalidateTag, unstable_cache } from 'next/cache';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 import { redisDel, redisJsonGet, redisJsonSet } from '@/lib/redis';
@@ -39,6 +40,7 @@ export const PUBLIC_WEDDING_FIELDS = [
     'hashtag',
     'rsvp_deadline',
     'rsvp_events',
+    'rsvp_embed_enabled',
     'program_timeline',
     'faq_items',
     'invitation_image',
@@ -122,6 +124,7 @@ export function toPublicWedding(record: Record<string, unknown>) {
         reception_venue_photos: publicWedding.reception_venue_photos ?? [],
         gallery_images: publicWedding.gallery_images ?? [],
         rsvp_events: Array.isArray(publicWedding.rsvp_events) ? publicWedding.rsvp_events : [],
+        rsvp_embed_enabled: publicWedding.rsvp_embed_enabled === true,
         gallery_layout: typeof publicWedding.gallery_layout === 'string' && publicWedding.gallery_layout
             ? publicWedding.gallery_layout
             : 'auto',
@@ -209,6 +212,7 @@ function getTemplateTestWedding(rawIdentifier: string) {
         contact_person: 'Lena, Wedding Coordinator',
         hashtag: 'AmeliaAndMateo',
         rsvp_deadline: '2027-05-01',
+        rsvp_embed_enabled: true,
         program_timeline: '4:30 PM - Ceremony\n5:30 PM - Cocktails\n7:00 PM - Dinner\n8:30 PM - Dancing',
         faq_items: JSON.stringify([
             { question: 'Can I bring a plus one?', answer: 'Please refer to the names listed on your invitation.' },
@@ -255,18 +259,19 @@ async function loadPublicWedding(rawIdentifier: string) {
     const cached = await redisJsonGet<Record<string, unknown>>(publicWeddingCacheKey(rawIdentifier));
     if (cached) return cached;
 
-    const db = getSupabaseAdminClient() as any;
+    const db: SupabaseClient = getSupabaseAdminClient();
     const { wedding, error, identifier } = await resolvePublicWeddingByIdentifier(
         db,
         rawIdentifier,
         PUBLIC_WEDDING_FIELDS.join(',')
     );
 
-    if (error && isMissingOptionalColumnError(error, ['background_music_url', 'background_music_title', 'background_music_enabled'])) {
+    if (error && isMissingOptionalColumnError(error, ['background_music_url', 'background_music_title', 'background_music_enabled', 'rsvp_embed_enabled'])) {
         const fallbackFields = PUBLIC_WEDDING_FIELDS.filter((field) => ![
             'background_music_url',
             'background_music_title',
             'background_music_enabled',
+            'rsvp_embed_enabled',
         ].includes(field));
         const fallback = await resolvePublicWeddingByIdentifier(db, rawIdentifier, fallbackFields.join(','));
 
@@ -296,16 +301,27 @@ async function loadPublicWedding(rawIdentifier: string) {
 }
 
 export async function invalidateWeddingPublicCache(...identifiers: Array<string | null | undefined>) {
-    const keys = identifiers
+    const normalizedIdentifiers = [...new Set(identifiers
         .filter((identifier): identifier is string => typeof identifier === 'string' && identifier.trim().length > 0)
-        .map((identifier) => publicWeddingCacheKey(identifier.trim()));
+        .map((identifier) => identifier.trim()))];
+    const keys = normalizedIdentifiers.map(publicWeddingCacheKey);
 
     await redisDel(...keys);
-    revalidateTag('public-wedding', 'max');
+    // Settings mutations need read-your-own-writes behavior. The "max" profile
+    // serves the stale value once while refreshing in the background, which can
+    // make a newly enabled RSVP embed appear disabled on its first test visit.
+    revalidateTag('public-wedding', { expire: 0 });
+
+    for (const identifier of normalizedIdentifiers) {
+        const encodedIdentifier = encodeURIComponent(identifier);
+        revalidatePath(`/w/${encodedIdentifier}`);
+        revalidatePath(`/embed/rsvp/${encodedIdentifier}`);
+        revalidatePath(`/api/public/weddings/${encodedIdentifier}`);
+    }
 }
 
 export const getCachedPublicWedding = unstable_cache(
     async (rawIdentifier: string) => loadPublicWedding(rawIdentifier),
-    ['public-wedding'],
+    ['public-wedding-v2'],
     { revalidate: 60, tags: ['public-wedding'] }
 );

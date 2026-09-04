@@ -21,6 +21,12 @@ function isUniqueViolation(error: unknown) {
     return record?.code === '23505' || String(record?.message || '').toLowerCase().includes('duplicate key');
 }
 
+function isMissingRsvpEmbedColumn(error: unknown) {
+    const record = error as { code?: string; message?: string };
+    const text = `${record?.code || ''} ${record?.message || ''}`.toLowerCase();
+    return text.includes('rsvp_embed_enabled') && (text.includes('column') || text.includes('schema cache') || text.includes('pgrst204') || text.includes('42703'));
+}
+
 export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const parsed = rsvpSubmissionSchema.safeParse(body);
@@ -54,13 +60,25 @@ export async function POST(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
+        const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, rsvp_embed_enabled, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
         let weddingResult = await db
             .from('weddings')
             .select(weddingSelect)
             .eq('id', weddingId)
             .is('deleted_at', null)
             .maybeSingle();
+
+        if (weddingResult.error && isMissingRsvpEmbedColumn(weddingResult.error)) {
+            if (parsed.data.submissionSource === 'embed') {
+                return NextResponse.json({ error: 'RSVP embeds are temporarily unavailable.' }, { status: 503 });
+            }
+            weddingResult = await db
+                .from('weddings')
+                .select(weddingSelect.replace('rsvp_embed_enabled, ', ''))
+                .eq('id', weddingId)
+                .is('deleted_at', null)
+                .maybeSingle();
+        }
 
         if (weddingResult.error && isMissingPublicSlugColumnError(weddingResult.error)) {
             weddingResult = await db
@@ -75,6 +93,17 @@ export async function POST(req: NextRequest) {
 
         if (weddingError) throw weddingError;
         if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
+
+        if (parsed.data.submissionSource === 'embed' && wedding.rsvp_embed_enabled !== true) {
+            return NextResponse.json({ error: 'This RSVP embed is not accepting responses.' }, { status: 403 });
+        }
+
+        if (typeof wedding.rsvp_deadline === 'string' && wedding.rsvp_deadline.trim()) {
+            const deadline = new Date(wedding.rsvp_deadline);
+            if (!Number.isNaN(deadline.getTime()) && deadline.getTime() < Date.now()) {
+                return NextResponse.json({ error: 'RSVPs are closed for this wedding.' }, { status: 410 });
+            }
+        }
 
         const { data: existing, error: duplicateError } = await db
             .from('rsvps')

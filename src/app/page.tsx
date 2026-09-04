@@ -467,12 +467,14 @@ function SectionHeading({
 
 function FeatureMockup({ feature }: { feature: (typeof featureCards)[number] }) {
   const visualImageUrl = 'imageUrl' in feature && feature.imageUrl ? feature.imageUrl : defaultCoreFeatureImageUrl;
+  const isPrimaryFeature = feature.number === '01';
   return (
     <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-secondary/70 via-[#fff8f4] to-primary/35">
       <Image
         src={feature.mobileImageUrl}
         alt={`${feature.title} interface preview`}
         fill
+        loading={isPrimaryFeature ? 'eager' : 'lazy'}
         sizes="(max-width: 639px) 90vw, 1px"
         className="object-cover sm:hidden"
       />
@@ -490,6 +492,7 @@ function FeatureMockup({ feature }: { feature: (typeof featureCards)[number] }) 
           src={feature.mobileImageUrl}
           alt={`${feature.title} app preview`}
           fill
+          loading={isPrimaryFeature ? 'eager' : 'lazy'}
           sizes="520px"
           className="object-cover object-center transition duration-500 group-hover:scale-[1.025]"
         />

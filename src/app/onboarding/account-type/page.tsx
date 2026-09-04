@@ -25,6 +25,7 @@ import {
     Camera,
     CheckCheck,
     Loader2,
+    ExternalLink,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -40,11 +41,12 @@ import {
     type AccountType,
     type OnboardingDateStatus,
     type OnboardingSurveyData,
+    type WebsiteMode,
 } from '@/lib/account';
 
 const LOCAL_STORAGE_DRAFT_KEY = 'quickweds_onboarding_survey_draft_v1';
 
-type SurveyStep = 'account' | 'wedding' | 'journey' | 'about' | 'ready';
+type SurveyStep = 'account' | 'website' | 'wedding' | 'journey' | 'about' | 'ready';
 
 const GUEST_COUNT_OPTIONS = [
     { id: 'Under 50', label: 'Under 50', desc: 'Intimate / Micro wedding', count: '<50' },
@@ -192,6 +194,7 @@ function AccountTypeOnboardingContent() {
     const [guestCount, setGuestCount] = useState('101–200');
     const [planningStage, setPlanningStage] = useState('Just starting');
     const [primaryNeeds, setPrimaryNeeds] = useState<string[]>(['Wedding website', 'Guest list & RSVP']);
+    const [websiteMode, setWebsiteMode] = useState<WebsiteMode>('quickweds');
     const [userRole, setUserRole] = useState('Bride');
     const [acquisitionSource, setAcquisitionSource] = useState('Instagram');
 
@@ -223,9 +226,10 @@ function AccountTypeOnboardingContent() {
                 if (parsed.guestCount) setGuestCount(parsed.guestCount);
                 if (parsed.planningStage) setPlanningStage(parsed.planningStage);
                 if (Array.isArray(parsed.primaryNeeds)) setPrimaryNeeds(parsed.primaryNeeds);
+                if (['quickweds', 'external', 'private'].includes(parsed.websiteMode)) setWebsiteMode(parsed.websiteMode);
                 if (parsed.userRole) setUserRole(parsed.userRole);
                 if (parsed.acquisitionSource) setAcquisitionSource(parsed.acquisitionSource);
-                if (parsed.step && ['wedding', 'journey', 'about'].includes(parsed.step)) {
+                if (parsed.step && ['website', 'wedding', 'journey', 'about'].includes(parsed.step)) {
                     setStep(parsed.step as SurveyStep);
                 }
             }
@@ -249,6 +253,7 @@ function AccountTypeOnboardingContent() {
                 guestCount,
                 planningStage,
                 primaryNeeds,
+                websiteMode,
                 userRole,
                 acquisitionSource,
             };
@@ -256,7 +261,7 @@ function AccountTypeOnboardingContent() {
         } catch {
             // Ignore storage errors
         }
-    }, [step, dateStatus, exactDate, monthVal, yearVal, country, city, guestCount, planningStage, primaryNeeds, userRole, acquisitionSource]);
+    }, [step, dateStatus, exactDate, monthVal, yearVal, country, city, guestCount, planningStage, primaryNeeds, websiteMode, userRole, acquisitionSource]);
 
     // Redirect unauthenticated users
     useEffect(() => {
@@ -316,11 +321,12 @@ function AccountTypeOnboardingContent() {
                     if (profile.wedding_city) setCity(profile.wedding_city);
                     if (profile.planning_stage) setPlanningStage(profile.planning_stage);
                     if (profile.primary_needs?.length) setPrimaryNeeds(profile.primary_needs);
+                    if (profile.website_mode) setWebsiteMode(profile.website_mode);
                     if (profile.estimated_guest_count) setGuestCount(profile.estimated_guest_count);
                     if (profile.user_role) setUserRole(profile.user_role);
                     if (profile.acquisition_source) setAcquisitionSource(profile.acquisition_source);
 
-                    setStep((prev) => (prev === 'account' ? 'wedding' : prev));
+                    setStep((prev) => (prev === 'account' ? 'website' : prev));
                 }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Unable to load account profile.');
@@ -357,7 +363,7 @@ function AccountTypeOnboardingContent() {
                 return;
             }
 
-            setStep('wedding');
+            setStep('website');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unable to save account type.');
         } finally {
@@ -369,6 +375,16 @@ function AccountTypeOnboardingContent() {
         setPrimaryNeeds((prev) =>
             prev.includes(needId) ? prev.filter((id) => id !== needId) : [...prev, needId]
         );
+    };
+
+    const chooseWebsiteMode = (mode: WebsiteMode) => {
+        setWebsiteMode(mode);
+        setPrimaryNeeds((current) => {
+            const withoutWebsite = current.filter((need) => need !== 'Wedding website');
+            if (mode === 'quickweds') return current.includes('Wedding website') ? current : ['Wedding website', ...current];
+            if (mode === 'external' && !withoutWebsite.includes('Guest list & RSVP')) return ['Guest list & RSVP', ...withoutWebsite];
+            return withoutWebsite;
+        });
     };
 
     const handleCompleteSurvey = async () => {
@@ -388,10 +404,11 @@ function AccountTypeOnboardingContent() {
             wedding_country: country.trim() || null,
             wedding_city: city.trim() || null,
             planning_stage: planningStage,
-            primary_needs: primaryNeeds.length > 0 ? primaryNeeds : ['Wedding website'],
+            primary_needs: primaryNeeds.length > 0 ? primaryNeeds : [websiteMode === 'private' ? 'Wedding checklist' : 'Guest list & RSVP'],
             estimated_guest_count: guestCount,
             user_role: userRole,
             acquisition_source: acquisitionSource,
+            website_mode: websiteMode,
             onboarding_draft: null,
         };
 
@@ -409,7 +426,11 @@ function AccountTypeOnboardingContent() {
     };
 
     const handleFinishAndEnterDashboard = () => {
-        router.replace(nextPath && !nextPath.startsWith('/onboarding/account-type') ? nextPath : '/dashboard');
+        if (nextPath && !nextPath.startsWith('/onboarding/account-type')) {
+            router.replace(nextPath);
+            return;
+        }
+        router.replace(websiteMode === 'quickweds' ? '/builder' : '/dashboard');
     };
 
     if (authLoading || loading) {
@@ -505,6 +526,64 @@ function AccountTypeOnboardingContent() {
                                         <span>Go to Supplier Dashboard</span>
                                         <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                                     </div>
+                                </button>
+                            </div>
+                        </motion.section>
+                    )}
+
+                    {/* WEBSITE SETUP CHOICE */}
+                    {step === 'website' && (
+                        <motion.section
+                            key="step-website"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="rounded-3xl border border-primary/15 bg-white p-6 shadow-2xl shadow-primary/10 sm:p-10"
+                        >
+                            <div className="max-w-2xl">
+                                <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                                    <Globe className="h-3.5 w-3.5" /> Website setup
+                                </span>
+                                <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                                    Do you need a wedding website, or do you already have one?
+                                </h1>
+                                <p className="mt-2 text-sm leading-6 text-text-secondary sm:text-base">
+                                    Choose the starting point that fits you. You can change this later for each wedding.
+                                </p>
+                            </div>
+
+                            <div className="mt-8 grid gap-4 lg:grid-cols-3">
+                                {[
+                                    { id: 'quickweds', title: 'Build with QuickWeds', body: 'Create your wedding website and collect RSVPs in one place.', icon: Sparkles },
+                                    { id: 'external', title: 'Connect my existing website', body: 'Keep your current website and embed your QuickWeds RSVP form.', icon: ExternalLink },
+                                    { id: 'private', title: 'Use QuickWeds privately', body: 'Use planning tools without publishing a wedding website.', icon: ClipboardList },
+                                ].map((option) => {
+                                    const Icon = option.icon;
+                                    const selected = websiteMode === option.id;
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            type="button"
+                                            onClick={() => chooseWebsiteMode(option.id as WebsiteMode)}
+                                            className={`rounded-2xl border-2 p-5 text-left transition hover:-translate-y-1 hover:shadow-lg ${selected ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' : 'border-border bg-white'}`}
+                                        >
+                                            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${selected ? 'bg-primary text-white' : 'bg-neutral text-text-secondary'}`}>
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                            <h2 className="mt-4 font-serif text-lg font-bold text-foreground">{option.title}</h2>
+                                            <p className="mt-2 text-xs leading-5 text-text-secondary">{option.body}</p>
+                                            {selected && <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary"><Check className="h-3.5 w-3.5" /> Selected</span>}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-6">
+                                <button type="button" onClick={() => setStep('account')} className="inline-flex items-center gap-2 px-4 py-3 text-sm font-bold text-text-secondary hover:text-primary">
+                                    <ArrowLeft className="h-4 w-4" /> Back
+                                </button>
+                                <button type="button" onClick={() => setStep('wedding')} className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-primary/25 hover:bg-primary-hover">
+                                    Continue <ArrowRight className="h-4 w-4" />
                                 </button>
                             </div>
                         </motion.section>
@@ -941,14 +1020,16 @@ function AccountTypeOnboardingContent() {
                                     onClick={handleFinishAndEnterDashboard}
                                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-primary text-white font-bold text-base shadow-xl shadow-primary/25 hover:bg-primary-hover transition-all"
                                 >
-                                    Enter My Dashboard <ArrowRight className="w-5 h-5" />
+                                    {websiteMode === 'quickweds' ? 'Build My Wedding Website' : 'Enter My Dashboard'} <ArrowRight className="w-5 h-5" />
                                 </button>
-                                <Link
-                                    href="/builder"
-                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border border-primary/20 bg-primary/5 text-primary font-bold text-base hover:bg-primary/10 transition-all"
-                                >
-                                    Create Wedding Website
-                                </Link>
+                                {websiteMode !== 'quickweds' && (
+                                    <Link
+                                        href="/builder"
+                                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border border-primary/20 bg-primary/5 text-primary font-bold text-base hover:bg-primary/10 transition-all"
+                                    >
+                                        Create a Wedding Workspace
+                                    </Link>
+                                )}
                             </div>
                         </motion.section>
                     )}
