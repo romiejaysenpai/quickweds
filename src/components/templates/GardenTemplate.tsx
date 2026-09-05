@@ -12,7 +12,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -52,6 +54,15 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: Template
                             A Secret Garden Union
                         </p>
 
+                        <TemplateMonogram
+                            wedding={wedding}
+                            defaultShape="botanical-frame"
+                            size="md"
+                            color="#2d6a4f"
+                            motifColor={motifColor}
+                            className="mx-auto my-2"
+                        />
+
                         <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif text-[#1b4332] leading-tight">
                             {wedding.bride_name}
                             <span className="block text-2xl sm:text-3xl italic font-light text-[#40916c] my-2">&amp;</span>
@@ -61,6 +72,12 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: Template
                         <p className="text-xs sm:text-sm font-sans uppercase tracking-[0.3em] text-[#2d6a4f] font-semibold">
                             {formattedDate} • {wedding.venue_name}
                         </p>
+
+                        {wedding.quote && (
+                            <blockquote className="my-6 max-w-md mx-auto font-serif italic text-[#2d6a4f] text-base border-y border-[#2d6a4f]/25 py-3">
+                                &ldquo;{wedding.quote}&rdquo;
+                            </blockquote>
+                        )}
 
                         {(wedding.couple_photo || wedding.hero_image) && (
                             <div className="mx-auto w-40 h-40 sm:w-52 sm:h-52 rounded-full overflow-hidden border-4 border-white shadow-xl relative p-1 bg-emerald-100">
@@ -100,8 +117,11 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: Template
                 </motion.div>
             </section>
 
+            <TemplateSectionDivider template="garden" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="garden" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="garden" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             
             {!wedding.is_thank_you_mode && (
@@ -118,8 +138,11 @@ export default function GardenTemplate({ wedding, gallery, isExpired }: Template
                 />
             )}
 
+            <TemplateSectionDivider template="garden" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="garden" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="garden" motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

@@ -198,17 +198,17 @@ const emails = [
             ${hero(IMG.nurture3, 'Planner Pro')}
             <tr><td style="padding:36px 44px 20px;background-color:#ffffff;">
                 <p style="margin:0 0 12px;color:${MAIN_COLOR};font-weight:800;letter-spacing:0.14em;text-transform:uppercase;font-size:11px;">Limited-time offer</p>
-                <h1 style="margin:0;font-size:28px;line-height:1.25;color:${TEXT_COLOR};font-weight:300;letter-spacing:-0.3px;">Unlock the full planner for $15</h1>
+                <h1 style="margin:0;font-size:28px;line-height:1.25;color:${TEXT_COLOR};font-weight:300;letter-spacing:-0.3px;">Unlock the full planner for ₱899</h1>
             </td></tr>
             <tr><td style="padding:8px 44px 24px;">
                 <p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:${TEXT_COLOR};">Hi there,</p>
-                <p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:${SECONDARY_TEXT};">Quick update: Planner Pro was $29, and it is now $15 for a limited-time offer.</p>
+                <p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:${SECONDARY_TEXT};">Quick update: Planner Pro was ₱1,699, and it is now ₱899 for a limited-time offer.</p>
             </td></tr>
             <tr><td style="padding:0 44px 28px;"><table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#fff6f1;border:1px solid rgba(209,108,120,0.2);border-radius:18px;overflow:hidden;"><tr><td style="padding:22px 24px 8px;">
                 <p style="margin:0 0 14px;color:${MAIN_COLOR};font-weight:800;letter-spacing:0.12em;text-transform:uppercase;font-size:10px;">Limited-time price update</p>
                 <table border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
-                    <td style="vertical-align:bottom;padding:0 16px 12px 0;"><p style="margin:0;font-size:12px;color:${SECONDARY_TEXT};font-weight:700;">Was</p><p style="margin:2px 0 0;font-size:26px;color:#b0969b;text-decoration:line-through;font-weight:800;">$29</p></td>
-                    <td style="vertical-align:bottom;padding:0 0 12px;"><p style="margin:0;font-size:12px;color:${SECONDARY_TEXT};font-weight:700;">Now</p><p style="margin:2px 0 0;font-size:44px;color:${TEXT_COLOR};font-weight:900;letter-spacing:-1px;">$15</p></td>
+                    <td style="vertical-align:bottom;padding:0 16px 12px 0;"><p style="margin:0;font-size:12px;color:${SECONDARY_TEXT};font-weight:700;">Was</p><p style="margin:2px 0 0;font-size:26px;color:#b0969b;text-decoration:line-through;font-weight:800;">₱1,699</p></td>
+                    <td style="vertical-align:bottom;padding:0 0 12px;"><p style="margin:0;font-size:12px;color:${SECONDARY_TEXT};font-weight:700;">Now</p><p style="margin:2px 0 0;font-size:44px;color:${TEXT_COLOR};font-weight:900;letter-spacing:-1px;">₱899</p></td>
                 </tr></table>
                 <p style="margin:0 0 16px;font-size:13px;color:${ACCENT_COLOR};font-weight:700;">One-time upgrade. No subscription.</p>
             </td></tr><tr><td style="padding:0 24px 22px;"><table border="0" cellpadding="0" cellspacing="0" width="100%">
@@ -216,7 +216,7 @@ const emails = [
                 <tr><td width="22" style="padding:5px 0;vertical-align:top;color:${MAIN_COLOR};font-size:15px;font-weight:900;">&#10003;</td><td style="padding:5px 0;color:${SECONDARY_TEXT};font-size:14px;font-weight:600;">Full planner tools</td></tr>
                 <tr><td width="22" style="padding:5px 0;vertical-align:top;color:${MAIN_COLOR};font-size:15px;font-weight:900;">&#10003;</td><td style="padding:5px 0;color:${SECONDARY_TEXT};font-size:14px;font-weight:600;">Seating, reminders, exports</td></tr>
             </table></td></tr></table></td></tr>
-            ${cta(`${APP_URL}/settings`, 'Unlock Planner Pro for $15')}
+            ${cta(`${APP_URL}/settings`, 'Unlock Planner Pro for ₱899')}
             ${footer(`<p style="margin:0;font-size:12px;color:#b0969b;">You are receiving this because you created a QuickWeds account.</p>`)}`),
     },
 ];

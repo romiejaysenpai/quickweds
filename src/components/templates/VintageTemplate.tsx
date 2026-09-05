@@ -12,6 +12,8 @@ import {
     VideoSection,
     AttireSection,
     FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '@/components/wedding';
 import type { TemplateProps } from '@/types/wedding';
 import { SharedNewSections } from './shared';
@@ -58,10 +60,16 @@ export default function VintageTemplate({ wedding, gallery, isExpired }: Templat
                                 <p>POSTAGE PAID</p>
                                 <p>{year}</p>
                             </div>
-                            <div className="w-16 h-20 sm:w-20 sm:h-24 border-2 border-dashed border-[#8c7462] bg-[#fbf5e6] p-1 shadow-sm flex flex-col items-center justify-center text-center rotate-3 relative">
-                                <span className="text-[9px] font-mono uppercase tracking-widest text-[#8c7462]">LOVE</span>
-                                <span className="text-xl sm:text-2xl font-serif" style={{ color: motifColor }}>❦</span>
-                                <span className="text-[8px] font-mono text-[#8c7462]">{year}</span>
+                            <div className="w-16 h-20 sm:w-20 sm:h-24 border-2 border-dashed border-[#8c7462] bg-[#fbf5e6] p-1 shadow-sm flex flex-col items-center justify-center text-center rotate-3 relative overflow-hidden">
+                                {wedding.logo_initials ? (
+                                    <TemplateMonogram wedding={wedding} defaultShape="oval" size="sm" />
+                                ) : (
+                                    <>
+                                        <span className="text-[9px] font-mono uppercase tracking-widest text-[#8c7462]">LOVE</span>
+                                        <span className="text-xl sm:text-2xl font-serif" style={{ color: motifColor }}>❦</span>
+                                        <span className="text-[8px] font-mono text-[#8c7462]">{year}</span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -110,6 +118,12 @@ export default function VintageTemplate({ wedding, gallery, isExpired }: Templat
                                 </p>
                             </div>
 
+                            {wedding.quote && (
+                                <div className="border-l-2 border-[#8c7462] pl-3 py-1 text-xs sm:text-sm italic text-[#524439]/90 max-w-md bg-[#fbf7ee]/60 rounded-r">
+                                    &ldquo;{wedding.quote}&rdquo;
+                                </div>
+                            )}
+
                             <p className="text-sm sm:text-base italic leading-relaxed text-[#615246] max-w-md">
                                 {wedding.story || 'Two hearts, one journey. Join us as we exchange vows and begin our new chapter together.'}
                             </p>
@@ -135,7 +149,9 @@ export default function VintageTemplate({ wedding, gallery, isExpired }: Templat
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="vintage" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="vintage" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -149,7 +165,9 @@ export default function VintageTemplate({ wedding, gallery, isExpired }: Templat
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="vintage" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="vintage" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

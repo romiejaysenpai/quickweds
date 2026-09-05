@@ -12,7 +12,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -56,6 +58,16 @@ export default function ElopementTemplate({ wedding, gallery, isExpired }: Templ
                         <span>An Intimate Elopement</span>
                     </motion.div>
 
+                    <TemplateMonogram
+                        wedding={wedding}
+                        defaultShape="minimal"
+                        size="md"
+                        color="#ffffff"
+                        motifColor={motifColor}
+                        inverted
+                        className="my-2"
+                    />
+
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -84,7 +96,11 @@ export default function ElopementTemplate({ wedding, gallery, isExpired }: Templ
                         transition={{ duration: 1, delay: 0.5 }}
                         className="text-base sm:text-xl font-serif italic text-white/80 max-w-xl mx-auto drop-shadow"
                     >
-                        &ldquo;A quiet union, an everlasting devotion. We chose forever, beneath open skies.&rdquo;
+                        {wedding.quote ? (
+                            <>&ldquo;{wedding.quote}&rdquo;</>
+                        ) : (
+                            <>&ldquo;A quiet union, an everlasting devotion. We chose forever, beneath open skies.&rdquo;</>
+                        )}
                     </motion.p>
 
                     <motion.div
@@ -121,8 +137,11 @@ export default function ElopementTemplate({ wedding, gallery, isExpired }: Templ
                 </motion.div>
             </section>
 
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -136,8 +155,11 @@ export default function ElopementTemplate({ wedding, gallery, isExpired }: Templ
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

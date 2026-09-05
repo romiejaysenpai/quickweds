@@ -14,20 +14,20 @@ const DEFAULT_APP_URL = 'https://www.quickweds.site';
 const DEFAULT_FROM_EMAIL = 'QuickWeds <noreply@rsvp.quickweds.site>';
 
 const CAMPAIGN = {
-    subject: 'Planner Pro is now $15, down from $29',
+    subject: 'Planner Pro is now ₱899, down from ₱1,699',
     eyebrow: 'Limited-time offer',
-    heading: 'Unlock the full planner for $15',
+    heading: 'Unlock the full planner for ₱899',
     body: [
-        'Quick update: Planner Pro was $29, and it is now $15 for a limited-time offer.',
+        'Quick update: Planner Pro was ₱1,699, and it is now ₱899 for a limited-time offer.',
         'That unlocks the bigger planning workspace: unlimited guest emails, seating, reminders, collaborators, budgets, suppliers, photo tools, exports, and more.',
         'If QuickWeds is becoming the place you manage the wedding, this is the best time to take the limits off.',
     ],
-    cta: 'Unlock Planner Pro for $15',
+    cta: 'Unlock Planner Pro for ₱899',
     path: '/settings',
     offer: {
         label: 'Limited-time price update',
-        oldPrice: '$29',
-        newPrice: '$15',
+        oldPrice: '₱1,699',
+        newPrice: '₱899',
         note: 'One-time upgrade. No subscription.',
         highlights: ['Unlimited guest emails', 'Full planner tools', 'Seating, reminders, exports'],
     },
@@ -301,7 +301,7 @@ async function insertNotifications(db, users) {
     const rows = users.map((user) => ({
         user_id: user.id,
         title: CAMPAIGN.subject,
-        message: 'Limited-time offer: Planner Pro was $29 and is now $15. Unlock unlimited guest emails, full planner tools, seating, reminders, collaborators, exports, and more.',
+        message: 'Limited-time offer: Planner Pro was ₱1,699 and is now ₱899. Unlock unlimited guest emails, full planner tools, seating, reminders, collaborators, exports, and more.',
         type: 'system',
         link: CAMPAIGN.path,
     }));

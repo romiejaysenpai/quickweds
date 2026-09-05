@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Sparkles, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import {
     VideoSection,
     BioSection,
@@ -12,7 +12,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -30,8 +32,8 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: Template
             {/* Kraft Paper & Wood Grain Background Texture */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.045]" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
 
-            {/* Glowing String Lights Header Illustration */}
-            <div className="absolute top-0 left-0 right-0 h-16 pointer-events-none z-20 flex justify-around items-start opacity-70">
+            {/* Glowing String Lights Header Illustration extending to all sections */}
+            <div className="fixed top-0 left-0 right-0 h-14 pointer-events-none z-30 flex justify-around items-start opacity-75">
                 {Array.from({ length: 9 }).map((_, i) => (
                     <motion.div
                         key={i}
@@ -55,6 +57,10 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: Template
                     transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
                     className="text-center max-w-4xl w-full z-10 bg-[#fffdf9]/90 backdrop-blur-md p-8 sm:p-14 md:p-18 rounded-2xl border border-[#8C6446]/20 shadow-[0_20px_70px_rgba(74,59,50,0.09)] space-y-6"
                 >
+                    <div className="mb-2 flex justify-center">
+                        <TemplateMonogram wedding={wedding} defaultShape="wax-seal" size="sm" />
+                    </div>
+
                     <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.45em] font-sans font-bold text-[#8C6446]">
                         <Heart className="w-3.5 h-3.5 fill-[#8C6446]" />
                         <span>We&apos;re Getting Married</span>
@@ -91,7 +97,13 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: Template
                         <span className="text-lg sm:text-xl text-[#635144]">{wedding.venue_name}</span>
                     </div>
 
-                    <p className="text-sm sm:text-base italic leading-relaxed text-[#635144] max-w-lg mx-auto">
+                    {wedding.quote && (
+                        <p className="text-sm font-serif italic text-[#8C6446] mb-3 max-w-lg mx-auto">
+                            &ldquo;{wedding.quote}&rdquo;
+                        </p>
+                    )}
+
+                    <p className="text-sm sm:text-base italic leading-relaxed text-[#5c4a40] max-w-lg mx-auto">
                         {wedding.story || 'A cozy celebration under string lights and open skies, surrounded by the warmth of family and lifelong friends.'}
                     </p>
 
@@ -114,7 +126,9 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: Template
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="rustic" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="rustic" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             
             {!wedding.is_thank_you_mode && (
@@ -131,7 +145,9 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: Template
                 />
             )}
 
+            <TemplateSectionDivider template="rustic" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="rustic" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

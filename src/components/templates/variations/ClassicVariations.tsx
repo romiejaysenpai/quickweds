@@ -14,6 +14,8 @@ import {
     VideoSection,
     AttireSection,
     FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '@/components/wedding';
 import type { TemplateProps } from '@/types/wedding';
 import { SharedNewSections } from '../shared';
@@ -77,6 +79,10 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
                         initial="hidden"
                         animate="visible"
                     >
+                        <motion.div variants={itemVariants} className="mb-4 flex justify-center">
+                            <TemplateMonogram wedding={wedding} defaultShape="circle" inverted size="sm" />
+                        </motion.div>
+
                         <motion.span
                             variants={itemVariants}
                             className="text-xs sm:text-sm uppercase tracking-[0.4em] font-bold mb-6 sm:mb-7 md:mb-8 block opacity-80"
@@ -135,7 +141,9 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
 
             {/* Standard Flow */}
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -149,7 +157,9 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
@@ -185,6 +195,7 @@ export function ClassicV2({ wedding, gallery, isExpired }: TemplateProps) {
                 </div>
 
                 <div className="flex flex-col justify-center px-8 py-12 lg:px-16 xl:px-24 bg-[#F9F7F5]">
+                    <TemplateMonogram wedding={wedding} defaultShape="editorial" size="sm" className="mb-4 justify-start" />
                     <span className="text-xs uppercase tracking-[0.4em] font-bold text-text-secondary mb-4 block" style={{ color: motifColor }}>
                         Save The Date
                     </span>
@@ -244,21 +255,27 @@ export function ClassicV2({ wedding, gallery, isExpired }: TemplateProps) {
 // ==========================================
 export function ClassicV3({ wedding, gallery, isExpired }: TemplateProps) {
     const motifColor = wedding.motif_color || '#D9777F';
+    const heroBg = wedding.hero_image || wedding.couple_photo;
 
     return (
         <div className="template-variation-v3 bg-gradient-to-b from-[#FFF0F3] via-[#FFF8F9] to-[#F8EDEB]">
             {/* Floating Glassmorphism Hero */}
             <section className="h-screen relative flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-                {wedding.hero_image && (
+                {heroBg ? (
                     <div className="absolute inset-0 z-0">
                         <Image
-                            src={wedding.hero_image}
+                            src={heroBg}
                             alt={`${wedding.bride_name} & ${wedding.groom_name}`}
                             fill
                             priority
                             className="object-cover blur-sm brightness-90 scale-110"
                         />
                         <div className="absolute inset-0 bg-black/30" />
+                    </div>
+                ) : (
+                    <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-rose-200/50 via-pink-100/30 to-transparent">
+                        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#D9777F]/15 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-rose-300/10 rounded-full blur-2xl pointer-events-none" />
                     </div>
                 )}
 
@@ -268,6 +285,7 @@ export function ClassicV3({ wedding, gallery, isExpired }: TemplateProps) {
                     transition={{ duration: 0.8 }}
                     className="relative z-10 max-w-2xl w-full backdrop-blur-xl bg-white/40 border border-white/60 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] rounded-[2.5rem] p-8 sm:p-12 text-center text-foreground"
                 >
+                    <TemplateMonogram wedding={wedding} defaultShape="oval" size="sm" className="mb-4" />
                     <span className="text-xs uppercase tracking-[0.4em] font-semibold text-primary/80 mb-3 block">
                         Together with their families
                     </span>
@@ -294,6 +312,7 @@ export function ClassicV3({ wedding, gallery, isExpired }: TemplateProps) {
             </section>
 
             {/* Schedule & Venue Priority Flow */}
+            <TemplateSectionDivider motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -307,10 +326,15 @@ export function ClassicV3({ wedding, gallery, isExpired }: TemplateProps) {
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle="v3" />
+            <TemplateSectionDivider motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="polaroid" />
+            <TemplateSectionDivider motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
@@ -331,9 +355,15 @@ export function ClassicV4({ wedding, gallery, isExpired }: TemplateProps) {
             {/* Monogram Banner & Asymmetric Photo Grid Hero */}
             <section className="pt-12 pb-16 px-6 sm:px-12 max-w-7xl mx-auto border-b border-border/40">
                 <div className="text-center mb-8">
-                    <span className="text-3xl font-serif tracking-widest border border-foreground/20 rounded-full px-6 py-2 inline-block mb-4">
-                        {initials}
-                    </span>
+                    <div className="mb-4 flex justify-center">
+                        {wedding.logo_initials ? (
+                            <TemplateMonogram wedding={wedding} defaultShape="circle" size="md" />
+                        ) : (
+                            <span className="text-3xl font-serif tracking-widest border border-foreground/20 rounded-full px-6 py-2 inline-block">
+                                {initials}
+                            </span>
+                        )}
+                    </div>
                     <h1 className="text-4xl sm:text-7xl font-serif uppercase tracking-tight leading-none mb-4">
                         {wedding.bride_name} <span className="font-light italic lowercase font-serif text-3xl sm:text-5xl text-primary">&</span> {wedding.groom_name}
                     </h1>
@@ -409,6 +439,7 @@ export function ClassicV5({ wedding, gallery, isExpired }: TemplateProps) {
         <div className="template-variation-v5 bg-[#FAF6F0] text-foreground">
             {/* Pure Typography Banner with Inline Countdown */}
             <section className="py-24 px-6 sm:px-12 text-center max-w-5xl mx-auto border-b border-border/30">
+                <TemplateMonogram wedding={wedding} defaultShape="minimal" size="sm" className="mb-4" />
                 <span className="text-xs font-mono uppercase tracking-[0.3em] text-text-secondary block mb-4">
                     Official Wedding Announcement
                 </span>

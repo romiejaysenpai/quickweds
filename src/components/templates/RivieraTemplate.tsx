@@ -11,7 +11,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -44,6 +46,15 @@ export default function RivieraTemplate({ wedding, gallery, isExpired }: Templat
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                         <span>Riviera Soirée</span>
                     </motion.div>
+
+                    <TemplateMonogram
+                        wedding={wedding}
+                        defaultShape="circle"
+                        size="md"
+                        color="#0284c7"
+                        motifColor={wedding.motif_color}
+                        className="mx-auto"
+                    />
 
                     <motion.h1
                         initial={{ opacity: 0, scale: 0.96 }}
@@ -79,7 +90,11 @@ export default function RivieraTemplate({ wedding, gallery, isExpired }: Templat
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-sky-950/70 via-transparent to-transparent flex items-end justify-between p-8 text-white">
                             <p className="font-serif italic text-lg sm:text-xl text-amber-100 max-w-md text-left">
-                                &quot;Where the azure sea meets timeless romance under the Mediterranean sun.&quot;
+                                {wedding.quote ? (
+                                    <>&ldquo;{wedding.quote}&rdquo;</>
+                                ) : (
+                                    <>&ldquo;Where the azure sea meets timeless romance under the Mediterranean sun.&rdquo;</>
+                                )}
                             </p>
                             <a
                                 href="#rsvp"
@@ -94,8 +109,11 @@ export default function RivieraTemplate({ wedding, gallery, isExpired }: Templat
             </section>
 
             {/* Content Sections */}
+            <TemplateSectionDivider template="riviera" motifColor={wedding.motif_color} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="riviera" motifColor={wedding.motif_color} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="riviera" motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} />
 
             {!wedding.is_thank_you_mode && (
@@ -112,8 +130,11 @@ export default function RivieraTemplate({ wedding, gallery, isExpired }: Templat
                 />
             )}
 
+            <TemplateSectionDivider template="riviera" motifColor={wedding.motif_color} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="riviera" motifColor={wedding.motif_color} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="riviera" motifColor={wedding.motif_color} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

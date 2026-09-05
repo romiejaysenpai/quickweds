@@ -11,18 +11,21 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
 
 const sakuraPetals = [
-    { id: 1, left: '10%', duration: 12, delay: 0 },
-    { id: 2, left: '25%', duration: 15, delay: 2 },
-    { id: 3, left: '45%', duration: 14, delay: 4 },
-    { id: 4, left: '65%', duration: 16, delay: 1 },
-    { id: 5, left: '85%', duration: 13, delay: 3 },
-    { id: 6, left: '95%', duration: 18, delay: 5 },
+    { id: 1, left: '8%', duration: 12, delay: 0 },
+    { id: 2, left: '20%', duration: 15, delay: 2 },
+    { id: 3, left: '35%', duration: 14, delay: 4 },
+    { id: 4, left: '50%', duration: 17, delay: 1.5 },
+    { id: 5, left: '65%', duration: 16, delay: 1 },
+    { id: 6, left: '80%', duration: 13, delay: 3 },
+    { id: 7, left: '92%', duration: 18, delay: 5 },
 ];
 
 export default function SakuraTemplate({ wedding, gallery, isExpired }: TemplateProps) {
@@ -73,6 +76,10 @@ export default function SakuraTemplate({ wedding, gallery, isExpired }: Template
                     transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
                     className="relative z-10 bg-white/80 backdrop-blur-xl p-8 sm:p-14 md:p-20 rounded-[3.5rem] border border-white max-w-4xl shadow-[0_20px_70px_rgba(255,183,197,0.35)] space-y-6"
                 >
+                    <div className="mb-2 flex justify-center">
+                        <TemplateMonogram wedding={wedding} defaultShape="botanical-frame" size="sm" />
+                    </div>
+
                     <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-pink-100/80 text-pink-700 text-xs uppercase tracking-[0.35em] font-sans font-bold">
                         <span>🌸 Spring Blossom Union</span>
                     </div>
@@ -104,6 +111,12 @@ export default function SakuraTemplate({ wedding, gallery, isExpired }: Template
                         </div>
                     )}
 
+                    {wedding.quote && (
+                        <p className="text-sm font-serif italic text-pink-600/90 max-w-md mx-auto">
+                            &ldquo;{wedding.quote}&rdquo;
+                        </p>
+                    )}
+
                     <p className="text-sm sm:text-base italic leading-relaxed text-[#8e405a]/80 max-w-lg mx-auto">
                         {wedding.story || 'Like cherry blossoms celebrating spring, we invite you to share in the joy and beauty of our union.'}
                     </p>
@@ -127,7 +140,9 @@ export default function SakuraTemplate({ wedding, gallery, isExpired }: Template
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="sakura" motifColor={wedding.motif_color} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="sakura" motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} />
             
             {!wedding.is_thank_you_mode && (
@@ -144,7 +159,9 @@ export default function SakuraTemplate({ wedding, gallery, isExpired }: Template
                 />
             )}
 
+            <TemplateSectionDivider template="sakura" motifColor={wedding.motif_color} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="sakura" motifColor={wedding.motif_color} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

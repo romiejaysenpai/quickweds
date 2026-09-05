@@ -12,7 +12,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -50,6 +52,15 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: TemplateP
                     </div>
 
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
+                        <TemplateMonogram
+                            wedding={wedding}
+                            defaultShape="editorial"
+                            size="md"
+                            color="#000000"
+                            motifColor={wedding.motif_color}
+                            className="mb-8"
+                        />
+
                         <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-serif leading-[0.85] tracking-tight uppercase mb-6">
                             {wedding.bride_name} <br />
                             <span className="font-sans font-light italic text-3xl sm:text-5xl text-neutral-400">&amp;</span> <br />
@@ -62,6 +73,12 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: TemplateP
                                 {wedding.venue_name} {wedding.venue_address ? `• ${wedding.venue_address}` : ''}
                             </p>
                         </div>
+
+                        {wedding.quote && (
+                            <blockquote className="my-6 border-l-2 border-black pl-4 font-serif italic text-neutral-800 text-lg">
+                                &ldquo;{wedding.quote}&rdquo;
+                            </blockquote>
+                        )}
 
                         <p className="text-sm sm:text-base leading-relaxed text-neutral-600 font-light max-w-md mb-8">
                             {wedding.story || 'A high-fashion union of modern elegance, curated cuisine, and timeless couture romance.'}
@@ -92,8 +109,11 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: TemplateP
                 </div>
             </section>
 
+            <TemplateSectionDivider template="vogue" motifColor={wedding.motif_color} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="vogue" motifColor={wedding.motif_color} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="vogue" motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -107,8 +127,11 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: TemplateP
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="vogue" motifColor={wedding.motif_color} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="vogue" motifColor={wedding.motif_color} />
             <GallerySection id="gallery" gallery={gallery} masonry template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="vogue" motifColor={wedding.motif_color} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

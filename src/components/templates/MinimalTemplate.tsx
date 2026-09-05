@@ -12,6 +12,8 @@ import {
     VideoSection,
     AttireSection,
     FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '@/components/wedding';
 import type { TemplateProps } from '@/types/wedding';
 import { SharedNewSections } from './shared';
@@ -43,6 +45,8 @@ export default function MinimalTemplate({ wedding, gallery, isExpired }: Templat
                         transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                         className="lg:col-span-7 space-y-8"
                     >
+                        <TemplateMonogram wedding={wedding} defaultShape="minimal" size="sm" className="justify-start mb-2" />
+
                         <div className="flex items-center gap-4 text-[10px] sm:text-xs font-mono uppercase tracking-[0.4em] text-neutral-400">
                             <span>SAVE THE DATE</span>
                             <span className="w-8 h-px bg-neutral-300" />
@@ -69,6 +73,12 @@ export default function MinimalTemplate({ wedding, gallery, isExpired }: Templat
                                 </p>
                             )}
                         </div>
+
+                        {wedding.quote && (
+                            <blockquote className="border-l-2 border-neutral-900 pl-4 py-1 text-sm font-serif italic text-neutral-700 max-w-md">
+                                &ldquo;{wedding.quote}&rdquo;
+                            </blockquote>
+                        )}
 
                         <p className="text-sm sm:text-base leading-relaxed text-neutral-500 max-w-md font-light">
                             {wedding.story || 'A union of two lives. Join us for an intimate celebration of vows, dinner, and dancing.'}
@@ -121,7 +131,9 @@ export default function MinimalTemplate({ wedding, gallery, isExpired }: Templat
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -135,7 +147,9 @@ export default function MinimalTemplate({ wedding, gallery, isExpired }: Templat
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

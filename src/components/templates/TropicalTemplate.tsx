@@ -12,7 +12,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -46,6 +48,15 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: Templa
                         <Sun className="w-3.5 h-3.5 text-amber-500" />
                     </div>
 
+                    <TemplateMonogram
+                        wedding={wedding}
+                        defaultShape="circle"
+                        size="md"
+                        color={motifColor}
+                        motifColor={motifColor}
+                        className="mb-6 mx-auto"
+                    />
+
                     <h1 className="text-4xl sm:text-6xl md:text-8xl font-serif text-[#00362c] leading-tight tracking-tight mb-6">
                         {wedding.bride_name} <br />
                         <span className="text-2xl sm:text-4xl italic font-light serif text-teal-600 my-2 block">&amp;</span>
@@ -59,6 +70,12 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: Templa
                         <span>•</span>
                         <span>{wedding.venue_name}</span>
                     </div>
+
+                    {wedding.quote && (
+                        <blockquote className="my-6 max-w-md mx-auto font-serif italic text-teal-900/90 text-base md:text-lg border-y border-teal-200/60 py-3">
+                            &ldquo;{wedding.quote}&rdquo;
+                        </blockquote>
+                    )}
 
                     {/* Couple Photo Showcase */}
                     {(wedding.hero_image || wedding.couple_photo) && (
@@ -101,8 +118,11 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: Templa
                 </motion.div>
             </section>
 
+            <TemplateSectionDivider template="tropical" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="tropical" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="tropical" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -116,8 +136,11 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: Templa
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="tropical" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="tropical" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="tropical" motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Film, Play } from 'lucide-react';
 import {
     VideoSection,
     BioSection,
@@ -12,7 +11,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -62,6 +63,16 @@ export default function CinematicTemplate({ wedding, gallery, isExpired }: Templ
                         </span>
                     </motion.div>
 
+                    <TemplateMonogram
+                        wedding={wedding}
+                        defaultShape="minimal"
+                        size="md"
+                        color="#ffffff"
+                        motifColor={wedding.motif_color}
+                        inverted
+                        className="my-2"
+                    />
+
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -86,6 +97,12 @@ export default function CinematicTemplate({ wedding, gallery, isExpired }: Templ
                         </div>
                     </motion.div>
 
+                    {wedding.quote && (
+                        <blockquote className="my-6 max-w-xl mx-auto italic font-serif text-white/80 text-base md:text-lg border-y border-white/15 py-3 drop-shadow">
+                            &ldquo;{wedding.quote}&rdquo;
+                        </blockquote>
+                    )}
+
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -109,8 +126,11 @@ export default function CinematicTemplate({ wedding, gallery, isExpired }: Templ
                 </div>
             </section>
 
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} invert />
             
             {!wedding.is_thank_you_mode && (
@@ -127,8 +147,11 @@ export default function CinematicTemplate({ wedding, gallery, isExpired }: Templ
                 />
             )}
 
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />

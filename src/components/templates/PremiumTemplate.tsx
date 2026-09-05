@@ -11,6 +11,8 @@ import {
     SafeWeddingImage,
     TimelineSection,
     VideoSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '@/components/wedding';
 import type { TemplateProps, Wedding } from '@/types/wedding';
 
@@ -198,10 +200,28 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
                     className={`relative z-10 flex min-h-[42rem] flex-col justify-center px-7 py-16 text-center sm:px-16 sm:py-20 ${(theme.layout === 'split' || theme.layout === 'arch' || theme.layout === 'bento') ? 'md:w-[52%] md:text-left' : ''} ${(theme.layout === 'cinematic' || theme.layout === 'poster') ? 'text-white' : ''}`}
                 >
                     <p className={`text-[10px] font-bold uppercase tracking-[0.32em] opacity-75 sm:text-xs ${theme.layout === 'bento' ? 'bg-black text-white px-3 py-1 rounded-sm w-fit mx-auto md:mx-0' : ''}`}>{theme.eyebrow}</p>
+                    
+                    <TemplateMonogram
+                        wedding={wedding}
+                        defaultShape="circle"
+                        size="md"
+                        color={theme.primary}
+                        motifColor={theme.primary}
+                        inverted={theme.layout === 'cinematic' || theme.layout === 'poster'}
+                        className={`my-4 ${(theme.layout === 'split' || theme.layout === 'arch' || theme.layout === 'bento') ? 'md:justify-start justify-center' : 'justify-center'}`}
+                    />
+
                     <div className="mx-auto my-7 h-px w-16 opacity-70 md:mx-0" style={{ backgroundColor: theme.primary }} />
                     <h1 className={`font-serif leading-[0.82] tracking-[-0.055em] ${theme.layout === 'editorial' ? 'text-5xl sm:text-7xl lg:text-[8rem]' : 'text-5xl sm:text-7xl lg:text-8xl'}`}>
                         {title}
                     </h1>
+
+                    {wedding.quote && (
+                        <blockquote className="my-6 max-w-md italic font-serif text-sm sm:text-base opacity-90 border-l-2 pl-4 md:mx-0 mx-auto" style={{ borderColor: theme.primary }}>
+                            &ldquo;{wedding.quote}&rdquo;
+                        </blockquote>
+                    )}
+
                     <p className="mt-8 max-w-md text-sm leading-7 opacity-80 sm:text-base md:mx-0">{theme.mood}</p>
                     <div className={`mt-10 flex flex-col gap-2 text-[10px] font-bold uppercase tracking-[0.25em] opacity-80 sm:text-xs ${theme.layout === 'bento' ? 'p-3 border border-black/40 rounded-lg bg-white/80 w-fit mx-auto md:mx-0' : ''}`}>
                         <span>{formatDate(wedding.wedding_date)}</span>
@@ -224,8 +244,11 @@ export default function PremiumTemplate({ wedding, gallery, isExpired }: Templat
             <div className="relative overflow-hidden" style={{ background: `linear-gradient(180deg, ${theme.surface} 0%, ${theme.secondary}55 45%, ${theme.surface} 100%)` }}>
                 <div className="pointer-events-none absolute left-1/2 top-0 h-96 w-[44rem] -translate-x-1/2 rounded-full blur-3xl" style={{ backgroundColor: `${theme.primary}12` }} />
                 <div className="relative z-10">
+                    <TemplateSectionDivider template={theme.baseTemplate} motifColor={theme.primary} />
                     <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
+                    <TemplateSectionDivider template={theme.baseTemplate} motifColor={theme.primary} />
                     <BioSection id="bio" wedding={themedWedding} />
+                    <TemplateSectionDivider template={theme.baseTemplate} motifColor={theme.primary} />
                     <DetailsSection id="details" wedding={themedWedding} />
                     {!wedding.is_thank_you_mode && (
                         <CountdownTimer
@@ -240,8 +263,11 @@ export default function PremiumTemplate({ wedding, gallery, isExpired }: Templat
                             motifColor={theme.primary}
                         />
                     )}
+                    <TemplateSectionDivider template={theme.baseTemplate} motifColor={theme.primary} />
                     <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={themedWedding} />
+                    <TemplateSectionDivider template={theme.baseTemplate} motifColor={theme.primary} />
                     <GallerySection id="gallery" gallery={gallery} template={theme.baseTemplate} motifColor={theme.primary} />
+                    <TemplateSectionDivider template={theme.baseTemplate} motifColor={theme.primary} />
                     <GiftSection id="gift" wedding={themedWedding} />
                     <SharedNewSections id="additional" wedding={themedWedding} isExpired={isExpired} />
                 </div>

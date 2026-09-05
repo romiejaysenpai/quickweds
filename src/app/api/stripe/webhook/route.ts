@@ -7,7 +7,7 @@ function isPaidCheckoutSession(session: Stripe.Checkout.Session) {
     return (
         session.mode === 'payment' &&
         session.payment_status === 'paid' &&
-        session.currency === PRICING.CURRENCY &&
+        session.currency?.toLowerCase() === PRICING.CURRENCY.toLowerCase() &&
         typeof session.amount_total === 'number' &&
         session.amount_total > 0
     );

@@ -39,6 +39,8 @@ import { supabase } from '@/lib/supabase';
 import UpgradeButton from '@/components/UpgradeButton';
 import { submitInquiry } from '@/app/actions/support';
 
+import { formatPrice, PRICING } from '@/lib/pricing';
+
 const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/lastfinal%20hero%20imagfe.png';
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/253b06e1-93cf-446c-a0fe-b3397777c185.png';
 const joySectionMobileImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/253b06e1-93cf-446c-a0fe-b3397777c185.png';
@@ -50,7 +52,7 @@ const landingSectionTitleClass = '[font-family:var(--font-montserrat)] text-[cla
 const landingHeroTitleClass = '[font-family:var(--font-montserrat)] text-[clamp(3rem,7vw,5.5rem)] font-black leading-[0.94] tracking-[-0.055em]';
 const landingLightTitleClass = '[font-family:var(--font-montserrat)] text-[clamp(2.25rem,5vw,4.25rem)] font-black leading-[0.98] tracking-[-0.045em] text-white';
 const landingTitleStyle = { fontFamily: 'var(--font-montserrat), Arial, sans-serif' };
-const plannerProDisplayPrice = '$15';
+const plannerProDisplayPrice = formatPrice(PRICING.PLANNER_PRO_PRICE);
 const defaultCoreFeatureImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/scrool%20images/IMG_4415.JPG';
 const newFeaturesImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/079f3b98-6106-45fe-8d55-407f65fe4d9f.png';
 
