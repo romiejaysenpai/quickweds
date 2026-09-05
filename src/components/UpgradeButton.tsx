@@ -117,7 +117,7 @@ export default function UpgradeButton({ weddingId: propWeddingId, plan = 'planne
     }
 
     return (
-        <button
+        <div><p className="mb-2 text-sm text-text-secondary">{scope==='account'?'Account Pro covers weddings you own. Client-owned shared weddings keep their own plan.':'One-time Planner Pro unlock for this wedding.'}</p><button
             onClick={handleUpgrade}
             disabled={loading}
             className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${baseStyles} ${className} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -133,6 +133,6 @@ export default function UpgradeButton({ weddingId: propWeddingId, plan = 'planne
                     {label || (scope === 'account' ? 'Unlock Account Pro' : 'Unlock Planner Pro')}
             </>
         )}
-        </button>
+        </button></div>
     );
 }

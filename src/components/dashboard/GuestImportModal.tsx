@@ -69,7 +69,12 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
             const [headerRow, ...dataRows] = parsed;
             setHeaders(headerRow);
             setRows(dataRows);
-            setMapping(inferGuestImportMapping(headerRow));
+            let inferred = inferGuestImportMapping(headerRow);
+            try {
+                const saved = JSON.parse(localStorage.getItem('quickweds-import-mapping-v1') || 'null');
+                if(saved && Array.isArray(saved.headers) && JSON.stringify(saved.headers) === JSON.stringify(headerRow)) inferred = saved.mapping;
+            } catch { /* A mapping preference is optional. */ }
+            setMapping(inferred);
             setError(null);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to read the CSV file.';
@@ -91,7 +96,10 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
                 throw new Error('No guest rows were detected in the CSV.');
             }
 
+            const identities = importedRows.map(row=>`${row.guest_name.trim().toLowerCase()}|${String(row.guest_email||'').trim().toLowerCase()}`);
+            if(new Set(identities).size !== identities.length) throw new Error('This file repeats the same name and email. Review those rows before importing; QuickWeds will not merge people by name.');
             await onImport(importedRows);
+            try { localStorage.setItem('quickweds-import-mapping-v1',JSON.stringify({headers,mapping})); } catch { /* The import succeeded even without preference storage. */ }
             handleClose();
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to import guests.';

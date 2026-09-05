@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { Calendar, ChevronDown, Check } from 'lucide-react';
 import { useState } from 'react';
+import { eventInstant } from '@/lib/event-time';
 
 interface SmartCalendarProps {
     wedding: {
@@ -10,6 +11,7 @@ interface SmartCalendarProps {
         groom_name: string;
         wedding_date: string;
         wedding_time: string;
+        event_timezone?: string;
         venue_name: string;
         venue_address?: string;
     };
@@ -24,7 +26,7 @@ export default function SmartCalendar({ wedding, motifColor }: SmartCalendarProp
     const location = wedding.venue_address || wedding.venue_name;
     
     // Combine date and time
-    const startDateTime = new Date(`${wedding.wedding_date}T${wedding.wedding_time || '10:00'}`);
+    const startDateTime = eventInstant(wedding.wedding_date, wedding.wedding_time || '10:00', wedding.event_timezone || 'UTC');
     const endDateTime = new Date(startDateTime.getTime() + 6 * 60 * 60 * 1000); // Default +6 hours
 
     const formatDateTime = (date: Date) => date.toISOString().replace(/-|:|\.\d+/g, "");

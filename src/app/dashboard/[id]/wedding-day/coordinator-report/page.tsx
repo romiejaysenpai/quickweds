@@ -1,4 +1,5 @@
 'use client';
+import { vendorBalance } from '@/lib/expense-summary';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -288,22 +289,19 @@ export default function CoordinatorReportPage() {
     const budgetSummary = useMemo(() => {
         // Vendors unpaid
         const outstandingVendors = vendors.map((vendor) => {
-            const isPaid = vendor.payment_status?.toLowerCase() === 'paid';
-            const isPending = vendor.payment_status?.toLowerCase() === 'pending';
-            const paidAmount = isPaid ? vendor.amount : (isPending ? vendor.amount * 0.5 : 0); // hypothetical estimation
-            const balance = vendor.amount - paidAmount;
+            const { paid: paidAmount, balance } = vendorBalance(vendor);
 
             return {
                 ...vendor,
                 paid: paidAmount,
                 balance
             };
-        }).filter((v) => v.balance > 0);
+        }).filter((v) => v.balance === null || v.balance > 0);
 
         // Budget items unpaid
-        const outstandingBudgets = budgets.filter((b) => !b.is_paid && b.actual_cost > 0);
+        const outstandingBudgets = budgets.filter((b) => !b.is_paid && b.actual_cost > 0 && !(b as any).planner_vendor_id);
 
-        const totalVendorOwed = outstandingVendors.reduce((sum, v) => sum + v.balance, 0);
+        const totalVendorOwed = outstandingVendors.reduce((sum, v) => sum + (v.balance || 0), 0);
         const totalBudgetOwed = outstandingBudgets.reduce((sum, b) => sum + (b.actual_cost || 0), 0);
 
         return {
@@ -761,7 +759,7 @@ export default function CoordinatorReportPage() {
                                                         <td className="py-3 pr-4 text-text-secondary print:text-black capitalize">{vendor.role}</td>
                                                         <td className="py-3 pr-4 text-text-secondary print:text-black capitalize">{vendor.payment_status}</td>
                                                         <td className="py-3 pr-4 text-text-secondary print:text-black">{currencySymbol}{vendor.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                        <td className="py-3 font-bold text-rose-700 print:text-black">{currencySymbol}{vendor.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                        <td className="py-3 font-bold text-rose-700 print:text-black">{vendor.balance === null ? 'Payment amount unrecorded' : currencySymbol + vendor.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     </tr>
                                                 ))}
 
@@ -782,7 +780,7 @@ export default function CoordinatorReportPage() {
                                     {/* Summary Totals */}
                                     <div className="flex justify-end">
                                         <div className={`p-4 rounded-2xl border ${printTheme === 'monochrome' ? 'border-black' : 'border-rose-100 bg-rose-50/30'} text-right max-w-sm w-full`}>
-                                            <p className="text-[10px] font-black uppercase tracking-wider text-rose-800 print:text-black">Total Outstanding Balance</p>
+                                            <p className="text-[10px] font-black uppercase tracking-wider text-rose-800 print:text-black">Known outstanding (excludes unrecorded payments) Balance</p>
                                             <p className="mt-1 text-2xl font-serif font-bold text-rose-700 print:text-black">
                                                 {currencySymbol}{budgetSummary.totalOwed.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </p>

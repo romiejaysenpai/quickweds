@@ -1,3 +1,4 @@
+import {isRsvpClosed} from '@/lib/event-time';
 import { notFound } from 'next/navigation';
 import { Heart } from 'lucide-react';
 import WeddingPageClient from './WeddingPageClient';
@@ -47,7 +48,7 @@ export default async function WeddingPage({ params }: { params: Promise<{ id: st
         <WeddingPageClient
             publicIdentifier={id}
             wedding={wedding as unknown as Wedding}
-            initialIsExpired={isRsvpDeadlineExpired(wedding.rsvp_deadline)}
+            initialIsExpired={isRsvpClosed(String(wedding.rsvp_deadline || ''), String(wedding.event_timezone || 'UTC'))}
         />
     );
 }

@@ -33,6 +33,9 @@ type OnboardingStep = 'account' | 'goal' | 'ready';
 
 const coupleGoals = [
     {
+        id: 'coordinator', title: 'Coordinate multiple weddings', body: 'See what needs attention across your clients and shared weddings.', icon: Users, accent: 'bg-primary/10 text-primary',
+    },
+    {
         id: 'site',
         title: 'Create our wedding site',
         body: 'Choose a design, add your details, and make a guest-ready home for the celebration.',
@@ -101,7 +104,7 @@ function AccountTypeOnboardingContent() {
     const [saving, setSaving] = useState<AccountType | 'complete' | null>(null);
     const [error, setError] = useState('');
     const [step, setStep] = useState<OnboardingStep>('account');
-    const [selectedGoal, setSelectedGoal] = useState(coupleGoals[0].id);
+    const [selectedGoal, setSelectedGoal] = useState('site');
     const nextPath = useMemo(() => getSafeAppPath(searchParams?.get('next'), ''), [searchParams]);
     const selectedGoalDetail = coupleGoals.find((goal) => goal.id === selectedGoal) || coupleGoals[0];
 
@@ -417,12 +420,12 @@ function AccountTypeOnboardingContent() {
                                         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                                             <button
                                                 type="button"
-                                                onClick={() => router.replace('/builder')}
+                                                onClick={() => router.replace(selectedGoal === 'coordinator' ? '/coordinator' : `/builder?goal=${selectedGoal}`)}
                                                 disabled={saving === 'complete'}
                                                 className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover disabled:opacity-70"
                                             >
                                                 {saving === 'complete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Heart className="h-4 w-4" />}
-                                                Create Your Free Site
+                                                Start {selectedGoalDetail.title.toLowerCase()}
                                             </button>
                                             <button
                                                 type="button"

@@ -45,8 +45,8 @@ async function resolveGuest(db: any, weddingId: string, body: Record<string, any
 
     if (!lookup) return null;
 
-    const tokenFromUrl = lookup.includes('/seat/')
-        ? lookup.split('/seat/').pop()?.split(/[?#]/)[0]
+    const tokenFromUrl = /\/(seat|guest)\//.test(lookup)
+        ? lookup.split(/\/(?:seat|guest)\//).pop()?.split(/[?#]/)[0]
         : lookup;
 
     const byToken = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).eq('seat_lookup_token', tokenFromUrl).maybeSingle();

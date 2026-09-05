@@ -1,4 +1,5 @@
 'use client';
+import GuestPhotoBatch from '@/components/GuestPhotoBatch';
 
 import { use, useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
@@ -117,11 +118,13 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
     }, [weddingId]);
 
     useEffect(() => {
+        const guest = searchParams?.get('guest');
+        if (guest) void fetch('/api/public/photo-access', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:guest})}).then(async response=>{const result=await response.json();if(!response.ok)throw new Error(result.error);if(result.weddingId===weddingId)setForm(previous=>({...previous,code:result.code,uploader_name:result.name}));}).catch(error=>setUploadError(error.message));
         const code = searchParams?.get('code');
         if (code) {
             setForm((prev) => ({ ...prev, code: code.toUpperCase() }));
         }
-    }, [searchParams]);
+    }, [searchParams, weddingId]);
 
     useEffect(() => {
         const enabledFilterIds = settings?.enabled_filter_ids?.length ? settings.enabled_filter_ids : PHOTO_FILTERS.map((filter) => filter.id);
@@ -398,6 +401,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
 
     return (
         <div className={`min-h-screen px-3 py-4 pb-24 sm:px-4 sm:py-12 ${nostalgicUi ? 'bg-[#f6f1e8]' : 'bg-[#fafafa]'}`}>
+            <div className="mx-auto max-w-3xl"><GuestPhotoBatch weddingId={weddingId} code={form.code} name={form.uploader_name}/></div>
             <AnimatePresence>
                 {showCaptureFlash && (
                     <motion.div
@@ -614,7 +618,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                                 )}
 
                                 {/* Step 2: Form Details (only shows strongly when a file is selected to keep cognitive load low initially) */}
-                                <div className={`origin-top space-y-4 transition-all duration-500 ${selectedFile ? 'mt-5 h-auto scale-y-100 opacity-100 sm:mt-6' : 'pointer-events-none h-0 scale-y-95 overflow-hidden opacity-40'}`}>
+                                <div className={`origin-top space-y-4 transition-all duration-500 ${'mt-5 h-auto scale-y-100 opacity-100 sm:mt-6'}`}>
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div className="min-w-0">
                                             <label className="block text-[10px] font-black uppercase tracking-widest text-text-secondary mb-1.5 ml-2">Sharing Code *</label>

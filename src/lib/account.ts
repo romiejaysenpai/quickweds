@@ -75,7 +75,7 @@ export function getPostLoginRedirect(profile?: AccountProfile | null, requestedP
     // Returning users with weddings always land on the welcome dashboard so
     // they can see all their weddings and choose which one to open — regardless
     // of where the login flow started (builder, direct login, OAuth, etc.).
-    if (profile.has_weddings) return getDefaultRoleRedirect(profile.account_type);
+    if (profile.has_weddings && !requestedPath) return getDefaultRoleRedirect(profile.account_type);
 
     const defaultPath = getDefaultRoleRedirect(profile.account_type);
     const safeNext = getSafeAppPath(requestedPath, defaultPath);

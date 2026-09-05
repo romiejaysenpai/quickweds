@@ -843,6 +843,7 @@ export default function DashboardRedirect() {
             </AnimatePresence>
 
             <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-6 sm:pt-12">
+                <Link href="/coordinator" className="mb-6 flex min-h-14 items-center justify-between rounded-2xl border border-primary/20 bg-white p-4 font-bold text-primary">Needs attention across weddings <span aria-hidden="true">→</span></Link>
                 <DashboardWelcomeHero
                     user={user}
                     weddings={weddings}

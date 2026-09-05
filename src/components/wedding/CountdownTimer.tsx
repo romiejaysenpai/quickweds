@@ -1,4 +1,5 @@
 'use client';
+import {eventInstant} from '@/lib/event-time';
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +14,7 @@ const getServerSnapshot = () => false;
 interface CountdownTimerProps {
     weddingDate: string;
     weddingTime?: string;
+    eventTimezone?: string;
     brideName: string;
     groomName: string;
     venueName?: string;
@@ -26,16 +28,8 @@ interface CountdownTimerProps {
 }
 
 function generateICS(props: CountdownTimerProps): string {
-    const date = new Date(props.weddingDate);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const formatDate = (d: Date) =>
-        `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-
-    if (props.weddingTime) {
-        const [h, m] = props.weddingTime.split(':').map(Number);
-        date.setHours(h || 0, m || 0);
-    }
-
+    const date = eventInstant(props.weddingDate, props.weddingTime || '00:00', props.eventTimezone || 'UTC');
+    const formatDate = (value: Date) => value.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
     const endDate = new Date(date);
     endDate.setHours(endDate.getHours() + 4); 
 
@@ -51,12 +45,13 @@ function generateICS(props: CountdownTimerProps): string {
         `DESCRIPTION:We can't wait to celebrate our special day with you!\\n\\n${props.brideName} & ${props.groomName}`,
         'END:VEVENT',
         'END:VCALENDAR',
-    ].join('\\r\\n');
+    ].join('\r\n');
 }
 
 export default function CountdownTimer({
     weddingDate,
     weddingTime,
+    eventTimezone,
     brideName,
     groomName,
     venueName,
@@ -79,11 +74,8 @@ export default function CountdownTimer({
     }, [id, registerSection, unregisterSection]);
 
     useEffect(() => {
-        const target = new Date(weddingDate);
-        if (weddingTime) {
-            const [h, m] = weddingTime.split(':').map(Number);
-            target.setHours(h || 0, m || 0);
-        }
+        let target: Date;
+        try { target = eventInstant(weddingDate, weddingTime || '00:00', eventTimezone || 'UTC'); } catch { return; }
 
         const update = () => {
             const now = new Date();
@@ -106,10 +98,10 @@ export default function CountdownTimer({
         update();
         const interval = setInterval(update, 1000);
         return () => clearInterval(interval);
-    }, [weddingDate, weddingTime]);
+    }, [weddingDate, weddingTime, eventTimezone]);
 
     const handleAddToCalendar = () => {
-        const ics = generateICS({ weddingDate, weddingTime, brideName, groomName, venueName, venueAddress, id });
+        const ics = generateICS({ weddingDate, weddingTime, eventTimezone, brideName, groomName, venueName, venueAddress, id });
         const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

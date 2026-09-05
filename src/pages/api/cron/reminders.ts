@@ -29,7 +29,7 @@ function getCronSupabaseClient() {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // 1. Security Check
   const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).end('Unauthorized');
   }
 
@@ -90,12 +90,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             numGuests: guest.num_guests,
           });
 
-          await sendEmail({
+          const delivery = await sendEmail({
+            idempotencyKey: `guest-reminder/${guest.id}/${trigger.type}`,
             to: guest.guest_email,
             subject: `Reminder: ${wedding.bride_name} & ${wedding.groom_name}'s Wedding is Almost Here!`,
             react
           });
 
+          if (!delivery.success) continue;
           await supabase.from('rsvp_reminders').insert({
             rsvp_id: guest.id,
             reminder_type: trigger.type

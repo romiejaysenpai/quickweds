@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { trackProductEvent } from '@/lib/product-events';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -15,6 +16,7 @@ export default function SignUpPage() {
     const [name, setName] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [verificationEmail, setVerificationEmail] = useState('');
     const router = useRouter();
 
     const getSafeNextPath = () => {
@@ -71,6 +73,7 @@ export default function SignUpPage() {
                 email: normalizedEmail,
                 password,
                 options: {
+                    emailRedirectTo: getPublicRedirectUrl('/auth/callback'),
                     data: {
                         full_name: trimmedName,
                     },
@@ -79,7 +82,13 @@ export default function SignUpPage() {
             if (error) throw error;
 
             const token = data.session?.access_token;
+            if (!token) {
+                rememberNextPath();
+                setVerificationEmail(normalizedEmail);
+                return;
+            }
             if (token) {
+                void trackProductEvent('signup_completed', token);
                 void fetch('/api/auth/signup-notification', {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${token}` },
@@ -143,7 +152,17 @@ export default function SignUpPage() {
                     </div>
                 )}
 
-                <form onSubmit={handleSignUp} className="space-y-6">
+                {verificationEmail ? <div className="space-y-4" role="status">
+                    <h1 className="text-2xl font-bold">Check your email</h1>
+                    <p>Open the confirmation link sent to {verificationEmail}, then sign in to continue.</p>
+                    <button type="button" disabled={loading} className="min-h-12 text-primary font-bold" onClick={async () => {
+                        setLoading(true);
+                        const { error } = await supabase.auth.resend({ type: 'signup', email: verificationEmail });
+                        setError(error ? error.message : 'Confirmation email requested. Please check your inbox.');
+                        setLoading(false);
+                    }}>Resend confirmation</button>
+                    <Link href={getLoginHref()} className="block min-h-12 text-primary">Continue to sign in</Link>
+                </div> : <form onSubmit={handleSignUp} className="space-y-6">
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Full Name</label>
                         <div className="relative">
@@ -235,7 +254,7 @@ export default function SignUpPage() {
                             Apple
                         </button>
                     </div>
-                </form>
+                </form>}
 
                 <p className="mt-8 text-center text-text-secondary">
                     Already have an account?{' '}

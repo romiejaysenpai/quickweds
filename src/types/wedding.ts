@@ -6,6 +6,7 @@ export interface Wedding {
     groom_name: string;
     wedding_date: string;
     wedding_time: string;
+    event_timezone?: string;
     venue_name: string;
     venue_address?: string;
     maps_link?: string;

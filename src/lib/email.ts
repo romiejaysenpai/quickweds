@@ -28,6 +28,7 @@ interface EmailAttachment {
 }
 
 interface SendEmailParams {
+    idempotencyKey?: string;
     to: string | string[];
     subject?: string;
     html?: string;
@@ -40,7 +41,7 @@ interface SendEmailParams {
     tags?: { name: string; value: string }[];
 }
 
-export async function sendEmail({ to, subject, html, react, template, attachments, tags }: SendEmailParams) {
+export async function sendEmail({ to, subject, html, react, template, attachments, tags, idempotencyKey }: SendEmailParams) {
     const resend = getResendClient();
     if (!resend) {
         console.error('Email configuration missing. Set RESEND_API_KEY before sending.');
@@ -77,7 +78,7 @@ export async function sendEmail({ to, subject, html, react, template, attachment
             ...(tags && tags.length > 0 ? { tags } : {}),
         };
 
-        const { data, error } = await resend.emails.send(payload);
+        const { data, error } = await resend.emails.send(payload, idempotencyKey ? { idempotencyKey } : undefined);
 
         if (error) {
             console.error('Resend API error:', error);

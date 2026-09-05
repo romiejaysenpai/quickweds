@@ -125,7 +125,7 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
         ? `https://${wedding.custom_domain}`
         : getWeddingPublicUrl(`https://${rootDomain}`, { ...wedding, id: weddingId });
     const dashboardUrl = `https://${rootDomain}/dashboard/${weddingId}`;
-    const checkInUrl = seatLookupToken ? `https://${rootDomain}/seat/${encodeURIComponent(seatLookupToken)}` : '';
+    const checkInUrl = seatLookupToken ? `https://${rootDomain}/guest/${encodeURIComponent(seatLookupToken)}` : '';
     const confirmationImageUrl = getWeddingConfirmationImageUrl(wedding, rootDomain);
 
     if (wedding.user_id) {

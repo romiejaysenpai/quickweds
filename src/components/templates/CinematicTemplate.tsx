@@ -109,7 +109,7 @@ export default function CinematicTemplate({ wedding, gallery, isExpired }: any) 
                 <CountdownTimer
                     id="countdown"
                     weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
+                    weddingTime={wedding.wedding_time} eventTimezone={wedding.event_timezone}
                     brideName={wedding.bride_name}
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}

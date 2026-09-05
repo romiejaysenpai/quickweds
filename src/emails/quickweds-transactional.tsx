@@ -256,7 +256,7 @@ function TimelineSteps({ steps }: { steps: { title: string; body: string }[] }) 
 }
 
 function GuestPassCard({ guestCode, checkInUrl, partyLabel }: { guestCode?: string; checkInUrl?: string; partyLabel: string }) {
-    const qrImageUrl = checkInUrl ? `https://quickchart.io/qr?size=240&margin=2&text=${encodeURIComponent(checkInUrl)}` : '';
+    const qrImageUrl = checkInUrl ? `${new URL(checkInUrl).origin}/api/public/guest-qr?token=${encodeURIComponent(new URL(checkInUrl).pathname.split('/').pop() || '')}` : '';
 
     return (
         <Section style={guestPassStyle}>

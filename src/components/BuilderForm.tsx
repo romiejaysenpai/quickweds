@@ -1,6 +1,8 @@
 'use client';
 
 import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useWeddingDraft } from '@/hooks/useWeddingDraft';
+import { trackProductEvent } from '@/lib/product-events';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle, Download, Lock, Play } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -391,7 +393,8 @@ const INITIAL_FORM_DATA = {
     isThankYouMode: false,
     thankYouMessage: '',
     photoAlbumLink: '',
-    isPublished: true,
+    isPublished: false,
+    eventTimezone: 'UTC',
     accentStyle: 'none',
 };
 
@@ -478,6 +481,7 @@ export default function BuilderForm() {
     const editId = searchParams?.get('edit');
     const userId = user?.id || null;
     const [currentStep, setCurrentStep] = useState(0);
+    const [essentialMode, setEssentialMode] = useState(true);
     const [loadedEditId, setLoadedEditId] = useState<string | null>(null);
     const weddingLoadRef = useRef<{ id: string; requestId: number } | null>(null);
     const weddingLoadRequestIdRef = useRef(0);
@@ -598,6 +602,7 @@ export default function BuilderForm() {
         };
     }, []);
 
+    const draft = useWeddingDraft(userId, editId || 'new', !editId || loadedEditId === editId, formData, setFormData);
     const [isPremium, setIsPremium] = useState(true);
     const [showMonogramProModal, setShowMonogramProModal] = useState(false);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
@@ -726,6 +731,7 @@ export default function BuilderForm() {
                         groomName: data.groom_name || '',
                         weddingDate: data.wedding_date || '',
                         weddingTime: data.wedding_time || '',
+                        eventTimezone: data.event_timezone || 'UTC',
                         venueName: data.venue_name || '',
                         venueAddress: data.venue_address || '',
                         mapsLink: data.maps_link || '',
@@ -833,8 +839,8 @@ export default function BuilderForm() {
         void loadPresets();
     }, [user]);
 
-    const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
-    const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
+    const nextStep = () => setCurrentStep((prev) => essentialMode ? ([0,1,7,9].find(step=>step>prev) ?? 9) : Math.min(prev + 1, STEPS.length - 1));
+    const prevStep = () => setCurrentStep((prev) => essentialMode ? ([9,7,1,0].find(step=>step<prev) ?? 0) : Math.max(prev - 1, 0));
 
     const handleArrayAdd = (field: string, item: any) => {
         const nextItem = field === 'weddingParty' ? normalizeWeddingPartyMember(item) : item;
@@ -1154,7 +1160,7 @@ export default function BuilderForm() {
             return;
         }
 
-        if (publishHealth.criticalItems.length > 0) {
+        if (formData.isPublished && publishHealth.criticalItems.length > 0) {
             const firstCriticalStep = Math.min(...publishHealth.criticalItems.map((item) => item.stepIndex));
             alert(`Please fix ${publishHealth.criticalItems.length} launch blocker${publishHealth.criticalItems.length === 1 ? '' : 's'} before publishing. Start with: ${publishHealth.criticalItems[0].title}`);
             if (Number.isFinite(firstCriticalStep)) {
@@ -1163,7 +1169,7 @@ export default function BuilderForm() {
             return;
         }
 
-        if (publishHealth.warningItems.length > 0) {
+        if (formData.isPublished && publishHealth.warningItems.length > 0) {
             const proceed = window.confirm(`Your invitation is ${publishHealth.score}% complete and has ${publishHealth.warningItems.length} important warning${publishHealth.warningItems.length === 1 ? '' : 's'}.\n\nYou can publish now, but guests may have a better experience if you fix them first. Publish anyway?`);
             if (!proceed) return;
         }
@@ -1175,7 +1181,7 @@ export default function BuilderForm() {
                 if (typeof window !== 'undefined') {
                     window.sessionStorage.setItem('pending_wedding_data', JSON.stringify(formData));
                 }
-                router.push('/login?returnTo=builder');
+                router.push('/login?next=%2Fbuilder');
             }
             return;
         }
@@ -1253,8 +1259,9 @@ export default function BuilderForm() {
             const payload: any = {
                 bride_name: formData.brideName,
                 groom_name: formData.groomName,
-                wedding_date: formData.weddingDate,
-                wedding_time: formData.weddingTime,
+                wedding_date: formData.weddingDate || null,
+                wedding_time: formData.weddingTime || null,
+                event_timezone: formData.eventTimezone || 'UTC',
                 venue_name: formData.venueName,
                 venue_address: formData.venueAddress,
                 maps_link: formData.mapsLink,
@@ -1280,7 +1287,7 @@ export default function BuilderForm() {
                 quote: formData.quote,
                 hashtag: formData.hashtag,
                 contact_person: formData.contactPerson,
-                rsvp_deadline: formData.rsvpDeadline,
+                rsvp_deadline: formData.rsvpDeadline || null,
                 gift_bank: formData.giftBank,
                 gift_account_name: formData.giftAccountName,
                 gift_account_number: formData.giftAccountNumber,
@@ -1416,7 +1423,11 @@ export default function BuilderForm() {
             }
 
             // Success
-            router.push(`/dashboard/${weddingId}?created=true`);
+            const {data:eventSession}=await supabase.auth.getSession();
+            if(formData.isPublished && eventSession.session) void trackProductEvent('wedding_published',eventSession.session.access_token,weddingId);
+            await draft.clear();
+            const goal = searchParams?.get('goal');
+            router.push(goal === 'planner' ? `/dashboard/${weddingId}/planner` : goal === 'guests' ? `/dashboard/${weddingId}/operations` : `/dashboard/${weddingId}?created=true`);
 
         } catch (err: any) {
             const errorMessage = getErrorMessage(err);
@@ -3009,7 +3020,14 @@ return (
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                <div className="mb-4 rounded-xl bg-neutral p-4 space-y-2">
+                    <p role="status">{draft.status || 'Start with the essentials. Personalize whenever you are ready.'}</p>
+                    <button type="button" className="min-h-12 rounded-xl border px-4" onClick={()=>setEssentialMode(value=>!value)}>{essentialMode?'Show full customization steps':'Use essential setup'}</button>
+                    {draft.available && <div className="flex flex-wrap gap-3"><button type="button" className="min-h-12 px-4 border rounded-xl" onClick={draft.restore}>Restore saved draft</button><button type="button" className="min-h-12 px-4 border rounded-xl" onClick={draft.discard}>Keep current details</button></div>}
+                    <div className="flex flex-wrap gap-2">{[{label:'Details',step:0},{label:'Design',step:1},{label:'RSVP',step:7},{label:'Review / save',step:9}].map(item=><button type="button" key={item.step} onClick={()=>setCurrentStep(item.step)} className="min-h-12 rounded-xl border px-4">{item.label}</button>)}</div>
+                    <label className="block">Event timezone<input aria-label="Event timezone" className="ml-2 min-h-12 rounded-xl border px-3" value={formData.eventTimezone || 'UTC'} onChange={e=>setFormData((previous:any)=>({...previous,eventTimezone:e.target.value}))} placeholder="Asia/Manila"/></label>
+                </div>
+                <form noValidate={!formData.isPublished} onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                     {freeWebsiteLimitReached && (
                         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

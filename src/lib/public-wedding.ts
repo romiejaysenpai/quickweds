@@ -12,6 +12,7 @@ export const PUBLIC_WEDDING_FIELDS = [
     'groom_name',
     'wedding_date',
     'wedding_time',
+    'event_timezone',
     'venue_name',
     'venue_address',
     'maps_link',

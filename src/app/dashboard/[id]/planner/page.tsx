@@ -1,4 +1,5 @@
 'use client';
+import { expenseSummary } from '@/lib/expense-summary';
 
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -1658,23 +1659,18 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
         }
     }
 
-    const foodDrinkBudgetTotal = foodDrinks
-        .filter((item: any) => !item.planner_vendor_id)
-        .reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0);
-    const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0) + foodDrinkBudgetTotal;
-    const totalSpentFromVendors = vendors
-        .filter((v: any) => v.payment_status?.toLowerCase() === 'paid')
-        .reduce((acc: number, v: any) => acc + (parseFloat(v.amount) || 0), 0);
-    
-    // Total "Committed/Spent" is both the estimates you added AND what you already paid vendors
-    const totalCommitted = totalEst + totalSpentFromVendors;
+    const summary = expenseSummary(initialBudgets, vendors, foodDrinks);
+    const foodDrinkBudgetTotal = foodDrinks.filter((item: any) => !item.planner_vendor_id).reduce((sum: number, item: any) => sum + (Number(item.estimated_cost) || 0), 0);
+    const totalEst = summary.planned;
+    const totalSpentFromVendors = summary.paid;
+    const totalCommitted = summary.planned;
     const budgetRemaining = (parseFloat(wedding?.total_budget) || 0) - totalCommitted;
     const usagePercent = wedding?.total_budget > 0 ? Math.min(100, Math.round((totalCommitted / wedding.total_budget) * 100)) : 0;
 
     // Chart Data
     const chartData = [
-        { name: 'Allocated (Budget + Food)', value: totalEst },
-        { name: 'Paid Vendors', value: totalSpentFromVendors },
+        { name: 'Planned, not recorded paid', value: Math.max(0, totalEst - totalSpentFromVendors) },
+        { name: 'Recorded paid', value: totalSpentFromVendors },
         { name: 'Remaining', value: Math.max(0, budgetRemaining) }
     ];
     const COLORS = ['#D16C78', '#CBB26A', '#3A2A2D'];
