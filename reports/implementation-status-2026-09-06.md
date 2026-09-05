@@ -35,7 +35,7 @@ This handoff maps the product investigation recommendations to the implementatio
 ## Release sequence
 
 1. Review and apply `supabase/migrations/20260905162952_product_intelligence_foundation.sql` before deploying application code. The application reads the new timezone and attendee columns.
-2. Configure `CRON_SECRET`, the production rate-limit service, Resend, Stripe prices, and the five-minute delivery cron in the target environment.
+2. Configure `CRON_SECRET`, the production rate-limit service, Resend, and Stripe prices. The repository uses a daily delivery safety run compatible with Vercel Hobby; configure a faster external scheduler or upgrade the Vercel plan before promising time-sensitive automated delivery.
 3. Deploy to a preview environment and run the migration-backed and browser flow tests there.
 4. Send internal test invitations, reminders, helper links, vendor briefs, and payment test sessions. Confirm provider acceptance, expiry, cancellation, and retry behavior.
 5. Pilot the coordinator workspace on real events before adding offline writes or optimization features that the investigation explicitly rejected.
