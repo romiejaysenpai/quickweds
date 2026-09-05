@@ -15,21 +15,21 @@ function normalizeColor(color?: string) {
     return /^[0-9a-fA-F]{6}$/.test(value) ? `#${value}` : '#D16C78';
 }
 
-function mixColor(hex: string, target: '#ffffff' | '#242129', amount: number) {
+function mixColor(hex: string, target: '#ffffff' | '#1a171d', amount: number) {
     const normalized = hex.replace('#', '');
     const base = {
-        r: parseInt(normalized.slice(0, 2), 16),
-        g: parseInt(normalized.slice(2, 4), 16),
-        b: parseInt(normalized.slice(4, 6), 16),
+        r: parseInt(normalized.slice(0, 2), 16) || 209,
+        g: parseInt(normalized.slice(2, 4), 16) || 108,
+        b: parseInt(normalized.slice(4, 6), 16) || 120,
     };
-    const to = target === '#ffffff' ? { r: 255, g: 255, b: 255 } : { r: 36, g: 33, b: 41 };
+    const to = target === '#ffffff' ? { r: 255, g: 255, b: 255 } : { r: 26, g: 23, b: 29 };
     const blend = (from: number, destination: number) => Math.round(from + (destination - from) * amount);
     return `rgb(${blend(base.r, to.r)}, ${blend(base.g, to.g)}, ${blend(base.b, to.b)})`;
 }
 
 /**
- * A formal, color-responsive adult couple shared by the builder and wedding page.
- * React's useId keeps all SVG paint definitions isolated when cards render together.
+ * An elevated, high-fashion wedding attire couple illustration shared across the builder and live wedding pages.
+ * Responsive to dynamic user attire color theme with rich fabric gradients, satin lapels, and graceful silhouettes.
  */
 export default function AttireIllustration({
     color = '#D16C78',
@@ -37,183 +37,340 @@ export default function AttireIllustration({
     className = '',
 }: AttireIllustrationProps) {
     const rawId = useId();
-    const illustrationId = rawId.replace(/[^a-zA-Z0-9_-]/g, '');
-    const dressGradientId = `formal-dress-${illustrationId}`;
-    const dressSheenId = `formal-dress-sheen-${illustrationId}`;
-    const suitGradientId = `formal-suit-${illustrationId}`;
-    const womanSkinGradientId = `formal-woman-skin-${illustrationId}`;
-    const manSkinGradientId = `formal-man-skin-${illustrationId}`;
-    const groundGradientId = `formal-ground-${illustrationId}`;
+    const id = rawId.replace(/[^a-zA-Z0-9_-]/g, '');
 
     const accent = normalizeColor(color);
     const isSponsor = variant === 'sponsors';
-    const dressLight = mixColor(accent, '#ffffff', 0.22);
-    const dressDark = mixColor(accent, '#242129', isSponsor ? 0.24 : 0.16);
-    const paleAccent = mixColor(accent, '#ffffff', 0.68);
-    const suit = isSponsor ? '#1D2330' : '#2D3543';
-    const suitDark = isSponsor ? '#141923' : '#202733';
-    const womanSkin = isSponsor ? '#9D624B' : '#D29A79';
-    const womanSkinLight = isSponsor ? '#BA7D62' : '#E3AE8B';
-    const womanHair = isSponsor ? '#272127' : '#56372F';
-    const manSkin = isSponsor ? '#B77758' : '#714533';
-    const manSkinLight = isSponsor ? '#CC906E' : '#8D5A43';
-    const manHair = isSponsor ? '#454047' : '#1F2427';
+
+    // Dress & Accent Palette
+    const dressHighlight = mixColor(accent, '#ffffff', 0.42);
+    const dressMid = accent;
+    const dressShadow = mixColor(accent, '#1a171d', isSponsor ? 0.38 : 0.28);
+    const dressDeepShadow = mixColor(accent, '#1a171d', 0.62);
+    const paleShimmer = mixColor(accent, '#ffffff', 0.78);
+
+    // Tuxedo & Suit Palette
+    const suitBase = isSponsor ? '#1B202A' : '#222733';
+    const suitLapel = isSponsor ? '#11141B' : '#171B24';
+    const suitTrousers = isSponsor ? '#13161E' : '#1A1E27';
+
+    // Skin & Hair Tones (Sophisticated warm natural tones)
+    const womanSkinLight = isSponsor ? '#F0CDAF' : '#FCE4D0';
+    const womanSkinMid = isSponsor ? '#DDAA88' : '#ECC0A4';
+    const womanSkinShadow = isSponsor ? '#BE8A6B' : '#CE9C7E';
+    const womanHair = isSponsor ? '#2C2326' : '#4E332A';
+    const womanHairHighlight = isSponsor ? '#4A3D42' : '#734E41';
+
+    const manSkinLight = isSponsor ? '#E2B89A' : '#E8BE9E';
+    const manSkinMid = isSponsor ? '#C99878' : '#D1A384';
+    const manSkinShadow = isSponsor ? '#A67757' : '#B07F60';
+    const manHair = isSponsor ? '#444047' : '#222329';
+    const manHairHighlight = isSponsor ? '#78737D' : '#3E414D';
 
     return (
         <svg
-            viewBox="0 0 420 338"
+            viewBox="0 0 460 360"
             fill="none"
-            className={`mx-auto block h-auto w-full ${className}`}
+            className={`mx-auto block h-auto w-full max-w-[420px] drop-shadow-md ${className}`}
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
         >
             <defs>
-                <linearGradient id={dressGradientId} x1="112" y1="105" x2="190" y2="283" gradientUnits="userSpaceOnUse">
-                    <stop stopColor={dressLight} />
-                    <stop offset="0.42" stopColor={accent} />
-                    <stop offset="1" stopColor={dressDark} />
-                </linearGradient>
-                <linearGradient id={dressSheenId} x1="143" y1="122" x2="177" y2="275" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#FFFFFF" stopOpacity="0.46" />
-                    <stop offset="0.48" stopColor="#FFFFFF" stopOpacity="0.1" />
-                    <stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
-                </linearGradient>
-                <linearGradient id={suitGradientId} x1="236" y1="103" x2="319" y2="230" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#FFFFFF" stopOpacity="0.13" />
-                    <stop offset="0.55" stopColor="#FFFFFF" stopOpacity="0.02" />
-                    <stop offset="1" stopColor="#000000" stopOpacity="0.18" />
-                </linearGradient>
-                <linearGradient id={womanSkinGradientId} x1="140" y1="38" x2="165" y2="92" gradientUnits="userSpaceOnUse">
-                    <stop stopColor={womanSkinLight} />
-                    <stop offset="1" stopColor={womanSkin} />
-                </linearGradient>
-                <linearGradient id={manSkinGradientId} x1="266" y1="37" x2="290" y2="93" gradientUnits="userSpaceOnUse">
-                    <stop stopColor={manSkinLight} />
-                    <stop offset="1" stopColor={manSkin} />
-                </linearGradient>
-                <radialGradient id={groundGradientId} cx="0" cy="0" r="1" gradientTransform="translate(211 316) rotate(90) scale(15 142)" gradientUnits="userSpaceOnUse">
-                    <stop stopColor={accent} stopOpacity="0.25" />
+                {/* Background Atmosphere */}
+                <radialGradient id={`bg-glow-${id}`} cx="0" cy="0" r="1" gradientTransform="translate(230 180) rotate(90) scale(160 210)" gradientUnits="userSpaceOnUse">
+                    <stop stopColor={accent} stopOpacity="0.12" />
+                    <stop offset="0.7" stopColor={accent} stopOpacity="0.03" />
                     <stop offset="1" stopColor={accent} stopOpacity="0" />
                 </radialGradient>
+
+                {/* Ground Shadow */}
+                <radialGradient id={`ground-${id}`} cx="0" cy="0" r="1" gradientTransform="translate(230 338) rotate(90) scale(14 175)" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#1E1B24" stopOpacity="0.28" />
+                    <stop offset="0.6" stopColor={accent} stopOpacity="0.14" />
+                    <stop offset="1" stopColor={accent} stopOpacity="0" />
+                </radialGradient>
+
+                {/* Woman Gown Gradient */}
+                <linearGradient id={`gown-grad-${id}`} x1="120" y1="100" x2="200" y2="330" gradientUnits="userSpaceOnUse">
+                    <stop stopColor={dressHighlight} />
+                    <stop offset="0.25" stopColor={dressMid} />
+                    <stop offset="0.7" stopColor={dressShadow} />
+                    <stop offset="1" stopColor={dressDeepShadow} />
+                </linearGradient>
+
+                {/* Gown Silk Sheen Overlay */}
+                <linearGradient id={`gown-sheen-${id}`} x1="135" y1="120" x2="185" y2="320" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#FFFFFF" stopOpacity="0.45" />
+                    <stop offset="0.35" stopColor="#FFFFFF" stopOpacity="0.08" />
+                    <stop offset="0.75" stopColor="#FFFFFF" stopOpacity="0.25" />
+                    <stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
+                </linearGradient>
+
+                {/* Man Suit Gradient */}
+                <linearGradient id={`suit-grad-${id}`} x1="260" y1="90" x2="345" y2="240" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#FFFFFF" stopOpacity="0.12" />
+                    <stop offset="0.4" stopColor="#FFFFFF" stopOpacity="0.02" />
+                    <stop offset="1" stopColor="#000000" stopOpacity="0.28" />
+                </linearGradient>
+
+                {/* Skin Gradients */}
+                <linearGradient id={`woman-skin-${id}`} x1="150" y1="40" x2="175" y2="105" gradientUnits="userSpaceOnUse">
+                    <stop stopColor={womanSkinLight} />
+                    <stop offset="0.6" stopColor={womanSkinMid} />
+                    <stop offset="1" stopColor={womanSkinShadow} />
+                </linearGradient>
+
+                <linearGradient id={`man-skin-${id}`} x1="285" y1="40" x2="310" y2="105" gradientUnits="userSpaceOnUse">
+                    <stop stopColor={manSkinLight} />
+                    <stop offset="0.6" stopColor={manSkinMid} />
+                    <stop offset="1" stopColor={manSkinShadow} />
+                </linearGradient>
+
+                {/* Gold Accessories Shimmer */}
+                <linearGradient id={`gold-acc-${id}`} x1="0" y1="0" x2="1" y2="1">
+                    <stop stopColor="#FFE8B5" />
+                    <stop offset="0.5" stopColor="#E5C178" />
+                    <stop offset="1" stopColor="#B88A3C" />
+                </linearGradient>
             </defs>
 
-            <ellipse cx="211" cy="316" rx="142" ry="15" fill={`url(#${groundGradientId})`} />
-            <path d="M87 313c62 13 187 13 249 0" stroke={accent} strokeOpacity="0.16" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="79" cy="100" r="4" fill={accent} fillOpacity="0.22" />
-            <circle cx="345" cy="82" r="4" fill={accent} fillOpacity="0.2" />
-            <path d="m70 132 6 6 9-11M342 142l6 6 9-11" stroke={accent} strokeOpacity="0.28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            {/* Atmosphere Backdrop & Floor Shadow */}
+            <circle cx="230" cy="180" r="165" fill={`url(#bg-glow-${id})`} />
+            <ellipse cx="230" cy="338" rx="165" ry="14" fill={`url(#ground-${id})`} />
 
-            {/* Woman in a full-length formal evening gown. */}
-            <g transform="translate(27.18 7) scale(0.82 1.08)">
-                <path d="M134 104c-12 7-20 23-22 42l-10 132c27 10 69 10 98 0l-11-132c-2-20-10-35-23-42-8 7-24 7-32 0Z" fill={`url(#${dressGradientId})`} />
-                <path d="M134 104c-12 7-20 23-22 42l-10 132c27 10 69 10 98 0l-11-132c-2-20-10-35-23-42-8 7-24 7-32 0Z" fill={`url(#${dressSheenId})`} />
-                <path d="M130 105c5 22 12 33 21 38 9-5 16-16 20-38-11 7-29 7-41 0Z" fill={paleAccent} />
-                <path d="M136 105c4 13 9 22 15 28 7-6 12-15 16-28-10 6-21 6-31 0Z" fill="#FFFDFC" fillOpacity="0.74" />
-                <path d="M116 158c20 8 49 8 70 0" stroke="#FFFFFF" strokeOpacity="0.28" strokeWidth="2" strokeLinecap="round" />
-                <path d="M128 164c7 7 14 9 21 10M176 164c-7 7-14 9-21 10" stroke="#FFFFFF" strokeOpacity="0.17" strokeWidth="2" strokeLinecap="round" />
-                <path d="M130 172c-3 31-5 66-6 101M151 174v104M174 172c4 32 6 67 7 101" stroke="#FFFFFF" strokeOpacity="0.15" strokeWidth="2" strokeLinecap="round" />
-
-                <path d="M119 126c-8 8-13 26-15 45l-3 38" stroke={`url(#${womanSkinGradientId})`} strokeWidth="11" strokeLinecap="round" />
-                <path d="M183 126c7 9 10 23 10 38v26" stroke={`url(#${womanSkinGradientId})`} strokeWidth="11" strokeLinecap="round" />
-                <path d="M193 190c-2 9-7 17-14 23" stroke={`url(#${womanSkinGradientId})`} strokeWidth="10" strokeLinecap="round" />
-                <ellipse cx="100" cy="211" rx="6" ry="10" transform="rotate(8 100 211)" fill={womanSkin} />
-                <ellipse cx="177" cy="216" rx="6" ry="10" transform="rotate(38 177 216)" fill={womanSkin} />
-                <path d="M96 211c-2 4-3 8-2 12M100 211c0 5 0 9 2 13M176 215c2 4 5 7 8 9" stroke="#AF6D52" strokeWidth="1.3" strokeLinecap="round" />
-                <rect x="171" y="199" width="27" height="19" rx="5" fill={dressDark} />
-                <path d="M175 204h19" stroke="#FFFFFF" strokeOpacity="0.36" strokeWidth="1.5" strokeLinecap="round" />
-                <circle cx="102" cy="200" r="3" stroke={paleAccent} strokeWidth="2" />
-
-                <g transform="translate(0 17.12) scale(1 0.84)">
-                <rect x="143" y="84" width="16" height="25" rx="7" fill={`url(#${womanSkinGradientId})`} />
-                <ellipse cx="151" cy="61" rx="19" ry="25" fill={`url(#${womanSkinGradientId})`} />
-                <ellipse cx="132" cy="63" rx="3.5" ry="5" fill={womanSkin} />
-                <ellipse cx="170" cy="63" rx="3.5" ry="5" fill={womanSkin} />
-                {isSponsor ? (
-                    <>
-                        <circle cx="151" cy="31" r="10" fill={womanHair} />
-                        <path d="M132 61c-1-22 13-34 29-30 14 4 20 18 13 37-5-9-12-14-21-16-8-2-15 1-21 9Z" fill={womanHair} />
-                        <path d="M133 59c-5 11-3 24 4 32 0-9 3-16 9-22-6-2-10-5-13-10Z" fill={womanHair} />
-                    </>
-                ) : (
-                    <>
-                        <path d="M132 61c-1-23 13-35 29-30 14 5 20 20 12 40-3-11-10-17-20-19-8-2-15 1-21 9Z" fill={womanHair} />
-                        <path d="M133 59c-7 14-4 32 7 40-2-11 1-20 7-27-7-2-11-6-14-13ZM170 56c10 12 8 31 1 43 0-11-3-20-8-27 5-4 7-9 7-16Z" fill={womanHair} />
-                    </>
-                )}
-                <path d="M139 56c3-2 7-2 10 0M155 56c3-2 7-2 10 0" stroke="#563833" strokeWidth="1.8" strokeLinecap="round" />
-                <ellipse cx="144" cy="61" rx="2" ry="1.6" fill="#382A29" />
-                <ellipse cx="160" cy="61" rx="2" ry="1.6" fill="#382A29" />
-                <circle cx="144.5" cy="60.5" r="0.6" fill="#FFFFFF" />
-                <circle cx="160.5" cy="60.5" r="0.6" fill="#FFFFFF" />
-                <path d="M151 62c-1 4-1 7 1 9" stroke="#B77057" strokeWidth="1.3" strokeLinecap="round" />
-                <path d="M146 77c4 3 8 3 12 0" stroke="#9F4B55" strokeWidth="2" strokeLinecap="round" />
-                <path d="M138 68c2 1 4 1 6 0M160 68c2 1 4 1 6 0" stroke="#D58A72" strokeWidth="1.3" strokeLinecap="round" />
-                <circle cx="132" cy="75" r="2.4" fill={paleAccent} />
-                <circle cx="170" cy="75" r="2.4" fill={paleAccent} />
-                <path d="M144 96c5 4 10 4 15 0" stroke={paleAccent} strokeWidth="1.8" strokeLinecap="round" />
-                </g>
+            {/* Sparkles / Ambient Stars */}
+            <g opacity="0.45">
+                <path d="M78 112L81 120L89 123L81 126L78 134L75 126L67 123L75 120Z" fill={accent} />
+                <path d="M382 94L384 100L390 102L384 104L382 110L380 104L374 102L380 100Z" fill={accent} />
+                <circle cx="395" cy="155" r="2.5" fill={accent} />
+                <circle cx="65" cy="175" r="2.5" fill={accent} />
             </g>
 
-            {/* Man in a dark formal suit or tuxedo with coordinated accents. */}
-            <g transform="translate(49.86 3) scale(0.82 1.08)">
-                <path d="M250 105c-13 8-21 25-22 47l-2 72h102l-3-72c-1-22-9-39-22-47-12 8-40 8-53 0Z" fill={suit} />
-                <path d="M250 105c-13 8-21 25-22 47l-2 72h102l-3-72c-1-22-9-39-22-47-12 8-40 8-53 0Z" fill={`url(#${suitGradientId})`} />
-                <path d="M260 106c7 10 13 18 17 28 5-10 10-18 17-28-10 5-24 5-34 0Z" fill="#FFFDFC" />
-                <path d="m251 106 26 28-22 18-17-25 13-21ZM303 106l-26 28 22 18 17-25-13-21Z" fill="#FFFFFF" fillOpacity="0.11" />
+            {/* ========================================================= */}
+            {/* 1. WOMAN: High-Fashion Evening Gown with Cascading Drapes */}
+            {/* ========================================================= */}
+            <g id="woman-figure">
+                {/* Flowing Lower Skirt / Train */}
+                <path
+                    d="M142 165 C132 195, 114 260, 96 332 C135 344, 192 344, 226 332 C210 262, 194 195, 184 165 Z"
+                    fill={`url(#gown-grad-${id})`}
+                />
+                {/* Skirt Silk Sheen & Pleat Shadows */}
+                <path
+                    d="M142 165 C132 195, 114 260, 96 332 C135 344, 192 344, 226 332 C210 262, 194 195, 184 165 Z"
+                    fill={`url(#gown-sheen-${id})`}
+                />
+
+                {/* Artistic Fabric Folds */}
+                <path d="M128 220 C134 260, 142 300, 145 336" stroke="#FFFFFF" strokeOpacity="0.22" strokeWidth="2.5" strokeLinecap="round" />
+                <path d="M162 190 C165 240, 168 290, 172 338" stroke="#FFFFFF" strokeOpacity="0.28" strokeWidth="2.5" strokeLinecap="round" />
+                <path d="M192 225 C190 265, 189 302, 194 336" stroke={dressDeepShadow} strokeOpacity="0.45" strokeWidth="2.5" strokeLinecap="round" />
+                <path d="M106 315 C138 330, 184 330, 218 315" stroke="#FFFFFF" strokeOpacity="0.18" strokeWidth="2" strokeLinecap="round" />
+
+                {/* Fitted Bodice / Corset */}
+                <path
+                    d="M144 116 C138 126, 137 146, 142 168 C155 172, 171 172, 184 168 C189 146, 188 126, 182 116 C173 122, 153 122, 144 116 Z"
+                    fill={`url(#gown-grad-${id})`}
+                />
+                {/* Sweetheart Neckline Overlay */}
+                <path
+                    d="M144 116 C153 122, 163 128, 163 128 C163 128, 173 122, 182 116 C176 110, 150 110, 144 116 Z"
+                    fill={paleShimmer}
+                    opacity="0.9"
+                />
+
+                {/* Waist Satin Ribbon / Sash */}
+                <path d="M141 164 C154 169, 172 169, 185 164 L184 171 C171 176, 154 176, 142 171 Z" fill={dressDeepShadow} />
+                <circle cx="163" cy="168" r="3.5" fill={`url(#gold-acc-${id})`} />
+
+                {/* Slender Arms & Delicate Hands */}
+                {/* Left Arm (Relaxed) */}
+                <path d="M143 120 C132 140, 122 172, 118 202 L124 203 C128 174, 137 144, 148 123 Z" fill={`url(#woman-skin-${id})`} />
+                <ellipse cx="119" cy="209" rx="5" ry="8" transform="rotate(10 119 209)" fill={womanSkinMid} />
+                <circle cx="121" cy="198" r="3.5" stroke={`url(#gold-acc-${id})`} strokeWidth="1.5" fill="none" />
+
+                {/* Right Arm (Holding chic evening clutch) */}
+                <path d="M183 120 C194 140, 202 168, 204 195 L198 197 C196 172, 188 145, 178 123 Z" fill={`url(#woman-skin-${id})`} />
+                <ellipse cx="201" cy="202" rx="5" ry="8" transform="rotate(-15 201 202)" fill={womanSkinMid} />
+                {/* Clutch Bag */}
+                <rect x="194" y="196" width="22" height="15" rx="3.5" fill="#1B1D24" stroke={`url(#gold-acc-${id})`} strokeWidth="1.5" />
+                <path d="M198 200 L205 205 L212 200" stroke={`url(#gold-acc-${id})`} strokeWidth="1.2" fill="none" />
+
+                {/* Graceful Neck & Decolletage */}
+                <path d="M157 88 L157 114 C161 116, 165 116, 169 114 L169 88 Z" fill={`url(#woman-skin-${id})`} />
+                {/* Pearl/Gold Necklace */}
+                <path d="M155 102 C160 110, 166 110, 171 102" stroke={`url(#gold-acc-${id})`} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+                <circle cx="163" cy="107" r="2.2" fill="#FFFDFC" stroke={`url(#gold-acc-${id})`} strokeWidth="0.8" />
+
+                {/* Feminine Head & Soft Features */}
+                <ellipse cx="163" cy="68" rx="16" ry="21" fill={`url(#woman-skin-${id})`} />
+                {/* Soft Ears & Earrings */}
+                <ellipse cx="147" cy="69" rx="2.5" ry="4" fill={womanSkinMid} />
+                <ellipse cx="179" cy="69" rx="2.5" ry="4" fill={womanSkinMid} />
+                <circle cx="147" cy="74" r="1.8" fill="#FFFDFC" stroke={`url(#gold-acc-${id})`} strokeWidth="0.8" />
+                <circle cx="179" cy="74" r="1.8" fill="#FFFDFC" stroke={`url(#gold-acc-${id})`} strokeWidth="0.8" />
+
+                {/* Elegant Hairstyle */}
                 {isSponsor ? (
+                    /* Classic Sophisticated Updo / Chignon */
                     <>
-                        <path d="m266 127 11 7-9 9-10-8 8-8ZM288 127l-11 7 9 9 10-8-8-8Z" fill={accent} />
-                        <circle cx="277" cy="134" r="3.5" fill={dressDark} />
+                        <ellipse cx="163" cy="42" rx="13" ry="11" fill={womanHair} />
+                        <path d="M147 67 C146 44, 153 36, 163 36 C173 36, 180 44, 179 67 C174 54, 152 54, 147 67 Z" fill={womanHair} />
+                        <path d="M147 65 C152 56, 174 56, 179 65 C176 50, 150 50, 147 65 Z" fill={womanHairHighlight} />
+                        {/* Gold Hairpiece Pin */}
+                        <path d="M160 41 Q163 38 166 41" stroke={`url(#gold-acc-${id})`} strokeWidth="2.5" strokeLinecap="round" />
                     </>
                 ) : (
-                    <path d="m274 128 3 6-4 34h8l-4-34 4-6-4-6Z" fill={accent} />
-                )}
-                <path d="M296 150h15l-3 8h-12Z" fill={paleAccent} />
-                <path d="M277 151v60" stroke="#FFFFFF" strokeOpacity="0.1" strokeWidth="1.5" />
-                <circle cx="277" cy="173" r="2.2" fill="#D6D7DC" />
-                <circle cx="277" cy="190" r="2.2" fill="#D6D7DC" />
-
-                <path d="M239 131c-8 12-11 29-12 48l-1 27" stroke={suit} strokeWidth="17" strokeLinecap="round" />
-                <path d="M314 131c9 12 13 29 14 48l2 24" stroke={suit} strokeWidth="17" strokeLinecap="round" />
-                <ellipse cx="226" cy="210" rx="6" ry="10" transform="rotate(6 226 210)" fill={manSkin} />
-                <ellipse cx="330" cy="207" rx="6" ry="10" transform="rotate(-8 330 207)" fill={manSkin} />
-                <path d="M222 210c-1 5 0 9 1 13M226 210c0 5 1 9 3 13M330 207c0 5-1 9-3 13" stroke="#A8644B" strokeWidth="1.3" strokeLinecap="round" />
-                <path d="M229 195h13M313 193h14" stroke="#FFFDFC" strokeOpacity="0.78" strokeWidth="3" strokeLinecap="round" />
-
-                <path d="M237 217h39l-2 62h-43l6-62ZM279 217h39l6 62h-43l-2-62Z" fill={suitDark} />
-                <path d="M277 222v56" stroke="#FFFFFF" strokeOpacity="0.09" strokeWidth="2" />
-                <path d="M229 279h47l-2 9h-48c-1-4 0-7 3-9ZM281 279h43c4 2 6 5 6 9h-48l-1-9Z" fill="#151820" />
-                <path d="M232 282h39M286 282h37" stroke="#FFFFFF" strokeOpacity="0.16" strokeWidth="1.5" strokeLinecap="round" />
-
-                <g transform="translate(0 17.44) scale(1 0.84)">
-                <rect x="269" y="83" width="16" height="26" rx="7" fill={manSkin} />
-                <ellipse cx="277" cy="60" rx="20" ry="26" fill={`url(#${manSkinGradientId})`} />
-                <ellipse cx="257" cy="63" rx="3.5" ry="5" fill={manSkin} />
-                <ellipse cx="297" cy="63" rx="3.5" ry="5" fill={manSkin} />
-                {isSponsor ? (
+                    /* Romantic Cascading Waves with Soft Bangs */
                     <>
-                        <path d="M257 58c2-22 16-34 32-29 15 5 21 19 13 39-3-10-10-16-20-19-9-2-17 1-25 9Z" fill={manHair} />
-                        <path d="M260 47c7-14 27-18 38-5-8 1-13 4-18 9-7-4-14-5-20-4Z" fill={manHair} />
-                        <path d="M263 42c7-5 17-7 25-3" stroke="#918A91" strokeWidth="2" strokeLinecap="round" opacity="0.75" />
+                        <path d="M147 68 C144 42, 152 35, 163 35 C174 35, 182 42, 179 68 C179 88, 174 98, 181 114 C175 106, 174 88, 175 75 C172 60, 154 60, 151 75 C152 88, 151 106, 145 114 C152 98, 147 88, 147 68 Z" fill={womanHair} />
+                        <path d="M150 48 C158 40, 168 40, 176 48 C172 38, 154 38, 150 48 Z" fill={womanHairHighlight} opacity="0.8" />
+                    </>
+                )}
+
+                {/* Delicate Joyful Facial Features */}
+                {/* Cheerful Lifted Eyebrows */}
+                <path d="M153 61 C156 58, 159 58, 161 61" stroke="#3D2924" strokeWidth="1.3" strokeLinecap="round" />
+                <path d="M165 61 C167 58, 170 58, 173 61" stroke="#3D2924" strokeWidth="1.3" strokeLinecap="round" />
+                {/* Happy Sparkling Eyes with Upward Eyelashes */}
+                <path d="M153 65 C155 62, 159 62, 161 65" stroke="#231714" strokeWidth="1.6" strokeLinecap="round" />
+                <ellipse cx="157" cy="66" rx="2" ry="2.2" fill="#231714" />
+                <circle cx="158" cy="65" r="0.8" fill="#FFFFFF" />
+                <path d="M165 65 C167 62, 171 62, 173 65" stroke="#231714" strokeWidth="1.6" strokeLinecap="round" />
+                <ellipse cx="169" cy="66" rx="2" ry="2.2" fill="#231714" />
+                <circle cx="170" cy="65" r="0.8" fill="#FFFFFF" />
+                {/* Warm Rosy Cheeks */}
+                <circle cx="152" cy="71" r="3.5" fill="#E8828C" opacity="0.45" />
+                <circle cx="174" cy="71" r="3.5" fill="#E8828C" opacity="0.45" />
+                {/* Cute Nose */}
+                <path d="M163 66 L162 72 L164 73" stroke={womanSkinShadow} strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+                {/* Radiant Smiling Lips & White Teeth */}
+                <path d="M157 76 C157 82, 169 82, 169 76 Z" fill="#C84B5B" />
+                <path d="M158 76 C159 79, 167 79, 168 76 Z" fill="#FFFFFF" />
+                <path d="M156 75.5 C156 82.5, 170 82.5, 170 75.5" stroke="#A83645" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+                {/* Soft Smile Dimples */}
+                <path d="M154 75 Q153 77 154 78.5" stroke="#C48473" strokeWidth="1" strokeLinecap="round" />
+                <path d="M172 75 Q173 77 172 78.5" stroke="#C48473" strokeWidth="1" strokeLinecap="round" />
+            </g>
+
+            {/* ========================================================= */}
+            {/* 2. MAN: Modern Tailored Tuxedo with Theme Color Accents    */}
+            {/* ========================================================= */}
+            <g id="man-figure">
+                {/* Tailored Trousers */}
+                <path d="M266 218 L260 326 C264 329, 290 329, 294 326 L298 235 L302 326 C306 329, 332 329, 336 326 L330 218 Z" fill={suitTrousers} />
+                <path d="M298 235 L298 326" stroke="#000000" strokeOpacity="0.35" strokeWidth="1.5" />
+                <path d="M277 230 L277 325 M319 230 L319 325" stroke="#FFFFFF" strokeOpacity="0.08" strokeWidth="1" />
+
+                {/* Polished Oxford Shoes */}
+                <path d="M256 325 C263 323, 287 323, 294 325 C295 330, 293 336, 287 337 L256 337 C253 334, 253 328, 256 325 Z" fill="#0C0E14" />
+                <path d="M302 325 C309 323, 333 323, 340 325 C343 328, 343 334, 340 337 L309 337 C303 336, 301 330, 302 325 Z" fill="#0C0E14" />
+                <path d="M260 327 C270 326, 282 326, 290 327 M306 327 C316 326, 328 326, 336 327" stroke="#FFFFFF" strokeOpacity="0.25" strokeWidth="1" strokeLinecap="round" />
+
+                {/* Tuxedo Jacket Body */}
+                <path
+                    d="M265 110 C252 120, 246 142, 248 180 L252 222 C275 227, 321 227, 344 222 L348 180 C350 142, 344 120, 331 110 C316 116, 280 116, 265 110 Z"
+                    fill={suitBase}
+                />
+                <path
+                    d="M265 110 C252 120, 246 142, 248 180 L252 222 C275 227, 321 227, 344 222 L348 180 C350 142, 344 120, 331 110 C316 116, 280 116, 265 110 Z"
+                    fill={`url(#suit-grad-${id})`}
+                />
+
+                {/* Crisp White Shirt V-Placket */}
+                <path d="M285 112 L298 165 L311 112 Z" fill="#FFFDFC" />
+                <line x1="298" y1="130" x2="298" y2="165" stroke="#E5E7EB" strokeWidth="1.2" />
+                {/* Black Onyx Shirt Studs */}
+                <circle cx="298" cy="142" r="1.3" fill="#11141B" />
+                <circle cx="298" cy="154" r="1.3" fill="#11141B" />
+
+                {/* Satin Peak Lapels */}
+                <path d="M266 110 L287 158 L283 198 L298 220 L276 218 L262 165 Z" fill={suitLapel} />
+                <path d="M330 110 L309 158 L313 198 L298 220 L320 218 L334 165 Z" fill={suitLapel} />
+
+                {/* Theme-Matched Tie or Bowtie */}
+                {isSponsor ? (
+                    /* Classic Silk Bowtie */
+                    <g id="bowtie">
+                        <path d="M290 120 L298 124 L290 128 Z" fill={accent} />
+                        <path d="M306 120 L298 124 L306 128 Z" fill={accent} />
+                        <ellipse cx="298" cy="124" rx="2.5" ry="2.8" fill={dressShadow} />
+                    </g>
+                ) : (
+                    /* Modern Slim Necktie */
+                    <g id="necktie">
+                        <polygon points="295,120 301,120 302,125 298,127 294,125" fill={dressShadow} />
+                        <polygon points="296,126 300,126 302,162 298,168 294,162" fill={accent} />
+                        <path d="M296 126 L298 166" stroke="#FFFFFF" strokeOpacity="0.25" strokeWidth="0.8" />
+                    </g>
+                )}
+
+                {/* Pocket Square in Theme Color + Boutonnière */}
+                <path d="M318 144 L328 142 L332 146 L317 146 Z" fill={paleShimmer} stroke={accent} strokeWidth="0.8" />
+                <circle cx="282" cy="138" r="2.5" fill={accent} />
+                <circle cx="284" cy="136" r="1.8" fill="#FFFDFC" />
+                <path d="M282 140 Q283 145 281 148" stroke="#52796F" strokeWidth="1.2" strokeLinecap="round" />
+
+                {/* Suit Sleeves & Cuffs */}
+                <path d="M255 116 C242 142, 234 175, 233 205 L242 206 C244 178, 252 148, 263 124 Z" fill={suitBase} />
+                <path d="M341 116 C354 142, 362 175, 363 205 L354 206 C352 178, 344 148, 333 124 Z" fill={suitBase} />
+
+                {/* White Shirt Cuff & Hands */}
+                <path d="M233 203 L242 204 L241 207 L232 206 Z" fill="#FFFDFC" />
+                <ellipse cx="236" cy="214" rx="5" ry="8" transform="rotate(8 236 214)" fill={manSkinMid} />
+
+                <path d="M354 204 L363 203 L364 206 L355 207 Z" fill="#FFFDFC" />
+                <ellipse cx="360" cy="214" rx="5" ry="8" transform="rotate(-8 360 214)" fill={manSkinMid} />
+                {/* Watch Detail on Right Wrist */}
+                <rect x="353" y="206" width="10" height="3" rx="1" fill={`url(#gold-acc-${id})`} />
+
+                {/* Strong Neck & Shirt Collar */}
+                <path d="M292 88 L292 114 C296 116, 300 116, 304 114 L304 88 Z" fill={`url(#man-skin-${id})`} />
+                <polygon points="288,110 298,118 296,110" fill="#FFFDFC" />
+                <polygon points="308,110 298,118 300,110" fill="#FFFDFC" />
+
+                {/* Masculine Head & Jawline */}
+                <ellipse cx="298" cy="68" rx="17" ry="22" fill={`url(#man-skin-${id})`} />
+                {/* Ears */}
+                <ellipse cx="281" cy="69" rx="2.8" ry="4.5" fill={manSkinMid} />
+                <ellipse cx="315" cy="69" rx="2.8" ry="4.5" fill={manSkinMid} />
+
+                {/* Modern Styled Haircut */}
+                {isSponsor ? (
+                    /* Distinguished Silver/Charcoal Executive Sweep */
+                    <>
+                        <path d="M281 65 C280 43, 288 35, 298 35 C308 35, 316 43, 315 65 C310 52, 286 52, 281 65 Z" fill={manHair} />
+                        <path d="M283 50 C290 40, 306 40, 313 50 C308 42, 288 42, 283 50 Z" fill={manHairHighlight} />
+                        <path d="M285 45 Q298 38 311 45" stroke="#B0AAB3" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
                     </>
                 ) : (
+                    /* Contemporary Textured Fade / Pompadour */
                     <>
-                        <path d="M257 59c0-21 14-34 31-31 16 3 24 17 17 38-5-9-13-14-23-15-9-1-17 2-25 8Z" fill={manHair} />
-                        <circle cx="263" cy="39" r="7" fill={manHair} />
-                        <circle cx="273" cy="34" r="8" fill={manHair} />
-                        <circle cx="284" cy="34" r="8" fill={manHair} />
-                        <circle cx="295" cy="40" r="7" fill={manHair} />
+                        <path d="M281 66 C279 40, 288 33, 298 33 C309 33, 317 40, 315 66 C311 50, 285 50, 281 66 Z" fill={manHair} />
+                        <path d="M283 46 C290 36, 306 36, 313 46 C308 38, 288 38, 283 46 Z" fill={manHairHighlight} opacity="0.8" />
                     </>
                 )}
-                <path d="M265 55c3-2 7-2 10 0M282 55c3-2 7-2 10 0" stroke="#3A2A2B" strokeWidth="1.8" strokeLinecap="round" />
-                <ellipse cx="270" cy="60" rx="2" ry="1.6" fill="#302526" />
-                <ellipse cx="287" cy="60" rx="2" ry="1.6" fill="#302526" />
-                <circle cx="270.5" cy="59.5" r="0.6" fill="#FFFFFF" />
-                <circle cx="287.5" cy="59.5" r="0.6" fill="#FFFFFF" />
-                <path d="M278 61c-1 4-1 7 1 9" stroke="#A4614A" strokeWidth="1.3" strokeLinecap="round" />
-                <path d="M273 76c4 3 8 3 12 0" stroke="#824344" strokeWidth="2" strokeLinecap="round" />
-                <path d="M264 68c2 1 4 1 6 0M287 68c2 1 4 1 6 0" stroke="#C27B62" strokeWidth="1.3" strokeLinecap="round" />
-                </g>
+
+                {/* Handsome Joyful Facial Features */}
+                {/* Cheerful Lifted Brows */}
+                <path d="M287 60 C290 57, 294 57, 296 60" stroke="#1D1A20" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M300 60 C302 57, 306 57, 309 60" stroke="#1D1A20" strokeWidth="1.8" strokeLinecap="round" />
+                {/* Warm Sparkling Eyes */}
+                <path d="M288 64 C290 62, 294 62, 296 64" stroke="#1D1A20" strokeWidth="1.5" strokeLinecap="round" />
+                <ellipse cx="292" cy="65.5" rx="2.2" ry="2.2" fill="#1D1A20" />
+                <circle cx="293" cy="64.5" r="0.8" fill="#FFFFFF" />
+                <path d="M300 64 C302 62, 306 62, 308 64" stroke="#1D1A20" strokeWidth="1.5" strokeLinecap="round" />
+                <ellipse cx="304" cy="65.5" rx="2.2" ry="2.2" fill="#1D1A20" />
+                <circle cx="305" cy="64.5" r="0.8" fill="#FFFFFF" />
+                {/* Defined Nose */}
+                <path d="M298 63 L297 71 L300 72" stroke={manSkinShadow} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                {/* Handsome Beaming Smile & White Teeth */}
+                <path d="M291 75.5 C291 82.5, 305 82.5, 305 75.5 Z" fill="#9E4D3C" />
+                <path d="M292 75.5 C293 78.5, 303 78.5, 304 75.5 Z" fill="#FFFFFF" />
+                <path d="M290 75 C290 83, 306 83, 306 75" stroke="#7A3426" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+                {/* Smile Dimples */}
+                <path d="M288 74.5 Q287 76.5 288 78" stroke="#9A6553" strokeWidth="1" strokeLinecap="round" />
+                <path d="M308 74.5 Q309 76.5 308 78" stroke="#9A6553" strokeWidth="1" strokeLinecap="round" />
             </g>
         </svg>
     );

@@ -7,6 +7,23 @@ type CacheEntry<T> = {
 
 const cache = new Map<string, CacheEntry<unknown>>();
 const pending = new Map<string, Promise<unknown>>();
+const MAX_CACHE_ENTRIES = 1000;
+
+function pruneCache() {
+    const now = Date.now();
+    for (const [k, v] of cache.entries()) {
+        if (v.expiresAt <= now) cache.delete(k);
+    }
+    if (cache.size > MAX_CACHE_ENTRIES) {
+        const excess = cache.size - MAX_CACHE_ENTRIES;
+        let count = 0;
+        for (const k of cache.keys()) {
+            cache.delete(k);
+            count++;
+            if (count >= excess) break;
+        }
+    }
+}
 
 export async function getCachedServerValue<T>(
     key: string,
@@ -28,6 +45,7 @@ export async function getCachedServerValue<T>(
 
     const load = loader()
         .then((value) => {
+            pruneCache();
             cache.set(key, {
                 expiresAt: Date.now() + ttlMs,
                 value,

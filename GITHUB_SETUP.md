@@ -42,6 +42,10 @@ git push -u origin main
 
 ---
 
+## Safe contribution workflow
+
+For day-to-day changes, do not push directly to `main`. Create a `feature/...` or `fix/...` branch, run `npm run verify`, open a pull request, test the Vercel Preview, and merge only after a human approval. See [ENGINEERING_WORKFLOW.md](./ENGINEERING_WORKFLOW.md) for the CI, Vercel, and Supabase safety requirements.
+
 ## Your Live App
 
 Your app is already deployed and live at:

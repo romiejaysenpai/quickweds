@@ -4,6 +4,7 @@ import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { hasAccountPro } from '@/lib/account';
 import { isKnownAdminEmail } from '@/lib/admin';
+import { checkRateLimitAsync } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -30,6 +31,11 @@ export async function POST(request: NextRequest) {
     try {
         const { user, error } = await getRequestUser(request);
         if (!user) return NextResponse.json({ error: error || 'Please sign in to export your monogram.' }, { status: 401 });
+
+        const rateLimitResult = await checkRateLimitAsync(user.id, 'MONOGRAM_EXPORT');
+        if (!rateLimitResult.allowed) {
+            return NextResponse.json({ error: 'Too many export requests. Please wait a minute before trying again.' }, { status: 429 });
+        }
 
         const db = getSupabaseAdminClient() as any;
         const { data: profile } = await db

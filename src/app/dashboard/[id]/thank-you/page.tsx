@@ -9,7 +9,6 @@ import {
     ArrowLeft,
     CheckCircle2,
     Image as ImageIcon,
-    Loader2,
     Mail,
     Palette,
     Send,
@@ -18,6 +17,8 @@ import {
 } from 'lucide-react';
 import { getCachedSession } from '@/lib/session-cache';
 import { getThankYouNoteHtml } from '@/lib/email-templates';
+import LoadingState from '@/components/ui/LoadingState';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 import {
     THANK_YOU_COLOR_OPTIONS,
     THANK_YOU_DEFAULT_MESSAGE,
@@ -246,23 +247,25 @@ export default function ThankYouBuilderPage() {
         return (
             <main className="min-h-screen overflow-x-hidden bg-[#FFF8F9] px-3 py-4 text-foreground sm:px-4 sm:py-6">
                 <div className="mx-auto flex min-h-[70vh] w-full max-w-5xl items-center justify-center">
-                    <div className="w-full max-w-md rounded-lg border border-border bg-white p-5 text-center shadow-xl shadow-primary/10 sm:p-8">
-                        <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-                        <p className="mt-4 text-sm font-bold text-text-secondary">Loading thank-you builder...</p>
-                    </div>
+                    <LoadingState
+                        label="Loading thank-you builder…"
+                        description="Preparing your guest list and message details."
+                        className="max-w-md"
+                    />
                 </div>
             </main>
         );
     }
 
     return (
-        <main className="min-h-screen overflow-x-hidden bg-[#FFF8F9] px-3 py-4 text-foreground sm:px-5 sm:py-6">
-            <div className="mx-auto w-full max-w-7xl min-w-0">
-                <div className="mb-4">
-                    <Link href={backHref} className="inline-flex min-h-[40px] max-w-full items-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
-                        <ArrowLeft className="h-4 w-4" /> {backLabel}
-                    </Link>
-                </div>
+        <DashboardShell weddingId={weddingId}>
+            <main className="min-h-screen overflow-x-hidden bg-[#FFF8F9] px-3 py-4 text-foreground sm:px-5 sm:py-6 flex-1">
+                <div className="mx-auto w-full max-w-7xl min-w-0">
+                    <div className="mb-4">
+                        <Link href={backHref} className="inline-flex min-h-[40px] max-w-full items-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
+                            <ArrowLeft className="h-4 w-4" /> {backLabel}
+                        </Link>
+                    </div>
 
                 <section className="mb-4 overflow-hidden rounded-lg border border-primary/15 bg-white p-3 shadow-xl shadow-primary/10 sm:p-5 lg:p-6">
                     <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -406,7 +409,7 @@ export default function ThankYouBuilderPage() {
                                         disabled={Boolean(submitting) || !data.logSchemaAvailable}
                                         className="inline-flex min-h-[48px] min-w-0 items-center justify-center gap-2 rounded-lg border border-primary/25 bg-white px-4 text-sm font-black text-primary transition hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
                                     >
-                                        {submitting === 'test' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                                        {submitting === 'test' ? <LoadingState variant="inline" label="Sending test email…" /> : <Mail className="h-4 w-4" />}
                                         Send Test
                                     </button>
                                     <button
@@ -415,7 +418,7 @@ export default function ThankYouBuilderPage() {
                                         disabled={Boolean(submitting) || !data.logSchemaAvailable || data.unsentRecipients.length === 0}
                                         className="inline-flex min-h-[48px] min-w-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-black text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
                                     >
-                                        {submitting === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        {submitting === 'send' ? <LoadingState variant="inline" label="Sending thank-you emails…" /> : <Send className="h-4 w-4" />}
                                         Send to Guests
                                     </button>
                                 </div>
@@ -477,6 +480,7 @@ export default function ThankYouBuilderPage() {
                 </div>
             </div>
         </main>
+        </DashboardShell>
     );
 }
 

@@ -60,6 +60,7 @@ export const CARD_CONTAINER_STYLES = [
 
 export interface TemplateVisualProfile {
     mood: TemplateMood;
+    templateId: string;
     cardStyleId: CardContainerStyleId;
     isDark: boolean;
     isSharp: boolean;
@@ -75,7 +76,9 @@ export interface TemplateVisualProfile {
     headingClass: string;
     bodyClass: string;
     dividerClass: string;
-    ornament: 'none' | 'floral' | 'botanical' | 'geometric' | 'editorial' | 'film' | 'tropical' | 'royal' | 'glitch';
+    badgeStyleClass?: string;
+    badgePrefix?: string;
+    ornament: 'none' | 'floral' | 'botanical' | 'geometric' | 'editorial' | 'film' | 'tropical' | 'royal' | 'glitch' | 'celestial' | 'artdeco' | 'vintage' | 'sakura';
     galleryTitle: string;
     detailTitle: string;
     timelineTitle: string;
@@ -192,17 +195,17 @@ function normalizeTemplate(template?: string) {
 export function getTemplateMood(template?: string): TemplateMood {
     const t = normalizeTemplate(template);
 
-    if (t === 'celestial') return 'celestial';
-    if (t === 'nordic') return 'nordic';
-    if (t === 'riviera') return 'riviera';
+    if (t === 'celestial' || t === 'stargazer') return 'celestial';
+    if (t === 'nordic' || t === 'nordicdrift' || t === 'japandi') return 'nordic';
+    if (t === 'riviera' || t === 'amalfi' || t === 'sunsetriviera') return 'riviera';
 
-    if (['royal', 'midnight', 'artdeco', 'luxury'].includes(t)) return 'dark';
-    if (['cinematic', 'film'].includes(t)) return 'cinematic';
-    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus'].includes(t)) return 'editorial';
-    if (['boho', 'garden', 'rustic', 'sakura'].includes(t)) return 'organic';
-    if (['tropical', 'elopement'].includes(t)) return 'destination';
-    if (['vintage', 'traditional'].includes(t)) return 'vintage';
-    if (['whimsical', 'romantic'].includes(t)) return 'playful';
+    if (['royal', 'midnight', 'artdeco', 'luxury', 'gothicnoir', 'baroque'].includes(t)) return 'dark';
+    if (['cinematic', 'film', 'lofifilm', 'cyberromantic'].includes(t)) return 'cinematic';
+    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus', 'kinfolk', 'neobrutalist', 'highfashion', 'bauhaus'].includes(t)) return 'editorial';
+    if (['boho', 'garden', 'rustic', 'sakura', 'glassbotanical', 'desertmirage', 'cottagecore'].includes(t)) return 'organic';
+    if (['tropical', 'elopement', 'travelogue'].includes(t)) return 'destination';
+    if (['vintage', 'traditional', 'chateau'].includes(t)) return 'vintage';
+    if (['whimsical', 'romantic', 'discofever', 'storybook'].includes(t)) return 'playful';
 
     return 'classic';
 }
@@ -306,13 +309,14 @@ export function getTemplateVisualProfile(
 ): TemplateVisualProfile {
     const t = normalizeTemplate(template);
     const mood = getTemplateMood(t);
-    const isDark = invert || mood === 'dark' || mood === 'cinematic' || ['urban', 'glitch'].includes(t);
-    const isSharp = mood === 'editorial' || ['artdeco', 'luxury', 'urban', 'glitch'].includes(t);
-    const isVintage = mood === 'vintage' || ['rustic', 'boho', 'film'].includes(t);
-    const isOrganic = mood === 'organic' || mood === 'destination' || mood === 'playful';
+    const isDark = invert || mood === 'dark' || mood === 'cinematic' || ['urban', 'glitch', 'artdeco', 'luxury', 'midnight', 'celestial', 'gothicnoir', 'highfashion', 'cyberromantic', 'stargazer'].includes(t);
+    const isSharp = mood === 'editorial' || ['artdeco', 'luxury', 'urban', 'glitch', 'vogue', 'highfashion', 'bauhaus', 'neobrutalist', 'kinfolk'].includes(t);
+    const isVintage = mood === 'vintage' || ['rustic', 'boho', 'film', 'traditional', 'chateau', 'baroque', 'discofever', 'lofifilm', 'storybook'].includes(t);
+    const isOrganic = mood === 'organic' || mood === 'destination' || mood === 'playful' || ['glassbotanical', 'cottagecore', 'amalfi', 'japandi', 'desertmirage'].includes(t);
 
     const base = {
         mood,
+        templateId: t,
         isDark,
         isSharp,
         isVintage,
@@ -323,175 +327,580 @@ export function getTemplateVisualProfile(
     };
 
     const getProfile = (): TemplateVisualProfile => {
-        if (mood === 'celestial') {
-            return {
-                ...base,
-                cardStyleId: 'borderless_glass',
-                isDark: true,
-                sectionClass: 'relative overflow-hidden bg-[#0a0e1a] text-amber-100',
-                sectionStyle: { backgroundImage: `radial-gradient(circle at 50% 20%, ${motifColor}33, transparent 45%), radial-gradient(circle at 10% 80%, #1e1b4b 0%, #090d16 100%)` },
-                containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
-                cardClass: 'rounded-2xl border border-amber-300/20 bg-slate-950/60 shadow-[0_20px_70px_rgba(15,23,42,0.6)] backdrop-blur-2xl',
-                accentCardClass: 'rounded-2xl border border-amber-300/40 bg-amber-500/10 shadow-[0_20px_70px_rgba(217,119,6,0.2)]',
-                imageFrameClass: 'rounded-2xl border-4 border-amber-300/30 shadow-[0_25px_80px_rgba(217,119,6,0.25)]',
-                eyebrowClass: 'text-amber-300/90 tracking-[0.45em]',
-                headingClass: 'font-serif tracking-widest text-amber-200 uppercase',
-                bodyClass: 'text-slate-300/90',
-                dividerClass: 'h-px w-32 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent',
-                ornament: 'royal',
-                galleryTitle: 'Celestial Memories',
-            };
-        }
+        switch (t) {
+            case 'artdeco':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#0d0d0d] text-[#d4af37]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at center, #1a1600 0%, #080808 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-none border-2 border-[#d4af37]/40 bg-black/85 shadow-[0_0_35px_rgba(212,175,55,0.15)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-none border-2 border-[#d4af37] bg-[#d4af37]/10 shadow-[0_0_50px_rgba(212,175,55,0.25)]',
+                    imageFrameClass: 'rounded-none border-4 border-[#d4af37] shadow-[0_0_40px_rgba(212,175,55,0.3)]',
+                    eyebrowClass: 'text-[#d4af37] tracking-[0.5em] font-sans font-bold uppercase',
+                    headingClass: 'font-serif tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-[#fceabb] to-[#d4af37] uppercase',
+                    bodyClass: 'text-amber-100/80',
+                    dividerClass: 'h-0.5 w-36 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent',
+                    badgeStyleClass: 'border border-[#d4af37]/60 bg-black text-[#d4af37] px-4 py-1.5 text-[10px] tracking-[0.4em] font-bold uppercase',
+                    badgePrefix: '1920S GATSBY N°',
+                    ornament: 'artdeco',
+                    galleryTitle: 'Deco Impressions',
+                };
 
-        if (mood === 'nordic') {
-            return {
-                ...base,
-                cardStyleId: 'borderless_glass',
-                sectionClass: 'relative overflow-hidden bg-[#f4f6f5] text-slate-800',
-                sectionStyle: { backgroundImage: `linear-gradient(180deg, #f4f6f5 0%, #e5e9e6 100%)` },
-                containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
-                cardClass: 'rounded-3xl border border-slate-200 bg-white/80 shadow-[0_12px_40px_rgba(30,41,59,0.05)] backdrop-blur-xl',
-                accentCardClass: 'rounded-3xl border border-emerald-900/10 bg-slate-100 shadow-[0_12px_40px_rgba(30,41,59,0.07)]',
-                imageFrameClass: 'rounded-3xl border-8 border-white shadow-[0_20px_60px_rgba(30,41,59,0.08)]',
-                eyebrowClass: 'text-slate-500 tracking-[0.38em]',
-                headingClass: 'font-sans font-light tracking-wide text-slate-900',
-                bodyClass: 'text-slate-600',
-                dividerClass: 'h-px w-20 bg-slate-300',
-                ornament: 'botanical',
-                galleryTitle: 'Fjord & Meadow',
-            };
-        }
+            case 'boho':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#fcf8f1] text-[#5d2e0a]',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 10% 20%, ${motifColor}18, transparent 40%), linear-gradient(180deg, #fcf8f1 0%, #f4eae0 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-[2.5rem] border border-[#8b4513]/20 bg-[#fffdfa]/90 shadow-[0_20px_50px_rgba(93,46,10,0.08)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-[2.5rem] border-2 border-[#8b4513]/30 bg-[#8b4513]/10 shadow-[0_20px_50px_rgba(93,46,10,0.12)]',
+                    imageFrameClass: 'rounded-[3rem] border-[10px] border-white shadow-[0_25px_60px_rgba(93,46,10,0.15)]',
+                    eyebrowClass: 'text-[#8b4513] tracking-[0.35em] font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#5d2e0a]',
+                    bodyClass: 'text-[#8b4513]/85',
+                    dividerClass: 'h-px w-28 bg-[#8b4513]/30',
+                    badgeStyleClass: 'rounded-full bg-[#8b4513]/15 text-[#5d2e0a] px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'WILD & FREE N°',
+                    ornament: 'botanical',
+                    galleryTitle: 'Bohemian Whispers',
+                };
 
-        if (mood === 'riviera') {
-            return {
-                ...base,
-                cardStyleId: 'borderless_glass',
-                sectionClass: 'relative overflow-hidden bg-[#fffdfa] text-cyan-950',
-                sectionStyle: { backgroundImage: `radial-gradient(circle at 90% 10%, #0284c718, transparent 40%), linear-gradient(180deg, #fffdfa 0%, #f0f9ff 100%)` },
-                containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
-                cardClass: 'rounded-3xl border border-sky-100 bg-white/90 shadow-[0_20px_60px_rgba(14,165,233,0.08)] backdrop-blur-xl',
-                accentCardClass: 'rounded-3xl border border-amber-300/40 bg-amber-500/5 shadow-[0_20px_60px_rgba(245,158,11,0.08)]',
-                imageFrameClass: 'rounded-3xl border-[10px] border-white shadow-[0_25px_70px_rgba(14,165,233,0.12)]',
-                eyebrowClass: 'text-sky-600 tracking-[0.35em]',
-                headingClass: 'font-serif italic tracking-normal text-sky-950',
-                bodyClass: 'text-sky-900/80',
-                dividerClass: 'h-0.5 w-24 bg-gradient-to-r from-sky-400 via-amber-400 to-sky-400',
-                ornament: 'tropical',
-                galleryTitle: 'Amalfi Stories',
-            };
-        }
+            case 'celestial':
+                return {
+                    ...base,
+                    cardStyleId: 'borderless_glass',
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#090d16] text-amber-100',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 50% 20%, ${motifColor}33, transparent 45%), radial-gradient(circle at 10% 80%, #1e1b4b 0%, #090d16 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl border border-amber-300/25 bg-slate-950/70 shadow-[0_20px_70px_rgba(15,23,42,0.6)] backdrop-blur-2xl',
+                    accentCardClass: 'rounded-3xl border border-amber-300/40 bg-amber-500/15 shadow-[0_20px_70px_rgba(217,119,6,0.25)]',
+                    imageFrameClass: 'rounded-3xl border-4 border-amber-300/30 shadow-[0_25px_80px_rgba(217,119,6,0.25)]',
+                    eyebrowClass: 'text-amber-300/90 tracking-[0.45em] uppercase font-bold',
+                    headingClass: 'font-serif tracking-widest text-amber-200 uppercase',
+                    bodyClass: 'text-slate-300/90',
+                    dividerClass: 'h-px w-32 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent',
+                    badgeStyleClass: 'rounded-full border border-amber-300/40 bg-slate-900/80 text-amber-300 px-4 py-1 text-[10px] tracking-[0.4em] font-bold uppercase',
+                    badgePrefix: 'STARDUST SEC N°',
+                    ornament: 'celestial',
+                    galleryTitle: 'Celestial Memories',
+                };
 
-        if (mood === 'dark') {
-            return {
-                ...base,
-                cardStyleId: 'borderless_glass',
-                sectionClass: 'relative overflow-hidden bg-[#101010] text-white',
-                sectionStyle: { backgroundImage: `radial-gradient(circle at 16% 10%, ${motifColor}24, transparent 34%), linear-gradient(180deg, #101010 0%, #17120f 100%)` },
-                containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
-                cardClass: 'border border-primary/25 bg-black/35 shadow-[0_28px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl rounded-none',
-                accentCardClass: 'border border-primary/35 bg-primary/10 shadow-[0_24px_70px_rgba(0,0,0,0.35)] rounded-none',
-                imageFrameClass: 'rounded-none border-[10px] border-primary/30 shadow-[0_30px_90px_rgba(0,0,0,0.55)]',
-                eyebrowClass: 'text-primary/85 tracking-[0.42em]',
-                headingClass: 'font-serif uppercase tracking-[0.12em] text-primary',
-                bodyClass: 'text-white/82',
-                dividerClass: 'h-px w-28 bg-gradient-to-r from-transparent via-primary/70 to-transparent',
-                ornament: t === 'artdeco' ? 'geometric' : 'royal',
-                galleryTitle: 'The Gallery',
-            };
-        }
+            case 'cinematic':
+                return {
+                    ...base,
+                    cardStyleId: 'borderless_glass',
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#0d0d10] text-white',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 80% 16%, ${motifColor}2E, transparent 34%), linear-gradient(180deg, #0d0d10 0%, #1f1712 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-2xl border border-white/15 bg-white/[0.06] shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-2xl',
+                    accentCardClass: 'rounded-2xl border border-amber-500/30 bg-amber-500/10 shadow-[0_30px_90px_rgba(0,0,0,0.4)]',
+                    imageFrameClass: 'rounded-xl border-[6px] border-black shadow-[0_28px_80px_rgba(0,0,0,0.6)] sepia-[0.1]',
+                    eyebrowClass: 'text-amber-400/90 tracking-[0.45em] font-mono uppercase',
+                    headingClass: 'font-serif tracking-tight text-white',
+                    bodyClass: 'text-white/80',
+                    dividerClass: 'h-px w-32 bg-gradient-to-r from-transparent via-amber-500/60 to-transparent',
+                    badgeStyleClass: 'border border-amber-500/40 bg-black/80 text-amber-400 font-mono px-3 py-1 text-[10px] tracking-[0.3em] uppercase',
+                    badgePrefix: 'SCENE N°',
+                    ornament: 'film',
+                    galleryTitle: 'Film Stills',
+                };
 
-        if (mood === 'editorial') {
-            return {
-                ...base,
-                cardStyleId: 'editorial_rules',
-                sectionClass: 'relative overflow-hidden bg-white text-neutral-950',
-                sectionStyle: { backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(180deg, #fff 0%, ${motifColor}0A 100%)`, backgroundSize: '72px 72px, auto' },
-                containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
-                cardClass: 'rounded-none border border-black/10 bg-white shadow-none',
-                accentCardClass: 'rounded-none border border-black bg-black text-white shadow-[18px_18px_0_rgba(0,0,0,0.08)]',
-                imageFrameClass: 'rounded-none border border-black/10 grayscale hover:grayscale-0 shadow-[18px_18px_0_rgba(0,0,0,0.06)]',
-                eyebrowClass: 'text-black/65 tracking-[0.5em]',
-                headingClass: 'font-sans font-black uppercase tracking-[-0.04em] text-black',
-                bodyClass: 'text-black/74',
-                dividerClass: 'h-[2px] w-24 bg-black',
-                ornament: t === 'glitch' ? 'glitch' : 'editorial',
-                galleryTitle: 'Photo Edit',
-            };
-        }
+            case 'editorial':
+                return {
+                    ...base,
+                    cardStyleId: 'editorial_rules',
+                    sectionClass: 'relative overflow-hidden bg-white text-neutral-950',
+                    sectionStyle: { backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(180deg, #fff 0%, ${motifColor}0A 100%)`, backgroundSize: '72px 72px, auto' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-none border border-black bg-white shadow-[12px_12px_0_rgba(0,0,0,0.08)]',
+                    accentCardClass: 'rounded-none border-2 border-black bg-black text-white shadow-[16px_16px_0_rgba(0,0,0,0.12)]',
+                    imageFrameClass: 'rounded-none border-2 border-black grayscale hover:grayscale-0 shadow-[14px_14px_0_rgba(0,0,0,0.1)]',
+                    eyebrowClass: 'text-black/70 tracking-[0.5em] font-mono uppercase font-bold',
+                    headingClass: 'font-sans font-black uppercase tracking-tighter text-black',
+                    bodyClass: 'text-black/80',
+                    dividerClass: 'h-[2px] w-24 bg-black',
+                    badgeStyleClass: 'border border-black bg-black text-white px-3 py-1 text-[10px] font-mono font-bold tracking-[0.3em] uppercase',
+                    badgePrefix: 'ISSUE N°',
+                    ornament: 'editorial',
+                    galleryTitle: 'Photo Edit',
+                };
 
-        if (mood === 'cinematic') {
-            return {
-                ...base,
-                cardStyleId: 'borderless_glass',
-                sectionClass: 'relative overflow-hidden bg-[#17110d] text-white',
-                sectionStyle: { backgroundImage: `radial-gradient(circle at 80% 16%, ${motifColor}2E, transparent 34%), linear-gradient(180deg, #0d0d10 0%, #221711 100%)` },
-                containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
-                cardClass: 'rounded-[1.5rem] border border-white/10 bg-white/[0.06] shadow-[0_30px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl',
-                accentCardClass: 'rounded-[1.5rem] border border-primary/30 bg-primary/10 shadow-[0_30px_90px_rgba(0,0,0,0.35)]',
-                imageFrameClass: 'rounded-[1rem] border-[8px] border-black shadow-[0_28px_80px_rgba(0,0,0,0.55)] sepia-[0.12]',
-                eyebrowClass: 'text-primary/85 tracking-[0.42em]',
-                headingClass: 'font-serif tracking-tight text-white',
-                bodyClass: 'text-white/82',
-                dividerClass: 'h-px w-28 bg-gradient-to-r from-transparent via-primary/70 to-transparent',
-                ornament: 'film',
-                galleryTitle: 'Film Stills',
-            };
-        }
+            case 'elegance':
+                return {
+                    ...base,
+                    cardStyleId: 'arch_panel',
+                    sectionClass: 'relative overflow-hidden bg-[#fffaf8] text-rose-950',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 80% 20%, ${motifColor}18, transparent 40%), linear-gradient(180deg, #fffaf8 0%, #f7ebe6 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-[3rem] border border-rose-200/60 bg-white/85 shadow-[0_20px_60px_rgba(225,110,130,0.08)] backdrop-blur-2xl',
+                    accentCardClass: 'rounded-[3rem] border border-rose-300/80 bg-rose-50 shadow-[0_20px_60px_rgba(225,110,130,0.12)]',
+                    imageFrameClass: 'rounded-[3.5rem] border-[12px] border-white shadow-[0_25px_70px_rgba(225,110,130,0.15)]',
+                    eyebrowClass: 'text-rose-500 tracking-[0.38em] font-medium uppercase',
+                    headingClass: 'font-serif italic text-rose-950',
+                    bodyClass: 'text-rose-900/80',
+                    dividerClass: 'h-0.5 w-28 bg-gradient-to-r from-transparent via-rose-300 to-transparent',
+                    badgeStyleClass: 'rounded-full bg-rose-100 text-rose-700 px-4 py-1 text-[10px] tracking-[0.3em] font-medium uppercase',
+                    badgePrefix: 'ELEGANCE N°',
+                    ornament: 'floral',
+                    galleryTitle: 'Silken Moments',
+                };
 
-        if (mood === 'organic' || mood === 'destination' || mood === 'playful') {
-            return {
-                ...base,
-                cardStyleId: 'soft_parchment',
-                sectionClass: 'relative overflow-hidden text-[#4A4444]',
-                sectionStyle: { backgroundImage: `radial-gradient(circle at 8% 8%, ${motifColor}18, transparent 32%), radial-gradient(circle at 92% 20%, ${motifColor}12, transparent 30%), linear-gradient(180deg, #fffaf6 0%, #f8efe8 100%)` },
-                containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
-                cardClass: 'rounded-[2rem] md:rounded-[3.25rem] border border-white/70 bg-white/68 shadow-[0_28px_90px_rgba(58,42,45,0.10)] backdrop-blur-xl',
-                accentCardClass: 'rounded-[2rem] md:rounded-[3.25rem] border border-primary/20 bg-white/80 shadow-[0_24px_80px_rgba(58,42,45,0.09)]',
-                imageFrameClass: 'rounded-[2.5rem] md:rounded-[4rem] border-[12px] border-white shadow-[0_30px_90px_rgba(58,42,45,0.16)]',
-                eyebrowClass: 'text-primary/82 tracking-[0.32em]',
-                headingClass: 'font-serif italic tracking-tight text-[#4A4444]',
-                bodyClass: 'text-[#4A4444]/78',
-                dividerClass: 'h-px w-24 bg-gradient-to-r from-transparent via-primary/45 to-transparent',
-                ornament: mood === 'destination' ? 'tropical' : 'botanical',
-                galleryTitle: mood === 'destination' ? 'Paradise Moments' : 'Captured Moments',
-            };
-        }
+            case 'elopement':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#f4f3ee] text-[#2b2d42]',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #f4f3ee 0%, #e0e1dd 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-2xl border border-stone-300 bg-[#faf9f6] shadow-[0_16px_45px_rgba(43,45,66,0.08)]',
+                    accentCardClass: 'rounded-2xl border-2 border-emerald-800/30 bg-emerald-900/5 shadow-[0_16px_45px_rgba(43,45,66,0.12)]',
+                    imageFrameClass: 'rounded-2xl border-[10px] border-white shadow-[0_20px_50px_rgba(43,45,66,0.14)]',
+                    eyebrowClass: 'text-emerald-800 tracking-[0.4em] font-bold uppercase',
+                    headingClass: 'font-serif tracking-wide text-stone-900',
+                    bodyClass: 'text-stone-700',
+                    dividerClass: 'h-px w-24 bg-stone-400',
+                    badgeStyleClass: 'rounded-md bg-emerald-800 text-white px-3 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'ADVENTURE N°',
+                    ornament: 'botanical',
+                    galleryTitle: 'Wild Vows',
+                };
 
-        if (mood === 'vintage') {
-            return {
-                ...base,
-                cardStyleId: 'cards_bordered',
-                sectionClass: 'relative overflow-hidden bg-[#fbf5ea] text-[#4A3A31]',
-                sectionStyle: { backgroundImage: `linear-gradient(180deg, #fbf5ea 0%, #efe1cd 100%)` },
-                containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
-                cardClass: 'rounded-sm border-[1px] border-primary/25 bg-[#fffaf0]/80 shadow-[0_24px_70px_rgba(74,58,49,0.14)] ring-4 ring-primary/5',
-                accentCardClass: 'rounded-sm border-[4px] double border-primary/30 bg-[#fffaf0]/90 shadow-[0_24px_80px_rgba(74,58,49,0.16)]',
-                imageFrameClass: 'rounded-sm border-[16px] border-[#f5ead8] shadow-[0_24px_70px_rgba(74,58,49,0.18)] sepia-[0.16]',
-                eyebrowClass: 'text-primary/82 tracking-[0.38em]',
-                headingClass: 'font-serif tracking-tight text-[#4A3A31]',
-                bodyClass: 'text-[#4A3A31]/80',
-                dividerClass: 'h-px w-28 bg-gradient-to-r from-transparent via-primary/55 to-transparent',
-                ornament: 'floral',
-                galleryTitle: 'Keepsake Gallery',
-            };
-        }
+            case 'film':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    isDark: false,
+                    sectionClass: 'relative overflow-hidden bg-[#f7f4ed] text-stone-900',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #f7f4ed 0%, #ebe5d8 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-none border-2 border-stone-800 bg-[#fffdfa] shadow-[10px_10px_0_rgba(0,0,0,0.06)]',
+                    accentCardClass: 'rounded-none border-2 border-amber-900 bg-amber-950/10 shadow-[10px_10px_0_rgba(0,0,0,0.1)]',
+                    imageFrameClass: 'rounded-none border-[12px] border-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] sepia-[0.2]',
+                    eyebrowClass: 'text-amber-900 tracking-[0.4em] font-mono font-bold uppercase',
+                    headingClass: 'font-serif tracking-normal text-stone-950',
+                    bodyClass: 'text-stone-800',
+                    dividerClass: 'h-0.5 w-28 bg-stone-800',
+                    badgeStyleClass: 'border border-stone-800 bg-[#fffdfa] font-mono px-3 py-1 text-[10px] tracking-[0.3em] uppercase',
+                    badgePrefix: '35MM FRAME N°',
+                    ornament: 'film',
+                    galleryTitle: 'Film Rolls',
+                };
 
-        return {
-            ...base,
-            cardStyleId: 'cards_bordered',
-            sectionClass: 'relative overflow-hidden text-[#4A4444]',
-            sectionStyle: { backgroundImage: `radial-gradient(circle at 15% 12%, ${motifColor}14, transparent 30%), linear-gradient(180deg, #fffdfb 0%, #f8eeea 100%)` },
-            containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
-            cardClass: 'rounded-[2rem] md:rounded-[4rem] border border-white/65 bg-white/62 shadow-[0_28px_90px_rgba(58,42,45,0.10)] backdrop-blur-xl',
-            accentCardClass: 'rounded-[2rem] md:rounded-[4rem] border border-primary/18 bg-white/78 shadow-[0_24px_80px_rgba(58,42,45,0.10)]',
-            imageFrameClass: 'rounded-[2rem] md:rounded-[4rem] border-[12px] border-white shadow-[0_30px_90px_rgba(58,42,45,0.14)]',
-            eyebrowClass: 'text-primary/82 tracking-[0.36em]',
-            headingClass: 'font-serif tracking-tight text-[#4A4444]',
-            bodyClass: 'text-[#4A4444]/78',
-            dividerClass: 'h-px w-24 bg-gradient-to-r from-transparent via-primary/45 to-transparent',
-            ornament: 'floral',
-            galleryTitle: 'Our Gallery',
-        };
+            case 'garden':
+                return {
+                    ...base,
+                    cardStyleId: 'arch_panel',
+                    sectionClass: 'relative overflow-hidden bg-[#f4f8f4] text-[#1b382b]',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 10% 10%, #2d5a4415, transparent 35%), linear-gradient(180deg, #f4f8f4 0%, #e5efe6 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-t-[4rem] rounded-b-2xl border border-emerald-800/15 bg-white/90 shadow-[0_20px_60px_rgba(27,56,43,0.08)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-t-[4rem] rounded-b-2xl border border-emerald-800/30 bg-emerald-900/10 shadow-[0_20px_60px_rgba(27,56,43,0.12)]',
+                    imageFrameClass: 'rounded-t-[4.5rem] rounded-b-3xl border-[10px] border-white shadow-[0_25px_70px_rgba(27,56,43,0.14)]',
+                    eyebrowClass: 'text-emerald-800 tracking-[0.38em] font-bold uppercase',
+                    headingClass: 'font-serif italic text-emerald-950',
+                    bodyClass: 'text-emerald-900/80',
+                    dividerClass: 'h-px w-28 bg-emerald-800/30',
+                    badgeStyleClass: 'rounded-full bg-emerald-800 text-emerald-50 px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'BOTANICAL N°',
+                    ornament: 'botanical',
+                    galleryTitle: 'Bloom Gallery',
+                };
+
+            case 'glitch':
+                return {
+                    ...base,
+                    cardStyleId: 'borderless_glass',
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#0a0a0f] text-cyan-200',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #0a0a0f 0%, #120024 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-none border-l-4 border-r-4 border-cyan-400/80 bg-black/80 shadow-[0_0_30px_rgba(6,182,212,0.2)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-none border-l-4 border-r-4 border-pink-500 bg-pink-950/20 shadow-[0_0_40px_rgba(236,72,153,0.3)]',
+                    imageFrameClass: 'rounded-none border-2 border-cyan-400 shadow-[0_0_35px_rgba(6,182,212,0.3)]',
+                    eyebrowClass: 'text-cyan-400 font-mono tracking-[0.5em] uppercase font-bold',
+                    headingClass: 'font-sans font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500',
+                    bodyClass: 'text-cyan-100/80 font-mono',
+                    dividerClass: 'h-0.5 w-32 bg-gradient-to-r from-cyan-400 via-pink-500 to-cyan-400',
+                    badgeStyleClass: 'border border-cyan-400 bg-black text-cyan-400 font-mono px-3 py-1 text-[10px] tracking-[0.4em] uppercase',
+                    badgePrefix: 'SYNTH DATA // 0',
+                    ornament: 'glitch',
+                    galleryTitle: 'Cyber Album',
+                };
+
+            case 'luxury':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#0c0a09] text-amber-200',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at center, #2b1f0d 0%, #0c0a09 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-xl border border-amber-400/30 bg-stone-950/80 shadow-[0_24px_80px_rgba(217,119,6,0.15)] backdrop-blur-2xl',
+                    accentCardClass: 'rounded-xl border-2 border-amber-400/60 bg-amber-500/15 shadow-[0_24px_80px_rgba(217,119,6,0.25)]',
+                    imageFrameClass: 'rounded-xl border-4 border-amber-400/40 shadow-[0_30px_90px_rgba(217,119,6,0.3)]',
+                    eyebrowClass: 'text-amber-400 tracking-[0.5em] font-serif uppercase font-bold',
+                    headingClass: 'font-serif tracking-widest text-amber-100 uppercase',
+                    bodyClass: 'text-amber-200/80',
+                    dividerClass: 'h-0.5 w-32 bg-gradient-to-r from-transparent via-amber-400 to-transparent',
+                    badgeStyleClass: 'border border-amber-400/60 bg-stone-900 text-amber-300 px-4 py-1 text-[10px] tracking-[0.4em] font-serif uppercase',
+                    badgePrefix: 'COUTURE EDITION N°',
+                    ornament: 'royal',
+                    galleryTitle: 'Grand Portfolio',
+                };
+
+            case 'midnight':
+                return {
+                    ...base,
+                    cardStyleId: 'borderless_glass',
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#070b19] text-blue-100',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 70% 30%, ${motifColor}28, transparent 40%), linear-gradient(180deg, #070b19 0%, #03050c 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl border border-blue-400/20 bg-slate-950/75 shadow-[0_20px_70px_rgba(7,11,25,0.7)] backdrop-blur-2xl',
+                    accentCardClass: 'rounded-3xl border border-blue-400/40 bg-blue-600/15 shadow-[0_20px_70px_rgba(37,99,235,0.25)]',
+                    imageFrameClass: 'rounded-3xl border-4 border-blue-400/30 shadow-[0_25px_80px_rgba(37,99,235,0.3)]',
+                    eyebrowClass: 'text-blue-300 tracking-[0.45em] uppercase font-bold',
+                    headingClass: 'font-serif tracking-wider text-blue-50',
+                    bodyClass: 'text-blue-200/80',
+                    dividerClass: 'h-px w-32 bg-gradient-to-r from-transparent via-blue-400/60 to-transparent',
+                    badgeStyleClass: 'rounded-full border border-blue-400/30 bg-slate-900 text-blue-300 px-4 py-1 text-[10px] tracking-[0.4em] uppercase font-bold',
+                    badgePrefix: 'MIDNIGHT N°',
+                    ornament: 'celestial',
+                    galleryTitle: 'Moonlit Memories',
+                };
+
+            case 'minimal':
+                return {
+                    ...base,
+                    cardStyleId: 'editorial_rules',
+                    sectionClass: 'relative overflow-hidden bg-[#fafafa] text-neutral-900',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-none border border-neutral-200 bg-white shadow-none',
+                    accentCardClass: 'rounded-none border border-neutral-400 bg-neutral-100 shadow-none',
+                    imageFrameClass: 'rounded-none border border-neutral-300 shadow-none',
+                    eyebrowClass: 'text-neutral-500 tracking-[0.45em] font-sans font-light uppercase',
+                    headingClass: 'font-sans font-light tracking-wide text-neutral-900',
+                    bodyClass: 'text-neutral-600',
+                    dividerClass: 'h-px w-20 bg-neutral-300',
+                    badgeStyleClass: 'border border-neutral-300 bg-white text-neutral-800 px-3 py-1 text-[10px] tracking-[0.3em] font-sans uppercase',
+                    badgePrefix: 'SECTION 0',
+                    ornament: 'none',
+                    galleryTitle: 'Gallery',
+                };
+
+            case 'nordic':
+                return {
+                    ...base,
+                    cardStyleId: 'borderless_glass',
+                    sectionClass: 'relative overflow-hidden bg-[#f4f6f5] text-slate-800',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #f4f6f5 0%, #e5e9e6 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl border border-slate-200 bg-white/85 shadow-[0_12px_40px_rgba(30,41,59,0.05)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-3xl border border-emerald-900/10 bg-slate-100 shadow-[0_12px_40px_rgba(30,41,59,0.07)]',
+                    imageFrameClass: 'rounded-3xl border-8 border-white shadow-[0_20px_60px_rgba(30,41,59,0.08)]',
+                    eyebrowClass: 'text-slate-500 tracking-[0.38em] font-bold uppercase',
+                    headingClass: 'font-sans font-light tracking-wide text-slate-900',
+                    bodyClass: 'text-slate-600',
+                    dividerClass: 'h-px w-20 bg-slate-300',
+                    badgeStyleClass: 'rounded-lg bg-slate-200 text-slate-700 px-3 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'FJORD SEC N°',
+                    ornament: 'botanical',
+                    galleryTitle: 'Fjord & Meadow',
+                };
+
+            case 'riviera':
+                return {
+                    ...base,
+                    cardStyleId: 'borderless_glass',
+                    sectionClass: 'relative overflow-hidden bg-[#fffdfa] text-cyan-950',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 90% 10%, #0284c718, transparent 40%), linear-gradient(180deg, #fffdfa 0%, #f0f9ff 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl border border-sky-200/80 bg-white/95 shadow-[0_20px_60px_rgba(14,165,233,0.08)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-3xl border border-amber-300/40 bg-amber-500/10 shadow-[0_20px_60px_rgba(245,158,11,0.12)]',
+                    imageFrameClass: 'rounded-3xl border-[10px] border-white shadow-[0_25px_70px_rgba(14,165,233,0.14)]',
+                    eyebrowClass: 'text-sky-600 tracking-[0.35em] font-bold uppercase',
+                    headingClass: 'font-serif italic tracking-normal text-sky-950',
+                    bodyClass: 'text-sky-900/85',
+                    dividerClass: 'h-0.5 w-28 bg-gradient-to-r from-sky-400 via-amber-400 to-sky-400',
+                    badgeStyleClass: 'rounded-full bg-sky-100 text-sky-800 px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'AMALFI CHAPTER N°',
+                    ornament: 'tropical',
+                    galleryTitle: 'Amalfi Stories',
+                };
+
+            case 'romantic':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#fff8f8] text-[#4a2e35]',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 10% 20%, ${motifColor}20, transparent 40%), linear-gradient(180deg, #fff8f8 0%, #faecee 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-[3rem] border border-rose-200 bg-white/90 shadow-[0_20px_60px_rgba(209,108,120,0.08)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-[3rem] border border-rose-300 bg-rose-50 shadow-[0_20px_60px_rgba(209,108,120,0.12)]',
+                    imageFrameClass: 'rounded-[3.5rem] border-[12px] border-white shadow-[0_25px_70px_rgba(209,108,120,0.15)]',
+                    eyebrowClass: 'text-rose-500 tracking-[0.35em] font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#4a2e35]',
+                    bodyClass: 'text-[#4a2e35]/80',
+                    dividerClass: 'h-0.5 w-28 bg-gradient-to-r from-transparent via-rose-300 to-transparent',
+                    badgeStyleClass: 'rounded-full bg-rose-100 text-rose-700 px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'LOVE STORY N°',
+                    ornament: 'floral',
+                    galleryTitle: 'Cherished Moments',
+                };
+
+            case 'royal':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#14060b] text-amber-200',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 50% 20%, #3d0e1b 0%, #14060b 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-xl border-2 border-amber-400/40 bg-stone-950/85 shadow-[0_24px_80px_rgba(180,30,60,0.25)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-xl border-2 border-amber-400 bg-amber-500/20 shadow-[0_24px_80px_rgba(217,119,6,0.3)]',
+                    imageFrameClass: 'rounded-xl border-[6px] border-amber-400/50 shadow-[0_30px_90px_rgba(180,30,60,0.35)]',
+                    eyebrowClass: 'text-amber-400 tracking-[0.5em] font-serif uppercase font-bold',
+                    headingClass: 'font-serif tracking-widest text-amber-100 uppercase',
+                    bodyClass: 'text-amber-100/80',
+                    dividerClass: 'h-0.5 w-36 bg-gradient-to-r from-transparent via-amber-400 to-transparent',
+                    badgeStyleClass: 'border-2 border-amber-400/70 bg-stone-900 text-amber-300 px-4 py-1.5 text-[10px] tracking-[0.4em] font-serif uppercase font-bold',
+                    badgePrefix: 'ROYAL DECREE N°',
+                    ornament: 'royal',
+                    galleryTitle: 'Regal Gallery',
+                };
+
+            case 'rustic':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    isVintage: true,
+                    sectionClass: 'relative overflow-hidden bg-[#f7f2ea] text-[#4a3b32]',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #f7f2ea 0%, #eae0d0 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-lg border-2 border-dashed border-[#8c6d58]/40 bg-[#fffbf5] shadow-[0_16px_40px_rgba(74,59,50,0.08)]',
+                    accentCardClass: 'rounded-lg border-2 border-[#8c6d58] bg-[#8c6d58]/10 shadow-[0_16px_40px_rgba(74,59,50,0.12)]',
+                    imageFrameClass: 'rounded-lg border-[12px] border-[#ede3d4] shadow-[0_20px_50px_rgba(74,59,50,0.15)] sepia-[0.15]',
+                    eyebrowClass: 'text-[#8c6d58] tracking-[0.4em] font-bold uppercase',
+                    headingClass: 'font-serif text-[#4a3b32]',
+                    bodyClass: 'text-[#4a3b32]/85',
+                    dividerClass: 'h-px w-28 bg-dashed border-t border-[#8c6d58]/50',
+                    badgeStyleClass: 'rounded border border-[#8c6d58] bg-[#fffbf5] text-[#4a3b32] px-3 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'COUNTRYSIDE N°',
+                    ornament: 'vintage',
+                    galleryTitle: 'Barn & Field',
+                };
+
+            case 'sakura':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#fff7f9] text-[#59323b]',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 80% 20%, #fbcfe830, transparent 40%), linear-gradient(180deg, #fff7f9 0%, #fce7f0 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-[3rem] border border-pink-200 bg-white/90 shadow-[0_20px_60px_rgba(244,114,182,0.08)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-[3rem] border border-pink-300 bg-pink-50 shadow-[0_20px_60px_rgba(244,114,182,0.12)]',
+                    imageFrameClass: 'rounded-[3.5rem] border-[12px] border-white shadow-[0_25px_70px_rgba(244,114,182,0.15)]',
+                    eyebrowClass: 'text-pink-500 tracking-[0.4em] font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#59323b]',
+                    bodyClass: 'text-[#59323b]/80',
+                    dividerClass: 'h-0.5 w-28 bg-gradient-to-r from-transparent via-pink-300 to-transparent',
+                    badgeStyleClass: 'rounded-full bg-pink-100 text-pink-700 px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'BLOSSOM N°',
+                    ornament: 'sakura',
+                    galleryTitle: 'Blossom Memories',
+                };
+
+            case 'timeline':
+                return {
+                    ...base,
+                    cardStyleId: 'editorial_rules',
+                    sectionClass: 'relative overflow-hidden bg-[#fcfcfc] text-neutral-900',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #fcfcfc 0%, #f3f3f3 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-xl border border-neutral-300 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.04)]',
+                    accentCardClass: 'rounded-xl border-2 border-indigo-600 bg-indigo-50 shadow-[0_10px_30px_rgba(79,70,229,0.1)]',
+                    imageFrameClass: 'rounded-xl border-4 border-white shadow-[0_15px_40px_rgba(0,0,0,0.08)]',
+                    eyebrowClass: 'text-indigo-600 tracking-[0.4em] font-mono font-bold uppercase',
+                    headingClass: 'font-sans font-bold tracking-tight text-neutral-900',
+                    bodyClass: 'text-neutral-700',
+                    dividerClass: 'h-px w-24 bg-indigo-600/40',
+                    badgeStyleClass: 'rounded-full bg-indigo-600 text-white font-mono px-3 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'TIMELINE STEP N°',
+                    ornament: 'editorial',
+                    galleryTitle: 'Chronological Gallery',
+                };
+
+            case 'traditional':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    isVintage: true,
+                    sectionClass: 'relative overflow-hidden bg-[#fcf9f2] text-[#3b2d22]',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #fcf9f2 0%, #efe7d8 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-sm border-2 border-[#b8977e]/50 bg-[#fffcf7] shadow-[0_18px_50px_rgba(59,45,34,0.09)]',
+                    accentCardClass: 'rounded-sm border-4 border-double border-[#b8977e] bg-[#b8977e]/10 shadow-[0_18px_50px_rgba(59,45,34,0.14)]',
+                    imageFrameClass: 'rounded-sm border-[14px] border-[#f4ebdc] shadow-[0_22px_60px_rgba(59,45,34,0.16)] sepia-[0.1]',
+                    eyebrowClass: 'text-[#8f6d53] tracking-[0.4em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif text-[#3b2d22]',
+                    bodyClass: 'text-[#3b2d22]/85',
+                    dividerClass: 'h-0.5 w-32 bg-gradient-to-r from-transparent via-[#b8977e] to-transparent',
+                    badgeStyleClass: 'border-2 border-[#b8977e] bg-[#fffcf7] text-[#3b2d22] px-4 py-1 text-[10px] tracking-[0.3em] font-serif font-bold uppercase',
+                    badgePrefix: 'HERITAGE N°',
+                    ornament: 'vintage',
+                    galleryTitle: 'Family Keepsakes',
+                };
+
+            case 'tropical':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#f2f9f5] text-[#133c2e]',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 90% 20%, #10b98115, transparent 40%), linear-gradient(180deg, #f2f9f5 0%, #e1f2e8 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-[2.5rem] border border-emerald-300/60 bg-white/90 shadow-[0_20px_60px_rgba(19,60,46,0.08)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-[2.5rem] border-2 border-emerald-400 bg-emerald-500/10 shadow-[0_20px_60px_rgba(19,60,46,0.12)]',
+                    imageFrameClass: 'rounded-[3rem] border-[10px] border-white shadow-[0_25px_70px_rgba(19,60,46,0.14)]',
+                    eyebrowClass: 'text-emerald-600 tracking-[0.4em] font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#133c2e]',
+                    bodyClass: 'text-[#133c2e]/85',
+                    dividerClass: 'h-0.5 w-28 bg-gradient-to-r from-emerald-400 via-amber-400 to-emerald-400',
+                    badgeStyleClass: 'rounded-full bg-emerald-600 text-white px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'ISLAND N°',
+                    ornament: 'tropical',
+                    galleryTitle: 'Tropical Escape',
+                };
+
+            case 'urban':
+                return {
+                    ...base,
+                    cardStyleId: 'editorial_rules',
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#121316] text-slate-100',
+                    sectionStyle: { backgroundImage: `linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(180deg, #121316 0%, #1c1e24 100%)`, backgroundSize: '40px 40px, auto' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-none border border-slate-700 bg-slate-900/90 shadow-[8px_8px_0_rgba(0,0,0,0.5)]',
+                    accentCardClass: 'rounded-none border-2 border-amber-400 bg-amber-400/10 shadow-[10px_10px_0_rgba(245,158,11,0.2)]',
+                    imageFrameClass: 'rounded-none border-2 border-slate-600 shadow-[10px_10px_0_rgba(0,0,0,0.5)]',
+                    eyebrowClass: 'text-amber-400 tracking-[0.45em] font-mono font-bold uppercase',
+                    headingClass: 'font-sans font-black uppercase tracking-tighter text-white',
+                    bodyClass: 'text-slate-300',
+                    dividerClass: 'h-1 w-24 bg-amber-400',
+                    badgeStyleClass: 'border border-amber-400 bg-amber-400 text-slate-950 font-mono font-bold px-3 py-1 text-[10px] tracking-[0.3em] uppercase',
+                    badgePrefix: 'CITY ZONE // 0',
+                    ornament: 'editorial',
+                    galleryTitle: 'Metro Views',
+                };
+
+            case 'vintage':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    isVintage: true,
+                    sectionClass: 'relative overflow-hidden bg-[#fbf5ea] text-[#4a3a31]',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #fbf5ea 0%, #efe1cd 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-sm border border-primary/30 bg-[#fffaf0]/90 shadow-[0_20px_60px_rgba(74,58,49,0.12)] ring-4 ring-primary/5',
+                    accentCardClass: 'rounded-sm border-4 border-double border-primary/50 bg-[#fffaf0] shadow-[0_20px_70px_rgba(74,58,49,0.16)]',
+                    imageFrameClass: 'rounded-sm border-[16px] border-[#f5ead8] shadow-[0_24px_70px_rgba(74,58,49,0.18)] sepia-[0.2]',
+                    eyebrowClass: 'text-primary tracking-[0.4em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif tracking-tight text-[#4a3a31]',
+                    bodyClass: 'text-[#4a3a31]/80',
+                    dividerClass: 'h-px w-28 bg-gradient-to-r from-transparent via-primary/60 to-transparent',
+                    badgeStyleClass: 'border-2 border-primary/40 bg-[#fffaf0] text-[#4a3a31] font-serif px-3 py-1 text-[10px] tracking-[0.3em] uppercase',
+                    badgePrefix: 'KEEPSAKE N°',
+                    ornament: 'vintage',
+                    galleryTitle: 'Keepsake Gallery',
+                };
+
+            case 'vogue':
+                return {
+                    ...base,
+                    cardStyleId: 'editorial_rules',
+                    isDark: false,
+                    sectionClass: 'relative overflow-hidden bg-[#faf7f5] text-black',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #faf7f5 0%, #f2ece8 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-none border-b-2 border-black bg-white/80 shadow-none py-6',
+                    accentCardClass: 'rounded-none border-y-2 border-black bg-black text-white shadow-none py-6',
+                    imageFrameClass: 'rounded-none border border-black/20 grayscale hover:grayscale-0 shadow-2xl',
+                    eyebrowClass: 'text-black tracking-[0.5em] font-sans font-black uppercase',
+                    headingClass: 'font-serif font-normal uppercase tracking-widest text-black',
+                    bodyClass: 'text-black/80',
+                    dividerClass: 'h-0.5 w-32 bg-black',
+                    badgeStyleClass: 'border-b-2 border-black text-black font-sans font-black px-4 py-1 text-[10px] tracking-[0.4em] uppercase',
+                    badgePrefix: 'VOGUE EDIT // 0',
+                    ornament: 'editorial',
+                    galleryTitle: 'Editorial Runway',
+                };
+
+            case 'whimsical':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#faf5ff] text-[#4c1d95]',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 50% 20%, #c084fc25, transparent 40%), linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-[3rem] border border-purple-200/80 bg-white/90 shadow-[0_20px_60px_rgba(192,132,252,0.12)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-[3rem] border border-purple-300 bg-purple-50 shadow-[0_20px_60px_rgba(192,132,252,0.18)]',
+                    imageFrameClass: 'rounded-[3.5rem] border-[12px] border-white shadow-[0_25px_70px_rgba(192,132,252,0.2)]',
+                    eyebrowClass: 'text-purple-600 tracking-[0.4em] font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#4c1d95]',
+                    bodyClass: 'text-[#4c1d95]/80',
+                    dividerClass: 'h-0.5 w-28 bg-gradient-to-r from-transparent via-purple-300 to-transparent',
+                    badgeStyleClass: 'rounded-full bg-purple-100 text-purple-700 px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'FAIRYTALE N°',
+                    ornament: 'celestial',
+                    galleryTitle: 'Wonderland',
+                };
+
+            case 'rsvpfocus':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    sectionClass: 'relative overflow-hidden bg-[#f8fafc] text-slate-900',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-2xl border-2 border-slate-300 bg-white shadow-xl',
+                    accentCardClass: 'rounded-2xl border-2 border-primary bg-primary/10 shadow-2xl',
+                    imageFrameClass: 'rounded-2xl border-4 border-white shadow-xl',
+                    eyebrowClass: 'text-primary tracking-[0.4em] font-bold uppercase',
+                    headingClass: 'font-sans font-extrabold text-slate-900',
+                    bodyClass: 'text-slate-700',
+                    dividerClass: 'h-1 w-24 bg-primary',
+                    badgeStyleClass: 'rounded-lg bg-primary text-white px-3 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'RSVP ACTION N°',
+                    ornament: 'none',
+                    galleryTitle: 'Event Highlights',
+                };
+
+            default:
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    sectionClass: 'relative overflow-hidden text-[#4A4444]',
+                    sectionStyle: { backgroundImage: `radial-gradient(circle at 15% 12%, ${motifColor}14, transparent 30%), linear-gradient(180deg, #fffdfb 0%, #f8eeea 100%)` },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-[2rem] md:rounded-[3rem] border border-white/70 bg-white/70 shadow-[0_20px_60px_rgba(58,42,45,0.08)] backdrop-blur-xl',
+                    accentCardClass: 'rounded-[2rem] md:rounded-[3rem] border border-primary/20 bg-white/85 shadow-[0_20px_60px_rgba(58,42,45,0.12)]',
+                    imageFrameClass: 'rounded-[2rem] md:rounded-[3rem] border-[12px] border-white shadow-[0_25px_70px_rgba(58,42,45,0.14)]',
+                    eyebrowClass: 'text-primary tracking-[0.36em] font-bold uppercase',
+                    headingClass: 'font-serif tracking-tight text-[#4A4444]',
+                    bodyClass: 'text-[#4A4444]/80',
+                    dividerClass: 'h-px w-24 bg-gradient-to-r from-transparent via-primary/45 to-transparent',
+                    badgeStyleClass: 'rounded-full bg-primary/10 text-primary px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'CHAPTER N°',
+                    ornament: 'floral',
+                    galleryTitle: 'Our Gallery',
+                };
+        }
     };
 
     const initialProfile = getProfile();

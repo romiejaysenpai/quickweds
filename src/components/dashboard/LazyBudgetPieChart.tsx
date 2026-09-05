@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 
 type BudgetPieDatum = {
     name: string;
@@ -28,7 +28,7 @@ export default function LazyBudgetPieChart({
     tooltipRadius = 16,
 }: LazyBudgetPieChartProps) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [canRenderChart, setCanRenderChart] = useState(false);
+    const [chartSize, setChartSize] = useState<{ width: number; height: number } | null>(null);
 
     useEffect(() => {
         const element = containerRef.current;
@@ -36,7 +36,9 @@ export default function LazyBudgetPieChart({
 
         const updateSize = () => {
             const { width, height } = element.getBoundingClientRect();
-            setCanRenderChart(width > 0 && height > 0);
+            const nextWidth = Math.floor(width);
+            const nextHeight = Math.floor(height);
+            setChartSize(nextWidth > 0 && nextHeight > 0 ? { width: nextWidth, height: nextHeight } : null);
         };
 
         updateSize();
@@ -47,9 +49,8 @@ export default function LazyBudgetPieChart({
 
     return (
         <div ref={containerRef} className="h-full min-h-[1px] w-full min-w-[1px]">
-            {canRenderChart && (
-                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
-                    <PieChart>
+            {chartSize && (
+                    <PieChart width={chartSize.width} height={chartSize.height}>
                         <Pie
                             data={data}
                             cx="50%"
@@ -76,7 +77,6 @@ export default function LazyBudgetPieChart({
                             ]}
                         />
                     </PieChart>
-                </ResponsiveContainer>
             )}
         </div>
     );

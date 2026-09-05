@@ -64,7 +64,11 @@ export default function VenueDetailsSection({ wedding, id = 'reception-venue' }:
                     <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-[1.4rem] border border-white/60 bg-white/75 text-primary shadow-[0_16px_40px_rgba(58,42,45,0.10)] backdrop-blur-sm">
                         <MapPin className="h-6 w-6" />
                     </div>
-                    <p className={`mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>Reception Details</p>
+                    <div className="mb-4 flex items-center justify-center">
+                        <span className={visual.badgeStyleClass || `text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
+                            {visual.badgePrefix ? `${visual.badgePrefix}RECEPTION` : 'Reception Details'}
+                        </span>
+                    </div>
                     <h2 className={`text-4xl md:text-6xl ${titleStyle.className}`} style={titleStyle.style}>
                         The Venue
                     </h2>

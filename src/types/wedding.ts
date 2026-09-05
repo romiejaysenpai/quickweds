@@ -145,8 +145,15 @@ export interface WeddingPartyMember {
     role: string;
     bio?: string;
     email?: string;
-    proposalTemplateKey?: 'heartfelt' | 'elegant' | 'simple';
+    proposalTemplateKey?: 'heartfelt' | 'elegant' | 'simple' | 'playful' | 'formal';
     proposalMessage?: string;
+    proposalCardTheme?: 'classic' | 'blush' | 'emerald' | 'midnight' | 'gold';
+    proposalTitle?: string;
+    /** Optional image shown in the header of this member's proposal email. */
+    proposalHeroImage?: string;
+    requestAttireSize?: boolean;
+    requestDietaryNotes?: boolean;
+    requestPhoneNumber?: boolean;
     photo?: string;
 }
 

@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, BarChart3, Mail, Loader2, QrCode, Share2, TrendingUp, Users } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, Tooltip, Cell } from 'recharts';
 import { getWeddingAnalyticsSummary } from '@/lib/wedding-features';
 import UpgradeButton from '@/components/UpgradeButton';
 import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
@@ -19,9 +19,11 @@ interface AnalyticsPanelProps {
 
 const COLORS = ['#D16C78', '#CBB26A', '#5B8A72', '#4B6B8A'];
 
-function MeasuredChartFrame({ children }: { children: ReactNode }) {
+type ChartSize = { width: number; height: number };
+
+function MeasuredChartFrame({ children }: { children: (size: ChartSize) => ReactNode }) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [canRenderChart, setCanRenderChart] = useState(false);
+    const [chartSize, setChartSize] = useState<ChartSize | null>(null);
 
     useEffect(() => {
         const element = containerRef.current;
@@ -29,7 +31,9 @@ function MeasuredChartFrame({ children }: { children: ReactNode }) {
 
         const updateSize = () => {
             const { width, height } = element.getBoundingClientRect();
-            setCanRenderChart(width > 0 && height > 0);
+            const nextWidth = Math.floor(width);
+            const nextHeight = Math.floor(height);
+            setChartSize(nextWidth > 0 && nextHeight > 0 ? { width: nextWidth, height: nextHeight } : null);
         };
 
         updateSize();
@@ -40,7 +44,7 @@ function MeasuredChartFrame({ children }: { children: ReactNode }) {
 
     return (
         <div ref={containerRef} className="h-44 min-h-[1px] w-full min-w-[1px]">
-            {canRenderChart ? children : null}
+            {chartSize ? children(chartSize) : null}
         </div>
     );
 }
@@ -161,8 +165,8 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                     <h4 className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60 mb-3">Visit Sources</h4>
                     {summary.sourceBreakdown.length > 0 ? (
                         <MeasuredChartFrame>
-                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
-                                <BarChart data={summary.sourceBreakdown}>
+                            {({ width, height }) => (
+                                <BarChart width={width} height={height} data={summary.sourceBreakdown}>
                                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'currentColor' }} />
                                     <Tooltip contentStyle={{ backgroundColor: 'var(--white)', borderColor: 'var(--border)', borderRadius: '12px' }} />
                                     <Bar dataKey="value" radius={[8, 8, 0, 0]}>
@@ -171,7 +175,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                                         ))}
                                     </Bar>
                                 </BarChart>
-                            </ResponsiveContainer>
+                            )}
                         </MeasuredChartFrame>
                     ) : (
                         <p className="text-sm text-text-secondary">Traffic data will appear after your wedding page starts receiving visits.</p>

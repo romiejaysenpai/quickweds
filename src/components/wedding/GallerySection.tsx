@@ -194,7 +194,11 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
                         transition={{ duration: 0.8 }}
                         className="text-center mb-12 sm:mb-20"
                     >
-                        <span className={`text-xs uppercase font-bold mb-4 block ${visual.eyebrowClass}`}>Moments Captured</span>
+                        <div className="mb-4 flex items-center justify-center">
+                            <span className={visual.badgeStyleClass || `text-xs uppercase font-bold block ${visual.eyebrowClass}`}>
+                                {visual.badgePrefix ? `${visual.badgePrefix}GALLERY` : 'Moments Captured'}
+                            </span>
+                        </div>
                         <h2 className={`text-4xl sm:text-6xl ${typography.heading} ${visual.headingClass}`}>{visual.galleryTitle}</h2>
                         <div className={`mx-auto mt-6 ${visual.dividerClass}`} />
                         <p className={`mx-auto mt-5 max-w-2xl text-sm leading-relaxed sm:text-base ${visual.bodyClass}`}>

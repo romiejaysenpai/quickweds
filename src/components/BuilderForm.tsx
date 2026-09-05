@@ -1,21 +1,20 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useWeddingDraft } from '@/hooks/useWeddingDraft';
 import { trackProductEvent } from '@/lib/product-events';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle, Download, Lock, Play } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AttireIllustration from './AttireIllustration';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import GenerationLoading from './GenerationLoading';
+import LoadingState from './ui/LoadingState';
 import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
-import MarketplacePanel from './builder/MarketplacePanel';
 import { MONOGRAM_SHAPES, MONOGRAM_ANIMATIONS, MonogramMark } from './MonogramMark';
-import { MonogramExporter } from './MonogramExporter';
 import DecorativeLayer from './DecorativeLayer';
 import { useLocalUndoRedo } from '@/components/UndoRedoProvider';
 import { hasAccountPro } from '@/lib/account';
@@ -47,6 +46,7 @@ import {
     DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY,
     ENTOURAGE_PROPOSAL_TEMPLATES,
     getEntourageProposalTemplate,
+    getEntourageCardTheme,
     type EntourageProposalTemplateKey,
 } from '@/lib/entourage-proposal-templates';
 import {
@@ -67,6 +67,11 @@ import {
     formatFileSize,
     storageErrorMessage,
 } from '@/lib/media-upload';
+
+import AttireIllustration from './AttireIllustration';
+const MarketplacePanel = dynamic(() => import('./builder/MarketplacePanel'), { ssr: false });
+const MonogramExporter = dynamic(() => import('./MonogramExporter').then(m => m.MonogramExporter), { ssr: false });
+const EntourageProposalCustomizerSection = dynamic(() => import('./EntourageProposalCustomizerSection').then(m => m.EntourageProposalCustomizerSection), { ssr: false });
 
 // Helper component for collapsible sections
 const Collapsible = memo(function Collapsible({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) {
@@ -443,11 +448,15 @@ function createEntourageMemberKey() {
 
 function normalizeWeddingPartyMember(member: any) {
     const templateKey = getEntourageProposalTemplate(member?.proposalTemplateKey || member?.templateKey).key;
+    const proposalHeroImage = typeof member?.proposalHeroImage === 'string' && /^https?:\/\//i.test(member.proposalHeroImage)
+        ? member.proposalHeroImage
+        : undefined;
     return {
         ...member,
         memberKey: member?.memberKey || member?.id || createEntourageMemberKey(),
         proposalTemplateKey: templateKey,
         proposalMessage: member?.proposalMessage || getEntourageProposalTemplate(templateKey).defaultMessage,
+        proposalHeroImage,
     };
 }
 
@@ -479,6 +488,7 @@ export default function BuilderForm() {
     const { user, isAdmin, loading: authLoading } = useAuth();
     const searchParams = useSearchParams();
     const editId = searchParams?.get('edit');
+    const requestedTemplate = searchParams?.get('template');
     const userId = user?.id || null;
     const [currentStep, setCurrentStep] = useState(0);
     const [essentialMode, setEssentialMode] = useState(true);
@@ -502,6 +512,7 @@ export default function BuilderForm() {
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [isDesktopPreview, setIsDesktopPreview] = useState(false);
     const [expandedSection, setExpandedSection] = useState<string | null>(null);
+    const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null);
 
     useEffect(() => {
         const mediaQuery = window.matchMedia('(min-width: 1024px)');
@@ -526,6 +537,18 @@ export default function BuilderForm() {
         canRedo,
         clear: initializeFormData,
     } = useLocalUndoRedo(INITIAL_FORM_DATA, 50);
+
+    useEffect(() => {
+        if (editId || !requestedTemplate || !TEMPLATES.some((template) => template.id === requestedTemplate)) return;
+
+        setFormData((previous: any) => ({
+            ...previous,
+            template: requestedTemplate,
+            templateStyle: isTemplateStyleAvailable(requestedTemplate, previous.templateStyle)
+                ? previous.templateStyle
+                : DEFAULT_TEMPLATE_STYLE,
+        }));
+    }, [editId, requestedTemplate, setFormData]);
 
     // Keyboard shortcuts for undo/redo
     useEffect(() => {
@@ -612,6 +635,7 @@ export default function BuilderForm() {
     const [monogramPreviewNonce, setMonogramPreviewNonce] = useState(0);
     const [activeWeddingCount, setActiveWeddingCount] = useState(0);
     const [entourageImportStatus, setEntourageImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+    const [customizingMemberIndex, setCustomizingMemberIndex] = useState<number | null>(null);
     const hasMonogramPro = isAdmin || accountIsPro;
     const freeWebsiteLimitReached = !editId && !isAdmin && !accountIsPro && activeWeddingCount >= 3;
     const publishHealth = useMemo(() => evaluateWeddingPublishHealth(formData, {
@@ -849,7 +873,7 @@ export default function BuilderForm() {
     const handleArrayRemove = (field: string, index: number) => {
         setFormData((prev: any) => ({ ...prev, [field]: (prev[field] || []).filter((_: any, i: number) => i !== index) }));
     };
-    const handleArrayChange = (field: string, index: number, key: string, value: string) => {
+    const handleArrayChange = (field: string, index: number, key: string, value: any) => {
         setFormData((prev: any) => {
             const newArr = [...(prev[field] || [])];
             const currentItem = { ...newArr[index], [key]: value };
@@ -1589,23 +1613,54 @@ export default function BuilderForm() {
                                                 <input type="email" placeholder="name@email.com" value={member.email || ''} onChange={(e) => handleArrayChange('weddingParty', i, 'email', e.target.value)} className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none transition-colors focus:border-primary min-h-[44px]" />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Proposal Template</label>
-                                                <select value={member.proposalTemplateKey || DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY} onChange={(e) => handleArrayChange('weddingParty', i, 'proposalTemplateKey', e.target.value as EntourageProposalTemplateKey)} className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-primary min-h-[44px]">
-                                                    {ENTOURAGE_PROPOSAL_TEMPLATES.map((template) => (
-                                                        <option key={template.key} value={template.key}>{template.label}</option>
-                                                    ))}
-                                                </select>
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Proposal Tone & Theme</label>
+                                                <div className="flex items-center justify-between gap-2 pt-1">
+                                                    <span className="truncate text-xs font-bold text-foreground">
+                                                        {getEntourageProposalTemplate(member.proposalTemplateKey).label} &bull; {getEntourageCardTheme(member.proposalCardTheme).label}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCustomizingMemberIndex(i)}
+                                                        className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all flex-shrink-0"
+                                                    >
+                                                        <Sparkles className="h-3.5 w-3.5" /> Customize & Preview
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div className="space-y-1 sm:col-span-2">
                                                 <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Personal Proposal Message</label>
                                                 <AutoResizeTextarea value={member.proposalMessage || getEntourageProposalTemplate(member.proposalTemplateKey).defaultMessage} onChange={(e) => handleArrayChange('weddingParty', i, 'proposalMessage', e.target.value)} placeholder="Write a message they will see in the proposal email." className="w-full min-h-[84px] resize-none rounded-lg border border-border px-3 py-2 text-sm outline-none transition-colors focus:border-primary" />
-                                                <p className="text-[10px] leading-5 text-text-secondary">Send and track this proposal from Planner after saving.</p>
+                                                <div className="flex items-center justify-between text-[10px] leading-5 text-text-secondary pt-0.5">
+                                                    <span>Send and track this proposal from Planner after saving.</span>
+                                                    <button type="button" onClick={() => setCustomizingMemberIndex(i)} className="text-primary font-bold hover:underline">
+                                                        Customize Card Theme &rarr;
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     <button type="button" onClick={() => handleArrayRemove('weddingParty', i)} className="p-2 sm:p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
                                 </div>
                             ))}
+
+                            {customizingMemberIndex !== null && formData.weddingParty?.[customizingMemberIndex] && (
+                                <EntourageProposalCustomizerSection
+                                    member={formData.weddingParty[customizingMemberIndex]}
+                                    coupleNames={[formData.brideName || 'Bride', formData.groomName || 'Groom'].join(' & ')}
+                                    weddingDate={formData.weddingDate || 'To be announced'}
+                                    venueName={formData.venueName || 'To be announced'}
+                                    couplePhotoUrl={previews.couplePhoto}
+                                    weddingHeroImageUrl={previews.heroImage}
+                                    onClose={() => setCustomizingMemberIndex(null)}
+                                    onSave={(updatedMember) => {
+                                        setFormData((prev: any) => {
+                                            const nextParty = [...(prev.weddingParty || [])];
+                                            nextParty[customizingMemberIndex] = updatedMember;
+                                            return { ...prev, weddingParty: nextParty };
+                                        });
+                                    }}
+                                />
+                            )}
                         </div>
                     </div>
                 );
@@ -1624,7 +1679,142 @@ export default function BuilderForm() {
                                 </span>
                             )}
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                        {/* ── Mobile: Collapsible Template List ── */}
+                        <div className="sm:hidden space-y-1">
+                            {TEMPLATES.map((tmpl) => {
+                                const isLocked = !isPremium && !FREE_TEMPLATE_IDS.includes(tmpl.id as typeof FREE_TEMPLATE_IDS[number]);
+                                const isSelected = formData.template === tmpl.id;
+                                const isExpanded = expandedTemplateId === tmpl.id;
+                                return (
+                                    <div key={tmpl.id} className={`rounded-xl border transition-all duration-200 overflow-hidden ${
+                                        isSelected
+                                            ? 'border-primary/40 bg-primary/5 shadow-sm'
+                                            : 'border-border/60 bg-white/80'
+                                    }`}>
+                                        {/* Collapsed row */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setExpandedTemplateId(isExpanded ? null : tmpl.id)}
+                                            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left"
+                                        >
+                                            <div
+                                                className="h-3 w-3 shrink-0 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.6)]"
+                                                style={{ backgroundColor: tmpl.accent }}
+                                            />
+                                            <span className={`flex-1 text-sm font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                                                {tmpl.name}
+                                            </span>
+                                            <span className="text-[8px] font-bold uppercase tracking-[0.16em] text-foreground/40 shrink-0">
+                                                {tmpl.eyebrow}
+                                            </span>
+                                            {isLocked && <Sparkles className="h-3 w-3 text-primary/50 shrink-0" />}
+                                            {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />}
+                                            <ChevronDown className={`h-3.5 w-3.5 text-text-secondary/60 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        {/* Expanded details — rendered in original rich card style */}
+                                        <AnimatePresence initial={false}>
+                                            {isExpanded && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.25, ease: 'easeInOut' }}
+                                                >
+                                                    <div className="p-2 pt-0">
+                                                        <div
+                                                            className={`qw-template-card group relative overflow-hidden rounded-2xl border text-left transition-all duration-300 ${
+                                                                isLocked
+                                                                    ? 'border-border/70 bg-neutral/60 opacity-70 cursor-not-allowed'
+                                                                    : isSelected
+                                                                        ? 'border-primary/40 bg-white shadow-md shadow-primary/10'
+                                                                        : 'border-border/70 bg-white'
+                                                            }`}
+                                                            style={{
+                                                                backgroundImage: `${tmpl.previewGradient}, linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.98))`,
+                                                            }}
+                                                        >
+                                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.65),transparent_38%)] pointer-events-none" />
+                                                            <div className="relative z-10 flex flex-col p-4">
+                                                                <div className="flex items-start justify-between gap-3">
+                                                                    <div>
+                                                                        <span className="inline-flex items-center rounded-full border border-white/55 bg-white/75 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.24em] text-foreground/60 backdrop-blur-sm">
+                                                                            {tmpl.eyebrow}
+                                                                        </span>
+                                                                        <div className="mt-2.5 flex items-center gap-2">
+                                                                            <div
+                                                                                className="h-2.5 w-2.5 rounded-full shadow-[0_0_0_4px_rgba(255,255,255,0.45)]"
+                                                                                style={{ backgroundColor: tmpl.accent }}
+                                                                            />
+                                                                            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/45">
+                                                                                Included
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                    {isLocked ? (
+                                                                        <div className="rounded-full border border-primary/15 bg-white/70 p-2 text-primary shadow-sm">
+                                                                            <Sparkles className="h-3.5 w-3.5" />
+                                                                        </div>
+                                                                    ) : isSelected ? (
+                                                                        <div className="rounded-full border border-primary/20 bg-white/80 p-2 text-primary shadow-sm">
+                                                                            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                                                                        </div>
+                                                                    ) : null}
+                                                                </div>
+                                                                <div className="mt-3 space-y-2">
+                                                                    <p className="font-serif text-lg leading-tight text-foreground font-bold">
+                                                                        {tmpl.name}
+                                                                    </p>
+                                                                    <p className="text-xs leading-relaxed text-foreground/65">
+                                                                        {tmpl.desc}
+                                                                    </p>
+                                                                    <div className="flex items-center justify-between pt-1">
+                                                                        <span className="text-[10px] uppercase tracking-[0.24em] text-foreground/40">
+                                                                            {tmpl.mood}
+                                                                        </span>
+                                                                        <div className="h-1.5 w-14 rounded-full bg-black/6">
+                                                                            <div
+                                                                                className="h-full rounded-full"
+                                                                                style={{ width: isSelected ? '100%' : '70%', backgroundColor: tmpl.accent }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="pt-2">
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={isLocked}
+                                                                            onClick={() => {
+                                                                                if (!isLocked) {
+                                                                                    setFormData((prev: any) => ({
+                                                                                        ...prev,
+                                                                                        template: tmpl.id,
+                                                                                        templateStyle: isTemplateStyleAvailable(tmpl.id, prev.templateStyle) ? prev.templateStyle : DEFAULT_TEMPLATE_STYLE,
+                                                                                    }));
+                                                                                }
+                                                                            }}
+                                                                            className={`w-full rounded-xl py-2.5 px-3 text-center text-xs font-bold uppercase tracking-widest transition-all ${
+                                                                                isSelected
+                                                                                    ? 'bg-primary text-white shadow-sm'
+                                                                                    : isLocked
+                                                                                        ? 'bg-neutral text-text-secondary/60 cursor-not-allowed'
+                                                                                        : 'bg-white/80 border border-primary/20 text-primary active:bg-primary active:text-white'
+                                                                            }`}
+                                                                        >
+                                                                            {isSelected ? '✓ Currently Selected' : isLocked ? 'Locked (Pro Only)' : 'Select This Wireframe'}
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        {/* ── Desktop: Original Card Grid ── */}
+                        <div className="hidden sm:grid sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                             {TEMPLATES.map((tmpl) => {
                                 const isLocked = !isPremium && !FREE_TEMPLATE_IDS.includes(tmpl.id as typeof FREE_TEMPLATE_IDS[number]);
                                 const isSelected = formData.template === tmpl.id;
@@ -1699,75 +1889,64 @@ export default function BuilderForm() {
                                 );
                             })}
                         </div>
-                        <div className="space-y-3 rounded-[1.75rem] border border-border/70 bg-white/80 p-4 shadow-sm">
+                        <div className="space-y-4 rounded-[1.75rem] border border-border/70 bg-white/80 p-4 shadow-sm sm:p-5">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-xs font-bold uppercase tracking-widest text-text-secondary">
-                                        Style Variant
+                                    <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                                        5 Design Variations
                                     </p>
                                     <p className="mt-1 text-sm text-text-secondary">
-                                        Keep the original look or apply a Nicepage-inspired wedding landing style to this template.
+                                        Select from 5 distinct variations for <strong className="text-foreground">{activeTemplateMeta?.name || 'this template'}</strong>. Switching variations changes layout, typography, section flow, gallery, buttons, RSVP, and mobile layout without losing your saved content.
                                     </p>
                                 </div>
                                 {activeTemplateMeta && (
                                     <span
-                                        className="mt-1 h-3 w-3 shrink-0 rounded-full shadow-[0_0_0_5px_rgba(255,255,255,0.8)]"
+                                        className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full shadow-[0_0_0_5px_rgba(255,255,255,0.8)]"
                                         style={{ backgroundColor: activeTemplateMeta.accent }}
                                     />
                                 )}
                             </div>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData((prev: any) => ({ ...prev, templateStyle: DEFAULT_TEMPLATE_STYLE }))}
-                                    className={`rounded-2xl border p-4 text-left transition-all ${
-                                        !formData.templateStyle || formData.templateStyle === DEFAULT_TEMPLATE_STYLE || !selectedStyleAvailable
-                                            ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/10'
-                                            : 'border-border bg-neutral/50 hover:border-primary/30 hover:bg-white'
-                                    }`}
-                                >
-                                    <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">Current</span>
-                                    <p className="mt-2 font-serif text-lg text-foreground">Original</p>
-                                    <p className="mt-1 text-xs leading-relaxed text-text-secondary">The existing QuickWeds template design. Existing weddings keep this by default.</p>
-                                </button>
-                                {styleVariants.map((variant) => (
-                                    <button
-                                        key={variant.id}
-                                        type="button"
-                                        onClick={() => setFormData((prev: any) => ({ ...prev, templateStyle: variant.id }))}
-                                        className={`rounded-2xl border p-4 text-left transition-all ${
-                                            formData.templateStyle === variant.id
-                                                ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/10'
-                                                : 'border-border bg-neutral/50 hover:border-primary/30 hover:bg-white'
-                                        }`}
-                                    >
-                                        <span className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">{variant.source}</span>
-                                        <div className="mt-2 flex items-center gap-2">
-                                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: variant.accent }} />
-                                            <p className="font-serif text-lg text-foreground">{variant.name}</p>
-                                        </div>
-                                        <p className="mt-1 text-xs leading-relaxed text-text-secondary">{variant.desc}</p>
-                                    </button>
-                                ))}
+                            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                                {styleVariants.map((variant) => {
+                                    const isSelected = formData.templateStyle === variant.id || (!formData.templateStyle && (variant.id === DEFAULT_TEMPLATE_STYLE || variant.id === 'classic_v1'));
+                                    return (
+                                        <button
+                                            key={variant.id}
+                                            type="button"
+                                            onClick={() => setFormData((prev: any) => ({ ...prev, templateStyle: variant.id }))}
+                                            className={`group relative rounded-2xl border p-4 text-left transition-all ${
+                                                isSelected
+                                                    ? 'border-primary/60 bg-primary/5 shadow-xl shadow-primary/10 ring-2 ring-primary/20'
+                                                    : 'border-border bg-neutral/40 hover:border-primary/40 hover:bg-white'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                                                <span className="text-[9px] font-black uppercase tracking-[0.22em] text-primary">
+                                                    Variation {variant.variationKey?.toUpperCase() || 'V1'}
+                                                </span>
+                                                {isSelected && (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-bold text-white">
+                                                        Selected
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: variant.accent }} />
+                                                <p className="font-serif text-lg font-bold text-foreground">{variant.name}</p>
+                                            </div>
+                                            <p className="mt-1 text-xs leading-relaxed text-text-secondary">{variant.desc}</p>
+                                            
+                                            <div className="mt-3 pt-3 border-t border-border/40 grid grid-cols-2 gap-1.5 text-[10px] text-text-secondary/80">
+                                                <div><span className="font-bold text-foreground/70">Hero:</span> {variant.heroLayout}</div>
+                                                <div><span className="font-bold text-foreground/70">Gallery:</span> {variant.galleryStyle}</div>
+                                                <div><span className="font-bold text-foreground/70">Button:</span> {variant.buttonStyle}</div>
+                                                <div><span className="font-bold text-foreground/70">Mobile:</span> {variant.mobileLayout}</div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            {styleVariants.length === 0 && (
-                                <p className="rounded-2xl border border-dashed border-border bg-neutral/50 px-4 py-3 text-xs text-text-secondary">
-                                    Additional landing-page style variants will be added here as we adapt more wedding references.
-                                </p>
-                            )}
                         </div>
-                        {!isPremium && (
-                            <div className="mt-4 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20">
-                                <div className="flex items-start gap-3">
-                                    <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                                    <div className="flex-1">
-                                        <h4 className="font-bold text-sm text-foreground mb-1">All templates are included</h4>
-                                        <p className="text-xs text-text-secondary mb-3">Choose any modern, luxury, or editorial style for free.</p>
-                                        <UpgradeButton weddingId={editId || ''} variant="outlined" className="text-xs px-4 py-2" />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 );
             }
@@ -2494,13 +2673,13 @@ export default function BuilderForm() {
                 <p className="text-text-secondary">Create separate attire guidance for principal sponsors and wedding guests.</p>
             </div>
 
-            <div className="space-y-6 rounded-[2rem] border border-border bg-white/70 p-4 shadow-sm sm:p-6">
+            <div className="space-y-6 rounded-2xl border border-border bg-white/70 p-2 shadow-sm sm:rounded-[2rem] sm:p-6">
                 {attireGroups.map((group) => {
                     const attireValue = formData[group.attireField];
                     const colorValue = formData[group.colorField];
 
                     return (
-                        <section key={group.id} className="overflow-hidden rounded-[1.75rem] border border-border bg-white p-4 sm:p-5">
+                        <section key={group.id} className="overflow-hidden rounded-xl border border-border bg-white p-2.5 sm:rounded-[1.75rem] sm:p-5">
                             <div className="mb-5 flex items-start justify-between gap-4">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">{group.label}</p>
@@ -2510,7 +2689,7 @@ export default function BuilderForm() {
                             </div>
 
                             <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
-                                <div className="space-y-5 rounded-2xl bg-neutral/45 p-4">
+                                <div className="space-y-5 rounded-xl bg-neutral/45 p-3 sm:rounded-2xl sm:p-4">
                                     <div className="space-y-2">
                                         <label htmlFor={`${group.id}-attire`} className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Type</label>
                                         <input
@@ -2561,7 +2740,7 @@ export default function BuilderForm() {
                                 </div>
 
                                 <div
-                                    className="relative flex min-h-[300px] flex-col justify-between overflow-hidden rounded-2xl border border-border bg-neutral p-4"
+                                    className="relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral/80 p-3.5 sm:min-h-[320px] sm:rounded-2xl sm:p-5"
                                     style={{ boxShadow: `0 20px 55px ${colorValue}18` }}
                                 >
                                     <div className="absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at 50% 30%, ${colorValue}22, transparent 48%)` }} />
@@ -2570,7 +2749,7 @@ export default function BuilderForm() {
                                         <p className="mt-1 font-serif text-xl font-bold text-foreground">{attireValue || 'Formal Attire'}</p>
                                     </div>
                                     <div className="relative flex flex-1 items-center justify-center py-2">
-                                        <AttireIllustration color={colorValue} variant={group.variant} className="max-w-[300px]" />
+                                        <AttireIllustration color={colorValue} variant={group.variant} className="max-w-[340px]" />
                                     </div>
                                 </div>
                             </div>
@@ -2937,24 +3116,21 @@ export default function BuilderForm() {
 
 if (editId && loadedEditId !== editId) {
     return (
-        <div className="mx-auto flex min-h-[520px] w-full max-w-6xl items-center justify-center px-6">
-            <div className="text-center">
-                <Heart className="mx-auto h-9 w-9 animate-pulse text-primary" />
-                <p className="mt-4 font-serif text-xl text-foreground">Loading your wedding design…</p>
-                <p className="mt-1 text-sm text-text-secondary">Your saved details will be ready in a moment.</p>
-            </div>
-        </div>
+        <LoadingState
+            variant="panel"
+            label="Loading your wedding design…"
+            description="Your saved details will be ready in a moment."
+            className="mx-auto min-h-[520px] max-w-6xl"
+        />
     );
 }
 
 return (
     <>
-        <AnimatePresence>
-            {isGenerating && <GenerationLoading />}
-        </AnimatePresence>
+        {isGenerating && <GenerationLoading />}
 
         <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
-            <div className="w-full lg:w-3/5 bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-8 soft-shadow border border-primary/10 flex-shrink-0">
+            <div className="qw-builder w-full lg:w-3/5 bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-8 soft-shadow border border-primary/10 flex-shrink-0">
                 {/* Mobile Stepper Header */}
                 <div className="lg:hidden mb-6">
                     <div className="flex justify-between items-end mb-2">
@@ -2979,17 +3155,18 @@ return (
                 </div>
 
                 {/* Desktop Stepper */}
-                <div className="hidden lg:flex justify-between items-center mb-12 gap-2">
+                <div className="hidden lg:flex justify-between items-start mb-12 gap-2">
                     {STEPS.map((step, idx) => (
-                        <div key={step.id} className="flex flex-col items-center relative flex-1">
+                        <div key={step.id} className="flex flex-col items-center relative flex-1 min-w-0">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 flex-shrink-0 transition-all duration-500 ${idx === currentStep ? 'bg-primary text-white scale-110 shadow-[0_0_20px_rgba(192,128,129,0.3)]' : idx < currentStep ? 'bg-secondary text-foreground' : 'bg-neutral text-text-secondary border border-border'}`}>
                                 {idx < currentStep ? <CheckCircle2 className="w-5 h-5" /> : <step.icon className="w-5 h-5" />}
                             </div>
-                            <span className={`text-[9px] uppercase tracking-widest mt-3 font-bold text-center leading-tight transition-colors duration-500 ${idx === currentStep ? 'text-primary' : 'text-text-secondary'}`}>{step.title}</span>
+                            <span className={`text-[9px] uppercase tracking-widest mt-3 font-bold text-center leading-tight transition-colors duration-500 whitespace-nowrap ${idx === currentStep ? 'text-primary' : 'text-text-secondary'}`}>{step.title}</span>
                             {idx < STEPS.length - 1 && <div className={`absolute top-5 left-[60%] w-[80%] h-[2px] -z-0 ${idx < currentStep ? 'bg-secondary' : 'bg-border'}`} />}
                         </div>
                     ))}
                 </div>
+
 
                 {/* Undo/Redo Controls */}
                 <div className="flex items-center justify-between mb-4 px-1">

@@ -61,10 +61,15 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
                     <div className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border ${isDark ? 'border-white/15 bg-white/10' : 'border-primary/15 bg-white/70'} shadow-sm`}>
                         <MessageCircleQuestion className="h-7 w-7 stroke-[1.6] text-primary" />
                     </div>
-                    <p className={`mb-3 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>Guest notes</p>
+                    <div className="mb-3 flex items-center justify-center">
+                        <span className={visual.badgeStyleClass || `text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
+                            {visual.badgePrefix ? `${visual.badgePrefix}FAQS` : 'Guest notes'}
+                        </span>
+                    </div>
                     <h2 className={`text-3xl sm:text-4xl md:text-5xl ${titleStyle.className}`} style={titleStyle.style}>Questions & Details</h2>
+                    <div className={`mx-auto mt-4 ${visual.dividerClass}`} />
                     <p className={`mx-auto mt-4 max-w-2xl text-sm leading-6 ${isDark ? 'text-white/76' : 'text-[#4A4444]/74'}`}>
-                        A clean accordion-style guide for the small details guests usually ask about.
+                        A clean guide for the details guests usually ask about.
                     </p>
                 </motion.div>
 
@@ -76,7 +81,7 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.04 }}
-                            className={`group rounded-2xl border p-5 shadow-sm backdrop-blur ${isDark ? 'border-white/10 bg-white/5 text-white' : 'border-primary/10 bg-white/75 text-[#4A4444]'}`}
+                            className={`group p-5 backdrop-blur ${visual.cardClass}`}
                         >
                             <summary className="flex cursor-pointer list-none items-start gap-3 font-serif text-lg leading-snug marker:hidden">
                                 <HelpCircle className="mt-0.5 h-5 w-5 flex-shrink-0 stroke-[1.6] text-primary" />

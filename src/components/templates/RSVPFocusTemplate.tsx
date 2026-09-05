@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { CheckCircle2, HeartHandshake } from 'lucide-react';
 import { SharedNewSections } from './shared';
 import {
     VideoSection,
@@ -17,62 +18,85 @@ import {
 import type { TemplateProps } from '@/types/wedding';
 
 export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: TemplateProps) {
-    const motifColor = wedding.motif_color || '#C5A059';
+    const motifColor = wedding.motif_color || '#A0616A';
+    const formattedDate = new Date(wedding.wedding_date).toLocaleDateString('en-US', { 
+        weekday: 'long',
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+    });
 
     return (
-        <div className="bg-white pb-24">
-            <section className="min-h-[85vh] flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-white via-primary/5 to-white" />
-                {wedding.hero_image && (
-                    <Image
-                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
-                        alt={`${wedding.bride_name} and ${wedding.groom_name} wedding`}
-                        priority
-                        fill
-                        sizes="100vw"
-                        className="object-cover opacity-10 z-0"
-                    />
-                )}
+        <div className="bg-[#fffbfb] text-neutral-800 pb-24 font-sans relative selection:bg-[#A0616A]/20">
+            {/* Subtle Gradient & Texture Overlay */}
+            <div className="fixed inset-0 pointer-events-none opacity-40 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-rose-100/40 via-transparent to-transparent" />
 
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1 }}
-                    className="relative text-center z-10 px-4 sm:px-6 md:px-12 max-w-4xl"
-                >
-                    <p className="text-xs sm:text-sm uppercase tracking-[0.4em] font-bold mb-8 sm:mb-10" style={{ color: motifColor }}>
-                        You&apos;re Invited
-                    </p>
-                    <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif text-neutral-900 mb-10 sm:mb-12 md:mb-16 leading-tight">
-                        {wedding.bride_name} <br />
-                        <span className="text-xl sm:text-2xl md:text-3xl italic font-light" style={{ color: motifColor }}>&</span>{' '}
-                        <br />
-                        {wedding.groom_name}
-                    </h1>
-                    <div className="w-20 sm:w-24 h-[1px] mx-auto mb-10 sm:mb-12" style={{ backgroundColor: motifColor }} />
-                    <p className="text-lg sm:text-xl md:text-2xl font-serif italic text-neutral-600 mb-12 sm:mb-14">
-                        {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'long' })}
-                    </p>
-                    <p className="text-base sm:text-lg font-light text-neutral-500 mb-16 sm:mb-20">
-                        at {wedding.venue_name}
-                    </p>
-                    <div className="mt-8">
-                        <a
-                            href="#rsvp"
-                            aria-label="RSVP Here"
-                            className="inline-flex items-center justify-center px-12 sm:px-16 py-5 sm:py-6 font-bold uppercase tracking-widest text-sm sm:text-base hover:scale-105 transition-all shadow-xl min-h-[56px]"
-                            style={{ backgroundColor: motifColor, color: 'white' }}
-                        >
-                            RSVP Here
-                        </a>
-                    </div>
-                    <p className="text-sm font-light text-neutral-400 mt-8 sm:mt-10">
-                        Your presence is our greatest gift
-                    </p>
-                </motion.div>
+            <section className="min-h-screen py-16 sm:py-24 px-4 sm:px-6 md:px-12 flex items-center justify-center relative overflow-hidden">
+                <div className="max-w-5xl w-full z-10">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.97, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+                        className="bg-white rounded-3xl border border-rose-100 shadow-[0_25px_80px_rgba(160,97,106,0.1)] p-8 sm:p-14 md:p-18 text-center relative overflow-hidden"
+                    >
+                        {/* Status Header Badge */}
+                        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border mb-8 text-xs uppercase tracking-[0.35em] font-bold" style={{ borderColor: `${motifColor}30`, backgroundColor: `${motifColor}0A`, color: motifColor }}>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Official Wedding Invitation &amp; RSVP</span>
+                        </div>
 
-                <div className="absolute bottom-16 left-1/2 -translate-x-1/2 animate-bounce">
-                    <div className="w-[1px] h-12 opacity-30" style={{ backgroundColor: motifColor }} />
+                        <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif text-neutral-900 mb-6 leading-tight tracking-tight">
+                            {wedding.bride_name} <br />
+                            <span className="text-2xl sm:text-4xl italic font-light serif" style={{ color: motifColor }}>&amp;</span> <br />
+                            {wedding.groom_name}
+                        </h1>
+
+                        <div className="w-20 h-px mx-auto my-6" style={{ backgroundColor: `${motifColor}50` }} />
+
+                        <p className="text-xl sm:text-2xl font-serif text-neutral-700 mb-2">
+                            {formattedDate}
+                        </p>
+                        <p className="text-sm sm:text-base font-light text-neutral-500 mb-8 max-w-md mx-auto">
+                            {wedding.venue_name} {wedding.venue_address ? `• ${wedding.venue_address}` : ''}
+                        </p>
+
+                        {/* Couple Photo Spotlight (If present) */}
+                        {(wedding.hero_image || wedding.couple_photo) && (
+                            <div className="mx-auto my-8 w-28 h-28 sm:w-36 sm:h-36 rounded-full p-1 shadow-lg relative border-2 border-white" style={{ backgroundColor: `${motifColor}20` }}>
+                                <div className="w-full h-full rounded-full overflow-hidden relative">
+                                    <Image
+                                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                                        priority
+                                        fill
+                                        sizes="150px"
+                                        className="object-cover"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* High-Conversion Primary RSVP Box */}
+                        <div className="mt-8 max-w-md mx-auto bg-neutral-50 border border-neutral-200/80 rounded-2xl p-6 shadow-inner space-y-4">
+                            <p className="text-xs uppercase tracking-widest font-bold text-neutral-500">
+                                Kindly Respond by Your Earliest Convenience
+                            </p>
+                            <motion.a
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.98 }}
+                                href="#rsvp"
+                                aria-label="Confirm Attendance Now"
+                                className="w-full inline-flex items-center justify-center gap-3 px-10 py-4 font-bold uppercase tracking-[0.25em] text-xs sm:text-sm text-white rounded-xl shadow-xl transition-all min-h-[52px]"
+                                style={{ backgroundColor: motifColor }}
+                            >
+                                <HeartHandshake className="w-4 h-4" />
+                                <span>Confirm Attendance Now</span>
+                            </motion.a>
+                            <p className="text-[11px] text-neutral-400 font-light">
+                                Your presence is our greatest gift. Please let us know if you can make it!
+                            </p>
+                        </div>
+                    </motion.div>
                 </div>
             </section>
 

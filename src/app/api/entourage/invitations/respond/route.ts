@@ -3,13 +3,19 @@ import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { z } from 'zod';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limit';
+import { createRateLimitMiddleware, getClientIP, sanitizeInput } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 const responseSchema = z.object({
     token: z.string().min(20).max(200),
     response: z.enum(['accepted', 'declined']),
+    details: z.object({
+        attireSize: z.string().trim().max(100).optional(),
+        dietaryNotes: z.string().trim().max(500).optional(),
+        phoneNumber: z.string().trim().max(50).optional(),
+        personalNote: z.string().trim().max(1000).optional(),
+    }).optional(),
 });
 
 function hashToken(token: string) {
@@ -21,7 +27,7 @@ async function findInvitationByToken(token: string) {
     const tokenHash = hashToken(token);
     const { data, error } = await db
         .from('entourage_invitations')
-        .select('id, wedding_id, member_key, name, email, role, message, template_key, status, sent_at, responded_at, weddings(bride_name, groom_name, wedding_date, venue_name)')
+        .select('id, wedding_id, member_key, name, email, role, message, template_key, card_theme, proposal_title, status, sent_at, responded_at, response_details, weddings(bride_name, groom_name, wedding_date, venue_name, wedding_party)')
         .eq('token_hash', tokenHash)
         .maybeSingle();
 
@@ -63,15 +69,30 @@ export async function POST(req: NextRequest) {
     try {
         const db = getSupabaseAdminClient() as any;
         const tokenHash = hashToken(parsed.data.token);
+
+        const sanitizedDetails = parsed.data.details ? {
+            attireSize: parsed.data.details.attireSize ? sanitizeInput(parsed.data.details.attireSize, { maxLength: 100 }) : undefined,
+            dietaryNotes: parsed.data.details.dietaryNotes ? sanitizeInput(parsed.data.details.dietaryNotes, { maxLength: 500 }) : undefined,
+            phoneNumber: parsed.data.details.phoneNumber ? sanitizeInput(parsed.data.details.phoneNumber, { maxLength: 50 }) : undefined,
+            personalNote: parsed.data.details.personalNote ? sanitizeInput(parsed.data.details.personalNote, { maxLength: 1000, allowNewlines: true }) : undefined,
+            respondedAt: new Date().toISOString(),
+        } : null;
+
+        const updateData: Record<string, any> = {
+            status: parsed.data.response,
+            responded_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        };
+
+        if (sanitizedDetails) {
+            updateData.response_details = sanitizedDetails;
+        }
+
         const { data: invitation, error } = await db
             .from('entourage_invitations')
-            .update({
-                status: parsed.data.response,
-                responded_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-            })
+            .update(updateData)
             .eq('token_hash', tokenHash)
-            .select('id, wedding_id, member_key, name, email, role, message, template_key, status, sent_at, responded_at, weddings(bride_name, groom_name, wedding_date, venue_name)')
+            .select('id, wedding_id, member_key, name, email, role, message, template_key, card_theme, proposal_title, status, sent_at, responded_at, response_details, weddings(bride_name, groom_name, wedding_date, venue_name)')
             .maybeSingle();
 
         if (error) throw error;
@@ -85,4 +106,3 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }
-

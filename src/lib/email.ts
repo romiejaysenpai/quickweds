@@ -58,8 +58,7 @@ export async function sendEmail({ to, subject, html, react, template, attachment
     }
 
     try {
-        console.log(`Attempting to send email via Resend to ${validRecipients.length} recipient(s).`);
-        console.log(`Email Subject: "${subject || template?.id || 'template email'}" | From: "${FROM_EMAIL}"`);
+        console.info(`Attempting to send email via Resend to ${validRecipients.length} recipient(s).`);
 
         if (!html && !react && !template?.id) {
             throw new Error('HTML, React Email component, or template ID is required for email sending');
@@ -89,7 +88,7 @@ export async function sendEmail({ to, subject, html, react, template, attachment
             };
         }
 
-        console.log(`Resend accepted the email request. ID: ${data?.id || 'n/a'}`);
+        console.info('Resend accepted the email request.');
         return {
             success: true,
             id: data?.id,

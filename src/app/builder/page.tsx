@@ -1,5 +1,6 @@
 import BuilderForm from '@/components/BuilderForm';
 import WeddingFontProvider from '@/components/WeddingFontProvider';
+import LoadingState from '@/components/ui/LoadingState';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
@@ -17,7 +18,7 @@ export default function BuilderPage() {
                     Tell us about your special day and we&apos;ll handle the rest.
                 </p>
             </div>
-            <Suspense fallback={<div className="flex items-center justify-center p-12"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}>
+            <Suspense fallback={<LoadingState variant="panel" label="Preparing your builder…" className="max-w-6xl" />}>
                 <BuilderForm />
             </Suspense>
         </div>

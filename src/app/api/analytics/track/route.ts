@@ -47,16 +47,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid wedding ID' }, { status: 400 });
         }
 
-        // Verify wedding exists
-        const { data: wedding, error: weddingError } = await supabase
-            .from('weddings')
-            .select('id')
-            .eq('id', sanitizedWeddingId)
-            .single();
 
-        if (weddingError || !wedding) {
-            return NextResponse.json({ error: 'Wedding not found' }, { status: 404 });
-        }
 
         // Sanitize metadata
         const sanitizedMetadata: Record<string, unknown> = {};

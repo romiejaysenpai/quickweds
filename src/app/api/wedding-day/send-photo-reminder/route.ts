@@ -6,8 +6,9 @@ import { getPhotoReminderEmailHtml } from '@/lib/photo-reminder-email';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getPublicAppUrl } from '@/lib/site-url';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
-import { sanitizeWeddingId } from '@/lib/rate-limit';
+import { createRateLimitMiddleware, sanitizeWeddingId } from '@/lib/rate-limit';
 import { getWeddingAccess } from '@/lib/wedding-access';
+import { claimEmailDelivery, completeEmailDelivery, EMAIL_DELIVERY_TYPES } from '@/lib/database-idempotency';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,10 @@ export async function POST(req: NextRequest) {
     try {
         const { user, error } = await getRequestUser(req);
         if (!user) return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+
+        const rateLimit = createRateLimitMiddleware('REMINDER_EMAIL');
+        const limited = await rateLimit.check(`${user.id}:${weddingId}:photo-reminder`);
+        if (limited.limited) return limited.response;
 
         const db = getSupabaseAdminClient() as any;
         const access = await getWeddingAccess(db, user, weddingId, {
@@ -86,6 +91,17 @@ export async function POST(req: NextRequest) {
                 continue;
             }
 
+            const leaseToken = await claimEmailDelivery(db, {
+                weddingId,
+                deliveryType: EMAIL_DELIVERY_TYPES.photoUploadReminder,
+                recipientKey: rsvp.id,
+            });
+
+            if (!leaseToken) {
+                skipped += 1;
+                continue;
+            }
+
             const result = await sendEmail({
                 to: email,
                 subject: `Share your photos from ${coupleName}'s wedding`,
@@ -95,6 +111,17 @@ export async function POST(req: NextRequest) {
                     photoUploadUrl: uploadUrl,
                     weddingDate: access.wedding.wedding_date,
                 }),
+            });
+
+            // Persist the outcome before writing the user-facing automation log so
+            // an overlapping request cannot send the same email during log writes.
+            await completeEmailDelivery(db, {
+                weddingId,
+                deliveryType: EMAIL_DELIVERY_TYPES.photoUploadReminder,
+                recipientKey: rsvp.id,
+                leaseToken,
+                succeeded: result.success,
+                providerMessageId: result.success ? result.id : null,
             });
 
             const status = result.success ? 'sent' : 'failed';

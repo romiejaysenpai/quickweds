@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPublicRedirectUrl } from '@/lib/site-url';
+import LoadingState from '@/components/ui/LoadingState';
 import { getClientAccountProfileForIntent, getClientAdminStatus, getPostLoginRedirect, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
@@ -195,7 +196,7 @@ export default function LoginPage() {
                         disabled={loading}
                         className="w-full py-5 rounded-2xl bg-primary text-white font-bold text-lg hover:bg-primary-hover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 disabled:bg-primary-disabled"
                     >
-                        {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Login <ArrowRight className="w-5 h-5" /></>}
+                        {loading ? <LoadingState variant="inline" label="Signing in…" className="[&>svg]:h-5 [&>svg]:w-5" /> : <>Login <ArrowRight className="w-5 h-5" /></>}
                     </button>
 
                     <div className="relative py-4">

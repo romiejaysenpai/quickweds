@@ -22,7 +22,7 @@ function formatDateLabel(date: string) {
         return 'A memorable day awaits';
     }
 
-    return parsedDate.toLocaleDateString(undefined, {
+    return parsedDate.toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
         year: 'numeric',

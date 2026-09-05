@@ -38,7 +38,9 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
                     <div className="relative mx-auto mb-11 max-w-3xl">
                         <div className="mb-5 flex items-center justify-center gap-4">
                             <span className="h-px w-10 opacity-70" style={{ backgroundColor: motifColor }} />
-                            <span className={`text-[10px] font-black uppercase tracking-[0.34em] ${visual.eyebrowClass}`}>The Wedding Party</span>
+                            <span className={visual.badgeStyleClass || `text-[10px] font-black uppercase tracking-[0.34em] ${visual.eyebrowClass}`}>
+                                {visual.badgePrefix ? `${visual.badgePrefix}ENTOURAGE` : 'The Wedding Party'}
+                            </span>
                             <span className="h-px w-10 opacity-70" style={{ backgroundColor: motifColor }} />
                         </div>
                         <h2 className={`text-4xl leading-tight md:text-6xl ${titleStyle.className}`} style={titleStyle.style}>Our Entourage</h2>

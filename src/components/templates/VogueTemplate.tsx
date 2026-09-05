@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { ArrowUpRight } from 'lucide-react';
 import {
     VideoSection,
     BioSection,
@@ -14,65 +15,79 @@ import {
     FAQSection
 } from '../wedding';
 import { SharedNewSections } from './shared';
+import type { TemplateProps } from '@/types/wedding';
 
-export default function VogueTemplate({ wedding, gallery, isExpired }: any) {
+export default function VogueTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+    const formattedDate = new Date(wedding.wedding_date).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
     return (
-        <div className="bg-white text-black font-sans selection:bg-black selection:text-white pb-24">
-            <section className="min-h-screen grid grid-cols-1 md:grid-cols-2">
-                <div className="relative h-[60vh] md:h-full order-2 md:order-1">
+        <div className="bg-white text-black font-sans selection:bg-black selection:text-white pb-24 relative overflow-hidden">
+            <section className="min-h-screen grid grid-cols-1 md:grid-cols-12 border-b border-black">
+                {/* Left Fashion Photography Feature */}
+                <div className="relative min-h-[60vh] md:min-h-full md:col-span-6 order-2 md:order-1 border-r border-black">
                     <Image
                         src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
                         alt={`${wedding.bride_name} and ${wedding.groom_name}`}
                         priority
                         fill
                         sizes="(max-width: 768px) 100vw, 50vw"
-                        className="object-cover grayscale contrast-125 z-0"
+                        className="object-cover grayscale contrast-125 hover:contrast-100 transition-all duration-700 z-0"
                     />
-                    <div className="absolute inset-0 bg-white/10 mix-blend-overlay" />
+                    <div className="absolute top-6 left-6 bg-black text-white px-3 py-1 text-[10px] font-mono uppercase tracking-[0.3em] z-10">
+                        COVER STORY
+                    </div>
                 </div>
-                <div className="flex flex-col justify-between px-4 sm:px-6 md:px-24 py-12 sm:py-16 md:py-24 order-1 md:order-2 bg-white">
-                    <div className="flex justify-between items-start">
-                        <span className="text-[10px] font-black uppercase tracking-widest border-b-2 border-black pb-1">The Edition</span>
-                        <span className="text-[10px] font-black uppercase tracking-widest">Vol. 01</span>
+
+                {/* Right Editorial Masthead */}
+                <div className="md:col-span-6 flex flex-col justify-between p-6 sm:p-12 md:p-16 lg:p-20 order-1 md:order-2 bg-white space-y-8">
+                    <div className="flex justify-between items-center border-b border-black pb-4">
+                        <span className="text-xs font-black uppercase tracking-[0.4em]">THE WEDDING ISSUE</span>
+                        <span className="text-xs font-mono uppercase tracking-widest text-neutral-500">SPECIAL EDITION</span>
                     </div>
 
-                    <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
-                        <h1 className="text-3xl sm:text-4xl md:text-7xl lg:text-9xl font-serif leading-[0.85] -ml-0 sm:-ml-1 md:-ml-2 mb-6 sm:mb-7 md:mb-8 mix-blend-difference drop-shadow-[0_2px_10px_rgba(0,0,0,0.1)]">
-                            {wedding.bride_name.split(' ')[0]} <br />
-                            <span className="font-sans font-light italic ml-0 sm:ml-6 md:ml-12 text-2xl sm:text-3xl md:text-6xl opacity-50">&</span> <br />
-                            {wedding.groom_name.split(' ')[0]}
+                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
+                        <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-serif leading-[0.85] tracking-tight uppercase mb-6">
+                            {wedding.bride_name} <br />
+                            <span className="font-sans font-light italic text-3xl sm:text-5xl text-neutral-400">&amp;</span> <br />
+                            {wedding.groom_name}
                         </h1>
 
-                        <div className="flex gap-4 sm:gap-6 md:gap-8 items-end mt-8 sm:mt-10 md:mt-12">
-                            <div className="flex-1 border-t border-black pt-3 sm:pt-4 md:pt-4">
-                                <p className="text-xs font-bold uppercase tracking-widest mb-2">Ceremony</p>
-                                <p className="text-lg sm:text-lg md:text-xl font-serif italic">{wedding.wedding_date}</p>
-                            </div>
-                            <a href="#rsvp" aria-label="RSVP" className="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 min-h-[44px] bg-black text-white rounded-full flex items-center justify-center text-xs font-bold uppercase tracking-widest hover:scale-110 transition-transform flex-shrink-0">
-                                RSVP
+                        <div className="space-y-3 font-serif border-y border-black py-6 my-8">
+                            <p className="text-xl sm:text-2xl font-bold tracking-tight">{formattedDate}</p>
+                            <p className="text-sm font-sans uppercase tracking-[0.25em] text-neutral-600">
+                                {wedding.venue_name} {wedding.venue_address ? `• ${wedding.venue_address}` : ''}
+                            </p>
+                        </div>
+
+                        <p className="text-sm sm:text-base leading-relaxed text-neutral-600 font-light max-w-md mb-8">
+                            {wedding.story || 'A high-fashion union of modern elegance, curated cuisine, and timeless couture romance.'}
+                        </p>
+
+                        <div className="flex gap-4 items-center">
+                            <a
+                                href="#rsvp"
+                                aria-label="RSVP"
+                                className="inline-flex items-center gap-2 px-10 py-4 bg-black text-white font-bold uppercase tracking-[0.25em] text-xs hover:bg-neutral-800 transition-all min-h-[48px]"
+                            >
+                                <span>RSVP ATTENDANCE</span>
+                                <ArrowUpRight className="w-4 h-4" />
+                            </a>
+                            <a
+                                href="#details"
+                                className="inline-flex items-center justify-center px-8 py-4 border border-black text-black font-medium uppercase tracking-[0.2em] text-xs hover:bg-neutral-50 transition-all min-h-[48px]"
+                            >
+                                The Details
                             </a>
                         </div>
                     </motion.div>
-                </div>
-            </section>
 
-            <section className="py-16 sm:py-24 md:py-32 lg:py-32 px-4 sm:px-6">
-                <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 sm:gap-12 md:gap-16 lg:gap-24 items-center">
-                    <div className="flex-1 md:text-right space-y-6 sm:space-y-7 md:space-y-8">
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif italic">A Modern Love Story</h2>
-                        <p className="text-lg sm:text-lg md:text-xl leading-relaxed font-light max-w-md ml-auto">
-                            {wedding.story || "Two souls, one stylish journey. Join us as we celebrate love in its most fashionable form."}
-                        </p>
-                    </div>
-                    <div className="w-full md:w-1/3 aspect-[3/4] relative">
-                        <div className="absolute inset-0 bg-neutral -translate-x-4 translate-y-4" />
-                        <Image
-                            src={wedding.couple_photo || wedding.hero_image || '/logo.png'}
-                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                            className="object-cover relative z-10 grayscale hover:grayscale-0 transition-all duration-700"
-                        />
+                    <div className="pt-8 border-t border-black/15 flex justify-between items-center text-[10px] font-mono text-neutral-400">
+                        <span>EST. 2026 // ALL RIGHTS RESERVED</span>
+                        <span>BARCODE: |||||||||||||||||</span>
                     </div>
                 </div>
             </section>
@@ -92,7 +107,7 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: any) {
                     motifColor={wedding.motif_color}
                 />
             )}
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} masonry template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

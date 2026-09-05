@@ -29,6 +29,7 @@ import {
   Twitter,
   Facebook,
   Loader2,
+  Mouse,
 } from 'lucide-react';
 import { motion, useInView, useReducedMotion, useScroll, useTransform, type MotionStyle, type MotionValue } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -52,6 +53,8 @@ const landingTitleStyle = { fontFamily: 'var(--font-montserrat), Arial, sans-ser
 const plannerProDisplayPrice = '$15';
 const defaultCoreFeatureImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/scrool%20images/IMG_4415.JPG';
 const newFeaturesImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/079f3b98-6106-45fe-8d55-407f65fe4d9f.png';
+
+import { landingTemplatePreviews } from '@/lib/landing-templates';
 
 const featureCards = [
   {
@@ -775,10 +778,84 @@ function FeaturePillBridge() {
   );
 }
 
-function CoreFeaturesSection() {
+function SidebarDot({ index, scrollYProgress, totalCards, title }: { index: number; scrollYProgress: MotionValue<number>; totalCards: number; title: string }) {
+  const segment = 1 / Math.max(totalCards - 1, 1);
+  const center = index * segment;
+  
+  let inputRange: number[];
+  let scaleOutput: number[];
+  let opacityOutput: number[];
+
+  if (index === 0) {
+    inputRange = [0, segment / 2];
+    scaleOutput = [1.3, 0.5];
+    opacityOutput = [1, 0.4];
+  } else if (index === totalCards - 1) {
+    inputRange = [center - segment / 2, 1];
+    scaleOutput = [0.5, 1.3];
+    opacityOutput = [0.4, 1];
+  } else {
+    inputRange = [center - segment / 2, center, center + segment / 2];
+    scaleOutput = [0.5, 1.3, 0.5];
+    opacityOutput = [0.4, 1, 0.4];
+  }
+  
+  const scale = useTransform(scrollYProgress, inputRange, scaleOutput);
+  const opacity = useTransform(scrollYProgress, inputRange, opacityOutput);
+
   return (
-    <section id="features" className="sticky-feature-section -mt-28 overflow-visible bg-neutral px-4 pb-12 pt-44 sm:mt-0 sm:px-6 sm:pb-20 sm:pt-24 lg:pb-16 lg:pt-28">
-      <div className="mx-auto max-w-7xl">
+    <div className="group relative flex w-full items-center justify-center pointer-events-auto cursor-pointer py-1">
+      <span className="absolute right-6 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:-translate-x-2 text-[10px] font-bold uppercase tracking-wider text-primary whitespace-nowrap bg-white/95 px-3 py-1.5 rounded-lg shadow-md border border-primary/10">
+        {title}
+      </span>
+      <motion.div 
+        style={{ scale, opacity }} 
+        className="relative z-10 h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-white" 
+      />
+    </div>
+  );
+}
+
+function CoreFeaturesSidebar({ scrollYProgress }: { scrollYProgress: MotionValue<number> }) {
+  return (
+    <div className="absolute right-1 top-[15vh] bottom-[15vh] w-8 sm:right-3 sm:w-12 lg:right-6 lg:top-[10vh] lg:bottom-[10vh] lg:w-24 pointer-events-none z-50">
+      <div className="sticky top-[40vh] lg:top-[35vh] flex flex-col items-center">
+        <div className="flex flex-col items-center gap-1.5 lg:gap-2 mb-2 lg:mb-3 opacity-60 lg:opacity-50 text-primary">
+          <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-[0.25em] [writing-mode:vertical-lr] rotate-180">Scroll</span>
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <ChevronDown className="h-3 w-3 lg:h-4 lg:w-4" />
+          </motion.div>
+        </div>
+
+        <div className="relative flex h-[240px] lg:h-[360px] w-6 flex-col items-center justify-between">
+          <div className="absolute bottom-0 top-0 w-[2px] rounded-full bg-primary/20 lg:bg-primary/20" />
+          <motion.div 
+            className="absolute bottom-0 top-0 w-[2px] origin-top rounded-full bg-primary"
+            style={{ scaleY: scrollYProgress }}
+          />
+          {featureCards.map((feature, i) => (
+            <SidebarDot key={i} index={i} scrollYProgress={scrollYProgress} totalCards={featureCards.length} title={feature.title} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CoreFeaturesSection() {
+  const containerRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end end'],
+  });
+
+  return (
+    <section ref={containerRef} id="features" className="relative sticky-feature-section -mt-28 overflow-visible bg-neutral px-3 pb-12 pt-44 sm:mt-0 sm:px-6 sm:pb-20 sm:pt-24 lg:px-8 lg:pb-16 lg:pt-28">
+      <CoreFeaturesSidebar scrollYProgress={scrollYProgress} />
+      <div className="mx-auto max-w-[1380px] relative">
         <div className="relative z-40 mx-auto max-w-4xl text-center">
           <p className="mb-3 text-[11px] font-black uppercase tracking-[0.18em] text-primary sm:text-xs">Core features</p>
           <h2 className={`${landingSectionTitleClass} mx-auto max-w-[21rem] sm:max-w-4xl`} style={landingTitleStyle}>
@@ -788,7 +865,7 @@ function CoreFeaturesSection() {
 
         <div className="h-[140px] min-[390px]:h-[170px] sm:h-[450px] lg:h-[420px]" aria-hidden="true" />
 
-        <div className="sticky-feature-stack mx-auto max-w-[430px] pb-20 sm:max-w-[720px] sm:pb-32 lg:max-w-[1120px] lg:pb-24">
+        <div className="sticky-feature-stack mx-auto w-full max-w-full pb-20 sm:max-w-[860px] sm:pb-32 lg:max-w-[1260px] lg:pb-24">
           {featureCards.map((feature, index) => (
             <AnimatedFeatureCard key={feature.title} feature={feature} index={index} />
           ))}
@@ -901,6 +978,50 @@ function NewFeatureDeckCard({
   );
 }
 
+function DeckProgressSegment({
+  scrollYProgress,
+  index,
+  total,
+}: {
+  scrollYProgress: MotionValue<number>;
+  index: number;
+  total: number;
+}) {
+  const segment = 1 / Math.max(total - 1, 1);
+  const center = index * segment;
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+  const inputRange = isFirst
+    ? [0, segment / 2]
+    : isLast
+      ? [center - segment / 2, 1]
+      : [center - segment / 2, center, center + segment / 2];
+  const widthOutput = isFirst
+    ? ["24px", "6px"]
+    : isLast
+      ? ["6px", "24px"]
+      : ["6px", "24px", "6px"];
+  const opacityOutput = isFirst
+    ? [1, 0.3]
+    : isLast
+      ? [0.3, 1]
+      : [0.3, 1, 0.3];
+  const width = useTransform(scrollYProgress, inputRange, widthOutput);
+  const opacity = useTransform(scrollYProgress, inputRange, opacityOutput);
+
+  return <motion.div style={{ width, opacity }} className="h-1.5 rounded-full bg-primary" />;
+}
+
+function DeckProgressIndicator({ scrollYProgress, total }: { scrollYProgress: MotionValue<number>; total: number }) {
+  return (
+    <div className="absolute -bottom-6 sm:-bottom-10 left-1/2 flex -translate-x-1/2 items-center gap-1.5 z-50">
+      {Array.from({ length: total }).map((_, index) => (
+        <DeckProgressSegment key={index} scrollYProgress={scrollYProgress} index={index} total={total} />
+      ))}
+    </div>
+  );
+}
+
 function NewFeaturesSection() {
   const deckRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -929,6 +1050,8 @@ function NewFeaturesSection() {
                 scrollYProgress={scrollYProgress}
               />
             ))}
+            
+            <DeckProgressIndicator scrollYProgress={scrollYProgress} total={newFeatureCards.length} />
           </div>
         </div>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center sm:flex-row">
@@ -1100,21 +1223,21 @@ function HeroBottomClouds({ sectionDivider = false }: { sectionDivider?: boolean
   );
 }
 
-function SectionTopClouds() {
+function SectionTopClouds({ fillClass = 'text-neutral', bgClass = 'bg-neutral' }: { fillClass?: string, bgClass?: string } = {}) {
   return (
     <div className="pointer-events-none absolute inset-x-0 -top-8 z-20 h-20 rotate-180 overflow-hidden sm:-top-10 sm:h-28" aria-hidden="true">
       <svg
         viewBox="0 0 1440 180"
         preserveAspectRatio="none"
-        className="absolute inset-x-0 bottom-0 h-full w-full text-neutral"
+        className={`absolute inset-x-0 bottom-0 h-full w-full ${fillClass}`}
         fill="currentColor"
       >
         <path d="M0 86c58-32 124-34 190-9 43-53 129-59 180-8 63-53 156-43 204 18 59-20 128-10 177 29 66-61 171-58 230 8 62-36 146-34 204 7 70-67 184-59 241 18 25-10 53-16 84-16v47H0V86Z" />
       </svg>
-      <div className="absolute bottom-0 left-[-8%] h-20 w-40 rounded-t-full bg-neutral sm:h-28 sm:w-60" />
-      <div className="absolute bottom-0 left-[28%] h-16 w-44 rounded-t-full bg-neutral sm:h-24 sm:w-64" />
-      <div className="absolute bottom-0 right-[12%] h-20 w-48 rounded-t-full bg-neutral sm:h-28 sm:w-72" />
-      <div className="absolute bottom-0 right-[-10%] h-16 w-40 rounded-t-full bg-neutral sm:h-24 sm:w-60" />
+      <div className={`absolute bottom-0 left-[-8%] h-20 w-40 rounded-t-full sm:h-28 sm:w-60 ${bgClass}`} />
+      <div className={`absolute bottom-0 left-[28%] h-16 w-44 rounded-t-full sm:h-24 sm:w-64 ${bgClass}`} />
+      <div className={`absolute bottom-0 right-[12%] h-20 w-48 rounded-t-full sm:h-28 sm:w-72 ${bgClass}`} />
+      <div className={`absolute bottom-0 right-[-10%] h-16 w-40 rounded-t-full sm:h-24 sm:w-60 ${bgClass}`} />
     </div>
   );
 }
@@ -1289,10 +1412,7 @@ export default function Home() {
     if (!target) return;
 
     window.history.pushState(null, '', `#${sectionId}`);
-    const previousScrollBehavior = document.documentElement.style.scrollBehavior;
-    document.documentElement.style.scrollBehavior = 'auto';
-    target.scrollIntoView({ block: 'start' });
-    document.documentElement.style.scrollBehavior = previousScrollBehavior;
+    target.scrollIntoView({ behavior: 'auto', block: 'start' });
   };
   const openDemo = () => {
     setIsDemoOpen(true);
@@ -1307,12 +1427,23 @@ export default function Home() {
       />
       <nav className="fixed inset-x-0 top-3 z-50 px-3 sm:top-4 sm:px-0">
         <div className="mobile-safe-px mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between gap-2 rounded-full border border-white/80 bg-[#fffaf7]/90 px-3 shadow-[0_10px_35px_rgba(87,55,62,0.10)] backdrop-blur-xl sm:h-20 sm:w-[94%] sm:gap-4 sm:px-8 lg:px-10">
-          <Link href="/" className="flex min-w-0 shrink items-center gap-2" aria-label="QuickWeds home">
-            <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-7 w-auto max-w-[128px] object-contain min-[390px]:h-8 min-[390px]:max-w-[150px] sm:h-11 sm:max-w-none" priority />
+          <Link href="/" className="group flex min-w-0 shrink items-center gap-2 sm:gap-2.5" aria-label="QuickWeds home">
+            <Image
+              src="/icon.png"
+              alt="QuickWeds Logo"
+              width={48}
+              height={48}
+              className="h-8 w-8 rounded-xl object-contain shadow-xs transition-transform group-hover:scale-105 min-[390px]:h-9 min-[390px]:w-9 sm:h-11 sm:w-11"
+              priority
+            />
+            <span className="font-serif text-lg font-black tracking-tight text-foreground transition-colors group-hover:text-primary min-[390px]:text-xl sm:text-2xl">
+              QuickWeds
+            </span>
           </Link>
 
           <div className="hidden items-center gap-7 lg:flex">
             <a href="#features" onClick={(event) => navigateToSection(event, 'features')} className={navItemClass}>Features</a>
+            <a href="#templates" onClick={(event) => navigateToSection(event, 'templates')} className={navItemClass}>Templates</a>
             <Link href="/suppliers" className={navItemClass}>Directory</Link>
             <button type="button" onClick={openDemo} className={navItemClass}>Demo</button>
             <a href="#pricing" onClick={(event) => navigateToSection(event, 'pricing')} className={navItemClass}>Pricing</a>
@@ -1365,6 +1496,14 @@ export default function Home() {
                 className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
               >
                 Features
+                <ArrowRight className="h-4 w-4" />
+              </a>
+              <a
+                href="#templates"
+                onClick={(event) => navigateToSection(event, 'templates')}
+                className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+              >
+                Templates
                 <ArrowRight className="h-4 w-4" />
               </a>
               <a
@@ -1469,8 +1608,68 @@ export default function Home() {
           <CoreFeaturesSection />
         </div>
 
+        <section id="templates" className="relative isolate overflow-hidden bg-gradient-to-b from-white via-[#fff8f5] to-[#fbdce3] px-4 py-16 sm:px-6 sm:py-24">
+          <div className="pointer-events-none absolute -left-24 top-16 h-72 w-72 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
+          <div className="pointer-events-none absolute -right-24 bottom-8 h-80 w-80 rounded-full bg-secondary/15 blur-3xl" aria-hidden="true" />
+          <div className="relative mx-auto max-w-7xl">
+            <SectionHeading
+              eyebrow="Wedding website templates"
+              title="Find the design that feels"
+              accent="like your day."
+              body="Start with a polished layout, then make it entirely your own with your story, photos, schedule, and RSVP details."
+            />
+
+            <div className="mt-10 grid grid-cols-2 gap-3 sm:mt-14 sm:gap-5 lg:grid-cols-4">
+              {landingTemplatePreviews.slice(0, 4).map((template, index) => (
+                <motion.article
+                  key={template.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.18 }}
+                  transition={{ duration: 0.5, delay: Math.min(index * 0.04, 0.24), ease: [0.16, 1, 0.3, 1] }}
+                  className="h-full"
+                >
+                  <Link
+                    href={`/templates`}
+                    className="group flex flex-col h-full overflow-hidden rounded-2xl border border-white/80 bg-white shadow-[0_16px_42px_rgba(87,55,62,0.10)] transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_24px_58px_rgba(87,55,62,0.16)] sm:rounded-[1.75rem]"
+                    aria-label={`View the ${template.name} template`}
+                  >
+                    <div className="relative shrink-0 aspect-[4/5] overflow-hidden bg-neutral">
+                      <Image
+                        src={template.image}
+                        alt={`${template.name} wedding website template preview`}
+                        fill
+                        sizes="(max-width: 639px) calc(50vw - 1rem), (max-width: 1023px) calc(50vw - 2rem), 300px"
+                        className="object-cover object-top transition duration-500 group-hover:scale-[1.035]"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true" />
+                      <span className="absolute bottom-2 left-2 hidden items-center gap-1.5 rounded-full bg-white px-2 py-1.5 text-[8px] font-black uppercase tracking-[0.16em] text-primary opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:bottom-4 sm:left-4 sm:inline-flex sm:px-3 sm:py-2 sm:text-[10px]">
+                        Use this template <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                      </span>
+                    </div>
+                    <div className="flex flex-1 flex-col justify-between p-3 sm:flex-row sm:items-start sm:gap-3 sm:p-5">
+                      <div className="min-w-0">
+                        <p className="truncate text-[8px] font-black uppercase tracking-[0.15em] text-primary/65 sm:text-[10px] sm:tracking-[0.18em]">{template.mood}</p>
+                        <h3 className="mt-0.5 font-serif text-[11px] font-bold leading-tight text-foreground sm:mt-1 sm:text-xl">{template.name}</h3>
+                      </div>
+                      <ArrowRight className="mt-1 hidden h-4 w-4 shrink-0 text-primary transition-transform duration-300 group-hover:translate-x-1 sm:block sm:h-5 sm:w-5" />
+                    </div>
+                  </Link>
+                </motion.article>
+              ))}
+            </div>
+
+            <div className="mt-10 text-center sm:mt-12">
+              <Link href="/templates" className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover sm:px-7 sm:text-base">
+                Explore all templates
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
         <section className="relative isolate overflow-hidden bg-gradient-to-b from-primary/25 via-[#fbe4e8] to-white px-4 pb-8 pt-20 sm:px-6 sm:pb-16 sm:pt-28">
-          <SectionTopClouds />
+          <SectionTopClouds fillClass="text-[#fbdce3]" bgClass="bg-[#fbdce3]" />
           <div className="group relative mx-auto flex min-h-[320px] max-w-7xl items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/30 px-6 py-12 shadow-[0_24px_70px_rgba(87,55,62,0.16)] sm:min-h-[500px] sm:rounded-[2.5rem] sm:px-10 sm:py-16">
             <motion.div
               className="absolute inset-0"

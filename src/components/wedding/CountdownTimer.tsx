@@ -48,6 +48,34 @@ function generateICS(props: CountdownTimerProps): string {
     ].join('\r\n');
 }
 
+function parseWeddingTargetDate(weddingDate: string, weddingTime?: string): Date {
+    if (!weddingDate) return new Date();
+
+    const cleanDateStr = String(weddingDate).trim();
+    const dateMatch = cleanDateStr.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+    let target: Date;
+
+    if (dateMatch) {
+        const year = parseInt(dateMatch[1], 10);
+        const month = parseInt(dateMatch[2], 10) - 1;
+        const day = parseInt(dateMatch[3], 10);
+        target = new Date(year, month, day);
+    } else {
+        target = new Date(weddingDate);
+    }
+
+    if (weddingTime && typeof weddingTime === 'string' && weddingTime.trim().length > 0) {
+        const timeParts = weddingTime.trim().split(':').map(Number);
+        if (!isNaN(timeParts[0])) {
+            target.setHours(timeParts[0], timeParts[1] || 0, 0, 0);
+        }
+    } else {
+        target.setHours(12, 0, 0, 0); // Default to 12:00 PM local time
+    }
+
+    return target;
+}
+
 export default function CountdownTimer({
     weddingDate,
     weddingTime,
@@ -118,21 +146,16 @@ export default function CountdownTimer({
     const isEditorial = visual.mood === 'editorial';
     const isDark = visual.isDark;
     const sectionClasses = `${visual.sectionClass} ${className}`;
-    const panelClass = isEditorial
-        ? 'rounded-none border border-black bg-white shadow-[18px_18px_0_rgba(0,0,0,0.08)]'
-        : visual.cardClass;
+    const panelClass = visual.cardClass;
     const detailIconClass = isDark
         ? 'border-primary/25 bg-primary/10 text-primary'
         : isEditorial
             ? 'border-black/15 bg-black text-white'
             : 'border-primary/15 bg-primary/8 text-primary';
-    const unitShellClass = isEditorial
-        ? 'rounded-none border border-black/10 bg-white shadow-none'
-        : isDark
-            ? 'rounded-none border border-primary/25 bg-white/[0.06] shadow-[0_18px_50px_rgba(0,0,0,0.25)]'
-            : `${visual.accentCardClass}`;
-    const unitValueClass = isDark ? 'text-white' : 'text-[#333]';
+    const unitShellClass = visual.accentCardClass;
+    const unitValueClass = isDark ? 'text-white' : 'text-[#222]';
     const separatorClass = isDark ? 'bg-primary/25' : isEditorial ? 'bg-black/15' : 'bg-primary/15';
+    const badgeText = visual.badgePrefix ? `${visual.badgePrefix}COUNTDOWN` : 'THE COUNTDOWN';
 
     if (isPast) {
         return (
@@ -159,6 +182,8 @@ export default function CountdownTimer({
         { label: 'Secs', value: timeLeft.seconds },
     ];
 
+    const targetDateObj = parseWeddingTargetDate(weddingDate, weddingTime);
+
     return (
         <section className={`py-12 sm:py-16 md:py-24 px-4 sm:px-6 w-full flex justify-center ${sectionClasses}`} style={visual.sectionStyle}>
             <motion.div
@@ -171,7 +196,7 @@ export default function CountdownTimer({
                 <div className={`relative overflow-hidden group ${panelClass}`}>
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-24 sm:h-32 bg-primary/15 blur-[60px] sm:blur-[80px] rounded-full pointer-events-none -translate-y-1/2 transition-opacity duration-1000 opacity-50 group-hover:opacity-90" />
                     
-                    <div className="p-4 sm:p-8 md:p-16 lg:p-20 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12">
+                    <div className="p-6 sm:p-10 md:p-14 lg:p-16 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12">
                         
                         {/* Event Details Section */}
                         <div className="text-center md:text-left flex-1 md:max-w-sm shrink-0">
@@ -181,9 +206,9 @@ export default function CountdownTimer({
                                 transition={{ delay: 0.2 }}
                                 className="flex items-center justify-center md:justify-start gap-3 mb-4 sm:mb-6"
                             >
-                                <span className={`h-[1px] w-8 sm:w-12 hidden md:block ${separatorClass}`} />
-                                <span className={`text-[9px] sm:text-xs font-black uppercase ${visual.eyebrowClass}`}>The Countdown</span>
-                                <span className={`h-[1px] w-8 sm:w-12 hidden md:block ${separatorClass}`} />
+                                <span className={visual.badgeStyleClass || `text-[9px] sm:text-xs font-black uppercase ${visual.eyebrowClass}`}>
+                                    {badgeText}
+                                </span>
                             </motion.div>
                             
                             <h2 className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl mb-6 sm:mb-8 leading-[1.1] ${visual.headingClass}`}>
@@ -196,8 +221,10 @@ export default function CountdownTimer({
                                         <CalendarHeart className="w-4 h-4 sm:w-5 sm:h-5" />
                                     </div>
                                     <div className="text-left font-serif pt-1 sm:pt-1.5">
-                                        <p className={`text-base sm:text-lg md:text-xl leading-none mb-1 ${unitValueClass}`}>{new Date(weddingDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                                        {weddingTime && <p className={`text-xs font-sans font-bold tracking-widest uppercase opacity-55 ${visual.bodyClass}`}>{weddingTime}</p>}
+                                        <p className={`text-base sm:text-lg md:text-xl leading-none mb-1 ${unitValueClass}`}>
+                                            {targetDateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                                        </p>
+                                        {weddingTime && <p className={`text-xs font-sans font-bold tracking-widest uppercase opacity-65 ${visual.bodyClass}`}>{weddingTime}</p>}
                                     </div>
                                 </div>
                                 {venueName && (
@@ -207,7 +234,7 @@ export default function CountdownTimer({
                                         </div>
                                         <div className="text-left font-serif pt-1 sm:pt-1.5">
                                             <p className={`text-base sm:text-lg md:text-xl leading-tight mb-1 ${unitValueClass}`}>{venueName}</p>
-                                            {venueAddress && <p className={`text-xs font-sans font-bold tracking-widest uppercase opacity-55 line-clamp-2 ${visual.bodyClass}`}>{venueAddress}</p>}
+                                            {venueAddress && <p className={`text-xs font-sans font-bold tracking-widest uppercase opacity-65 line-clamp-2 ${visual.bodyClass}`}>{venueAddress}</p>}
                                         </div>
                                     </div>
                                 )}
@@ -217,7 +244,7 @@ export default function CountdownTimer({
                                 whileHover={{ scale: 1.02, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={handleAddToCalendar}
-                                className="w-full md:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-primary text-white font-black text-xs uppercase tracking-widest shadow-[0_10px_20px_-10px_var(--primary)] hover:shadow-[0_15px_30px_-10px_var(--primary)] transition-all min-h-[44px]"
+                                className="w-full md:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-primary text-white font-black text-xs uppercase tracking-widest shadow-[0_10px_20px_-10px_var(--primary)] hover:shadow-[0_15px_30px_-10px_var(--primary)] transition-all min-h-[44px]"
                             >
                                 <Clock className="w-4 h-4 flex-shrink-0" />
                                 <span className="hidden sm:inline">Save Date & Time</span>
@@ -241,15 +268,13 @@ export default function CountdownTimer({
                                         <div className="w-full h-full p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden">
                                             <motion.div
                                                 key={unit.value}
-                                                initial={{ y: -10, opacity: 0, scale: 0.9 }}
-                                                animate={{ y: 0, opacity: 1, scale: 1 }}
-                                                transition={{ type: "spring", damping: 15 }}
+                                                initial={{ y: -15, opacity: 0 }}
+                                                animate={{ y: 0, opacity: 1 }}
+                                                className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-black tracking-tight leading-none mb-2 ${unitValueClass}`}
                                             >
-                                                <span className={`text-4xl md:text-5xl lg:text-7xl font-serif font-light tracking-tighter drop-shadow-sm mb-2 block ${unitValueClass}`}>
-                                                    {String(unit.value).padStart(2, '0')}
-                                                </span>
+                                                {String(unit.value).padStart(2, '0')}
                                             </motion.div>
-                                            <span className={`text-[10px] md:text-xs font-sans font-black uppercase ${visual.eyebrowClass}`}>
+                                            <span className={`text-[10px] sm:text-xs uppercase font-bold tracking-[0.25em] ${visual.eyebrowClass}`}>
                                                 {unit.label}
                                             </span>
                                         </div>

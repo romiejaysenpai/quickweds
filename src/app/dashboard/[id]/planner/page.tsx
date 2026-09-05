@@ -3,7 +3,7 @@ import { expenseSummary } from '@/lib/expense-summary';
 
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -12,24 +12,17 @@ import UpgradeButton from '@/components/UpgradeButton';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
 import { getCachedSession } from '@/lib/session-cache';
-import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate } from '@/lib/entourage-proposal-templates';
 import { uploadAuthenticatedFile } from '@/lib/authenticated-upload';
+import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate, getEntourageCardTheme } from '@/lib/entourage-proposal-templates';
+import { EntourageProposalCustomizerSection } from '@/components/EntourageProposalCustomizerSection';
+import LoadingState from '@/components/ui/LoadingState';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
-    loading: () => (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="mt-4 text-sm font-bold text-text-secondary">Loading seating chart...</p>
-        </div>
-    ),
+    loading: () => <LoadingState variant="panel" label="Loading seating chart…" className="min-h-[320px]" />,
 });
 const PhotoSharingManager = dynamic(() => import('@/components/dashboard/PhotoSharingManager'), {
-    loading: () => (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="mt-4 text-sm font-bold text-text-secondary">Loading photo sharing...</p>
-        </div>
-    ),
+    loading: () => <LoadingState variant="panel" label="Loading photo sharing…" className="min-h-[320px]" />,
 });
 const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudgetPieChart'), {
     ssr: false,
@@ -487,9 +480,15 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
 
     if (checkingRole || loading) {
-        return <div className="min-h-screen flex items-center justify-center bg-background">
-            <Loader2 className="w-12 h-12 text-primary animate-spin" />
-        </div>;
+        return (
+            <main className="mobile-safe-screen flex items-center justify-center bg-background px-4 py-6">
+                <LoadingState
+                    label={checkingRole ? 'Confirming planner access…' : 'Loading your wedding planner…'}
+                    description="Getting your plans, people, and priorities ready."
+                    className="max-w-lg"
+                />
+            </main>
+        );
     }
 
     // Dev debug logging
@@ -531,114 +530,179 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            {/* Top Navigation Bar */}
-            <div className="bg-white/80 dark:bg-white/90 backdrop-blur-md border-b border-border sticky top-0 z-40 overflow-hidden">
-                <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
-                    <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-                        <button onClick={() => router.push(`/dashboard/${weddingId}`)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]">
-                            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
-                        </button>
-                        <div className="min-w-0">
-                            <h1 className="text-base sm:text-lg md:text-xl font-serif font-bold text-foreground truncate">Wedding Planner</h1>
+        <DashboardShell
+            weddingId={weddingId}
+            weddingTitle={wedding?.couple_name || (wedding?.bride_name && wedding?.groom_name ? `${wedding.bride_name} & ${wedding.groom_name}` : undefined)}
+            weddingSlug={wedding?.public_slug}
+        >
+            <div className="min-h-screen bg-background">
+                {/* Top Navigation Bar with Breadcrumbs */}
+                <div className="bg-white/85 dark:bg-white/90 backdrop-blur-md border-b border-border sticky top-0 z-40">
+                    <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                            <button
+                                onClick={() => router.push(`/dashboard/${weddingId}`)}
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 border border-border/80"
+                                title="Back to Workspace"
+                            >
+                                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
+                            </button>
+                            <div className="min-w-0">
+                                <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-text-secondary">
+                                    <Link href="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+                                    <span>/</span>
+                                    <Link href={`/dashboard/${weddingId}`} className="hover:text-primary transition-colors truncate max-w-[140px] md:max-w-[200px]">
+                                        {wedding?.couple_name || (wedding?.bride_name && wedding?.groom_name ? `${wedding.bride_name} & ${wedding.groom_name}` : 'Workspace')}
+                                    </Link>
+                                    <span>/</span>
+                                    <span className="text-foreground">Planner Suite</span>
+                                </div>
+                                <h1 className="text-base sm:text-lg md:text-xl font-serif font-bold text-foreground truncate sm:hidden">Wedding Planner</h1>
+                            </div>
                         </div>
-                    </div>
-                    {/* Home button (go to QuickWeds landing) */}
-                    <Link href="/" className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-neutral text-foreground text-sm font-bold border border-border hover:bg-neutral-hover transition-all min-h-[44px]">
-                        <Home className="w-4 h-4" />
-                        <span>Home</span>
-                    </Link>
-                    {/* Mobile home icon */}
-                    <Link href="/" className="sm:hidden w-9 h-9 rounded-full hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]" aria-label="Home">
-                        <Home className="w-5 h-5 text-text-secondary" />
-                    </Link>
-                </div>
-            </div>
 
-            <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-6">
-                {/* Sidebar - Mobile: Grid, Desktop: Vertical stack */}
-                <div className="w-full md:w-56 lg:w-64 shrink-0">
-                    <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl p-2 sm:p-4 md:p-6 soft-shadow border border-border sticky top-20 md:top-24 flex-shrink-0">
-                        <div className="grid grid-cols-3 md:flex md:flex-col gap-2 md:gap-2">
-                            {PLANNER_TAB_DETAILS.map((tab) => {
-                                const Icon = tab.icon;
-                                const isActive = activeTab === tab.tab;
-
-                                return (
-                                    <button
-                                        key={tab.tab}
-                                        onClick={() => setActiveTab(tab.tab)}
-                                        className={`relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${
-                                            isActive
-                                                ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
-                                                : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'
-                                        }`}
-                                    >
-                                        {!hasPlannerPro && tab.tab === 'thanks' && (
-                                            <span className={`absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full md:static md:h-auto md:w-auto md:rounded-none md:bg-transparent ${
-                                                isActive ? 'bg-white/20 md:text-white' : 'bg-primary/10 text-primary'
-                                            }`}>
-                                                <LockKeyhole className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
-                                            </span>
-                                        )}
-                                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                        <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">{tab.label}</span>
-                                        {!hasPlannerPro && tab.tab === 'thanks' && (
-                                            <span className={`hidden md:inline-flex ml-auto rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
-                                                isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                                            }`}>
-                                                Pro
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                            <Link href={`/dashboard/${weddingId}/wedding-day?from=planner`} title="Open Wedding Day Mode" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground">
-                                <ClipboardCheck className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Wedding Day</span>
-                            </Link>
-                            <Link href={`/dashboard/${weddingId}/qr-kit?from=planner`} title="Open QR Kit" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground">
-                                <QrCode className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">QR Kit</span>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content Area */}
-                <div className="flex-1 min-w-0 overflow-x-hidden">
-                    {!hasPlannerPro && activeTab === 'thanks' ? (
-                        <LockedPlannerFeature
-                            activeTab={activeTab}
-                            accessRole={accessRole}
-                            weddingId={weddingId}
-                            onSelectTab={setActiveTab}
-                        />
-                    ) : (
-                        <>
-                            <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
-                            {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={loadPlannerData} />}
-                            {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={loadPlannerData} />}
-                            {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} hasPlannerPro={hasPlannerPro} />}
-                            {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
-                            {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'seating' && (
-                                <SeatingChartBuilder
-                                    weddingId={weddingId}
-                                    hasPlannerPro={hasPlannerPro}
-                                    initialPublicSeatFinderToken={wedding?.public_seat_finder_token || ''}
-                                    initialSeatFinderEnabled={wedding?.seat_finder_enabled !== false && Boolean(wedding?.public_seat_finder_token)}
-                                />
+                        <div className="flex items-center gap-2">
+                            {wedding?.public_slug && (
+                                <Link
+                                    href={`/w/${wedding.public_slug}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/20 bg-primary/5 text-primary text-xs font-bold hover:bg-primary/10 transition-colors"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>Guest View</span>
+                                </Link>
                             )}
-                            {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
-                            {activeTab === 'thanks' && <ThankYouPlannerLauncher weddingId={weddingId} confirmedGuests={confirmedGuests} />}
-                            {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
-                        </>
-                    )}
+                            <Link href="/" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral text-foreground text-xs font-bold border border-border hover:bg-neutral-hover transition-all min-h-[36px]">
+                                <Home className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Landing</span>
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* Desktop Horizontal Segmented Tab Bar */}
+                    <div className="hidden md:block border-t border-border/60 bg-white/70 backdrop-blur-xs px-3 sm:px-6">
+                        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto py-2 no-scrollbar">
+                            <div className="flex items-center gap-1.5">
+                                {PLANNER_TAB_DETAILS.map((tab) => {
+                                    const Icon = tab.icon;
+                                    const isActive = activeTab === tab.tab;
+
+                                    return (
+                                        <button
+                                            key={tab.tab}
+                                            onClick={() => setActiveTab(tab.tab)}
+                                            className={`relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                                isActive
+                                                    ? 'bg-primary text-white shadow-md shadow-primary/25 scale-[1.02]'
+                                                    : 'text-text-secondary hover:bg-neutral/80 hover:text-foreground'
+                                            }`}
+                                        >
+                                            <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                                            <span>{tab.label}</span>
+                                            {!hasPlannerPro && tab.tab === 'thanks' && (
+                                                <span className={`rounded-full px-1.5 py-0.2 text-[8px] font-black uppercase tracking-wider ${
+                                                    isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                                                }`}>
+                                                    Pro
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex items-center gap-2 pl-4 border-l border-border/80">
+                                <Link
+                                    href={`/dashboard/${weddingId}/wedding-day?from=planner`}
+                                    title="Open Wedding Day Mode"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-text-secondary hover:bg-neutral hover:text-primary transition-colors whitespace-nowrap"
+                                >
+                                    <ClipboardCheck className="w-3.5 h-3.5 text-primary" />
+                                    <span>Wedding Day</span>
+                                </Link>
+                                <Link
+                                    href={`/dashboard/${weddingId}/qr-kit?from=planner`}
+                                    title="Open QR Kit"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-text-secondary hover:bg-neutral hover:text-primary transition-colors whitespace-nowrap"
+                                >
+                                    <QrCode className="w-3.5 h-3.5 text-primary" />
+                                    <span>QR Kit</span>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Tab Grid Bar */}
+                <div className="md:hidden max-w-7xl mx-auto px-3 pt-4">
+                    <div className="bg-white rounded-2xl p-2.5 soft-shadow border border-border grid grid-cols-3 gap-1.5">
+                        {PLANNER_TAB_DETAILS.map((tab) => {
+                            const Icon = tab.icon;
+                            const isActive = activeTab === tab.tab;
+
+                            return (
+                                <button
+                                    key={tab.tab}
+                                    onClick={() => setActiveTab(tab.tab)}
+                                    className={`relative flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl font-bold transition-all min-h-[44px] ${
+                                        isActive
+                                            ? 'bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]'
+                                            : 'text-text-secondary hover:bg-neutral hover:text-foreground'
+                                    }`}
+                                >
+                                    <Icon className="w-4 h-4 flex-shrink-0" />
+                                    <span className="text-[10px] text-center">{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                        <Link href={`/dashboard/${weddingId}/wedding-day?from=planner`} className="flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral hover:text-foreground">
+                            <ClipboardCheck className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-[10px] text-center">Wedding Day</span>
+                        </Link>
+                        <Link href={`/dashboard/${weddingId}/qr-kit?from=planner`} className="flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral hover:text-foreground">
+                            <QrCode className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-[10px] text-center">QR Kit</span>
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 md:py-8">
+                    {/* Main Content Area */}
+                    <div className="w-full min-w-0">
+                        {!hasPlannerPro && activeTab === 'thanks' ? (
+                            <LockedPlannerFeature
+                                activeTab={activeTab}
+                                accessRole={accessRole}
+                                weddingId={weddingId}
+                                onSelectTab={setActiveTab}
+                            />
+                        ) : (
+                            <>
+                                <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
+                                {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={loadPlannerData} />}
+                                {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={loadPlannerData} />}
+                                {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} hasPlannerPro={hasPlannerPro} />}
+                                {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                                {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
+                                {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                                {activeTab === 'seating' && (
+                                    <SeatingChartBuilder
+                                        weddingId={weddingId}
+                                        hasPlannerPro={hasPlannerPro}
+                                        initialPublicSeatFinderToken={wedding?.public_seat_finder_token || ''}
+                                        initialSeatFinderEnabled={wedding?.seat_finder_enabled !== false && Boolean(wedding?.public_seat_finder_token)}
+                                    />
+                                )}
+                                {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
+                                {activeTab === 'thanks' && <ThankYouPlannerLauncher weddingId={weddingId} confirmedGuests={confirmedGuests} />}
+                                {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+        </DashboardShell>
     );
 }
 
@@ -773,6 +837,7 @@ function getProposalStatusClasses(status: string) {
 
 function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitations, reload }: any) {
     const [sendingKey, setSendingKey] = useState<string | null>(null);
+    const [customizingRowIndex, setCustomizingRowIndex] = useState<number | null>(null);
     const members = readWeddingParty(wedding?.wedding_party);
     const invitationByKey = new Map((invitations || []).map((invite: any) => [String(invite.member_key), invite]));
     const rows = members.map((member: any, index: number) => {
@@ -786,7 +851,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
         return acc;
     }, { draft: 0, sent: 0, accepted: 0, declined: 0 });
 
-    async function sendProposal(member: any, memberKey: string) {
+    async function sendProposal(member: any, memberKey: string, customOverrides?: any) {
         if (!member.email) return;
         setSendingKey(memberKey);
         try {
@@ -794,7 +859,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
             const token = sessionData.session?.access_token;
             if (!token) throw new Error('Please sign in again before sending this proposal.');
 
-            const template = getEntourageProposalTemplate(member.proposalTemplateKey || DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY);
+            const template = getEntourageProposalTemplate(customOverrides?.proposalTemplateKey || member.proposalTemplateKey || DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY);
             const response = await fetch('/api/entourage/invitations/send', {
                 method: 'POST',
                 headers: {
@@ -807,8 +872,14 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                     name: member.name,
                     email: member.email,
                     role: member.role || 'Wedding Entourage',
-                    message: member.proposalMessage || template.defaultMessage,
+                    message: customOverrides?.proposalMessage || member.proposalMessage || template.defaultMessage,
                     templateKey: template.key,
+                    cardTheme: customOverrides?.proposalCardTheme || member.proposalCardTheme || 'classic',
+                    proposalTitle: customOverrides?.proposalTitle || member.proposalTitle || template.defaultTitle,
+                    heroImageUrl: customOverrides ? (customOverrides.proposalHeroImage || '') : (member.proposalHeroImage || undefined),
+                    requestAttireSize: customOverrides?.requestAttireSize ?? member.requestAttireSize ?? true,
+                    requestDietaryNotes: customOverrides?.requestDietaryNotes ?? member.requestDietaryNotes ?? true,
+                    requestPhoneNumber: customOverrides?.requestPhoneNumber ?? member.requestPhoneNumber ?? false,
                 }),
             });
             const data = await response.json().catch(() => ({}));
@@ -831,7 +902,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
             <div className="flex flex-col gap-4 border-b border-border/50 pb-6 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h2 className="font-serif text-2xl font-bold text-foreground sm:text-3xl">Entourage Proposals</h2>
-                    <p className="mt-1 text-xs text-text-secondary sm:text-sm">Send proposal emails and track who accepted or declined.</p>
+                    <p className="mt-1 text-xs text-text-secondary sm:text-sm">Customize card themes, send proposal emails, and track responses.</p>
                 </div>
                 <Link href={`/builder?edit=${weddingId}`} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
                     <Edit2 className="h-4 w-4" /> Edit in Builder
@@ -860,16 +931,22 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                 </div>
             ) : (
                 <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
-                    {rows.map(({ member, memberKey, invite }: any) => {
+                    {rows.map(({ member, memberKey, invite }: any, index: number) => {
                         const status = invite?.status || 'draft';
                         const template = getEntourageProposalTemplate(member.proposalTemplateKey || invite?.template_key || DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY);
+                        const cardTheme = getEntourageCardTheme(member.proposalCardTheme || invite?.card_theme || 'classic');
                         const canSend = Boolean(member.email);
+                        const responseDetails = invite?.response_details;
+
                         return (
                             <div key={memberKey} className="grid gap-4 bg-white p-4 lg:grid-cols-[1fr_auto] lg:items-center">
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <h3 className="break-words font-serif text-lg font-bold text-foreground">{member.name || 'Unnamed member'}</h3>
                                         <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${getProposalStatusClasses(status)}`}>{status === 'draft' ? 'Not Sent' : status}</span>
+                                        <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${cardTheme.badgeBg} ${cardTheme.badgeText}`}>
+                                            {cardTheme.label}
+                                        </span>
                                     </div>
                                     <p className="mt-1 text-sm text-text-secondary">{[member.role, member.email].filter(Boolean).join(' - ') || 'Role and email not set'}</p>
                                     <p className="mt-2 text-xs leading-6 text-text-secondary">
@@ -877,15 +954,33 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                                         {invite?.sent_at ? ` - sent ${new Date(invite.sent_at).toLocaleDateString()}` : ''}
                                         {invite?.responded_at ? ` - responded ${new Date(invite.responded_at).toLocaleDateString()}` : ''}
                                     </p>
+
+                                    {/* Display response details if member accepted */}
+                                    {status === 'accepted' && responseDetails && (
+                                        <div className="mt-3 grid gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 text-xs text-emerald-950">
+                                            <p className="font-bold text-[10px] uppercase tracking-wider text-emerald-800">Accepted Response Details:</p>
+                                            {responseDetails.attireSize && <p>👔 <strong>Attire Size:</strong> {responseDetails.attireSize}</p>}
+                                            {responseDetails.dietaryNotes && <p>🥗 <strong>Dietary Notes:</strong> {responseDetails.dietaryNotes}</p>}
+                                            {responseDetails.phoneNumber && <p>📱 <strong>Phone Number:</strong> {responseDetails.phoneNumber}</p>}
+                                            {responseDetails.personalNote && <p>💬 <strong>Note to Couple:</strong> {responseDetails.personalNote}</p>}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCustomizingRowIndex(index)}
+                                        className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3.5 py-2 text-sm font-bold text-text-secondary hover:border-primary/40 hover:text-primary transition-colors"
+                                    >
+                                        <Sparkles className="h-4 w-4 text-primary" /> Open Proposal Editor
+                                    </button>
                                     <button
                                         type="button"
                                         disabled={!canSend || sendingKey === memberKey}
                                         onClick={() => void sendProposal(member, memberKey)}
                                         className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        {sendingKey === memberKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        {sendingKey === memberKey ? <LoadingState variant="inline" label="Sending proposal…" /> : <Send className="h-4 w-4" />}
                                         {status === 'sent' || status === 'accepted' || status === 'declined' ? 'Resend' : 'Send Proposal'}
                                     </button>
                                     {!canSend && (
@@ -898,6 +993,37 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                         );
                     })}
                 </div>
+            )}
+
+            {customizingRowIndex !== null && rows[customizingRowIndex] && (
+                <EntourageProposalCustomizerSection
+                    member={{ ...rows[customizingRowIndex].member, proposalHeroImage: (rows[customizingRowIndex].invite as any)?.proposal_hero_image_url || rows[customizingRowIndex].member.proposalHeroImage }}
+                    coupleNames={[wedding?.bride_name || 'Bride', wedding?.groom_name || 'Groom'].join(' & ')}
+                    weddingDate={wedding?.wedding_date || 'To be announced'}
+                    venueName={wedding?.venue_name || 'To be announced'}
+                    couplePhotoUrl={wedding?.couple_photo || ''}
+                    weddingHeroImageUrl={wedding?.hero_image || ''}
+                    onUploadHeroImage={async (file) => {
+                        const { data: sessionData } = await getCachedSession();
+                        const userId = sessionData.session?.user?.id;
+                        if (!userId) throw new Error('Please sign in again before uploading an image.');
+
+                        const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-');
+                        const filePath = `${userId}/${weddingId}/entourage-proposals/${Date.now()}-${safeFileName}`;
+                        const { error: uploadError } = await supabase.storage
+                            .from('quickweds')
+                            .upload(filePath, file, { contentType: file.type });
+                        if (uploadError) throw uploadError;
+
+                        const { data } = supabase.storage.from('quickweds').getPublicUrl(filePath);
+                        return data.publicUrl;
+                    }}
+                    onClose={() => setCustomizingRowIndex(null)}
+                    onSave={(updatedMember) => {
+                        const targetRow = rows[customizingRowIndex];
+                        void sendProposal(updatedMember, targetRow.memberKey, updatedMember);
+                    }}
+                />
             )}
         </div>
     );
@@ -1238,7 +1364,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                                         <input value={editTask.notes} onChange={(e) => setEditTask({ ...editTask, notes: e.target.value })} placeholder="Notes" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                                                         <div className="flex flex-col gap-2 sm:flex-row lg:col-span-2">
                                                             <button type="button" disabled={savingTaskId === task.id || !editTask.title.trim()} onClick={() => void saveTaskDetails(task)} className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
-                                                                {savingTaskId === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                                                {savingTaskId === task.id ? <LoadingState variant="inline" label="Saving task…" /> : <Save className="h-4 w-4" />}
                                                                 Save Changes
                                                             </button>
                                                             <button type="button" onClick={cancelEditingTask} className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary hover:border-primary/30 hover:text-primary">
@@ -1277,7 +1403,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                                         className="flex min-h-[44px] w-full touch-manipulation items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 text-sm font-bold text-red-600 disabled:opacity-50 sm:w-auto sm:min-w-[44px] sm:bg-white sm:px-3 sm:hover:bg-red-50"
                                                         aria-label="Delete checklist item"
                                                     >
-                                                        {deletingTaskId === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                        {deletingTaskId === task.id ? <LoadingState variant="inline" label="Deleting task…" /> : <Trash2 className="h-4 w-4" />}
                                                         <span className="sm:hidden">{deletingTaskId === task.id ? 'Deleting...' : 'Delete'}</span>
                                                     </button>
                                                 </div>
@@ -2083,9 +2209,9 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
                 </select>
                 <input value={newItem.custom_supplier_name} onChange={(e) => setNewItem({ ...newItem, custom_supplier_name: e.target.value })} placeholder="Custom supplier" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                 <label className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/30 bg-white px-4 py-3 text-sm font-bold text-primary">
-                    {uploadingReference ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                    {uploadingReference ? <LoadingState variant="inline" label="Uploading reference image…" /> : <ImageIcon className="h-4 w-4" />}
                     {uploadingReference ? 'Uploading...' : newItem.reference_image_url ? 'Photo selected' : 'Upload from gallery'}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && void uploadReference(e.target.files[0])} />
+                    <input type="file" accept="image/*" disabled={uploadingReference} className="hidden" onChange={(e) => e.target.files?.[0] && void uploadReference(e.target.files[0])} />
                 </label>
                 <div className="flex min-h-[44px] items-center rounded-xl border border-border bg-white px-4 py-3 text-sm text-text-secondary">
                     {newItem.reference_image_url ? 'Reference photo uploaded' : 'No photo uploaded'}
@@ -2120,7 +2246,7 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
                                         className="flex min-h-[44px] min-w-[92px] touch-manipulation items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-sm font-bold text-red-600 disabled:opacity-50 sm:min-w-[44px] sm:bg-white sm:px-2 sm:hover:bg-red-50"
                                         aria-label="Delete food or drink item"
                                     >
-                                        {deletingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                        {deletingItemId === item.id ? <LoadingState variant="inline" label="Deleting food item…" /> : <Trash2 className="h-4 w-4" />}
                                         <span className="sm:hidden">{deletingItemId === item.id ? 'Deleting...' : 'Delete'}</span>
                                     </button>
                                 </div>

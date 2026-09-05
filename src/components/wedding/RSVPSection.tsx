@@ -38,9 +38,11 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                     <div className="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-primary/40" />
 
                     <div className="text-center mb-10 sm:mb-14">
-                        <span className="text-[10px] uppercase tracking-[1em] font-black block mb-4 text-primary">
-                            Guest Confirmation
-                        </span>
+                        <div className="mb-4 flex items-center justify-center">
+                            <span className={visual.badgeStyleClass || "text-[10px] uppercase tracking-[1em] font-black block text-primary"}>
+                                {visual.badgePrefix ? `${visual.badgePrefix}RSVP` : 'Guest Confirmation'}
+                            </span>
+                        </div>
                         <h2 className={`text-3xl sm:text-5xl md:text-6xl mb-6 ${titleStyle.className}`} style={titleStyle.style}>
                             Will You Join Us?
                         </h2>
@@ -74,8 +76,8 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                     {/* Header bar */}
                     <div className="border-b border-black/10 px-8 sm:px-14 py-8 sm:py-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                         <div>
-                            <span className="text-[10px] uppercase tracking-[1em] font-black text-black/65 block mb-2">
-                                Issue No. 02
+                            <span className={visual.badgeStyleClass || "text-[10px] uppercase tracking-[1em] font-black text-black/65 block mb-2"}>
+                                {visual.badgePrefix ? `${visual.badgePrefix}RSVP` : 'ISSUE N°02'}
                             </span>
                             <h2 className={`text-3xl sm:text-5xl leading-none ${titleStyle.className}`} style={titleStyle.style}>
                                 RSVP

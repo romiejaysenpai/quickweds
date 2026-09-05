@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRequestUser } from '@/lib/api-auth';
+import { getAuthenticatedRequest } from '@/lib/api-rate-limit';
 import { getDashboardCounters } from '@/lib/dashboard-counters';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { sanitizeWeddingId } from '@/lib/rate-limiter';
@@ -8,8 +8,9 @@ import { getWeddingAccess } from '@/lib/wedding-access';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-    const { user, error } = await getRequestUser(req);
-    if (!user) return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
+    const auth = await getAuthenticatedRequest(req, 'AUTHENTICATED_DEFAULT');
+    if (auth.response) return auth.response;
+    const { user, rateLimitHeaders } = auth;
 
     const weddingId = sanitizeWeddingId(req.nextUrl.searchParams.get('weddingId') || '');
     if (!weddingId) return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
@@ -25,10 +26,16 @@ export async function GET(req: NextRequest) {
         if (!access.canManage) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
         const counters = await getDashboardCounters(db, weddingId);
-        return NextResponse.json({ counters });
+        return NextResponse.json({ counters }, {
+            headers: {
+                ...rateLimitHeaders,
+                'Cache-Control': 'private, max-age=30',
+            },
+        });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to load dashboard counters.';
         console.error('Dashboard counters failed:', message);
         return NextResponse.json({ error: 'Unable to load dashboard counters.' }, { status: 500 });
     }
 }
+
