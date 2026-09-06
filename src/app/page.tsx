@@ -428,9 +428,10 @@ function Accent({ children }: { children: React.ReactNode }) {
 }
 
 function PrimaryCta({ children = 'Create Your Free Wedding Site' }: { children?: string }) {
+  const { user } = useAuth();
   return (
     <Link
-      href="/builder"
+      href={user ? '/builder' : '/login?next=%2Fbuilder'}
       className="group inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-center text-sm font-bold text-white shadow-xl shadow-primary/25 transition hover:bg-primary-hover sm:w-auto sm:px-6 sm:text-base"
     >
       {children}
@@ -1276,6 +1277,8 @@ function FooterCloudLayers() {
 }
 
 function LandingHero({ onDemoClick }: { onDemoClick: () => void }) {
+  const { user } = useAuth();
+  const builderHref = user ? '/builder' : '/login?next=%2Fbuilder';
   const heroRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
@@ -1303,7 +1306,7 @@ function LandingHero({ onDemoClick }: { onDemoClick: () => void }) {
           </p>
           <div className="mt-5 hidden items-center justify-start gap-2 lg:flex">
             <Link
-              href="/builder"
+              href={builderHref}
               className="group inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-1.5 text-center text-xs font-black text-white shadow-xl shadow-primary/25 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-primary-hover hover:shadow-2xl hover:shadow-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
             >
               Create Your Free Wedding Site
@@ -1327,7 +1330,7 @@ function LandingHero({ onDemoClick }: { onDemoClick: () => void }) {
         >
           <div className="mx-auto mb-4 flex w-full max-w-[21rem] flex-col items-center justify-center gap-2 sm:mb-5 sm:w-auto sm:max-w-none sm:flex-row lg:hidden">
             <Link
-              href="/builder"
+              href={builderHref}
               className="group inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-2 text-center text-xs font-black text-white shadow-xl shadow-primary/25 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-primary-hover hover:shadow-2xl hover:shadow-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 sm:w-auto sm:px-6 sm:text-sm"
             >
               Create Your Free Wedding Site
@@ -1370,6 +1373,7 @@ export default function Home() {
   const { user, isAdmin, logout } = useAuth();
   const router = useRouter();
   const showDashboardLink = Boolean(user && hasWeddingSite);
+  const builderHref = user ? '/builder' : '/login?next=%2Fbuilder';
 
   useEffect(() => {
     if (!user) return;
@@ -1473,7 +1477,7 @@ export default function Home() {
               </Link>
             )}
             <Link
-              href="/builder"
+              href={builderHref}
               className="hidden min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover min-[360px]:inline-flex sm:min-h-[44px] sm:px-5 sm:text-sm"
               onClick={closeMobileMenu}
             >
@@ -1594,7 +1598,7 @@ export default function Home() {
                 </Link>
               )}
               <Link
-                href="/builder"
+                href={builderHref}
                 onClick={closeMobileMenu}
                 className="mt-2 flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-xl shadow-primary/25 transition hover:bg-primary-hover"
               >
@@ -1893,7 +1897,7 @@ export default function Home() {
               <h2 className={landingLightTitleClass} style={landingTitleStyle}>Spend less time managing, more time <span className="text-secondary">celebrating.</span></h2>
               <p className="mt-4 text-[15px] leading-7 text-white/85 sm:mt-5 sm:text-lg sm:leading-8">Focus on moments, not logistics. QuickWeds keeps the details handled so the day feels lighter.</p>
               <div className="mt-8">
-                <Link href="/builder" className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-neutral sm:w-auto sm:px-6 sm:text-base">
+                <Link href={builderHref} className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-neutral sm:w-auto sm:px-6 sm:text-base">
                   Create Your Free Wedding Site
                   <ArrowRight className="h-4 w-4" />
                 </Link>
