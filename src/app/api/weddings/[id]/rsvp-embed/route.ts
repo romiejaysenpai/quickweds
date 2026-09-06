@@ -48,7 +48,7 @@ async function resolveAccess(req: NextRequest, id: string, forUpdate = false) {
 
     const db: SupabaseClient = getSupabaseAdminClient();
     const access = await getWeddingAccess(db, user, id, {
-        select: 'id, user_id, public_slug, bride_name, groom_name, website_mode, external_website_url, external_platform, rsvp_embed_enabled, deleted_at',
+        select: 'id, user_id, public_slug, bride_name, groom_name, website_mode, external_website_url, external_platform, rsvp_embed_enabled, is_published, deleted_at',
         collaboratorRoles: forUpdate ? ['partner'] : ['partner', 'coordinator'],
     });
 
@@ -78,6 +78,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
                 external_website_url: resolved.access.wedding.external_website_url,
                 external_platform: resolved.access.wedding.external_platform,
                 rsvp_embed_enabled: resolved.access.wedding.rsvp_embed_enabled,
+                is_published: resolved.access.wedding.is_published,
             },
             canEdit: resolved.access.role !== 'coordinator',
         });
@@ -110,6 +111,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         if (body.rsvp_embed_enabled && !externalPlatform) {
             return NextResponse.json({ error: 'Choose your website platform before activating the RSVP form.' }, { status: 400 });
         }
+        if (body.rsvp_embed_enabled && resolved.access.wedding.is_published !== true) {
+            return NextResponse.json({ error: 'Publish your wedding in QuickWeds before activating the RSVP form.' }, { status: 409 });
+        }
 
         let externalWebsiteUrl: string | null;
         try {
@@ -128,7 +132,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                 updated_at: new Date().toISOString(),
             })
             .eq('id', id)
-            .select('id, public_slug, bride_name, groom_name, website_mode, external_website_url, external_platform, rsvp_embed_enabled')
+            .select('id, public_slug, bride_name, groom_name, website_mode, external_website_url, external_platform, rsvp_embed_enabled, is_published')
             .single();
 
         if (error) throw error;

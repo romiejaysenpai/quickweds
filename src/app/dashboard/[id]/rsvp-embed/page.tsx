@@ -39,6 +39,7 @@ type EmbedWedding = {
     external_website_url?: string | null;
     external_platform?: string | null;
     rsvp_embed_enabled?: boolean;
+    is_published?: boolean;
 };
 
 async function getToken() {
@@ -117,7 +118,8 @@ export default function RsvpEmbedSettingsPage() {
     );
     const selectedPlatform = getRsvpEmbedPlatform(wedding?.external_platform);
     const websiteUrl = getSafeWebsiteUrl(wedding?.external_website_url);
-    const isLive = wedding?.rsvp_embed_enabled === true;
+    const isPublished = wedding?.is_published === true;
+    const isLive = wedding?.rsvp_embed_enabled === true && isPublished;
     const isConfigured = Boolean(selectedPlatform);
 
     const updateWedding = (patch: Partial<EmbedWedding>) => {
@@ -354,7 +356,7 @@ export default function RsvpEmbedSettingsPage() {
                                                 <button
                                                     type="button"
                                                     onClick={() => void saveSettings(!isLive, isLive ? 'RSVP form paused.' : 'RSVP form is live.')}
-                                                    disabled={saving || (!isLive && !isConfigured)}
+                                                    disabled={saving || (!isLive && (!isConfigured || !isPublished))}
                                                     className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50 ${isLive ? 'bg-foreground' : 'bg-primary shadow-md shadow-primary/20'}`}
                                                 >
                                                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : isLive ? <PauseCircle className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
@@ -373,6 +375,7 @@ export default function RsvpEmbedSettingsPage() {
                                         </div>
                                     </div>
 
+                                    {!isPublished && <p role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Publish your wedding in QuickWeds before activating the RSVP form. <Link href={`/dashboard/${weddingId}`} className="font-bold underline">Open wedding dashboard</Link></p>}
                                     <div className="rounded-2xl border border-border p-5">
                                         <h3 className="text-sm font-black uppercase tracking-wider text-text-secondary">Before sharing</h3>
                                         <ul className="mt-4 space-y-3 text-sm text-text-secondary">

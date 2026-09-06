@@ -4,6 +4,7 @@ import RSVPForm from '@/components/RSVPForm';
 import RsvpEmbedAutoHeight from '@/components/RsvpEmbedAutoHeight';
 import { getCachedPublicWedding, getSupabaseErrorMessage } from '@/lib/public-wedding';
 import type { Wedding } from '@/types/wedding';
+import { isRsvpClosed } from '@/lib/event-time';
 
 export const revalidate = 60;
 
@@ -11,12 +12,6 @@ export const metadata: Metadata = {
     title: 'Wedding RSVP',
     robots: { index: false, follow: false },
 };
-
-function isDeadlineExpired(value: unknown) {
-    if (typeof value !== 'string' || !value.trim()) return false;
-    const deadline = new Date(value);
-    return !Number.isNaN(deadline.getTime()) && deadline.getTime() < Date.now();
-}
 
 function formatDeadline(value: unknown) {
     if (typeof value !== 'string' || !value.trim()) return '';
@@ -54,7 +49,7 @@ export default async function RsvpEmbedPage({ params }: { params: Promise<{ id: 
         return <RsvpEmbedAutoHeight><EmbedUnavailable message="The couple has not enabled this RSVP form." /></RsvpEmbedAutoHeight>;
     }
 
-    const expired = isDeadlineExpired(wedding.rsvp_deadline);
+    const expired = isRsvpClosed(wedding.rsvp_deadline, wedding.event_timezone || 'UTC');
     const deadline = formatDeadline(wedding.rsvp_deadline);
 
     return (

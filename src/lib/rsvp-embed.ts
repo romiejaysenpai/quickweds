@@ -74,7 +74,7 @@ export const RSVP_EMBED_PLATFORMS = [
         instructions: [
             'Add a Raw HTML element to your RSVP page.',
             'Paste the QuickWeds embed code into the element.',
-            'Save the page and verify the published version.',
+            'Save and test the live page: Raw HTML may not appear in the editor preview. On Info pages, use the RSVP link instead.',
         ],
     },
     {
@@ -111,6 +111,7 @@ export function createRsvpEmbedCode(embedUrl: string, frameId: string) {
 
     try {
         const parsedUrl = new URL(embedUrl);
+        if (!['https:', 'http:'].includes(parsedUrl.protocol)) return '';
         allowedOrigin = parsedUrl.origin;
         safeEmbedUrl = parsedUrl.href.replaceAll('&', '&amp;').replaceAll('"', '&quot;');
     } catch {

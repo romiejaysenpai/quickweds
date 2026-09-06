@@ -227,7 +227,7 @@ export default function RSVPForm({
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        if (response.status === 409 || result.code === "duplicate_rsvp") {
+        if (result.code === "duplicate_rsvp") {
           setDuplicateError(true);
         }
         setSubmitError(result.error || "Submission failed. Please try again.");
@@ -299,6 +299,8 @@ export default function RSVPForm({
           <a
             className="inline-flex min-h-12 mt-4 items-center rounded-xl bg-primary px-5 text-white"
             href={receipt.guestPass}
+            target={submissionSource === "embed" ? "_blank" : undefined}
+            rel={submissionSource === "embed" ? "noopener noreferrer" : undefined}
           >
             Open your guest pass
           </a>
