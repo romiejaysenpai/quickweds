@@ -42,6 +42,11 @@ export async function POST(req: NextRequest) {
         { error: "Invitation unavailable." },
         { status: 404 },
       );
+    if (input.submissionSource === "embed" && wedding.rsvp_embed_enabled !== true)
+      return NextResponse.json(
+        { error: "This RSVP embed is not accepting responses." },
+        { status: 403 },
+      );
     if (isRsvpClosed(wedding.rsvp_deadline, wedding.event_timezone || "UTC"))
       return NextResponse.json(
         {

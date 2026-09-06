@@ -41,6 +41,26 @@ const C = {
 const FONT_HEADING = "'Georgia', 'Times New Roman', serif";
 const FONT_BODY = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
+/**
+ * QuickWeds email typography scale (HTML templates).
+ * Mirrors the spec in src/emails/quickweds-transactional.tsx so the
+ * React templates and the HTML templates share the same visual language.
+ */
+const TYPE = {
+    display: '34px',
+    h1: '32px',
+    h2: '26px',
+    h3: '18px',
+    body: '16px',
+    small: '14px',
+    caption: '13px',
+    label: '11px',
+    headingLh: '1.15',
+    bodyLh: '1.7',
+    labelLs: '0.16em',
+    eyebrowLs: '0.2em',
+} as const;
+
 const SUPABASE_IMG = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images';
 
 const IMG = {
@@ -94,7 +114,7 @@ function emailShell(title: string, content: string, previewText = title) {
             .qw-pad { padding-left: 24px !important; padding-right: 24px !important; }
             .qw-stack { display: block !important; width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; }
             .qw-full-button { display: block !important; width: 100% !important; box-sizing: border-box !important; }
-            .qw-h1 { font-size: 28px !important; line-height: 1.18 !important; }
+            .qw-h1 { font-size: 28px !important; line-height: 1.18 !important; } .qw-h2 { font-size: 22px !important; line-height: 1.2 !important; } .qw-h3 { font-size: 16px !important; line-height: 1.3 !important; }
         }
     </style>
     <!--[if mso]><style>table,td,a,p,h1,h2,h3{font-family:Arial,sans-serif!important}</style><![endif]-->
@@ -133,22 +153,22 @@ function heroImage(src: string, alt = '') {
 
 /** Upperscore eyebrow label */
 function eyebrow(text: string) {
-    return `<p style="margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:${C.primary};font-family:${FONT_BODY};">${esc(text)}</p>`;
+    return `<p style="margin:0 0 12px;font-size:${TYPE.label};font-weight:700;letter-spacing:${TYPE.eyebrowLs};text-transform:uppercase;color:${C.primary};font-family:${FONT_BODY};">${esc(text)}</p>`;
 }
 
 /** Large serif heading (H1) */
 function heading1(text: string) {
-    return `<h1 class="qw-h1" style="margin:0;font-size:32px;line-height:1.2;font-weight:400;color:${C.text};font-family:${FONT_HEADING};letter-spacing:0;">${esc(text)}</h1>`;
+    return `<h1 class="qw-h1" style="margin:0;font-size:32px;line-height:${TYPE.headingLh};font-weight:400;color:${C.text};font-family:${FONT_HEADING};letter-spacing:-0.3px;">${esc(text)}</h1>`;
 }
 
 /** Medium serif heading (H2) */
 function heading2(text: string) {
-    return `<h2 style="margin:0;font-size:26px;line-height:1.25;font-weight:400;color:${C.text};font-family:${FONT_HEADING};letter-spacing:-0.2px;">${esc(text)}</h2>`;
+    return `<h2 class="qw-h2" style="margin:0;font-size:26px;line-height:1.2;font-weight:400;color:${C.text};font-family:${FONT_HEADING};letter-spacing:-0.2px;">${esc(text)}</h2>`;
 }
 
 /** Section heading (H3) — uppercase label style */
 function sectionLabel(text: string) {
-    return `<h3 style="margin:0 0 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:${C.primary};font-family:${FONT_BODY};">${esc(text)}</h3>`;
+    return `<h3 class="qw-h3" style="margin:0 0 20px;font-size:${TYPE.label};font-weight:700;text-transform:uppercase;letter-spacing:${TYPE.labelLs};color:${C.primary};font-family:${FONT_BODY};">${esc(text)}</h3>`;
 }
 
 /** Body paragraph */
@@ -233,7 +253,7 @@ function infoRow(icon: string, label: string, value: string) {
         <div style="width:38px;height:38px;border-radius:12px;background-color:${C.primaryLight};text-align:center;line-height:38px;font-size:16px;">${icon}</div>
     </td>
     <td style="padding-left:16px;padding-bottom:20px;">
-        <p style="margin:0;font-size:12px;color:${C.textMuted};text-transform:uppercase;letter-spacing:1px;font-weight:600;font-family:${FONT_BODY};">${label}</p>
+        <p style="margin:0;font-size:${TYPE.label};color:${C.textMuted};text-transform:uppercase;letter-spacing:0.12em;font-weight:600;font-family:${FONT_BODY};">${label}</p>
         <p style="margin:4px 0 0;font-size:16px;font-weight:700;color:${C.text};font-family:${FONT_BODY};">${value}</p>
     </td>
 </tr>`;
@@ -264,7 +284,7 @@ function featureCard(icon: string, title: string, desc: string) {
                 </td>
                 <td style="padding-left:16px;">
                     <p style="margin:0;font-size:16px;font-weight:700;color:${C.text};font-family:${FONT_BODY};">${esc(title)}</p>
-                    <p style="margin:5px 0 0;font-size:14px;color:${C.textSecondary};line-height:1.6;font-family:${FONT_BODY};">${esc(desc)}</p>
+                    <p style="margin:5px 0 0;font-size:${TYPE.small};color:${C.textSecondary};line-height:1.65;font-family:${FONT_BODY};">${esc(desc)}</p>
                 </td>
             </tr>
         </table>
@@ -276,7 +296,7 @@ function checklist(items: string[]) {
     return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
         ${items.map((item) => `<tr>
             <td width="28" valign="top" style="padding:7px 0;color:${C.primary};font-size:16px;font-weight:700;">&#10003;</td>
-            <td style="padding:7px 0;color:${C.textSecondary};font-size:14px;line-height:1.55;font-weight:600;font-family:${FONT_BODY};">${esc(item)}</td>
+            <td style="padding:7px 0;color:${C.textSecondary};font-size:${TYPE.small};line-height:1.65;font-weight:500;font-family:${FONT_BODY};">${esc(item)}</td>
         </tr>`).join('')}
     </table>`;
 }
@@ -289,7 +309,7 @@ function stepRow(num: number, title: string, desc: string) {
     </td>
     <td style="padding-left:16px;padding-bottom:28px;">
         <p style="margin:0;font-size:16px;font-weight:700;color:${C.text};font-family:${FONT_BODY};">${esc(title)}</p>
-        <p style="margin:5px 0 0;font-size:14px;color:${C.textSecondary};line-height:1.6;font-family:${FONT_BODY};">${esc(desc)}</p>
+        <p style="margin:5px 0 0;font-size:${TYPE.small};color:${C.textSecondary};line-height:1.65;font-family:${FONT_BODY};">${esc(desc)}</p>
     </td>
 </tr>`;
 }
@@ -311,6 +331,7 @@ interface EmailTemplateProps {
     numGuests: number;
     guestCode?: string;
     checkInUrl?: string;
+    confirmationImageUrl?: string;
     message?: string;
     dietaryDetails?: string;
     songRequest?: string;
@@ -326,7 +347,7 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
     const {
         guestName, brideName, groomName, weddingDate, weddingTime,
         venueName, venueAddress, mapsLink, weddingUrl, attendance, numGuests,
-        guestCode, checkInUrl
+        guestCode, checkInUrl, confirmationImageUrl
     } = props;
 
     const isAttending = attendance === 'Yes';
@@ -376,7 +397,7 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
 
     const content = emailTable(`
         ${logoBar()}
-        ${heroImage(IMG.heroRsvp, 'Wedding RSVP Confirmation')}
+        ${confirmationImageUrl ? heroImage(confirmationImageUrl, `${brideName} & ${groomName}'s wedding`) : ''}
         <tr><td align="center" style="padding:44px 44px 16px;">
             ${eyebrow('RSVP Confirmed')}
             ${heading1(isAttending ? "We're so excited!" : "We'll miss you!")}
@@ -404,7 +425,7 @@ export function getGuestConfirmationHtml(props: EmailTemplateProps) {
 export function getCoupleNotificationHtml(props: EmailTemplateProps) {
     const {
         guestName, guestEmail, attendance, numGuests, message,
-        dietaryDetails, songRequest, plusOneNames, childrenCount, weddingUrl
+        dietaryDetails, songRequest, plusOneNames, childrenCount, weddingUrl, confirmationImageUrl
     } = props;
 
     const isAttending = attendance === 'Yes';
@@ -428,7 +449,7 @@ export function getCoupleNotificationHtml(props: EmailTemplateProps) {
 
     const content = emailTable(`
         ${logoBar()}
-        ${heroImage(IMG.heroRsvp, 'New RSVP received')}
+        ${confirmationImageUrl ? heroImage(confirmationImageUrl, 'New RSVP received') : ''}
         <tr><td class="qw-pad" align="center" style="padding:40px 44px 16px;">
             ${eyebrow('Guest Response')}
             ${heading1('New RSVP Received!')}
@@ -458,12 +479,12 @@ export function getCoupleNotificationHtml(props: EmailTemplateProps) {
 export function getGuestReminderHtml(props: EmailTemplateProps) {
     const {
         guestName, brideName, groomName, weddingDate, weddingTime,
-        venueName, venueAddress, mapsLink, weddingUrl
+        venueName, venueAddress, mapsLink, weddingUrl, confirmationImageUrl
     } = props;
 
     const content = emailTable(`
         ${logoBar()}
-        ${heroImage(IMG.heroReminder, 'Wedding countdown')}
+        ${confirmationImageUrl ? heroImage(confirmationImageUrl, 'Wedding countdown') : ''}
         <tr><td class="qw-pad" align="center" style="padding:44px 44px 12px;">
             ${eyebrow('Friendly Reminder')}
             ${heading1('The Big Day is Almost Here!')}
@@ -471,7 +492,7 @@ export function getGuestReminderHtml(props: EmailTemplateProps) {
         <tr><td class="qw-pad" style="padding:16px 44px 40px;">
             ${paragraph(`Hi ${esc(guestName)}, just a sweet reminder that we can't wait to celebrate with you!`)}
             ${card(`
-                <p style="margin:0;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:2.5px;color:${C.primary};font-weight:700;font-family:${FONT_BODY};">Wedding of</p>
+                <p style="margin:0;text-align:center;font-size:${TYPE.label};text-transform:uppercase;letter-spacing:0.18em;color:${C.primary};font-weight:700;font-family:${FONT_BODY};">Wedding of</p>
                 <h2 style="margin:12px 0 32px;text-align:center;font-size:32px;font-weight:400;color:${C.text};font-family:${FONT_HEADING};letter-spacing:-0.3px;">${esc(brideName)} & ${esc(groomName)}</h2>
                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                     <tr><td style="padding-bottom:28px;">
@@ -705,21 +726,21 @@ const MARKETING_NURTURE_STEPS = [
         feature: { icon: '📋', title: 'Smart RSVP tracking', desc: 'Real-time responses, dietary notes, song requests, and guest codes.' },
     },
     {
-        subject: 'Planner Pro is now $15, down from $29',
+        subject: 'Planner Pro is now ₱899, down from ₱1,699',
         eyebrow: 'Limited-time offer',
-        heading: 'Unlock the full planner for $15',
+        heading: 'Unlock the full planner for ₱899',
         hero: 'hero-nurture-3.jpg',
         body: [
-            'Quick update: Planner Pro was $29, and it is now $15 for a limited-time offer.',
+            'Quick update: Planner Pro was ₱1,699, and it is now ₱899 for a limited-time offer.',
             'That unlocks the bigger planning workspace: unlimited guest emails, seating, reminders, collaborators, budgets, suppliers, photo tools, exports, and more.',
             'If QuickWeds is becoming the place you manage the wedding, this is the best time to take the limits off.',
         ],
-        cta: 'Unlock Planner Pro for $15',
+        cta: 'Unlock Planner Pro for ₱899',
         path: '/settings',
         offer: {
             label: 'Limited-time price update',
-            oldPrice: '$29',
-            newPrice: '$15',
+            oldPrice: '₱1,699',
+            newPrice: '₱899',
             note: 'One-time upgrade. No subscription.',
             highlights: ['Unlimited guest emails', 'Full planner tools', 'Seating, reminders, exports'],
         },

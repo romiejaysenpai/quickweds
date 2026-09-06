@@ -117,6 +117,11 @@ test.describe('Couple onboarding survey', () => {
     await page.goto('/onboarding/account-type');
     await page.getByRole('button', { name: /I am a Couple/i }).click();
 
+    // Website setup choice
+    await expect(page.getByRole('heading', { name: /Do you need a wedding website/i })).toBeVisible();
+    await page.getByRole('button', { name: /Connect my existing website/i }).click();
+    await page.getByRole('button', { name: /^Continue/i }).click();
+
     // Step 1: Your Wedding
     await expect(page.getByRole('heading', { name: /Tell us about your wedding/i })).toBeVisible();
     await expect(page.getByText(/Step 1 of 3/i)).toBeVisible();
@@ -155,6 +160,7 @@ test.describe('Couple onboarding survey', () => {
     // Celebration / Ready screen
     await expect(page.getByRole('heading', { name: /Your QuickWeds space is ready/i })).toBeVisible();
     expect(savedSurveyData?.onboarding_completed).toBe(true);
+    expect(savedSurveyData?.website_mode).toBe('external');
   });
 
   test('supplier account selection redirects to supplier dashboard', async ({ page }) => {

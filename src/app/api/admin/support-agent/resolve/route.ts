@@ -30,7 +30,7 @@ function getResolutionEmailHtml(input: {
     return `
         <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; color: #3A2A2D;">
             <p style="margin: 0 0 8px; color: #D16C78; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px;">QuickWeds Support</p>
-            <h1 style="margin: 0 0 16px; font-size: 28px; line-height: 1.2;">Your reported issue has been fixed</h1>
+            <h1 style="margin: 0 0 16px; font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 30px; line-height: 1.15; letter-spacing: -0.3px;">Your reported issue has been fixed</h1>
             <p style="font-size: 16px; line-height: 1.7; color: #7A5A61;">
                 Hi there, thanks for reporting an issue with ${safeFeature}. We have applied a fix for your report:
             </p>

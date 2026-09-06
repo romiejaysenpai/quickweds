@@ -40,6 +40,26 @@ const C = {
 
 const FONT_HEADING = 'Georgia, Times New Roman, serif';
 const FONT_BODY = 'Helvetica Neue, Helvetica, Arial, sans-serif';
+
+/**
+ * QuickWeds email typography scale.
+ * One spec shared by every template: serif display for headings,
+ * sans for body, and a single tracking scale for labels/eyebrows.
+ */
+const T = {
+    display: '34px',
+    h1: '32px',
+    h2: '26px',
+    h3: '18px',
+    body: '16px',
+    small: '14px',
+    caption: '13px',
+    label: '11px',
+    headingLh: '1.15',
+    bodyLh: '1.7',
+    labelLs: '0.16em',
+    eyebrowLs: '0.18em',
+} as const;
 const SUPABASE_IMG = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images';
 
 const IMG = {
@@ -79,7 +99,7 @@ type ShellProps = {
     preview: string;
     navItems?: string[];
     hero?: {
-        image: string;
+        image?: string;
         alt: string;
         eyebrow: string;
         heading: React.ReactNode;
@@ -135,7 +155,7 @@ type HeroConfig = NonNullable<ShellProps['hero']>;
 function HeroPanel({ image, alt, eyebrow, heading, subheading, badge }: HeroConfig) {
     return (
         <Section style={heroPanelStyle}>
-            <Img src={image} alt={alt} width="640" style={heroImageStyle} />
+            {image ? <Img src={image} alt={alt} width="640" style={heroImageStyle} /> : null}
             <Section style={heroCopyStyle}>
                 {badge ? <Text style={heroBadgeStyle}>{badge}</Text> : null}
                 <Text style={eyebrowStyle}>{eyebrow}</Text>
@@ -162,9 +182,11 @@ function RsvpConfirmationHero({
                 <Heading as="h1" style={rsvpHeroHeadingStyle}>{heading}</Heading>
                 {subheading ? <Text style={rsvpHeroSubheadingStyle}>{subheading}</Text> : null}
             </Section>
-            <Section style={rsvpHeroImageFrameStyle}>
-                <Img src={image} alt={alt} width="536" style={rsvpHeroImageStyle} />
-            </Section>
+            {image ? (
+                <Section style={rsvpHeroImageFrameStyle}>
+                    <Img src={image} alt={alt} width="536" style={rsvpHeroImageStyle} />
+                </Section>
+            ) : null}
         </Section>
     );
 }
@@ -364,7 +386,7 @@ export function WelcomeEmail({ userName }: { userName: string }) {
 export function GuestConfirmationEmail(props: WeddingEmailProps) {
     const isAttending = props.attendance === 'Yes';
     const partyLabel = `${props.numGuests} guest${props.numGuests === 1 ? '' : 's'}`;
-    const confirmationImage = props.confirmationImageUrl || IMG.heroRsvp;
+    const confirmationImage = props.confirmationImageUrl;
 
     return (
         <QuickWedsShell
@@ -439,7 +461,7 @@ export function CoupleRsvpNotificationEmail(props: WeddingEmailProps) {
             preview={`${props.guestName} responded ${props.attendance} for ${props.numGuests} guest${props.numGuests === 1 ? '' : 's'}.`}
             navItems={['Dashboard', 'Guests', 'RSVPs']}
             hero={{
-                image: IMG.heroRsvp,
+                image: props.confirmationImageUrl,
                 alt: 'New RSVP received',
                 eyebrow: 'Guest Response',
                 heading: 'A new RSVP just landed.',
@@ -497,7 +519,7 @@ export function GuestReminderEmail(props: WeddingEmailProps) {
             preview={`${props.brideName} and ${props.groomName}'s wedding is coming up. Review the date, venue, and map.`}
             navItems={['Reminder', 'Venue', 'Map']}
             hero={{
-                image: IMG.heroReminder,
+                image: props.confirmationImageUrl,
                 alt: 'Wedding countdown',
                 eyebrow: 'Friendly Reminder',
                 heading: 'The celebration is almost here.',
@@ -608,9 +630,9 @@ const logoStyle = {
 const navTextStyle = {
     margin: 0,
     color: C.faint,
-    fontSize: '11px',
+    fontSize: T.label,
     fontWeight: 700,
-    letterSpacing: '0.14em',
+    letterSpacing: '0.16em',
     textTransform: 'uppercase' as const,
 };
 
@@ -639,7 +661,7 @@ const heroBadgeStyle = {
     border: `1px solid ${C.primaryLight}`,
     borderRadius: '999px',
     color: C.primaryDark,
-    fontSize: '11px',
+    fontSize: T.label,
     fontWeight: 800,
     letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
@@ -648,9 +670,9 @@ const heroBadgeStyle = {
 const eyebrowStyle = {
     margin: '0 0 12px',
     color: C.primary,
-    fontSize: '11px',
+    fontSize: T.label,
     fontWeight: 800,
-    letterSpacing: '0.18em',
+    letterSpacing: T.eyebrowLs,
     textTransform: 'uppercase' as const,
 };
 
@@ -667,8 +689,8 @@ const heroSubheadingStyle = {
     margin: '16px auto 0',
     maxWidth: '500px',
     color: C.muted,
-    fontSize: '16px',
-    lineHeight: '1.65',
+    fontSize: T.body,
+    lineHeight: '1.7',
 };
 
 const rsvpHeroPanelStyle = {
@@ -703,7 +725,7 @@ const rsvpHeroImageStyle = {
 
 const rsvpHeroHeadingStyle = {
     ...heroHeadingStyle,
-    fontSize: '34px',
+    fontSize: T.display,
 };
 
 const rsvpHeroSubheadingStyle = {
@@ -726,9 +748,9 @@ const promoBandStyle = {
 const promoLabelStyle = {
     margin: '0 0 12px',
     color: C.primary,
-    fontSize: '11px',
+    fontSize: T.label,
     fontWeight: 800,
-    letterSpacing: '0.16em',
+    letterSpacing: T.labelLs,
     textTransform: 'uppercase' as const,
 };
 
@@ -736,16 +758,16 @@ const promoTitleStyle = {
     margin: '0 0 14px',
     color: C.ink,
     fontFamily: FONT_HEADING,
-    fontSize: '28px',
+    fontSize: T.h2,
     fontWeight: 400,
-    lineHeight: '1.2',
+    lineHeight: T.headingLh,
 };
 
 const promoBodyStyle = {
     margin: 0,
     color: C.muted,
-    fontSize: '15px',
-    lineHeight: '1.75',
+    fontSize: T.body,
+    lineHeight: T.bodyLh,
 };
 
 const featureRowStyle = {
@@ -769,9 +791,9 @@ const featureCardStyle = {
 const featureLabelStyle = {
     margin: '0 0 12px',
     color: C.champagne,
-    fontSize: '12px',
+    fontSize: T.label,
     fontWeight: 900,
-    letterSpacing: '0.14em',
+    letterSpacing: T.labelLs,
     textTransform: 'uppercase' as const,
 };
 
@@ -786,8 +808,8 @@ const featureTitleStyle = {
 const featureBodyStyle = {
     margin: 0,
     color: C.muted,
-    fontSize: '13px',
-    lineHeight: '1.6',
+    fontSize: T.caption,
+    lineHeight: '1.65',
 };
 
 const detailCardStyle = {
@@ -805,7 +827,7 @@ const detailCardTintStyle = {
 const sectionLabelStyle = {
     margin: '0 0 18px',
     color: C.primary,
-    fontSize: '11px',
+    fontSize: T.label,
     fontWeight: 800,
     letterSpacing: '0.16em',
     textTransform: 'uppercase' as const,
@@ -820,9 +842,9 @@ const detailLabelStyle = {
 const detailLabelTextStyle = {
     margin: 0,
     color: C.faint,
-    fontSize: '12px',
+    fontSize: T.label,
     fontWeight: 800,
-    letterSpacing: '0.08em',
+    letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
 };
 
@@ -830,9 +852,9 @@ const detailValueStyle = {
     margin: 0,
     padding: '8px 0',
     color: C.ink,
-    fontSize: '15px',
-    fontWeight: 700,
-    lineHeight: '1.55',
+    fontSize: T.body,
+    fontWeight: 600,
+    lineHeight: '1.6',
 };
 
 const metricColumnStyle = {
@@ -864,7 +886,7 @@ const metricErrorStyle = {
 const metricLabelStyle = {
     margin: '0 0 10px',
     color: C.faint,
-    fontSize: '11px',
+    fontSize: T.label,
     fontWeight: 800,
     letterSpacing: '0.16em',
     textTransform: 'uppercase' as const,
@@ -874,9 +896,9 @@ const metricValueStyle = {
     margin: 0,
     color: C.ink,
     fontFamily: FONT_HEADING,
-    fontSize: '34px',
+    fontSize: T.display,
     fontWeight: 400,
-    lineHeight: '1.1',
+    lineHeight: T.headingLh,
 };
 
 const timelineStyle = {
@@ -904,15 +926,15 @@ const timelineNumberStyle = {
 const timelineTitleStyle = {
     margin: '0 0 5px',
     color: C.ink,
-    fontSize: '15px',
-    fontWeight: 800,
+    fontSize: T.small,
+    fontWeight: 700,
 };
 
 const timelineBodyStyle = {
     margin: '0 0 20px',
     color: C.muted,
-    fontSize: '13px',
-    lineHeight: '1.6',
+    fontSize: T.caption,
+    lineHeight: '1.65',
 };
 
 const guestPassStyle = {
@@ -925,9 +947,9 @@ const guestPassStyle = {
 const guestPassKickerStyle = {
     margin: '0 0 12px',
     color: C.champagneSoft,
-    fontSize: '11px',
+    fontSize: T.label,
     fontWeight: 900,
-    letterSpacing: '0.18em',
+    letterSpacing: T.eyebrowLs,
     textTransform: 'uppercase' as const,
 };
 
@@ -935,8 +957,9 @@ const guestPassTitleStyle = {
     margin: '0 0 10px',
     color: C.white,
     fontFamily: FONT_HEADING,
-    fontSize: '28px',
-    lineHeight: '1.2',
+    fontSize: T.h2,
+    fontWeight: 400,
+    lineHeight: T.headingLh,
 };
 
 const guestCodeStyle = {
@@ -947,6 +970,7 @@ const guestCodeStyle = {
     color: C.ink,
     fontFamily: FONT_HEADING,
     fontSize: '30px',
+    lineHeight: '1.2',
     letterSpacing: '0.14em',
 };
 
@@ -995,9 +1019,9 @@ const checkTextStyle = {
     margin: 0,
     padding: '7px 0',
     color: C.muted,
-    fontSize: '14px',
-    fontWeight: 600,
-    lineHeight: '1.55',
+    fontSize: T.small,
+    fontWeight: 500,
+    lineHeight: '1.65',
 };
 
 const buttonWrapStyle = {
@@ -1011,9 +1035,9 @@ const buttonStyle = {
     backgroundColor: C.primary,
     borderRadius: '999px',
     color: C.white,
-    fontSize: '15px',
+    fontSize: T.small,
     fontWeight: 800,
-    letterSpacing: '0.02em',
+    letterSpacing: '0.04em',
     textDecoration: 'none',
 };
 
@@ -1023,7 +1047,7 @@ const secondaryButtonStyle = {
     backgroundColor: C.white,
     borderRadius: '999px',
     color: C.ink,
-    fontSize: '13px',
+    fontSize: T.small,
     fontWeight: 800,
     textDecoration: 'none',
 };
@@ -1036,7 +1060,7 @@ const inlineButtonStyle = {
     border: `1px solid ${C.primaryLight}`,
     borderRadius: '999px',
     color: C.primary,
-    fontSize: '13px',
+    fontSize: T.small,
     fontWeight: 800,
     textDecoration: 'none',
 };
@@ -1056,7 +1080,7 @@ const footerHeadlineStyle = {
     margin: '0 auto 14px',
     maxWidth: '420px',
     color: C.white,
-    fontSize: '14px',
+    fontSize: T.small,
     fontWeight: 700,
     lineHeight: '1.65',
 };
@@ -1064,7 +1088,7 @@ const footerHeadlineStyle = {
 const footerTextStyle = {
     margin: '0 0 10px',
     color: C.cream,
-    fontSize: '13px',
+    fontSize: T.caption,
     lineHeight: '1.6',
 };
 
@@ -1076,16 +1100,16 @@ const footerRuleStyle = {
 const footerLinksStyle = {
     margin: 0,
     color: C.cream,
-    fontSize: '11px',
+    fontSize: T.label,
     fontWeight: 800,
-    letterSpacing: '0.12em',
+    letterSpacing: '0.14em',
     textTransform: 'uppercase' as const,
 };
 
 const legalStyle = {
     margin: '14px 0 0',
     color: C.cream,
-    fontSize: '11px',
+    fontSize: T.label,
     lineHeight: '1.5',
 };
 

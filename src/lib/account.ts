@@ -1,5 +1,6 @@
 export type AccountType = 'couple' | 'supplier';
 export type OnboardingDateStatus = 'exact' | 'month_year' | 'undecided';
+export type WebsiteMode = 'quickweds' | 'external' | 'private';
 
 export type OnboardingSurveyData = {
     wedding_date?: string | null;
@@ -11,6 +12,7 @@ export type OnboardingSurveyData = {
     estimated_guest_count?: string | null;
     user_role?: string | null;
     acquisition_source?: string | null;
+    website_mode?: WebsiteMode | null;
     onboarding_draft?: Record<string, any> | null;
 };
 
@@ -28,6 +30,7 @@ export type AccountProfile = {
     estimated_guest_count?: string | null;
     user_role?: string | null;
     acquisition_source?: string | null;
+    website_mode?: WebsiteMode | null;
     onboarding_draft?: Record<string, any> | null;
     is_pro?: boolean | null;
     plan_type?: string | null;
@@ -140,6 +143,7 @@ export async function updateClientAccountProfile(
         estimated_guest_count?: string | null;
         user_role?: string | null;
         acquisition_source?: string | null;
+        website_mode?: WebsiteMode | null;
         onboarding_draft?: Record<string, any> | null;
     },
 ) {

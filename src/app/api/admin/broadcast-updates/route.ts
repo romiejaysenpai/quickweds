@@ -86,7 +86,7 @@ function getUpdateEmailHtml(title: string, message: string, link: string) {
     return [
         '<div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; color: #3A2A2D;">',
         '    <p style="margin: 0 0 8px; color: #D16C78; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px;">QuickWeds Update</p>',
-        '    <h1 style="margin: 0 0 16px; font-size: 28px; line-height: 1.2;">' + escapedTitle + '</h1>',
+        '    <h1 style="margin: 0 0 16px; font-family: Georgia, \'Times New Roman\', serif; font-weight: 400; font-size: 30px; line-height: 1.15; letter-spacing: -0.3px;">' + escapedTitle + '</h1>',
         ...paragraphs,
         '    <p style="margin: 28px 0;">',
         '        <a href="' + href + '" style="display: inline-block; background: #D16C78; color: #fff; padding: 14px 20px; border-radius: 12px; text-decoration: none; font-weight: 700;">Send feedback or report an issue</a>',

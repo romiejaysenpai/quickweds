@@ -13,7 +13,9 @@ import {
     GiftSection,
     CountdownTimer,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import type { TemplateProps } from '@/types/wedding';
 
@@ -45,6 +47,15 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                             <span>Official Wedding Invitation &amp; RSVP</span>
                         </div>
 
+                        <TemplateMonogram
+                            wedding={wedding}
+                            defaultShape="circle"
+                            size="md"
+                            color={motifColor}
+                            motifColor={motifColor}
+                            className="mx-auto mb-6"
+                        />
+
                         <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif text-neutral-900 mb-6 leading-tight tracking-tight">
                             {wedding.bride_name} <br />
                             <span className="text-2xl sm:text-4xl italic font-light serif" style={{ color: motifColor }}>&amp;</span> <br />
@@ -59,6 +70,12 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                         <p className="text-sm sm:text-base font-light text-neutral-500 mb-8 max-w-md mx-auto">
                             {wedding.venue_name} {wedding.venue_address ? `• ${wedding.venue_address}` : ''}
                         </p>
+
+                        {wedding.quote && (
+                            <blockquote className="my-6 max-w-md mx-auto italic font-serif text-neutral-700 text-sm sm:text-base border-y border-rose-100 py-3">
+                                &ldquo;{wedding.quote}&rdquo;
+                            </blockquote>
+                        )}
 
                         {/* Couple Photo Spotlight (If present) */}
                         {(wedding.hero_image || wedding.couple_photo) && (
@@ -100,11 +117,17 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                 </div>
             </section>
 
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

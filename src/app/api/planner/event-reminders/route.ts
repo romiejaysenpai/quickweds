@@ -17,14 +17,14 @@ function reminderHtml(input: {
         <div style="font-family: Georgia, serif; background:#fff8f4; padding:32px; color:#3a2a2d;">
             <div style="max-width:620px; margin:0 auto; background:#fff; border-radius:28px; padding:32px; border:1px solid rgba(209,108,120,.18);">
                 <p style="margin:0 0 10px; text-transform:uppercase; letter-spacing:.2em; color:#d16c78; font-size:11px; font-weight:700;">QuickWeds Planner Reminder</p>
-                <h1 style="margin:0 0 16px; color:#3a2a2d;">${input.title}</h1>
+                <h1 style="margin:0 0 16px; color:#3a2a2d; font-size:30px; font-weight:400; line-height:1.15; letter-spacing:-0.3px;">${input.title}</h1>
                 <p style="font-size:16px; line-height:1.7;">Upcoming schedule for ${input.couple}.</p>
                 <div style="background:#fff8f4; border-radius:18px; padding:18px; margin:20px 0;">
                     <p style="margin:0 0 8px;"><strong>When:</strong> ${input.startsAt}</p>
                     ${input.location ? `<p style="margin:0 0 8px;"><strong>Where:</strong> ${input.location}</p>` : ''}
                     ${input.notes ? `<p style="margin:0;"><strong>Notes:</strong> ${input.notes}</p>` : ''}
                 </div>
-                <a href="${input.plannerUrl}" style="display:inline-block; background:#d16c78; color:#fff; padding:14px 22px; border-radius:14px; text-decoration:none; font-weight:700;">Open Planner</a>
+                <a href="${input.plannerUrl}" style="display:inline-block; background:#d16c78; color:#fff; padding:14px 22px; border-radius:14px; text-decoration:none; font-weight:700; font-size:15px; letter-spacing:0.02em;">Open Planner</a>
             </div>
         </div>
     `;

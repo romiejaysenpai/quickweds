@@ -53,7 +53,7 @@ export function getEntourageProposalEmailHtml(input: EntourageProposalEmailInput
         ${heroImage}
         <tr><td align="center" style="padding:38px 36px 28px;background:${theme.accent};color:#ffffff;">
           <p style="margin:0 0 11px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Wedding Entourage Proposal</p>
-          <h1 style="margin:0;font-size:31px;line-height:1.2;font-weight:400;">${escapeHtml(input.title)}</h1>
+          <h1 style="margin:0;font-size:31px;line-height:1.15;font-weight:400;letter-spacing:-0.3px;">${escapeHtml(input.title)}</h1>
           <p style="margin:14px 0 0;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;">${escapeHtml(input.coupleNames)}</p>
         </td></tr>
         <tr><td style="padding:34px 40px 18px;">
@@ -66,8 +66,8 @@ export function getEntourageProposalEmailHtml(input: EntourageProposalEmailInput
           <p style="margin:22px 0 0;font-family:Arial,sans-serif;font-size:14px;line-height:1.7;color:#695c59;">Wedding date: ${escapeHtml(input.weddingDate)}<br />Venue: ${escapeHtml(input.venueName)}</p>
         </td></tr>
         <tr><td align="center" style="padding:20px 36px 40px;">
-          <a href="${escapeHtml(input.acceptUrl)}" style="display:inline-block;margin:6px;padding:15px 27px;border-radius:12px;background:${theme.accent};color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;">Accept</a>
-          <a href="${escapeHtml(input.declineUrl)}" style="display:inline-block;margin:6px;padding:14px 25px;border:1px solid #d7cfca;border-radius:12px;background:#ffffff;color:#695c59;font-family:Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;">Decline</a>
+          <a href="${escapeHtml(input.acceptUrl)}" style="display:inline-block;margin:6px;padding:15px 27px;border-radius:12px;background:${theme.accent};color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:700;letter-spacing:0.02em;text-decoration:none;">Accept</a>
+          <a href="${escapeHtml(input.declineUrl)}" style="display:inline-block;margin:6px;padding:14px 25px;border:1px solid #d7cfca;border-radius:12px;background:#ffffff;color:#695c59;font-family:Arial,sans-serif;font-size:15px;font-weight:700;letter-spacing:0.02em;text-decoration:none;">Decline</a>
         </td></tr>
       </table>
     </td></tr>

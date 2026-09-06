@@ -12,7 +12,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -35,8 +37,8 @@ export default function WhimsicalTemplate({ wedding, gallery, isExpired }: Templ
 
     return (
         <div className="bg-[#fff9fd] text-[#4a2e5a] relative overflow-hidden pb-24 font-serif selection:bg-[#8D7BC4]/20">
-            {/* Animated Stardust Particles */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-10">
+            {/* Animated Stardust Particles extending to all sections */}
+            <div className="fixed inset-0 pointer-events-none z-10">
                 {whimsicalParticles.map((particle) => (
                     <motion.div
                         key={particle.id}
@@ -84,6 +86,10 @@ export default function WhimsicalTemplate({ wedding, gallery, isExpired }: Templ
                         </motion.div>
                     </div>
 
+                    <div className="mb-4 flex justify-center">
+                        <TemplateMonogram wedding={wedding} defaultShape="intertwined" size="sm" />
+                    </div>
+
                     <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-purple-100/80 text-purple-700 text-xs uppercase tracking-[0.35em] font-sans font-bold mb-6">
                         <span>✨ Storybook Romance</span>
                     </div>
@@ -97,6 +103,12 @@ export default function WhimsicalTemplate({ wedding, gallery, isExpired }: Templ
                     <p className="text-sm sm:text-base font-sans uppercase tracking-[0.3em] text-[#8D7BC4] font-semibold mb-4">
                         {formattedDate} • {wedding.venue_name}
                     </p>
+
+                    {wedding.quote && (
+                        <p className="text-sm sm:text-base font-serif italic text-pink-600 mb-6 max-w-md mx-auto">
+                            &ldquo;{wedding.quote}&rdquo;
+                        </p>
+                    )}
 
                     <p className="text-base sm:text-xl font-serif italic text-[#6a4c7a] mb-10 max-w-lg mx-auto">
                         {wedding.story || 'Once upon a time, two souls met and wrote a love story that will last forever.'}
@@ -123,7 +135,9 @@ export default function WhimsicalTemplate({ wedding, gallery, isExpired }: Templ
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="whimsical" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="whimsical" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -137,7 +151,9 @@ export default function WhimsicalTemplate({ wedding, gallery, isExpired }: Templ
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="whimsical" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="whimsical" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

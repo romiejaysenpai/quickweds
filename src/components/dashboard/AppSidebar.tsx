@@ -27,6 +27,7 @@ import {
     Plus,
     PanelLeftClose,
     PanelLeftOpen,
+    Code2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getWeddingPublicPath } from '@/lib/wedding-slugs';
@@ -56,14 +57,13 @@ export default function AppSidebar({
     // Collapsible state persisted in localStorage for desktop UX
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
-        setIsMounted(true);
-        const stored = localStorage.getItem('qw_desktop_sidebar_collapsed');
-        if (stored !== null) {
-            setIsCollapsed(stored === 'true');
-        }
+        const frame = window.requestAnimationFrame(() => {
+            const stored = localStorage.getItem('qw_desktop_sidebar_collapsed');
+            if (stored !== null) setIsCollapsed(stored === 'true');
+        });
+        return () => window.cancelAnimationFrame(frame);
     }, []);
 
     const toggleCollapse = () => {
@@ -188,6 +188,16 @@ export default function AppSidebar({
             },
         ];
     }, [pathname, activeWeddingId]);
+
+    const guestNav = useMemo<SidebarNavItem[]>(() => {
+        if (!activeWeddingId) return [];
+        return [{
+            label: 'Embed & Share',
+            href: `/dashboard/${activeWeddingId}/rsvp-embed`,
+            icon: Code2,
+            isActive: pathname.includes(`/dashboard/${activeWeddingId}/rsvp-embed`),
+        }];
+    }, [activeWeddingId, pathname]);
 
     const generalNav = useMemo(() => {
         return [
@@ -398,6 +408,28 @@ export default function AppSidebar({
                         })}
                     </div>
                 </div>
+
+                {guestNav.length > 0 && (
+                    <div>
+                        {!isCollapsed && (
+                            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-[0.15em] text-text-secondary/60">
+                                Guests &amp; RSVP
+                            </p>
+                        )}
+                        <div className="space-y-1">
+                            {guestNav.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <Link key={item.label} href={item.href} title={isCollapsed ? item.label : undefined} className={`group relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-sm ${isCollapsed ? 'justify-center px-0' : ''} ${item.isActive ? 'bg-primary text-white font-bold shadow-md shadow-primary/20 scale-[1.01]' : 'text-text-secondary hover:bg-neutral/80 hover:text-foreground'}`}>
+                                        <Icon className={`w-4.5 h-4.5 shrink-0 ${item.isActive ? 'text-white' : 'text-text-secondary/80 group-hover:text-primary'}`} />
+                                        {!isCollapsed && <span className="truncate font-medium">{item.label}</span>}
+                                        {isCollapsed && item.isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-md bg-primary" />}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* Group 2: Planning Tools (Only in wedding context) */}
                 {toolsNav.length > 0 && (

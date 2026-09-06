@@ -78,6 +78,11 @@ export function getWeddingPublicPath(wedding: { id?: string | null; public_slug?
     return identifier ? `/w/${encodeURIComponent(identifier)}` : '';
 }
 
+export function getRsvpEmbedPath(wedding: { id?: string | null; public_slug?: string | null }) {
+    const identifier = getWeddingPublicIdentifier(wedding);
+    return identifier ? `/embed/rsvp/${encodeURIComponent(identifier)}` : '';
+}
+
 export function getWeddingPublicUrl(
     baseUrl: string,
     wedding: { id?: string | null; public_slug?: string | null; custom_domain?: string | null }

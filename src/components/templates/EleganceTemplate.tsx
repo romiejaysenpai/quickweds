@@ -11,7 +11,9 @@ import {
     GallerySection, 
     GiftSection, 
     AttireSection, 
-    FAQSection 
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -50,6 +52,15 @@ export default function EleganceTemplate({ wedding, gallery, isExpired }: Templa
                             <span>A Celebration of Love</span>
                         </div>
 
+                        <TemplateMonogram
+                            wedding={wedding}
+                            defaultShape="oval"
+                            size="md"
+                            color={motifColor}
+                            motifColor={motifColor}
+                            className="justify-start mb-4"
+                        />
+
                         <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif text-[#241e1a] leading-[1.05] tracking-tight">
                             {wedding.bride_name} <br />
                             <span className="text-2xl sm:text-4xl italic font-light font-serif my-2 block" style={{ color: motifColor }}>
@@ -68,6 +79,12 @@ export default function EleganceTemplate({ wedding, gallery, isExpired }: Templa
                                 {wedding.venue_name} {wedding.venue_address ? `• ${wedding.venue_address}` : ''}
                             </p>
                         </div>
+
+                        {wedding.quote && (
+                            <blockquote className="my-6 border-l-2 pl-4 py-1 italic font-serif text-[#63554b] text-base" style={{ borderColor: motifColor }}>
+                                &ldquo;{wedding.quote}&rdquo;
+                            </blockquote>
+                        )}
 
                         <p className="text-sm sm:text-base leading-relaxed italic text-[#63554b] mb-10 max-w-lg">
                             {wedding.story || 'The honor of your presence is requested as we unite our lives and celebrate our wedding day.'}
@@ -118,8 +135,11 @@ export default function EleganceTemplate({ wedding, gallery, isExpired }: Templa
                 </div>
             </section>
 
+            <TemplateSectionDivider template="luxury" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="luxury" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="luxury" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -133,8 +153,11 @@ export default function EleganceTemplate({ wedding, gallery, isExpired }: Templa
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="luxury" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="luxury" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="luxury" motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

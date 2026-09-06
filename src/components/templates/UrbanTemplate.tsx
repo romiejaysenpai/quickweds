@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { ArrowUpRight, Heart, Sparkles } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import {
     VideoSection,
     BioSection,
@@ -12,7 +12,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -53,6 +55,15 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: TemplateP
                         transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
                         className="lg:col-span-7 space-y-8"
                     >
+                        <TemplateMonogram
+                            wedding={wedding}
+                            defaultShape="square"
+                            size="sm"
+                            color="#FF4D5A"
+                            inverted
+                            className="mb-2"
+                        />
+
                         <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black uppercase leading-[0.82] tracking-tighter mix-blend-difference">
                             {wedding.bride_name} <br />
                             <span className="text-[#FF4D5A] font-light italic font-serif text-3xl sm:text-5xl">+</span> <br />
@@ -68,6 +79,12 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: TemplateP
                         <p className="text-sm sm:text-base font-mono uppercase tracking-wide text-white/70 max-w-md">
                             {wedding.story || 'A night of music, city lights, and monumental celebration in the heart of downtown.'}
                         </p>
+
+                        {wedding.quote && (
+                            <div className="border-l-2 border-[#FF4D5A] pl-4 py-2 font-mono text-xs uppercase tracking-wider text-white/80 bg-white/5 max-w-md">
+                                &ldquo;{wedding.quote}&rdquo;
+                            </div>
+                        )}
 
                         <div className="pt-4 flex flex-wrap gap-4 items-center">
                             <motion.a 
@@ -120,8 +137,11 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: TemplateP
                 </div>
             </section>
 
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} invert />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -135,8 +155,11 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: TemplateP
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />

@@ -11,11 +11,14 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '../wedding';
 import { SharedNewSections } from './shared';
+import type { TemplateProps } from '@/types/wedding';
 
-export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
+export default function LuxuryTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     if (wedding.template_style === 'luxury-planner') {
         return (
             <div className="bg-[#fbf7ef] text-[#2b2520] font-serif selection:bg-[#b9975b] selection:text-white pb-24">
@@ -28,6 +31,7 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                             transition={{ duration: 1 }}
                             className="order-2 lg:order-1 backdrop-blur-md bg-white/40 p-8 lg:p-12 rounded-3xl border border-white/50 shadow-xl"
                         >
+                            <TemplateMonogram wedding={wedding} defaultShape="diamond" size="sm" className="lg:justify-start mb-4" />
                             <p className="text-[10px] font-bold uppercase tracking-[0.42em] text-[#b9975b]">
                                 Planners of a beautiful day
                             </p>
@@ -41,7 +45,12 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                                 <span className="h-px w-12 bg-[#b9975b]" />
                                 <span>{wedding.venue_name}</span>
                             </div>
-                            <p className="mt-8 max-w-xl text-lg leading-8 text-[#6f645b]">
+                            {wedding.quote && (
+                                <p className="mt-4 text-base italic text-[#b9975b] max-w-xl">
+                                    &ldquo;{wedding.quote}&rdquo;
+                                </p>
+                            )}
+                            <p className="mt-6 max-w-xl text-lg leading-8 text-[#6f645b]">
                                 {wedding.story || 'An elegant celebration shaped with intention, beauty, and every thoughtful detail in place.'}
                             </p>
                             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
@@ -77,7 +86,9 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                 </section>
 
                 <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+                <TemplateSectionDivider template="luxury" motifColor="#b9975b" />
                 <BioSection id="bio" wedding={wedding} />
+                <TemplateSectionDivider template="luxury" motifColor="#b9975b" />
                 <DetailsSection id="details" wedding={wedding} />
                 {!wedding.is_thank_you_mode && (
                     <CountdownTimer id="countdown"
@@ -91,7 +102,9 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                         motifColor={wedding.motif_color}
                     />
                 )}
-                <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+                <TemplateSectionDivider template="luxury" motifColor="#b9975b" />
+                <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+                <TemplateSectionDivider template="luxury" motifColor="#b9975b" />
                 <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
                 <AttireSection wedding={wedding} />
                 <FAQSection wedding={wedding} />
@@ -108,13 +121,19 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
             <section className="min-h-screen grid grid-cols-1 md:grid-cols-12 relative overflow-hidden">
                 <div className="md:col-span-5 flex flex-col justify-center px-4 sm:px-6 md:px-16 py-12 sm:py-16 md:py-24 bg-black z-10 border-r border-[#C5A059]/10">
                     <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1.5 }}>
-                        <div className="w-16 h-[2px] bg-[#C5A059] mb-12" />
+                        <TemplateMonogram wedding={wedding} defaultShape="diamond" size="sm" className="justify-start mb-6" inverted />
+                        <div className="w-16 h-[2px] bg-[#C5A059] mb-8" />
                         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-serif text-white uppercase tracking-tighter mb-8 leading-none">
                             {wedding.bride_name} <br />
                             <span className="text-[#C5A059]">&</span> <br />
                             {wedding.groom_name}
                         </h1>
-                        <p className="text-lg sm:text-xl md:text-xl lg:text-xl font-serif italic mb-12 sm:mb-16 md:mb-20 max-w-sm text-[#C5A059]/60">
+                        {wedding.quote && (
+                            <p className="text-base font-serif italic mb-6 max-w-sm text-[#C5A059]">
+                                &ldquo;{wedding.quote}&rdquo;
+                            </p>
+                        )}
+                        <p className="text-lg sm:text-xl md:text-xl lg:text-xl font-serif italic mb-10 sm:mb-12 md:mb-16 max-w-sm text-[#C5A059]/60">
                             A celebration of rare elegance and timeless devotion.
                         </p>
                         <a href="#rsvp" aria-label="Request Presence - RSVP" className="px-10 py-5 bg-[#C5A059] text-black font-bold uppercase tracking-[0.3em] text-xs hover:bg-white transition-all shadow-[0_20px_50px_rgba(197,160,89,0.3)]">Request Presence</a>
@@ -137,7 +156,9 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="luxury" motifColor="#C5A059" />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="luxury" motifColor="#C5A059" />
             <DetailsSection id="details" wedding={wedding} invert />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -151,7 +172,9 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                     motifColor={wedding.motif_color}
                 />
             )}
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+            <TemplateSectionDivider template="luxury" motifColor="#C5A059" />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="luxury" motifColor="#C5A059" />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

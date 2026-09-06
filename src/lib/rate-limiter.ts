@@ -8,11 +8,6 @@ interface RateLimitEntry {
 // In-memory store (note: not shared across Vercel edge functions, but still provides basic protection)
 const rateLimitMap = new Map<string, RateLimitEntry>();
 
-interface RateLimitConfig {
-    maxRequests: number;  // Maximum number of requests allowed
-    windowMs: number;     // Time window in milliseconds
-}
-
 // Predefined rate limit configurations
 export const RATE_LIMITS = {
     // Strict limits for email sending (prevent abuse)
@@ -58,6 +53,9 @@ export const RATE_LIMITS = {
     
     // Authenticated API endpoints (planner, dashboard, settings, etc.)
     AUTHENTICATED_DEFAULT: { maxRequests: 100, windowMs: 15 * 60 * 1000 },  // 100 per 15 minutes
+
+    // Adding large wedding checklist templates is heavier than a normal item write
+    CHECKLIST_TEMPLATE_ADD: { maxRequests: 20, windowMs: 60 * 60 * 1000 },  // 20 per hour
     
     // Admin/moderation actions
     ADMIN_ACTION: { maxRequests: 30, windowMs: 60 * 60 * 1000 },            // 30 per hour

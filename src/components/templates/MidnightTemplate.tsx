@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Moon, Sparkles } from 'lucide-react';
+import { Moon } from 'lucide-react';
 import {
     VideoSection,
     BioSection,
@@ -12,7 +12,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -41,6 +43,16 @@ export default function MidnightTemplate({ wedding, gallery, isExpired }: Templa
                             <span>Midnight Soirée</span>
                         </div>
 
+                        <TemplateMonogram
+                            wedding={wedding}
+                            defaultShape="diamond"
+                            size="md"
+                            color="#D4AF37"
+                            motifColor={motifColor}
+                            inverted
+                            className="mb-8"
+                        />
+
                         <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif text-white mb-6 leading-tight tracking-tight">
                             {wedding.bride_name} <br />
                             <span className="text-3xl sm:text-5xl italic font-light serif text-[#D4AF37] my-2 block">&amp;</span>
@@ -57,6 +69,12 @@ export default function MidnightTemplate({ wedding, gallery, isExpired }: Templa
                                 {wedding.venue_name} {wedding.venue_address ? `• ${wedding.venue_address}` : ''}
                             </p>
                         </div>
+
+                        {wedding.quote && (
+                            <blockquote className="my-8 border-l-2 border-[#D4AF37] pl-4 font-serif italic text-amber-100/80 text-base max-w-lg leading-relaxed">
+                                &ldquo;{wedding.quote}&rdquo;
+                            </blockquote>
+                        )}
 
                         <p className="text-base sm:text-lg font-serif italic text-white/70 mb-10 max-w-lg leading-relaxed">
                             {wedding.story || 'Join us for an unforgettable evening under starlight and gold, celebrating love that shines endlessly.'}
@@ -96,8 +114,11 @@ export default function MidnightTemplate({ wedding, gallery, isExpired }: Templa
                 </div>
             </section>
 
+            <TemplateSectionDivider template="midnight" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="midnight" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="midnight" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} invert />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -111,8 +132,11 @@ export default function MidnightTemplate({ wedding, gallery, isExpired }: Templa
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="midnight" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="midnight" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="midnight" motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />

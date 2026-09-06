@@ -12,7 +12,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -38,6 +40,8 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: Template
                         transition={{ type: 'spring', stiffness: 100, damping: 20 }}
                         className="border-l-4 border-emerald-400 pl-4 sm:pl-6 bg-emerald-950/30 py-4 rounded-r-xl backdrop-blur-md border-t border-b border-r border-emerald-400/30 shadow-[0_0_40px_rgba(52,211,153,0.15)]"
                     >
+                        <TemplateMonogram wedding={wedding} defaultShape="square" size="sm" className="justify-start mb-3" />
+
                         <div className="flex items-center gap-2 text-xs text-emerald-300 font-bold mb-3">
                             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                             <Terminal className="w-3.5 h-3.5" />
@@ -60,6 +64,13 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: Template
                             <p className="text-sm font-bold text-emerald-200 truncate">{wedding.venue_name}</p>
                         </div>
                     </div>
+
+                    {wedding.quote && (
+                        <div className="border border-cyan-400/40 bg-cyan-950/20 px-4 py-2.5 text-xs text-cyan-300 font-mono max-w-xl">
+                            <span className="opacity-50 text-[10px] block mb-1">{'// EXEC::QUOTE()'}</span>
+                            &ldquo;{wedding.quote}&rdquo;
+                        </div>
+                    )}
 
                     <div className="pt-2 flex flex-wrap gap-4 items-center">
                         <motion.a
@@ -97,7 +108,9 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: Template
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="glitch" motifColor={wedding.motif_color} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="glitch" motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} invert />
             
             {!wedding.is_thank_you_mode && (
@@ -114,7 +127,9 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: Template
                 />
             )}
 
+            <TemplateSectionDivider template="glitch" motifColor={wedding.motif_color} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="glitch" motifColor={wedding.motif_color} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

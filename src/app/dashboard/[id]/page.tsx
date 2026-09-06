@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle, Bell, BellOff, Info, Camera } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle, Bell, BellOff, Info, Camera, Code2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -757,6 +757,17 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary/50 mb-3 ml-1">Tools & Planning</p>
                                     <div className="grid gap-2">
                                         <Link
+                                            href={`/dashboard/${wedding.id}/rsvp-embed`}
+                                            onClick={closeMobileMenu}
+                                            className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <Code2 className="w-4 h-4" />
+                                                RSVP Embed &amp; Share
+                                            </span>
+                                            <ArrowRight className="h-4 w-4 opacity-20" />
+                                        </Link>
+                                        <Link
                                             href={`/dashboard/${wedding.id}/planner`}
                                             onClick={closeMobileMenu}
                                             className="flex h-14 items-center justify-between rounded-xl bg-primary/5 px-4 text-sm font-bold text-primary transition hover:bg-primary/10 border border-primary/10"
@@ -1049,6 +1060,16 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {/* Mobile Home Hub / Widgets - Even smaller now */}
                         {activeTab === 'home' && (
                             <div className="grid grid-cols-2 sm:hidden gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2">
+                                <Link
+                                    href={`/dashboard/${wedding.id}/rsvp-embed`}
+                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1.5">
+                                        <Code2 className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">Embed RSVP</span>
+                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-active:opacity-100 transition-opacity" />
+                                </Link>
                                 <Link
                                     href={`/builder?edit=${wedding.id}`}
                                     className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"

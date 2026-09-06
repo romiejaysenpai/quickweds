@@ -84,6 +84,7 @@ export const rsvpSubmissionSchema = z
   .object({
     invitationToken: z.string().min(20).max(200).optional(),
     responseVersion: z.number().int().nonnegative().optional(),
+    submissionSource: z.enum(["hosted", "embed"]).optional().default("hosted"),
     weddingId: z.string().min(1, "Wedding ID is required"),
     guestName: z.string().min(1, "Guest name is required").max(200),
     guestEmail: z

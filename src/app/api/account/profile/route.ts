@@ -125,6 +125,7 @@ export async function PATCH(req: NextRequest) {
             'estimated_guest_count',
             'user_role',
             'acquisition_source',
+            'website_mode',
             'onboarding_completed_at',
             'onboarding_draft',
         ] as const;
@@ -137,6 +138,13 @@ export async function PATCH(req: NextRequest) {
         }
 
         const hasSurveyUpdates = Object.keys(surveyUpdates).length > 0;
+
+        if (
+            Object.prototype.hasOwnProperty.call(surveyUpdates, 'website_mode') &&
+            !['quickweds', 'external', 'private'].includes(surveyUpdates.website_mode)
+        ) {
+            return NextResponse.json({ error: 'Choose a valid website setup option.' }, { status: 400 });
+        }
 
         if (!hasAccountType && !hasOnboardingCompleted && !hasSurveyUpdates) {
             return NextResponse.json({ error: 'No profile updates were provided.' }, { status: 400 });

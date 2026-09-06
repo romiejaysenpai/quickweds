@@ -67,12 +67,14 @@ function initialAttendees(initialGuest?: {
 export default function RSVPForm({
   weddingId,
   wedding,
+  submissionSource = "hosted",
   invitationToken,
   initialGuest,
   onResponseSaved,
 }: {
   weddingId: string;
   wedding?: WeddingPreview;
+  submissionSource?: "hosted" | "embed";
   invitationToken?: string;
   onResponseSaved?: (attendance: string) => void;
   initialGuest?: {
@@ -197,6 +199,7 @@ export default function RSVPForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           weddingId,
+          submissionSource,
           invitationToken,
           responseVersion: initialGuest?.response_version,
           guestName: formData.guestName.trim(),
@@ -259,7 +262,7 @@ export default function RSVPForm({
         })();
 
       void trackWeddingEvent(weddingId, "rsvp_submitted", {
-        source: "rsvp_form",
+        source: submissionSource === "embed" ? "rsvp_embed" : "rsvp_form",
         attendance: formData.attendance,
       });
     } catch (err) {

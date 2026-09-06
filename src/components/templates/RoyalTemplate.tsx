@@ -2,8 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Crown, Heart } from 'lucide-react';
-import { MonogramMark } from '../MonogramMark';
+import { Crown } from 'lucide-react';
 import {
     VideoSection,
     BioSection,
@@ -13,7 +12,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -57,16 +58,12 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: TemplateP
                     {/* Top Royal Crest Monogram Badge */}
                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-[#0f0e0c] rounded-full border-2 border-[#D4AF37]/60 flex items-center justify-center overflow-hidden shadow-2xl">
                         {wedding.logo_initials ? (
-                            <MonogramMark
-                                initials={wedding.logo_initials}
-                                brideName={wedding.bride_name}
-                                groomName={wedding.groom_name}
-                                shape={wedding.logo_shape || 'crest'}
-                                animation={wedding.is_premium ? wedding.logo_animation : 'none'}
-                                color={wedding.logo_color || motifColor}
-                                motifColor={motifColor}
-                                fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
+                            <TemplateMonogram
+                                wedding={wedding}
+                                defaultShape="crest"
                                 size="sm"
+                                color="#D4AF37"
+                                motifColor={motifColor}
                                 inverted
                             />
                         ) : (
@@ -83,6 +80,12 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: TemplateP
                         <span className="text-2xl sm:text-4xl italic lowercase font-light text-[#D4AF37] block my-3 tracking-normal">and</span>
                         {wedding.groom_name}
                     </h1>
+
+                    {wedding.quote && (
+                        <blockquote className="my-6 border-y border-[#D4AF37]/30 py-3 font-serif italic text-base sm:text-lg text-amber-200/90 max-w-xl mx-auto">
+                            &ldquo;{wedding.quote}&rdquo;
+                        </blockquote>
+                    )}
 
                     <p className="text-base sm:text-xl font-serif italic mb-8 max-w-2xl mx-auto text-[#f2d0a4]/90">
                         {wedding.story || 'Cordially invite you to witness the union of two royal houses under starlight and eternal vows.'}
@@ -112,8 +115,11 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: TemplateP
                 </motion.div>
             </section>
 
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} invert />
             
             {!wedding.is_thank_you_mode && (
@@ -129,8 +135,11 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: TemplateP
                 />
             )}
 
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />

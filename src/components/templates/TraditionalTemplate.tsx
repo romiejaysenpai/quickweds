@@ -11,7 +11,9 @@ import {
     GallerySection, 
     GiftSection, 
     AttireSection, 
-    FAQSection 
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -59,6 +61,15 @@ export default function TraditionalTemplate({ wedding, gallery, isExpired }: Tem
                         <div className="h-px w-12 sm:w-20" style={{ backgroundColor: `${motifColor}50` }} />
                     </div>
 
+                    <TemplateMonogram
+                        wedding={wedding}
+                        defaultShape="crest"
+                        size="md"
+                        color={motifColor}
+                        motifColor={motifColor}
+                        className="mx-auto mb-4"
+                    />
+
                     <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#6b584a] mb-4 sm:mb-6">
                         Together with their families, cordially invite you to celebrate the marriage of
                     </p>
@@ -98,6 +109,12 @@ export default function TraditionalTemplate({ wedding, gallery, isExpired }: Tem
                         </p>
                     </div>
 
+                    {wedding.quote && (
+                        <blockquote className="my-6 max-w-lg mx-auto border-y py-3 italic text-sm sm:text-base text-[#6b584a]" style={{ borderColor: `${motifColor}30` }}>
+                            &ldquo;{wedding.quote}&rdquo;
+                        </blockquote>
+                    )}
+
                     <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
                         <motion.a 
                             whileHover={{ scale: 1.03 }}
@@ -120,8 +137,11 @@ export default function TraditionalTemplate({ wedding, gallery, isExpired }: Tem
                 </motion.div>
             </section>
 
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -135,8 +155,11 @@ export default function TraditionalTemplate({ wedding, gallery, isExpired }: Tem
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

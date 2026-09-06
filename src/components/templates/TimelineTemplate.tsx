@@ -12,7 +12,9 @@ import {
     GallerySection, 
     GiftSection, 
     AttireSection, 
-    FAQSection 
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -53,6 +55,15 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
                     <div className="bg-white border border-slate-200/80 shadow-[0_20px_70px_rgba(15,23,42,0.06)] rounded-3xl p-6 sm:p-12 md:p-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                         
                         <div className="lg:col-span-7 text-center lg:text-left space-y-6">
+                            <TemplateMonogram
+                                wedding={wedding}
+                                defaultShape="minimal"
+                                size="sm"
+                                color={motifColor}
+                                motifColor={motifColor}
+                                className="lg:justify-start justify-center mb-2"
+                            />
+
                             <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif text-slate-900 leading-tight">
                                 {wedding.bride_name} <br />
                                 <span className="text-2xl sm:text-3xl md:text-4xl italic font-light serif text-slate-400">&amp;</span> <br />
@@ -81,6 +92,12 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
                             <p className="text-sm sm:text-base leading-relaxed text-slate-600 font-sans max-w-lg">
                                 {wedding.story || 'Join us for a carefully orchestrated celebration of love, music, dining, and unforgettable moments.'}
                             </p>
+
+                            {wedding.quote && (
+                                <blockquote className="border-l-2 pl-4 py-1 italic font-serif text-slate-700 text-sm max-w-lg" style={{ borderColor: motifColor }}>
+                                    &ldquo;{wedding.quote}&rdquo;
+                                </blockquote>
+                            )}
 
                             <div className="pt-4 flex flex-wrap gap-4 justify-center lg:justify-start">
                                 <a 
@@ -118,10 +135,15 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
             </section>
 
             {/* Structured Itinerary Flow takes center stage */}
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
@@ -137,6 +159,7 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
                     motifColor={wedding.motif_color}
                 />
             )}
+            <TemplateSectionDivider template="minimal" motifColor={motifColor} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

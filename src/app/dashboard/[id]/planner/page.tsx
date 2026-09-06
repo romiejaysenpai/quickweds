@@ -3,7 +3,7 @@ import { expenseSummary } from '@/lib/expense-summary';
 
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode, ExternalLink, BookOpen, Package } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -23,6 +23,12 @@ const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/Seating
 });
 const PhotoSharingManager = dynamic(() => import('@/components/dashboard/PhotoSharingManager'), {
     loading: () => <LoadingState variant="panel" label="Loading photo sharing…" className="min-h-[320px]" />,
+});
+const ChecklistTemplateLibrary = dynamic(() => import('@/components/planner/ChecklistTemplateLibrary').then((mod) => mod.ChecklistTemplateLibrary), {
+    loading: () => <LoadingState variant="panel" label="Loading checklist templates…" className="min-h-[320px]" />,
+});
+const BoxPackingMode = dynamic(() => import('@/components/planner/BoxPackingMode').then((mod) => mod.BoxPackingMode), {
+    loading: () => <LoadingState variant="panel" label="Loading box packing mode…" className="min-h-[320px]" />,
 });
 const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudgetPieChart'), {
     ssr: false,
@@ -1114,6 +1120,8 @@ function getChecklistDueDate(weddingDateValue: string | null | undefined, months
 
 function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], wedding, reload }: any) {
     const [publishing, setPublishing] = useState(false);
+    const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
+    const [showBoxPacking, setShowBoxPacking] = useState(false);
     const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [savingTaskId, setSavingTaskId] = useState<string | null>(null);
@@ -1291,6 +1299,14 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
     const preparedCount = initialTasks.filter((t: any) => t.status === 'prepared' || t.status === 'completed').length;
     const progress = initialTasks.length > 0 ? Math.round((preparedCount / initialTasks.length) * 100) : 0;
 
+    // Template box sections (e.g. "Bride's Box", "Emergency kit") render after the built-in sections.
+    const templateSections: string[] = Array.from(
+        new Set<string>(
+            initialTasks.map((task: any) => String(task.section || 'General')).filter((section: string) => !CHECKLIST_SECTIONS.includes(section))
+        )
+    ).sort((a: string, b: string) => a.localeCompare(b));
+    const allChecklistSections = [...CHECKLIST_SECTIONS, ...templateSections];
+
     return (
         <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 md:p-10 soft-shadow border border-border">
             <div className="flex flex-col gap-4 border-b border-border/50 pb-6 mb-6 lg:flex-row lg:items-end lg:justify-between">
@@ -1304,18 +1320,48 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                     <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Done</p>
                     </div>
                     <div className="text-center sm:text-left">
-                        <button type="button" onClick={() => void seedTwelveMonthChecklist()} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white sm:w-auto">
-                            <Sparkles className="h-4 w-4" /> Load 12-Month List
-                        </button>
-                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-text-secondary">Recommended template checklist</p>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                            <button type="button" onClick={() => void seedTwelveMonthChecklist()} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white sm:w-auto">
+                                <Sparkles className="h-4 w-4" /> Load 12-Month List
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setShowTemplateLibrary((v) => !v); setShowBoxPacking(false); }}
+                                aria-expanded={showTemplateLibrary}
+                                className={`inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all sm:w-auto ${showTemplateLibrary ? 'border-primary bg-primary text-white' : 'border-primary/20 bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}
+                            >
+                                <BookOpen className="h-4 w-4" /> Checklist Templates
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setShowBoxPacking((v) => !v); setShowTemplateLibrary(false); }}
+                                aria-expanded={showBoxPacking}
+                                className={`inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all sm:w-auto ${showBoxPacking ? 'border-primary bg-primary text-white' : 'border-primary/20 bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}
+                            >
+                                <Package className="h-4 w-4" /> Box Packing Mode
+                            </button>
+                        </div>
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-text-secondary">Wedding-day box templates included</p>
                     </div>
                 </div>
             </div>
 
+            {showTemplateLibrary && (
+                <div className="mb-8">
+                    <ChecklistTemplateLibrary weddingId={weddingId} wedding={wedding} onAdded={reload} />
+                </div>
+            )}
+
+            {showBoxPacking && (
+                <div className="mb-8">
+                    <BoxPackingMode tasks={initialTasks} updateTask={updateTask} />
+                </div>
+            )}
+
             <form onSubmit={addTask} className="mb-8 grid gap-3 rounded-2xl border border-border bg-neutral/30 p-4 lg:grid-cols-3">
                 <input required value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} placeholder="Checklist item" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                 <select value={newTask.section} onChange={(e) => setNewTask({ ...newTask, section: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
-                    {CHECKLIST_SECTIONS.map(section => <option key={section} value={section}>{section}</option>)}
+                    {allChecklistSections.map(section => <option key={section} value={section}>{section}</option>)}
                 </select>
                 <input type="date" value={newTask.due_date} onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                 <input value={newTask.assigned_to} onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })} placeholder="Assigned person / role" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
@@ -1329,7 +1375,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
             </form>
 
             <div className="space-y-5">
-                {CHECKLIST_SECTIONS.map((section) => {
+                {allChecklistSections.map((section) => {
                     const sectionTasks = initialTasks.filter((task: any) => (task.section || 'General') === section);
                     if (sectionTasks.length === 0) return null;
                     return (
@@ -1352,7 +1398,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                                     <div className="grid gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-3 lg:grid-cols-2">
                                                         <input value={editTask.title} onChange={(e) => setEditTask({ ...editTask, title: e.target.value })} placeholder="Checklist item" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px] lg:col-span-2" />
                                                         <select value={editTask.section} onChange={(e) => setEditTask({ ...editTask, section: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
-                                                            {CHECKLIST_SECTIONS.map(sectionOption => <option key={sectionOption} value={sectionOption}>{sectionOption}</option>)}
+                                                            {allChecklistSections.map(sectionOption => <option key={sectionOption} value={sectionOption}>{sectionOption}</option>)}
                                                         </select>
                                                         <input type="date" value={editTask.due_date} onChange={(e) => setEditTask({ ...editTask, due_date: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                                                         <input value={editTask.assigned_to} onChange={(e) => setEditTask({ ...editTask, assigned_to: e.target.value })} placeholder="Assigned person / role" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
@@ -1415,7 +1461,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                         </div>
                     );
                 })}
-                {initialTasks.length === 0 && <div className="text-center py-12 opacity-50 font-serif italic text-sm">Your checklist is empty. Add an item or load the 12-month list.</div>}
+                {initialTasks.length === 0 && <div className="text-center py-12 opacity-50 font-serif italic text-sm">Your checklist is empty. Add an item, load the 12-month list, or browse the wedding-day checklist templates above.</div>}
             </div>
         </div>
     );

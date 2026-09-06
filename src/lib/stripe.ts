@@ -17,15 +17,4 @@ export function getStripe() {
     return stripeClient;
 }
 
-const parsePrice = (value: string | undefined, fallback: number) => {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-};
-
-export const PRICING = {
-    ACCOUNT_PRO_PRICE: parsePrice(process.env.STRIPE_ACCOUNT_PRO_PRICE, 15),
-    PLANNER_PRO_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 15),
-    PREMIUM_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 15),
-    ELITE_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 15),
-    CURRENCY: 'usd',
-} as const;
+export { PRICING, formatPrice, DEFAULT_PLANNER_PRO_PRICE_PHP } from './pricing';

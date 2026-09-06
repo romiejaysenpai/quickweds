@@ -12,11 +12,14 @@ import {
     GallerySection, 
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '../wedding';
 import { SharedNewSections } from './shared';
+import type { TemplateProps } from '@/types/wedding';
 
-export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
+export default function RomanticTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     if (wedding.template_style === 'romantic-estate') {
         return (
             <div className="relative bg-[#fff8f5] pb-24 font-serif text-[#55373b] selection:bg-[#b97983]/20">
@@ -29,7 +32,8 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                             transition={{ duration: 1 }}
                             className="text-center lg:text-left"
                         >
-                            <Heart className="mx-auto mb-8 h-10 w-10 fill-[#b97983] text-[#b97983] lg:mx-0" />
+                            <Heart className="mx-auto mb-6 h-10 w-10 fill-[#b97983] text-[#b97983] lg:mx-0" />
+                            <TemplateMonogram wedding={wedding} defaultShape="oval" size="sm" className="lg:justify-start mb-4" />
                             <p className="text-[10px] font-bold uppercase tracking-[0.42em] text-[#b97983]">Romantic estate celebration</p>
                             <h1 className="mt-8 text-5xl leading-[0.95] text-[#55373b] sm:text-6xl md:text-7xl">
                                 {wedding.bride_name}
@@ -79,7 +83,9 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                 </section>
 
                 <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+                <TemplateSectionDivider template="romantic" motifColor={wedding.motif_color} />
                 <BioSection id="bio" wedding={wedding} />
+                <TemplateSectionDivider template="romantic" motifColor={wedding.motif_color} />
                 <DetailsSection id="details" wedding={wedding} />
                 {!wedding.is_thank_you_mode && (
                     <CountdownTimer id="countdown"
@@ -93,7 +99,9 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                         motifColor={wedding.motif_color}
                     />
                 )}
-                <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+                <TemplateSectionDivider template="romantic" motifColor={wedding.motif_color} />
+                <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+                <TemplateSectionDivider template="romantic" motifColor={wedding.motif_color} />
                 <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
                 <AttireSection wedding={wedding} />
                 <FAQSection wedding={wedding} />
@@ -103,25 +111,58 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
         );
     }
 
+    const heroPhoto = wedding.hero_image || wedding.couple_photo;
+
     return (
         <div className="bg-[#fffafa] text-[#b03060] font-serif relative pb-24 selection:bg-[#b03060]/20">
             <div className="absolute top-0 left-0 w-full h-screen overflow-hidden opacity-10 pointer-events-none z-0">
                 <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, 10, 0] }} transition={{ duration: 30, repeat: Infinity }} className="absolute -top-20 -left-20 w-[600px] h-[600px] border-[40px] border-primary rounded-full filter blur-[100px]" />
             </div>
 
-            <section className="min-h-screen py-20 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative z-10">
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2 }}>
-                    <div className="mb-8 sm:mb-10 md:mb-12">
-                        <Heart className="w-12 h-12 text-primary fill-primary mx-auto animate-pulse" />
+            <section className="min-h-screen py-16 sm:py-20 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative z-10">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2 }} className="max-w-4xl w-full mx-auto">
+                    <div className="mb-4 sm:mb-6">
+                        <Heart className="w-10 h-10 sm:w-12 sm:h-12 text-primary fill-primary mx-auto animate-pulse" />
                     </div>
-                    <span className="text-xs uppercase tracking-[1em] font-bold opacity-30 mb-8 block">WE FALLING IN LOVE</span>
-                    <h1 className="text-4xl sm:text-5xl md:text-8xl lg:text-9xl mb-8 leading-tight drop-shadow-xl">
+                    <TemplateMonogram wedding={wedding} defaultShape="oval" size="sm" className="mb-4" />
+                    <span className="text-xs uppercase tracking-[0.8em] font-bold opacity-40 mb-6 block">WE FALLING IN LOVE</span>
+                    <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl mb-6 leading-tight drop-shadow-sm">
                         {wedding.bride_name} <br />
-                        <span className="font-light italic text-primary/60">&</span> <br />
+                        <span className="font-light italic text-primary/60 text-2xl sm:text-4xl">&amp;</span> <br />
                         {wedding.groom_name}
                     </h1>
-                    <div className="flex flex-col gap-6 sm:gap-8 items-center mt-8 sm:mt-12 md:mt-16">
-                        <p className="text-xl sm:text-2xl italic opacity-60">Cordially invite you to witness our forever</p>
+
+                    {heroPhoto && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            transition={{ duration: 1.1, delay: 0.2 }}
+                            className="relative mx-auto my-8 w-60 sm:w-72 md:w-80 aspect-[3/4] max-h-[460px]"
+                        >
+                            <div className="relative h-full w-full overflow-hidden rounded-t-full rounded-b-[3.5rem] border-4 border-white shadow-[0_20px_50px_rgba(176,48,96,0.18)] ring-1 ring-primary/20">
+                                <Image
+                                    src={heroPhoto}
+                                    alt={`${wedding.bride_name} & ${wedding.groom_name}`}
+                                    fill
+                                    priority
+                                    sizes="(max-width: 768px) 80vw, 360px"
+                                    className="object-cover object-[center_20%] transition-transform duration-700 hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
+                            </div>
+                            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-white/95 px-5 py-1.5 shadow-md border border-primary/15 text-[11px] font-sans tracking-widest uppercase text-primary font-semibold">
+                                {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    <div className="flex flex-col gap-6 sm:gap-8 items-center mt-6 sm:mt-8">
+                        {wedding.quote && (
+                            <p className="text-base sm:text-lg italic text-primary opacity-90 max-w-lg">
+                                &ldquo;{wedding.quote}&rdquo;
+                            </p>
+                        )}
+                        <p className="text-lg sm:text-xl italic opacity-70 max-w-lg">Cordially invite you to witness our forever</p>
                         <div className="w-24 h-[1px] bg-primary/20" />
                         <motion.a
                             whileHover={{ scale: 1.05 }}
@@ -148,7 +189,9 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="romantic" motifColor={wedding.motif_color} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="romantic" motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
@@ -162,7 +205,9 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                     motifColor={wedding.motif_color}
                 />
             )}
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+            <TemplateSectionDivider template="romantic" motifColor={wedding.motif_color} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="romantic" motifColor={wedding.motif_color} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

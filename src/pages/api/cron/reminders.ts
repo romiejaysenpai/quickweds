@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/lib/email';
 import { getGuestReminderReact } from '@/emails/quickweds-transactional';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
+import { getWeddingConfirmationImageUrl } from '@/lib/email-images';
 
 let supabaseAdmin: any = null;
 
@@ -77,6 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         let sentCount = 0;
         for (const guest of eligibleGuests) {
+          const confirmationImageUrl = getWeddingConfirmationImageUrl(wedding);
           const react = getGuestReminderReact({
             guestName: guest.guest_name,
             brideName: wedding.bride_name,
@@ -88,6 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             weddingUrl: getWeddingPublicUrl(process.env.NEXT_PUBLIC_APP_URL || 'https://quickweds.site', wedding),
             attendance: 'Yes',
             numGuests: guest.num_guests,
+            confirmationImageUrl: confirmationImageUrl || undefined,
           });
 
           const delivery = await sendEmail({

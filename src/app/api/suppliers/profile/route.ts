@@ -104,7 +104,7 @@ function getSupplierReviewEmailHtml(profile: SupplierProfile, ownerEmail?: strin
     return `
         <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 32px; border: 1px solid #eadeda; border-radius: 24px; background: #ffffff;">
             <p style="margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #D16C78;">Supplier Directory Review</p>
-            <h1 style="margin: 0 0 16px; color: #34272b; font-size: 28px;">New business listing submitted</h1>
+            <h1 style="margin: 0 0 16px; color: #34272b; font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 30px; line-height: 1.15; letter-spacing: -0.3px;">New business listing submitted</h1>
             <p style="margin: 0 0 24px; color: #6f6266; line-height: 1.7;">
                 A supplier submitted a listing for QuickWeds review. Approving it will publish the business in the public directory. Not approving it will keep it hidden.
             </p>

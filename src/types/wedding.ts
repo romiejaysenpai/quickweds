@@ -22,6 +22,10 @@ export interface Wedding {
     gallery_images?: string | string[];
     gallery_layout?: string;
     custom_domain?: string;
+    website_mode?: 'quickweds' | 'external' | 'private';
+    external_website_url?: string;
+    external_platform?: string;
+    rsvp_embed_enabled?: boolean;
     template: string;
     template_style?: string;
     card_style?: string;

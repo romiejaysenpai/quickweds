@@ -11,15 +11,15 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '../wedding';
 import { SharedNewSections } from './shared';
-import { derivePalette, getTypography } from '@/lib/theme-engine';
+import type { TemplateProps } from '@/types/wedding';
 
-export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
+export default function BohoTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     const motifColor = wedding.motif_color || '#8b4513';
-    const palette = derivePalette(motifColor);
-    const typography = getTypography('boho');
 
     return (
         <div className="bg-[#fcf8f1] text-[#5d2e0a] font-serif relative pb-24 selection:bg-[#8b4513]/20 overflow-x-hidden">
@@ -43,6 +43,8 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
                         >
+                            <TemplateMonogram wedding={wedding} defaultShape="laurel" size="sm" className="lg:justify-start mb-4" />
+
                             <span className="text-[10px] sm:text-xs uppercase tracking-[0.8em] font-black opacity-40 mb-6 block">WILD & FREE LOVE</span>
 
                             <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[10rem] mb-8 leading-[0.85] text-[#5d2e0a] italic font-serif">
@@ -66,6 +68,12 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
                                     <p className="text-[10px] uppercase tracking-[0.3em] opacity-40">{wedding.venue_name}</p>
                                 </div>
                             </div>
+
+                            {wedding.quote && (
+                                <p className="mt-8 text-sm sm:text-base font-serif italic text-[#8b4513] opacity-80 max-w-md">
+                                    &ldquo;{wedding.quote}&rdquo;
+                                </p>
+                            )}
                         </motion.div>
                     </div>
 
@@ -138,7 +146,9 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="boho" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="boho" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
 
             {!wedding.is_thank_you_mode && (
@@ -154,7 +164,9 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
 
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+            <TemplateSectionDivider template="boho" motifColor={motifColor} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="boho" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template="boho" motifColor={motifColor} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

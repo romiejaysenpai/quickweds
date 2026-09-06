@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Film, Play } from 'lucide-react';
 import {
     VideoSection,
     BioSection,
@@ -12,7 +11,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -66,6 +67,14 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: TemplatePr
                     </div>
 
                     <div className="text-center font-serif text-zinc-900 bg-[#faf6ed] p-6 sm:p-8 rounded-sm shadow-inner space-y-3">
+                        <TemplateMonogram
+                            wedding={wedding}
+                            defaultShape="square"
+                            size="sm"
+                            color="#18181b"
+                            motifColor={wedding.motif_color}
+                            className="mb-2 mx-auto"
+                        />
                         <p className="text-[10px] font-mono tracking-[0.4em] uppercase text-zinc-500">AN ANALOG LOVE STORY</p>
                         <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-zinc-900 leading-tight">
                             {wedding.bride_name} &amp; {wedding.groom_name}
@@ -74,6 +83,11 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: TemplatePr
                         <p className="text-xs uppercase tracking-widest font-mono text-zinc-600">
                             {formattedDate} • {wedding.venue_name}
                         </p>
+                        {wedding.quote && (
+                            <p className="font-serif italic text-xs text-zinc-700 max-w-sm mx-auto pt-2 border-t border-zinc-300">
+                                &ldquo;{wedding.quote}&rdquo;
+                            </p>
+                        )}
                     </div>
                 </motion.div>
 
@@ -93,8 +107,11 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: TemplatePr
                 </motion.div>
             </section>
 
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} invert />
             
             {!wedding.is_thank_you_mode && (
@@ -111,8 +128,11 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: TemplatePr
                 />
             )}
 
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="film" motifColor={wedding.motif_color} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />
