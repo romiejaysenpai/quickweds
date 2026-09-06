@@ -6,6 +6,7 @@ export interface Wedding {
     groom_name: string;
     wedding_date: string;
     wedding_time: string;
+    event_timezone?: string;
     venue_name: string;
     venue_address?: string;
     maps_link?: string;
@@ -21,10 +22,15 @@ export interface Wedding {
     gallery_images?: string | string[];
     gallery_layout?: string;
     custom_domain?: string;
+    website_mode?: 'quickweds' | 'external' | 'private';
+    external_website_url?: string;
+    external_platform?: string;
+    rsvp_embed_enabled?: boolean;
     template: string;
     template_style?: string;
     card_style?: string;
     background_style?: string;
+    section_styles?: SectionStylesMap | string;
     section_title_font_style?: string;
     section_title_color_style?: string;
     font_style: string;
@@ -183,3 +189,19 @@ export interface SectionProps {
     wedding: Wedding;
     invert?: boolean;
 }
+
+export type SectionBackgroundMode = 'default' | 'color' | 'gradient' | 'texture' | 'image';
+export type SectionTextureType = 'grain' | 'linen' | 'washi' | 'vignette' | 'dots';
+
+export interface SectionStyleConfig {
+    mode?: SectionBackgroundMode;
+    color?: string;
+    gradient?: string;
+    texture?: SectionTextureType;
+    imageUrl?: string;
+    overlayOpacity?: number; // 0 - 80 percent
+    overlayTheme?: 'dark' | 'light';
+    textColorMode?: 'auto' | 'dark' | 'light';
+}
+
+export type SectionStylesMap = Record<string, SectionStyleConfig>;

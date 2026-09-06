@@ -19,7 +19,9 @@ const disposableSettings = {
 };
 
 async function mockDisposableCameraApis(page: Page) {
-  let uploadCalled = false;
+    let uploadCalled = false;
+    let prepareCalled = false;
+    let completeCalled = false;
 
   await page.route('**/api/public/photos/test-wedding', async (route) => {
     await route.fulfill({
@@ -51,21 +53,42 @@ async function mockDisposableCameraApis(page: Page) {
     });
   });
 
-  await page.route('**/api/public/photos/upload', async (route) => {
-    uploadCalled = true;
-    const body = route.request().postData() || '';
-    expect(body).toContain('editMetadata');
-    expect(body).toContain('soft-film');
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true }),
+    await page.route('**/api/public/photos/upload', async (route) => {
+        const body = JSON.parse(route.request().postData() || '{}');
+        if (body.operation === 'prepare') {
+            prepareCalled = true;
+            expect(body.editMetadata.filter).toBe('soft-film');
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    success: true,
+                    intentId: '2b8a4ed9-a651-4ab8-9d08-cc50e89f19f9',
+                    bucket: 'quickweds',
+                    path: 'guest-uploads/test-wedding/memory.jpg',
+                    token: 'test-signed-upload-token',
+                }),
+            });
+            return;
+        }
+        if (body.operation === 'complete') {
+            completeCalled = true;
+            expect(body.intentId).toBe('2b8a4ed9-a651-4ab8-9d08-cc50e89f19f9');
+            await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) });
+            return;
+        }
+        await route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'Unexpected operation' }) });
     });
-  });
 
-  return {
-    wasUploadCalled: () => uploadCalled,
+    await page.route('**/storage/v1/object/upload/sign/**', async (route) => {
+        uploadCalled = true;
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ Key: 'guest-uploads/test-wedding/memory.jpg' }) });
+    });
+
+    return {
+        wasUploadCalled: () => uploadCalled,
+        wasPrepareCalled: () => prepareCalled,
+        wasCompleteCalled: () => completeCalled,
   };
 }
 
@@ -106,6 +129,8 @@ test.describe('Disposable Camera Mode', () => {
     await expect(page.getByText('Photo roll progress')).toBeVisible();
     await expect(page.getByText('2 / 5')).toBeVisible();
     expect(api.wasUploadCalled()).toBe(true);
+    expect(api.wasPrepareCalled()).toBe(true);
+    expect(api.wasCompleteCalled()).toBe(true);
   });
 
   test('keeps the normal photo portal free of disposable camera editing when mode is off', async ({ page }) => {

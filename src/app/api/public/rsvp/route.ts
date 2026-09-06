@@ -1,173 +1,246 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { rsvpSubmissionSchema } from '@/lib/validations';
-import { createRateLimitMiddleware, getClientIP, sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
-import { sendRsvpNotifications } from '@/lib/rsvp-notifications';
-import { isMissingPublicSlugColumnError } from '@/lib/wedding-slugs';
-import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
-import { makeGuestCode, makeSeatLookupToken } from '@/lib/seat-finder';
-
-function getPrimaryPlusOneName(raw: string) {
-    const [firstName] = raw
-        .split(',')
-        .map((name) => name.trim())
-        .filter(Boolean);
-    return firstName || '';
-}
+import { createHash } from "crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { getSupabaseAdminClient } from "@/lib/supabase-admin";
+import { rsvpSubmissionSchema } from "@/lib/validations";
+import {
+  createRateLimitMiddleware,
+  getClientIP,
+  sanitizeInput,
+} from "@/lib/rate-limit";
+import { sendRsvpNotifications } from "@/lib/rsvp-notifications";
+import { invalidateDashboardCounters } from "@/lib/dashboard-counters";
+import { makeGuestCode, makeSeatLookupToken } from "@/lib/seat-finder";
+import { isRsvpClosed } from "@/lib/event-time";
 
 export async function POST(req: NextRequest) {
-    const body = await req.json().catch(() => ({}));
-    const parsed = rsvpSubmissionSchema.safeParse(body);
-
-    if (!parsed.success) {
-        return NextResponse.json({ error: parsed.error.issues.map((issue) => issue.message).join(', ') }, { status: 400 });
-    }
-
-    const weddingId = sanitizeWeddingId(parsed.data.weddingId);
-    if (!weddingId) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
-
-    const rateLimit = createRateLimitMiddleware('RSVP_SUBMIT');
-    const limited = await rateLimit.check(`${getClientIP(req)}:${weddingId}`);
-    if (limited.limited) return limited.response;
-
-    const guestName = sanitizeInput(parsed.data.guestName, { maxLength: 200 });
-    const guestEmail = sanitizeEmail(parsed.data.guestEmail || '');
-    const mealPreference = sanitizeInput(parsed.data.mealPreference || '', { maxLength: 200 });
-    const dietaryDetails = sanitizeInput(parsed.data.dietaryDetails || '', { maxLength: 1000 });
-    const songRequest = sanitizeInput(parsed.data.songRequest || '', { maxLength: 500 });
-    const plusOneNames = sanitizeInput(parsed.data.plusOneNames || '', { maxLength: 1000 });
-    const message = sanitizeInput(parsed.data.message || '', { maxLength: 2000, allowNewlines: true });
-    const householdName = sanitizeInput(parsed.data.householdName || '', { maxLength: 200 });
-    const householdMembers = parsed.data.householdMembers
-        .map((name) => sanitizeInput(name, { maxLength: 200 }))
-        .filter(Boolean);
-
-    if (!guestName) {
-        return NextResponse.json({ error: 'Guest name is required.' }, { status: 400 });
-    }
-
-    try {
-        const db = getSupabaseAdminClient() as any;
-        const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
-        let weddingResult = await db
-            .from('weddings')
-            .select(weddingSelect)
-            .eq('id', weddingId)
-            .is('deleted_at', null)
-            .maybeSingle();
-
-        if (weddingResult.error && isMissingPublicSlugColumnError(weddingResult.error)) {
-            weddingResult = await db
-                .from('weddings')
-                .select(weddingSelect.replace('public_slug, ', ''))
-                .eq('id', weddingId)
-                .is('deleted_at', null)
-                .maybeSingle();
-        }
-
-        const { data: wedding, error: weddingError } = weddingResult;
-
-        if (weddingError) throw weddingError;
-        if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
-
-        const { data: existing, error: duplicateError } = await db
-            .from('rsvps')
-            .select('id')
-            .eq('wedding_id', weddingId)
-            .ilike('guest_name', guestName)
-            .limit(1);
-
-        if (duplicateError) throw duplicateError;
-        if (existing?.length) {
-            return NextResponse.json({
-                error: "You have already RSVP'd for this wedding. If you need to make changes, please contact the couple directly.",
-                code: 'duplicate_rsvp',
-            }, { status: 409 });
-        }
-
-        const insertData: Record<string, unknown> = {
-            wedding_id: weddingId,
-            guest_name: guestName,
-            guest_email: guestEmail || null,
-            attendance: parsed.data.attendance,
-            num_guests: parsed.data.numGuests || 1,
-            rsvp_status: parsed.data.attendance === 'Yes' ? 'confirmed' : 'declined',
-            plus_one_allowed: parsed.data.numGuests > 1 || Boolean(plusOneNames),
-        };
-
-        if (parsed.data.attendance === 'Yes') {
-            insertData.seat_lookup_token = makeSeatLookupToken();
-            insertData.guest_code = makeGuestCode(guestName);
-        }
-        if (weddingResult.error && String(weddingResult.error.message || '').includes('rsvp_events')) {
-            weddingResult = await db
-                .from('weddings')
-                .select(weddingSelect.replace('rsvp_events, ', ''))
-                .eq('id', weddingId)
-                .is('deleted_at', null)
-                .maybeSingle();
-        }
-
-        if (mealPreference && mealPreference !== 'No Preference') insertData.meal_preference = mealPreference;
-        if (dietaryDetails) insertData.dietary_details = dietaryDetails;
-        if (message) insertData.message = message;
-        if (plusOneNames) {
-            insertData.plus_one_names = plusOneNames;
-            insertData.plus_one_name = getPrimaryPlusOneName(plusOneNames);
-            insertData.plus_one_rsvp_status = parsed.data.attendance === 'Yes' ? 'confirmed' : 'declined';
-        }
-        if (songRequest) insertData.song_request = songRequest;
-        if (parsed.data.childrenCount > 0) insertData.children_count = parsed.data.childrenCount;
-        if (householdName) insertData.household_name = householdName;
-        if (householdMembers.length > 0) insertData.household_members = householdMembers;
-
-        const configuredEvents = Array.isArray(wedding.rsvp_events) ? wedding.rsvp_events : [];
-        const allowedEventIds = new Set(configuredEvents.map((event: { id?: unknown }) => String(event?.id || '')).filter(Boolean));
-        const eventResponses = parsed.data.eventResponses.filter((response) => allowedEventIds.has(response.eventId));
-        if (eventResponses.length > 0) insertData.event_responses = eventResponses;
-
-        let { data: rsvp, error: insertError } = await db
-            .from('rsvps')
-            .insert(insertData)
-            .select('id')
-            .single();
-
-        if (insertError && ['household_name', 'household_members', 'event_responses'].some((column) => String(insertError.message || '').includes(column))) {
-            const compatibleInsert = { ...insertData };
-            delete compatibleInsert.household_name;
-            delete compatibleInsert.household_members;
-            delete compatibleInsert.event_responses;
-            const fallbackInsert = await db.from('rsvps').insert(compatibleInsert).select('id').single();
-            rsvp = fallbackInsert.data;
-            insertError = fallbackInsert.error;
-        }
-
-        if (insertError) throw insertError;
-        await invalidateDashboardCounters(weddingId);
-
-        const notifications = await sendRsvpNotifications(db, {
-            weddingId,
-            wedding,
-            guestName,
-            guestEmail,
-            attendance: parsed.data.attendance,
-            numGuests: parsed.data.numGuests || 1,
-            message,
-            dietaryDetails,
-            songRequest,
-            plusOneNames,
-            childrenCount: parsed.data.childrenCount || 0,
-            guestCode: typeof insertData.guest_code === 'string' ? insertData.guest_code : '',
-            seatLookupToken: typeof insertData.seat_lookup_token === 'string' ? insertData.seat_lookup_token : '',
-        });
-
+  const parsed = rsvpSubmissionSchema.safeParse(
+    await req.json().catch(() => ({})),
+  );
+  if (!parsed.success)
+    return NextResponse.json(
+      { error: parsed.error.issues.map((issue) => issue.message).join(", ") },
+      { status: 400 },
+    );
+  const input = parsed.data;
+  const limit = await createRateLimitMiddleware("RSVP_SUBMIT").check(
+    `${getClientIP(req)}:${input.weddingId}`,
+  );
+  if (limit.limited) return limit.response;
+  const db = getSupabaseAdminClient() as any;
+  let claim = "";
+  let saved = false;
+  try {
+    const { data: wedding, error } = await db
+      .from("weddings")
+      .select("*")
+      .eq("id", input.weddingId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) throw error;
+    if (!wedding?.is_published)
+      return NextResponse.json(
+        { error: "Invitation unavailable." },
+        { status: 404 },
+      );
+    if (input.submissionSource === "embed" && wedding.rsvp_embed_enabled !== true)
+      return NextResponse.json(
+        { error: "This RSVP embed is not accepting responses." },
+        { status: 403 },
+      );
+    if (isRsvpClosed(wedding.rsvp_deadline, wedding.event_timezone || "UTC"))
+      return NextResponse.json(
+        {
+          error: `Responses are closed. Please contact ${wedding.contact_person || "the couple"} to request a change.`,
+        },
+        { status: 409 },
+      );
+    const clean = (value: string, maxLength = 1000) =>
+      sanitizeInput(value, { maxLength, allowNewlines: true });
+    const attendance = input.attendance;
+    const attendees =
+      attendance === "No"
+        ? []
+        : input.attendees.map((person) => ({
+            name: clean(person.name, 200),
+            kind: person.kind,
+            meal: clean(person.meal || "", 200),
+            dietary: clean(person.dietary || "", 500),
+          }));
+    const eventIds = new Set(
+      (Array.isArray(wedding.rsvp_events) ? wedding.rsvp_events : []).map(
+        (event: { id: string }) => event.id,
+      ),
+    );
+    const record: Record<string, any> = {
+      response_version: input.responseVersion,
+      wedding_id: wedding.id,
+      guest_name: clean(input.guestName, 200),
+      guest_email: input.guestEmail?.trim().toLowerCase() || null,
+      attendance,
+      num_guests: attendance === "No" ? 1 : input.numGuests,
+      rsvp_status:
+        attendance === "Yes"
+          ? "confirmed"
+          : attendance === "No"
+            ? "declined"
+            : "pending",
+      meal_preference:
+        attendance === "No"
+          ? ""
+          : clean(
+              attendees
+                .map((person) => person.meal)
+                .filter(Boolean)
+                .join(", ") ||
+                input.mealPreference ||
+                "",
+              200,
+            ),
+      dietary_details:
+        attendance === "No"
+          ? ""
+          : clean(
+              attendees
+                .map((person) =>
+                  person.dietary ? `${person.name}: ${person.dietary}` : "",
+                )
+                .filter(Boolean)
+                .join("\n") || input.dietaryDetails,
+            ),
+      message: clean(input.message, 2000),
+      song_request: clean(input.songRequest, 500),
+      plus_one_names:
+        attendance === "No"
+          ? ""
+          : clean(
+              attendees
+                .slice(1)
+                .map((person) => person.name)
+                .join(", ") || input.plusOneNames,
+            ),
+      plus_one_name:
+        attendance === "No"
+          ? ""
+          : clean(
+              attendees[1]?.name || input.plusOneNames.split(",")[0] || "",
+              200,
+            ),
+      plus_one_rsvp_status: attendance === "Yes" ? "confirmed" : "declined",
+      children_count: attendance === "No" ? 0 : input.childrenCount,
+      household_name: clean(input.householdName, 200),
+      household_members:
+        attendance === "No"
+          ? []
+          : attendees.length
+            ? attendees.slice(1).map((person) => person.name)
+            : input.householdMembers.map((name) => clean(name, 200)),
+      attendees,
+      event_responses: input.eventResponses
+        .filter((event) => eventIds.has(event.eventId))
+        .map((event) => ({
+          ...event,
+          attendance: attendance === "No" ? "No" : event.attendance,
+        })),
+    };
+    let guest: any;
+    if (input.invitationToken) {
+      const result = await db.rpc("qw_respond_to_invitation", {
+        p_wedding: wedding.id,
+        p_token: input.invitationToken,
+        p_data: record,
+      });
+      if (result.error)
         return NextResponse.json(
-            { success: true, rsvpId: rsvp.id, notifications },
-            { headers: limited.headers }
+          {
+            error:
+              "Unable to update this invitation. Check the party allowance or ask the couple for help.",
+          },
+          { status: 409 },
         );
-    } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unable to submit RSVP.';
-        console.error('Public RSVP submit failed:', message);
-        return NextResponse.json({ error: 'Unable to submit RSVP.' }, { status: 500 });
+      guest = result.data;
+    } else {
+      claim = createHash("sha256")
+        .update(
+          `${record.guest_name.toLowerCase()}\0${record.guest_email || ""}`,
+        )
+        .digest("hex");
+      const claimed = await db
+        .from("public_rsvp_submission_keys")
+        .insert({ wedding_id: wedding.id, submission_key: claim });
+      if (claimed.error) {
+        claim = "";
+        if (claimed.error.code === "23505")
+          return NextResponse.json(
+            {
+              error:
+                "A response with these details is already saved. Use your guest pass to edit it, or ask the couple for your personal invitation.",
+              code: "duplicate_rsvp",
+            },
+            { status: 409 },
+          );
+        throw claimed.error;
+      }
+      const inserted = await db
+        .from("rsvps")
+        .insert({
+          ...record,
+          response_version: 0,
+          seat_lookup_token: makeSeatLookupToken(),
+          guest_code: makeGuestCode(record.guest_name),
+          responded_at: new Date().toISOString(),
+          invited_party_size: 50,
+        })
+        .select("*")
+        .single();
+      if (inserted.error) throw inserted.error;
+      guest = inserted.data;
+      saved = true;
+      await db
+        .from("public_rsvp_submission_keys")
+        .update({ rsvp_id: guest.id })
+        .eq("wedding_id", wedding.id)
+        .eq("submission_key", claim);
     }
+    saved = true;
+    await db
+      .from("product_events")
+      .insert({ wedding_id: wedding.id, event: "rsvp_saved" });
+    await invalidateDashboardCounters(wedding.id).catch(() => undefined);
+    const notifications = await sendRsvpNotifications(db, {
+      weddingId: wedding.id,
+      wedding,
+      guestName: guest.guest_name,
+      guestEmail: guest.guest_email || "",
+      attendance,
+      numGuests: guest.num_guests,
+      message: record.message,
+      dietaryDetails: record.dietary_details,
+      songRequest: record.song_request,
+      plusOneNames: record.plus_one_names,
+      childrenCount: record.children_count,
+      guestCode: guest.guest_code,
+      seatLookupToken: guest.seat_lookup_token,
+    }).catch(() => ({ success: false, results: [] }));
+    return NextResponse.json(
+      {
+        success: true,
+        rsvpId: guest.id,
+        guestPass: `/guest/${guest.seat_lookup_token}`,
+        notifications,
+      },
+      { headers: limit.headers },
+    );
+  } catch (error) {
+    if (claim && !saved)
+      await db
+        .from("public_rsvp_submission_keys")
+        .delete()
+        .eq("wedding_id", input.weddingId)
+        .eq("submission_key", claim);
+    console.error("RSVP save failed", error);
+    return NextResponse.json(
+      { error: "Unable to save your response. Please try again." },
+      { status: 500 },
+    );
+  }
 }

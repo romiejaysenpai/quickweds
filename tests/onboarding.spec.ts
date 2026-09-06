@@ -25,20 +25,21 @@ function getSupabaseStorageKey() {
 async function seedAuthSession(page: Page) {
   const expiresAt = Math.floor(Date.now() / 1000) + 3600;
   await page.addInitScript(
-    ({ storageKey, user, expiresAtValue }) => {
-      window.localStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          access_token: 'fake-access-token',
-          refresh_token: 'fake-refresh-token',
-          token_type: 'bearer',
-          expires_in: 3600,
-          expires_at: expiresAtValue,
-          user,
-        }),
-      );
+    ({ user, expiresAtValue }) => {
+      window.localStorage.removeItem('quickweds_onboarding_survey_draft_v1');
+      const sessionData = JSON.stringify({
+        access_token: 'fake-access-token',
+        refresh_token: 'fake-refresh-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: expiresAtValue,
+        user,
+      });
+      window.localStorage.setItem('sb-jioouyzzitvtlpzqqbkz-auth-token', sessionData);
+      window.localStorage.setItem('sb-127-auth-token', sessionData);
+      window.localStorage.setItem('supabase.auth.token', sessionData);
     },
-    { storageKey: getSupabaseStorageKey(), user: fakeUser, expiresAtValue: expiresAt },
+    { user: fakeUser, expiresAtValue: expiresAt },
   );
 }
 
@@ -54,7 +55,7 @@ async function mockCommonAuthenticatedRoutes(page: Page) {
   });
 }
 
-test.describe('Couple onboarding', () => {
+test.describe('Couple onboarding survey', () => {
   test('redirects unauthenticated users to login with onboarding next path', async ({ page }) => {
     await page.goto('/onboarding/account-type');
 
@@ -62,18 +63,48 @@ test.describe('Couple onboarding', () => {
     await expect(page.getByRole('button', { name: /Login/i })).toBeVisible();
   });
 
-  test('couple account selection enters the guided goal sequence', async ({ page }) => {
+  test('shows and clears the branded loading state while account data is pending', async ({ page }) => {
     await seedAuthSession(page);
     await mockCommonAuthenticatedRoutes(page);
 
+    let releaseProfile: (() => void) | undefined;
+    const profileGate = new Promise<void>((resolve) => {
+      releaseProfile = resolve;
+    });
+
+    await page.route('**/api/account/profile', async (route) => {
+      await profileGate;
+      await route.fulfill({ json: { profile: { user_id: fakeUser.id, account_type: null, onboarding_completed: false } } });
+    });
+
+    await page.goto('/onboarding/account-type', { waitUntil: 'domcontentloaded' });
+
+    await expect(page.getByText('Loading your account…')).toBeVisible();
+    await expect(page.getByRole('progressbar', { name: 'Loading your account…' })).toBeVisible();
+
+    releaseProfile?.();
+
+    await expect(page.getByText('Loading your account…')).toBeHidden({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /I am a Couple/i })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('couple account selection enters 3-step survey and completes successfully', async ({ page }) => {
+    await seedAuthSession(page);
+    await mockCommonAuthenticatedRoutes(page);
+
+    let savedSurveyData: any = null;
+
     await page.route('**/api/account/profile', async (route) => {
       if (route.request().method() === 'PATCH') {
+        const body = JSON.parse(route.request().postData() || '{}');
+        savedSurveyData = body;
         await route.fulfill({
           json: {
             profile: {
               user_id: fakeUser.id,
               account_type: 'couple',
-              onboarding_completed: false,
+              onboarding_completed: body.onboarding_completed ?? false,
+              ...body,
             },
           },
         });
@@ -84,10 +115,52 @@ test.describe('Couple onboarding', () => {
     });
 
     await page.goto('/onboarding/account-type');
-    await page.getByRole('button', { name: /I am a couple/i }).click();
+    await page.getByRole('button', { name: /I am a Couple/i }).click();
 
-    await expect(page.getByRole('heading', { name: /What would feel best to set up first/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Create our wedding site/i })).toBeVisible();
+    // Website setup choice
+    await expect(page.getByRole('heading', { name: /Do you need a wedding website/i })).toBeVisible();
+    await page.getByRole('button', { name: /Connect my existing website/i }).click();
+    await page.getByRole('button', { name: /^Continue/i }).click();
+
+    // Step 1: Your Wedding
+    await expect(page.getByRole('heading', { name: /Tell us about your wedding/i })).toBeVisible();
+    await expect(page.getByText(/Step 1 of 3/i)).toBeVisible();
+    
+    // Select not decided yet
+    await page.getByRole('button', { name: /Not Decided/i }).click();
+    // Select guest count
+    await page.getByRole('button', { name: /101–200/i }).click();
+    
+    // Move to Step 2
+    await page.getByRole('button', { name: /Next: Planning Journey/i }).click();
+
+    // Step 2: Planning Journey
+    await expect(page.getByRole('heading', { name: /Your Planning Journey/i })).toBeVisible();
+    await expect(page.getByText(/Step 2 of 3/i)).toBeVisible();
+    
+    // Select stage
+    await page.getByRole('button', { name: /Planning already/i }).click();
+    // Select primary needs
+    await page.getByRole('button', { name: /Seating arrangement/i }).click();
+
+    // Move to Step 3
+    await page.getByRole('button', { name: /Next: About You/i }).click();
+
+    // Step 3: About You
+    await expect(page.getByRole('heading', { name: /Almost done! Tell us about you/i })).toBeVisible();
+    await expect(page.getByText(/Step 3 of 3/i)).toBeVisible();
+
+    // Select role and source
+    await page.getByRole('button', { name: /Bride/i }).click();
+    await page.getByRole('button', { name: /Instagram/i }).click();
+
+    // Complete survey
+    await page.getByRole('button', { name: /Complete Setup/i }).click();
+
+    // Celebration / Ready screen
+    await expect(page.getByRole('heading', { name: /Your QuickWeds space is ready/i })).toBeVisible();
+    expect(savedSurveyData?.onboarding_completed).toBe(true);
+    expect(savedSurveyData?.website_mode).toBe('external');
   });
 
   test('supplier account selection redirects to supplier dashboard', async ({ page }) => {
@@ -112,12 +185,12 @@ test.describe('Couple onboarding', () => {
     });
 
     await page.goto('/onboarding/account-type');
-    await page.getByRole('button', { name: /I am a supplier/i }).click();
+    await page.getByRole('button', { name: /I am a Wedding Supplier/i }).click();
 
     await expect(page).toHaveURL(/\/supplier\/dashboard/);
   });
 
-  test('dashboard onboarding section can be completed and hidden', async ({ page }) => {
+  test('dashboard shows personalized recommendations and handles checklist', async ({ page }) => {
     await seedAuthSession(page);
     await mockCommonAuthenticatedRoutes(page);
 
@@ -132,6 +205,8 @@ test.describe('Couple onboarding', () => {
               user_id: fakeUser.id,
               account_type: 'couple',
               onboarding_completed: true,
+              planning_stage: 'Planning already',
+              primary_needs: ['Seating arrangement', 'Budget tracking'],
             },
           },
         });
@@ -144,6 +219,8 @@ test.describe('Couple onboarding', () => {
             user_id: fakeUser.id,
             account_type: 'couple',
             onboarding_completed: onboardingCompleted,
+            planning_stage: 'Planning already',
+            primary_needs: ['Seating arrangement', 'Budget tracking'],
           },
         },
       });
@@ -151,6 +228,7 @@ test.describe('Couple onboarding', () => {
 
     await page.goto('/dashboard');
 
+    await expect(page.getByRole('heading', { name: /Recommended Next Steps/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Your first QuickWeds wins/i })).toBeVisible();
     await page.getByRole('button', { name: /Complete/i }).click();
     await expect(page.getByRole('heading', { name: /Your first QuickWeds wins/i })).toBeHidden();

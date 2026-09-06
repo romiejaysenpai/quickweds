@@ -131,10 +131,10 @@ export const viewport: Viewport = {
   userScalable: true,
   viewportFit: "cover",
   themeColor: "#FFF8F4",
+  colorScheme: "light",
 };
 
 import { AuthProvider } from "@/context/AuthContext";
-import { ThemeProvider } from "@/context/ThemeContext";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import PWAInstaller from "@/components/PWAInstaller";
@@ -149,37 +149,42 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{document.documentElement.classList.remove('dark');document.documentElement.removeAttribute('data-theme');localStorage.removeItem('theme');}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className={`
         ${inter.variable} ${montserrat.variable} ${playfair.variable}
         antialiased
       `}>
-        <ThemeProvider>
-          <AuthProvider>
-            <SectionProvider>
-              {children}
-            </SectionProvider>
-            <NativeAppChrome />
-            <PWAInstaller />
-            <Analytics />
-            <SpeedInsights />
-            {googleAnalyticsId && (
-              <>
-                <Script
-                  src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
-                  strategy="afterInteractive"
-                />
-                <Script id="google-analytics" strategy="afterInteractive">
-                  {`
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    gtag('js', new Date());
-                    gtag('config', '${googleAnalyticsId}');
-                  `}
-                </Script>
-              </>
-            )}
-          </AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <SectionProvider>
+            {children}
+          </SectionProvider>
+          <NativeAppChrome />
+          <PWAInstaller />
+          <Analytics />
+          <SpeedInsights />
+          {googleAnalyticsId && (
+            <>
+              <Script
+                src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+                strategy="afterInteractive"
+              />
+              <Script id="google-analytics" strategy="afterInteractive">
+                {`
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${googleAnalyticsId}');
+                `}
+              </Script>
+            </>
+          )}
+        </AuthProvider>
       </body>
     </html>
   );

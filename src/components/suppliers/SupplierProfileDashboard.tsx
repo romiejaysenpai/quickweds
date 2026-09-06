@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { CheckCircle2, ImagePlus, Loader2, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { getClientAccountProfileForIntent, getRoleAwareRedirect } from '@/lib/account';
 import SupplierShareControls from '@/components/suppliers/SupplierShareControls';
 import { getCachedSession } from '@/lib/session-cache';
+import { uploadAuthenticatedFile } from '@/lib/authenticated-upload';
 import {
     PHILIPPINE_SUPPLIER_LOCATIONS,
     SUPPLIER_CATEGORIES,
@@ -191,20 +191,11 @@ export default function SupplierProfileDashboard() {
 
         setUploadingLogo(true);
         try {
-            const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
-            const filePath = `suppliers/${user.id}/business-logo-${Date.now()}.${extension}`;
-            const { error: uploadError } = await supabase.storage
-                .from('quickweds')
-                .upload(filePath, file, {
-                    contentType: file.type,
-                    upsert: true,
-                });
-
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('quickweds')
-                .getPublicUrl(filePath);
+            const publicUrl = await uploadAuthenticatedFile({
+                purpose: 'supplier-logo',
+                file,
+                accessToken: token,
+            });
 
             updateField('cover_image_url', publicUrl);
             setMessage('Business logo uploaded. Save your draft or submit for approval to keep it on your listing.');
@@ -238,19 +229,11 @@ export default function SupplierProfileDashboard() {
 
         setUploadingGallery(true);
         try {
-            const uploadedUrls = await Promise.all(imageFiles.map(async (file, index) => {
-                const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-                const filePath = `suppliers/${user.id}/gallery-${Date.now()}-${index}.${extension}`;
-                const { error: uploadError } = await supabase.storage
-                    .from('quickweds')
-                    .upload(filePath, file, {
-                        contentType: file.type,
-                        upsert: true,
-                    });
-                if (uploadError) throw uploadError;
-                const { data: { publicUrl } } = supabase.storage.from('quickweds').getPublicUrl(filePath);
-                return publicUrl;
-            }));
+            const uploadedUrls = await Promise.all(imageFiles.map((file) => uploadAuthenticatedFile({
+                purpose: 'supplier-gallery',
+                file,
+                accessToken: token,
+            })));
 
             setGalleryImages([...getGalleryImages(), ...uploadedUrls]);
             setMessage('Gallery photos uploaded. Save your draft or submit for approval to keep them on your listing.');

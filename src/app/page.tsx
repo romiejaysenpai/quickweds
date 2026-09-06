@@ -39,6 +39,8 @@ import { supabase } from '@/lib/supabase';
 import UpgradeButton from '@/components/UpgradeButton';
 import { submitInquiry } from '@/app/actions/support';
 
+import { formatPrice, PRICING } from '@/lib/pricing';
+
 const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/lastfinal%20hero%20imagfe.png';
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/253b06e1-93cf-446c-a0fe-b3397777c185.png';
 const joySectionMobileImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/253b06e1-93cf-446c-a0fe-b3397777c185.png';
@@ -50,7 +52,7 @@ const landingSectionTitleClass = '[font-family:var(--font-montserrat)] text-[cla
 const landingHeroTitleClass = '[font-family:var(--font-montserrat)] text-[clamp(3rem,7vw,5.5rem)] font-black leading-[0.94] tracking-[-0.055em]';
 const landingLightTitleClass = '[font-family:var(--font-montserrat)] text-[clamp(2.25rem,5vw,4.25rem)] font-black leading-[0.98] tracking-[-0.045em] text-white';
 const landingTitleStyle = { fontFamily: 'var(--font-montserrat), Arial, sans-serif' };
-const plannerProDisplayPrice = '$15';
+const plannerProDisplayPrice = formatPrice(PRICING.PLANNER_PRO_PRICE);
 const defaultCoreFeatureImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/scrool%20images/IMG_4415.JPG';
 const newFeaturesImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/079f3b98-6106-45fe-8d55-407f65fe4d9f.png';
 
@@ -426,9 +428,10 @@ function Accent({ children }: { children: React.ReactNode }) {
 }
 
 function PrimaryCta({ children = 'Create Your Free Wedding Site' }: { children?: string }) {
+  const { user } = useAuth();
   return (
     <Link
-      href="/builder"
+      href={user ? '/builder' : '/login?next=%2Fbuilder'}
       className="group inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-center text-sm font-bold text-white shadow-xl shadow-primary/25 transition hover:bg-primary-hover sm:w-auto sm:px-6 sm:text-base"
     >
       {children}
@@ -467,12 +470,14 @@ function SectionHeading({
 
 function FeatureMockup({ feature }: { feature: (typeof featureCards)[number] }) {
   const visualImageUrl = 'imageUrl' in feature && feature.imageUrl ? feature.imageUrl : defaultCoreFeatureImageUrl;
+  const isPrimaryFeature = feature.number === '01';
   return (
     <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-secondary/70 via-[#fff8f4] to-primary/35">
       <Image
         src={feature.mobileImageUrl}
         alt={`${feature.title} interface preview`}
         fill
+        loading={isPrimaryFeature ? 'eager' : 'lazy'}
         sizes="(max-width: 639px) 90vw, 1px"
         className="object-cover sm:hidden"
       />
@@ -490,6 +495,7 @@ function FeatureMockup({ feature }: { feature: (typeof featureCards)[number] }) 
           src={feature.mobileImageUrl}
           alt={`${feature.title} app preview`}
           fill
+          loading={isPrimaryFeature ? 'eager' : 'lazy'}
           sizes="520px"
           className="object-cover object-center transition duration-500 group-hover:scale-[1.025]"
         />
@@ -978,42 +984,46 @@ function NewFeatureDeckCard({
   );
 }
 
+function DeckProgressSegment({
+  scrollYProgress,
+  index,
+  total,
+}: {
+  scrollYProgress: MotionValue<number>;
+  index: number;
+  total: number;
+}) {
+  const segment = 1 / Math.max(total - 1, 1);
+  const center = index * segment;
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+  const inputRange = isFirst
+    ? [0, segment / 2]
+    : isLast
+      ? [center - segment / 2, 1]
+      : [center - segment / 2, center, center + segment / 2];
+  const widthOutput = isFirst
+    ? ["24px", "6px"]
+    : isLast
+      ? ["6px", "24px"]
+      : ["6px", "24px", "6px"];
+  const opacityOutput = isFirst
+    ? [1, 0.3]
+    : isLast
+      ? [0.3, 1]
+      : [0.3, 1, 0.3];
+  const width = useTransform(scrollYProgress, inputRange, widthOutput);
+  const opacity = useTransform(scrollYProgress, inputRange, opacityOutput);
+
+  return <motion.div style={{ width, opacity }} className="h-1.5 rounded-full bg-primary" />;
+}
+
 function DeckProgressIndicator({ scrollYProgress, total }: { scrollYProgress: MotionValue<number>; total: number }) {
   return (
     <div className="absolute -bottom-6 sm:-bottom-10 left-1/2 flex -translate-x-1/2 items-center gap-1.5 z-50">
-      {Array.from({ length: total }).map((_, i) => {
-        const segment = 1 / Math.max(total - 1, 1);
-        const center = i * segment;
-        
-        let inputRange: number[];
-        let widthOutput: string[];
-        let opacityOutput: number[];
-
-        if (i === 0) {
-          inputRange = [0, segment / 2];
-          widthOutput = ["24px", "6px"];
-          opacityOutput = [1, 0.3];
-        } else if (i === total - 1) {
-          inputRange = [center - segment / 2, 1];
-          widthOutput = ["6px", "24px"];
-          opacityOutput = [0.3, 1];
-        } else {
-          inputRange = [center - segment / 2, center, center + segment / 2];
-          widthOutput = ["6px", "24px", "6px"];
-          opacityOutput = [0.3, 1, 0.3];
-        }
-        
-        const width = useTransform(scrollYProgress, inputRange, widthOutput);
-        const opacity = useTransform(scrollYProgress, inputRange, opacityOutput);
-        
-        return (
-          <motion.div
-            key={i}
-            style={{ width, opacity }}
-            className="h-1.5 rounded-full bg-primary"
-          />
-        );
-      })}
+      {Array.from({ length: total }).map((_, index) => (
+        <DeckProgressSegment key={index} scrollYProgress={scrollYProgress} index={index} total={total} />
+      ))}
     </div>
   );
 }
@@ -1267,6 +1277,8 @@ function FooterCloudLayers() {
 }
 
 function LandingHero({ onDemoClick }: { onDemoClick: () => void }) {
+  const { user } = useAuth();
+  const builderHref = user ? '/builder' : '/login?next=%2Fbuilder';
   const heroRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
@@ -1294,7 +1306,7 @@ function LandingHero({ onDemoClick }: { onDemoClick: () => void }) {
           </p>
           <div className="mt-5 hidden items-center justify-start gap-2 lg:flex">
             <Link
-              href="/builder"
+              href={builderHref}
               className="group inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-1.5 text-center text-xs font-black text-white shadow-xl shadow-primary/25 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-primary-hover hover:shadow-2xl hover:shadow-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
             >
               Create Your Free Wedding Site
@@ -1318,7 +1330,7 @@ function LandingHero({ onDemoClick }: { onDemoClick: () => void }) {
         >
           <div className="mx-auto mb-4 flex w-full max-w-[21rem] flex-col items-center justify-center gap-2 sm:mb-5 sm:w-auto sm:max-w-none sm:flex-row lg:hidden">
             <Link
-              href="/builder"
+              href={builderHref}
               className="group inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-2 text-center text-xs font-black text-white shadow-xl shadow-primary/25 transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-primary-hover hover:shadow-2xl hover:shadow-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 sm:w-auto sm:px-6 sm:text-sm"
             >
               Create Your Free Wedding Site
@@ -1361,6 +1373,7 @@ export default function Home() {
   const { user, isAdmin, logout } = useAuth();
   const router = useRouter();
   const showDashboardLink = Boolean(user && hasWeddingSite);
+  const builderHref = user ? '/builder' : '/login?next=%2Fbuilder';
 
   useEffect(() => {
     if (!user) return;
@@ -1408,10 +1421,7 @@ export default function Home() {
     if (!target) return;
 
     window.history.pushState(null, '', `#${sectionId}`);
-    const previousScrollBehavior = document.documentElement.style.scrollBehavior;
-    document.documentElement.style.scrollBehavior = 'auto';
-    target.scrollIntoView({ block: 'start' });
-    document.documentElement.style.scrollBehavior = previousScrollBehavior;
+    target.scrollIntoView({ behavior: 'auto', block: 'start' });
   };
   const openDemo = () => {
     setIsDemoOpen(true);
@@ -1426,8 +1436,18 @@ export default function Home() {
       />
       <nav className="fixed inset-x-0 top-3 z-50 px-3 sm:top-4 sm:px-0">
         <div className="mobile-safe-px mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between gap-2 rounded-full border border-white/80 bg-[#fffaf7]/90 px-3 shadow-[0_10px_35px_rgba(87,55,62,0.10)] backdrop-blur-xl sm:h-20 sm:w-[94%] sm:gap-4 sm:px-8 lg:px-10">
-          <Link href="/" className="flex min-w-0 shrink items-center gap-2" aria-label="QuickWeds home">
-            <Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-7 w-auto max-w-[128px] object-contain min-[390px]:h-8 min-[390px]:max-w-[150px] sm:h-11 sm:max-w-none" priority />
+          <Link href="/" className="group flex min-w-0 shrink items-center gap-2 sm:gap-2.5" aria-label="QuickWeds home">
+            <Image
+              src="/icon.png"
+              alt="QuickWeds Logo"
+              width={48}
+              height={48}
+              className="h-8 w-8 rounded-xl object-contain shadow-xs transition-transform group-hover:scale-105 min-[390px]:h-9 min-[390px]:w-9 sm:h-11 sm:w-11"
+              priority
+            />
+            <span className="font-serif text-lg font-black tracking-tight text-foreground transition-colors group-hover:text-primary min-[390px]:text-xl sm:text-2xl">
+              QuickWeds
+            </span>
           </Link>
 
           <div className="hidden items-center gap-7 lg:flex">
@@ -1457,7 +1477,7 @@ export default function Home() {
               </Link>
             )}
             <Link
-              href="/builder"
+              href={builderHref}
               className="hidden min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover min-[360px]:inline-flex sm:min-h-[44px] sm:px-5 sm:text-sm"
               onClick={closeMobileMenu}
             >
@@ -1578,7 +1598,7 @@ export default function Home() {
                 </Link>
               )}
               <Link
-                href="/builder"
+                href={builderHref}
                 onClick={closeMobileMenu}
                 className="mt-2 flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-xl shadow-primary/25 transition hover:bg-primary-hover"
               >
@@ -1877,7 +1897,7 @@ export default function Home() {
               <h2 className={landingLightTitleClass} style={landingTitleStyle}>Spend less time managing, more time <span className="text-secondary">celebrating.</span></h2>
               <p className="mt-4 text-[15px] leading-7 text-white/85 sm:mt-5 sm:text-lg sm:leading-8">Focus on moments, not logistics. QuickWeds keeps the details handled so the day feels lighter.</p>
               <div className="mt-8">
-                <Link href="/builder" className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-neutral sm:w-auto sm:px-6 sm:text-base">
+                <Link href={builderHref} className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-neutral sm:w-auto sm:px-6 sm:text-base">
                   Create Your Free Wedding Site
                   <ArrowRight className="h-4 w-4" />
                 </Link>

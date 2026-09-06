@@ -5,7 +5,7 @@ import { Quote } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
-import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getSectionTitleStyle, getTemplateVisualProfile, parseSectionStyles, resolveSectionBackground } from '@/lib/theme-engine';
 import SafeWeddingImage from './SafeWeddingImage';
 
 interface BioSectionProps {
@@ -25,7 +25,11 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
     const motifColor = wedding.motif_color || '#D16C78';
     const visual = getTemplateVisualProfile(template, motifColor, false, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
-    const { isSharp, isDark, isVintage } = visual;
+    const { isSharp, isVintage } = visual;
+
+    const sectionStylesMap = parseSectionStyles(wedding.section_styles);
+    const customBg = resolveSectionBackground(sectionStylesMap[id] || sectionStylesMap['bio']);
+    const isDark = customBg.hasCustomBackground ? customBg.isDark : visual.isDark;
 
     // Apply negative margin to overlap the hero and break the "blocky" rhythm
     const overlapClass = 'md:-mt-24 pb-24';
@@ -40,8 +44,15 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
     const textColorBody = isDark ? 'text-white/80' : 'text-[#4A4444]/80';
 
     return (
-        <section id={id} className={`relative z-20 overflow-hidden ${overlapClass}`}>
-            <div className="absolute inset-0 -z-10 opacity-80" style={visual.sectionStyle} />
+        <section
+            id={id}
+            className={`relative z-20 overflow-hidden ${overlapClass} ${customBg.textColorClass || ''}`}
+            style={customBg.hasCustomBackground ? customBg.style : undefined}
+        >
+            {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
+            {!customBg.hasCustomBackground && (
+                <div className="absolute inset-0 -z-10 opacity-80" style={visual.sectionStyle} />
+            )}
             {visual.ornament !== 'none' && (
                 <div className="pointer-events-none absolute right-0 top-8 -z-10 text-[18vw] font-black uppercase leading-none opacity-[0.025]">
                     {visual.ornament === 'editorial' ? 'STORY' : visual.ornament === 'film' ? 'FRAME' : visual.ornament === 'royal' ? 'VOWS' : 'LOVE'}

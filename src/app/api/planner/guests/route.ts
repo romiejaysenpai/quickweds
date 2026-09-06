@@ -6,6 +6,7 @@ import { FREE_PLAN_LIMITS, hasPlannerProAccess } from '@/lib/planner-limits';
 import { sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limiter';
 import { getWeddingAccess } from '@/lib/wedding-access';
 import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
+import { makeGuestCode, makeSeatLookupToken } from '@/lib/seat-finder';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,6 +75,9 @@ function normalizeGuestPayload(weddingId: string, input: Record<string, any>) {
         plus_one_email: nullableEmail(input.plus_one_email),
         plus_one_rsvp_status: plusOneAllowed ? nullableText(input.plus_one_rsvp_status, 40) || 'not_invited' : 'not_invited',
         manual_entry: true,
+        seat_lookup_token: makeSeatLookupToken(),
+        guest_code: makeGuestCode(String(input.guest_name || 'Guest')),
+        invited_party_size: Math.min(50, Math.max(plusOneAllowed ? 2 : 1, Number(input.num_guests || 1))),
     };
 }
 

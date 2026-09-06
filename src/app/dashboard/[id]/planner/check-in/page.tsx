@@ -4,10 +4,11 @@ import type { FormEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Camera, CheckCircle2, Loader2, Search, Undo2 } from 'lucide-react';
+import { ArrowLeft, Camera, CheckCircle2, Search, Undo2 } from 'lucide-react';
 import { getCachedSession } from '@/lib/session-cache';
 import GuestQrScanner from '@/components/dashboard/GuestQrScanner';
 import type { GuestQrScanResult } from '@/components/dashboard/GuestQrScanner';
+import LoadingState from '@/components/ui/LoadingState';
 
 type CheckInGuest = {
     id: string;
@@ -179,7 +180,7 @@ export default function PlannerCheckInPage() {
                         </button>
                         <input value={lookup} onChange={(event) => setLookup(event.target.value)} placeholder="Scan/paste QR link, guest code, or search name" className="min-h-[48px] flex-1 rounded-2xl border border-border bg-white px-4 text-sm font-bold outline-none focus:border-primary" />
                         <button disabled={saving || !lookup.trim()} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-bold text-white disabled:opacity-50">
-                            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                            {saving ? <LoadingState variant="inline" label="Checking in guest…" /> : <Search className="h-4 w-4" />}
                             Check In
                         </button>
                     </form>
@@ -194,9 +195,7 @@ export default function PlannerCheckInPage() {
 
                     <div className="mt-6 divide-y divide-border overflow-hidden rounded-2xl border border-border">
                         {loading ? (
-                            <div className="flex min-h-[220px] items-center justify-center">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            </div>
+                            <LoadingState variant="panel" label="Loading your guests…" className="min-h-[220px] border-0 shadow-none" />
                         ) : filteredGuests.length === 0 ? (
                             <div className="p-8 text-center text-sm italic text-text-secondary">No guests found.</div>
                         ) : filteredGuests.map((guest) => (

@@ -1,9 +1,37 @@
 export type AccountType = 'couple' | 'supplier';
+export type OnboardingDateStatus = 'exact' | 'month_year' | 'undecided';
+export type WebsiteMode = 'quickweds' | 'external' | 'private';
+
+export type OnboardingSurveyData = {
+    wedding_date?: string | null;
+    wedding_date_status?: OnboardingDateStatus | null;
+    wedding_country?: string | null;
+    wedding_city?: string | null;
+    planning_stage?: string | null;
+    primary_needs?: string[] | null;
+    estimated_guest_count?: string | null;
+    user_role?: string | null;
+    acquisition_source?: string | null;
+    website_mode?: WebsiteMode | null;
+    onboarding_draft?: Record<string, any> | null;
+};
 
 export type AccountProfile = {
     user_id: string;
     account_type: AccountType | null;
     onboarding_completed: boolean;
+    onboarding_completed_at?: string | null;
+    wedding_date?: string | null;
+    wedding_date_status?: OnboardingDateStatus | null;
+    wedding_country?: string | null;
+    wedding_city?: string | null;
+    planning_stage?: string | null;
+    primary_needs?: string[] | null;
+    estimated_guest_count?: string | null;
+    user_role?: string | null;
+    acquisition_source?: string | null;
+    website_mode?: WebsiteMode | null;
+    onboarding_draft?: Record<string, any> | null;
     is_pro?: boolean | null;
     plan_type?: string | null;
     payment_status?: string | null;
@@ -75,7 +103,7 @@ export function getPostLoginRedirect(profile?: AccountProfile | null, requestedP
     // Returning users with weddings always land on the welcome dashboard so
     // they can see all their weddings and choose which one to open — regardless
     // of where the login flow started (builder, direct login, OAuth, etc.).
-    if (profile.has_weddings) return getDefaultRoleRedirect(profile.account_type);
+    if (profile.has_weddings && !requestedPath) return getDefaultRoleRedirect(profile.account_type);
 
     const defaultPath = getDefaultRoleRedirect(profile.account_type);
     const safeNext = getSafeAppPath(requestedPath, defaultPath);
@@ -102,7 +130,22 @@ export async function getClientAccountProfile(token: string) {
 
 export async function updateClientAccountProfile(
     token: string,
-    payload: { account_type?: AccountType; onboarding_completed?: boolean },
+    payload: {
+        account_type?: AccountType;
+        onboarding_completed?: boolean;
+        onboarding_completed_at?: string | null;
+        wedding_date?: string | null;
+        wedding_date_status?: OnboardingDateStatus | null;
+        wedding_country?: string | null;
+        wedding_city?: string | null;
+        planning_stage?: string | null;
+        primary_needs?: string[] | null;
+        estimated_guest_count?: string | null;
+        user_role?: string | null;
+        acquisition_source?: string | null;
+        website_mode?: WebsiteMode | null;
+        onboarding_draft?: Record<string, any> | null;
+    },
 ) {
     const response = await fetch('/api/account/profile', {
         method: 'PATCH',
@@ -125,8 +168,25 @@ export async function setClientAccountType(token: string, accountType: AccountTy
     return updateClientAccountProfile(token, { account_type: accountType });
 }
 
+export async function saveClientOnboardingSurvey(
+    token: string,
+    survey: OnboardingSurveyData,
+    markComplete: boolean = false,
+) {
+    return updateClientAccountProfile(token, {
+        ...survey,
+        ...(markComplete ? {
+            onboarding_completed: true,
+            onboarding_completed_at: new Date().toISOString(),
+        } : {}),
+    });
+}
+
 export async function completeClientOnboarding(token: string) {
-    return updateClientAccountProfile(token, { onboarding_completed: true });
+    return updateClientAccountProfile(token, {
+        onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString(),
+    });
 }
 
 export async function getClientAccountProfileForIntent(token: string, requestedPath?: string | null) {

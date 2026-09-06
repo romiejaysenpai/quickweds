@@ -1,19 +1,20 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useWeddingDraft } from '@/hooks/useWeddingDraft';
+import { trackProductEvent } from '@/lib/product-events';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle, Download, Lock, Play } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AttireIllustration from './AttireIllustration';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import GenerationLoading from './GenerationLoading';
+import LoadingState from './ui/LoadingState';
 import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
-import MarketplacePanel from './builder/MarketplacePanel';
 import { MONOGRAM_SHAPES, MONOGRAM_ANIMATIONS, MonogramMark } from './MonogramMark';
-import { MonogramExporter } from './MonogramExporter';
 import DecorativeLayer from './DecorativeLayer';
 import { useLocalUndoRedo } from '@/components/UndoRedoProvider';
 import { hasAccountPro } from '@/lib/account';
@@ -39,7 +40,17 @@ import {
 } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
 import { hasStoredSupabaseSession } from '@/lib/supabase-auth';
-import { CARD_CONTAINER_STYLES, getMotifSectionTitleGradient, SECTION_TITLE_COLOR_STYLES, SECTION_TITLE_FONT_STYLES } from '@/lib/theme-engine';
+import {
+    CARD_CONTAINER_STYLES,
+    getMotifSectionTitleGradient,
+    SECTION_TITLE_COLOR_STYLES,
+    SECTION_TITLE_FONT_STYLES,
+    EDITABLE_SECTIONS,
+    SECTION_GRADIENT_PRESETS,
+    SECTION_TEXTURE_PRESETS,
+    parseSectionStyles,
+} from '@/lib/theme-engine';
+import type { SectionStylesMap, SectionStyleConfig } from '@/types/wedding';
 import { parseCsv } from '@/lib/guest-list';
 import {
     DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY,
@@ -48,7 +59,6 @@ import {
     getEntourageCardTheme,
     type EntourageProposalTemplateKey,
 } from '@/lib/entourage-proposal-templates';
-import { EntourageProposalCustomizerSection } from './EntourageProposalCustomizerSection';
 import {
     evaluateWeddingPublishHealth,
     type WeddingPublishHealthSummary,
@@ -56,6 +66,23 @@ import {
 import { parseDressCodeValue, serializeDressCodeValue } from '@/lib/dress-code';
 import { getSafeMonogramConfig } from '@/lib/monogram';
 import { createMonogramWebm, downloadMonogramImage, requestMonogramMp4 } from '@/lib/monogram-export';
+import { compressImageForUpload } from '@/lib/image-compression';
+import { uploadAuthenticatedFile } from '@/lib/authenticated-upload';
+import {
+    ACCEPTED_IMAGE_TYPES,
+    MAX_AUDIO_UPLOAD_SIZE,
+    MAX_IMAGE_SOURCE_SIZE,
+    MAX_VIDEO_UPLOAD_SIZE,
+    fileTooLargeMessage,
+    formatFileSize,
+    storageErrorMessage,
+} from '@/lib/media-upload';
+
+import AttireIllustration from './AttireIllustration';
+const MarketplacePanel = dynamic(() => import('./builder/MarketplacePanel'), { ssr: false });
+const MonogramExporter = dynamic(() => import('./MonogramExporter').then(m => m.MonogramExporter), { ssr: false });
+const EntourageProposalCustomizerSection = dynamic(() => import('./EntourageProposalCustomizerSection').then(m => m.EntourageProposalCustomizerSection), { ssr: false });
+const SectionBackgroundCustomizer = dynamic(() => import('./builder/SectionBackgroundCustomizer'), { ssr: false });
 
 // Helper component for collapsible sections
 const Collapsible = memo(function Collapsible({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) {
@@ -349,6 +376,7 @@ const INITIAL_FORM_DATA = {
     sectionTitleColorStyle: 'motif',
     cardStyle: 'default',
     backgroundStyle: 'gradient',
+    sectionStyles: {} as SectionStylesMap,
     template: 'classic',
     templateStyle: DEFAULT_TEMPLATE_STYLE,
     galleryLayout: 'auto',
@@ -382,6 +410,8 @@ const INITIAL_FORM_DATA = {
     isThankYouMode: false,
     thankYouMessage: '',
     photoAlbumLink: '',
+    isPublished: false,
+    eventTimezone: 'UTC',
     accentStyle: 'none',
 };
 
@@ -463,9 +493,6 @@ function isMissingOptionalWeddingColumnError(error: unknown, column: string) {
     );
 }
 
-const MAX_IMAGE_FILE_BYTES = 12 * 1024 * 1024;
-const MAX_FREE_VIDEO_FILE_BYTES = 50 * 1024 * 1024;
-const MAX_PREMIUM_VIDEO_FILE_BYTES = 100 * 1024 * 1024;
 const MAX_CONCURRENT_UPLOADS = 3;
 
 export default function BuilderForm() {
@@ -476,6 +503,7 @@ export default function BuilderForm() {
     const requestedTemplate = searchParams?.get('template');
     const userId = user?.id || null;
     const [currentStep, setCurrentStep] = useState(0);
+    const [essentialMode, setEssentialMode] = useState(true);
     const [loadedEditId, setLoadedEditId] = useState<string | null>(null);
     const weddingLoadRef = useRef<{ id: string; requestId: number } | null>(null);
     const weddingLoadRequestIdRef = useRef(0);
@@ -609,6 +637,7 @@ export default function BuilderForm() {
         };
     }, []);
 
+    const draft = useWeddingDraft(userId, editId || 'new', !editId || loadedEditId === editId, formData, setFormData);
     const [isPremium, setIsPremium] = useState(true);
     const [showMonogramProModal, setShowMonogramProModal] = useState(false);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
@@ -647,13 +676,13 @@ export default function BuilderForm() {
         if (!user) {
             setAccountIsPro(false);
             setActiveWeddingCount(0);
-            return { isPro: false, activeCount: 0 };
+            return { isPro: false, activeCount: 0, websiteMode: 'quickweds' as const };
         }
 
         const [profileResult, countResult] = await Promise.all([
             supabase
                 .from('user_app_profiles')
-                .select('is_pro, payment_status')
+                .select('is_pro, payment_status, website_mode')
                 .eq('user_id', user.id)
                 .maybeSingle(),
             supabase
@@ -675,7 +704,11 @@ export default function BuilderForm() {
         const activeCount = countResult.count || 0;
         setAccountIsPro(isPro);
         setActiveWeddingCount(activeCount);
-        return { isPro, activeCount };
+        const profileWebsiteMode = profileResult.data?.website_mode;
+        const websiteMode = ['quickweds', 'external', 'private'].includes(profileWebsiteMode)
+            ? profileWebsiteMode
+            : 'quickweds';
+        return { isPro, activeCount, websiteMode };
     }, [user]);
 
     useEffect(() => {
@@ -738,6 +771,7 @@ export default function BuilderForm() {
                         groomName: data.groom_name || '',
                         weddingDate: data.wedding_date || '',
                         weddingTime: data.wedding_time || '',
+                        eventTimezone: data.event_timezone || 'UTC',
                         venueName: data.venue_name || '',
                         venueAddress: data.venue_address || '',
                         mapsLink: data.maps_link || '',
@@ -750,6 +784,7 @@ export default function BuilderForm() {
                         sectionTitleColorStyle: data.section_title_color_style || 'motif',
                         cardStyle: data.card_style || 'default',
                         backgroundStyle: data.background_style || 'gradient',
+                        sectionStyles: parseSectionStyles(data.section_styles),
                         template: data.template || 'classic',
                         templateStyle: data.template_style || DEFAULT_TEMPLATE_STYLE,
                         galleryLayout: data.gallery_layout || 'auto',
@@ -783,6 +818,7 @@ export default function BuilderForm() {
                         isThankYouMode: data.is_thank_you_mode || false,
                         thankYouMessage: data.thank_you_message || '',
                         photoAlbumLink: data.photo_album_link || '',
+                        isPublished: data.is_published === true,
                         accentStyle: data.accent_style || 'none',
                         });
                         let inviteImages: string[] = [];
@@ -844,8 +880,8 @@ export default function BuilderForm() {
         void loadPresets();
     }, [user]);
 
-    const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
-    const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
+    const nextStep = () => setCurrentStep((prev) => essentialMode ? ([0,1,7,9].find(step=>step>prev) ?? 9) : Math.min(prev + 1, STEPS.length - 1));
+    const prevStep = () => setCurrentStep((prev) => essentialMode ? ([9,7,1,0].find(step=>step<prev) ?? 0) : Math.max(prev - 1, 0));
 
     const handleArrayAdd = (field: string, item: any) => {
         const nextItem = field === 'weddingParty' ? normalizeWeddingPartyMember(item) : item;
@@ -1016,46 +1052,57 @@ export default function BuilderForm() {
     };
 
     const validateImageFiles = (files: File[]) => {
-        const invalidType = files.find((file) => !file.type.startsWith('image/'));
+        const invalidType = files.find((file) => !ACCEPTED_IMAGE_TYPES.has(file.type));
         if (invalidType) {
-            alert(`${invalidType.name} is not a supported image file.`);
+            alert(`${invalidType.name} is not supported. Use JPEG, PNG, WebP, or GIF.`);
             return false;
         }
 
-        const oversized = files.find((file) => file.size > MAX_IMAGE_FILE_BYTES);
+        const oversized = files.find((file) => file.size > MAX_IMAGE_SOURCE_SIZE);
         if (oversized) {
-            alert(`${oversized.name} is larger than 12MB. Please resize or compress it before uploading.`);
+            alert(fileTooLargeMessage(oversized, MAX_IMAGE_SOURCE_SIZE));
             return false;
         }
 
         return true;
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
         if (field === 'galleryImages') {
             const newFiles = Array.from(files);
             if (!validateImageFiles(newFiles)) return;
+            let optimizedFiles: File[];
+            try {
+                optimizedFiles = await Promise.all(newFiles.map((file) => compressImageForUpload(file)));
+            } catch (error) {
+                alert(error instanceof Error ? error.message : 'Image compression failed. Please try again.');
+                return;
+            }
             if (!isPremium && (mediaFiles.galleryImages.length + newFiles.length) > 12) {
                 alert("Free plan is limited to 12 photos. Please upgrade to Premium for unlimited gallery uploads.");
                 return;
             }
-            setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...newFiles] }));
-            const previewUrls = newFiles.map(createLocalPreview);
+            setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...optimizedFiles] }));
+            const previewUrls = optimizedFiles.map(createLocalPreview);
             setPreviews(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...previewUrls] }));
         } else if (field === 'invitationImages') {
             const newFiles = Array.from(files);
             if (!validateImageFiles(newFiles)) return;
-            setMediaFiles(prev => ({ ...prev, invitationImages: [...prev.invitationImages, ...newFiles] }));
-            const previewUrls = newFiles.map(createLocalPreview);
+            let optimizedFiles: File[];
+            try { optimizedFiles = await Promise.all(newFiles.map((file) => compressImageForUpload(file))); } catch (error) { alert(error instanceof Error ? error.message : 'Image compression failed. Please try again.'); return; }
+            setMediaFiles(prev => ({ ...prev, invitationImages: [...prev.invitationImages, ...optimizedFiles] }));
+            const previewUrls = optimizedFiles.map(createLocalPreview);
             setPreviews(prev => ({ ...prev, invitationImages: [...prev.invitationImages, ...previewUrls] }));
         } else if (field === 'receptionVenuePhotos') {
             const newFiles = Array.from(files);
             if (!validateImageFiles(newFiles)) return;
-            setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, ...newFiles] }));
-            const previewUrls = newFiles.map(createLocalPreview);
+            let optimizedFiles: File[];
+            try { optimizedFiles = await Promise.all(newFiles.map((file) => compressImageForUpload(file))); } catch (error) { alert(error instanceof Error ? error.message : 'Image compression failed. Please try again.'); return; }
+            setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, ...optimizedFiles] }));
+            const previewUrls = optimizedFiles.map(createLocalPreview);
             setPreviews(prev => ({ ...prev, receptionVenuePhotos: [...prev.receptionVenuePhotos, ...previewUrls] }));
         } else {
             const file = files[0];
@@ -1064,9 +1111,8 @@ export default function BuilderForm() {
                     alert('Please upload a supported video file.');
                     return;
                 }
-                const limit = isPremium ? MAX_PREMIUM_VIDEO_FILE_BYTES : MAX_FREE_VIDEO_FILE_BYTES;
-                if (file.size > limit) {
-                    alert(`Videos must be ${isPremium ? '100MB' : '50MB'} or smaller. Please compress the video and try again.`);
+                if (file.size > MAX_VIDEO_UPLOAD_SIZE) {
+                    alert(fileTooLargeMessage(file, MAX_VIDEO_UPLOAD_SIZE));
                     return;
                 }
             }
@@ -1075,14 +1121,23 @@ export default function BuilderForm() {
                 return;
             }
 
+            let uploadFile = file;
+            if (['heroImage', 'couplePhoto', 'giftQr', 'invitationImage'].includes(field)) {
+                try {
+                    uploadFile = await compressImageForUpload(file);
+                } catch (error) {
+                    alert(error instanceof Error ? error.message : 'Image compression failed. Please try again.');
+                    return;
+                }
+            }
+
             if (field === 'backgroundMusic') {
-                const limit = 15 * 1024 * 1024; // 15MB
                 if (!file.type.startsWith('audio/')) {
                     alert('Please upload an audio file such as MP3, M4A, WAV, or OGG.');
                     return;
                 }
-                if (file.size > limit) {
-                    alert('Background music must be 15MB or smaller. Please compress the audio file and try again.');
+                if (file.size > MAX_AUDIO_UPLOAD_SIZE) {
+                    alert(fileTooLargeMessage(file, MAX_AUDIO_UPLOAD_SIZE));
                     return;
                 }
                 setFormData((prev: any) => ({
@@ -1092,10 +1147,10 @@ export default function BuilderForm() {
                 }));
             }
 
-            setMediaFiles((prev: any) => ({ ...prev, [field]: file }));
+            setMediaFiles((prev: any) => ({ ...prev, [field]: uploadFile }));
 
             if (field === 'heroImage' || field === 'couplePhoto' || field === 'giftQr' || field === 'teaserVideo' || field === 'backgroundMusic' || field === 'invitationImage') {
-                const previewUrl = createLocalPreview(file);
+                const previewUrl = createLocalPreview(uploadFile);
                 setPreviews((prev: any) => {
                     releaseLocalPreview(prev[field]);
                     return { ...prev, [field]: previewUrl };
@@ -1146,7 +1201,7 @@ export default function BuilderForm() {
             return;
         }
 
-        if (publishHealth.criticalItems.length > 0) {
+        if (formData.isPublished && publishHealth.criticalItems.length > 0) {
             const firstCriticalStep = Math.min(...publishHealth.criticalItems.map((item) => item.stepIndex));
             alert(`Please fix ${publishHealth.criticalItems.length} launch blocker${publishHealth.criticalItems.length === 1 ? '' : 's'} before publishing. Start with: ${publishHealth.criticalItems[0].title}`);
             if (Number.isFinite(firstCriticalStep)) {
@@ -1155,7 +1210,7 @@ export default function BuilderForm() {
             return;
         }
 
-        if (publishHealth.warningItems.length > 0) {
+        if (formData.isPublished && publishHealth.warningItems.length > 0) {
             const proceed = window.confirm(`Your invitation is ${publishHealth.score}% complete and has ${publishHealth.warningItems.length} important warning${publishHealth.warningItems.length === 1 ? '' : 's'}.\n\nYou can publish now, but guests may have a better experience if you fix them first. Publish anyway?`);
             if (!proceed) return;
         }
@@ -1167,14 +1222,16 @@ export default function BuilderForm() {
                 if (typeof window !== 'undefined') {
                     window.sessionStorage.setItem('pending_wedding_data', JSON.stringify(formData));
                 }
-                router.push('/login?returnTo=builder');
+                router.push('/login?next=%2Fbuilder');
             }
             return;
         }
 
+        let initialWebsiteMode: 'quickweds' | 'external' | 'private' = 'quickweds';
         if (!editId && !isAdmin) {
             try {
                 const limitState = await loadAccountLimitState();
+                initialWebsiteMode = limitState.websiteMode;
                 if (!limitState.isPro && limitState.activeCount >= 3) {
                     alert('Free accounts can create up to 3 active wedding websites. Unlock Account Pro to create more.');
                     return;
@@ -1206,37 +1263,28 @@ export default function BuilderForm() {
                 activeUploads -= 1;
                 uploadWaiters.shift()?.();
             };
-            const uploadToSupabase = async (file: File, folder: string) => {
-                const filename = `${folder}-${file.name.replace(/\s+/g, '_')}`;
-                const filePath = `${user.id}/${weddingId}/${filename}`;
-
+            const uploadToSupabase = async (file: File) => {
                 await acquireUploadSlot();
                 try {
-                    const { error: uploadError } = await supabase.storage
-                        .from('quickweds')
-                        .upload(filePath, file, { upsert: true, contentType: file.type });
-
-                    if (uploadError) throw uploadError;
-
-                    const { data: { publicUrl } } = supabase.storage
-                        .from('quickweds')
-                        .getPublicUrl(filePath);
-
-                    return publicUrl;
+                    return await uploadAuthenticatedFile({
+                        purpose: 'builder-media',
+                        weddingId,
+                        file,
+                    });
                 } finally {
                     releaseUploadSlot();
                 }
             };
 
             // Upload ALL media in parallel including video
-            const heroPromise = mediaFiles.heroImage ? uploadToSupabase(mediaFiles.heroImage, 'hero') : Promise.resolve(null);
-            const couplePromise = mediaFiles.couplePhoto ? uploadToSupabase(mediaFiles.couplePhoto, 'couple') : Promise.resolve(null);
-            const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr, 'gift-qr') : Promise.resolve(null);
-            const invitationPromises = mediaFiles.invitationImages.map((file, i) => uploadToSupabase(file, `invitation-${i}`));
-            const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo, 'teaser') : Promise.resolve(null);
-            const musicPromise = mediaFiles.backgroundMusic ? uploadToSupabase(mediaFiles.backgroundMusic, 'music') : Promise.resolve(null);
-            const galleryPromises = mediaFiles.galleryImages.map((file, i) => uploadToSupabase(file, `gallery-${i}`));
-            const receptionVenuePromises = mediaFiles.receptionVenuePhotos.map((file, i) => uploadToSupabase(file, `reception-venue-${i}`));
+            const heroPromise = mediaFiles.heroImage ? uploadToSupabase(mediaFiles.heroImage) : Promise.resolve(null);
+            const couplePromise = mediaFiles.couplePhoto ? uploadToSupabase(mediaFiles.couplePhoto) : Promise.resolve(null);
+            const giftQrPromise = mediaFiles.giftQr ? uploadToSupabase(mediaFiles.giftQr) : Promise.resolve(null);
+            const invitationPromises = mediaFiles.invitationImages.map((file) => uploadToSupabase(file));
+            const videoPromise = mediaFiles.teaserVideo ? uploadToSupabase(mediaFiles.teaserVideo) : Promise.resolve(null);
+            const musicPromise = mediaFiles.backgroundMusic ? uploadToSupabase(mediaFiles.backgroundMusic) : Promise.resolve(null);
+            const galleryPromises = mediaFiles.galleryImages.map((file) => uploadToSupabase(file));
+            const receptionVenuePromises = mediaFiles.receptionVenuePhotos.map((file) => uploadToSupabase(file));
 
             const [heroUrl, coupleUrl, giftQrUrl, invitationUrls, videoUrl, musicUrl, galleryUrls, receptionVenueUrls] = await Promise.all([
                 heroPromise,
@@ -1254,8 +1302,9 @@ export default function BuilderForm() {
             const payload: any = {
                 bride_name: formData.brideName,
                 groom_name: formData.groomName,
-                wedding_date: formData.weddingDate,
-                wedding_time: formData.weddingTime,
+                wedding_date: formData.weddingDate || null,
+                wedding_time: formData.weddingTime || null,
+                event_timezone: formData.eventTimezone || 'UTC',
                 venue_name: formData.venueName,
                 venue_address: formData.venueAddress,
                 maps_link: formData.mapsLink,
@@ -1268,6 +1317,7 @@ export default function BuilderForm() {
                 section_title_color_style: formData.sectionTitleColorStyle,
                 card_style: formData.cardStyle || 'default',
                 background_style: formData.backgroundStyle,
+                section_styles: formData.sectionStyles,
                 template: formData.template,
                 template_style: formData.templateStyle || DEFAULT_TEMPLATE_STYLE,
                 gallery_layout: formData.galleryLayout || 'auto',
@@ -1281,7 +1331,7 @@ export default function BuilderForm() {
                 quote: formData.quote,
                 hashtag: formData.hashtag,
                 contact_person: formData.contactPerson,
-                rsvp_deadline: formData.rsvpDeadline,
+                rsvp_deadline: formData.rsvpDeadline || null,
                 gift_bank: formData.giftBank,
                 gift_account_name: formData.giftAccountName,
                 gift_account_number: formData.giftAccountNumber,
@@ -1301,6 +1351,7 @@ export default function BuilderForm() {
                 is_thank_you_mode: formData.isThankYouMode,
                 thank_you_message: formData.thankYouMessage,
                 photo_album_link: formData.photoAlbumLink,
+                is_published: formData.isPublished === true,
                 accent_style: formData.accentStyle,
             };
 
@@ -1320,6 +1371,7 @@ export default function BuilderForm() {
             const publicSlug = await resolvePublicSlug(weddingId);
             const baseSubmitPayload: any = {
                 ...payload,
+                ...(!editId ? { website_mode: initialWebsiteMode, rsvp_embed_enabled: false } : {}),
                 ...(publicSlug ? { public_slug: publicSlug } : {}),
                 id: weddingId,
                 user_id: editId && weddingOwnerId ? weddingOwnerId : user.id,
@@ -1351,6 +1403,11 @@ export default function BuilderForm() {
                     canRetry = true;
                 }
 
+                if (isMissingOptionalWeddingColumnError(error, 'is_published')) {
+                    delete fallbackPayload.is_published;
+                    canRetry = true;
+                }
+
                 if (isMissingOptionalWeddingColumnError(error, 'template_style')) {
                     delete fallbackPayload.template_style;
                     canRetry = true;
@@ -1369,8 +1426,11 @@ export default function BuilderForm() {
                     'section_title_font_style',
                     'section_title_color_style',
                     'card_style',
+                    'section_styles',
                     'include_entourage_section',
                     'background_music_url',
+                    'website_mode',
+                    'rsvp_embed_enabled',
                     'background_music_title',
                     'background_music_enabled',
                 ].forEach((column) => {
@@ -1411,17 +1471,17 @@ export default function BuilderForm() {
             }
 
             // Success
-            router.push(`/dashboard/${weddingId}?created=true`);
+            const {data:eventSession}=await supabase.auth.getSession();
+            if(formData.isPublished && eventSession.session) void trackProductEvent('wedding_published',eventSession.session.access_token,weddingId);
+            await draft.clear();
+            const goal = searchParams?.get('goal');
+            router.push(goal === 'planner' ? `/dashboard/${weddingId}/planner` : goal === 'guests' ? `/dashboard/${weddingId}/operations` : `/dashboard/${weddingId}?created=true`);
 
         } catch (err: any) {
             const errorMessage = getErrorMessage(err);
             console.error('Submission error:', err, errorMessage);
             setIsGenerating(false);
-            if (errorMessage.includes('exceeded the maximum allowed size')) {
-                alert('Storage Limit Error: Your Supabase bucket has a 50MB default limit. Please compress your files or go to your Supabase Dashboard to check your storage settings.');
-            } else {
-                alert('Error creating invitation: ' + errorMessage);
-            }
+            alert(`Could not create invitation. ${storageErrorMessage(err)}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -2048,7 +2108,13 @@ export default function BuilderForm() {
                                   })}
                               </div>
                           </div>
-                         <Collapsible title="Typography & Fonts" isOpen={expandedSection === 'fonts'} onToggle={() => toggleSection('fonts')} icon={Layout}>
+                                                   <SectionBackgroundCustomizer
+                              sectionStyles={formData.sectionStyles}
+                              motifColor={formData.motifColor}
+                              onChange={(newStyles) => setFormData((prev: any) => ({ ...prev, sectionStyles: newStyles }))}
+                          />
+
+                          <Collapsible title="Typography & Fonts" isOpen={expandedSection === 'fonts'} onToggle={() => toggleSection('fonts')} icon={Layout}>
                             <div className="grid grid-cols-2 gap-2 no-scrollbar sm:max-h-[400px] sm:grid-cols-3 sm:gap-3 sm:overflow-y-auto sm:pr-2 md:gap-4 custom-scrollbar">
                                 {FONTS.map((font, index) => {
                                     const isLocked = !isPremium && index >= 10;
@@ -2414,8 +2480,13 @@ export default function BuilderForm() {
                                 ) : (
                                     <div className="text-center group-hover:scale-105 transition-transform">
                                         <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                        <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
-                                        {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
+                                        <span className="text-sm text-text-secondary font-medium">Upload Video</span>
+                                        <p className="mt-1 text-xs font-bold text-amber-700">
+                                            Maximum file size: {formatFileSize(MAX_VIDEO_UPLOAD_SIZE)}
+                                        </p>
+                                        <p className="mt-1 max-w-xs text-[11px] leading-4 text-text-secondary">
+                                            Videos over this limit cannot be uploaded. Trim or compress the video before selecting it.
+                                        </p>
                                     </div>
                                 )}
                                 <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
@@ -2699,7 +2770,7 @@ export default function BuilderForm() {
                                 </div>
 
                                 <div
-                                    className="relative flex min-h-[240px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral p-3 sm:min-h-[300px] sm:rounded-2xl sm:p-4"
+                                    className="relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral/80 p-3.5 sm:min-h-[320px] sm:rounded-2xl sm:p-5"
                                     style={{ boxShadow: `0 20px 55px ${colorValue}18` }}
                                 >
                                     <div className="absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at 50% 30%, ${colorValue}22, transparent 48%)` }} />
@@ -2708,7 +2779,7 @@ export default function BuilderForm() {
                                         <p className="mt-1 font-serif text-xl font-bold text-foreground">{attireValue || 'Formal Attire'}</p>
                                     </div>
                                     <div className="relative flex flex-1 items-center justify-center py-2">
-                                        <AttireIllustration color={colorValue} variant={group.variant} className="max-w-[300px]" />
+                                        <AttireIllustration color={colorValue} variant={group.variant} className="max-w-[340px]" />
                                     </div>
                                 </div>
                             </div>
@@ -3075,21 +3146,18 @@ export default function BuilderForm() {
 
 if (editId && loadedEditId !== editId) {
     return (
-        <div className="mx-auto flex min-h-[520px] w-full max-w-6xl items-center justify-center px-6">
-            <div className="text-center">
-                <Heart className="mx-auto h-9 w-9 animate-pulse text-primary" />
-                <p className="mt-4 font-serif text-xl text-foreground">Loading your wedding design…</p>
-                <p className="mt-1 text-sm text-text-secondary">Your saved details will be ready in a moment.</p>
-            </div>
-        </div>
+        <LoadingState
+            variant="panel"
+            label="Loading your wedding design…"
+            description="Your saved details will be ready in a moment."
+            className="mx-auto min-h-[520px] max-w-6xl"
+        />
     );
 }
 
 return (
     <>
-        <AnimatePresence>
-            {isGenerating && <GenerationLoading />}
-        </AnimatePresence>
+        {isGenerating && <GenerationLoading />}
 
         <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-6 sm:gap-8 items-start">
             <div className="qw-builder w-full lg:w-3/5 bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-8 soft-shadow border border-primary/10 flex-shrink-0">
@@ -3159,7 +3227,14 @@ return (
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                <div className="mb-4 rounded-xl bg-neutral p-4 space-y-2">
+                    <p role="status">{draft.status || 'Start with the essentials. Personalize whenever you are ready.'}</p>
+                    <button type="button" className="min-h-12 rounded-xl border px-4" onClick={()=>setEssentialMode(value=>!value)}>{essentialMode?'Show full customization steps':'Use essential setup'}</button>
+                    {draft.available && <div className="flex flex-wrap gap-3"><button type="button" className="min-h-12 px-4 border rounded-xl" onClick={draft.restore}>Restore saved draft</button><button type="button" className="min-h-12 px-4 border rounded-xl" onClick={draft.discard}>Keep current details</button></div>}
+                    <div className="flex flex-wrap gap-2">{[{label:'Details',step:0},{label:'Design',step:1},{label:'RSVP',step:7},{label:'Review / save',step:9}].map(item=><button type="button" key={item.step} onClick={()=>setCurrentStep(item.step)} className="min-h-12 rounded-xl border px-4">{item.label}</button>)}</div>
+                    <label className="block">Event timezone<input aria-label="Event timezone" className="ml-2 min-h-12 rounded-xl border px-3" value={formData.eventTimezone || 'UTC'} onChange={e=>setFormData((previous:any)=>({...previous,eventTimezone:e.target.value}))} placeholder="Asia/Manila"/></label>
+                </div>
+                <form noValidate={!formData.isPublished} onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                     {freeWebsiteLimitReached && (
                         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -3186,7 +3261,28 @@ return (
                     </AnimatePresence>
 
                     {currentStep === STEPS.length - 1 && (
-                        <PublishHealthPanel health={publishHealth} onGoToStep={setCurrentStep} />
+                        <>
+                            <div className="flex items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+                                <div>
+                                    <p className="text-sm font-black text-foreground">Wedding site visibility</p>
+                                    <p className="mt-1 text-xs leading-5 text-text-secondary">
+                                        {formData.isPublished ? 'Your wedding site and public RSVP tools will be available after saving.' : 'Your wedding site, RSVP form, gallery, and guest book will stay private after saving.'}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={formData.isPublished}
+                                    aria-label="Toggle wedding site visibility"
+                                    onClick={() => setFormData((previous: any) => ({ ...previous, isPublished: !previous.isPublished }))}
+                                    className={`grid h-10 w-[88px] shrink-0 grid-cols-2 rounded-xl border p-0.5 text-[10px] font-black uppercase tracking-wider transition-colors focus:outline-none focus:ring-4 focus:ring-primary/15 ${formData.isPublished ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'}`}
+                                >
+                                    <span className={`flex items-center justify-center rounded-lg transition ${!formData.isPublished ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Private</span>
+                                    <span className={`flex items-center justify-center rounded-lg transition ${formData.isPublished ? 'bg-primary text-white shadow-sm' : ''}`}>Live</span>
+                                </button>
+                            </div>
+                            <PublishHealthPanel health={publishHealth} onGoToStep={setCurrentStep} />
+                        </>
                     )}
 
                     {currentStep === 1 && (

@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import RSVPForm from '@/components/RSVPForm';
 import type { Wedding } from '@/types/wedding';
-import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getSectionTitleStyle, getTemplateVisualProfile, parseSectionStyles, resolveSectionBackground } from '@/lib/theme-engine';
 
 interface RSVPSectionProps {
     wedding: Wedding;
@@ -14,17 +14,23 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     const template = wedding.template || 'classic';
     const visual = getTemplateVisualProfile(template, wedding.motif_color || '#D16C78', false, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
+    const sectionStylesMap = parseSectionStyles(wedding.section_styles);
+    const customBg = resolveSectionBackground(sectionStylesMap['rsvp']);
     const isSharp = visual.isSharp || ['editorial', 'urban', 'minimal', 'vogue', 'glitch', 'film'].includes(template);
-    const isDark = visual.isDark || ['royal', 'midnight', 'cinematic'].includes(template);
+    const isDark = customBg.hasCustomBackground ? customBg.isDark : (visual.isDark || ['royal', 'midnight', 'cinematic'].includes(template));
     const isVintage = visual.isVintage || ['vintage', 'rustic', 'boho', 'artdeco', 'sakura', 'garden'].includes(template);
     const deadline = new Date(wedding.rsvp_deadline).toLocaleDateString('en-US', {
         month: 'long', day: 'numeric', year: 'numeric'
     });
 
+    const sectionClass = `px-4 sm:px-6 py-24 sm:py-32 relative overflow-hidden ${customBg.hasCustomBackground ? '' : visual.sectionClass} ${customBg.textColorClass || ''}`;
+    const sectionStyle = customBg.hasCustomBackground ? customBg.style : visual.sectionStyle;
+
     // ── DARK templates: Royal / Midnight / Cinematic ──────────────────────────
     if (isDark) {
         return (
-            <section id="rsvp" className={`px-4 sm:px-6 py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
+            <section id="rsvp" className={sectionClass} style={sectionStyle}>
+                {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -107,7 +113,8 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     // ── VINTAGE / BOHO / RUSTIC templates ─────────────────────────────────────
     if (isVintage) {
         return (
-            <section id="rsvp" className={`px-4 sm:px-6 py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
+            <section id="rsvp" className={sectionClass} style={sectionStyle}>
+                {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -142,15 +149,11 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                     </div>
 
                     {isExpired ? (
-                        <div className="py-12 border border-primary/10 text-center">
-                            <p className="text-xl font-serif text-[#4A4444]/70 italic">
-                                RSVP has closed for this event.
-                            </p>
+                        <div className="p-8 border border-primary/20 text-center">
+                            <p className="text-xl font-serif text-[#4A4444]/72">RSVP has closed for this event.</p>
                         </div>
                     ) : (
-                        <div className="text-left">
-                            <RSVPForm weddingId={wedding.id} wedding={wedding} />
-                        </div>
+                        <RSVPForm weddingId={wedding.id} wedding={wedding} />
                     )}
                 </motion.div>
             </section>
@@ -159,7 +162,8 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
 
     // ── DEFAULT: Classic / Romantic / Luxury / Everything else ────────────────
     return (
-        <section id="rsvp" className={`px-4 sm:px-6 py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section id="rsvp" className={sectionClass} style={sectionStyle}>
+            {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}

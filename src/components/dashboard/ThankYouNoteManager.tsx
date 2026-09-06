@@ -117,7 +117,7 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] soft-shadow border border-border">
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl sm:rounded-[2.5rem] soft-shadow border border-border">
                 <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
                 <p className="text-text-secondary font-serif italic">Loading thank you studio...</p>
             </div>
@@ -127,14 +127,14 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
     return (
         <div className="space-y-6 sm:space-y-8">
             {/* Header & Internal Nav */}
-            <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 md:p-10 soft-shadow border border-border">
+            <div className="bg-white rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 md:p-10 soft-shadow border border-border">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 sm:mb-10">
                     <div className="min-w-0">
                         <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">Thank You Studio</h2>
                         <p className="text-xs sm:text-sm text-text-secondary mt-1 max-w-xl">Express your gratitude. Send automated or custom thank you notes to your confirmed guests.</p>
                     </div>
                     
-                    <div className="flex bg-neutral dark:bg-neutral/40 p-1 rounded-xl w-full md:w-auto border border-border/50 shadow-inner">
+                    <div className="flex bg-neutral p-1 rounded-xl w-full md:w-auto border border-border/50 shadow-inner">
                         {[
                             { id: 'send', label: 'Action' },
                             { id: 'templates', label: 'Lib' },
@@ -143,7 +143,7 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
                             <button 
                                 key={tab.id}
                                 onClick={() => setActiveView(tab.id as any)}
-                                className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeView === tab.id ? 'bg-white dark:bg-white/10 text-primary shadow-sm' : 'text-text-secondary hover:text-foreground'}`}
+                                className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeView === tab.id ? 'bg-white text-primary shadow-sm' : 'text-text-secondary hover:text-foreground'}`}
                             >
                                 {tab.id === 'send' && 'Send Notes'}
                                 {tab.id === 'templates' && 'Templates'}
@@ -160,14 +160,14 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {guests.length === 0 ? (
-                                <div className="col-span-full py-12 text-center bg-neutral/30 dark:bg-neutral/10 rounded-2xl border border-dashed border-border opacity-50">
+                                <div className="col-span-full py-12 text-center bg-neutral/30 rounded-2xl border border-dashed border-border opacity-50">
                                     <p className="font-serif italic text-sm">Waiting for confirmed guests...</p>
                                 </div>
                             ) : (
                                 guests.map(guest => {
                                     const noteSent = notes.some(n => n.recipient_email === guest.guest_email && n.status === 'sent');
                                     return (
-                                        <div key={guest.id} className="p-4 bg-white dark:bg-white/5 border border-border rounded-xl flex items-center justify-between group hover:border-primary/30 transition-all shadow-sm">
+                                        <div key={guest.id} className="p-4 bg-white border border-border rounded-xl flex items-center justify-between group hover:border-primary/30 transition-all shadow-sm">
                                             <div className="min-w-0 pr-2">
                                                 <p className="font-bold text-sm truncate text-foreground">{guest.guest_name}</p>
                                                 <p className="text-[10px] text-text-secondary truncate">{guest.guest_email}</p>
@@ -195,12 +195,12 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
                         </div>
 
                         {isCreatingTemplate ? (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-neutral/30 dark:bg-neutral/10 p-5 rounded-2xl border border-border space-y-4">
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-neutral/30 p-5 rounded-2xl border border-border space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <input placeholder="Template Name" className="bg-white dark:bg-white/5 border border-border p-3 rounded-xl text-sm" value={newTemplate.name} onChange={e => setNewTemplate({...newTemplate, name: e.target.value})} />
-                                    <input placeholder="Subject Line" className="bg-white dark:bg-white/5 border border-border p-3 rounded-xl text-sm" value={newTemplate.subject} onChange={e => setNewTemplate({...newTemplate, subject: e.target.value})} />
+                                    <input placeholder="Template Name" className="bg-white border border-border p-3 rounded-xl text-sm" value={newTemplate.name} onChange={e => setNewTemplate({...newTemplate, name: e.target.value})} />
+                                    <input placeholder="Subject Line" className="bg-white border border-border p-3 rounded-xl text-sm" value={newTemplate.subject} onChange={e => setNewTemplate({...newTemplate, subject: e.target.value})} />
                                 </div>
-                                <textarea placeholder="Message Body... use {guest_name} for personalization" className="w-full bg-white dark:bg-white/5 border border-border p-3 rounded-xl text-sm min-h-[120px]" value={newTemplate.body} onChange={e => setNewTemplate({...newTemplate, body: e.target.value})} />
+                                <textarea placeholder="Message Body... use {guest_name} for personalization" className="w-full bg-white border border-border p-3 rounded-xl text-sm min-h-[120px]" value={newTemplate.body} onChange={e => setNewTemplate({...newTemplate, body: e.target.value})} />
                                 <div className="flex gap-2 justify-end">
                                     <button onClick={() => setIsCreatingTemplate(false)} className="px-4 py-2 text-text-secondary text-xs font-bold">Cancel</button>
                                     <button onClick={createTemplate} className="px-6 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-md shadow-primary/20">Save Template</button>
@@ -212,7 +212,7 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
                                     <div className="col-span-full py-12 text-center text-text-secondary/50 font-serif italic text-sm">Create your first personalized template.</div>
                                 ) : (
                                     templates.map(t => (
-                                        <div key={t.id} className="p-5 border border-border bg-white dark:bg-white/5 rounded-2xl flex flex-col gap-3 group relative hover:border-primary/30 transition-all shadow-sm">
+                                        <div key={t.id} className="p-5 border border-border bg-white rounded-2xl flex flex-col gap-3 group relative hover:border-primary/30 transition-all shadow-sm">
                                             <h4 className="font-bold text-foreground text-sm">{t.name}</h4>
                                             <p className="text-xs text-text-secondary line-clamp-2 opacity-70 mb-2">{t.body_template}</p>
                                             <div className="flex gap-2 border-t border-border/50 pt-3 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -231,9 +231,9 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
                 {activeView === 'history' && (
                     <div className="space-y-4">
                         <h3 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-text-secondary flex items-center gap-2"><Clock className="w-4 h-4" /> Activity Log</h3>
-                        <div className="bg-white dark:bg-white/5 border border-border rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm">
                             <table className="w-full text-left text-xs sm:text-sm">
-                                <thead className="bg-neutral/40 dark:bg-neutral/20 border-b border-border">
+                                <thead className="bg-neutral/40 border-b border-border">
                                     <tr>
                                         <th className="px-4 py-3 font-black uppercase tracking-wider text-[10px] text-text-secondary">Guest</th>
                                         <th className="px-4 py-3 font-black uppercase tracking-wider text-[10px] text-text-secondary">Status</th>
@@ -264,7 +264,7 @@ export default function ThankYouNoteManager({ weddingId }: { weddingId: string }
             </div>
 
             {/* Quick Tips Box */}
-            <div className="p-5 sm:p-8 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-2xl sm:rounded-[2.5rem] flex items-start gap-4">
+            <div className="p-5 sm:p-8 bg-primary/5 border border-primary/20 rounded-2xl sm:rounded-[2.5rem] flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><AlertCircle className="w-5 h-5 text-primary" /></div>
                 <div>
                     <h4 className="font-bold text-foreground text-sm sm:text-base">Tip: Personalize Your Templates</h4>

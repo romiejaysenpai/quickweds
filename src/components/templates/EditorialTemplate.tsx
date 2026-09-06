@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { MonogramMark } from '../MonogramMark';
 import { 
     VideoSection, 
     BioSection, 
@@ -12,11 +11,14 @@ import {
     GallerySection, 
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
+import type { TemplateProps } from '@/types/wedding';
 
-export default function EditorialTemplate({ wedding, gallery, isExpired }: any) {
+export default function EditorialTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     if (wedding.template_style === 'editorial-photo') {
         return (
             <div className="bg-[#f7f3ee] pb-24 text-[#201c19]">
@@ -54,20 +56,13 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                                 transition={{ duration: 0.9, delay: 0.15 }}
                                 className="py-12"
                             >
-                                {wedding.logo_initials && (
-                                    <MonogramMark
-                                        initials={wedding.logo_initials}
-                                        brideName={wedding.bride_name}
-                                        groomName={wedding.groom_name}
-                                        shape={wedding.logo_shape || 'minimal'}
-                                        animation={wedding.is_premium ? wedding.logo_animation : 'none'}
-                                        color="#201c19"
-                                        motifColor={wedding.motif_color}
-                                        fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
-                                        size="sm"
-                                        className="mb-8"
-                                    />
-                                )}
+                                <TemplateMonogram
+                                    wedding={wedding}
+                                    defaultShape="editorial"
+                                    size="sm"
+                                    color="#201c19"
+                                    className="mb-8"
+                                />
                                 <h1 className="font-serif text-5xl leading-[0.86] tracking-tight sm:text-6xl md:text-7xl lg:text-8xl">
                                     {wedding.bride_name.split(' ')[0]}
                                     <span className="block font-light italic text-primary">&</span>
@@ -93,13 +88,16 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                     </div>
                 </section>
 
+                <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
                 <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+                <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
                 <BioSection id="bio" wedding={wedding} />
+                <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
                 <DetailsSection id="details" wedding={wedding} />
                 {!wedding.is_thank_you_mode && (
                     <CountdownTimer id="countdown"
                         weddingDate={wedding.wedding_date}
-                        weddingTime={wedding.wedding_time}
+                        weddingTime={wedding.wedding_time} eventTimezone={wedding.event_timezone}
                         brideName={wedding.bride_name}
                         groomName={wedding.groom_name}
                         venueName={wedding.venue_name}
@@ -108,8 +106,11 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                         motifColor={wedding.motif_color}
                     />
                 )}
-                <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+                <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
+                <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+                <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
                 <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+                <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
                 <AttireSection wedding={wedding} />
                 <FAQSection wedding={wedding} />
                 <GiftSection id="gift" wedding={wedding} />
@@ -142,21 +143,14 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                         />
                     </motion.div>
                     <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5, duration: 1 }} className="text-white relative z-10 max-w-6xl">
-                        {wedding.logo_initials && (
-                            <MonogramMark
-                                initials={wedding.logo_initials}
-                                brideName={wedding.bride_name}
-                                groomName={wedding.groom_name}
-                                shape={wedding.logo_shape || 'editorial'}
-                                animation={wedding.is_premium ? wedding.logo_animation : 'none'}
-                                color="#ffffff"
-                                motifColor={wedding.motif_color}
-                                fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
-                                size="md"
-                                className="mb-8"
-                                inverted
-                            />
-                        )}
+                        <TemplateMonogram
+                            wedding={wedding}
+                            defaultShape="editorial"
+                            size="md"
+                            color="#ffffff"
+                            className="mb-8"
+                            inverted
+                        />
                         <span className="inline-block px-4 py-1 bg-primary text-xs font-black uppercase tracking-widest mb-12">Special Invitation</span>
                         <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl lg:text-[18vw] font-serif leading-[0.75] tracking-tighter mb-16 mix-blend-screen drop-shadow-2xl">
                             {wedding.bride_name.split(' ')[0]} <br />
@@ -164,7 +158,12 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                         </h1>
                         <div className="flex flex-col md:flex-row gap-4 sm:gap-6 md:gap-12 lg:gap-24 items-start md:items-end w-full">
                             <div className="flex-1 border-l border-white/20 pl-4 sm:pl-6 md:pl-12">
-                                <p className="text-2xl font-serif italic leading-tight max-w-lg mb-8 opacity-80">{wedding.story || "A tale of two souls becoming one, captured in a beauty that never fades."}</p>
+                                <p className="text-2xl font-serif italic leading-tight max-w-lg mb-4 opacity-90">{wedding.story || "A tale of two souls becoming one, captured in a beauty that never fades."}</p>
+                                {wedding.quote && (
+                                    <p className="text-sm font-serif italic text-white/70 mb-8 border-l-2 border-primary/60 pl-3">
+                                        &ldquo;{wedding.quote}&rdquo;
+                                    </p>
+                                )}
                                 <p className="text-xs uppercase tracking-[0.5em] font-black opacity-40">Photography by QuickWeds Editorial</p>
                             </div>
                             <div className="shrink-0 flex flex-col items-end">
@@ -178,13 +177,16 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                 </div>
             </section>
 
+            <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
+                    weddingTime={wedding.wedding_time} eventTimezone={wedding.event_timezone}
                     brideName={wedding.bride_name}
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}
@@ -193,8 +195,11 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                     motifColor={wedding.motif_color}
                 />
             )}
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+            <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider style="editorial" motifColor={wedding.motif_color} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

@@ -69,7 +69,12 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
             const [headerRow, ...dataRows] = parsed;
             setHeaders(headerRow);
             setRows(dataRows);
-            setMapping(inferGuestImportMapping(headerRow));
+            let inferred = inferGuestImportMapping(headerRow);
+            try {
+                const saved = JSON.parse(localStorage.getItem('quickweds-import-mapping-v1') || 'null');
+                if(saved && Array.isArray(saved.headers) && JSON.stringify(saved.headers) === JSON.stringify(headerRow)) inferred = saved.mapping;
+            } catch { /* A mapping preference is optional. */ }
+            setMapping(inferred);
             setError(null);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to read the CSV file.';
@@ -91,7 +96,10 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
                 throw new Error('No guest rows were detected in the CSV.');
             }
 
+            const identities = importedRows.map(row=>`${row.guest_name.trim().toLowerCase()}|${String(row.guest_email||'').trim().toLowerCase()}`);
+            if(new Set(identities).size !== identities.length) throw new Error('This file repeats the same name and email. Review those rows before importing; QuickWeds will not merge people by name.');
             await onImport(importedRows);
+            try { localStorage.setItem('quickweds-import-mapping-v1',JSON.stringify({headers,mapping})); } catch { /* The import succeeded even without preference storage. */ }
             handleClose();
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to import guests.';
@@ -113,7 +121,7 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
                     </div>
                         <button
                             onClick={handleClose}
-                            className="w-10 h-10 rounded-full bg-neutral dark:bg-neutral/50 text-text-secondary flex items-center justify-center hover:bg-neutral/80 transition-colors min-h-[44px] min-w-[44px]"
+                            className="w-10 h-10 rounded-full bg-neutral text-text-secondary flex items-center justify-center hover:bg-neutral/80 transition-colors min-h-[44px] min-w-[44px]"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -150,7 +158,7 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
                                                         [field.value]: event.target.value,
                                                     }))
                                                 }
-                                                className="w-full bg-white dark:bg-neutral/30 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary text-sm min-h-[44px]"
+                                                className="w-full bg-white border border-border rounded-xl px-4 py-3 outline-none focus:border-primary text-sm min-h-[44px]"
                                             >
                                                 <option value="">Skip this field</option>
                                                 {headers.map((header) => (
@@ -177,7 +185,7 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
                         </div>
 
                         {previewRows.length === 0 ? (
-                            <div className="h-full min-h-[280px] rounded-[1.5rem] bg-neutral/30 dark:bg-neutral/20 border border-dashed border-border flex items-center justify-center text-center px-6">
+                            <div className="h-full min-h-[280px] rounded-[1.5rem] bg-neutral/30 border border-dashed border-border flex items-center justify-center text-center px-6">
                                 <div>
                                     <Upload className="w-8 h-8 text-text-secondary/40 mx-auto mb-3" />
                                     <p className="text-sm text-text-secondary">Upload a CSV to preview your guest data before importing.</p>
@@ -186,7 +194,7 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
                         ) : (
                             <div className="overflow-x-auto rounded-[1.5rem] border border-border">
                                 <table className="w-full text-left text-xs sm:text-sm">
-                                    <thead className="bg-neutral/40 dark:bg-neutral/50">
+                                    <thead className="bg-neutral/40">
                                         <tr>
                                             {headers.map((header) => (
                                                 <th key={header} className="px-3 py-2 font-bold text-text-secondary whitespace-nowrap">

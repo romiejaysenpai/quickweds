@@ -48,7 +48,7 @@ const Header = () => {
   if (isHomePage) return null;
 
   return (
-    <header className="relative z-50 border-b border-border/50 bg-white/90 backdrop-blur-md dark:bg-black/90">
+    <header className="relative z-50 border-b border-border/50 bg-white/90 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo/Brand */}
@@ -66,8 +66,8 @@ const Header = () => {
                 href={`#${section.id}`}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors 
                          ${activeSection === section.id 
-                           ? 'text-primary bg-primary/10 dark:bg-primary/20' 
-                           : 'text-text-secondary hover:text-primary hover:bg-primary/5 dark:hover:bg-primary/10'}`}
+                           ? 'text-primary bg-primary/10' 
+                           : 'text-text-secondary hover:text-primary hover:bg-primary/5'}`}
               >
                 {section.title}
               </Link>
@@ -79,7 +79,7 @@ const Header = () => {
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
-              className="p-2 rounded-md text-text-secondary hover:text-primary hover:bg-primary/5 dark:hover:bg-primary/10"
+              className="p-2 rounded-md text-text-secondary hover:text-primary hover:bg-primary/5"
               aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={isMobileMenuOpen}
               aria-controls="section-mobile-menu"
@@ -104,8 +104,8 @@ const Header = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex min-h-11 items-center rounded-xl px-4 text-sm font-medium transition-colors ${
                   activeSection === section.id
-                    ? 'bg-primary/10 text-primary dark:bg-primary/20'
-                    : 'text-text-secondary hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/10'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text-secondary hover:bg-primary/5 hover:text-primary'
                 }`}
               >
                 {section.title}

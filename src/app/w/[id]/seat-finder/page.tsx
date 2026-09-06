@@ -82,7 +82,7 @@ export default function PublicSeatFinderPage() {
                 <h1 className="mt-3 font-serif text-3xl font-bold leading-tight">Find Your Seat</h1>
                 <p className="mt-2 text-sm leading-6 text-text-secondary">Enter the guest code from your email. Some weddings may also allow exact email, phone, or name lookup.</p>
 
-                {token && finderUrl && (
+                {token && finderUrl && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('print') === '1' && (
                     <div className="mt-5 flex items-center gap-4 rounded-2xl border border-primary/15 bg-primary/5 p-4">
                         <QRCodeSVG value={finderUrl} size={92} className="shrink-0 rounded-xl bg-white p-2" />
                         <div className="min-w-0">

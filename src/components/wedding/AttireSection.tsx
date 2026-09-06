@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Shirt } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 import { useSectionContext } from '@/context/SectionContext';
-import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getTemplateVisualProfile, parseSectionStyles, resolveSectionBackground } from '@/lib/theme-engine';
 import AttireIllustration from '@/components/AttireIllustration';
 import { parseDressCodeValue } from '@/lib/dress-code';
 
@@ -37,7 +37,9 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
     const dressCodes = parseDressCodeValue(wedding.dress_code, wedding.motif_color);
     const { sponsors, guests } = dressCodes;
     const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || guests.color);
-    const isDark = ['royal', 'midnight', 'cinematic', 'urban', 'glitch', 'film'].includes(wedding.template || '');
+    const sectionStylesMap = parseSectionStyles(wedding.section_styles);
+    const customBg = resolveSectionBackground(sectionStylesMap[id] || sectionStylesMap['attire']);
+    const isDark = customBg.hasCustomBackground ? customBg.isDark : ['royal', 'midnight', 'cinematic', 'urban', 'glitch', 'film'].includes(wedding.template || '');
     const palette = [
         sponsors.color,
         guests.color,
@@ -61,11 +63,11 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
                     </div>
                 </div>
 
-                <div className="mb-7 flex flex-wrap gap-3">
+                <div className="mb-7 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
                     {palette.slice(0, 5).map((swatch, index) => (
                         <div key={`${swatch}-${index}`} className="flex flex-col items-center gap-1">
-                            <span className="h-9 w-9 rounded-full border-[3px] border-white shadow-md" style={{ backgroundColor: swatch }} aria-label={paletteLabels[index] ? `${paletteLabels[index]} attire color` : `Wedding color ${index + 1}`} />
-                            {paletteLabels[index] && <span className="text-[8px] font-black uppercase tracking-[0.12em] text-primary">{paletteLabels[index]}</span>}
+                            <span className="h-8 w-8 rounded-full border-[3px] border-white shadow-md sm:h-9 sm:w-9" style={{ backgroundColor: swatch }} aria-label={paletteLabels[index] ? `${paletteLabels[index]} attire color` : `Wedding color ${index + 1}`} />
+                            <span className={`${paletteLabels[index] ? 'text-primary' : 'invisible'} text-[8px] font-black uppercase tracking-[0.08em]`}>{paletteLabels[index] || '\u00A0'}</span>
                         </div>
                     ))}
                 </div>
@@ -88,7 +90,12 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
     }
 
     return (
-        <section id={id} className={`relative z-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section
+            id={id}
+            className={`relative z-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 ${customBg.hasCustomBackground ? '' : visual.sectionClass} ${customBg.textColorClass || ''}`}
+            style={customBg.hasCustomBackground ? customBg.style : visual.sectionStyle}
+        >
+            {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
             <div className="mx-auto max-w-6xl">
                 <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.25 }} className="mx-auto mb-12 max-w-3xl text-center">
                     <div className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border ${isDark ? 'border-white/15 bg-white/10' : 'border-primary/15 bg-white/75'} shadow-sm`}>
@@ -103,11 +110,11 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
                     <p className={`mx-auto mt-5 max-w-2xl text-sm leading-7 sm:text-base ${isDark ? 'text-white/65' : 'text-[#4A4444]/70'}`}>We Kindly invite you to celebrate with us by dressing in attire that reflects our wedding colors.</p>
                 </motion.div>
 
-                <div className="mb-10 flex flex-wrap items-center justify-center gap-3">
+                <div className="mb-10 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
                     {palette.map((swatch, index) => (
-                        <div key={`${swatch}-${index}`} className="flex flex-col items-center gap-2">
-                            <span className="h-12 w-12 rounded-full border-4 border-white shadow-lg sm:h-14 sm:w-14" style={{ backgroundColor: swatch }} aria-label={paletteLabels[index] ? `${paletteLabels[index]} attire color` : `Wedding color ${index + 1}`} />
-                            {paletteLabels[index] && <span className="text-[9px] font-black uppercase tracking-[0.18em] text-primary">{paletteLabels[index]}</span>}
+                        <div key={`${swatch}-${index}`} className="flex flex-col items-center gap-1 sm:gap-2">
+                            <span className="h-9 w-9 rounded-full border-[3px] border-white shadow-lg sm:h-12 sm:w-12 sm:border-4 md:h-14 md:w-14" style={{ backgroundColor: swatch }} aria-label={paletteLabels[index] ? `${paletteLabels[index]} attire color` : `Wedding color ${index + 1}`} />
+                            <span className={`${paletteLabels[index] ? 'text-primary' : 'invisible'} text-[8px] font-black uppercase tracking-[0.08em] sm:text-[9px] sm:tracking-[0.18em]`}>{paletteLabels[index] || '\u00A0'}</span>
                         </div>
                     ))}
                 </div>

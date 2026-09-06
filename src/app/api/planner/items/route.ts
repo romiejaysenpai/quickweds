@@ -64,7 +64,7 @@ function cleanString(value: unknown) {
 function getTaskFallbackCategory(values: Record<string, any>) {
     const section = cleanString(values.section || values.category) || 'General';
     const meta: Record<string, any> = { section };
-    for (const key of ['assigned_to', 'planner_vendor_id', 'custom_supplier_name', 'notes', 'template_key']) {
+    for (const key of ['assigned_to', 'planner_vendor_id', 'custom_supplier_name', 'notes', 'template_key', 'responsible_person', 'location']) {
         const value = cleanString(values[key]);
         if (value) meta[key] = value;
     }
@@ -84,6 +84,8 @@ function getTaskFallbackResponseItem(data: Record<string, any>, values: Record<s
         custom_supplier_name: cleanString(values.custom_supplier_name),
         notes: cleanString(values.notes),
         template_key: cleanString(values.template_key),
+        responsible_person: cleanString(values.responsible_person),
+        location: cleanString(values.location),
     };
 }
 
@@ -101,6 +103,15 @@ function getTaskCreatePayload(weddingId: string, values: Record<string, any>) {
         custom_supplier_name: cleanString(values.custom_supplier_name),
         notes: cleanString(values.notes),
         template_key: cleanString(values.template_key),
+        is_optional: Boolean(values.is_optional),
+        quantity: values.quantity != null && values.quantity !== '' ? Number(values.quantity) : 1,
+        responsible_person: cleanString(values.responsible_person),
+        location: cleanString(values.location),
+        not_included: Boolean(values.not_included),
+        source_template_id: values.source_template_id || null,
+        source_template_key: cleanString(values.source_template_key),
+        box_status: cleanString(values.box_status) || 'not_started',
+        sort_order: values.sort_order != null && values.sort_order !== '' ? Number(values.sort_order) : 0,
         updated_at: new Date().toISOString(),
     };
 }
@@ -190,7 +201,7 @@ function getCreatePayload(type: string, weddingId: string, values: Record<string
 function getUpdatePayload(type: string, values: Record<string, any>) {
     const payload: Record<string, any> = {};
     const allowed = type === 'task'
-        ? ['title', 'status', 'category', 'section', 'due_date', 'assigned_to', 'planner_vendor_id', 'custom_supplier_name', 'notes', 'template_key']
+        ? ['title', 'status', 'category', 'section', 'due_date', 'assigned_to', 'planner_vendor_id', 'custom_supplier_name', 'notes', 'template_key', 'is_optional', 'quantity', 'responsible_person', 'location', 'not_included', 'source_template_id', 'source_template_key', 'box_status', 'sort_order']
         : Object.keys(values);
 
     for (const key of allowed) {

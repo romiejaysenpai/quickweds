@@ -63,7 +63,7 @@ export default function MilestoneTimeline({ milestones, motifColor }: MilestoneT
                                     className="w-full md:w-1/2 flex flex-col items-center z-20"
                                 >
                                     <div className={`
-                                        p-6 md:p-10 bg-white dark:bg-white/5 border border-border/50 rounded-[2rem] md:rounded-[2.5rem] soft-shadow 
+                                        p-6 md:p-10 bg-white border border-border/50 rounded-[2rem] md:rounded-[2.5rem] soft-shadow 
                                         text-center w-full max-w-sm relative group
                                     `}>
                                         {milestone.image && (

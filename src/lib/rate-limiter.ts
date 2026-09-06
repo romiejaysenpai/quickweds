@@ -8,11 +8,6 @@ interface RateLimitEntry {
 // In-memory store (note: not shared across Vercel edge functions, but still provides basic protection)
 const rateLimitMap = new Map<string, RateLimitEntry>();
 
-interface RateLimitConfig {
-    maxRequests: number;  // Maximum number of requests allowed
-    windowMs: number;     // Time window in milliseconds
-}
-
 // Predefined rate limit configurations
 export const RATE_LIMITS = {
     // Strict limits for email sending (prevent abuse)
@@ -32,11 +27,11 @@ export const RATE_LIMITS = {
     SIGNUP_NOTIFY: { maxRequests: 20, windowMs: 60 * 60 * 1000 },    // 20 per hour
     
     // Moderate limits for read operations
-    WEDDING_READ: { maxRequests: 100, windowMs: 15 * 60 * 1000 },    // 100 per 15 minutes
-    DASHBOARD_LOAD: { maxRequests: 50, windowMs: 15 * 60 * 1000 },   // 50 per 15 minutes
+    WEDDING_READ: { maxRequests: 500, windowMs: 15 * 60 * 1000 },    // 500 per 15 minutes (accommodates shared guest WiFi)
+    DASHBOARD_LOAD: { maxRequests: 100, windowMs: 15 * 60 * 1000 },   // 100 per 15 minutes
     
-    // Lenient limits for public wedding pages
-    WEDDING_PAGE_VIEW: { maxRequests: 200, windowMs: 15 * 60 * 1000 }, // 200 per 15 minutes
+    // Lenient limits for public wedding pages and guest views
+    WEDDING_PAGE_VIEW: { maxRequests: 1500, windowMs: 15 * 60 * 1000 }, // 1500 per 15 minutes (accommodates venue WiFi surges)
     
     // Strict limits for authentication
     LOGIN: { maxRequests: 5, windowMs: 10 * 60 * 1000 },             // 5 per 10 minutes
@@ -45,12 +40,22 @@ export const RATE_LIMITS = {
     // Domain management (admin operations)
     DOMAIN_MANAGEMENT: { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
     
+    // Heavy media/canvas processing
+    MONOGRAM_EXPORT: { maxRequests: 10, windowMs: 60 * 1000 },        // 10 per minute
+    
+    // Support & Collaborator invites
+    SUPPORT_TICKET: { maxRequests: 10, windowMs: 15 * 60 * 1000 },    // 10 per 15 minutes
+    COLLABORATOR_INVITE: { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
+    
     // Analytics events - strict to prevent spam (CRITICAL FIX #1)
     ANALYTICS_TRACK: { maxRequests: 50, windowMs: 60 * 1000 },        // 50 per minute per IP
     ANALYTICS_BATCH: { maxRequests: 10, windowMs: 60 * 1000 },        // 10 batch requests per minute
     
     // Authenticated API endpoints (planner, dashboard, settings, etc.)
     AUTHENTICATED_DEFAULT: { maxRequests: 100, windowMs: 15 * 60 * 1000 },  // 100 per 15 minutes
+
+    // Adding large wedding checklist templates is heavier than a normal item write
+    CHECKLIST_TEMPLATE_ADD: { maxRequests: 20, windowMs: 60 * 60 * 1000 },  // 20 per hour
     
     // Admin/moderation actions
     ADMIN_ACTION: { maxRequests: 30, windowMs: 60 * 60 * 1000 },            // 30 per hour
@@ -75,6 +80,10 @@ export function checkRateLimit(
     const config = RATE_LIMITS[limitKey];
     const now = Date.now();
     const key = `${limitKey}:${identifier}`;
+
+    if (rateLimitMap.size > 2000) {
+        cleanupRateLimits();
+    }
     
     const entry = rateLimitMap.get(key);
     

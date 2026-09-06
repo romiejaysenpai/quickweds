@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { trackProductEvent } from '@/lib/product-events';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
+import { Heart, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getPublicRedirectUrl } from '@/lib/site-url';
+import LoadingState from '@/components/ui/LoadingState';
 import { getClientAccountProfileForIntent, getClientAdminStatus, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
 
 export default function SignUpPage() {
@@ -15,6 +17,7 @@ export default function SignUpPage() {
     const [name, setName] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [verificationEmail, setVerificationEmail] = useState('');
     const router = useRouter();
 
     const getSafeNextPath = () => {
@@ -71,6 +74,7 @@ export default function SignUpPage() {
                 email: normalizedEmail,
                 password,
                 options: {
+                    emailRedirectTo: getPublicRedirectUrl('/auth/callback'),
                     data: {
                         full_name: trimmedName,
                     },
@@ -78,21 +82,19 @@ export default function SignUpPage() {
             });
             if (error) throw error;
 
-            // Trigger admin notification & welcome email manually
-            // We pass the record object to match the expected Supabase webhook format
-            void fetch('/api/admin/notify-signup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    record: {
-                        email: normalizedEmail,
-                        full_name: trimmedName,
-                        source: 'email_signup',
-                    }
-                })
-            }).catch(err => console.error('Notification Error:', err));
-
             const token = data.session?.access_token;
+            if (!token) {
+                rememberNextPath();
+                setVerificationEmail(normalizedEmail);
+                return;
+            }
+            if (token) {
+                void trackProductEvent('signup_completed', token);
+                void fetch('/api/auth/signup-notification', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            }
             const redirectPath = token
                 ? await resolvePostAuthPath(token, getSafeNextPath(), data.user?.email)
                 : getRoleAwareRedirect(null, getSafeNextPath());
@@ -151,7 +153,17 @@ export default function SignUpPage() {
                     </div>
                 )}
 
-                <form onSubmit={handleSignUp} className="space-y-6">
+                {verificationEmail ? <div className="space-y-4" role="status">
+                    <h1 className="text-2xl font-bold">Check your email</h1>
+                    <p>Open the confirmation link sent to {verificationEmail}, then sign in to continue.</p>
+                    <button type="button" disabled={loading} className="min-h-12 text-primary font-bold" onClick={async () => {
+                        setLoading(true);
+                        const { error } = await supabase.auth.resend({ type: 'signup', email: verificationEmail });
+                        setError(error ? error.message : 'Confirmation email requested. Please check your inbox.');
+                        setLoading(false);
+                    }}>Resend confirmation</button>
+                    <Link href={getLoginHref()} className="block min-h-12 text-primary">Continue to sign in</Link>
+                </div> : <form onSubmit={handleSignUp} className="space-y-6">
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Full Name</label>
                         <div className="relative">
@@ -209,7 +221,7 @@ export default function SignUpPage() {
                         disabled={loading}
                         className="w-full py-5 rounded-2xl bg-primary text-white font-bold text-lg hover:bg-primary-hover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 disabled:bg-primary-disabled"
                     >
-                        {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Sign Up <ArrowRight className="w-5 h-5" /></>}
+                        {loading ? <LoadingState variant="inline" label="Creating your account…" className="[&>svg]:h-5 [&>svg]:w-5" /> : <>Sign Up <ArrowRight className="w-5 h-5" /></>}
                     </button>
 
                     <div className="relative py-4">
@@ -243,7 +255,7 @@ export default function SignUpPage() {
                             Apple
                         </button>
                     </div>
-                </form>
+                </form>}
 
                 <p className="mt-8 text-center text-text-secondary">
                     Already have an account?{' '}

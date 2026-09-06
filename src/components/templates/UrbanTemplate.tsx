@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Heart, Quote } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import {
     VideoSection,
     BioSection,
@@ -12,87 +12,141 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
+import type { TemplateProps } from '@/types/wedding';
 
-export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
+export default function UrbanTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+    const motifColor = wedding.motif_color || '#FF4D5A';
+    const formattedDate = new Date(wedding.wedding_date).toLocaleDateString('en-US', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+    }).toUpperCase();
+
     return (
-        <div className="bg-[#111] text-white selection:bg-primary/50 font-sans">
-            {/* Industrial Grid Mesh */}
-            <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
+        <div className="bg-[#0e0f12] text-white selection:bg-[#FF4D5A] selection:text-black font-sans relative pb-24 overflow-hidden">
+            {/* Industrial Grid Mesh & Spotlight */}
+            <div className="fixed inset-0 opacity-15 pointer-events-none z-0" style={{ backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`, backgroundSize: '48px 48px' }} />
+            <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-red-600/10 rounded-full blur-[160px] pointer-events-none -z-0" />
 
-            <section className="min-h-screen py-20 flex bg-black relative group">
-                <motion.div
-                    initial={{ scale: 1.2, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 0.5 }}
-                    transition={{ duration: 1.5 }}
-                    className="absolute inset-0 z-0 overflow-hidden"
-                >
-                    <Image
-                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
-                        alt="Hero"
-                        priority
-                        fill
-                        sizes="100vw"
-                        className="object-cover grayscale brightness-50 group-hover:scale-105 transition-transform duration-[10s]"
-                    />
-                </motion.div>
-                <div className="z-10 px-4 sm:px-6 md:px-12 lg:px-32 py-12 sm:py-16 md:py-24 lg:py-32 flex flex-col justify-between w-full relative">
-                    <div className="flex justify-between items-start border-b border-white/10 pb-6 sm:pb-8 md:pb-12 lg:pb-12">
-                        <div className="space-y-2">
-                            <p className="font-mono text-xs uppercase tracking-[0.5em] text-primary">Access Level: VIP</p>
-                            <p className="font-mono text-xs uppercase tracking-widest opacity-40">Serial No. {wedding.id.slice(0, 8)}</p>
-                        </div>
-                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}>
-                            <Heart className="w-8 sm:w-10 md:w-12 lg:w-12 h-8 sm:h-10 md:h-12 lg:h-12 text-primary" />
-                        </motion.div>
+            <section className="min-h-screen py-16 sm:py-24 px-4 sm:px-8 md:px-16 flex flex-col justify-between relative z-10">
+                {/* Header VIP Status Bar */}
+                <div className="flex justify-between items-center border-b border-white/15 pb-6">
+                    <div className="flex items-center gap-3">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                        <span className="font-mono text-xs uppercase tracking-[0.4em] text-[#FF4D5A] font-bold">
+                            ALL-ACCESS VIP // UNION
+                        </span>
                     </div>
+                    <span className="font-mono text-xs uppercase tracking-widest text-white/40 hidden sm:inline">
+                        N° {wedding.id.slice(0, 8).toUpperCase()}
+                    </span>
+                </div>
 
-                    <motion.div initial={{ opacity: 0, x: -100 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1 }}>
-                        <h1 className="text-3xl sm:text-4xl md:text-8xl lg:text-[15vw] font-black uppercase leading-[0.75] mb-8 sm:mb-10 md:mb-12 lg:mb-12 tracking-tighter mix-blend-difference drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                            {wedding.bride_name.split(' ')[0]}<br />
-                            <span className="text-primary">+</span><br />
-                            {wedding.groom_name.split(' ')[0]}
+                {/* Main Hero Spread */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center py-12">
+                    <motion.div 
+                        initial={{ opacity: 0, x: -40 }} 
+                        animate={{ opacity: 1, x: 0 }} 
+                        transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+                        className="lg:col-span-7 space-y-8"
+                    >
+                        <TemplateMonogram
+                            wedding={wedding}
+                            defaultShape="square"
+                            size="sm"
+                            color="#FF4D5A"
+                            inverted
+                            className="mb-2"
+                        />
+
+                        <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black uppercase leading-[0.82] tracking-tighter mix-blend-difference">
+                            {wedding.bride_name} <br />
+                            <span className="text-[#FF4D5A] font-light italic font-serif text-3xl sm:text-5xl">+</span> <br />
+                            {wedding.groom_name}
                         </h1>
-                        <div className="flex flex-wrap gap-4 sm:gap-6 md:gap-8 lg:gap-12 font-mono text-xs sm:text-sm md:text-sm lg:text-sm uppercase tracking-[0.3em] bg-black/50 backdrop-blur-md p-4 sm:p-5 md:p-6 lg:p-6 border-l-4 border-primary inline-flex">
-                            <p>[ DATE: {new Date(wedding.wedding_date).toLocaleDateString()} ]</p>
-                            <p>[ LOG: {wedding.venue_name} ]</p>
+
+                        <div className="flex flex-wrap gap-4 font-mono text-xs sm:text-sm uppercase tracking-[0.25em] bg-white/5 backdrop-blur-xl p-4 sm:p-5 border-l-4 border-[#FF4D5A] inline-flex">
+                            <p className="text-white font-bold">{formattedDate}</p>
+                            <span className="text-white/40">•</span>
+                            <p className="text-white/80">{wedding.venue_name}</p>
+                        </div>
+
+                        <p className="text-sm sm:text-base font-mono uppercase tracking-wide text-white/70 max-w-md">
+                            {wedding.story || 'A night of music, city lights, and monumental celebration in the heart of downtown.'}
+                        </p>
+
+                        {wedding.quote && (
+                            <div className="border-l-2 border-[#FF4D5A] pl-4 py-2 font-mono text-xs uppercase tracking-wider text-white/80 bg-white/5 max-w-md">
+                                &ldquo;{wedding.quote}&rdquo;
+                            </div>
+                        )}
+
+                        <div className="pt-4 flex flex-wrap gap-4 items-center">
+                            <motion.a 
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.98 }}
+                                href="#rsvp" 
+                                aria-label="Enter Event - RSVP" 
+                                className="inline-flex items-center gap-3 px-10 py-4 bg-[#FF4D5A] text-black font-black uppercase tracking-[0.25em] text-xs hover:bg-white transition-all shadow-[0_0_30px_rgba(255,77,90,0.4)] min-h-[48px]"
+                            >
+                                <span>ENTER EVENT (RSVP)</span>
+                                <ArrowUpRight className="w-4 h-4" />
+                            </motion.a>
+                            <a 
+                                href="#details" 
+                                className="inline-flex items-center justify-center px-8 py-4 border border-white/30 text-white font-mono uppercase tracking-[0.2em] text-xs hover:bg-white/10 transition-all min-h-[48px]"
+                            >
+                                Logistics &amp; Dress Code
+                            </a>
                         </div>
                     </motion.div>
 
-                    <div className="flex justify-end">
-                        <a href="#rsvp" aria-label="Enter Event - RSVP" className="text-primary hover:text-white transition-all text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter hover:tracking-widest duration-500 min-h-[44px] flex items-center">
-                            ENTER EVENT →
-                        </a>
-                    </div>
+                    {/* Right Hero Image Frame */}
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }} 
+                        animate={{ opacity: 1, scale: 1 }} 
+                        transition={{ duration: 1.2, delay: 0.2 }}
+                        className="lg:col-span-5"
+                    >
+                        <div className="relative aspect-[4/5] border-2 border-white/20 bg-neutral-900 overflow-hidden shadow-2xl group">
+                            <Image
+                                src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                                alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                                priority
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 500px"
+                                className="object-cover grayscale contrast-125 group-hover:grayscale-0 transition-all duration-700"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                            <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end text-white font-mono text-[10px] uppercase tracking-widest">
+                                <span>AFTER-HOURS EDITION</span>
+                                <span className="text-[#FF4D5A]">2026 // LIVE</span>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+
+                <div className="border-t border-white/10 pt-4 flex justify-between items-center font-mono text-[10px] text-white/40 uppercase tracking-widest">
+                    <span>STATUS: RSVP OPEN</span>
+                    <span>VENUE: {wedding.venue_name}</span>
                 </div>
             </section>
 
-            <section className="py-16 sm:py-24 md:py-32 lg:py-32 px-4 sm:px-6 relative z-10">
-                <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 sm:gap-12 md:gap-16 lg:gap-24 items-end">
-                    <div className="flex-1 space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12">
-                        <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-8xl font-black uppercase tracking-tighter text-white/10">THE MISSION</h2>
-                        <p className="text-2xl sm:text-3xl md:text-4xl font-mono uppercase tracking-tighter leading-tight">
-                            {wedding.story || "A tale of two souls becoming one, captured in the heart of the city."}
-                        </p>
-                    </div>
-                    <div className="w-full lg:w-1/2 p-6 sm:p-8 md:p-12 lg:p-12 bg-primary/10 border border-primary/20 backdrop-blur-xl">
-                        <Quote className="w-8 sm:w-10 md:w-12 lg:w-12 h-8 sm:h-10 md:h-12 lg:h-12 text-primary mb-6 sm:mb-7 md:mb-8 lg:mb-8" />
-                        <p className="text-lg sm:text-xl md:text-2xl lg:text-2xl font-mono uppercase italic leading-relaxed opacity-80">
-                            {wedding.quote || "Love is the ultimate disruptor."}
-                        </p>
-                    </div>
-                </div>
-            </section>
-
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
-            <div className="px-4 sm:px-6 md:px-12 lg:px-32 py-12 sm:py-16 md:py-24 lg:py-32"><DetailsSection id="details" wedding={wedding} invert /></div>
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
+            <DetailsSection id="details" wedding={wedding} invert />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
+                    weddingTime={wedding.wedding_time} eventTimezone={wedding.event_timezone}
                     brideName={wedding.bride_name}
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}
@@ -101,8 +155,11 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                     motifColor={wedding.motif_color}
                 />
             )}
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="urban" motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />

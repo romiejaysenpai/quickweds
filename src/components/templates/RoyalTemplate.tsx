@@ -2,8 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Heart } from 'lucide-react';
-import { MonogramMark } from '../MonogramMark';
+import { Crown } from 'lucide-react';
 import {
     VideoSection,
     BioSection,
@@ -13,18 +12,31 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
+import type { TemplateProps } from '@/types/wedding';
 
-export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
+export default function RoyalTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+    const motifColor = wedding.motif_color || '#D4AF37';
+    const formattedDate = new Date(wedding.wedding_date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
     return (
-        <div className="bg-[#121212] text-[#f2d0a4] relative overflow-hidden min-h-screen font-serif">
+        <div className="bg-[#0f0e0c] text-[#f2d0a4] relative overflow-hidden min-h-screen font-serif selection:bg-[#D4AF37] selection:text-black pb-24">
+            {/* Regal Damask Pattern Overlay */}
             <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'var(--qw-deco-texture)' }} />
+            <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-amber-500/10 rounded-full blur-[160px] pointer-events-none -z-0" />
 
-            <section className="min-h-screen py-20 relative overflow-hidden flex items-center justify-center border-b border-primary/20">
+            <section className="min-h-screen py-24 relative overflow-hidden flex flex-col items-center justify-center border-b border-[#D4AF37]/20 z-10 px-4 sm:px-6">
                 {wedding.teaser_video ? (
-                    <video src={wedding.teaser_video} className="absolute inset-0 w-full h-full object-cover opacity-30 grayscale contrast-125" autoPlay muted loop />
+                    <video src={wedding.teaser_video} className="absolute inset-0 w-full h-full object-cover opacity-25 grayscale contrast-125" autoPlay muted loop />
                 ) : (
                     <Image
                         src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
@@ -35,72 +47,85 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                         className="object-cover opacity-20 grayscale brightness-50 z-0"
                     />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-[#121212]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0e0c] via-transparent to-[#0f0e0c]" />
 
                 <motion.div
-                    initial={{ scale: 1.2, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 2 }}
-                    className="z-10 text-center max-w-6xl px-4 sm:px-6 md:px-8 lg:px-8 py-6 sm:py-12 md:py-16 lg:py-24 border-[4px] border-primary/20 m-4 sm:m-6 md:m-8 lg:m-12 bg-black/40 backdrop-blur-sm relative"
+                    initial={{ scale: 0.96, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="z-10 text-center max-w-5xl w-full p-8 sm:p-14 md:p-20 border-2 border-[#D4AF37]/40 bg-black/60 backdrop-blur-xl relative rounded-sm shadow-[0_30px_100px_rgba(0,0,0,0.9)]"
                 >
-                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-[#121212] rounded-full border border-primary/20 flex items-center justify-center overflow-hidden">
+                    {/* Top Royal Crest Monogram Badge */}
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-[#0f0e0c] rounded-full border-2 border-[#D4AF37]/60 flex items-center justify-center overflow-hidden shadow-2xl">
                         {wedding.logo_initials ? (
-                            <MonogramMark
-                                initials={wedding.logo_initials}
-                                brideName={wedding.bride_name}
-                                groomName={wedding.groom_name}
-                                shape={wedding.logo_shape || 'crest'}
-                                animation={wedding.is_premium ? wedding.logo_animation : 'none'}
-                                color={wedding.logo_color || wedding.motif_color}
-                                motifColor={wedding.motif_color}
-                                fontFamily={`var(--font-${wedding.logo_font?.toLowerCase() || 'serif'})`}
+                            <TemplateMonogram
+                                wedding={wedding}
+                                defaultShape="crest"
                                 size="sm"
+                                color="#D4AF37"
+                                motifColor={motifColor}
                                 inverted
                             />
                         ) : (
-                            <Heart className="w-12 h-12 text-primary fill-primary" />
+                            <Crown className="w-10 h-10 text-[#D4AF37]" />
                         )}
                     </div>
 
-                    <span className="text-xs uppercase tracking-[1em] font-black opacity-60 mb-12 block">BY ROYAL PROCLAMATION</span>
-                    <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-[8rem] font-serif border-y-2 border-primary/40 py-8 sm:py-12 md:py-16 lg:py-16 mb-8 sm:mb-12 md:mb-16 lg:mb-16 leading-tight tracking-[0.05em] uppercase">
+                    <span className="text-xs uppercase tracking-[0.6em] font-sans font-bold text-[#D4AF37] mb-6 block pt-4">
+                        BY ROYAL PROCLAMATION
+                    </span>
+
+                    <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif border-y border-[#D4AF37]/30 py-8 sm:py-12 my-6 leading-none tracking-tight uppercase text-white drop-shadow-[0_0_30px_rgba(212,175,55,0.3)]">
                         {wedding.bride_name} <br />
-                        <span className="text-2xl sm:text-2xl md:text-3xl italic normal-case block my-4 sm:my-8 md:my-12 lg:my-12 tracking-widest">and</span>
+                        <span className="text-2xl sm:text-4xl italic lowercase font-light text-[#D4AF37] block my-3 tracking-normal">and</span>
                         {wedding.groom_name}
                     </h1>
-                    <p className="text-lg sm:text-xl md:text-2xl font-serif italic mb-8 sm:mb-10 md:mb-12 lg:mb-12 max-w-3xl mx-auto opacity-80">His Majesty & Her Royal Highness cordially invite you to witness the union of two royal houses</p>
-                    <div className="flex gap-4 sm:gap-6 md:gap-8 lg:gap-12 items-center justify-center mb-8 sm:mb-12 md:mb-16 lg:mb-16">
-                        <div className="w-24 h-[1px] bg-primary/40" />
-                        <p className="text-sm uppercase tracking-[1em] font-black">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                        <div className="w-24 h-[1px] bg-primary/40" />
-                    </div>
-                </motion.div>
 
-                {/* RSVP CTA */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.5, duration: 1 }}
-                    className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20"
-                >
-                    <a href="#rsvp" aria-label="Attend Royal Celebration - RSVP" className="inline-flex min-h-[48px] items-center justify-center px-10 py-4 border-2 border-[#f2d0a4]/50 text-[#f2d0a4] font-bold uppercase tracking-[0.3em] text-xs hover:bg-[#f2d0a4] hover:text-[#121212] transition-all">
-                        Attend Celebration
-                    </a>
+                    {wedding.quote && (
+                        <blockquote className="my-6 border-y border-[#D4AF37]/30 py-3 font-serif italic text-base sm:text-lg text-amber-200/90 max-w-xl mx-auto">
+                            &ldquo;{wedding.quote}&rdquo;
+                        </blockquote>
+                    )}
+
+                    <p className="text-base sm:text-xl font-serif italic mb-8 max-w-2xl mx-auto text-[#f2d0a4]/90">
+                        {wedding.story || 'Cordially invite you to witness the union of two royal houses under starlight and eternal vows.'}
+                    </p>
+
+                    <div className="flex gap-4 items-center justify-center mb-8 text-xs font-mono tracking-[0.3em] uppercase text-[#D4AF37]">
+                        <div className="w-16 h-px bg-[#D4AF37]/50" />
+                        <p>{formattedDate} • {wedding.venue_name}</p>
+                        <div className="w-16 h-px bg-[#D4AF37]/50" />
+                    </div>
+
+                    <div className="pt-4 flex flex-wrap gap-4 justify-center">
+                        <a
+                            href="#rsvp"
+                            aria-label="Attend Royal Celebration - RSVP"
+                            className="inline-flex min-h-[48px] items-center justify-center px-12 py-4 bg-[#D4AF37] text-black font-sans font-bold uppercase tracking-[0.25em] text-xs hover:bg-[#fff] transition-all shadow-[0_0_30px_rgba(212,175,55,0.4)]"
+                        >
+                            Attend Royal Celebration
+                        </a>
+                        <a
+                            href="#details"
+                            className="inline-flex min-h-[48px] items-center justify-center px-8 py-4 border border-[#D4AF37]/60 text-[#D4AF37] font-sans font-medium uppercase tracking-[0.2em] text-xs hover:bg-[#D4AF37]/10 transition-all"
+                        >
+                            Court Protocol &amp; Details
+                        </a>
+                    </div>
                 </motion.div>
             </section>
 
-            <div className="relative z-10 scale-90 md:scale-100 origin-center bg-[#1a1a1a] shadow-[0_0_100px_rgba(0,0,0,1)] pt-24">
-                <div className="text-center mb-24">
-                    <h2 className="text-5xl font-serif text-primary uppercase tracking-[0.3em] mb-4">Official Bio</h2>
-                    <div className="w-24 h-[1px] bg-primary mx-auto" />
-                </div>
-                <BioSection id="bio" wedding={wedding} />
-                <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
-                <div className="relative z-10 bg-[#121212] pt-24"><DetailsSection id="details" wedding={wedding} invert /></div>
-                {!wedding.is_thank_you_mode && (
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
+            <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
+            <DetailsSection id="details" wedding={wedding} invert />
+            
+            {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
+                    weddingTime={wedding.wedding_time} eventTimezone={wedding.event_timezone}
                     brideName={wedding.bride_name}
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}
@@ -109,13 +134,16 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                     motifColor={wedding.motif_color}
                 />
             )}
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
-                <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
-                <AttireSection wedding={wedding} />
-                <FAQSection wedding={wedding} />
-                <GiftSection id="gift" wedding={wedding} invert />
-                <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
-            </div>
+
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="royal" motifColor={motifColor} />
+            <AttireSection wedding={wedding} />
+            <FAQSection wedding={wedding} />
+            <GiftSection id="gift" wedding={wedding} invert />
+            <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );
 }

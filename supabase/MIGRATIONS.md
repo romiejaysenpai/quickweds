@@ -5,3 +5,22 @@ Files in `supabase/migrations/` are the ordered, deployable database history. Ro
 New changes must be additive where possible, use `if not exists` for safe rollout, preserve existing rows, explicitly set Data API grants, and verify row-level security after deployment.
 
 The template/RSVP consolidation migration is `20260717143000_consolidate_template_rsvp_schema_and_grants.sql`. It adds only JSONB/text columns with safe defaults and narrows browser grants; public RSVP submissions continue through the rate-limited server endpoint.
+
+## Current reconciliation gate
+
+The repository still has 33 root-level `supabase-*.sql` historical scripts and only eight ordered migrations. A read-only production catalog inspection found 49 public tables and nine recorded production migrations whose identities do not match this directory. Those scripts contain overlapping schema and policy definitions, so they are not a reproducible baseline and must not be bulk-converted or executed as a batch.
+
+Before applying any migration to a shared environment:
+
+1. Provision or nominate a disposable staging Supabase project; do not link the active QuickWeds project unless it is explicitly confirmed as staging.
+2. Create a schema-only export from the production catalog, use it to build one reviewed baseline migration, then capture the resulting staging schema with `supabase db pull --linked`. Review every table, function, grant, storage policy, trigger, index, and RLS policy that the application exposes.
+3. Apply pending migrations to staging only, then run two-user cross-wedding RLS and storage-policy tests using non-production accounts and data.
+4. Capture the resulting schema as the reviewed migration baseline in a separate PR. Archive/reclassify the root-level scripts only after that baseline is verified.
+
+`20260815120000_add_rsvp_and_email_idempotency.sql` is deliberately additive: it gives new RSVP records an atomic submission key and adds server-only delivery leases. It does not backfill or alter historical RSVP data. Deploy that migration before deploying the API code that depends on it.
+
+An empty-project staging bootstrap has confirmed that the first ordered
+migration assumes `public.rsvps` already exists, while no tracked SQL creates
+the core `public.weddings` or `public.rsvps` tables. See
+`supabase/STAGING_RECONCILIATION.md` for the exact failure and the required
+schema-only baseline-capture procedure.

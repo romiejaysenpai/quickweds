@@ -76,9 +76,13 @@ export interface TemplateVisualProfile {
     headingClass: string;
     bodyClass: string;
     dividerClass: string;
+    sectionDividerStyle?: string;
+    galleryLayoutVariant?: 'bento' | 'horizontal' | 'vertical' | 'grid';
+    backgroundPattern?: string;
+    sectionOrder?: Array<'video' | 'bio' | 'details' | 'countdown' | 'timeline' | 'gallery' | 'gift' | 'additional'>;
     badgeStyleClass?: string;
     badgePrefix?: string;
-    ornament: 'none' | 'floral' | 'botanical' | 'geometric' | 'editorial' | 'film' | 'tropical' | 'royal' | 'glitch' | 'celestial' | 'artdeco' | 'vintage' | 'sakura';
+    ornament: 'none' | 'floral' | 'botanical' | 'geometric' | 'editorial' | 'film' | 'tropical' | 'royal' | 'glitch' | 'celestial' | 'artdeco' | 'vintage' | 'sakura' | 'traditional';
     galleryTitle: string;
     detailTitle: string;
     timelineTitle: string;
@@ -195,17 +199,17 @@ function normalizeTemplate(template?: string) {
 export function getTemplateMood(template?: string): TemplateMood {
     const t = normalizeTemplate(template);
 
-    if (t === 'celestial') return 'celestial';
-    if (t === 'nordic') return 'nordic';
-    if (t === 'riviera') return 'riviera';
+    if (['celestial', 'stargazer', 'astronomy', 'planetarium', 'enchanted', 'growthtale', 'holynight'].includes(t)) return 'celestial';
+    if (['nordic', 'nordicdrift', 'japandi', 'teaceremony', 'washipaper', 'snowwhite'].includes(t)) return 'nordic';
+    if (['riviera', 'amalfi', 'sunsetriviera', 'yellowsummer', 'konatsu', 'mermaidbeach', 'coralsea', 'oceanblue'].includes(t)) return 'riviera';
 
-    if (['royal', 'midnight', 'artdeco', 'luxury'].includes(t)) return 'dark';
-    if (['cinematic', 'film'].includes(t)) return 'cinematic';
-    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus'].includes(t)) return 'editorial';
-    if (['boho', 'garden', 'rustic', 'sakura'].includes(t)) return 'organic';
-    if (['tropical', 'elopement'].includes(t)) return 'destination';
-    if (['vintage', 'traditional'].includes(t)) return 'vintage';
-    if (['whimsical', 'romantic'].includes(t)) return 'playful';
+    if (['royal', 'midnight', 'artdeco', 'luxury', 'gothicnoir', 'baroque', 'emerald', 'streamline', 'moonlit', 'oceanus', 'akamatsu', 'regency', 'jazz', 'musicfest', 'royalblue'].includes(t)) return 'dark';
+    if (['cinematic', 'film', 'lofifilm', 'cyberromantic', 'cinema-noir', 'faintblur', 'mistveil'].includes(t)) return 'cinematic';
+    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus', 'kinfolk', 'neobrutalist', 'highfashion', 'bauhaus', 'modernsquare', 'magazinecover', 'weddingtimes', 'linea', 'minimumstyle', 'museum', 'duotone', 'atelier', 'truelove', 'airport', 'noweddingnolife'].includes(t)) return 'editorial';
+    if (['boho', 'garden', 'rustic', 'sakura', 'glassbotanical', 'desertmirage', 'cottagecore', 'botanicalgreen', 'palefloral', 'aromabotanical', 'forest', 'naturalcamper', 'lapin', 'daisygarden', 'sunflower', 'mimosa', 'arrangeflowers', 'gradientleaf', 'gardenwedding', 'deeporange'].includes(t)) return 'organic';
+    if (['tropical', 'elopement', 'travelogue', 'passport'].includes(t)) return 'destination';
+    if (['vintage', 'traditional', 'chateau', 'letter', 'oldpaper', 'notepaper', 'heritage', 'kimono', 'seigaiha', 'asanoha', 'mizuhiki', 'hanaume', 'camellia', 'japan', 'music', 'estate'].includes(t)) return 'vintage';
+    if (['whimsical', 'romantic', 'discofever', 'storybook', 'petlove', 'weddingcake', 'balloonrelease', 'splash', 'retroflower', 'flowerflow', 'springrise', 'innocentpetals', 'luxeheart', 'bluebird', 'hydrangea', 'anemone', 'mellowwave', 'wildflower', 'lovescript', 'petal-note'].includes(t)) return 'playful';
 
     return 'classic';
 }
@@ -309,10 +313,10 @@ export function getTemplateVisualProfile(
 ): TemplateVisualProfile {
     const t = normalizeTemplate(template);
     const mood = getTemplateMood(t);
-    const isDark = invert || mood === 'dark' || mood === 'cinematic' || ['urban', 'glitch', 'artdeco', 'luxury', 'midnight', 'celestial'].includes(t);
-    const isSharp = mood === 'editorial' || ['artdeco', 'luxury', 'urban', 'glitch', 'vogue'].includes(t);
-    const isVintage = mood === 'vintage' || ['rustic', 'boho', 'film', 'traditional'].includes(t);
-    const isOrganic = mood === 'organic' || mood === 'destination' || mood === 'playful';
+    const isDark = invert || mood === 'dark' || mood === 'cinematic' || ['urban', 'glitch', 'artdeco', 'luxury', 'midnight', 'celestial', 'gothicnoir', 'highfashion', 'cyberromantic', 'stargazer'].includes(t);
+    const isSharp = mood === 'editorial' || ['artdeco', 'luxury', 'urban', 'glitch', 'vogue', 'highfashion', 'bauhaus', 'neobrutalist', 'kinfolk'].includes(t);
+    const isVintage = mood === 'vintage' || ['rustic', 'boho', 'film', 'traditional', 'chateau', 'baroque', 'discofever', 'lofifilm', 'storybook'].includes(t);
+    const isOrganic = mood === 'organic' || mood === 'destination' || mood === 'playful' || ['glassbotanical', 'cottagecore', 'amalfi', 'japandi', 'desertmirage'].includes(t);
 
     const base = {
         mood,
@@ -324,6 +328,17 @@ export function getTemplateVisualProfile(
         detailTitle: 'Wedding Details',
         timelineTitle: 'The Program',
         giftTitle: 'Gift Registry',
+        sectionDividerStyle: t,
+        galleryLayoutVariant: (mood === 'editorial' ? 'bento' : mood === 'cinematic' ? 'horizontal' : mood === 'playful' ? 'vertical' : 'grid') as 'bento' | 'horizontal' | 'vertical' | 'grid',
+        backgroundPattern: (
+            mood === 'celestial' ? 'constellation-map' :
+            mood === 'organic' ? 'botanical-sprig' :
+            mood === 'nordic' ? 'washi-fibers' :
+            mood === 'vintage' ? 'airmail-chevrons' :
+            mood === 'riviera' ? 'ceramic-tiles' :
+            mood === 'editorial' ? 'newspaper-columns' :
+            'none'
+        ),
     };
 
     const getProfile = (): TemplateVisualProfile => {
@@ -881,6 +896,505 @@ export function getTemplateVisualProfile(
                     galleryTitle: 'Event Highlights',
                 };
 
+            case 'mizuhiki':
+            case 'hanaume':
+            case 'kimono':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    sectionClass: 'relative overflow-hidden bg-[#fffdfb] text-[#2c1e21]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at 15% 15%, #c0392b10, transparent 40%), linear-gradient(180deg, #fffdfb 0%, #faece9 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-xl border border-[#c0392b]/25 bg-white/95 shadow-[0_15px_40px_rgba(192,57,43,0.06)] backdrop-blur-md',
+                    accentCardClass: 'rounded-xl border-2 border-[#d4af37]/60 bg-[#c0392b]/5 shadow-[0_15px_40px_rgba(192,57,43,0.12)]',
+                    imageFrameClass: 'rounded-xl border-4 border-white shadow-xl',
+                    eyebrowClass: 'text-[#c0392b] tracking-[0.4em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif text-[#2c1e21]',
+                    bodyClass: 'text-[#2c1e21]/80',
+                    dividerClass: 'h-0.5 w-32 bg-gradient-to-r from-transparent via-[#c0392b] to-transparent',
+                    sectionDividerStyle: 'mizuhiki',
+                    backgroundPattern: 'mizuhiki-knot',
+                    badgeStyleClass: 'rounded-full border border-[#d4af37] bg-white text-[#c0392b] px-4 py-1 text-[10px] tracking-[0.3em] font-serif font-bold uppercase',
+                    badgePrefix: 'AUSPICIOUS N°',
+                    ornament: 'traditional',
+                    galleryTitle: 'Ceremonial Keepsakes',
+                };
+
+            case 'washi':
+            case 'washipaper':
+            case 'teaceremony':
+            case 'japan':
+            case 'japandi':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#faf7f0] text-[#2b261f]',
+                    sectionStyle: { backgroundImage: 'linear-gradient(180deg, #faf7f0 0%, #f0e9dc 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-2xl border border-[#7c6f57]/20 bg-[#fffdfa]/95 shadow-[0_10px_35px_rgba(124,111,87,0.07)] backdrop-blur-md',
+                    accentCardClass: 'rounded-2xl border border-[#7c6f57]/35 bg-[#7c6f57]/10 shadow-[0_12px_40px_rgba(124,111,87,0.1)]',
+                    imageFrameClass: 'rounded-2xl border-8 border-white shadow-lg',
+                    eyebrowClass: 'text-[#7c6f57] tracking-[0.35em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#2b261f]',
+                    bodyClass: 'text-[#2b261f]/80',
+                    dividerClass: 'h-px w-28 bg-[#7c6f57]/30',
+                    sectionDividerStyle: 'washi',
+                    backgroundPattern: 'washi-fibers',
+                    badgeStyleClass: 'border border-[#7c6f57]/40 bg-[#fffdfa] text-[#7c6f57] px-3.5 py-1 text-[10px] tracking-[0.3em] font-serif font-bold uppercase',
+                    badgePrefix: 'ZEN WA // 0',
+                    ornament: 'traditional',
+                    galleryTitle: 'Serene Memories',
+                };
+
+            case 'seigaiha':
+                return {
+                    ...base,
+                    cardStyleId: 'arch_panel',
+                    sectionClass: 'relative overflow-hidden bg-[#fafbfd] text-[#0d1b2a]',
+                    sectionStyle: { backgroundImage: 'linear-gradient(180deg, #fafbfd 0%, #e8f1fa 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-t-[3rem] rounded-b-2xl border border-[#1d3557]/20 bg-white/90 shadow-[0_15px_45px_rgba(29,53,87,0.08)] backdrop-blur-md',
+                    accentCardClass: 'rounded-t-[3rem] rounded-b-2xl border border-[#1d3557]/35 bg-[#1d3557]/10 shadow-[0_15px_45px_rgba(29,53,87,0.14)]',
+                    imageFrameClass: 'rounded-t-[3rem] rounded-b-2xl border-4 border-white shadow-xl',
+                    eyebrowClass: 'text-[#1d3557] tracking-[0.4em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif text-[#0d1b2a]',
+                    bodyClass: 'text-[#0d1b2a]/80',
+                    dividerClass: 'h-0.5 w-32 bg-gradient-to-r from-transparent via-[#1d3557] to-transparent',
+                    sectionDividerStyle: 'wave',
+                    backgroundPattern: 'seigaiha-waves',
+                    badgeStyleClass: 'rounded-full bg-[#1d3557] text-white px-4 py-1 text-[10px] tracking-[0.3em] font-serif uppercase',
+                    badgePrefix: 'CALM SEAS // 0',
+                    ornament: 'traditional',
+                    galleryTitle: 'Ocean Vows & Waves',
+                };
+
+            case 'asanoha':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    sectionClass: 'relative overflow-hidden bg-[#f7f9fa] text-[#1f2421]',
+                    sectionStyle: { backgroundImage: 'linear-gradient(180deg, #f7f9fa 0%, #ebf0f2 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-none border border-[#5c6b73]/30 bg-white shadow-[6px_6px_0px_0px_rgba(92,107,115,0.15)]',
+                    accentCardClass: 'rounded-none border-2 border-[#5c6b73] bg-[#5c6b73]/10 shadow-[8px_8px_0px_0px_rgba(92,107,115,0.2)]',
+                    imageFrameClass: 'rounded-none border-2 border-[#5c6b73]',
+                    eyebrowClass: 'text-[#5c6b73] tracking-[0.45em] font-mono font-bold uppercase',
+                    headingClass: 'font-serif tracking-widest text-[#1f2421]',
+                    bodyClass: 'text-[#1f2421]/80',
+                    dividerClass: 'h-0.5 w-28 bg-[#5c6b73]',
+                    sectionDividerStyle: 'minimal',
+                    backgroundPattern: 'asanoha-lattice',
+                    badgeStyleClass: 'border border-[#5c6b73] bg-white text-[#1f2421] px-3 py-1 text-[10px] tracking-[0.3em] font-mono uppercase',
+                    badgePrefix: 'SACRED LATTICE // 0',
+                    ornament: 'traditional',
+                    galleryTitle: 'Geometric Harmony',
+                };
+
+            case 'amalfi':
+                return {
+                    ...base,
+                    cardStyleId: 'borderless_glass',
+                    sectionClass: 'relative overflow-hidden bg-[#fffdf7] text-[#1e252b]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at 90% 10%, #1c4e8015, transparent 40%), linear-gradient(180deg, #fffdf7 0%, #fdf3d6 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-2xl border border-[#1c4e80]/20 bg-white/90 shadow-[0_15px_45px_rgba(28,78,128,0.08)] backdrop-blur-md',
+                    accentCardClass: 'rounded-2xl border-2 border-amber-400 bg-amber-400/10 shadow-[0_15px_45px_rgba(245,158,11,0.15)]',
+                    imageFrameClass: 'rounded-2xl border-4 border-white shadow-xl',
+                    eyebrowClass: 'text-[#1c4e80] tracking-[0.4em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#1e252b]',
+                    bodyClass: 'text-[#1e252b]/80',
+                    dividerClass: 'h-0.5 w-32 bg-gradient-to-r from-transparent via-[#1c4e80] to-transparent',
+                    sectionDividerStyle: 'tile',
+                    backgroundPattern: 'ceramic-tiles',
+                    badgeStyleClass: 'rounded-full border border-[#1c4e80]/40 bg-white text-[#1c4e80] px-4 py-1 text-[10px] tracking-[0.3em] font-serif font-bold uppercase',
+                    badgePrefix: 'LA DOLCE VITA N°',
+                    ornament: 'tropical',
+                    galleryTitle: 'Capri & Lemon Groves',
+                };
+
+            case 'notepaper':
+            case 'oldpaper':
+            case 'letter':
+            case 'passport':
+            case 'travelogue':
+            case 'airport':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#faf7f5] text-[#3e2723]',
+                    sectionStyle: { backgroundImage: 'linear-gradient(180deg, #faf7f5 0%, #efebe9 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-sm border border-[#5d4037]/25 bg-[#fffdfb]/95 shadow-[0_12px_35px_rgba(93,64,55,0.08)]',
+                    accentCardClass: 'rounded-sm border-2 border-dashed border-[#5d4037]/45 bg-[#5d4037]/5 shadow-[0_12px_35px_rgba(93,64,55,0.12)]',
+                    imageFrameClass: 'rounded-sm border-8 border-white shadow-md sepia-[0.1]',
+                    eyebrowClass: 'text-[#5d4037] tracking-[0.35em] font-mono font-bold uppercase',
+                    headingClass: 'font-serif text-[#3e2723]',
+                    bodyClass: 'text-[#3e2723]/80',
+                    dividerClass: 'h-px w-28 border-t-2 border-dashed border-[#5d4037]/40',
+                    sectionDividerStyle: 'stamp',
+                    backgroundPattern: 'airmail-chevrons',
+                    badgeStyleClass: 'border-2 border-[#5d4037] bg-white text-[#5d4037] px-3.5 py-0.5 text-[10px] tracking-[0.25em] font-mono uppercase',
+                    badgePrefix: 'AIRMAIL ARCHIVE // 0',
+                    ornament: 'vintage',
+                    galleryTitle: 'Keepsake Letters & Journeys',
+                };
+
+            case 'disco':
+            case 'discofever':
+            case 'retroflower':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    sectionClass: 'relative overflow-hidden bg-[#fff8ee] text-[#382218]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at 80% 20%, #e39b0020, transparent 45%), linear-gradient(180deg, #fff8ee 0%, #fce7c8 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl border-2 border-[#e39b00]/30 bg-white/95 shadow-[0_15px_50px_rgba(227,155,0,0.1)]',
+                    accentCardClass: 'rounded-3xl border-2 border-[#e39b00] bg-[#e39b00]/10 shadow-[0_15px_50px_rgba(227,155,0,0.18)]',
+                    imageFrameClass: 'rounded-3xl border-4 border-[#e39b00]/40 shadow-xl',
+                    eyebrowClass: 'text-[#e39b00] tracking-[0.4em] font-bold uppercase',
+                    headingClass: 'font-sans font-black tracking-tight text-[#382218]',
+                    bodyClass: 'text-[#382218]/80',
+                    dividerClass: 'h-1 w-28 bg-[#e39b00]',
+                    sectionDividerStyle: 'disco',
+                    backgroundPattern: 'vinyl-grooves',
+                    badgeStyleClass: 'rounded-full bg-[#e39b00] text-white px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'GOLDEN GROOVE // 0',
+                    ornament: 'geometric',
+                    galleryTitle: 'Dancefloor Memories',
+                };
+
+            case 'music':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#faf9fb] text-[#1e202b]',
+                    sectionStyle: { backgroundImage: 'linear-gradient(180deg, #faf9fb 0%, #e2e3eb 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-2xl border border-[#4a4e69]/20 bg-white/95 shadow-[0_10px_35px_rgba(74,78,105,0.08)]',
+                    accentCardClass: 'rounded-2xl border border-[#4a4e69]/35 bg-[#4a4e69]/10 shadow-[0_12px_40px_rgba(74,78,105,0.12)]',
+                    imageFrameClass: 'rounded-2xl border-4 border-white shadow-lg',
+                    eyebrowClass: 'text-[#4a4e69] tracking-[0.4em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#1e202b]',
+                    bodyClass: 'text-[#1e202b]/80',
+                    dividerClass: 'h-px w-28 bg-[#4a4e69]/40',
+                    sectionDividerStyle: 'music',
+                    backgroundPattern: 'music-staff',
+                    badgeStyleClass: 'rounded-full border border-[#4a4e69] bg-white text-[#4a4e69] px-4 py-1 text-[10px] tracking-[0.3em] font-serif uppercase',
+                    badgePrefix: 'LYRICAL HARMONY N°',
+                    ornament: 'floral',
+                    galleryTitle: 'Acoustic Moments',
+                };
+
+            case 'bauhaus':
+            case 'neobrutalist':
+            case 'splash':
+                return {
+                    ...base,
+                    cardStyleId: 'editorial_rules',
+                    sectionClass: 'relative overflow-hidden bg-[#fffdf7] text-[#0a0a0a]',
+                    sectionStyle: { backgroundImage: 'linear-gradient(180deg, #fffdf7 0%, #fef3c7 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-none border-2 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]',
+                    accentCardClass: 'rounded-none border-2 border-black bg-[#FFE169] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]',
+                    imageFrameClass: 'rounded-none border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]',
+                    eyebrowClass: 'text-black tracking-[0.4em] font-mono font-black uppercase',
+                    headingClass: 'font-sans font-black uppercase tracking-tight text-black',
+                    bodyClass: 'text-black/85 font-medium',
+                    dividerClass: 'h-1.5 w-24 bg-black',
+                    sectionDividerStyle: 'bauhaus',
+                    backgroundPattern: 'bauhaus-shapes',
+                    galleryLayoutVariant: 'bento',
+                    badgeStyleClass: 'border-2 border-black bg-black text-white px-3 py-1 text-[10px] tracking-[0.3em] font-mono font-bold uppercase',
+                    badgePrefix: 'BAUHAUS 1919 // 0',
+                    ornament: 'editorial',
+                    galleryTitle: 'Visual Manifesto',
+                };
+
+            case 'neumorphism':
+            case 'fluidmodern':
+                return {
+                    ...base,
+                    cardStyleId: 'borderless_glass',
+                    sectionClass: 'relative overflow-hidden bg-[#e8ecef] text-[#1d2a30]',
+                    sectionStyle: { backgroundImage: 'linear-gradient(180deg, #e8ecef 0%, #dde2e6 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl bg-[#e8ecef] shadow-[10px_10px_20px_rgba(166,180,200,0.7),-10px_-10px_20px_rgba(255,255,255,0.9)] border border-white/40',
+                    accentCardClass: 'rounded-3xl bg-[#e8ecef] shadow-[inset_6px_6px_12px_rgba(166,180,200,0.6),inset_-6px_-6px_12px_rgba(255,255,255,0.9)] border border-white/30',
+                    imageFrameClass: 'rounded-3xl shadow-[8px_8px_16px_rgba(166,180,200,0.7),-8px_-8px_16px_rgba(255,255,255,0.9)]',
+                    eyebrowClass: 'text-[#4f6d7a] tracking-[0.4em] font-sans font-bold uppercase',
+                    headingClass: 'font-sans font-extrabold text-[#1d2a30]',
+                    bodyClass: 'text-[#1d2a30]/80',
+                    dividerClass: 'h-1 w-24 rounded-full bg-[#4f6d7a]/30 shadow-inner',
+                    sectionDividerStyle: 'neumorphic',
+                    backgroundPattern: 'neumorphic-glow',
+                    badgeStyleClass: 'rounded-full bg-[#e8ecef] shadow-[4px_4px_8px_rgba(166,180,200,0.7),-4px_-4px_8px_rgba(255,255,255,0.9)] text-[#4f6d7a] px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'TACTILE ARCHITECTURE // 0',
+                    ornament: 'geometric',
+                    galleryTitle: 'Sculpted Perspectives',
+                };
+
+            case 'aromabotanical':
+            case 'hydrangea':
+            case 'kasumi':
+            case 'mistveil':
+            case 'innocentpetals':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#fafdfb] text-[#232b27]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at 10% 20%, #5b706512, transparent 40%), linear-gradient(180deg, #fafdfb 0%, #ebf2ee 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl border border-[#5b7065]/20 bg-white/90 shadow-[0_15px_45px_rgba(91,112,101,0.06)] backdrop-blur-md',
+                    accentCardClass: 'rounded-3xl border border-[#5b7065]/35 bg-[#5b7065]/10 shadow-[0_15px_45px_rgba(91,112,101,0.1)]',
+                    imageFrameClass: 'rounded-3xl border-8 border-white shadow-xl',
+                    eyebrowClass: 'text-[#5b7065] tracking-[0.4em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#232b27]',
+                    bodyClass: 'text-[#232b27]/80',
+                    dividerClass: 'h-px w-28 bg-[#5b7065]/40',
+                    sectionDividerStyle: 'mist',
+                    backgroundPattern: 'mist-haze',
+                    badgeStyleClass: 'rounded-full bg-[#5b7065]/15 text-[#232b27] px-4 py-1 text-[10px] tracking-[0.3em] font-serif font-bold uppercase',
+                    badgePrefix: 'MORNING MIST N°',
+                    ornament: 'floral',
+                    galleryTitle: 'Ethereal Impressions',
+                };
+
+            case 'deeporange':
+            case 'desertmirage':
+            case 'lunette':
+                return {
+                    ...base,
+                    cardStyleId: 'arch_panel',
+                    sectionClass: 'relative overflow-hidden bg-[#fffbf9] text-[#3b180c]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at 80% 20%, #c85a3215, transparent 40%), linear-gradient(180deg, #fffbf9 0%, #fbe6dd 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-t-[3rem] rounded-b-2xl border border-[#c85a32]/25 bg-white/95 shadow-[0_15px_45px_rgba(200,90,50,0.08)] backdrop-blur-md',
+                    accentCardClass: 'rounded-t-[3rem] rounded-b-2xl border-2 border-[#c85a32]/40 bg-[#c85a32]/10 shadow-[0_15px_45px_rgba(200,90,50,0.15)]',
+                    imageFrameClass: 'rounded-t-[3rem] rounded-b-2xl border-4 border-white shadow-xl',
+                    eyebrowClass: 'text-[#c85a32] tracking-[0.4em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif text-[#3b180c]',
+                    bodyClass: 'text-[#3b180c]/80',
+                    dividerClass: 'h-0.5 w-32 bg-gradient-to-r from-transparent via-[#c85a32] to-transparent',
+                    sectionDividerStyle: 'terracotta',
+                    backgroundPattern: 'terracotta-arches',
+                    badgeStyleClass: 'rounded-full border border-[#c85a32]/40 bg-white text-[#c85a32] px-4 py-1 text-[10px] tracking-[0.3em] font-serif font-bold uppercase',
+                    badgePrefix: 'TERRACOTTA DUNE N°',
+                    ornament: 'botanical',
+                    galleryTitle: 'Desert Sunsets & Arches',
+                };
+
+            case 'konatsu':
+            case 'yellowsummer':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#fffdf7] text-[#3d1c00]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at 20% 20%, #fb850015, transparent 40%), linear-gradient(180deg, #fffdf7 0%, #feedd1 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl border border-[#fb8500]/25 bg-white/95 shadow-[0_15px_45px_rgba(251,133,0,0.08)] backdrop-blur-md',
+                    accentCardClass: 'rounded-3xl border-2 border-[#fb8500]/40 bg-[#fb8500]/10 shadow-[0_15px_45px_rgba(251,133,0,0.15)]',
+                    imageFrameClass: 'rounded-3xl border-4 border-white shadow-xl',
+                    eyebrowClass: 'text-[#fb8500] tracking-[0.4em] font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#3d1c00]',
+                    bodyClass: 'text-[#3d1c00]/80',
+                    dividerClass: 'h-0.5 w-32 bg-gradient-to-r from-transparent via-[#fb8500] to-transparent',
+                    sectionDividerStyle: 'citrus',
+                    backgroundPattern: 'citrus-bloom',
+                    badgeStyleClass: 'rounded-full bg-[#fb8500] text-white px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'CITRUS GROVE N°',
+                    ornament: 'tropical',
+                    galleryTitle: 'Sunlit Orchard Moments',
+                };
+
+            case 'palefloral':
+            case 'cottagecore':
+            case 'botanicalgreen':
+            case 'lapin':
+            case 'daisygarden':
+            case 'sunflower':
+            case 'mimosa':
+            case 'arrangeflowers':
+            case 'gradientleaf':
+            case 'gardenwedding':
+            case 'anemone':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#fbfdf9] text-[#1f2e1a]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at 10% 15%, #405d2712, transparent 35%), linear-gradient(180deg, #fbfdf9 0%, #ebf2e6 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-[2.5rem] border border-[#405d27]/20 bg-white/90 shadow-[0_15px_45px_rgba(64,93,39,0.06)] backdrop-blur-md',
+                    accentCardClass: 'rounded-[2.5rem] border-2 border-[#405d27]/30 bg-[#405d27]/10 shadow-[0_15px_45px_rgba(64,93,39,0.12)]',
+                    imageFrameClass: 'rounded-[2.5rem] border-8 border-white shadow-xl',
+                    eyebrowClass: 'text-[#405d27] tracking-[0.4em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#1f2e1a]',
+                    bodyClass: 'text-[#1f2e1a]/80',
+                    dividerClass: 'h-0.5 w-28 bg-[#405d27]/40',
+                    sectionDividerStyle: 'botanical',
+                    backgroundPattern: 'botanical-sprig',
+                    badgeStyleClass: 'rounded-full bg-[#405d27]/15 text-[#1f2e1a] px-4 py-1 text-[10px] tracking-[0.3em] font-serif font-bold uppercase',
+                    badgePrefix: 'HERBARIUM N°',
+                    ornament: 'botanical',
+                    galleryTitle: 'Botanical Keepsakes',
+                };
+
+            case 'forest':
+            case 'naturalcamper':
+            case 'akamatsu':
+                return {
+                    ...base,
+                    cardStyleId: 'arch_panel',
+                    sectionClass: 'relative overflow-hidden bg-[#f7f9f6] text-[#172e14]',
+                    sectionStyle: { backgroundImage: 'linear-gradient(180deg, #f7f9f6 0%, #e3ede5 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-2xl border border-[#2d5a27]/25 bg-white/95 shadow-[0_15px_45px_rgba(45,90,39,0.08)]',
+                    accentCardClass: 'rounded-2xl border-2 border-[#2d5a27]/40 bg-[#2d5a27]/10 shadow-[0_15px_45px_rgba(45,90,39,0.15)]',
+                    imageFrameClass: 'rounded-2xl border-4 border-white shadow-xl',
+                    eyebrowClass: 'text-[#2d5a27] tracking-[0.4em] font-serif font-bold uppercase',
+                    headingClass: 'font-serif text-[#172e14]',
+                    bodyClass: 'text-[#172e14]/80',
+                    dividerClass: 'h-0.5 w-28 bg-[#2d5a27]/40',
+                    sectionDividerStyle: 'rustic',
+                    backgroundPattern: 'woodland-pine',
+                    badgeStyleClass: 'rounded-full border border-[#2d5a27] bg-white text-[#2d5a27] px-4 py-1 text-[10px] tracking-[0.3em] font-serif uppercase',
+                    badgePrefix: 'PINE SANCTUARY N°',
+                    ornament: 'botanical',
+                    galleryTitle: 'Woodland Vows',
+                };
+
+            case 'astronomy':
+            case 'planetarium':
+            case 'stargazer':
+            case 'enchanted':
+            case 'growthtale':
+            case 'holynight':
+                return {
+                    ...base,
+                    cardStyleId: 'borderless_glass',
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#060a18] text-[#f0f4f8]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at 50% 20%, #d4af3720, transparent 50%), linear-gradient(180deg, #060a18 0%, #101a35 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl border border-amber-300/25 bg-slate-950/75 shadow-[0_20px_70px_rgba(0,0,0,0.6)] backdrop-blur-2xl',
+                    accentCardClass: 'rounded-3xl border border-amber-300/40 bg-amber-500/15 shadow-[0_20px_70px_rgba(217,119,6,0.25)]',
+                    imageFrameClass: 'rounded-3xl border-4 border-amber-300/30 shadow-2xl',
+                    eyebrowClass: 'text-amber-300 tracking-[0.45em] uppercase font-bold',
+                    headingClass: 'font-serif tracking-widest text-amber-200 uppercase',
+                    bodyClass: 'text-slate-300/90',
+                    dividerClass: 'h-px w-32 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent',
+                    sectionDividerStyle: 'celestial',
+                    backgroundPattern: 'constellation-map',
+                    badgeStyleClass: 'rounded-full border border-amber-300/40 bg-slate-900/80 text-amber-300 px-4 py-1 text-[10px] tracking-[0.4em] font-bold uppercase',
+                    badgePrefix: 'CELESTIAL CHART // 0',
+                    ornament: 'celestial',
+                    galleryTitle: 'Starlit Constellations',
+                };
+
+            case 'weddingtimes':
+            case 'magazinecover':
+            case 'highfashion':
+            case 'linea':
+            case 'minimumstyle':
+            case 'modernsquare':
+            case 'truelove':
+                return {
+                    ...base,
+                    cardStyleId: 'editorial_rules',
+                    sectionClass: 'relative overflow-hidden bg-[#fdfbf7] text-[#1a1a1a]',
+                    sectionStyle: { backgroundImage: 'linear-gradient(180deg, #fdfbf7 0%, #f4f0e8 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-none border-b-2 border-black bg-white/70 shadow-none py-6',
+                    accentCardClass: 'rounded-none border-y-2 border-black bg-black text-white shadow-none py-6',
+                    imageFrameClass: 'rounded-none border border-black/30 grayscale hover:grayscale-0 shadow-lg',
+                    eyebrowClass: 'text-black tracking-[0.5em] font-sans font-black uppercase',
+                    headingClass: 'font-serif uppercase tracking-widest text-black',
+                    bodyClass: 'text-black/80',
+                    dividerClass: 'h-0.5 w-32 bg-black',
+                    sectionDividerStyle: 'editorial',
+                    backgroundPattern: 'newspaper-columns',
+                    galleryLayoutVariant: 'bento',
+                    badgeStyleClass: 'border-b-2 border-black text-black font-sans font-black px-4 py-1 text-[10px] tracking-[0.4em] uppercase',
+                    badgePrefix: 'VOL. 1 ISSUE // 0',
+                    ornament: 'editorial',
+                    galleryTitle: 'Front Page Romance',
+                };
+
+            case 'frostedglass':
+            case 'faintblur':
+            case 'clearblue':
+            case 'cyberromantic':
+            case 'sunsetriviera':
+                return {
+                    ...base,
+                    cardStyleId: 'borderless_glass',
+                    sectionClass: 'relative overflow-hidden bg-[#f4f9fc] text-[#162834]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at 80% 20%, #457b9d20, transparent 40%), linear-gradient(180deg, #f4f9fc 0%, #e1eef6 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl border border-white/60 bg-white/60 shadow-[0_20px_60px_rgba(69,123,157,0.1)] backdrop-blur-2xl',
+                    accentCardClass: 'rounded-3xl border border-white/80 bg-white/80 shadow-[0_25px_70px_rgba(69,123,157,0.15)] backdrop-blur-2xl',
+                    imageFrameClass: 'rounded-3xl border-4 border-white shadow-2xl',
+                    eyebrowClass: 'text-[#457b9d] tracking-[0.4em] font-bold uppercase',
+                    headingClass: 'font-sans font-bold text-[#162834]',
+                    bodyClass: 'text-[#162834]/80',
+                    dividerClass: 'h-1 w-28 rounded-full bg-[#457b9d]/30',
+                    sectionDividerStyle: 'aura',
+                    backgroundPattern: 'soft-aura',
+                    badgeStyleClass: 'rounded-full border border-[#457b9d]/30 bg-white/80 text-[#457b9d] px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase backdrop-blur-md',
+                    badgePrefix: 'LUCENT AURA // 0',
+                    ornament: 'glitch',
+                    galleryTitle: 'Luminescent Light',
+                };
+
+            case 'petlove':
+            case 'weddingcake':
+            case 'balloonrelease':
+                return {
+                    ...base,
+                    cardStyleId: 'soft_parchment',
+                    sectionClass: 'relative overflow-hidden bg-[#fef9f3] text-[#3e2714]',
+                    sectionStyle: { backgroundImage: 'radial-gradient(circle at 50% 20%, #e67e2215, transparent 40%), linear-gradient(180deg, #fef9f3 0%, #fdebd0 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-3xl border border-[#e67e22]/20 bg-white/95 shadow-[0_15px_45px_rgba(230,126,34,0.08)]',
+                    accentCardClass: 'rounded-3xl border-2 border-[#e67e22]/35 bg-[#e67e22]/10 shadow-[0_15px_45px_rgba(230,126,34,0.14)]',
+                    imageFrameClass: 'rounded-3xl border-4 border-white shadow-xl',
+                    eyebrowClass: 'text-[#e67e22] tracking-[0.35em] font-bold uppercase',
+                    headingClass: 'font-serif italic text-[#3e2714]',
+                    bodyClass: 'text-[#3e2714]/80',
+                    dividerClass: 'h-0.5 w-28 bg-[#e67e22]/40',
+                    sectionDividerStyle: 'whimsical',
+                    backgroundPattern: 'soft-aura',
+                    badgeStyleClass: 'rounded-full bg-[#e67e22]/15 text-[#3e2714] px-4 py-1 text-[10px] tracking-[0.3em] font-bold uppercase',
+                    badgePrefix: 'JOYFUL HEARTS N°',
+                    ornament: 'floral',
+                    galleryTitle: 'Joyful Chapters',
+                };
+
+            case 'lofifilm':
+            case 'polaroid':
+            case 'cinema-noir':
+                return {
+                    ...base,
+                    cardStyleId: 'cards_bordered',
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#181818] text-[#eaeaea]',
+                    sectionStyle: { backgroundImage: 'linear-gradient(180deg, #181818 0%, #28221c 100%)' },
+                    containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
+                    cardClass: 'rounded-sm border border-white/20 bg-black/80 shadow-2xl backdrop-blur-md',
+                    accentCardClass: 'rounded-sm border border-amber-400/50 bg-amber-500/10 shadow-[0_0_40px_rgba(245,158,11,0.15)]',
+                    imageFrameClass: 'rounded-sm border-[10px] border-white shadow-2xl',
+                    eyebrowClass: 'text-amber-400 tracking-[0.4em] font-mono font-bold uppercase',
+                    headingClass: 'font-serif italic text-white',
+                    bodyClass: 'text-neutral-300',
+                    dividerClass: 'h-px w-32 bg-amber-400/40',
+                    sectionDividerStyle: 'film',
+                    backgroundPattern: 'film-sprockets',
+                    galleryLayoutVariant: 'horizontal',
+                    badgeStyleClass: 'border border-amber-400/60 bg-black text-amber-400 font-mono px-3 py-1 text-[10px] tracking-[0.3em] uppercase',
+                    badgePrefix: '35MM GRAIN // 0',
+                    ornament: 'film',
+                    galleryTitle: 'Candid Film Rolls',
+                };
+
             default:
                 return {
                     ...base,
@@ -984,3 +1498,217 @@ export const BENTO_PRESETS = {
         "md:col-span-2 md:row-span-1", // Wide
     ]
 };
+
+/**
+ * =======================================================================
+ * Per-Section Background & Texture Engine
+ * =======================================================================
+ */
+
+import type { SectionStyleConfig, SectionStylesMap } from '@/types/wedding';
+
+export const SECTION_TEXTURE_PRESETS = [
+    {
+        id: 'grain',
+        name: 'Paper Grain',
+        description: 'Subtle tactile noise texture',
+        preview: 'radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px)',
+    },
+    {
+        id: 'linen',
+        name: 'Woven Linen',
+        description: 'Fine cross-weave fabric texture',
+        preview: 'repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0, rgba(0,0,0,0.03) 1px, transparent 0, transparent 50%)',
+    },
+    {
+        id: 'washi',
+        name: 'Washi Paper',
+        description: 'Handmade organic fiber texture',
+        preview: 'radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.7) 0%, rgba(245,238,230,0.4) 100%)',
+    },
+    {
+        id: 'vignette',
+        name: 'Soft Vignette',
+        description: 'Gentle radial depth around edges',
+        preview: 'radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.06) 100%)',
+    },
+    {
+        id: 'dots',
+        name: 'Pinpoint Dots',
+        description: 'Delicate geometric stationery dots',
+        preview: 'radial-gradient(rgba(0,0,0,0.08) 1px, transparent 1px)',
+    },
+] as const;
+
+export const SECTION_GRADIENT_PRESETS = [
+    {
+        id: 'warm-ivory-glow',
+        name: 'Warm Ivory Glow',
+        value: 'linear-gradient(180deg, #FFFFFF 0%, #FFF8F2 50%, #FBF0E4 100%)',
+    },
+    {
+        id: 'sunset-blush',
+        name: 'Sunset Blush',
+        value: 'linear-gradient(135deg, #FFF5F5 0%, #FED7E2 50%, #FEEBC8 100%)',
+    },
+    {
+        id: 'sage-whisper',
+        name: 'Sage Whisper',
+        value: 'linear-gradient(135deg, #F0FFF4 0%, #E6FFFA 50%, #EDF2F7 100%)',
+    },
+    {
+        id: 'champagne-silk',
+        name: 'Champagne Silk',
+        value: 'linear-gradient(180deg, #FAF5EE 0%, #F5EBE1 50%, #EAD8C7 100%)',
+    },
+    {
+        id: 'midnight-romance',
+        name: 'Midnight Romance',
+        value: 'linear-gradient(180deg, #1A202C 0%, #2D3748 50%, #171923 100%)',
+        isDark: true,
+    },
+    {
+        id: 'dusty-plum',
+        name: 'Dusty Plum',
+        value: 'linear-gradient(135deg, #2D1B28 0%, #4A283B 50%, #1F131D 100%)',
+        isDark: true,
+    },
+] as const;
+
+export const EDITABLE_SECTIONS = [
+    { id: 'hero', name: 'Hero Banner' },
+    { id: 'bio', name: 'Our Story / Bio' },
+    { id: 'details', name: 'Wedding Details' },
+    { id: 'countdown', name: 'Countdown Clock' },
+    { id: 'timeline', name: 'Program Timeline' },
+    { id: 'gallery', name: 'Photo Gallery' },
+    { id: 'attire', name: 'Dress Code & Attire' },
+    { id: 'gift', name: 'Gift & Registry' },
+    { id: 'faq', name: 'Questions & FAQs' },
+    { id: 'rsvp', name: 'RSVP Card' },
+] as const;
+
+export interface ResolvedSectionBackground {
+    hasCustomBackground: boolean;
+    style: CSSProperties;
+    overlayStyle?: CSSProperties;
+    textColorClass?: string;
+    isDark: boolean;
+}
+
+export function parseSectionStyles(value?: SectionStylesMap | string | null): SectionStylesMap {
+    if (!value) return {};
+    if (typeof value === 'object') return value;
+    try {
+        const parsed = JSON.parse(value);
+        return typeof parsed === 'object' && parsed !== null ? parsed : {};
+    } catch {
+        return {};
+    }
+}
+
+export function resolveSectionBackground(
+    config?: SectionStyleConfig | null
+): ResolvedSectionBackground {
+    if (!config || !config.mode || config.mode === 'default') {
+        return {
+            hasCustomBackground: false,
+            style: {},
+            isDark: false,
+        };
+    }
+
+    const { mode, color, gradient, texture, imageUrl, overlayOpacity = 30, overlayTheme = 'dark', textColorMode = 'auto' } = config;
+
+    let style: CSSProperties = {};
+    let isDark = false;
+
+    if (mode === 'color' && color) {
+        style = { backgroundColor: color };
+        // Check simple hex luminance
+        if (color.startsWith('#') && color.length === 7) {
+            const r = parseInt(color.slice(1, 3), 16);
+            const g = parseInt(color.slice(3, 5), 16);
+            const b = parseInt(color.slice(5, 7), 16);
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            if (luminance < 0.45) isDark = true;
+        }
+    } else if (mode === 'gradient' && gradient) {
+        style = { backgroundImage: gradient };
+        const matchingPreset = SECTION_GRADIENT_PRESETS.find(p => p.value === gradient);
+        if (matchingPreset && 'isDark' in matchingPreset && matchingPreset.isDark) {
+            isDark = true;
+        }
+    } else if (mode === 'texture' && texture) {
+        switch (texture) {
+            case 'grain':
+                style = {
+                    backgroundColor: '#FAF7F2',
+                    backgroundImage: `radial-gradient(circle at 50% 50%, rgba(60, 40, 30, 0.05) 1px, transparent 1px)`,
+                    backgroundSize: '16px 16px',
+                };
+                break;
+            case 'linen':
+                style = {
+                    backgroundColor: '#F7F4EE',
+                    backgroundImage: `repeating-linear-gradient(45deg, rgba(80, 60, 40, 0.03) 0, rgba(80, 60, 40, 0.03) 1px, transparent 0, transparent 12px), repeating-linear-gradient(-45deg, rgba(80, 60, 40, 0.03) 0, rgba(80, 60, 40, 0.03) 1px, transparent 0, transparent 12px)`,
+                    backgroundSize: '24px 24px',
+                };
+                break;
+            case 'washi':
+                style = {
+                    backgroundColor: '#FDFBF7',
+                    backgroundImage: `radial-gradient(ellipse at top left, rgba(214, 184, 124, 0.08) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(192, 128, 129, 0.07) 0%, transparent 60%)`,
+                };
+                break;
+            case 'vignette':
+                style = {
+                    backgroundColor: '#F8F5F0',
+                    backgroundImage: `radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.07) 100%)`,
+                };
+                break;
+            case 'dots':
+                style = {
+                    backgroundColor: '#FCFAF7',
+                    backgroundImage: `radial-gradient(rgba(0, 0, 0, 0.08) 1.2px, transparent 1.2px)`,
+                    backgroundSize: '20px 20px',
+                };
+                break;
+        }
+    } else if (mode === 'image' && imageUrl) {
+        style = {
+            backgroundImage: `url(${imageUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+        };
+        // Background images usually require dark text or contrast overlay
+        if (overlayTheme === 'dark') {
+            isDark = true;
+        }
+    }
+
+    let overlayStyle: CSSProperties | undefined = undefined;
+    if (mode === 'image' && imageUrl) {
+        const opacityVal = Math.min(Math.max((overlayOpacity || 30) / 100, 0), 0.85);
+        overlayStyle = {
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            backgroundColor: overlayTheme === 'dark' ? `rgba(0, 0, 0, ${opacityVal})` : `rgba(255, 255, 255, ${opacityVal})`,
+            zIndex: 0,
+        };
+    }
+
+    // Determine final text mode
+    if (textColorMode === 'dark') isDark = false;
+    else if (textColorMode === 'light') isDark = true;
+
+    return {
+        hasCustomBackground: true,
+        style,
+        overlayStyle,
+        textColorClass: isDark ? 'text-white' : undefined,
+        isDark,
+    };
+}

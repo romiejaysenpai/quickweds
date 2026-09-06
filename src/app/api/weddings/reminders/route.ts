@@ -132,22 +132,22 @@ export async function POST(req: NextRequest) {
             to: guest.guest_email,
             subject: `Reminder: ${sanitizedBrideName} & ${sanitizedGroomName} would love your RSVP`,
             html: `
-                <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #2e2e2e;">
-                    <h1 style="font-size: 24px; margin-bottom: 12px;">A quick RSVP reminder</h1>
-                    <p style="line-height: 1.6;">Hi ${guest.guest_name},</p>
-                    <p style="line-height: 1.6;">
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #2e2e2e;">
+                    <h1 style="font-family: Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 400; line-height: 1.2; letter-spacing: -0.3px; margin-bottom: 12px;">A quick RSVP reminder</h1>
+                    <p style="font-size: 16px; line-height: 1.65;">Hi ${guest.guest_name},</p>
+                    <p style="font-size: 16px; line-height: 1.65;">
                         ${sanitizedBrideName} and ${sanitizedGroomName} are finalizing plans for their wedding and would love your RSVP when you have a moment.
                     </p>
-                    <p style="line-height: 1.6;">
+                    <p style="font-size: 16px; line-height: 1.65;">
                         Event date: <strong>${sanitizedWeddingDate}</strong><br />
                         RSVP deadline: <strong>${sanitizedRsvpDeadline}</strong>
                     </p>
                     <p style="margin: 24px 0;">
-                        <a href="${weddingUrl}" style="display: inline-block; background: #D16C78; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: bold;">
+                        <a href="${weddingUrl}" style="display: inline-block; background: #D16C78; color: #fff; text-decoration: none; padding: 14px 24px; border-radius: 12px; font-weight: 700; font-size: 15px; letter-spacing: 0.02em;">
                             Open invitation and RSVP
                         </a>
                     </p>
-                    <p style="line-height: 1.6; color: #6b6b6b;">Thank you for helping them plan the day smoothly.</p>
+                    <p style="font-size: 14px; line-height: 1.65; color: #6b6b6b;">Thank you for helping them plan the day smoothly.</p>
                 </div>
             `,
         })));

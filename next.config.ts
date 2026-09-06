@@ -1,28 +1,69 @@
 import type { NextConfig } from "next";
 import { validateEnv } from "./src/lib/env";
 
-// Validate environment variables on build/startup
-if (process.env.NODE_ENV !== 'production' || process.env.VALIDATE_ENV === 'true') {
-  try {
-    // Only validate in non-build contexts or when explicitly requested
-    if (typeof window === 'undefined') {
-      // Don't throw during config load, just warn
-      validateEnv();
-    }
-  } catch (e) {
+// Validate environment variables on build/startup. Production fails closed;
+// development logs a warning so local UI work can still proceed.
+try {
+  if (typeof window === 'undefined') validateEnv();
+} catch (e) {
+  if (process.env.NODE_ENV === 'production') throw e;
     console.warn('⚠️  Environment validation warning:', (e as Error).message);
-  }
 }
 
+const isVercelBuild = process.env.VERCEL === '1';
+
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  // Docker consumes standalone output, while Vercel's Next.js adapter creates
+  // its own serverless artifacts and requires the standard trace output.
+  ...(isVercelBuild ? {} : { output: 'standalone' }),
   // A lockfile also exists in the parent directory. Pinning the project root
   // keeps Turbopack from scanning and resolving modules from the wrong tree.
   turbopack: {
     root: process.cwd(),
   },
   async headers() {
+    const contentSecurityPolicy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://*.ingest.sentry.io https://api.stripe.com https://www.google-analytics.com https://analytics.google.com; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; worker-src 'self' blob:";
+    const securityHeaders = [
+      { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+      { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()' },
+      { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+    ];
     return [
+      {
+        source: '/api/:path*',
+        headers: [
+          ...securityHeaders,
+          { key: 'Cache-Control', value: 'no-store, max-age=0' },
+        ],
+      },
+      {
+        source: '/:path((?!embed/rsvp(?:/|$)).*)',
+        headers: securityHeaders,
+      },
+      {
+        source: '/embed/rsvp/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: contentSecurityPolicy.replace("frame-ancestors 'self'", "frame-ancestors https: http://localhost:* http://127.0.0.1:*")
+          },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          {
+            key: 'Referrer-Policy',
+            value: 'no-referrer',
+          },
+        ],
+      },
+      {
+        source: '/dashboard/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'self';" },
+        ],
+      },
       {
         source: '/:path*.(png|jpg|jpeg|webp|avif|gif|svg|ico|woff|woff2)',
         headers: [

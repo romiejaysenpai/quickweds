@@ -299,7 +299,7 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-white py-12 soft-shadow dark:bg-white/5 sm:rounded-2xl sm:py-16">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-white py-12 soft-shadow sm:rounded-2xl sm:py-16">
                 <Loader2 className="mb-3 h-10 w-10 animate-spin text-primary sm:h-12 sm:w-12" />
                 <p className="font-serif text-xs italic text-text-secondary sm:text-sm">Loading photo portal...</p>
             </div>
@@ -314,7 +314,7 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
                 </div>
             )}
 
-            <div className="rounded-xl border border-border bg-white p-3 soft-shadow dark:bg-white/5 sm:rounded-2xl sm:p-4">
+            <div className="rounded-xl border border-border bg-white p-3 soft-shadow sm:rounded-2xl sm:p-4">
                 <div className="mb-3 flex flex-col items-start gap-2 sm:mb-4 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0 flex-1">
                         <h2 className="font-serif text-xl font-bold text-foreground sm:text-2xl">Photo Portal</h2>
@@ -338,7 +338,7 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
                 </div>
             </div>
 
-            <section className="rounded-xl border border-border bg-white p-4 soft-shadow dark:bg-white/5 sm:rounded-2xl sm:p-5">
+            <section className="rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-2xl sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Photo Sharing Portal &gt; Settings</p>
@@ -419,7 +419,7 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
                 )}
             </section>
 
-            <section className="rounded-xl border border-border bg-white p-4 soft-shadow dark:bg-white/5 sm:rounded-2xl sm:p-5">
+            <section className="rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-2xl sm:p-5">
                 <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h3 className="flex items-center gap-2 font-serif text-lg font-bold text-foreground"><Key className="h-4 w-4 text-primary" /> Private QR Upload Link</h3>
@@ -477,7 +477,7 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
                 </div>
             </section>
 
-            <section className="rounded-xl border border-border bg-white soft-shadow dark:bg-white/5 sm:rounded-2xl">
+            <section className="rounded-xl border border-border bg-white soft-shadow sm:rounded-2xl">
                 <div className="border-b border-border/60 p-3 sm:p-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <h3 className="font-serif text-lg font-bold text-foreground">Uploaded Photos</h3>

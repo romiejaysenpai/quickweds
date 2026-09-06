@@ -45,14 +45,20 @@ function selectWithoutColumn(select: string, column: string) {
         .join(',');
 }
 
-function isDeleted(record: Record<string, any> | null) {
-    return Boolean(record && 'deleted_at' in record && record.deleted_at);
+function selectWithPublicationState(select: string) {
+    if (select === '*' || select.split(',').some((field) => field.trim() === 'is_published')) return select;
+    return `${select}, is_published`;
 }
 
-async function queryById(db: any, identifier: string, select: string): Promise<ResolveWeddingResult> {
+function isPublic(record: Record<string, any> | null) {
+    return Boolean(record && !record.deleted_at && record.is_published === true);
+}
+
+async function queryById(db: any, identifier: string, select: string, addPublicationState = true): Promise<ResolveWeddingResult> {
+    const selectedColumns = addPublicationState ? selectWithPublicationState(select) : select;
     const { data, error } = await db
         .from('weddings')
-        .select(select)
+        .select(selectedColumns)
         .eq('id', identifier)
         .maybeSingle();
 
@@ -60,35 +66,36 @@ async function queryById(db: any, identifier: string, select: string): Promise<R
         const missingColumn = isMissingPublicSlugColumnError(error)
             ? 'public_slug'
             : getMissingWeddingColumn(error);
-        const fallbackSelect = missingColumn ? selectWithoutColumn(select, missingColumn) : select;
-        if (fallbackSelect && fallbackSelect !== select) {
-            return queryById(db, identifier, fallbackSelect);
+        const fallbackSelect = missingColumn ? selectWithoutColumn(selectedColumns, missingColumn) : selectedColumns;
+        if (fallbackSelect && fallbackSelect !== selectedColumns) {
+            return queryById(db, identifier, fallbackSelect, false);
         }
     }
 
     if (error) return { wedding: null, error };
-    if (!data || isDeleted(data)) return { wedding: null, error: null };
+    if (!isPublic(data)) return { wedding: null, error: null };
     return { wedding: data, error: null };
 }
 
-async function queryBySlug(db: any, identifier: string, select: string): Promise<ResolveWeddingResult> {
+async function queryBySlug(db: any, identifier: string, select: string, addPublicationState = true): Promise<ResolveWeddingResult> {
+    const selectedColumns = addPublicationState ? selectWithPublicationState(select) : select;
     const { data, error } = await db
         .from('weddings')
-        .select(select)
+        .select(selectedColumns)
         .eq('public_slug', identifier)
         .maybeSingle();
 
     if (error) {
         if (isMissingPublicSlugColumnError(error)) return { wedding: null, error: null };
         const missingColumn = getMissingWeddingColumn(error);
-        const fallbackSelect = missingColumn ? selectWithoutColumn(select, missingColumn) : select;
-        if (fallbackSelect && fallbackSelect !== select) {
-            return queryBySlug(db, identifier, fallbackSelect);
+        const fallbackSelect = missingColumn ? selectWithoutColumn(selectedColumns, missingColumn) : selectedColumns;
+        if (fallbackSelect && fallbackSelect !== selectedColumns) {
+            return queryBySlug(db, identifier, fallbackSelect, false);
         }
         return { wedding: null, error };
     }
 
-    if (!data || isDeleted(data)) return { wedding: null, error: null };
+    if (!isPublic(data)) return { wedding: null, error: null };
     return { wedding: data, error: null };
 }
 

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Clock, Gem, Mic2, Music2, PartyPopper } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
-import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getSectionTitleStyle, getTemplateVisualProfile, getTemplateMood, parseSectionStyles, resolveSectionBackground } from '@/lib/theme-engine';
 
 interface TimelineSectionProps {
     timeline: string;
@@ -479,8 +479,52 @@ const STYLE_VARIANT_TIMELINE_DESIGNS: Record<string, Partial<TimelineDesign>> = 
     },
 };
 
+const MOOD_TIMELINE_MAP: Record<string, string> = {
+    editorial: 'editorial',
+    dark: 'midnight',
+    organic: 'garden',
+    vintage: 'vintage',
+    destination: 'riviera',
+    cinematic: 'cinematic',
+    playful: 'whimsical',
+    nordic: 'nordic',
+    celestial: 'celestial',
+    romantic: 'romantic',
+    riviera: 'riviera',
+    classic: 'classic',
+};
+
+const TEMPLATE_TIMELINE_OVERRIDES: Record<string, string> = {
+    mizuhiki: 'traditional',
+    teaceremony: 'traditional',
+    kimono: 'traditional',
+    asanoha: 'traditional',
+    seigaiha: 'traditional',
+    washipaper: 'traditional',
+    discofever: 'glitch',
+    disco: 'glitch',
+    bauhaus: 'minimal',
+    neobrutalist: 'minimal',
+    astronomy: 'celestial',
+    stargazer: 'celestial',
+    holynight: 'celestial',
+    lofifilm: 'film',
+    'cinema-noir': 'film',
+    amalfi: 'riviera',
+    sunsetriviera: 'riviera',
+    petlove: 'whimsical',
+    storybook: 'whimsical',
+};
+
 function getTimelineDesign(template: string, templateStyle?: string) {
-    const base = TIMELINE_DESIGNS[template] || TIMELINE_DESIGNS.classic;
+    const normalized = (template || '').toLowerCase();
+    const resolvedKey = TIMELINE_DESIGNS[normalized]
+        ? normalized
+        : TEMPLATE_TIMELINE_OVERRIDES[normalized]
+        || MOOD_TIMELINE_MAP[getTemplateMood(normalized)]
+        || 'classic';
+
+    const base = TIMELINE_DESIGNS[resolvedKey] || TIMELINE_DESIGNS.classic;
     const variant = templateStyle && templateStyle !== 'default' ? STYLE_VARIANT_TIMELINE_DESIGNS[templateStyle] : undefined;
     return {
         ...base,
@@ -619,11 +663,18 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
     const titleStyle = getSectionTitleStyle(wedding || {}, visual.headingClass);
     const design = getTimelineDesign(template, templateStyle);
     const isSharp = visual.isSharp;
-    const isDark = visual.isDark;
+    const sectionStylesMap = parseSectionStyles(wedding?.section_styles);
+    const customBg = resolveSectionBackground(sectionStylesMap[id] || sectionStylesMap['timeline']);
+    const isDark = customBg.hasCustomBackground ? customBg.isDark : visual.isDark;
     const isVintage = ['vintage', 'rustic', 'boho', 'artdeco'].includes(template);
 
     return (
-        <section id={id} className={`py-16 sm:py-24 md:py-32 relative z-10 overflow-hidden ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section
+            id={id}
+            className={`py-16 sm:py-24 md:py-32 relative z-10 overflow-hidden ${customBg.hasCustomBackground ? '' : visual.sectionClass} ${customBg.textColorClass || ''}`}
+            style={customBg.hasCustomBackground ? customBg.style : visual.sectionStyle}
+        >
+            {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
             {visual.ornament === 'film' && <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.12)_0_12px,transparent_12px_26px)]" />}
             <div className={`${design.maxWidth} mx-auto px-4 sm:px-6 md:px-8 relative`}>
                 {/* Section header */}

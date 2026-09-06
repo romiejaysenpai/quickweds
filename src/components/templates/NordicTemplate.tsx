@@ -11,7 +11,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -44,14 +46,29 @@ export default function NordicTemplate({ wedding, gallery, isExpired }: Template
                         <span className="text-xs font-medium uppercase tracking-[0.35em] text-slate-600">The Nordic Union</span>
                     </motion.div>
 
+                    <TemplateMonogram
+                        wedding={wedding}
+                        defaultShape="minimal"
+                        size="md"
+                        color="#1e293b"
+                        motifColor={wedding.motif_color}
+                        className="mx-auto"
+                    />
+
                     <motion.h1
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 1, delay: 0.2 }}
                         className="text-4xl sm:text-6xl md:text-8xl font-light tracking-tight text-slate-900 leading-none"
                     >
-                        {wedding.bride_name} <span className="font-serif italic text-emerald-800/70 font-normal">&</span> {wedding.groom_name}
+                        {wedding.bride_name} <span className="font-serif italic text-emerald-800/70 font-normal">&amp;</span> {wedding.groom_name}
                     </motion.h1>
+
+                    {wedding.quote && (
+                        <blockquote className="my-6 max-w-md mx-auto italic font-serif text-slate-700 text-sm sm:text-base border-y border-slate-200/80 py-3">
+                            &ldquo;{wedding.quote}&rdquo;
+                        </blockquote>
+                    )}
 
                     <motion.p
                         initial={{ opacity: 0 }}
@@ -94,15 +111,18 @@ export default function NordicTemplate({ wedding, gallery, isExpired }: Template
             </section>
 
             {/* Content Sections */}
+            <TemplateSectionDivider template="nordic" motifColor={wedding.motif_color} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="nordic" motifColor={wedding.motif_color} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="nordic" motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} />
             
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer
                     id="countdown"
                     weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
+                    weddingTime={wedding.wedding_time} eventTimezone={wedding.event_timezone}
                     brideName={wedding.bride_name}
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}
@@ -112,8 +132,11 @@ export default function NordicTemplate({ wedding, gallery, isExpired }: Template
                 />
             )}
 
+            <TemplateSectionDivider template="nordic" motifColor={wedding.motif_color} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="nordic" motifColor={wedding.motif_color} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="nordic" motifColor={wedding.motif_color} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

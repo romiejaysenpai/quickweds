@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
-import { getTypography, BENTO_PRESETS, getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getTypography, BENTO_PRESETS, getTemplateVisualProfile, parseSectionStyles, resolveSectionBackground } from '@/lib/theme-engine';
 import { useSectionContext } from '@/context/SectionContext';
+import type { SectionStylesMap } from '@/types/wedding';
 
 interface GallerySectionProps {
     gallery: string[];
@@ -15,6 +16,7 @@ interface GallerySectionProps {
     cardStyle?: string;
     galleryLayout?: string;
     id: string;
+    sectionStyles?: SectionStylesMap | string;
 }
 
 type GalleryLayout = 'auto' | 'bento' | 'vertical' | 'horizontal' | 'grid';
@@ -123,7 +125,7 @@ function Lightbox({ images, index, onClose }: { images: string[]; index: number;
     );
 }
 
-export default function GallerySection({ gallery, masonry = false, template = 'classic', motifColor = '#D16C78', cardStyle, galleryLayout = 'auto', id }: GallerySectionProps) {
+export default function GallerySection({ gallery, masonry = false, template = 'classic', motifColor = '#D16C78', cardStyle, galleryLayout = 'auto', id, sectionStyles }: GallerySectionProps) {
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const { registerSection, unregisterSection } = useSectionContext();
 
@@ -141,7 +143,7 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
     
     const isSharp = visual.isSharp || ['editorial', 'vogue', 'urban', 'minimal'].includes(template);
     const selectedLayout = normalizeGalleryLayout(galleryLayout);
-    const resolvedLayout = selectedLayout === 'auto' ? getDefaultGalleryLayout(template, masonry) : selectedLayout;
+    const resolvedLayout = selectedLayout === 'auto' ? (visual.galleryLayoutVariant || getDefaultGalleryLayout(template, masonry)) : selectedLayout;
     const isBento = resolvedLayout === 'bento';
     const layoutClasses = isBento ? BENTO_PRESETS.gallery : Array(gallery.length).fill("");
     const itemRadiusClass = isSharp ? 'rounded-none' : 'rounded-[1.8rem]';
@@ -184,9 +186,17 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
         </motion.button>
     );
 
+    const sectionStylesMap = parseSectionStyles(sectionStyles);
+    const customBg = resolveSectionBackground(sectionStylesMap[id] || sectionStylesMap['gallery']);
+
     return (
         <>
-        <section id={id} className={`py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section
+            id={id}
+            className={`py-24 sm:py-32 relative overflow-hidden ${customBg.hasCustomBackground ? '' : visual.sectionClass} ${customBg.textColorClass || ''}`}
+            style={customBg.hasCustomBackground ? customBg.style : visual.sectionStyle}
+        >
+            {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
                 <div className={visual.containerClass}>
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}

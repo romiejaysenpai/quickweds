@@ -137,20 +137,20 @@ export function getSeatEmailHtml({
 
     return `
         <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; color: #3A2A2D;">
-            <p style="margin: 0 0 8px; color: #D16C78; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px;">QuickWeds Seat Finder</p>
-            <h1 style="margin: 0 0 16px; font-size: 28px; line-height: 1.2;">Your seat is ready</h1>
+            <p style="margin: 0 0 8px; color: #D16C78; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px;">QuickWeds Seat Finder</p>
+            <h1 style="margin: 0 0 16px; font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 30px; line-height: 1.15; letter-spacing: -0.3px;">Your seat is ready</h1>
             <p style="font-size: 16px; line-height: 1.7; color: #7A5A61;">Hi ${escapeHtml(guestName)}, here is your seating information for ${safeWeddingName}.</p>
             <div style="border: 1px solid #F1D6DA; border-radius: 18px; padding: 20px; background: #FFF8F9; margin: 24px 0;">
                 <p style="margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: #9B6670; font-weight: 800;">Table</p>
-                <p style="margin: 0; font-size: 28px; font-weight: 800;">${safeTableName}</p>
+                <p style="margin: 0; font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 30px; line-height: 1.2;">${safeTableName}</p>
                 ${safeSeatLabel ? `<p style="margin: 8px 0 0; color: #7A5A61;">${safeSeatLabel}</p>` : ''}
             </div>
             <p style="text-align: center; margin: 28px 0 12px;">
                 <img src="${qrUrl}" alt="Seat finder QR code" width="220" height="220" style="display: inline-block; border: 1px solid #eee; border-radius: 16px;" />
             </p>
-            <p style="margin: 16px 0; text-align: center; color: #7A5A61;">Backup guest code: <strong>${escapeHtml(guestCode)}</strong></p>
+            <p style="margin: 16px 0; text-align: center; color: #7A5A61; font-size: 14px; line-height: 1.7;">Backup guest code: <strong>${escapeHtml(guestCode)}</strong></p>
             <p style="margin: 28px 0; text-align: center;">
-                <a href="${seatUrl}" style="display: inline-block; background: #D16C78; color: #fff; padding: 14px 20px; border-radius: 12px; text-decoration: none; font-weight: 700;">View My Seat</a>
+                <a href="${seatUrl}" style="display: inline-block; background: #D16C78; color: #fff; padding: 14px 20px; border-radius: 12px; text-decoration: none; font-family: Arial, sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.02em;">View My Seat</a>
             </p>
             <div style="border-top: 1px solid #F1D6DA; margin-top: 24px; padding-top: 18px;">
                 <p style="margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: #7A5A61; font-weight: 700;">How to use this at the event</p>

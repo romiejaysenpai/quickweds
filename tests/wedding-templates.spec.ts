@@ -143,7 +143,7 @@ test.describe('public wedding templates', () => {
         await expect(page.locator('#timeline')).toBeVisible();
         await expect(page.locator('#gallery')).toBeVisible();
         await expect(page.locator('#gift')).toBeVisible();
-        await expect(page.locator('#faq')).toBeVisible();
+        await expect(page.locator('#faq').first()).toBeVisible();
         await expect(page.locator('#guestbook')).toBeVisible();
         await expect(page.locator('#venue')).toBeVisible();
         await expect(page.locator('#entourage')).toBeVisible();

@@ -52,6 +52,7 @@ export default function LivePreview({
                 section_title_font_style: formData.sectionTitleFontStyle || 'default',
                 section_title_color_style: formData.sectionTitleColorStyle || 'motif',
                 background_style: formData.backgroundStyle || 'cream',
+                section_styles: formData.sectionStyles,
                 template: formData.template || 'classic',
                 template_style: formData.templateStyle || 'default',
                 card_style: formData.cardStyle || 'default',
@@ -99,6 +100,7 @@ export default function LivePreview({
     }, [formData, previews, hasMonogramPro]);
 
     const latestPayloadRef = useRef<typeof previewPayload & { previewRevision?: number }>(previewPayload);
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const sendUpdate = useCallback(() => {
         const payload = latestPayloadRef.current;
@@ -110,10 +112,25 @@ export default function LivePreview({
         iframeRef.current?.contentWindow?.postMessage(payload, window.location.origin);
     }, [previewStorageKey]);
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         payloadRevisionRef.current += 1;
         latestPayloadRef.current = { ...previewPayload, previewRevision: payloadRevisionRef.current };
-        sendUpdate();
+
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+
+        // Debounce by 180ms to keep typing responsive and silky smooth
+        debounceTimerRef.current = setTimeout(() => {
+            sendUpdate();
+            debounceTimerRef.current = null;
+        }, 180);
+
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
     }, [previewPayload, sendUpdate]);
 
     const syncAfterFrameLoad = useCallback(() => {
@@ -136,6 +153,9 @@ export default function LivePreview({
         return () => {
             window.removeEventListener('message', handleMessage);
             retryTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
         };
     }, [sendUpdate]);
 

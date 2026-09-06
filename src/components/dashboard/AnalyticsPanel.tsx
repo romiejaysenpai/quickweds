@@ -150,7 +150,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
 
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {stats.map((stat) => (
-                    <div key={stat.label} className="flex min-h-[118px] min-w-0 flex-col items-center justify-between rounded-2xl border border-border bg-neutral/50 p-3 text-center dark:bg-neutral/40 sm:p-4">
+                    <div key={stat.label} className="flex min-h-[118px] min-w-0 flex-col items-center justify-between rounded-2xl border border-border bg-neutral/50 p-3 text-center sm:p-4">
                         <stat.icon className="mb-2 h-4 w-4 flex-shrink-0 text-primary" />
                         <div className="min-w-0">
                             <p className="truncate text-xl font-black leading-none text-foreground sm:text-2xl">{stat.value}</p>
@@ -161,7 +161,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
             </div>
 
             {hasPlannerPro ? <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <div className="min-w-0 rounded-2xl border border-border bg-neutral/40 p-4 dark:bg-neutral/30">
+                <div className="min-w-0 rounded-2xl border border-border bg-neutral/40 p-4">
                     <h4 className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60 mb-3">Visit Sources</h4>
                     {summary.sourceBreakdown.length > 0 ? (
                         <MeasuredChartFrame>
@@ -182,7 +182,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                     )}
                 </div>
 
-                <div className="min-w-0 space-y-3 rounded-2xl border border-border bg-neutral/40 p-4 dark:bg-neutral/30">
+                <div className="min-w-0 space-y-3 rounded-2xl border border-border bg-neutral/40 p-4">
                     <h4 className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60">Reminder Performance</h4>
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-text-secondary">Reminder runs</span>

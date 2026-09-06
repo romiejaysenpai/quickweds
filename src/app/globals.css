@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --primary: #D16C78;
   /* Dusty Rose */
   --primary-hover: #C85F6B;
@@ -39,32 +40,6 @@
   --qw-film-texture:
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 12px),
     radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.08), transparent 20rem);
-}
-
-[data-theme='dark'],
-.dark {
-  --primary: #E69DA7;
-  /* Softer Rose for dark context */
-  --primary-hover: #D16C78;
-  --primary-disabled: #6A4A4F;
-  --secondary: #EAB2BE;
-  --accent: #E6CD9D;
-  /* Brighter Gold */
-  --neutral: #1A1213;
-  /* Deep Charcoal Rose */
-  --white: #251B1D;
-  /* Soft Dark Background for cards */
-  --foreground: #FFF8F4;
-  /* Warm Ivory Text */
-  --text-secondary: #C0A8AD;
-  /* Muted Rose Beige */
-  --border: #3A2A2D;
-  /* Darker Outline */
-  --background: #121212;
-  /* True Dark Background */
-  --success-bg: #1B2B21;
-  --error-bg: #2B1B1B;
-  --error-text: #E69B9B;
 }
 
 /* Template-only continuation styling. Keeps shared lower sections visually tied
@@ -259,17 +234,8 @@ h6 {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.dark .glass {
-  background: rgba(26, 18, 19, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
 .soft-shadow {
   box-shadow: 0 10px 30px rgba(192, 128, 129, 0.1);
-}
-
-.dark .soft-shadow {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 @keyframes marquee {
@@ -284,6 +250,30 @@ h6 {
 
 .animate-marquee {
   animation: marquee 40s linear infinite;
+}
+
+@keyframes qw-loading-progress {
+  0% {
+    transform: translateX(-130%);
+  }
+
+  100% {
+    transform: translateX(340%);
+  }
+}
+
+.qw-loading-progress-indeterminate {
+  width: 34%;
+  background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 35%, transparent);
+  animation: qw-loading-progress 1.35s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qw-loading-progress-indeterminate {
+    animation: none;
+    transform: translateX(95%);
+  }
 }
 
 @keyframes supplier-marquee {
@@ -403,11 +393,6 @@ h6 {
   box-shadow: 0 8px 32px 0 rgba(192, 128, 129, 0.1);
 }
 
-.dark .glossy {
-  background: rgba(26, 18, 19, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-}
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

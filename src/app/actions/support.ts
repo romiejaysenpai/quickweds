@@ -43,7 +43,7 @@ async function uploadToCloudinary(file: File): Promise<string | null> {
 
 function getEmailWrapper(content: string, type: string, color: string = '#D16C78') {
     return `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px 20px; color: #333;">
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f7f6; padding: 40px 20px; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #eef2f1;">
                 <!-- Header -->
                 <div style="background-color: ${color}; padding: 30px; text-align: center;">

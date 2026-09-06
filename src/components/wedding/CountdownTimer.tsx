@@ -1,10 +1,12 @@
 'use client';
+import {eventInstant} from '@/lib/event-time';
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarHeart, MapPin, Sparkles, Clock } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
-import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getTemplateVisualProfile, parseSectionStyles, resolveSectionBackground } from '@/lib/theme-engine';
+import type { SectionStylesMap } from '@/types/wedding';
 
 const subscribeToClient = () => () => {};
 const getClientSnapshot = () => true;
@@ -13,6 +15,7 @@ const getServerSnapshot = () => false;
 interface CountdownTimerProps {
     weddingDate: string;
     weddingTime?: string;
+    eventTimezone?: string;
     brideName: string;
     groomName: string;
     venueName?: string;
@@ -23,19 +26,12 @@ interface CountdownTimerProps {
     motifColor?: string;
     cardStyle?: string;
     invert?: boolean;
+    sectionStyles?: SectionStylesMap | string;
 }
 
 function generateICS(props: CountdownTimerProps): string {
-    const date = new Date(props.weddingDate);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const formatDate = (d: Date) =>
-        `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-
-    if (props.weddingTime) {
-        const [h, m] = props.weddingTime.split(':').map(Number);
-        date.setHours(h || 0, m || 0);
-    }
-
+    const date = eventInstant(props.weddingDate, props.weddingTime || '00:00', props.eventTimezone || 'UTC');
+    const formatDate = (value: Date) => value.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
     const endDate = new Date(date);
     endDate.setHours(endDate.getHours() + 4); 
 
@@ -51,7 +47,7 @@ function generateICS(props: CountdownTimerProps): string {
         `DESCRIPTION:We can't wait to celebrate our special day with you!\\n\\n${props.brideName} & ${props.groomName}`,
         'END:VEVENT',
         'END:VCALENDAR',
-    ].join('\\r\\n');
+    ].join('\r\n');
 }
 
 function parseWeddingTargetDate(weddingDate: string, weddingTime?: string): Date {
@@ -85,6 +81,7 @@ function parseWeddingTargetDate(weddingDate: string, weddingTime?: string): Date
 export default function CountdownTimer({
     weddingDate,
     weddingTime,
+    eventTimezone,
     brideName,
     groomName,
     venueName,
@@ -95,6 +92,7 @@ export default function CountdownTimer({
     motifColor = '#D16C78',
     cardStyle,
     invert = false,
+    sectionStyles,
 }: CountdownTimerProps) {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
     const [isPast, setIsPast] = useState(false);
@@ -107,7 +105,8 @@ export default function CountdownTimer({
     }, [id, registerSection, unregisterSection]);
 
     useEffect(() => {
-        const target = parseWeddingTargetDate(weddingDate, weddingTime);
+        let target: Date;
+        try { target = eventInstant(weddingDate, weddingTime || '00:00', eventTimezone || 'UTC'); } catch { return; }
 
         const update = () => {
             const now = new Date();
@@ -130,10 +129,10 @@ export default function CountdownTimer({
         update();
         const interval = setInterval(update, 1000);
         return () => clearInterval(interval);
-    }, [weddingDate, weddingTime]);
+    }, [weddingDate, weddingTime, eventTimezone]);
 
     const handleAddToCalendar = () => {
-        const ics = generateICS({ weddingDate, weddingTime, brideName, groomName, venueName, venueAddress, id });
+        const ics = generateICS({ weddingDate, weddingTime, eventTimezone, brideName, groomName, venueName, venueAddress, id });
         const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -148,8 +147,10 @@ export default function CountdownTimer({
 
     const visual = getTemplateVisualProfile(template, motifColor, invert, cardStyle);
     const isEditorial = visual.mood === 'editorial';
-    const isDark = visual.isDark;
-    const sectionClasses = `${visual.sectionClass} ${className}`;
+    const sectionStylesMap = parseSectionStyles(sectionStyles);
+    const customBg = resolveSectionBackground(sectionStylesMap[id] || sectionStylesMap['countdown']);
+    const isDark = customBg.hasCustomBackground ? customBg.isDark : visual.isDark;
+    const sectionClasses = `${customBg.hasCustomBackground ? '' : visual.sectionClass} ${customBg.textColorClass || ''} ${className}`;
     const panelClass = visual.cardClass;
     const detailIconClass = isDark
         ? 'border-primary/25 bg-primary/10 text-primary'
@@ -163,7 +164,11 @@ export default function CountdownTimer({
 
     if (isPast) {
         return (
-            <section className={`py-8 sm:py-12 px-4 sm:px-6 w-full ${sectionClasses} flex justify-center`} style={visual.sectionStyle}>
+            <section
+                className={`py-8 sm:py-12 px-4 sm:px-6 w-full ${sectionClasses} flex justify-center relative overflow-hidden`}
+                style={customBg.hasCustomBackground ? customBg.style : visual.sectionStyle}
+            >
+                {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
@@ -189,7 +194,11 @@ export default function CountdownTimer({
     const targetDateObj = parseWeddingTargetDate(weddingDate, weddingTime);
 
     return (
-        <section className={`py-12 sm:py-16 md:py-24 px-4 sm:px-6 w-full flex justify-center ${sectionClasses}`} style={visual.sectionStyle}>
+        <section
+            className={`py-12 sm:py-16 md:py-24 px-4 sm:px-6 w-full flex justify-center relative overflow-hidden ${sectionClasses}`}
+            style={customBg.hasCustomBackground ? customBg.style : visual.sectionStyle}
+        >
+            {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
             <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}

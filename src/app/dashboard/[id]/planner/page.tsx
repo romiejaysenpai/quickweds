@@ -1,8 +1,9 @@
 'use client';
+import { expenseSummary } from '@/lib/expense-summary';
 
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode, ExternalLink, BookOpen, Package, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -11,24 +12,23 @@ import UpgradeButton from '@/components/UpgradeButton';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
 import { getCachedSession } from '@/lib/session-cache';
+import { uploadAuthenticatedFile } from '@/lib/authenticated-upload';
 import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate, getEntourageCardTheme } from '@/lib/entourage-proposal-templates';
 import { EntourageProposalCustomizerSection } from '@/components/EntourageProposalCustomizerSection';
+import LoadingState from '@/components/ui/LoadingState';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
-    loading: () => (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="mt-4 text-sm font-bold text-text-secondary">Loading seating chart...</p>
-        </div>
-    ),
+    loading: () => <LoadingState variant="panel" label="Loading seating chart…" className="min-h-[320px]" />,
 });
 const PhotoSharingManager = dynamic(() => import('@/components/dashboard/PhotoSharingManager'), {
-    loading: () => (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-8 text-center soft-shadow">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="mt-4 text-sm font-bold text-text-secondary">Loading photo sharing...</p>
-        </div>
-    ),
+    loading: () => <LoadingState variant="panel" label="Loading photo sharing…" className="min-h-[320px]" />,
+});
+const ChecklistTemplateLibrary = dynamic(() => import('@/components/planner/ChecklistTemplateLibrary').then((mod) => mod.ChecklistTemplateLibrary), {
+    loading: () => <LoadingState variant="panel" label="Loading checklist templates…" className="min-h-[320px]" />,
+});
+const BoxPackingMode = dynamic(() => import('@/components/planner/BoxPackingMode').then((mod) => mod.BoxPackingMode), {
+    loading: () => <LoadingState variant="panel" label="Loading box packing mode…" className="min-h-[320px]" />,
 });
 const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudgetPieChart'), {
     ssr: false,
@@ -183,14 +183,14 @@ function getVendorPaymentStatusClasses(status?: string | null) {
     const normalized = normalizeVendorPaymentStatus(status);
 
     if (normalized === 'paid') {
-        return 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-emerald-900/5 focus:ring-emerald-500/20 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300';
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-emerald-900/5 focus:ring-emerald-500/20';
     }
 
     if (normalized === 'pending') {
-        return 'border-amber-200 bg-amber-50 text-amber-700 shadow-amber-900/5 focus:ring-amber-500/20 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-300';
+        return 'border-amber-200 bg-amber-50 text-amber-700 shadow-amber-900/5 focus:ring-amber-500/20';
     }
 
-    return 'border-border bg-neutral text-text-secondary shadow-primary/5 focus:ring-primary/20 dark:bg-white/5';
+    return 'border-border bg-neutral text-text-secondary shadow-primary/5 focus:ring-primary/20';
 }
 
 function VendorPaymentStatusSelect({
@@ -486,9 +486,15 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
 
     if (checkingRole || loading) {
-        return <div className="min-h-screen flex items-center justify-center bg-background">
-            <Loader2 className="w-12 h-12 text-primary animate-spin" />
-        </div>;
+        return (
+            <main className="mobile-safe-screen flex items-center justify-center bg-background px-4 py-6">
+                <LoadingState
+                    label={checkingRole ? 'Confirming planner access…' : 'Loading your wedding planner…'}
+                    description="Getting your plans, people, and priorities ready."
+                    className="max-w-lg"
+                />
+            </main>
+        );
     }
 
     // Dev debug logging
@@ -530,114 +536,179 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            {/* Top Navigation Bar */}
-            <div className="bg-white/80 dark:bg-white/90 backdrop-blur-md border-b border-border sticky top-0 z-40 overflow-hidden">
-                <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
-                    <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-                        <button onClick={() => router.push(`/dashboard/${weddingId}`)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]">
-                            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
-                        </button>
-                        <div className="min-w-0">
-                            <h1 className="text-base sm:text-lg md:text-xl font-serif font-bold text-foreground truncate">Wedding Planner</h1>
+        <DashboardShell
+            weddingId={weddingId}
+            weddingTitle={wedding?.couple_name || (wedding?.bride_name && wedding?.groom_name ? `${wedding.bride_name} & ${wedding.groom_name}` : undefined)}
+            weddingSlug={wedding?.public_slug}
+        >
+            <div className="min-h-screen bg-background">
+                {/* Top Navigation Bar with Breadcrumbs */}
+                <div className="bg-white/85 backdrop-blur-md border-b border-border sticky top-0 z-40">
+                    <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                            <button
+                                onClick={() => router.push(`/dashboard/${weddingId}`)}
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl hover:bg-neutral flex items-center justify-center transition-colors flex-shrink-0 border border-border/80"
+                                title="Back to Workspace"
+                            >
+                                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
+                            </button>
+                            <div className="min-w-0">
+                                <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-text-secondary">
+                                    <Link href="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+                                    <span>/</span>
+                                    <Link href={`/dashboard/${weddingId}`} className="hover:text-primary transition-colors truncate max-w-[140px] md:max-w-[200px]">
+                                        {wedding?.couple_name || (wedding?.bride_name && wedding?.groom_name ? `${wedding.bride_name} & ${wedding.groom_name}` : 'Workspace')}
+                                    </Link>
+                                    <span>/</span>
+                                    <span className="text-foreground">Planner Suite</span>
+                                </div>
+                                <h1 className="text-base sm:text-lg md:text-xl font-serif font-bold text-foreground truncate sm:hidden">Wedding Planner</h1>
+                            </div>
                         </div>
-                    </div>
-                    {/* Home button (go to QuickWeds landing) */}
-                    <Link href="/" className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-neutral text-foreground text-sm font-bold border border-border hover:bg-neutral-hover transition-all min-h-[44px]">
-                        <Home className="w-4 h-4" />
-                        <span>Home</span>
-                    </Link>
-                    {/* Mobile home icon */}
-                    <Link href="/" className="sm:hidden w-9 h-9 rounded-full hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]" aria-label="Home">
-                        <Home className="w-5 h-5 text-text-secondary" />
-                    </Link>
-                </div>
-            </div>
 
-            <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-6">
-                {/* Sidebar - Mobile: Grid, Desktop: Vertical stack */}
-                <div className="w-full md:w-56 lg:w-64 shrink-0">
-                    <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl p-2 sm:p-4 md:p-6 soft-shadow border border-border sticky top-20 md:top-24 flex-shrink-0">
-                        <div className="grid grid-cols-3 md:flex md:flex-col gap-2 md:gap-2">
-                            {PLANNER_TAB_DETAILS.map((tab) => {
-                                const Icon = tab.icon;
-                                const isActive = activeTab === tab.tab;
-
-                                return (
-                                    <button
-                                        key={tab.tab}
-                                        onClick={() => setActiveTab(tab.tab)}
-                                        className={`relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${
-                                            isActive
-                                                ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
-                                                : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'
-                                        }`}
-                                    >
-                                        {!hasPlannerPro && tab.tab === 'thanks' && (
-                                            <span className={`absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full md:static md:h-auto md:w-auto md:rounded-none md:bg-transparent ${
-                                                isActive ? 'bg-white/20 md:text-white' : 'bg-primary/10 text-primary'
-                                            }`}>
-                                                <LockKeyhole className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
-                                            </span>
-                                        )}
-                                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                        <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">{tab.label}</span>
-                                        {!hasPlannerPro && tab.tab === 'thanks' && (
-                                            <span className={`hidden md:inline-flex ml-auto rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
-                                                isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                                            }`}>
-                                                Pro
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                            <Link href={`/dashboard/${weddingId}/wedding-day?from=planner`} title="Open Wedding Day Mode" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground">
-                                <ClipboardCheck className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Wedding Day</span>
-                            </Link>
-                            <Link href={`/dashboard/${weddingId}/qr-kit?from=planner`} title="Open QR Kit" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground">
-                                <QrCode className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">QR Kit</span>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content Area */}
-                <div className="flex-1 min-w-0 overflow-x-hidden">
-                    {!hasPlannerPro && activeTab === 'thanks' ? (
-                        <LockedPlannerFeature
-                            activeTab={activeTab}
-                            accessRole={accessRole}
-                            weddingId={weddingId}
-                            onSelectTab={setActiveTab}
-                        />
-                    ) : (
-                        <>
-                            <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
-                            {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={loadPlannerData} />}
-                            {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={loadPlannerData} />}
-                            {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} hasPlannerPro={hasPlannerPro} />}
-                            {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
-                            {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'seating' && (
-                                <SeatingChartBuilder
-                                    weddingId={weddingId}
-                                    hasPlannerPro={hasPlannerPro}
-                                    initialPublicSeatFinderToken={wedding?.public_seat_finder_token || ''}
-                                    initialSeatFinderEnabled={wedding?.seat_finder_enabled !== false && Boolean(wedding?.public_seat_finder_token)}
-                                />
+                        <div className="flex items-center gap-2">
+                            {wedding?.public_slug && (
+                                <Link
+                                    href={`/w/${wedding.public_slug}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/20 bg-primary/5 text-primary text-xs font-bold hover:bg-primary/10 transition-colors"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>Guest View</span>
+                                </Link>
                             )}
-                            {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
-                            {activeTab === 'thanks' && <ThankYouPlannerLauncher weddingId={weddingId} confirmedGuests={confirmedGuests} />}
-                            {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
-                        </>
-                    )}
+                            <Link href="/" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral text-foreground text-xs font-bold border border-border hover:bg-neutral-hover transition-all min-h-[36px]">
+                                <Home className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Landing</span>
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* Desktop Horizontal Segmented Tab Bar */}
+                    <div className="hidden md:block border-t border-border/60 bg-white/70 backdrop-blur-xs px-3 sm:px-6">
+                        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto py-2 no-scrollbar">
+                            <div className="flex items-center gap-1.5">
+                                {PLANNER_TAB_DETAILS.map((tab) => {
+                                    const Icon = tab.icon;
+                                    const isActive = activeTab === tab.tab;
+
+                                    return (
+                                        <button
+                                            key={tab.tab}
+                                            onClick={() => setActiveTab(tab.tab)}
+                                            className={`relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                                isActive
+                                                    ? 'bg-primary text-white shadow-md shadow-primary/25 scale-[1.02]'
+                                                    : 'text-text-secondary hover:bg-neutral/80 hover:text-foreground'
+                                            }`}
+                                        >
+                                            <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                                            <span>{tab.label}</span>
+                                            {!hasPlannerPro && tab.tab === 'thanks' && (
+                                                <span className={`rounded-full px-1.5 py-0.2 text-[8px] font-black uppercase tracking-wider ${
+                                                    isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                                                }`}>
+                                                    Pro
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex items-center gap-2 pl-4 border-l border-border/80">
+                                <Link
+                                    href={`/dashboard/${weddingId}/wedding-day?from=planner`}
+                                    title="Open Wedding Day Mode"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-text-secondary hover:bg-neutral hover:text-primary transition-colors whitespace-nowrap"
+                                >
+                                    <ClipboardCheck className="w-3.5 h-3.5 text-primary" />
+                                    <span>Wedding Day</span>
+                                </Link>
+                                <Link
+                                    href={`/dashboard/${weddingId}/qr-kit?from=planner`}
+                                    title="Open QR Kit"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-text-secondary hover:bg-neutral hover:text-primary transition-colors whitespace-nowrap"
+                                >
+                                    <QrCode className="w-3.5 h-3.5 text-primary" />
+                                    <span>QR Kit</span>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Tab Grid Bar */}
+                <div className="md:hidden max-w-7xl mx-auto px-3 pt-4">
+                    <div className="bg-white rounded-2xl p-2.5 soft-shadow border border-border grid grid-cols-3 gap-1.5">
+                        {PLANNER_TAB_DETAILS.map((tab) => {
+                            const Icon = tab.icon;
+                            const isActive = activeTab === tab.tab;
+
+                            return (
+                                <button
+                                    key={tab.tab}
+                                    onClick={() => setActiveTab(tab.tab)}
+                                    className={`relative flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl font-bold transition-all min-h-[44px] ${
+                                        isActive
+                                            ? 'bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]'
+                                            : 'text-text-secondary hover:bg-neutral hover:text-foreground'
+                                    }`}
+                                >
+                                    <Icon className="w-4 h-4 flex-shrink-0" />
+                                    <span className="text-[10px] text-center">{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                        <Link href={`/dashboard/${weddingId}/wedding-day?from=planner`} className="flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral hover:text-foreground">
+                            <ClipboardCheck className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-[10px] text-center">Wedding Day</span>
+                        </Link>
+                        <Link href={`/dashboard/${weddingId}/qr-kit?from=planner`} className="flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral hover:text-foreground">
+                            <QrCode className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-[10px] text-center">QR Kit</span>
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 md:py-8">
+                    {/* Main Content Area */}
+                    <div className="w-full min-w-0">
+                        {!hasPlannerPro && activeTab === 'thanks' ? (
+                            <LockedPlannerFeature
+                                activeTab={activeTab}
+                                accessRole={accessRole}
+                                weddingId={weddingId}
+                                onSelectTab={setActiveTab}
+                            />
+                        ) : (
+                            <>
+                                <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
+                                {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={loadPlannerData} />}
+                                {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={loadPlannerData} />}
+                                {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} hasPlannerPro={hasPlannerPro} />}
+                                {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                                {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
+                                {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                                {activeTab === 'seating' && (
+                                    <SeatingChartBuilder
+                                        weddingId={weddingId}
+                                        hasPlannerPro={hasPlannerPro}
+                                        initialPublicSeatFinderToken={wedding?.public_seat_finder_token || ''}
+                                        initialSeatFinderEnabled={wedding?.seat_finder_enabled !== false && Boolean(wedding?.public_seat_finder_token)}
+                                    />
+                                )}
+                                {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
+                                {activeTab === 'thanks' && <ThankYouPlannerLauncher weddingId={weddingId} confirmedGuests={confirmedGuests} />}
+                                {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+        </DashboardShell>
     );
 }
 
@@ -915,7 +986,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                                         onClick={() => void sendProposal(member, memberKey)}
                                         className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        {sendingKey === memberKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                        {sendingKey === memberKey ? <LoadingState variant="inline" label="Sending proposal…" /> : <Send className="h-4 w-4" />}
                                         {status === 'sent' || status === 'accepted' || status === 'declined' ? 'Resend' : 'Send Proposal'}
                                     </button>
                                     {!canSend && (
@@ -1049,6 +1120,8 @@ function getChecklistDueDate(weddingDateValue: string | null | undefined, months
 
 function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], wedding, reload }: any) {
     const [publishing, setPublishing] = useState(false);
+    const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
+    const [showBoxPacking, setShowBoxPacking] = useState(false);
     const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [savingTaskId, setSavingTaskId] = useState<string | null>(null);
@@ -1226,8 +1299,16 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
     const preparedCount = initialTasks.filter((t: any) => t.status === 'prepared' || t.status === 'completed').length;
     const progress = initialTasks.length > 0 ? Math.round((preparedCount / initialTasks.length) * 100) : 0;
 
+    // Template box sections (e.g. "Bride's Box", "Emergency kit") render after the built-in sections.
+    const templateSections: string[] = Array.from(
+        new Set<string>(
+            initialTasks.map((task: any) => String(task.section || 'General')).filter((section: string) => !CHECKLIST_SECTIONS.includes(section))
+        )
+    ).sort((a: string, b: string) => a.localeCompare(b));
+    const allChecklistSections = [...CHECKLIST_SECTIONS, ...templateSections];
+
     return (
-        <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 md:p-10 soft-shadow border border-border">
+        <div className="bg-white rounded-2xl sm:rounded-[2.5rem] p-5 md:p-10 soft-shadow border border-border">
             <div className="flex flex-col gap-4 border-b border-border/50 pb-6 mb-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">Planner Checklist</h2>
@@ -1239,18 +1320,48 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                     <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Done</p>
                     </div>
                     <div className="text-center sm:text-left">
-                        <button type="button" onClick={() => void seedTwelveMonthChecklist()} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white sm:w-auto">
-                            <Sparkles className="h-4 w-4" /> Load 12-Month List
-                        </button>
-                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-text-secondary">Recommended template checklist</p>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                            <button type="button" onClick={() => void seedTwelveMonthChecklist()} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white sm:w-auto">
+                                <Sparkles className="h-4 w-4" /> Load 12-Month List
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setShowTemplateLibrary((v) => !v); setShowBoxPacking(false); }}
+                                aria-expanded={showTemplateLibrary}
+                                className={`inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all sm:w-auto ${showTemplateLibrary ? 'border-primary bg-primary text-white' : 'border-primary/20 bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}
+                            >
+                                <BookOpen className="h-4 w-4" /> Checklist Templates
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setShowBoxPacking((v) => !v); setShowTemplateLibrary(false); }}
+                                aria-expanded={showBoxPacking}
+                                className={`inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all sm:w-auto ${showBoxPacking ? 'border-primary bg-primary text-white' : 'border-primary/20 bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}
+                            >
+                                <Package className="h-4 w-4" /> Box Packing Mode
+                            </button>
+                        </div>
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-text-secondary">Wedding-day box templates included</p>
                     </div>
                 </div>
             </div>
 
+            {showTemplateLibrary && (
+                <div className="mb-8">
+                    <ChecklistTemplateLibrary weddingId={weddingId} wedding={wedding} onAdded={reload} />
+                </div>
+            )}
+
+            {showBoxPacking && (
+                <div className="mb-8">
+                    <BoxPackingMode tasks={initialTasks} updateTask={updateTask} />
+                </div>
+            )}
+
             <form onSubmit={addTask} className="mb-8 grid gap-3 rounded-2xl border border-border bg-neutral/30 p-4 lg:grid-cols-3">
                 <input required value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} placeholder="Checklist item" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                 <select value={newTask.section} onChange={(e) => setNewTask({ ...newTask, section: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
-                    {CHECKLIST_SECTIONS.map(section => <option key={section} value={section}>{section}</option>)}
+                    {allChecklistSections.map(section => <option key={section} value={section}>{section}</option>)}
                 </select>
                 <input type="date" value={newTask.due_date} onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                 <input value={newTask.assigned_to} onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })} placeholder="Assigned person / role" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
@@ -1264,7 +1375,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
             </form>
 
             <div className="space-y-5">
-                {CHECKLIST_SECTIONS.map((section) => {
+                {allChecklistSections.map((section) => {
                     const sectionTasks = initialTasks.filter((task: any) => (task.section || 'General') === section);
                     if (sectionTasks.length === 0) return null;
                     return (
@@ -1287,7 +1398,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                                     <div className="grid gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-3 lg:grid-cols-2">
                                                         <input value={editTask.title} onChange={(e) => setEditTask({ ...editTask, title: e.target.value })} placeholder="Checklist item" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px] lg:col-span-2" />
                                                         <select value={editTask.section} onChange={(e) => setEditTask({ ...editTask, section: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]">
-                                                            {CHECKLIST_SECTIONS.map(sectionOption => <option key={sectionOption} value={sectionOption}>{sectionOption}</option>)}
+                                                            {allChecklistSections.map(sectionOption => <option key={sectionOption} value={sectionOption}>{sectionOption}</option>)}
                                                         </select>
                                                         <input type="date" value={editTask.due_date} onChange={(e) => setEditTask({ ...editTask, due_date: e.target.value })} className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                                                         <input value={editTask.assigned_to} onChange={(e) => setEditTask({ ...editTask, assigned_to: e.target.value })} placeholder="Assigned person / role" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
@@ -1299,7 +1410,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                                         <input value={editTask.notes} onChange={(e) => setEditTask({ ...editTask, notes: e.target.value })} placeholder="Notes" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                                                         <div className="flex flex-col gap-2 sm:flex-row lg:col-span-2">
                                                             <button type="button" disabled={savingTaskId === task.id || !editTask.title.trim()} onClick={() => void saveTaskDetails(task)} className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
-                                                                {savingTaskId === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                                                {savingTaskId === task.id ? <LoadingState variant="inline" label="Saving task…" /> : <Save className="h-4 w-4" />}
                                                                 Save Changes
                                                             </button>
                                                             <button type="button" onClick={cancelEditingTask} className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary hover:border-primary/30 hover:text-primary">
@@ -1311,8 +1422,37 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                                 ) : (
                                                     <>
                                                         <div className="flex min-w-0 items-start gap-3">
-                                                            <p className={`min-w-0 break-words font-serif text-base font-bold leading-snug ${prepared ? 'text-text-secondary line-through' : 'text-foreground'}`}>{task.title}</p>
+                                                            <p className={`min-w-0 break-words font-serif text-base font-bold leading-snug ${prepared ? 'text-text-secondary line-through' : 'text-foreground'}`}>
+                                                                {task.title}
+                                                                {task.quantity && Number(task.quantity) > 1 ? (
+                                                                    <span className="ml-1.5 text-xs font-normal text-text-secondary">× {task.quantity}</span>
+                                                                ) : null}
+                                                            </p>
                                                         </div>
+                                                        {(task.not_included || task.is_optional || task.responsible_person || task.location) ? (
+                                                            <div className="mt-1 flex flex-wrap gap-1.5">
+                                                                {task.not_included ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-amber-700">
+                                                                        Not in box
+                                                                    </span>
+                                                                ) : null}
+                                                                {task.is_optional ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-accent">
+                                                                        Optional
+                                                                    </span>
+                                                                ) : null}
+                                                                {task.responsible_person && task.responsible_person !== task.assigned_to ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">
+                                                                        <UserRound className="h-3 w-3" /> {task.responsible_person}
+                                                                    </span>
+                                                                ) : null}
+                                                                {task.location && task.location !== task.section ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-neutral/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-text-secondary">
+                                                                        {task.location}
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                        ) : null}
                                                         <p className="mt-1 break-words text-xs leading-5 text-text-secondary">
                                                             {[task.assigned_to, task.due_date ? new Date(task.due_date).toLocaleDateString() : null, linkedVendor?.name || task.custom_supplier_name].filter(Boolean).join(' - ') || 'No details yet'}
                                                         </p>
@@ -1338,7 +1478,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                                         className="flex min-h-[44px] w-full touch-manipulation items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 text-sm font-bold text-red-600 disabled:opacity-50 sm:w-auto sm:min-w-[44px] sm:bg-white sm:px-3 sm:hover:bg-red-50"
                                                         aria-label="Delete checklist item"
                                                     >
-                                                        {deletingTaskId === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                        {deletingTaskId === task.id ? <LoadingState variant="inline" label="Deleting task…" /> : <Trash2 className="h-4 w-4" />}
                                                         <span className="sm:hidden">{deletingTaskId === task.id ? 'Deleting...' : 'Delete'}</span>
                                                     </button>
                                                 </div>
@@ -1350,7 +1490,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                         </div>
                     );
                 })}
-                {initialTasks.length === 0 && <div className="text-center py-12 opacity-50 font-serif italic text-sm">Your checklist is empty. Add an item or load the 12-month list.</div>}
+                {initialTasks.length === 0 && <div className="text-center py-12 opacity-50 font-serif italic text-sm">Your checklist is empty. Add an item, load the 12-month list, or browse the wedding-day checklist templates above.</div>}
             </div>
         </div>
     );
@@ -1720,23 +1860,18 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
         }
     }
 
-    const foodDrinkBudgetTotal = foodDrinks
-        .filter((item: any) => !item.planner_vendor_id)
-        .reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0);
-    const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0) + foodDrinkBudgetTotal;
-    const totalSpentFromVendors = vendors
-        .filter((v: any) => v.payment_status?.toLowerCase() === 'paid')
-        .reduce((acc: number, v: any) => acc + (parseFloat(v.amount) || 0), 0);
-    
-    // Total "Committed/Spent" is both the estimates you added AND what you already paid vendors
-    const totalCommitted = totalEst + totalSpentFromVendors;
+    const summary = expenseSummary(initialBudgets, vendors, foodDrinks);
+    const foodDrinkBudgetTotal = foodDrinks.filter((item: any) => !item.planner_vendor_id).reduce((sum: number, item: any) => sum + (Number(item.estimated_cost) || 0), 0);
+    const totalEst = summary.planned;
+    const totalSpentFromVendors = summary.paid;
+    const totalCommitted = summary.planned;
     const budgetRemaining = (parseFloat(wedding?.total_budget) || 0) - totalCommitted;
     const usagePercent = wedding?.total_budget > 0 ? Math.min(100, Math.round((totalCommitted / wedding.total_budget) * 100)) : 0;
 
     // Chart Data
     const chartData = [
-        { name: 'Allocated (Budget + Food)', value: totalEst },
-        { name: 'Paid Vendors', value: totalSpentFromVendors },
+        { name: 'Planned, not recorded paid', value: Math.max(0, totalEst - totalSpentFromVendors) },
+        { name: 'Recorded paid', value: totalSpentFromVendors },
         { name: 'Remaining', value: Math.max(0, budgetRemaining) }
     ];
     const COLORS = ['#D16C78', '#CBB26A', '#3A2A2D'];
@@ -2061,12 +2196,12 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
         }
         setUploadingReference(true);
         try {
-            const safeName = file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
-            const path = `planner-food/${weddingId}/${Date.now()}-${safeName}`;
-            const { error } = await supabase.storage.from('quickweds').upload(path, file, { contentType: file.type, upsert: true });
-            if (error) throw error;
-            const { data } = supabase.storage.from('quickweds').getPublicUrl(path);
-            setNewItem((current) => ({ ...current, reference_image_url: data.publicUrl }));
+            const publicUrl = await uploadAuthenticatedFile({
+                purpose: 'planner-food-reference',
+                weddingId,
+                file,
+            });
+            setNewItem((current) => ({ ...current, reference_image_url: publicUrl }));
         } catch (err) {
             console.error('Food reference upload failed:', err);
             alert(err instanceof Error ? err.message : 'Unable to upload food reference photo.');
@@ -2149,9 +2284,9 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
                 </select>
                 <input value={newItem.custom_supplier_name} onChange={(e) => setNewItem({ ...newItem, custom_supplier_name: e.target.value })} placeholder="Custom supplier" className="rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none min-h-[44px]" />
                 <label className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/30 bg-white px-4 py-3 text-sm font-bold text-primary">
-                    {uploadingReference ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                    {uploadingReference ? <LoadingState variant="inline" label="Uploading reference image…" /> : <ImageIcon className="h-4 w-4" />}
                     {uploadingReference ? 'Uploading...' : newItem.reference_image_url ? 'Photo selected' : 'Upload from gallery'}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && void uploadReference(e.target.files[0])} />
+                    <input type="file" accept="image/*" disabled={uploadingReference} className="hidden" onChange={(e) => e.target.files?.[0] && void uploadReference(e.target.files[0])} />
                 </label>
                 <div className="flex min-h-[44px] items-center rounded-xl border border-border bg-white px-4 py-3 text-sm text-text-secondary">
                     {newItem.reference_image_url ? 'Reference photo uploaded' : 'No photo uploaded'}
@@ -2186,7 +2321,7 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
                                         className="flex min-h-[44px] min-w-[92px] touch-manipulation items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-sm font-bold text-red-600 disabled:opacity-50 sm:min-w-[44px] sm:bg-white sm:px-2 sm:hover:bg-red-50"
                                         aria-label="Delete food or drink item"
                                     >
-                                        {deletingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                        {deletingItemId === item.id ? <LoadingState variant="inline" label="Deleting food item…" /> : <Trash2 className="h-4 w-4" />}
                                         <span className="sm:hidden">{deletingItemId === item.id ? 'Deleting...' : 'Delete'}</span>
                                     </button>
                                 </div>

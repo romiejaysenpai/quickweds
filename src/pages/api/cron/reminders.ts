@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/lib/email';
 import { getGuestReminderReact } from '@/emails/quickweds-transactional';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
+import { getWeddingConfirmationImageUrl } from '@/lib/email-images';
 
 let supabaseAdmin: any = null;
 
@@ -29,7 +30,7 @@ function getCronSupabaseClient() {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // 1. Security Check
   const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).end('Unauthorized');
   }
 
@@ -77,6 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         let sentCount = 0;
         for (const guest of eligibleGuests) {
+          const confirmationImageUrl = getWeddingConfirmationImageUrl(wedding);
           const react = getGuestReminderReact({
             guestName: guest.guest_name,
             brideName: wedding.bride_name,
@@ -88,14 +90,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             weddingUrl: getWeddingPublicUrl(process.env.NEXT_PUBLIC_APP_URL || 'https://quickweds.site', wedding),
             attendance: 'Yes',
             numGuests: guest.num_guests,
+            confirmationImageUrl: confirmationImageUrl || undefined,
           });
 
-          await sendEmail({
+          const delivery = await sendEmail({
+            idempotencyKey: `guest-reminder/${guest.id}/${trigger.type}`,
             to: guest.guest_email,
             subject: `Reminder: ${wedding.bride_name} & ${wedding.groom_name}'s Wedding is Almost Here!`,
             react
           });
 
+          if (!delivery.success) continue;
           await supabase.from('rsvp_reminders').insert({
             rsvp_id: guest.id,
             reminder_type: trigger.type

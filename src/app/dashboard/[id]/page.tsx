@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Loader2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle, Bell, BellOff, Info, Camera } from 'lucide-react';
+import { Heart, Users, Share2, ExternalLink, Calendar, CheckCircle2, Download, Search, Trash2, Copy, MessageCircle, Mail, X, Music, Baby, AlertCircle, ListTodo, Wallet, Plus, Coins, ArrowRight, ShieldCheck, Upload, ChevronDown, Sparkles, LayoutDashboard, PieChartIcon, Settings, Smartphone, Printer, QrCode, LogOut, Menu, MapPin, BookOpen, LifeBuoy, PlayCircle, Bell, BellOff, Info, Camera, Code2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -11,7 +11,6 @@ import { useAuth } from '@/context/AuthContext';
 import { trackWeddingEvent } from '@/lib/wedding-features';
 import ConfettiCelebration from '@/components/ConfettiCelebration';
 import CopyButton from '@/components/CopyButton';
-import DarkModeToggle from '@/components/DarkModeToggle';
 import UpgradeButton from '@/components/UpgradeButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getClientAccountProfile, hasAccountPro } from '@/lib/account';
@@ -32,6 +31,8 @@ import {
 } from '@/lib/guest-list';
 import { getCachedSession } from '@/lib/session-cache';
 import QrCodeActions from '@/components/dashboard/QrCodeActions';
+import LoadingState from '@/components/ui/LoadingState';
+import DashboardShell from '@/components/dashboard/DashboardShell';
 
 const AnalyticsPanel = dynamic(() => import('@/components/dashboard/AnalyticsPanel'), {
     loading: () => <DashboardPanelLoading label="Loading analytics..." />,
@@ -48,12 +49,7 @@ const GuestImportModal = dynamic(() => import('@/components/dashboard/GuestImpor
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/dahsboard%20quivkyt.png';
 
 function DashboardPanelLoading({ label }: { label: string }) {
-    return (
-        <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-border bg-white p-6 text-center soft-shadow">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="mt-3 text-sm font-bold text-text-secondary">{label}</p>
-        </div>
-    );
+    return <LoadingState variant="panel" label={label} />;
 }
 
 function getFirstName(user: any) {
@@ -627,7 +623,15 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     };
 
     if (checkingRole || loading) {
-        return <div className="mobile-safe-screen flex items-center justify-center bg-neutral/30"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
+        return (
+            <main className="mobile-safe-screen flex items-center justify-center bg-neutral/30 px-4 py-6">
+                <LoadingState
+                    label={checkingRole ? 'Confirming workspace access…' : 'Loading your wedding workspace…'}
+                    description="Bringing your guest list and planning details together."
+                    className="max-w-lg"
+                />
+            </main>
+        );
     }
 
     // DEBUG: Show access info in development
@@ -658,51 +662,66 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     const currencySymbol = wedding?.currency === 'USD' ? '$' : wedding?.currency === 'JPY' ? '¥' : '₱';
 
     return (
-        <div className="mobile-safe-screen bg-background pb-20 mobile-safe-bottom">
-            {/* Dev debug banner */}
-            {process.env.NODE_ENV === 'development' && accessDebug && (
-                <div className="fixed top-0 left-0 right-0 z-50 bg-accent text-white p-2 text-xs text-center">
-                    {accessDebug}
-                </div>
-            )}
-
-            {/* Confetti Celebration */}
-            <ConfettiCelebration trigger={showConfetti} />
-
-            {/* Header */}
-            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-white/90 sm:p-4">
-                <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-2 sm:px-4">
-                    <div className="flex items-center gap-8">
-                        <Link href="/" className="flex min-w-[88px] flex-shrink-0 items-center sm:min-w-[104px]" aria-label="QuickWeds">
-                            <img src="/logo.png" alt="QuickWeds Logo" className="h-8 w-auto object-contain transition-transform hover:scale-105 sm:h-12" />
-                        </Link>
+        <DashboardShell
+            weddingId={wedding.id}
+            weddingTitle={wedding.couple_name || `${wedding.bride_name} & ${wedding.groom_name}`}
+            weddingSlug={wedding.public_slug}
+            canManageWorkspace={canManageWorkspace}
+        >
+            <div className="mobile-safe-screen bg-background pb-20 mobile-safe-bottom flex-1">
+                {/* Dev debug banner */}
+                {process.env.NODE_ENV === 'development' && accessDebug && (
+                    <div className="fixed top-0 left-0 right-0 z-50 bg-accent text-white p-2 text-xs text-center">
+                        {accessDebug}
                     </div>
+                )}
 
-                    <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
-                        {canManageWorkspace && (
-                            <Link
-                                href={`/builder?edit=${wedding.id}`}
-                                className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
-                            >
-                                <Sparkles className="w-4 h-4 flex-shrink-0" />
-                                <span className="hidden sm:inline">Edit Design</span>
-                                <span className="sm:hidden">Edit</span>
+                {/* Confetti Celebration */}
+                <ConfettiCelebration trigger={showConfetti} />
+
+                {/* Header */}
+                <div className="sticky top-0 z-40 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md sm:p-4">
+                    <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-2 sm:px-4">
+                        <div className="flex items-center gap-4">
+                            {/* Mobile Logo */}
+                            <Link href="/" className="flex md:hidden min-w-[88px] flex-shrink-0 items-center sm:min-w-[104px]" aria-label="QuickWeds">
+                                <img src="/logo.png" alt="QuickWeds Logo" className="h-8 w-auto object-contain transition-transform hover:scale-105 sm:h-12" />
                             </Link>
-                        )}
 
-                        <NotificationBell />
+                            {/* Desktop Title & Couple Name */}
+                            <div className="hidden md:flex items-center gap-2">
+                                <span className="font-serif font-bold text-lg text-foreground truncate max-w-xs">{wedding.couple_name || `${wedding.bride_name} & ${wedding.groom_name}`}</span>
+                                <span className="text-text-secondary/40">/</span>
+                                <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">Workspace</span>
+                            </div>
+                        </div>
 
-                        <button
-                            type="button"
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary hover:bg-primary/5 hover:text-primary"
-                            aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-                        >
-                            {isMobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
-                        </button>
+                        <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
+                            {canManageWorkspace && (
+                                <Link
+                                    href={`/builder?edit=${wedding.id}`}
+                                    className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
+                                >
+                                    <Sparkles className="w-4 h-4 flex-shrink-0" />
+                                    <span className="hidden sm:inline">Edit Design</span>
+                                    <span className="sm:hidden">Edit</span>
+                                </Link>
+                            )}
+
+                            <NotificationBell />
+
+                            {/* Mobile-only Hamburger Menu Button */}
+                            <button
+                                type="button"
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="flex md:hidden h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl border border-border bg-white text-text-secondary transition hover:border-primary hover:bg-primary/5 hover:text-primary"
+                                aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                            >
+                                {isMobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
             {/* Right Side Burger Menu (Drawer) */}
             <AnimatePresence>
@@ -736,6 +755,17 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 <div className="mb-4">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary/50 mb-3 ml-1">Tools & Planning</p>
                                     <div className="grid gap-2">
+                                        <Link
+                                            href={`/dashboard/${wedding.id}/rsvp-embed`}
+                                            onClick={closeMobileMenu}
+                                            className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <Code2 className="w-4 h-4" />
+                                                RSVP Embed &amp; Share
+                                            </span>
+                                            <ArrowRight className="h-4 w-4 opacity-20" />
+                                        </Link>
                                         <Link
                                             href={`/dashboard/${wedding.id}/planner`}
                                             onClick={closeMobileMenu}
@@ -863,9 +893,41 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 )}
             </AnimatePresence>
 
-            <main className="qw-workspace max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-12 text-left">
+            <main className="qw-workspace max-w-7xl mx-auto px-3 sm:px-6 pt-3 sm:pt-6 text-left">
+                {/* Desktop Workspace Header & Breadcrumbs */}
+                <div className="hidden md:flex items-center justify-between gap-4 mb-5 pb-3.5 border-b border-border/80">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary">
+                        <Link href="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+                        <span className="text-text-secondary/40">/</span>
+                        <span className="font-bold text-foreground truncate max-w-[220px]">{wedding.bride_name} & {wedding.groom_name}</span>
+                        <span className="text-text-secondary/40">/</span>
+                        <span className="text-primary font-bold">Workspace</span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-[11px] font-bold">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                            Website Live
+                        </span>
+                        <CopyButton
+                            text={url}
+                            label="Copy Link"
+                            variant="minimal"
+                            className="h-8.5 px-3 rounded-xl border border-border bg-white text-xs font-bold text-text-secondary hover:text-primary hover:border-primary/30 transition-all shadow-2xs"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => openExternal(url)}
+                            className="inline-flex h-8.5 items-center gap-1.5 px-3 rounded-xl border border-border bg-white text-xs font-bold text-text-secondary hover:bg-neutral hover:text-foreground transition-all shadow-2xs"
+                        >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Guest View
+                        </button>
+                    </div>
+                </div>
+
                 {/* Mobile Tab Navigation (Fixed Bottom) */}
-                <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-white/90 backdrop-blur-md border-t border-border z-[100] flex justify-around items-center p-2 pb-safe shadow-2xl">
+                <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-border z-[100] flex justify-around items-center p-2 pb-safe shadow-2xl">
                     <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'home' ? 'text-primary' : 'text-text-secondary/50'}`}>
                         <LayoutDashboard className="w-5 h-5" />
                         <span className="text-[8px] font-black uppercase tracking-widest">Overview</span>
@@ -888,10 +950,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     </button>
                 </div>
 
-
-
                 {/* Desktop Tab Navigation */}
-                <div className="hidden sm:flex items-center gap-1 mb-8 p-1.5 bg-neutral/50 dark:bg-neutral/70 rounded-2xl border border-border w-fit">
+                <div className="hidden sm:flex items-center gap-1 mb-6 p-1.5 bg-neutral/50 rounded-2xl border border-border w-fit">
                     {[
                         { id: 'home', label: 'Overview', icon: LayoutDashboard },
                         { id: 'guests', label: 'Guests', icon: Users },
@@ -904,8 +964,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
                                 activeTab === tab.id
-                                    ? 'bg-white dark:bg-white text-primary shadow-sm ring-1 ring-primary/10 dark:ring-white/5'
-                                    : 'text-text-secondary/60 hover:text-text-secondary hover:bg-white/50 dark:hover:bg-white/70'
+                                    ? 'bg-white text-primary shadow-sm ring-1 ring-primary/10'
+                                    : 'text-text-secondary/60 hover:text-text-secondary hover:bg-white/50:bg-white/70'
                             }`}
                         >
                             <tab.icon className="w-4 h-4" />
@@ -914,15 +974,15 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     ))}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12">
-                    <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mb-8 sm:mb-12">
+                    <div className="lg:col-span-8 space-y-6 sm:space-y-8">
 
 
 
                         {created && activeTab === 'home' && (
                             <div className="mb-8 p-4 rounded-xl bg-success-bg border border-border flex flex-row items-center gap-4 relative overflow-hidden sm:hidden">
                                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 pointer-events-none" />
-                                <div className="w-10 h-10 rounded-full bg-white dark:bg-white flex items-center justify-center text-accent shadow-sm flex-shrink-0 relative">
+                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-accent shadow-sm flex-shrink-0 relative">
                                     <Sparkles className="w-5 h-5" />
                                 </div>
                                 <div className="relative">
@@ -937,57 +997,59 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             <motion.section
                                 initial={{ opacity: 0, y: 18 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="relative isolate mb-5 overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-2xl shadow-primary/10 sm:mb-7 sm:rounded-[2.25rem]"
+                                className="relative isolate mb-4 overflow-hidden rounded-2xl border border-border bg-white shadow-md shadow-primary/5 sm:mb-5 sm:rounded-3xl"
                             >
-                                <div className="p-4 sm:p-6 lg:p-7">
+                                <div className="p-3.5 sm:p-4 lg:p-4">
                                     <div className="relative z-10 flex items-start justify-between gap-4">
                                         <div className="min-w-0">
-                                            <p className="inline-flex rounded-full bg-primary/5 px-3 py-1 text-[9px] font-black uppercase tracking-[0.22em] text-primary/70 ring-1 ring-primary/10 sm:text-[10px]">
+                                            <p className="inline-flex rounded-full bg-primary/5 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.2em] text-primary/70 ring-1 ring-primary/10">
                                                 {wedding.wedding_date}
                                             </p>
-                                            <h1 className="mt-3 max-w-3xl font-serif text-[1.5rem] sm:text-[2rem] font-black leading-[1.1] text-foreground sm:text-4xl">
+                                            <h1 className="mt-1 max-w-3xl font-serif text-base font-black leading-snug text-foreground sm:text-lg lg:text-xl">
                                                 Workspace: <span className="text-primary">{wedding.bride_name} & {wedding.groom_name}</span><span className="text-accent">.</span>
                                             </h1>
-                                            <p className="mt-2 text-xs sm:text-sm text-text-secondary max-w-sm">
+                                            <p className="mt-0.5 text-[11px] sm:text-xs text-text-secondary max-w-md">
                                                 Welcome back, {getFirstName(user)}! Your wedding workspace is ready for updates.
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="relative left-1/2 mt-4 h-[128px] w-screen max-w-[calc(100%+2rem)] -translate-x-1/2 overflow-visible sm:-mx-6 sm:left-auto sm:w-auto sm:max-w-none sm:translate-x-0 sm:mt-6 sm:h-[240px] lg:-mx-7 lg:h-[270px]">
+                                    <div className="relative left-1/2 mt-2.5 h-[98px] w-screen max-w-[calc(100%+2rem)] -translate-x-1/2 overflow-visible sm:-mx-4 sm:left-auto sm:w-auto sm:max-w-none sm:translate-x-0 sm:mt-3 sm:h-[106px] lg:-mx-4 lg:h-[114px]">
                                         <div className="absolute inset-0 bg-primary" />
                                         <div
-                                            className="absolute inset-x-[-32%] top-[-58px] z-10 h-[112px] bg-white sm:inset-x-[-24%] sm:top-[-92px] sm:h-[168px]"
+                                            className="absolute inset-x-[-32%] top-[-46px] z-10 h-[88px] bg-white sm:inset-x-[-24%] sm:top-[-48px] sm:h-[92px] lg:top-[-50px] lg:h-[96px]"
                                             style={{ borderRadius: '0 0 50% 50% / 0 0 74% 74%' }}
                                         />
 
                                         <img
                                             src={WELCOME_CHARACTER_URL}
                                             alt="QuickWeds welcome character"
-                                            className="absolute bottom-0 left-[-14px] z-[60] h-[152px] w-auto object-contain drop-shadow-2xl transition duration-500 hover:-translate-y-2 hover:scale-[1.03] sm:left-[-6px] sm:h-[250px] lg:left-4 lg:h-[300px]"
+                                            className="absolute bottom-0 left-[-10px] z-[60] h-[112px] w-auto object-contain drop-shadow-xl transition duration-500 hover:-translate-y-1 hover:scale-[1.02] sm:left-1 sm:h-[122px] lg:left-2 lg:h-[130px]"
                                         />
 
-                                        <div className="absolute left-[52%] right-3 top-[-6px] z-50 rounded-[1.2rem] bg-white px-3 py-2 pr-4 shadow-[0_18px_50px_rgba(122,90,97,0.18)] ring-1 ring-primary/10 sm:left-[50%] sm:right-2 sm:top-8 sm:rounded-[1.75rem] sm:px-6 sm:py-5 sm:pr-7 lg:left-[43%] lg:right-6 lg:max-w-2xl">
-                                            <span className="absolute left-[-13px] top-1/2 h-0 w-0 -translate-y-1/2 border-y-[12px] border-r-[14px] border-y-transparent border-r-white" />
-                                            <p className="text-[12px] font-black text-primary sm:text-base">Workspace Pro</p>
-                                            <p className="mt-1 text-[11px] font-semibold leading-[1.45] text-text-secondary sm:mt-2 sm:text-base sm:leading-7">
-                                                Track budgets, vendors, seating, and RSVPs all in one place. Your special day is coming soon!
-                                            </p>
+                                        <div className="absolute left-[45%] right-2 top-[-3px] z-50 rounded-xl border border-primary/25 bg-white px-3 py-1.5 pr-3 shadow-[0_10px_28px_rgba(122,90,97,0.13)] ring-1 ring-primary/10 sm:left-[33%] sm:right-3 sm:top-1.5 sm:rounded-2xl sm:px-4 sm:py-2 sm:pr-4 lg:left-[24%] lg:right-3 lg:max-w-xl">
+                                            <span className="absolute -left-[7px] top-1/2 -translate-y-1/2 h-3.5 w-3.5 rotate-45 border-b border-l border-primary/25 bg-white" />
+                                            <div className="relative z-10">
+                                                <p className="text-[10px] font-black text-primary sm:text-[11px] uppercase tracking-wider">Workspace Pro</p>
+                                                <p className="mt-0.5 text-[10px] font-medium leading-tight text-text-secondary sm:text-xs sm:leading-snug">
+                                                    Track budgets, vendors, seating, and RSVPs all in one place. Your special day is coming soon!
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-4">
-                                        <Link href={`/dashboard/${wedding.id}/planner`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-primary/15 transition-all hover:-translate-y-0.5 hover:bg-primary-hover sm:text-sm">
-                                            <ListTodo className="w-4 h-4" /> Open Planner
+                                    <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:mt-3">
+                                        <Link href={`/dashboard/${wedding.id}/planner`} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-primary/15 transition-all hover:-translate-y-0.5 hover:bg-primary-hover">
+                                            <ListTodo className="w-3.5 h-3.5" /> Open Planner
                                         </Link>
-                                        <Link href={`/dashboard/${wedding.id}/wedding-day?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
-                                            <Bell className="w-4 h-4" /> Wedding Day
+                                        <Link href={`/dashboard/${wedding.id}/wedding-day?from=dashboard`} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white">
+                                            <Bell className="w-3.5 h-3.5" /> Wedding Day
                                         </Link>
-                                        <Link href={`/dashboard/${wedding.id}/thank-you?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
-                                            <Mail className="w-4 h-4" /> Thank You
+                                        <Link href={`/dashboard/${wedding.id}/thank-you?from=dashboard`} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-primary/20 bg-white px-3 py-1.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white">
+                                            <Mail className="w-3.5 h-3.5" /> Thank You
                                         </Link>
-                                        <button type="button" onClick={() => openExternal(url)} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-bold text-text-secondary transition-all hover:-translate-y-0.5 hover:bg-neutral hover:text-foreground sm:text-sm">
-                                            <ExternalLink className="w-4 h-4" /> Guest View
+                                        <button type="button" onClick={() => openExternal(url)} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-bold text-text-secondary transition-all hover:-translate-y-0.5 hover:bg-neutral hover:text-foreground">
+                                            <ExternalLink className="w-3.5 h-3.5" /> Guest View
                                         </button>
                                     </div>
                                 </div>
@@ -998,8 +1060,18 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {activeTab === 'home' && (
                             <div className="grid grid-cols-2 sm:hidden gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2">
                                 <Link
+                                    href={`/dashboard/${wedding.id}/rsvp-embed`}
+                                    className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1.5">
+                                        <Code2 className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">Embed RSVP</span>
+                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-active:opacity-100 transition-opacity" />
+                                </Link>
+                                <Link
                                     href={`/builder?edit=${wedding.id}`}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1.5">
                                         <Sparkles className="w-4 h-4" />
@@ -1009,7 +1081,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </Link>
                                 <Link
                                     href={`/dashboard/${wedding.id}/planner`}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-1.5">
                                         <ListTodo className="w-4 h-4" />
@@ -1019,7 +1091,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </Link>
                                 <button
                                     onClick={() => setActiveTab('guests')}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-1.5">
                                         <Users className="w-4 h-4" />
@@ -1029,7 +1101,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('analytics')}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 mb-1.5">
                                         <PieChartIcon className="w-4 h-4" />
@@ -1043,12 +1115,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {/* Mobile Home Quick Stats Summary - Even smaller now */}
                         {activeTab === 'home' && (
                             <div className="sm:hidden grid grid-cols-2 gap-2 mb-4">
-                                <div className="p-4 rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center">
+                                <div className="p-4 rounded-3xl bg-white border border-border soft-shadow text-center">
                                     <p className="text-[7px] uppercase font-black tracking-widest text-text-secondary/50 mb-0.5">Guests</p>
                                     <p className="text-2xl font-serif font-bold text-primary">{stats.confirmed}</p>
                                     <p className="text-[7px] font-bold text-text-secondary/40 uppercase tracking-widest">Confirmed</p>
                                 </div>
-                                <div className="p-4 rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center">
+                                <div className="p-4 rounded-3xl bg-white border border-border soft-shadow text-center">
                                     <p className="text-[7px] uppercase font-black tracking-widest text-text-secondary/50 mb-0.5">Budget</p>
                                     <p className="text-2xl font-serif font-bold text-secondary">{stats.budgetPercent}%</p>
                                     <p className="text-[7px] font-bold text-text-secondary/40 uppercase tracking-widest">Utilized</p>
@@ -1059,29 +1131,29 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {/* Full Stats Cards - Mobile: Analytics only, Desktop: All */}
                         {(activeTab === 'analytics' || activeTab === 'home') && (
                             <div className={`${activeTab === 'home' ? 'hidden sm:grid' : 'grid'} grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 animate-in fade-in`}>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-primary/30 transition-all">
-                                    <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-border soft-shadow text-center hover:border-primary/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <Users className="w-5 h-5 text-primary" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.totalGuests}</p>
                                     <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Total Guests</p>
                                 </div>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-green-500/30 transition-all">
-                                    <div className="w-10 h-10 rounded-full bg-green-500/5 dark:bg-green-500/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-border soft-shadow text-center hover:border-green-500/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-green-500/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <CheckCircle2 className="w-5 h-5 text-green-500" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.confirmed}</p>
                                     <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Confirmed</p>
                                 </div>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-red-400/30 transition-all">
-                                    <div className="w-10 h-10 rounded-full bg-red-400/5 dark:bg-red-400/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-border soft-shadow text-center hover:border-red-400/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-red-400/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <X className="w-5 h-5 text-red-400" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.declined}</p>
                                     <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Declined</p>
                                 </div>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-amber-500/30 transition-all">
-                                    <div className="w-10 h-10 rounded-full bg-amber-500/5 dark:bg-amber-500/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-border soft-shadow text-center hover:border-amber-500/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-amber-500/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <AlertCircle className="w-5 h-5 text-amber-500" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.pending}</p>
@@ -1092,7 +1164,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                         {/* Budget Visualization - Mobile: Analytics only, Desktop: All */}
                         {(activeTab === 'analytics' || activeTab === 'home') && (
-                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-6 sm:p-10 rounded-3xl bg-white dark:bg-white border border-border soft-shadow animate-in fade-in`}>
+                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-6 sm:p-10 rounded-3xl bg-white border border-border soft-shadow animate-in fade-in`}>
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                                     <div>
                                         <h2 className="text-xl sm:text-2xl font-serif font-bold text-foreground flex items-center gap-3">
@@ -1100,7 +1172,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </h2>
                                         <p className="text-xs text-text-secondary mt-1">Real-time overview of your wedding investments.</p>
                                     </div>
-                                    <div className="text-right bg-neutral/50 dark:bg-neutral/30 px-4 py-2 rounded-2xl border border-border">
+                                    <div className="text-right bg-neutral/50 px-4 py-2 rounded-2xl border border-border">
                                         <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Total Utilization</p>
                                         <p className="text-2xl font-mono font-black text-primary">{stats.budgetPercent}%</p>
                                     </div>
@@ -1125,18 +1197,18 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                                     <div className="md:col-span-2 space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/20 border border-border hover:border-primary/20 transition-all group">
+                                            <div className="p-4 rounded-2xl bg-neutral/30 border border-border hover:border-primary/20 transition-all group">
                                                 <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary/50 mb-2">Total Budget</p>
                                                 <p className="text-xl font-mono font-bold text-foreground group-hover:text-primary transition-colors">{currencySymbol}{stats.totalBudget.toLocaleString()}</p>
                                             </div>
-                                            <div className="p-4 rounded-2xl bg-primary/5 dark:bg-primary/20 border-2 border-primary/10 shadow-sm relative overflow-hidden group">
+                                            <div className="p-4 rounded-2xl bg-primary/5 border-2 border-primary/10 shadow-sm relative overflow-hidden group">
                                                 <div className="absolute top-0 right-0 w-12 h-12 bg-primary/5 rounded-bl-full" />
                                                 <p className="text-[10px] uppercase font-black tracking-widest text-primary mb-2">Committed</p>
                                                 <p className="text-xl font-mono font-black text-primary">{currencySymbol}{stats.totalSpent.toLocaleString()}</p>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/20 border border-border">
+                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral/30 border border-border">
                                             <div>
                                                 <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Remaining Balance</p>
                                                 <p className={`text-xl font-mono font-black ${stats.remainingBudget < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -1156,17 +1228,17 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {(activeTab === 'analytics' || activeTab === 'home') && (
                             <div className={`${activeTab === 'home' ? 'hidden sm:grid' : 'grid'} grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in fade-in`}>
                                 {/* Attendance Breakdown */}
-                                <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-white border border-border soft-shadow">
+                                <div className="p-6 sm:p-10 rounded-3xl bg-white border border-border soft-shadow">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-secondary/40 mb-8 flex items-center gap-2">
                                         <PieChartIcon className="w-4 h-4 text-primary" /> RSVP Distribution
                                     </h3>
                                     <div className="flex flex-row items-center gap-8">
-                                        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full relative flex-shrink-0 p-1 bg-neutral/10 dark:bg-neutral/80" style={{
+                                        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full relative flex-shrink-0 p-1 bg-neutral/10" style={{
                                             background: stats.total > 0
                                                 ? `conic-gradient(#22c55e ${attendPct}%, #ef4444 ${attendPct}% ${attendPct + declinePct}%, #f59e0b ${attendPct + declinePct}% ${attendPct + declinePct + pendingPct}%, #3A2A2D ${attendPct + declinePct + pendingPct}% 100%)`
                                                 : '#3A2A2D'
                                         }}>
-                                            <div className="absolute inset-2 sm:inset-4 bg-white dark:bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
+                                            <div className="absolute inset-2 sm:inset-4 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
                                                 <span className="text-xl sm:text-2xl font-black text-foreground">{stats.total}</span>
                                                 <span className="text-[8px] font-black uppercase tracking-widest text-text-secondary/40">Total</span>
                                             </div>
@@ -1198,7 +1270,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </div>
 
                                 {/* Meal Summary */}
-                                <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-white border border-border soft-shadow">
+                                <div className="p-6 sm:p-10 rounded-3xl bg-white border border-border soft-shadow">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-secondary/40 mb-8 flex items-center gap-2">
                                         <Smartphone className="w-4 h-4 text-secondary" /> Dining Preferences
                                     </h3>
@@ -1209,7 +1281,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                     <span className="text-text-secondary truncate max-w-[150px]">{pref}</span>
                                                     <span className="text-primary">{count} guests</span>
                                                 </div>
-                                                <div className="h-1.5 bg-neutral/20 dark:bg-neutral/70 rounded-full overflow-hidden">
+                                                <div className="h-1.5 bg-neutral/20 rounded-full overflow-hidden">
                                                     <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${(count / stats.total) * 100}%` }} />
                                                 </div>
                                             </div>
@@ -1235,7 +1307,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                                             {stats.songs.map((s, i) => (
-                                                <div key={i} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-neutral/50 dark:bg-neutral/30 border border-border/10">
+                                                <div key={i} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-neutral/50 border border-border/10">
                                                     <span className="text-base sm:text-lg flex-shrink-0">🎵</span>
                                                     <div className="min-w-0">
                                                         <p className="font-bold text-xs sm:text-sm line-clamp-1 italic">&quot;{s.song}&quot;</p>
@@ -1274,13 +1346,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </div>
 
                                         <div className="flex flex-wrap gap-2 w-full sm:w-auto overflow-x-auto pb-1 no-scrollbar">
-                                            <button onClick={() => setIsAddGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 transition-colors min-h-[44px]">
+                                            <button onClick={() => setIsAddGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 transition-colors min-h-[44px]">
                                                 <Plus className="w-4 h-4 flex-shrink-0" /> <span>Add</span>
                                             </button>
-                                            <button onClick={() => setIsImportGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-secondary/10 dark:bg-secondary/20 text-secondary text-xs font-bold hover:bg-secondary/20 transition-colors min-h-[44px]">
+                                            <button onClick={() => setIsImportGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-secondary/10 text-secondary text-xs font-bold hover:bg-secondary/20 transition-colors min-h-[44px]">
                                                 <Upload className="w-4 h-4 flex-shrink-0" /> <span>Import</span>
                                             </button>
-                                            <button onClick={exportCSV} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-primary/10 dark:bg-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-colors min-h-[44px] ml-auto">
+                                            <button onClick={exportCSV} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-colors min-h-[44px] ml-auto">
                                                 <Download className="w-4 h-4 flex-shrink-0" /> <span>Export</span>
                                             </button>
                                         </div>
@@ -1314,32 +1386,32 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="overflow-x-auto">
+                                    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                                         <table className="w-full text-left text-xs sm:text-sm">
-                                            <thead className="bg-neutral text-text-secondary/60 text-[8px] sm:text-[10px] uppercase tracking-widest font-black sticky top-0">
+                                            <thead className="bg-neutral/95 backdrop-blur-xs text-text-secondary/70 text-[9px] sm:text-[10px] uppercase tracking-widest font-black sticky top-0 z-10 border-b border-border/80 shadow-2xs">
                                                 <tr>
-                                                    <th className="px-3 sm:px-6 py-2 sm:py-3">Guest</th>
-                                                    <th className="px-3 sm:px-6 py-2 sm:py-3">Status</th>
-                                                    <th className="px-3 sm:px-6 py-2 sm:py-3 hidden sm:table-cell">Details</th>
-                                                    <th className="px-3 sm:px-6 py-2 sm:py-3"></th>
+                                                    <th className="px-3 sm:px-6 py-2.5 sm:py-3.5">Guest</th>
+                                                    <th className="px-3 sm:px-6 py-2.5 sm:py-3.5">Status</th>
+                                                    <th className="px-3 sm:px-6 py-2.5 sm:py-3.5 hidden sm:table-cell">Group & Table</th>
+                                                    <th className="px-3 sm:px-6 py-2.5 sm:py-3.5 text-right">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-border/50">
                                                 {filteredRsvps.slice(0, visibleCount).map((rsvp) => (
                                                     <tr key={rsvp.id} className="hover:bg-neutral/30 transition-colors group/row">
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-5">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
                                                             <div className="flex items-center gap-3 sm:gap-4">
-                                                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-primary/5 dark:bg-primary/20 flex items-center justify-center text-primary font-black text-[10px] sm:text-xs">
+                                                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-primary/5 flex items-center justify-center text-primary font-black text-[10px] sm:text-xs">
                                                                     {rsvp.guest_name.charAt(0)}
                                                                 </div>
                                                                 <div>
                                                                     <p className="font-bold text-foreground text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{rsvp.guest_name}</p>
                                                                     <p className="text-[10px] text-text-secondary/40 truncate italic max-w-[120px] sm:max-w-none">{rsvp.guest_email || 'No email provided'}</p>
-                                                                    {rsvp.num_guests > 1 && <span className="text-[7px] bg-primary/5 text-primary px-1.5 py-0.5 rounded font-black mt-1 inline-block uppercase tracking-widest">+{rsvp.num_guests - 1} party</span>}
+                                                                    {rsvp.num_guests > 1 && <span className="text-[7px] bg-primary/5 text-primary px-1.5 py-0.5 rounded font-black mt-0.5 inline-block uppercase tracking-widest">+{rsvp.num_guests - 1} party</span>}
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-5">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
                                                             <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter sm:tracking-widest ${
                                                                 (rsvp.rsvp_status === 'confirmed' || rsvp.attendance === 'Yes') ? 'bg-emerald-50 text-emerald-600' :
                                                                 (rsvp.rsvp_status === 'declined' || rsvp.attendance === 'No') ? 'bg-red-50 text-red-600' :
@@ -1349,14 +1421,14 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                                   (rsvp.rsvp_status === 'declined' || rsvp.attendance === 'No') ? 'NO' : '?' }
                                                             </span>
                                                         </td>
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-5 hidden sm:table-cell">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
                                                             <div className="text-[10px] text-text-secondary">
                                                                 <p className="font-black uppercase tracking-widest text-[8px] text-text-secondary/60">{getGuestGroupLabel(rsvp.guest_group)}</p>
-                                                                <p className="mt-1">{rsvp.table_assignment || 'No Table'}</p>
+                                                                <p className="mt-0.5">{rsvp.table_assignment || 'No Table'}</p>
                                                             </div>
                                                         </td>
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-5 text-right">
-                                                            <button onClick={() => deleteRsvp(rsvp.id)} className="text-text-secondary/20 hover:text-red-500 transition-colors">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-right">
+                                                            <button onClick={() => deleteRsvp(rsvp.id)} className="text-text-secondary/20 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50">
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
                                                         </td>
@@ -1377,7 +1449,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         )}
                     </div>
 
-                    <div className="space-y-6 sm:space-y-8">
+                    <div className="lg:col-span-4 space-y-6 sm:space-y-8 lg:sticky lg:top-6 self-start">
                         {/* QR & Share Hub */}
                         {(activeTab === 'home') && (
                             <div className="p-6 sm:p-10 rounded-[2.5rem] bg-primary text-white shadow-2xl relative overflow-hidden group animate-in fade-in slide-in-from-right-4">
@@ -1475,13 +1547,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                         {(activeTab === 'settings' || activeTab === 'home') && (
                             <div className="space-y-4 sm:space-y-6">
-                                <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-white border border-border soft-shadow animate-in fade-in">
+                                <div className="p-4 sm:p-8 rounded-3xl bg-white border border-border soft-shadow animate-in fade-in">
                                     <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4 flex items-center justify-between">
                                         Notifications
-                                        {isSavingSettings && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+                                        {isSavingSettings && <LoadingState variant="inline" label="Saving notification settings…" className="text-primary" />}
                                     </h3>
                                     <div className="space-y-5">
-                                        <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/90 border border-border group transition-all hover:border-primary/20">
+                                        <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 border border-border group transition-all hover:border-primary/20">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${wedding?.notify_on_rsvp !== false ? 'bg-primary/10 text-primary' : 'bg-text-secondary/10 text-text-secondary'}`}>
                                                     {wedding?.notify_on_rsvp !== false ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
@@ -1506,7 +1578,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             </button>
                                         </div>
 
-                                        <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/90 border border-border group transition-all hover:border-primary/20">
+                                        <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 border border-border group transition-all hover:border-primary/20">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${wedding?.notify_on_updates !== false ? 'bg-accent/10 text-accent' : 'bg-text-secondary/10 text-text-secondary'}`}>
                                                     <Info className="w-5 h-5" />
@@ -1533,7 +1605,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     </div>
                                 </div>
 
-                                <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-white border border-border soft-shadow animate-in fade-in">
+                                <div className="p-4 sm:p-8 rounded-3xl bg-white border border-border soft-shadow animate-in fade-in">
                                     <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4">Event Details</h3>
                                     <div className="space-y-6">
                                         <div>
@@ -1718,5 +1790,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 onImport={handleImportGuests}
             />
         </div>
+        </DashboardShell>
     );
 }

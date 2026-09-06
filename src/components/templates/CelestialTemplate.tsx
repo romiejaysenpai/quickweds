@@ -11,7 +11,9 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -56,6 +58,16 @@ export default function CelestialTemplate({ wedding, gallery, isExpired }: Templ
                         Written in the Stars
                     </motion.p>
 
+                    <TemplateMonogram
+                        wedding={wedding}
+                        defaultShape="diamond"
+                        size="md"
+                        color="#fde047"
+                        motifColor={wedding.motif_color}
+                        inverted
+                        className="mx-auto"
+                    />
+
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -66,6 +78,12 @@ export default function CelestialTemplate({ wedding, gallery, isExpired }: Templ
                         <span className="text-amber-400 font-serif italic lowercase text-4xl sm:text-6xl tracking-normal">&amp;</span> <br />
                         {wedding.groom_name}
                     </motion.h1>
+
+                    {wedding.quote && (
+                        <blockquote className="my-6 max-w-lg mx-auto italic font-serif text-amber-200/90 text-base sm:text-lg border-y border-amber-400/20 py-3">
+                            &ldquo;{wedding.quote}&rdquo;
+                        </blockquote>
+                    )}
 
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
@@ -107,15 +125,18 @@ export default function CelestialTemplate({ wedding, gallery, isExpired }: Templ
             </section>
 
             {/* Sections */}
+            <TemplateSectionDivider template="celestial" motifColor={wedding.motif_color} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="celestial" motifColor={wedding.motif_color} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="celestial" motifColor={wedding.motif_color} />
             <DetailsSection id="details" wedding={wedding} invert />
 
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer
                     id="countdown"
                     weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
+                    weddingTime={wedding.wedding_time} eventTimezone={wedding.event_timezone}
                     brideName={wedding.bride_name}
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}
@@ -125,8 +146,11 @@ export default function CelestialTemplate({ wedding, gallery, isExpired }: Templ
                 />
             )}
 
+            <TemplateSectionDivider template="celestial" motifColor={wedding.motif_color} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="celestial" motifColor={wedding.motif_color} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TemplateSectionDivider template="celestial" motifColor={wedding.motif_color} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />

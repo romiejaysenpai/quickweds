@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { Heart } from 'lucide-react';
 import {
     VideoSection,
     BioSection,
@@ -11,11 +12,15 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+    FAQSection,
+    TemplateMonogram,
+    TemplateSectionDivider,
 } from '../wedding';
 import { SharedNewSections } from './shared';
+import type { TemplateProps } from '@/types/wedding';
 
-export default function RusticTemplate({ wedding, gallery, isExpired }: any) {
+export default function RusticTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+    const motifColor = wedding.motif_color || '#8C6446';
     const formattedDate = new Date(wedding.wedding_date).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
@@ -23,81 +28,114 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: any) {
     });
 
     return (
-        <div className="bg-[#f5ebe0] text-[#5e503f] font-serif relative pb-24 selection:bg-[#5e503f] selection:text-[#f5ebe0]">
-            <div className="fixed inset-0 pointer-events-none opacity-10" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
+        <div className="bg-[#f7f2ea] text-[#4a3b32] font-serif relative pb-24 selection:bg-[#8C6446]/20">
+            {/* Kraft Paper & Wood Grain Background Texture */}
+            <div className="fixed inset-0 pointer-events-none opacity-[0.045]" style={{ backgroundImage: 'var(--qw-paper-texture)' }} />
 
-            <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 relative py-20">
-                <div className="absolute inset-4 sm:inset-6 border-[2px] border-[#5e503f]/30 pointer-events-none rounded-lg" />
-                <div className="absolute inset-7 sm:inset-9 border border-[#5e503f]/15 pointer-events-none rounded-lg" />
+            {/* Glowing String Lights Header Illustration extending to all sections */}
+            <div className="fixed top-0 left-0 right-0 h-14 pointer-events-none z-30 flex justify-around items-start opacity-75">
+                {Array.from({ length: 9 }).map((_, i) => (
+                    <motion.div
+                        key={i}
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 2 + (i % 3), repeat: Infinity, ease: 'easeInOut', delay: i * 0.3 }}
+                        className="flex flex-col items-center"
+                    >
+                        <div className="w-px h-6 bg-[#8C6446]/40" />
+                        <div className="w-3.5 h-3.5 rounded-full bg-amber-200 shadow-[0_0_12px_#fde68a]" />
+                    </motion.div>
+                ))}
+            </div>
+
+            <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 relative py-24">
+                {/* Double Stitched Border Frame */}
+                <div className="absolute inset-4 sm:inset-8 border-2 border-dashed border-[#8C6446]/30 pointer-events-none rounded-2xl" />
 
                 <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1 }}
-                    className="text-center max-w-4xl z-10 space-y-6"
+                    initial={{ opacity: 0, scale: 0.96, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+                    className="text-center max-w-4xl w-full z-10 bg-[#fffdf9]/90 backdrop-blur-md p-8 sm:p-14 md:p-18 rounded-2xl border border-[#8C6446]/20 shadow-[0_20px_70px_rgba(74,59,50,0.09)] space-y-6"
                 >
-                    <div className="w-16 h-16 mx-auto opacity-50 text-[#5e503f]">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
+                    <div className="mb-2 flex justify-center">
+                        <TemplateMonogram wedding={wedding} defaultShape="wax-seal" size="sm" />
                     </div>
 
-                    <p className="text-xs uppercase tracking-[0.45em] font-sans font-bold text-[#7f6c57]">
-                        We&apos;re Getting Married
-                    </p>
+                    <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.45em] font-sans font-bold text-[#8C6446]">
+                        <Heart className="w-3.5 h-3.5 fill-[#8C6446]" />
+                        <span>We&apos;re Getting Married</span>
+                    </div>
 
-                    <h1 className="text-4xl sm:text-6xl md:text-8xl font-black text-[#7a6754] drop-shadow-sm leading-tight">
-                        {wedding.bride_name.split(' ')[0]} &amp; {wedding.groom_name.split(' ')[0]}
+                    <h1 className="text-4xl sm:text-6xl md:text-8xl font-serif font-bold text-[#3d2e24] leading-tight tracking-tight">
+                        {wedding.bride_name} <br />
+                        <span className="text-2xl sm:text-4xl italic font-light serif text-[#8C6446] my-2 block">&amp;</span>
+                        {wedding.groom_name}
                     </h1>
 
-                    <div className="inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-6 border-y border-[#5e503f]/25 py-4 px-8 bg-white/60 backdrop-blur-sm rounded-lg shadow-sm font-serif">
-                        <span className="text-lg sm:text-xl font-bold">{formattedDate}</span>
-                        <span className="w-2 h-2 rounded-full bg-[#5e503f]/40 hidden sm:block" />
-                        <span className="text-lg sm:text-xl">{wedding.venue_name}</span>
+                    {/* Polaroid Photo Frame (If photo exists) */}
+                    {(wedding.hero_image || wedding.couple_photo) && (
+                        <div className="mx-auto my-6 max-w-xs aspect-square p-3 bg-white shadow-xl border border-stone-200 rotate-[-2deg] hover:rotate-0 transition-transform duration-500 rounded-sm">
+                            <div className="w-full h-[82%] relative overflow-hidden bg-stone-100">
+                                <Image
+                                    src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
+                                    alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                                    priority
+                                    fill
+                                    sizes="300px"
+                                    className="object-cover sepia-[0.15]"
+                                />
+                            </div>
+                            <p className="text-center text-[10px] font-sans tracking-widest text-stone-500 pt-2 uppercase">
+                                Together in Love
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-6 border-y border-[#8C6446]/25 py-4 px-8 bg-white/70 backdrop-blur-sm rounded-lg shadow-sm font-serif">
+                        <span className="text-lg sm:text-xl font-bold text-[#3d2e24]">{formattedDate}</span>
+                        <span className="w-2 h-2 rounded-full bg-[#8C6446]/40 hidden sm:block" />
+                        <span className="text-lg sm:text-xl text-[#635144]">{wedding.venue_name}</span>
                     </div>
 
-                    <div className="pt-6">
+                    {wedding.quote && (
+                        <p className="text-sm font-serif italic text-[#8C6446] mb-3 max-w-lg mx-auto">
+                            &ldquo;{wedding.quote}&rdquo;
+                        </p>
+                    )}
+
+                    <p className="text-sm sm:text-base italic leading-relaxed text-[#5c4a40] max-w-lg mx-auto">
+                        {wedding.story || 'A cozy celebration under string lights and open skies, surrounded by the warmth of family and lifelong friends.'}
+                    </p>
+
+                    <div className="pt-4 flex flex-wrap gap-4 justify-center">
                         <a
                             href="#rsvp"
                             aria-label="RSVP"
-                            className="px-10 py-4 inline-flex items-center justify-center bg-[#5e503f] text-[#f5ebe0] rounded-lg font-sans font-bold tracking-[0.25em] uppercase hover:bg-[#493e31] transition-all shadow-lg text-xs"
+                            className="px-10 py-4 inline-flex items-center justify-center bg-[#8C6446] text-[#fffdf9] rounded-xl font-sans font-bold tracking-[0.25em] uppercase hover:bg-[#6e4e36] transition-all shadow-lg text-xs min-h-[46px]"
                         >
-                            RSVP
+                            Confirm RSVP
+                        </a>
+                        <a
+                            href="#details"
+                            className="px-8 py-4 inline-flex items-center justify-center border border-[#8C6446]/40 text-[#4a3b32] rounded-xl font-sans font-medium tracking-[0.2em] uppercase hover:bg-[#8C6446]/5 transition-all text-xs min-h-[46px]"
+                        >
+                            Event Details
                         </a>
                     </div>
                 </motion.div>
             </section>
 
-            <section className="py-20 px-4 sm:px-6 bg-white/50">
-                <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                    <motion.div
-                        initial={{ opacity: 0, rotate: 2 }}
-                        whileInView={{ opacity: 1, rotate: -1 }}
-                        viewport={{ once: true }}
-                        className="aspect-square relative p-4 bg-white shadow-2xl border border-stone-200 rounded-sm"
-                    >
-                        <Image
-                            src={wedding.couple_photo || wedding.hero_image || '/logo.png'}
-                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            className="object-cover sepia-[0.2]"
-                        />
-                    </motion.div>
-                    <div className="space-y-6">
-                        <h2 className="text-3xl sm:text-4xl font-bold text-[#7a6754]">Our Rustic Romance</h2>
-                        <p className="text-lg leading-relaxed opacity-85">{wedding.story || 'A simple, beautiful journey surrounded by nature, love, and warm hearts.'}</p>
-                    </div>
-                </div>
-            </section>
-
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <TemplateSectionDivider template="rustic" motifColor={motifColor} />
             <BioSection id="bio" wedding={wedding} />
+            <TemplateSectionDivider template="rustic" motifColor={motifColor} />
             <DetailsSection id="details" wedding={wedding} />
             
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer
                     id="countdown"
                     weddingDate={wedding.wedding_date}
-                    weddingTime={wedding.wedding_time}
+                    weddingTime={wedding.wedding_time} eventTimezone={wedding.event_timezone}
                     brideName={wedding.bride_name}
                     groomName={wedding.groom_name}
                     venueName={wedding.venue_name}
@@ -107,7 +145,9 @@ export default function RusticTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
 
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+            <TemplateSectionDivider template="rustic" motifColor={motifColor} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <TemplateSectionDivider template="rustic" motifColor={motifColor} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getWeddingAccess } from '@/lib/wedding-access';
+import { deleteWeddingPhotoObject } from '@/lib/media-deletion';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
 
         const { data: photo, error: lookupError } = await db
             .from('wedding_photos')
-            .select('id, wedding_id')
+            .select('id, wedding_id, cloudinary_public_id, cloudinary_url')
             .eq('id', photoId)
             .maybeSingle();
 
@@ -36,6 +37,12 @@ export async function POST(req: NextRequest) {
         if (String(photo.wedding_id) !== weddingId) return NextResponse.json({ error: 'Photo does not belong to this wedding.' }, { status: 403 });
 
         if (action === 'delete') {
+            try {
+                await deleteWeddingPhotoObject(db, photo);
+            } catch (storageError) {
+                console.error('Unable to permanently delete photo object:', storageError instanceof Error ? storageError.message : 'unknown error');
+                return NextResponse.json({ error: 'The photo file could not be deleted safely. Please retry.' }, { status: 502 });
+            }
             const { error: deleteError } = await db
                 .from('wedding_photos')
                 .delete()

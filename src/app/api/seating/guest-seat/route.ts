@@ -9,11 +9,11 @@ export const dynamic = 'force-dynamic';
 async function buildSeatResponse(db: any, guest: any, source: 'personal_qr' | 'public_lookup') {
     const { data: wedding, error: weddingError } = await db
         .from('weddings')
-        .select('id, bride_name, groom_name, wedding_date, seat_finder_enabled, seat_finder_show_map')
+        .select('id, bride_name, groom_name, wedding_date, is_published, seat_finder_enabled, seat_finder_show_map')
         .eq('id', guest.wedding_id)
         .maybeSingle();
     if (weddingError) throw weddingError;
-    if (!wedding || wedding.seat_finder_enabled === false) {
+    if (!wedding || wedding.is_published !== true || wedding.seat_finder_enabled === false) {
         return NextResponse.json({ error: 'Seat finder is not available for this wedding.' }, { status: 404 });
     }
 

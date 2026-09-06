@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { redisDel, redisJsonGet, redisJsonSet } from '@/lib/redis';
+import { getCachedServerValue, clearServerCache } from '@/lib/server-cache';
 
 export type DashboardCounters = {
     confirmed: number;
@@ -22,16 +23,13 @@ export type DashboardCounters = {
 };
 
 const DASHBOARD_COUNTER_TTL_SECONDS = 2 * 60;
+const DASHBOARD_COUNTER_TTL_MS = DASHBOARD_COUNTER_TTL_SECONDS * 1000;
 
 export function dashboardCountersKey(weddingId: string) {
     return `quickweds:dashboard:counters:${weddingId}`;
 }
 
-export async function getDashboardCounters(db: any, weddingId: string): Promise<DashboardCounters> {
-    const key = dashboardCountersKey(weddingId);
-    const cached = await redisJsonGet<DashboardCounters>(key);
-    if (cached) return cached;
-
+async function calculateDashboardCounters(db: any, weddingId: string): Promise<DashboardCounters> {
     const [rsvpsRes, photosRes, tablesRes] = await Promise.all([
         db
             .from('rsvps')
@@ -104,7 +102,7 @@ export async function getDashboardCounters(db: any, weddingId: string): Promise<
         })
         .sort((a, b) => a.tableName.localeCompare(b.tableName));
 
-    const counters: DashboardCounters = {
+    return {
         confirmed,
         declined,
         pending,
@@ -117,11 +115,25 @@ export async function getDashboardCounters(db: any, weddingId: string): Promise<
         mealChoices,
         cachedAt: new Date().toISOString(),
     };
+}
 
-    await redisJsonSet(key, counters, DASHBOARD_COUNTER_TTL_SECONDS);
+export async function getDashboardCounters(db: any, weddingId: string): Promise<DashboardCounters> {
+    const key = dashboardCountersKey(weddingId);
+    const cached = await redisJsonGet<DashboardCounters>(key);
+    if (cached) return cached;
+
+    // Use memory cache + request deduplication
+    const { value: counters } = await getCachedServerValue(key, DASHBOARD_COUNTER_TTL_MS, async () => {
+        const computed = await calculateDashboardCounters(db, weddingId);
+        await redisJsonSet(key, computed, DASHBOARD_COUNTER_TTL_SECONDS);
+        return computed;
+    });
+
     return counters;
 }
 
 export async function invalidateDashboardCounters(weddingId: string) {
-    await redisDel(dashboardCountersKey(weddingId));
+    const key = dashboardCountersKey(weddingId);
+    await redisDel(key);
+    clearServerCache(key);
 }
