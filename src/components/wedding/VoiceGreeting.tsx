@@ -51,7 +51,7 @@ export default function VoiceGreeting({ audioUrl, motifColor }: VoiceGreetingPro
                             onClick={togglePlay}
                             className={`
                                 flex min-h-[44px] items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-6 sm:py-4 
-                                rounded-full bg-white dark:bg-neutral border border-border/50 
+                                rounded-full bg-white border border-border/50 
                                 shadow-2xl soft-shadow transition-all group
                             `}
                         >

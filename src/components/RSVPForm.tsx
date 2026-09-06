@@ -278,9 +278,9 @@ export default function RSVPForm({
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="p-12 rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 text-center soft-shadow"
+        className="p-12 rounded-[2rem] bg-emerald-50 border border-emerald-100 text-center soft-shadow"
       >
-        <div className="w-20 h-20 bg-white dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
           <CheckCircle2 className="w-10 h-10 text-emerald-500" />
         </div>
         <h3 className="text-3xl font-serif mb-2 text-foreground">Thank You!</h3>

@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { HelpCircle, MessageCircleQuestion } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
-import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getSectionTitleStyle, getTemplateVisualProfile, parseSectionStyles, resolveSectionBackground } from '@/lib/theme-engine';
 
 interface FAQItem {
     question: string;
@@ -47,10 +47,17 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
     const motifColor = wedding?.motif_color || '#D16C78';
     const visual = getTemplateVisualProfile(template, motifColor, false, wedding?.card_style);
     const titleStyle = wedding ? getSectionTitleStyle(wedding, visual.headingClass) : { className: visual.headingClass, style: undefined };
-    const isDark = ['royal', 'midnight', 'cinematic', 'urban', 'glitch', 'film'].includes(template);
+    const sectionStylesMap = parseSectionStyles(wedding?.section_styles);
+    const customBg = resolveSectionBackground(sectionStylesMap[id] || sectionStylesMap['faq']);
+    const isDark = customBg.hasCustomBackground ? customBg.isDark : ['royal', 'midnight', 'cinematic', 'urban', 'glitch', 'film'].includes(template);
 
     return (
-        <section id={id} className={`relative z-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section
+            id={id}
+            className={`relative z-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 ${customBg.hasCustomBackground ? '' : visual.sectionClass} ${customBg.textColorClass || ''}`}
+            style={customBg.hasCustomBackground ? customBg.style : visual.sectionStyle}
+        >
+            {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
             <div className="mx-auto max-w-5xl">
                 <motion.div
                     initial={{ opacity: 0, y: 24 }}

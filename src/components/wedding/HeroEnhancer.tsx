@@ -64,7 +64,7 @@ export default function HeroEnhancer({ wedding }: { wedding: Wedding }) {
 
             {/* Animated Scroll Prompt */}
             <motion.div 
-                className="absolute bottom-4 sm:bottom-8 lg:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+                className="max-sm:hidden absolute bottom-4 sm:bottom-8 lg:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 2, duration: 1 }}

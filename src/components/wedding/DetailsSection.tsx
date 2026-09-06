@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Calendar, MapPin, Info } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
-import { derivePalette, getSectionTitleStyle, getTypography, getTemplateVisualProfile, type TemplateVisualProfile } from '@/lib/theme-engine';
+import { derivePalette, getSectionTitleStyle, getTypography, getTemplateVisualProfile, parseSectionStyles, resolveSectionBackground, type TemplateVisualProfile } from '@/lib/theme-engine';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
 import AttireSection from './AttireSection';
@@ -148,12 +148,19 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     
     const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
-    const isDark = ['midnight', 'cinematic', 'royal', 'urban', 'glitch', 'film', 'artdeco'].includes(template) || invert;
+    const sectionStylesMap = parseSectionStyles(wedding.section_styles);
+    const customBg = resolveSectionBackground(sectionStylesMap[id] || sectionStylesMap['details']);
+    const isDark = customBg.hasCustomBackground ? customBg.isDark : (['midnight', 'cinematic', 'royal', 'urban', 'glitch', 'film', 'artdeco'].includes(template) || invert);
     const isVintage = ['vintage', 'rustic', 'boho', 'film'].includes(template);
     const inviteImages = parseInvitationImages(wedding.invitation_image);
 
     return (
-        <section id={id} className={`py-24 md:py-40 relative z-10 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section
+            id={id}
+            className={`py-24 md:py-40 relative z-10 ${customBg.hasCustomBackground ? '' : visual.sectionClass} ${customBg.textColorClass || ''}`}
+            style={customBg.hasCustomBackground ? customBg.style : visual.sectionStyle}
+        >
+            {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
             <div className={visual.containerClass}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}

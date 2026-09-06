@@ -52,6 +52,7 @@ export default function LivePreview({
                 section_title_font_style: formData.sectionTitleFontStyle || 'default',
                 section_title_color_style: formData.sectionTitleColorStyle || 'motif',
                 background_style: formData.backgroundStyle || 'cream',
+                section_styles: formData.sectionStyles,
                 template: formData.template || 'classic',
                 template_style: formData.templateStyle || 'default',
                 card_style: formData.cardStyle || 'default',

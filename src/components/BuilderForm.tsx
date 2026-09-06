@@ -40,7 +40,17 @@ import {
 } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
 import { hasStoredSupabaseSession } from '@/lib/supabase-auth';
-import { CARD_CONTAINER_STYLES, getMotifSectionTitleGradient, SECTION_TITLE_COLOR_STYLES, SECTION_TITLE_FONT_STYLES } from '@/lib/theme-engine';
+import {
+    CARD_CONTAINER_STYLES,
+    getMotifSectionTitleGradient,
+    SECTION_TITLE_COLOR_STYLES,
+    SECTION_TITLE_FONT_STYLES,
+    EDITABLE_SECTIONS,
+    SECTION_GRADIENT_PRESETS,
+    SECTION_TEXTURE_PRESETS,
+    parseSectionStyles,
+} from '@/lib/theme-engine';
+import type { SectionStylesMap, SectionStyleConfig } from '@/types/wedding';
 import { parseCsv } from '@/lib/guest-list';
 import {
     DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY,
@@ -72,6 +82,7 @@ import AttireIllustration from './AttireIllustration';
 const MarketplacePanel = dynamic(() => import('./builder/MarketplacePanel'), { ssr: false });
 const MonogramExporter = dynamic(() => import('./MonogramExporter').then(m => m.MonogramExporter), { ssr: false });
 const EntourageProposalCustomizerSection = dynamic(() => import('./EntourageProposalCustomizerSection').then(m => m.EntourageProposalCustomizerSection), { ssr: false });
+const SectionBackgroundCustomizer = dynamic(() => import('./builder/SectionBackgroundCustomizer'), { ssr: false });
 
 // Helper component for collapsible sections
 const Collapsible = memo(function Collapsible({ title, children, isOpen, onToggle, icon: Icon }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void, icon?: any }) {
@@ -365,6 +376,7 @@ const INITIAL_FORM_DATA = {
     sectionTitleColorStyle: 'motif',
     cardStyle: 'default',
     backgroundStyle: 'gradient',
+    sectionStyles: {} as SectionStylesMap,
     template: 'classic',
     templateStyle: DEFAULT_TEMPLATE_STYLE,
     galleryLayout: 'auto',
@@ -772,6 +784,7 @@ export default function BuilderForm() {
                         sectionTitleColorStyle: data.section_title_color_style || 'motif',
                         cardStyle: data.card_style || 'default',
                         backgroundStyle: data.background_style || 'gradient',
+                        sectionStyles: parseSectionStyles(data.section_styles),
                         template: data.template || 'classic',
                         templateStyle: data.template_style || DEFAULT_TEMPLATE_STYLE,
                         galleryLayout: data.gallery_layout || 'auto',
@@ -1304,6 +1317,7 @@ export default function BuilderForm() {
                 section_title_color_style: formData.sectionTitleColorStyle,
                 card_style: formData.cardStyle || 'default',
                 background_style: formData.backgroundStyle,
+                section_styles: formData.sectionStyles,
                 template: formData.template,
                 template_style: formData.templateStyle || DEFAULT_TEMPLATE_STYLE,
                 gallery_layout: formData.galleryLayout || 'auto',
@@ -1412,6 +1426,7 @@ export default function BuilderForm() {
                     'section_title_font_style',
                     'section_title_color_style',
                     'card_style',
+                    'section_styles',
                     'include_entourage_section',
                     'background_music_url',
                     'website_mode',
@@ -2093,7 +2108,13 @@ export default function BuilderForm() {
                                   })}
                               </div>
                           </div>
-                         <Collapsible title="Typography & Fonts" isOpen={expandedSection === 'fonts'} onToggle={() => toggleSection('fonts')} icon={Layout}>
+                                                   <SectionBackgroundCustomizer
+                              sectionStyles={formData.sectionStyles}
+                              motifColor={formData.motifColor}
+                              onChange={(newStyles) => setFormData((prev: any) => ({ ...prev, sectionStyles: newStyles }))}
+                          />
+
+                          <Collapsible title="Typography & Fonts" isOpen={expandedSection === 'fonts'} onToggle={() => toggleSection('fonts')} icon={Layout}>
                             <div className="grid grid-cols-2 gap-2 no-scrollbar sm:max-h-[400px] sm:grid-cols-3 sm:gap-3 sm:overflow-y-auto sm:pr-2 md:gap-4 custom-scrollbar">
                                 {FONTS.map((font, index) => {
                                     const isLocked = !isPremium && index >= 10;

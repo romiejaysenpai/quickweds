@@ -128,7 +128,7 @@ export function BoxPackingMode({ tasks, updateTask }: {
                     </p>
                     <p className="mx-auto mt-1 max-w-sm text-sm leading-5 text-text-secondary">
                         {boxTasks.length === 0
-                            ? 'Add a template like Bride\u2019s Box, Groom\u2019s Box, or Master Box from Checklist Templates to pack it here.'
+                            ? 'Add a template like Bride\u2019s Box, Groom\u2019s Box, or Ceremony Box from Checklist Templates to pack it here.'
                             : 'Try a different filter to see more box items.'}
                     </p>
                 </div>

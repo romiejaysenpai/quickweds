@@ -11,7 +11,6 @@ import { useAuth } from '@/context/AuthContext';
 import { trackWeddingEvent } from '@/lib/wedding-features';
 import ConfettiCelebration from '@/components/ConfettiCelebration';
 import CopyButton from '@/components/CopyButton';
-import DarkModeToggle from '@/components/DarkModeToggle';
 import UpgradeButton from '@/components/UpgradeButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getClientAccountProfile, hasAccountPro } from '@/lib/account';
@@ -681,7 +680,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 <ConfettiCelebration trigger={showConfetti} />
 
                 {/* Header */}
-                <div className="sticky top-0 z-40 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-white/90 sm:p-4">
+                <div className="sticky top-0 z-40 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md sm:p-4">
                     <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-2 sm:px-4">
                         <div className="flex items-center gap-4">
                             {/* Mobile Logo */}
@@ -928,7 +927,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 </div>
 
                 {/* Mobile Tab Navigation (Fixed Bottom) */}
-                <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-white/90 backdrop-blur-md border-t border-border z-[100] flex justify-around items-center p-2 pb-safe shadow-2xl">
+                <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-border z-[100] flex justify-around items-center p-2 pb-safe shadow-2xl">
                     <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'home' ? 'text-primary' : 'text-text-secondary/50'}`}>
                         <LayoutDashboard className="w-5 h-5" />
                         <span className="text-[8px] font-black uppercase tracking-widest">Overview</span>
@@ -952,7 +951,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 </div>
 
                 {/* Desktop Tab Navigation */}
-                <div className="hidden sm:flex items-center gap-1 mb-6 p-1.5 bg-neutral/50 dark:bg-neutral/70 rounded-2xl border border-border w-fit">
+                <div className="hidden sm:flex items-center gap-1 mb-6 p-1.5 bg-neutral/50 rounded-2xl border border-border w-fit">
                     {[
                         { id: 'home', label: 'Overview', icon: LayoutDashboard },
                         { id: 'guests', label: 'Guests', icon: Users },
@@ -965,8 +964,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
                                 activeTab === tab.id
-                                    ? 'bg-white dark:bg-white text-primary shadow-sm ring-1 ring-primary/10 dark:ring-white/5'
-                                    : 'text-text-secondary/60 hover:text-text-secondary hover:bg-white/50 dark:hover:bg-white/70'
+                                    ? 'bg-white text-primary shadow-sm ring-1 ring-primary/10'
+                                    : 'text-text-secondary/60 hover:text-text-secondary hover:bg-white/50:bg-white/70'
                             }`}
                         >
                             <tab.icon className="w-4 h-4" />
@@ -983,7 +982,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {created && activeTab === 'home' && (
                             <div className="mb-8 p-4 rounded-xl bg-success-bg border border-border flex flex-row items-center gap-4 relative overflow-hidden sm:hidden">
                                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 pointer-events-none" />
-                                <div className="w-10 h-10 rounded-full bg-white dark:bg-white flex items-center justify-center text-accent shadow-sm flex-shrink-0 relative">
+                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-accent shadow-sm flex-shrink-0 relative">
                                     <Sparkles className="w-5 h-5" />
                                 </div>
                                 <div className="relative">
@@ -1062,7 +1061,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                             <div className="grid grid-cols-2 sm:hidden gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2">
                                 <Link
                                     href={`/dashboard/${wedding.id}/rsvp-embed`}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1.5">
                                         <Code2 className="w-4 h-4" />
@@ -1072,7 +1071,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </Link>
                                 <Link
                                     href={`/builder?edit=${wedding.id}`}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1.5">
                                         <Sparkles className="w-4 h-4" />
@@ -1082,7 +1081,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </Link>
                                 <Link
                                     href={`/dashboard/${wedding.id}/planner`}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-1.5">
                                         <ListTodo className="w-4 h-4" />
@@ -1092,7 +1091,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </Link>
                                 <button
                                     onClick={() => setActiveTab('guests')}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 mb-1.5">
                                         <Users className="w-4 h-4" />
@@ -1102,7 +1101,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('analytics')}
-                                    className="flex flex-col items-center justify-center p-3 bg-white dark:bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
+                                    className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 mb-1.5">
                                         <PieChartIcon className="w-4 h-4" />
@@ -1116,12 +1115,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {/* Mobile Home Quick Stats Summary - Even smaller now */}
                         {activeTab === 'home' && (
                             <div className="sm:hidden grid grid-cols-2 gap-2 mb-4">
-                                <div className="p-4 rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center">
+                                <div className="p-4 rounded-3xl bg-white border border-border soft-shadow text-center">
                                     <p className="text-[7px] uppercase font-black tracking-widest text-text-secondary/50 mb-0.5">Guests</p>
                                     <p className="text-2xl font-serif font-bold text-primary">{stats.confirmed}</p>
                                     <p className="text-[7px] font-bold text-text-secondary/40 uppercase tracking-widest">Confirmed</p>
                                 </div>
-                                <div className="p-4 rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center">
+                                <div className="p-4 rounded-3xl bg-white border border-border soft-shadow text-center">
                                     <p className="text-[7px] uppercase font-black tracking-widest text-text-secondary/50 mb-0.5">Budget</p>
                                     <p className="text-2xl font-serif font-bold text-secondary">{stats.budgetPercent}%</p>
                                     <p className="text-[7px] font-bold text-text-secondary/40 uppercase tracking-widest">Utilized</p>
@@ -1132,29 +1131,29 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {/* Full Stats Cards - Mobile: Analytics only, Desktop: All */}
                         {(activeTab === 'analytics' || activeTab === 'home') && (
                             <div className={`${activeTab === 'home' ? 'hidden sm:grid' : 'grid'} grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 animate-in fade-in`}>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-primary/30 transition-all">
-                                    <div className="w-10 h-10 rounded-full bg-primary/5 dark:bg-primary/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-border soft-shadow text-center hover:border-primary/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <Users className="w-5 h-5 text-primary" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.totalGuests}</p>
                                     <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Total Guests</p>
                                 </div>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-green-500/30 transition-all">
-                                    <div className="w-10 h-10 rounded-full bg-green-500/5 dark:bg-green-500/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-border soft-shadow text-center hover:border-green-500/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-green-500/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <CheckCircle2 className="w-5 h-5 text-green-500" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.confirmed}</p>
                                     <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Confirmed</p>
                                 </div>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-red-400/30 transition-all">
-                                    <div className="w-10 h-10 rounded-full bg-red-400/5 dark:bg-red-400/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-border soft-shadow text-center hover:border-red-400/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-red-400/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <X className="w-5 h-5 text-red-400" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.declined}</p>
                                     <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] font-black text-text-secondary/40">Declined</p>
                                 </div>
-                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-white border border-border soft-shadow text-center hover:border-amber-500/30 transition-all">
-                                    <div className="w-10 h-10 rounded-full bg-amber-500/5 dark:bg-amber-500/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                <div className="group p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-border soft-shadow text-center hover:border-amber-500/30 transition-all">
+                                    <div className="w-10 h-10 rounded-full bg-amber-500/5 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                                         <AlertCircle className="w-5 h-5 text-amber-500" />
                                     </div>
                                     <p className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-foreground">{stats.pending}</p>
@@ -1165,7 +1164,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                         {/* Budget Visualization - Mobile: Analytics only, Desktop: All */}
                         {(activeTab === 'analytics' || activeTab === 'home') && (
-                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-6 sm:p-10 rounded-3xl bg-white dark:bg-white border border-border soft-shadow animate-in fade-in`}>
+                            <div className={`${activeTab === 'home' ? 'hidden sm:block' : 'block'} p-6 sm:p-10 rounded-3xl bg-white border border-border soft-shadow animate-in fade-in`}>
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                                     <div>
                                         <h2 className="text-xl sm:text-2xl font-serif font-bold text-foreground flex items-center gap-3">
@@ -1173,7 +1172,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </h2>
                                         <p className="text-xs text-text-secondary mt-1">Real-time overview of your wedding investments.</p>
                                     </div>
-                                    <div className="text-right bg-neutral/50 dark:bg-neutral/30 px-4 py-2 rounded-2xl border border-border">
+                                    <div className="text-right bg-neutral/50 px-4 py-2 rounded-2xl border border-border">
                                         <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Total Utilization</p>
                                         <p className="text-2xl font-mono font-black text-primary">{stats.budgetPercent}%</p>
                                     </div>
@@ -1198,18 +1197,18 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                                     <div className="md:col-span-2 space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/20 border border-border hover:border-primary/20 transition-all group">
+                                            <div className="p-4 rounded-2xl bg-neutral/30 border border-border hover:border-primary/20 transition-all group">
                                                 <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary/50 mb-2">Total Budget</p>
                                                 <p className="text-xl font-mono font-bold text-foreground group-hover:text-primary transition-colors">{currencySymbol}{stats.totalBudget.toLocaleString()}</p>
                                             </div>
-                                            <div className="p-4 rounded-2xl bg-primary/5 dark:bg-primary/20 border-2 border-primary/10 shadow-sm relative overflow-hidden group">
+                                            <div className="p-4 rounded-2xl bg-primary/5 border-2 border-primary/10 shadow-sm relative overflow-hidden group">
                                                 <div className="absolute top-0 right-0 w-12 h-12 bg-primary/5 rounded-bl-full" />
                                                 <p className="text-[10px] uppercase font-black tracking-widest text-primary mb-2">Committed</p>
                                                 <p className="text-xl font-mono font-black text-primary">{currencySymbol}{stats.totalSpent.toLocaleString()}</p>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/20 border border-border">
+                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral/30 border border-border">
                                             <div>
                                                 <p className="text-[10px] uppercase font-black tracking-widest text-text-secondary/50 mb-1">Remaining Balance</p>
                                                 <p className={`text-xl font-mono font-black ${stats.remainingBudget < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -1229,17 +1228,17 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {(activeTab === 'analytics' || activeTab === 'home') && (
                             <div className={`${activeTab === 'home' ? 'hidden sm:grid' : 'grid'} grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in fade-in`}>
                                 {/* Attendance Breakdown */}
-                                <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-white border border-border soft-shadow">
+                                <div className="p-6 sm:p-10 rounded-3xl bg-white border border-border soft-shadow">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-secondary/40 mb-8 flex items-center gap-2">
                                         <PieChartIcon className="w-4 h-4 text-primary" /> RSVP Distribution
                                     </h3>
                                     <div className="flex flex-row items-center gap-8">
-                                        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full relative flex-shrink-0 p-1 bg-neutral/10 dark:bg-neutral/80" style={{
+                                        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full relative flex-shrink-0 p-1 bg-neutral/10" style={{
                                             background: stats.total > 0
                                                 ? `conic-gradient(#22c55e ${attendPct}%, #ef4444 ${attendPct}% ${attendPct + declinePct}%, #f59e0b ${attendPct + declinePct}% ${attendPct + declinePct + pendingPct}%, #3A2A2D ${attendPct + declinePct + pendingPct}% 100%)`
                                                 : '#3A2A2D'
                                         }}>
-                                            <div className="absolute inset-2 sm:inset-4 bg-white dark:bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
+                                            <div className="absolute inset-2 sm:inset-4 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
                                                 <span className="text-xl sm:text-2xl font-black text-foreground">{stats.total}</span>
                                                 <span className="text-[8px] font-black uppercase tracking-widest text-text-secondary/40">Total</span>
                                             </div>
@@ -1271,7 +1270,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                 </div>
 
                                 {/* Meal Summary */}
-                                <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-white border border-border soft-shadow">
+                                <div className="p-6 sm:p-10 rounded-3xl bg-white border border-border soft-shadow">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-secondary/40 mb-8 flex items-center gap-2">
                                         <Smartphone className="w-4 h-4 text-secondary" /> Dining Preferences
                                     </h3>
@@ -1282,7 +1281,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                     <span className="text-text-secondary truncate max-w-[150px]">{pref}</span>
                                                     <span className="text-primary">{count} guests</span>
                                                 </div>
-                                                <div className="h-1.5 bg-neutral/20 dark:bg-neutral/70 rounded-full overflow-hidden">
+                                                <div className="h-1.5 bg-neutral/20 rounded-full overflow-hidden">
                                                     <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${(count / stats.total) * 100}%` }} />
                                                 </div>
                                             </div>
@@ -1308,7 +1307,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                                             {stats.songs.map((s, i) => (
-                                                <div key={i} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-neutral/50 dark:bg-neutral/30 border border-border/10">
+                                                <div key={i} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-neutral/50 border border-border/10">
                                                     <span className="text-base sm:text-lg flex-shrink-0">🎵</span>
                                                     <div className="min-w-0">
                                                         <p className="font-bold text-xs sm:text-sm line-clamp-1 italic">&quot;{s.song}&quot;</p>
@@ -1347,13 +1346,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         </div>
 
                                         <div className="flex flex-wrap gap-2 w-full sm:w-auto overflow-x-auto pb-1 no-scrollbar">
-                                            <button onClick={() => setIsAddGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 transition-colors min-h-[44px]">
+                                            <button onClick={() => setIsAddGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 transition-colors min-h-[44px]">
                                                 <Plus className="w-4 h-4 flex-shrink-0" /> <span>Add</span>
                                             </button>
-                                            <button onClick={() => setIsImportGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-secondary/10 dark:bg-secondary/20 text-secondary text-xs font-bold hover:bg-secondary/20 transition-colors min-h-[44px]">
+                                            <button onClick={() => setIsImportGuestModalOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-secondary/10 text-secondary text-xs font-bold hover:bg-secondary/20 transition-colors min-h-[44px]">
                                                 <Upload className="w-4 h-4 flex-shrink-0" /> <span>Import</span>
                                             </button>
-                                            <button onClick={exportCSV} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-primary/10 dark:bg-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-colors min-h-[44px] ml-auto">
+                                            <button onClick={exportCSV} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-colors min-h-[44px] ml-auto">
                                                 <Download className="w-4 h-4 flex-shrink-0" /> <span>Export</span>
                                             </button>
                                         </div>
@@ -1402,7 +1401,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                                     <tr key={rsvp.id} className="hover:bg-neutral/30 transition-colors group/row">
                                                         <td className="px-3 sm:px-6 py-3 sm:py-4">
                                                             <div className="flex items-center gap-3 sm:gap-4">
-                                                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-primary/5 dark:bg-primary/20 flex items-center justify-center text-primary font-black text-[10px] sm:text-xs">
+                                                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-primary/5 flex items-center justify-center text-primary font-black text-[10px] sm:text-xs">
                                                                     {rsvp.guest_name.charAt(0)}
                                                                 </div>
                                                                 <div>
@@ -1548,13 +1547,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                         {(activeTab === 'settings' || activeTab === 'home') && (
                             <div className="space-y-4 sm:space-y-6">
-                                <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-white border border-border soft-shadow animate-in fade-in">
+                                <div className="p-4 sm:p-8 rounded-3xl bg-white border border-border soft-shadow animate-in fade-in">
                                     <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4 flex items-center justify-between">
                                         Notifications
                                         {isSavingSettings && <LoadingState variant="inline" label="Saving notification settings…" className="text-primary" />}
                                     </h3>
                                     <div className="space-y-5">
-                                        <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/90 border border-border group transition-all hover:border-primary/20">
+                                        <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 border border-border group transition-all hover:border-primary/20">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${wedding?.notify_on_rsvp !== false ? 'bg-primary/10 text-primary' : 'bg-text-secondary/10 text-text-secondary'}`}>
                                                     {wedding?.notify_on_rsvp !== false ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
@@ -1579,7 +1578,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             </button>
                                         </div>
 
-                                        <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 dark:bg-neutral/90 border border-border group transition-all hover:border-primary/20">
+                                        <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral/30 border border-border group transition-all hover:border-primary/20">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${wedding?.notify_on_updates !== false ? 'bg-accent/10 text-accent' : 'bg-text-secondary/10 text-text-secondary'}`}>
                                                     <Info className="w-5 h-5" />
@@ -1606,7 +1605,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                     </div>
                                 </div>
 
-                                <div className="p-4 sm:p-8 rounded-3xl bg-white dark:bg-white border border-border soft-shadow animate-in fade-in">
+                                <div className="p-4 sm:p-8 rounded-3xl bg-white border border-border soft-shadow animate-in fade-in">
                                     <h3 className="text-lg sm:text-xl font-serif font-bold mb-4 sm:mb-6 text-foreground border-b border-border pb-4">Event Details</h3>
                                     <div className="space-y-6">
                                         <div>

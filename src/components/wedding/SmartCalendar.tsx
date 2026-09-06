@@ -42,7 +42,7 @@ export default function SmartCalendar({ wedding, motifColor }: SmartCalendarProp
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-3 px-6 py-4 rounded-full bg-white dark:bg-neutral border border-border/50 shadow-lg soft-shadow transition-all group"
+                className="flex items-center gap-3 px-6 py-4 rounded-full bg-white border border-border/50 shadow-lg soft-shadow transition-all group"
             >
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary" style={{ color: motifColor }}>
                     <Calendar className="w-4 h-4" />
@@ -55,7 +55,7 @@ export default function SmartCalendar({ wedding, motifColor }: SmartCalendarProp
                 <motion.div
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    className="absolute top-full mt-4 left-0 w-64 bg-white dark:bg-neutral border border-border/50 rounded-2xl shadow-2xl p-2 z-[70] backdrop-blur-xl"
+                    className="absolute top-full mt-4 left-0 w-64 bg-white border border-border/50 rounded-2xl shadow-2xl p-2 z-[70] backdrop-blur-xl"
                 >
                     <a 
                         href={links.google} 

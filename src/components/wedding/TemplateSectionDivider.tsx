@@ -242,6 +242,196 @@ export default function TemplateSectionDivider({
         );
     }
 
+    // 13. Mizuhiki — Ceremonial looped red and gold Japanese knot
+    if (t === 'mizuhiki' || t === 'hanaume' || t === 'kimono') {
+        return (
+            <div className={`template-divider template-divider-mizuhiki py-8 flex items-center justify-center ${className}`}>
+                <div className="flex items-center gap-4 w-full max-w-md px-6">
+                    <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-[#C0392B] to-[#C0392B]" />
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#D4AF37] bg-white/90 shadow-sm text-xs font-serif">
+                        <span className="text-[#C0392B] font-bold">結</span>
+                        <span className="text-[#D4AF37] text-[10px]">✦</span>
+                        <span className="text-[#C0392B] font-bold">び</span>
+                    </div>
+                    <div className="h-0.5 flex-1 bg-gradient-to-l from-transparent via-[#C0392B] to-[#C0392B]" />
+                </div>
+            </div>
+        );
+    }
+
+    // 14. Washi — Organic Japanese mulberry deckle edge line
+    if (t === 'washi' || t === 'washipaper' || t === 'teaceremony' || t === 'japan') {
+        return (
+            <div className={`template-divider template-divider-washi py-8 flex items-center justify-center ${className}`}>
+                <div className="flex items-center gap-3 w-full max-w-md px-6 opacity-60">
+                    <div className="h-px flex-1 border-t border-dashed border-current" />
+                    <span className="text-[9px] font-serif uppercase tracking-[0.3em] px-2 py-0.5 border border-current/30 rounded-sm">
+                        和紙 // FIBER
+                    </span>
+                    <div className="h-px flex-1 border-t border-dashed border-current" />
+                </div>
+            </div>
+        );
+    }
+
+    // 15. Tile — Amalfi coast majolica diamond tile
+    if (t === 'tile' || t === 'amalfi') {
+        return (
+            <div className={`template-divider template-divider-tile py-8 flex items-center justify-center ${className}`}>
+                <div className="flex items-center gap-3 w-full max-w-md px-6" style={{ color: motifColor }}>
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent to-current" />
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rotate-45 border-2 border-current bg-white shadow-sm" />
+                        <div className="w-3.5 h-3.5 rotate-45 border-2 border-amber-500 bg-current/20 shadow-sm" />
+                        <div className="w-2.5 h-2.5 rotate-45 border-2 border-current bg-white shadow-sm" />
+                    </div>
+                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-current" />
+                </div>
+            </div>
+        );
+    }
+
+    // 16. Stamp / Postal — Cancellation marks and date seal
+    if (t === 'stamp' || t === 'passport' || t === 'notepaper' || t === 'oldpaper' || t === 'letter' || t === 'travelogue' || t === 'airport') {
+        return (
+            <div className={`template-divider template-divider-stamp py-8 flex items-center justify-center ${className}`}>
+                <div className="flex items-center gap-3 w-full max-w-md px-6" style={{ color: motifColor }}>
+                    <div className="h-px flex-1 border-t-2 border-dashed border-current opacity-40" />
+                    <div className="flex items-center gap-2 px-3 py-1 border-2 border-current rounded-full text-[9px] font-mono uppercase tracking-[0.25em] bg-white/80 backdrop-blur-sm">
+                        <span>★</span>
+                        <span>OFFICIAL SEAL</span>
+                        <span>★</span>
+                    </div>
+                    <div className="h-px flex-1 border-t-2 border-dashed border-current opacity-40" />
+                </div>
+            </div>
+        );
+    }
+
+    // 17. Disco — Retro 70s groove & starbursts
+    if (t === 'disco' || t === 'discofever' || t === 'jazz') {
+        return (
+            <div className={`template-divider template-divider-disco py-8 flex items-center justify-center ${className}`}>
+                <div className="flex items-center gap-3 w-full max-w-md px-6" style={{ color: motifColor }}>
+                    <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-amber-400 to-amber-500" />
+                    <div className="flex items-center gap-2 text-amber-500">
+                        <span className="text-xs animate-pulse">✦</span>
+                        <span className="text-base font-bold">🪩</span>
+                        <span className="text-xs animate-pulse">✦</span>
+                    </div>
+                    <div className="h-0.5 flex-1 bg-gradient-to-l from-transparent via-amber-400 to-amber-500" />
+                </div>
+            </div>
+        );
+    }
+
+    // 18. Aura / Frosted Glass — Chromatic glow line
+    if (t === 'aura' || t === 'frostedglass' || t === 'faintblur' || t === 'clearblue' || t === 'cyberromantic') {
+        return (
+            <div className={`template-divider template-divider-aura py-8 flex items-center justify-center ${className}`}>
+                <div className="w-full max-w-md px-6 flex items-center justify-center">
+                    <div
+                        className="h-1 w-full rounded-full blur-[1px] opacity-80"
+                        style={{
+                            background: `linear-gradient(90deg, transparent 0%, ${motifColor}40 25%, ${motifColor} 50%, ${motifColor}40 75%, transparent 100%)`,
+                        }}
+                    />
+                </div>
+            </div>
+        );
+    }
+
+    // 19. Bauhaus / Neobrutalist — Geometry trio (circle, square, triangle)
+    if (t === 'bauhaus' || t === 'neobrutalist' || t === 'splash') {
+        return (
+            <div className={`template-divider template-divider-bauhaus py-8 flex items-center justify-center ${className}`}>
+                <div className="flex items-center gap-4 w-full max-w-md px-6">
+                    <div className="h-1 flex-1 bg-black" />
+                    <div className="flex items-center gap-2">
+                        <div className="w-3.5 h-3.5 rounded-full bg-[#FF5E5B] border-2 border-black" />
+                        <div className="w-3.5 h-3.5 bg-[#FFE169] border-2 border-black" />
+                        <div className="w-0 h-0 border-l-[7px] border-l-transparent border-r-[7px] border-r-transparent border-b-[14px] border-b-[#1D4ED8]" />
+                    </div>
+                    <div className="h-1 flex-1 bg-black" />
+                </div>
+            </div>
+        );
+    }
+
+    // 20. Neumorphic — Tactile embossed groove
+    if (t === 'neumorphic' || t === 'neumorphism' || t === 'fluidmodern') {
+        return (
+            <div className={`template-divider template-divider-neumorphic py-8 flex items-center justify-center ${className}`}>
+                <div className="w-full max-w-md px-6 flex items-center justify-center">
+                    <div className="h-1.5 w-full rounded-full bg-[#E8ECEF] shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.8)]" />
+                </div>
+            </div>
+        );
+    }
+
+    // 21. Mist — Soft fading morning fog gradient
+    if (t === 'mist' || t === 'aromabotanical' || t === 'hydrangea' || t === 'kasumi' || t === 'mistveil' || t === 'innocentpetals') {
+        return (
+            <div className={`template-divider template-divider-mist py-8 flex items-center justify-center ${className}`}>
+                <div className="flex items-center gap-4 w-full max-w-sm px-6 opacity-50" style={{ color: motifColor }}>
+                    <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-current to-transparent" />
+                    <span className="text-xs opacity-60">☁</span>
+                    <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-current to-transparent" />
+                </div>
+            </div>
+        );
+    }
+
+    // 22. Music — Classical musical stave & clef
+    if (t === 'music' || t === 'acoustic') {
+        return (
+            <div className={`template-divider template-divider-music py-8 flex items-center justify-center ${className}`}>
+                <div className="flex items-center gap-3 w-full max-w-md px-6 opacity-60" style={{ color: motifColor }}>
+                    <div className="h-px flex-1 border-t-2 border-current" />
+                    <div className="flex items-center gap-2 text-xs">
+                        <span>♩</span>
+                        <span className="font-serif italic font-bold">♪ ♫</span>
+                        <span>♩</span>
+                    </div>
+                    <div className="h-px flex-1 border-t-2 border-current" />
+                </div>
+            </div>
+        );
+    }
+
+    // 23. Terracotta — Mediterranean arch curve
+    if (t === 'terracotta' || t === 'deeporange' || t === 'desertmirage' || t === 'lunette') {
+        return (
+            <div className={`template-divider template-divider-terracotta py-8 flex items-center justify-center ${className}`}>
+                <div className="flex items-center gap-3 w-full max-w-md px-6" style={{ color: motifColor }}>
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent to-current" />
+                    <svg viewBox="0 0 32 20" fill="none" className="w-8 h-5 text-current">
+                        <path d="M4 18 C4 8, 28 8, 28 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M10 18 C10 12, 22 12, 22 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-current" />
+                </div>
+            </div>
+        );
+    }
+
+    // 24. Citrus — Mediterranean lemon & orange bloom
+    if (t === 'citrus' || t === 'konatsu' || t === 'yellowsummer') {
+        return (
+            <div className={`template-divider template-divider-citrus py-8 flex items-center justify-center ${className}`}>
+                <div className="flex items-center gap-3 w-full max-w-md px-6 text-amber-500">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-400" />
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs">🍊</span>
+                        <span className="text-[10px] opacity-70">✦</span>
+                        <span className="text-xs">🍋</span>
+                    </div>
+                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-400" />
+                </div>
+            </div>
+        );
+    }
+
     // Default — Elegant classic fade diamond
     return (
         <div className={`template-divider template-divider-classic py-8 flex items-center justify-center ${className}`}>

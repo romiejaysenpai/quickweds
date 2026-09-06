@@ -32,6 +32,7 @@ export type ChecklistTemplateItem = {
     not_included: boolean;
     due_offset_days: number | null;
     sort_order: number;
+    already_in_checklist?: boolean;
 };
 
 export type ChecklistTemplateSection = {
@@ -57,6 +58,7 @@ export type AddChecklistTemplatePayload = {
     sectionIds: string[];
     itemIds: string[];
     addAnyway: boolean;
+    skipDuplicates?: boolean;
     applySuggestDueDates: boolean;
 };
 
@@ -66,6 +68,9 @@ export type AddChecklistTemplateResult = {
     alreadyAdded: boolean;
     createdIds: string[];
     tasks: Array<Record<string, unknown>>;
+    skippedDuplicates?: number;
+    message?: string;
+    allAlreadyAdded?: boolean;
 };
 
 /** Templates that participate in the box-packing workflow. */
@@ -75,6 +80,8 @@ export const BOX_PACKING_TEMPLATE_KEYS = [
     'ceremony-box',
     'reception-box',
     'prep-snacks',
+    // Legacy-only: no longer shown in the template library, but retained so
+    // weddings that already copied it keep their box-packing view.
     'master-box',
 ] as const;
 

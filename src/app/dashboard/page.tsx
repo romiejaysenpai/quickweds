@@ -580,13 +580,13 @@ function StatusBadge({ wedding }: { wedding: any }) {
         colorClass = 'bg-accent/20 text-accent border-accent/30';
     } else if (weddingDate < now) {
         label = 'Completed';
-        colorClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+        colorClass = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
     } else if (rsvpDeadline < now) {
         label = 'RSVP Closed';
         colorClass = 'bg-neutral text-text-secondary border-border';
     } else {
         label = 'Live';
-        colorClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+        colorClass = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
     }
 
     return (
@@ -811,7 +811,7 @@ export default function DashboardRedirect() {
         <DashboardShell weddings={weddings}>
             <div className="mobile-safe-screen bg-background pb-16 sm:pb-20 mobile-safe-bottom flex-1">
                 {/* Top nav */}
-                <div className="sticky top-0 z-40 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-white/90 sm:p-4">
+                <div className="sticky top-0 z-40 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md sm:p-4">
                     <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-2 sm:px-4">
                         <div className="flex items-center gap-4">
                             {/* Mobile brand logo */}
@@ -1173,7 +1173,7 @@ export default function DashboardRedirect() {
                                     className="group bg-white rounded-xl sm:rounded-[2rem] overflow-hidden border border-border soft-shadow hover:shadow-2xl hover:translate-y-[-4px] transition-all duration-300"
                                 >
                                     {/* Hero image */}
-                                    <div className="aspect-[16/10] bg-neutral dark:bg-neutral/50 relative overflow-hidden">
+                                    <div className="aspect-[16/10] bg-neutral relative overflow-hidden">
                                         {wedding.hero_image ? (
                                             <img
                                                 src={wedding.hero_image}
@@ -1182,7 +1182,7 @@ export default function DashboardRedirect() {
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center">
-                                                <Heart className="w-16 sm:w-20 h-16 sm:h-20 text-primary/20 dark:text-primary/10" />
+                                                <Heart className="w-16 sm:w-20 h-16 sm:h-20 text-primary/20" />
                                             </div>
                                         )}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-3 sm:p-5">

@@ -1553,7 +1553,7 @@ export default function SeatingChartBuilder({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] soft-shadow border border-border">
+      <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl sm:rounded-[2.5rem] soft-shadow border border-border">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
         <p className="text-text-secondary font-serif italic">
           Loading seating arrangements...
@@ -1564,7 +1564,7 @@ export default function SeatingChartBuilder({
 
   return (
     <div className="space-y-4 sm:space-y-6 relative">
-      <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 md:p-12 soft-shadow border border-border">
+      <div className="bg-white rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 md:p-12 soft-shadow border border-border">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 sm:mb-10">
           <div>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">
@@ -2195,7 +2195,7 @@ export default function SeatingChartBuilder({
                   {/* Center Column: D-pad / Joystick Nudge Control */}
                   <div className="flex justify-center items-center">
                     {selectedTableData || selectedObjectData ? (
-                      <div className="relative flex items-center justify-center bg-white dark:bg-white/5 rounded-full p-2.5 shadow-md border border-border/60">
+                      <div className="relative flex items-center justify-center bg-white rounded-full p-2.5 shadow-md border border-border/60">
                         {/* Visual D-Pad Circle */}
                         <div className="grid grid-cols-3 grid-rows-3 gap-1.5 w-32 h-32 relative">
                           {/* UP BUTTON */}
@@ -2487,8 +2487,8 @@ export default function SeatingChartBuilder({
             </div>
 
             <div className="space-y-6">
-              <div className="bg-white dark:bg-white/10 rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden flex flex-col h-full max-h-[700px]">
-                <div className="p-4 sm:p-6 border-b border-border bg-neutral/30 dark:bg-neutral/10">
+              <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-border shadow-sm overflow-hidden flex flex-col h-full max-h-[700px]">
+                <div className="p-4 sm:p-6 border-b border-border bg-neutral/30">
                   <h3 className="font-serif font-bold text-xl flex items-center gap-2 mb-4">
                     <Users className="w-5 h-5 text-primary" />
                     Guest Assignment
@@ -2667,7 +2667,7 @@ export default function SeatingChartBuilder({
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md bg-white dark:bg-white rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-10 z-[60] shadow-2xl border border-border"
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md bg-white rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-10 z-[60] shadow-2xl border border-border"
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-serif font-bold text-xl sm:text-2xl text-foreground">
@@ -2675,7 +2675,7 @@ export default function SeatingChartBuilder({
                 </h3>
                 <button
                   onClick={() => setIsTableModalOpen(false)}
-                  className="p-2 hover:bg-neutral dark:hover:bg-neutral/10 rounded-full transition-colors"
+                  className="p-2 hover:bg-neutral rounded-full transition-colors"
                 >
                   <X className="w-5 h-5 text-text-secondary" />
                 </button>

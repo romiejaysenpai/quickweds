@@ -121,7 +121,7 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
                     </div>
                         <button
                             onClick={handleClose}
-                            className="w-10 h-10 rounded-full bg-neutral dark:bg-neutral/50 text-text-secondary flex items-center justify-center hover:bg-neutral/80 transition-colors min-h-[44px] min-w-[44px]"
+                            className="w-10 h-10 rounded-full bg-neutral text-text-secondary flex items-center justify-center hover:bg-neutral/80 transition-colors min-h-[44px] min-w-[44px]"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -158,7 +158,7 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
                                                         [field.value]: event.target.value,
                                                     }))
                                                 }
-                                                className="w-full bg-white dark:bg-neutral/30 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary text-sm min-h-[44px]"
+                                                className="w-full bg-white border border-border rounded-xl px-4 py-3 outline-none focus:border-primary text-sm min-h-[44px]"
                                             >
                                                 <option value="">Skip this field</option>
                                                 {headers.map((header) => (
@@ -185,7 +185,7 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
                         </div>
 
                         {previewRows.length === 0 ? (
-                            <div className="h-full min-h-[280px] rounded-[1.5rem] bg-neutral/30 dark:bg-neutral/20 border border-dashed border-border flex items-center justify-center text-center px-6">
+                            <div className="h-full min-h-[280px] rounded-[1.5rem] bg-neutral/30 border border-dashed border-border flex items-center justify-center text-center px-6">
                                 <div>
                                     <Upload className="w-8 h-8 text-text-secondary/40 mx-auto mb-3" />
                                     <p className="text-sm text-text-secondary">Upload a CSV to preview your guest data before importing.</p>
@@ -194,7 +194,7 @@ export default function GuestImportModal({ open, onClose, onImport }: GuestImpor
                         ) : (
                             <div className="overflow-x-auto rounded-[1.5rem] border border-border">
                                 <table className="w-full text-left text-xs sm:text-sm">
-                                    <thead className="bg-neutral/40 dark:bg-neutral/50">
+                                    <thead className="bg-neutral/40">
                                         <tr>
                                             {headers.map((header) => (
                                                 <th key={header} className="px-3 py-2 font-bold text-text-secondary whitespace-nowrap">

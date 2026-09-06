@@ -21,3 +21,4 @@ export { default as TemplateNavigation } from './TemplateNavigation';
 export { default as SafeWeddingImage } from './SafeWeddingImage';
 export { default as TemplateMonogram } from './TemplateMonogram';
 export { default as TemplateSectionDivider } from './TemplateSectionDivider';
+export { default as TemplateBackgroundVector } from './TemplateBackgroundVector';

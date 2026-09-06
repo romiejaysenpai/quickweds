@@ -19,6 +19,7 @@ import {
 } from '@/components/wedding';
 import type { TemplateProps } from '@/types/wedding';
 import { SharedNewSections } from '../shared';
+import { parseSectionStyles, resolveSectionBackground } from '@/lib/theme-engine';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -161,7 +162,7 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
             <TemplateSectionDivider template="classic" motifColor={motifColor} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <TemplateSectionDivider template="classic" motifColor={motifColor} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} sectionStyles={wedding.section_styles} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
@@ -227,7 +228,7 @@ export function ClassicV2({ wedding, gallery, isExpired }: TemplateProps) {
 
             {/* Story-First Section Flow */}
             <BioSection id="bio" wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="carousel" />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="carousel" sectionStyles={wedding.section_styles} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle="v2" />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
@@ -336,7 +337,7 @@ export function ClassicV3({ wedding, gallery, isExpired }: TemplateProps) {
             <TemplateSectionDivider motifColor={motifColor} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle="v3" />
             <TemplateSectionDivider motifColor={motifColor} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="polaroid" />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="polaroid" sectionStyles={wedding.section_styles} />
             <TemplateSectionDivider motifColor={motifColor} />
             <AttireSection wedding={wedding} />
             <FAQSection wedding={wedding} />

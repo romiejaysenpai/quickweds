@@ -3,7 +3,7 @@ import { expenseSummary } from '@/lib/expense-summary';
 
 import { useState, useEffect, use, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode, ExternalLink, BookOpen, Package } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode, ExternalLink, BookOpen, Package, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -183,14 +183,14 @@ function getVendorPaymentStatusClasses(status?: string | null) {
     const normalized = normalizeVendorPaymentStatus(status);
 
     if (normalized === 'paid') {
-        return 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-emerald-900/5 focus:ring-emerald-500/20 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300';
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-emerald-900/5 focus:ring-emerald-500/20';
     }
 
     if (normalized === 'pending') {
-        return 'border-amber-200 bg-amber-50 text-amber-700 shadow-amber-900/5 focus:ring-amber-500/20 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-300';
+        return 'border-amber-200 bg-amber-50 text-amber-700 shadow-amber-900/5 focus:ring-amber-500/20';
     }
 
-    return 'border-border bg-neutral text-text-secondary shadow-primary/5 focus:ring-primary/20 dark:bg-white/5';
+    return 'border-border bg-neutral text-text-secondary shadow-primary/5 focus:ring-primary/20';
 }
 
 function VendorPaymentStatusSelect({
@@ -543,12 +543,12 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
         >
             <div className="min-h-screen bg-background">
                 {/* Top Navigation Bar with Breadcrumbs */}
-                <div className="bg-white/85 dark:bg-white/90 backdrop-blur-md border-b border-border sticky top-0 z-40">
+                <div className="bg-white/85 backdrop-blur-md border-b border-border sticky top-0 z-40">
                     <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                             <button
                                 onClick={() => router.push(`/dashboard/${weddingId}`)}
-                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 border border-border/80"
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl hover:bg-neutral flex items-center justify-center transition-colors flex-shrink-0 border border-border/80"
                                 title="Back to Workspace"
                             >
                                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
@@ -1308,7 +1308,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
     const allChecklistSections = [...CHECKLIST_SECTIONS, ...templateSections];
 
     return (
-        <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 md:p-10 soft-shadow border border-border">
+        <div className="bg-white rounded-2xl sm:rounded-[2.5rem] p-5 md:p-10 soft-shadow border border-border">
             <div className="flex flex-col gap-4 border-b border-border/50 pb-6 mb-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">Planner Checklist</h2>
@@ -1422,8 +1422,37 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                                                 ) : (
                                                     <>
                                                         <div className="flex min-w-0 items-start gap-3">
-                                                            <p className={`min-w-0 break-words font-serif text-base font-bold leading-snug ${prepared ? 'text-text-secondary line-through' : 'text-foreground'}`}>{task.title}</p>
+                                                            <p className={`min-w-0 break-words font-serif text-base font-bold leading-snug ${prepared ? 'text-text-secondary line-through' : 'text-foreground'}`}>
+                                                                {task.title}
+                                                                {task.quantity && Number(task.quantity) > 1 ? (
+                                                                    <span className="ml-1.5 text-xs font-normal text-text-secondary">× {task.quantity}</span>
+                                                                ) : null}
+                                                            </p>
                                                         </div>
+                                                        {(task.not_included || task.is_optional || task.responsible_person || task.location) ? (
+                                                            <div className="mt-1 flex flex-wrap gap-1.5">
+                                                                {task.not_included ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-amber-700">
+                                                                        Not in box
+                                                                    </span>
+                                                                ) : null}
+                                                                {task.is_optional ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-accent">
+                                                                        Optional
+                                                                    </span>
+                                                                ) : null}
+                                                                {task.responsible_person && task.responsible_person !== task.assigned_to ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">
+                                                                        <UserRound className="h-3 w-3" /> {task.responsible_person}
+                                                                    </span>
+                                                                ) : null}
+                                                                {task.location && task.location !== task.section ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-neutral/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-text-secondary">
+                                                                        {task.location}
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                        ) : null}
                                                         <p className="mt-1 break-words text-xs leading-5 text-text-secondary">
                                                             {[task.assigned_to, task.due_date ? new Date(task.due_date).toLocaleDateString() : null, linkedVendor?.name || task.custom_supplier_name].filter(Boolean).join(' - ') || 'No details yet'}
                                                         </p>

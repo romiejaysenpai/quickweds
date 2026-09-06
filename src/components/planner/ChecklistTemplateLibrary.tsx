@@ -79,6 +79,11 @@ function ModalFrame({ onClose, title, subtitle, children, maxWidth = 'max-w-2xl'
 function ItemBadges({ item }: { item: ChecklistTemplateItem }) {
     return (
         <span className="mt-1 flex flex-wrap gap-1.5">
+            {item.already_in_checklist ? (
+                <Pill tone="emerald">
+                    <CheckCircle2 className="h-3 w-3" /> Already in checklist
+                </Pill>
+            ) : null}
             {item.not_included ? <Pill tone="amber">Not included in the box</Pill> : null}
             {item.is_optional ? <Pill tone="gold">Optional</Pill> : null}
             {item.assigned_person ? <Pill tone="rose"><UserRound className="h-3 w-3" /> {item.assigned_person}</Pill> : null}
@@ -131,11 +136,12 @@ export function ChecklistTemplateLibrary({ weddingId, wedding, onAdded }: {
     const [addStep, setAddStep] = useState<AddStep>('configure');
     const [adding, setAdding] = useState(false);
     const [addError, setAddError] = useState('');
-    const [lastResult, setLastResult] = useState<{ createdIds: string[]; count: number; name: string } | null>(null);
+    const [lastResult, setLastResult] = useState<{ createdIds: string[]; count: number; name: string; skippedCount?: number; message?: string } | null>(null);
     const [undoing, setUndoing] = useState(false);
     const [undoMessage, setUndoMessage] = useState('');
 
     const load = useCallback(async (showSpinner = false) => {
+        if (!weddingId || !weddingId.trim()) return;
         if (showSpinner) setLoading(true);
         setError('');
         try {
@@ -153,6 +159,7 @@ export function ChecklistTemplateLibrary({ weddingId, wedding, onAdded }: {
     }, [load]);
 
     const openPreview = useCallback(async (templateId: string) => {
+        if (!weddingId || !templateId) return;
         setPreview(null);
         setPreviewError('');
         setPreviewLoading(true);
@@ -167,6 +174,7 @@ export function ChecklistTemplateLibrary({ weddingId, wedding, onAdded }: {
     }, [weddingId]);
 
     const startAdd = useCallback(async (templateId: string) => {
+        if (!weddingId || !templateId) return;
         setAddTemplate(null);
         setAddPreview(null);
         setAddError('');
@@ -185,6 +193,12 @@ export function ChecklistTemplateLibrary({ weddingId, wedding, onAdded }: {
             setAddTemplate(data.template);
             setAddPreview(data);
             setChecklistName(data.template.name);
+            // Default selectedItemIds to only items that are NOT already in the checklist
+            const missingIds = data.sections
+                .flatMap((s) => s.items)
+                .filter((item) => !item.already_in_checklist)
+                .map((item) => item.id);
+            setSelectedItemIds(missingIds);
         } catch (err) {
             setAddError(err instanceof Error ? err.message : 'Unable to open this template.');
         } finally {
@@ -255,6 +269,8 @@ const allItems = useMemo(() => (addPreview?.sections || []).flatMap((section) =>
                 createdIds: result.createdIds,
                 count: result.addedCount,
                 name: checklistName.trim() || addTemplate.name,
+                skippedCount: result.skippedDuplicates || 0,
+                message: result.message,
             });
             setAddStep('success');
             if (onAdded) await onAdded();
@@ -271,7 +287,7 @@ const allItems = useMemo(() => (addPreview?.sections || []).flatMap((section) =>
     };
 
     const handleUndo = async () => {
-        if (!lastResult || undoing) return;
+        if (!lastResult || undoing || lastResult.createdIds.length === 0) return;
         setUndoing(true);
         setUndoMessage('');
         try {
@@ -372,7 +388,7 @@ const renderAddModal = () => {
         return (
             <ModalFrame
                 onClose={clearAdd}
-                title={isSuccessStep ? 'Template added' : `Add ${addTemplate.name}`}
+                title={isSuccessStep ? (lastResult && lastResult.count === 0 ? 'Checklist up to date' : 'Template added') : `Add ${addTemplate.name}`}
                 subtitle={isSuccessStep ? undefined : 'Choose what to copy into your wedding checklist.'}
             >
                 {isSuccessStep && lastResult ? (
@@ -381,21 +397,25 @@ const renderAddModal = () => {
                             <CheckCircle2 className="h-7 w-7" />
                         </div>
                         <h4 className="mt-4 font-serif text-xl font-bold text-foreground">
-                            Added {lastResult.count} item{lastResult.count === 1 ? '' : 's'}
+                            {lastResult.count === 0 ? 'No duplicate items added' : `Added ${lastResult.count} new item${lastResult.count === 1 ? '' : 's'}`}
                         </h4>
                         <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-text-secondary">
-                            “{lastResult.name}” is now part of your wedding checklist. You can edit, assign, or remove each item freely.
+                            {lastResult.message || (lastResult.count === 0
+                                ? `All items from “${lastResult.name}” are already in your checklist. Duplicates were prevented.`
+                                : `“${lastResult.name}” is now part of your wedding checklist. Existing items were not duplicated.`)}
                         </p>
                         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                            <button
-                                type="button"
-                                onClick={() => void handleUndo()}
-                                disabled={undoing}
-                                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-5 py-2 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary disabled:opacity-50"
-                            >
-                                <Undo2 className="h-4 w-4" />
-                                {undoing ? 'Removing…' : 'Undo add'}
-                            </button>
+                            {lastResult.createdIds.length > 0 ? (
+                                <button
+                                    type="button"
+                                    onClick={() => void handleUndo()}
+                                    disabled={undoing}
+                                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-5 py-2 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary disabled:opacity-50"
+                                >
+                                    <Undo2 className="h-4 w-4" />
+                                    {undoing ? 'Removing…' : 'Undo add'}
+                                </button>
+                            ) : null}
                             <button
                                 type="button"
                                 onClick={clearAdd}
@@ -410,9 +430,9 @@ const renderAddModal = () => {
                         <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
                             <AlertTriangle className="mt-0.5 h-5 w-5 flex-none text-amber-600" />
                             <div>
-                                <p className="text-sm font-bold text-amber-800">This template was already added to your checklist</p>
+                                <p className="text-sm font-bold text-amber-800">Template items already in checklist</p>
                                 <p className="mt-1 text-xs leading-5 text-amber-700">
-                                    Adding it again will copy the same items one more time. Add again intentionally if you really need duplicate rows, or skip to avoid duplicates.
+                                    To ensure items are not duplicated, QuickWeds will skip any items already in your checklist and only add missing ones.
                                 </p>
                             </div>
                         </div>
@@ -423,7 +443,7 @@ const renderAddModal = () => {
                                 onClick={clearAdd}
                                 className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-border bg-white px-5 py-2 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary"
                             >
-                                Skip
+                                Cancel
                             </button>
                             <button
                                 type="button"
@@ -432,7 +452,7 @@ const renderAddModal = () => {
                                 className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover disabled:opacity-50"
                             >
                                 <PackagePlus className="h-4 w-4" />
-                                {adding ? 'Adding…' : 'Add again anyway'}
+                                {adding ? 'Checking…' : 'Add missing items only'}
                             </button>
                         </div>
                     </div>
@@ -496,7 +516,14 @@ const renderAddModal = () => {
                                                                 onChange={() => toggleItem(item)}
                                                                 className="h-4 w-4 accent-[var(--primary)]"
                                                             />
-                                                            <span className="min-w-0">{item.title}{item.is_optional ? ' (optional)' : ''}</span>
+                                                            <span className="min-w-0 flex items-center gap-2">
+                                                                <span>{item.title}{item.is_optional ? ' (optional)' : ''}</span>
+                                                                {item.already_in_checklist ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                                                                        <CheckCircle2 className="h-2.5 w-2.5" /> In checklist
+                                                                    </span>
+                                                                ) : null}
+                                                            </span>
                                                         </label>
                                                     </li>
                                                 ))}

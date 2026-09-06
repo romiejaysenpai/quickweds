@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import type { Wedding } from '@/types/wedding';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
-import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getSectionTitleStyle, getTemplateVisualProfile, parseSectionStyles, resolveSectionBackground } from '@/lib/theme-engine';
 import { copyToClipboard } from '@/lib/client-clipboard';
 
 interface GiftSectionProps {
@@ -49,8 +49,12 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
     const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
     const isVintage = ['vintage', 'rustic', 'boho', 'film'].includes(template);
 
-    const labelClass = visual.isDark ? 'text-white/72' : 'text-[#4A4444]/68';
-    const mutedTextClass = visual.isDark ? 'text-white/72' : 'text-[#4A4444]/68';
+    const sectionStylesMap = parseSectionStyles(wedding.section_styles);
+    const customBg = resolveSectionBackground(sectionStylesMap[id] || sectionStylesMap['gift']);
+    const isDark = customBg.hasCustomBackground ? customBg.isDark : visual.isDark;
+
+    const labelClass = isDark ? 'text-white/72' : 'text-[#4A4444]/68';
+    const mutedTextClass = isDark ? 'text-white/72' : 'text-[#4A4444]/68';
     const cardClass = isSharp
         ? visual.cardClass
         : isVintage
@@ -58,7 +62,12 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
             : visual.cardClass;
 
     return (
-        <section id={id} className={`py-24 md:py-40 relative z-10 overflow-hidden ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section
+            id={id}
+            className={`py-24 md:py-40 relative z-10 overflow-hidden ${customBg.hasCustomBackground ? '' : visual.sectionClass} ${customBg.textColorClass || ''}`}
+            style={customBg.hasCustomBackground ? customBg.style : visual.sectionStyle}
+        >
+            {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
             {/* Background Decoration */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
 

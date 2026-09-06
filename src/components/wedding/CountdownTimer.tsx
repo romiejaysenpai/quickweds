@@ -5,7 +5,8 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarHeart, MapPin, Sparkles, Clock } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
-import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getTemplateVisualProfile, parseSectionStyles, resolveSectionBackground } from '@/lib/theme-engine';
+import type { SectionStylesMap } from '@/types/wedding';
 
 const subscribeToClient = () => () => {};
 const getClientSnapshot = () => true;
@@ -25,6 +26,7 @@ interface CountdownTimerProps {
     motifColor?: string;
     cardStyle?: string;
     invert?: boolean;
+    sectionStyles?: SectionStylesMap | string;
 }
 
 function generateICS(props: CountdownTimerProps): string {
@@ -90,6 +92,7 @@ export default function CountdownTimer({
     motifColor = '#D16C78',
     cardStyle,
     invert = false,
+    sectionStyles,
 }: CountdownTimerProps) {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
     const [isPast, setIsPast] = useState(false);
@@ -144,8 +147,10 @@ export default function CountdownTimer({
 
     const visual = getTemplateVisualProfile(template, motifColor, invert, cardStyle);
     const isEditorial = visual.mood === 'editorial';
-    const isDark = visual.isDark;
-    const sectionClasses = `${visual.sectionClass} ${className}`;
+    const sectionStylesMap = parseSectionStyles(sectionStyles);
+    const customBg = resolveSectionBackground(sectionStylesMap[id] || sectionStylesMap['countdown']);
+    const isDark = customBg.hasCustomBackground ? customBg.isDark : visual.isDark;
+    const sectionClasses = `${customBg.hasCustomBackground ? '' : visual.sectionClass} ${customBg.textColorClass || ''} ${className}`;
     const panelClass = visual.cardClass;
     const detailIconClass = isDark
         ? 'border-primary/25 bg-primary/10 text-primary'
@@ -159,7 +164,11 @@ export default function CountdownTimer({
 
     if (isPast) {
         return (
-            <section className={`py-8 sm:py-12 px-4 sm:px-6 w-full ${sectionClasses} flex justify-center`} style={visual.sectionStyle}>
+            <section
+                className={`py-8 sm:py-12 px-4 sm:px-6 w-full ${sectionClasses} flex justify-center relative overflow-hidden`}
+                style={customBg.hasCustomBackground ? customBg.style : visual.sectionStyle}
+            >
+                {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
@@ -185,7 +194,11 @@ export default function CountdownTimer({
     const targetDateObj = parseWeddingTargetDate(weddingDate, weddingTime);
 
     return (
-        <section className={`py-12 sm:py-16 md:py-24 px-4 sm:px-6 w-full flex justify-center ${sectionClasses}`} style={visual.sectionStyle}>
+        <section
+            className={`py-12 sm:py-16 md:py-24 px-4 sm:px-6 w-full flex justify-center relative overflow-hidden ${sectionClasses}`}
+            style={customBg.hasCustomBackground ? customBg.style : visual.sectionStyle}
+        >
+            {customBg.overlayStyle && <div style={customBg.overlayStyle} />}
             <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}

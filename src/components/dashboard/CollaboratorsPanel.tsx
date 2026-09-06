@@ -148,12 +148,12 @@ export default function CollaboratorsPanel({
                             placeholder="partner@example.com"
                             value={inviteEmail}
                             onChange={(e) => setInviteEmail(e.target.value)}
-                            className="h-12 min-w-0 rounded-xl border border-border bg-neutral px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 dark:bg-neutral/40"
+                            className="h-12 min-w-0 rounded-xl border border-border bg-neutral px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
                         />
                         <select
                             value={inviteRole}
                             onChange={(e) => setInviteRole(e.target.value as CollaboratorRole)}
-                            className="h-12 min-w-0 rounded-xl border border-border bg-neutral px-4 text-sm font-bold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 dark:bg-neutral/40"
+                            className="h-12 min-w-0 rounded-xl border border-border bg-neutral px-4 text-sm font-bold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
                         >
                             <option value="partner">Partner</option>
                             <option value="coordinator">Coordinator</option>
@@ -187,7 +187,7 @@ export default function CollaboratorsPanel({
                         const isOwnInvite = collaborator.email.toLowerCase() === (currentUserEmail || '').toLowerCase();
 
                         return (
-                            <div key={collaborator.id} className="grid grid-cols-1 items-center gap-3 rounded-2xl border border-border bg-neutral/40 p-4 dark:bg-neutral/30 md:grid-cols-[minmax(0,1fr)_auto]">
+                            <div key={collaborator.id} className="grid grid-cols-1 items-center gap-3 rounded-2xl border border-border bg-neutral/40 p-4 md:grid-cols-[minmax(0,1fr)_auto]">
                                 <div className="min-w-0">
                                     <p className="truncate text-sm font-bold text-foreground" title={collaborator.email}>{collaborator.email}</p>
                                     <p className="text-[10px] uppercase tracking-widest font-black text-text-secondary/60">

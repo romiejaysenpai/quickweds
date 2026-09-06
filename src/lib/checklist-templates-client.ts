@@ -37,7 +37,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     };
 }
 
-function normalizeErrorCode(status: number, body: Record<string, any>): ChecklistTemplateListErrorCode {
+function normalizeErrorCode(status: number, body: Record<string, unknown>): ChecklistTemplateListErrorCode {
     if (status === 401) return 'unauthorized';
     if (status === 403) return 'wedding_access_denied';
     if (status === 404) return 'wedding_not_found';
@@ -104,5 +104,8 @@ export async function addChecklistTemplate(
         alreadyAdded: Boolean(body?.alreadyAdded),
         createdIds: Array.isArray(body?.createdIds) ? body.createdIds : [],
         tasks: Array.isArray(body?.tasks) ? body.tasks : [],
+        skippedDuplicates: Number(body?.skippedDuplicates || 0),
+        message: typeof body?.message === 'string' ? body.message : undefined,
+        allAlreadyAdded: Boolean(body?.allAlreadyAdded),
     };
 }

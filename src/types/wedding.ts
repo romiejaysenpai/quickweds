@@ -30,6 +30,7 @@ export interface Wedding {
     template_style?: string;
     card_style?: string;
     background_style?: string;
+    section_styles?: SectionStylesMap | string;
     section_title_font_style?: string;
     section_title_color_style?: string;
     font_style: string;
@@ -188,3 +189,19 @@ export interface SectionProps {
     wedding: Wedding;
     invert?: boolean;
 }
+
+export type SectionBackgroundMode = 'default' | 'color' | 'gradient' | 'texture' | 'image';
+export type SectionTextureType = 'grain' | 'linen' | 'washi' | 'vignette' | 'dots';
+
+export interface SectionStyleConfig {
+    mode?: SectionBackgroundMode;
+    color?: string;
+    gradient?: string;
+    texture?: SectionTextureType;
+    imageUrl?: string;
+    overlayOpacity?: number; // 0 - 80 percent
+    overlayTheme?: 'dark' | 'light';
+    textColorMode?: 'auto' | 'dark' | 'light';
+}
+
+export type SectionStylesMap = Record<string, SectionStyleConfig>;
