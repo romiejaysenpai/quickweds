@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Download, Bell, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { isNativeCapacitorApp } from '@/lib/capacitor';
+import { clearPwaAutoRecoveryGuard } from '@/lib/pwa-recovery';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -64,6 +65,7 @@ export default function PWAInstaller() {
     void navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .then((registration) => registration.update())
       .catch(() => undefined);
+    const recoveryGuardTimer = window.setTimeout(clearPwaAutoRecoveryGuard, 10_000);
     window.setTimeout(() => {
       setIsStandalone(isStandaloneDisplay());
       setNotificationReady('Notification' in window && 'PushManager' in window);
@@ -88,6 +90,7 @@ export default function PWAInstaller() {
     window.addEventListener('appinstalled', onAppInstalled);
 
     return () => {
+      window.clearTimeout(recoveryGuardTimer);
       navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
       window.removeEventListener('appinstalled', onAppInstalled);
