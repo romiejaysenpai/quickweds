@@ -3,17 +3,40 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import * as Sentry from '@sentry/nextjs';
 
 export default function GlobalError({
     error,
-    reset,
 }: {
     error: Error & { digest?: string };
     reset: () => void;
 }) {
     useEffect(() => {
         console.error('Global app error:', error);
+        Sentry.captureException(error);
     }, [error]);
+
+    const reloadApp = async () => {
+        try {
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.getRegistration('/');
+                await registration?.update();
+            }
+
+            if ('caches' in window) {
+                const cacheKeys = await window.caches.keys();
+                await Promise.all(
+                    cacheKeys
+                        .filter((key) => key.startsWith('quickweds-pwa-'))
+                        .map((key) => window.caches.delete(key)),
+                );
+            }
+        } catch {
+            // Reloading still gives the browser a chance to recover without PWA cleanup.
+        } finally {
+            window.location.reload();
+        }
+    };
 
     return (
         <html lang="en">
@@ -30,11 +53,11 @@ export default function GlobalError({
                         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                             <button
                                 type="button"
-                                onClick={reset}
+                                onClick={() => void reloadApp()}
                                 className="inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700"
                             >
                                 <RefreshCw className="h-4 w-4" />
-                                Retry
+                                Reload app
                             </button>
                             <Link
                                 href="/"

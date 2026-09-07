@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'quickweds-pwa-v4';
+const CACHE_VERSION = 'quickweds-pwa-v5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
@@ -40,11 +40,10 @@ function isDeniedRequest(url, request) {
 }
 
 function isStaticAsset(url, request) {
-  if (url.pathname.startsWith('/_next/static/')) return true;
   if (url.pathname.startsWith('/icons/')) return true;
   if (url.pathname.startsWith('/templates/')) return true;
   if (url.pathname.startsWith('/textures/')) return true;
-  if (request.destination === 'font' || request.destination === 'style' || request.destination === 'script') return true;
+  if (request.destination === 'font') return true;
   return false;
 }
 
@@ -125,8 +124,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Next.js filenames are deployment-specific. Let the browser fetch scripts and
+  // styles directly so an installed app cannot reuse an incompatible old bundle.
   if (url.pathname.startsWith('/_next/static/') || request.destination === 'script' || request.destination === 'style') {
-    event.respondWith(staleWhileRevalidate(request));
     return;
   }
 

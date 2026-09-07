@@ -36,7 +36,8 @@ test.describe('response headers', () => {
   test('keeps service worker and manifest revalidation friendly', async ({ request }) => {
     const serviceWorker = await request.get('/sw.js');
     expect(serviceWorker.status()).toBe(200);
-    expect(serviceWorker.headers()['cache-control']).toContain('max-age=0');
+    expect(serviceWorker.headers()['cache-control']).toContain('no-store');
+    expect(serviceWorker.headers()['content-type']).toContain('application/javascript');
 
     const manifest = await request.get('/manifest.webmanifest');
     expect(manifest.status()).toBe(200);

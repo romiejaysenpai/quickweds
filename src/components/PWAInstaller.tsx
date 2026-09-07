@@ -52,7 +52,18 @@ export default function PWAInstaller() {
       return;
     }
 
-    void navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => undefined);
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    let refreshingForUpdate = false;
+    const onControllerChange = () => {
+      if (!hadController || refreshingForUpdate) return;
+      refreshingForUpdate = true;
+      window.location.reload();
+    };
+
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+    void navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then((registration) => registration.update())
+      .catch(() => undefined);
     window.setTimeout(() => {
       setIsStandalone(isStandaloneDisplay());
       setNotificationReady('Notification' in window && 'PushManager' in window);
@@ -77,6 +88,7 @@ export default function PWAInstaller() {
     window.addEventListener('appinstalled', onAppInstalled);
 
     return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
       window.removeEventListener('appinstalled', onAppInstalled);
     };
