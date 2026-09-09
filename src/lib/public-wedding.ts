@@ -30,6 +30,7 @@ export const PUBLIC_WEDDING_FIELDS = [
     'template',
     'template_style',
     'card_style',
+    'background_style',
     'section_title_font_style',
     'section_title_color_style',
     'font_style',
@@ -92,14 +93,9 @@ function normalizeWeddingParty(value: unknown) {
     return parsePartyValue(value)
         .filter((member): member is Record<string, unknown> => Boolean(member) && typeof member === 'object')
         .map((member) => ({
-            memberKey: typeof member.memberKey === 'string' ? member.memberKey.trim() : '',
-            id: typeof member.id === 'string' ? member.id.trim() : '',
             name: String(member.name || '').trim(),
             role: String(member.role || '').trim(),
             bio: typeof member.bio === 'string' ? member.bio.trim() : '',
-            email: typeof member.email === 'string' ? member.email.trim() : '',
-            proposalTemplateKey: typeof member.proposalTemplateKey === 'string' ? member.proposalTemplateKey : undefined,
-            proposalMessage: typeof member.proposalMessage === 'string' ? member.proposalMessage.trim() : '',
             photo: typeof member.photo === 'string' ? member.photo.trim() : '',
         }))
         .filter((member) => member.name.length > 0);
@@ -154,7 +150,8 @@ export function getSupabaseErrorMessage(error: unknown) {
 }
 
 function publicWeddingCacheKey(rawIdentifier: string) {
-    return `quickweds:wedding:public:${rawIdentifier}`;
+    // Versioned so privacy/schema changes never reuse an older serialized payload.
+    return `quickweds:wedding:public:v2:${rawIdentifier}`;
 }
 
 function isMissingOptionalColumnError(error: unknown, columns: readonly string[]) {
@@ -298,11 +295,11 @@ export async function invalidateWeddingPublicCache(...identifiers: Array<string 
         .map((identifier) => publicWeddingCacheKey(identifier.trim()));
 
     await redisDel(...keys);
-    revalidateTag('public-wedding', 'max');
+    revalidateTag('public-wedding-v2', 'max');
 }
 
 export const getCachedPublicWedding = unstable_cache(
     async (rawIdentifier: string) => loadPublicWedding(rawIdentifier),
-    ['public-wedding'],
-    { revalidate: 60, tags: ['public-wedding'] }
+    ['public-wedding-v2'],
+    { revalidate: 60, tags: ['public-wedding-v2'] }
 );

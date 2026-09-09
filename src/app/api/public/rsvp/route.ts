@@ -70,19 +70,57 @@ export async function POST(req: NextRequest) {
         if (weddingError) throw weddingError;
         if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
 
+        if (wedding.rsvp_deadline) {
+            const rawDeadline = String(wedding.rsvp_deadline);
+            const deadline = /^\d{4}-\d{2}-\d{2}$/.test(rawDeadline)
+                ? new Date(`${rawDeadline}T23:59:59.999Z`)
+                : new Date(rawDeadline);
+            if (!Number.isNaN(deadline.getTime()) && deadline.getTime() < Date.now()) {
+                return NextResponse.json({ error: 'The RSVP deadline has passed.' }, { status: 410 });
+            }
+        }
+
         const { data: existing, error: duplicateError } = await db
             .from('rsvps')
-            .select('id')
+            .select('id, guest_email, rsvp_status, attendance, manual_entry, num_guests, plus_one_allowed')
             .eq('wedding_id', weddingId)
             .ilike('guest_name', guestName)
-            .limit(1);
+            .limit(3);
 
         if (duplicateError) throw duplicateError;
-        if (existing?.length) {
+        const exactEmailMatch = guestEmail
+            ? existing?.find((row: { guest_email?: string | null }) => row.guest_email?.toLowerCase() === guestEmail.toLowerCase())
+            : null;
+        const soleNameMatch = existing?.length === 1
+            && (!existing[0].guest_email || existing[0].guest_email.toLowerCase() === guestEmail?.toLowerCase())
+            ? existing[0]
+            : null;
+        const invitedMatch = exactEmailMatch || soleNameMatch;
+        const isPendingInvitation = invitedMatch && (
+            invitedMatch.manual_entry === true
+            && (!invitedMatch.attendance || invitedMatch.rsvp_status === 'pending')
+        );
+
+        if (existing?.length && !invitedMatch) {
+            return NextResponse.json({
+                error: 'More than one guest has this name. Please use the email address on your invitation or contact the couple.',
+                code: 'ambiguous_guest',
+            }, { status: 409 });
+        }
+        if (invitedMatch && !isPendingInvitation) {
             return NextResponse.json({
                 error: "You have already RSVP'd for this wedding. If you need to make changes, please contact the couple directly.",
                 code: 'duplicate_rsvp',
             }, { status: 409 });
+        }
+
+        const requestedPartySize = parsed.data.numGuests || 1;
+        const invitedPartySize = isPendingInvitation ? Math.max(1, Number(invitedMatch.num_guests || 1)) : requestedPartySize;
+        if (isPendingInvitation && requestedPartySize > invitedPartySize) {
+            return NextResponse.json({
+                error: `This invitation allows up to ${invitedPartySize} guest${invitedPartySize === 1 ? '' : 's'}.`,
+                code: 'party_size_exceeded',
+            }, { status: 400 });
         }
 
         const insertData: Record<string, unknown> = {
@@ -90,9 +128,9 @@ export async function POST(req: NextRequest) {
             guest_name: guestName,
             guest_email: guestEmail || null,
             attendance: parsed.data.attendance,
-            num_guests: parsed.data.numGuests || 1,
-            rsvp_status: parsed.data.attendance === 'Yes' ? 'confirmed' : 'declined',
-            plus_one_allowed: parsed.data.numGuests > 1 || Boolean(plusOneNames),
+            num_guests: requestedPartySize,
+            rsvp_status: parsed.data.attendance === 'Yes' ? 'confirmed' : parsed.data.attendance === 'No' ? 'declined' : 'pending',
+            plus_one_allowed: isPendingInvitation ? Boolean(invitedMatch.plus_one_allowed) : requestedPartySize > 1 || Boolean(plusOneNames),
         };
 
         if (parsed.data.attendance === 'Yes') {
@@ -126,18 +164,20 @@ export async function POST(req: NextRequest) {
         const eventResponses = parsed.data.eventResponses.filter((response) => allowedEventIds.has(response.eventId));
         if (eventResponses.length > 0) insertData.event_responses = eventResponses;
 
-        let { data: rsvp, error: insertError } = await db
-            .from('rsvps')
-            .insert(insertData)
-            .select('id')
-            .single();
+        const saveQuery = isPendingInvitation
+            ? db.from('rsvps').update(insertData).eq('id', invitedMatch.id).eq('wedding_id', weddingId)
+            : db.from('rsvps').insert(insertData);
+        let { data: rsvp, error: insertError } = await saveQuery.select('id').single();
 
         if (insertError && ['household_name', 'household_members', 'event_responses'].some((column) => String(insertError.message || '').includes(column))) {
             const compatibleInsert = { ...insertData };
             delete compatibleInsert.household_name;
             delete compatibleInsert.household_members;
             delete compatibleInsert.event_responses;
-            const fallbackInsert = await db.from('rsvps').insert(compatibleInsert).select('id').single();
+            const fallbackQuery = isPendingInvitation
+                ? db.from('rsvps').update(compatibleInsert).eq('id', invitedMatch.id).eq('wedding_id', weddingId)
+                : db.from('rsvps').insert(compatibleInsert);
+            const fallbackInsert = await fallbackQuery.select('id').single();
             rsvp = fallbackInsert.data;
             insertError = fallbackInsert.error;
         }
@@ -151,7 +191,7 @@ export async function POST(req: NextRequest) {
             guestName,
             guestEmail,
             attendance: parsed.data.attendance,
-            numGuests: parsed.data.numGuests || 1,
+            numGuests: requestedPartySize,
             message,
             dietaryDetails,
             songRequest,

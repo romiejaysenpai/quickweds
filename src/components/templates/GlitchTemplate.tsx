@@ -48,11 +48,11 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: any) {
 
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                         <div className="border border-emerald-400/40 bg-black/60 p-4 rounded shadow-[0_0_15px_rgba(52,211,153,0.15)]">
-                            <p className="opacity-50 text-[10px] mb-1">// TIMESTAMP</p>
+                            <p className="opacity-50 text-[10px] mb-1">{'// TIMESTAMP'}</p>
                             <p className="text-sm font-bold text-emerald-200">{formattedDate}</p>
                         </div>
                         <div className="border border-emerald-400/40 bg-black/60 p-4 rounded shadow-[0_0_15px_rgba(52,211,153,0.15)]">
-                            <p className="opacity-50 text-[10px] mb-1">// COORDINATES</p>
+                            <p className="opacity-50 text-[10px] mb-1">{'// COORDINATES'}</p>
                             <p className="text-sm font-bold text-emerald-200">{wedding.venue_name}</p>
                         </div>
                     </div>

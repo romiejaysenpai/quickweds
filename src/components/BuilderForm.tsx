@@ -480,6 +480,7 @@ export default function BuilderForm() {
     const [loadedEditId, setLoadedEditId] = useState<string | null>(null);
     const weddingLoadRef = useRef<{ id: string; requestId: number } | null>(null);
     const weddingLoadRequestIdRef = useRef(0);
+    const draftRestoredRef = useRef(false);
 
     // Scroll to top of the page when the step changes
     useEffect(() => {
@@ -685,7 +686,17 @@ export default function BuilderForm() {
                     console.warn('Could not restore pending wedding data:', e);
                     window.sessionStorage.removeItem('pending_wedding_data');
                 }
+            } else if (!draftRestoredRef.current) {
+                const savedDraft = window.localStorage.getItem(`quickweds_builder_draft:${userId}`);
+                if (savedDraft) {
+                    try {
+                        initializeFormData({ ...INITIAL_FORM_DATA, ...JSON.parse(savedDraft) });
+                    } catch {
+                        window.localStorage.removeItem(`quickweds_builder_draft:${userId}`);
+                    }
+                }
             }
+            draftRestoredRef.current = true;
         }
 
         if (userId && editId && loadedEditId !== editId && weddingLoadRef.current?.id !== editId) {
@@ -810,6 +821,14 @@ export default function BuilderForm() {
             void fetchWedding();
         }
     }, [userId, authLoading, router, editId, loadedEditId, initializeFormData]);
+
+    useEffect(() => {
+        if (!userId || editId || !draftRestoredRef.current || typeof window === 'undefined') return;
+        const timer = window.setTimeout(() => {
+            window.localStorage.setItem(`quickweds_builder_draft:${userId}`, JSON.stringify(formData));
+        }, 750);
+        return () => window.clearTimeout(timer);
+    }, [formData, userId, editId]);
 
     useEffect(() => {
         if (!user) {
@@ -1112,19 +1131,31 @@ export default function BuilderForm() {
 
     const removeFile = (field: string, index?: number) => {
         if (field === 'galleryImages' && index !== undefined) {
-            setMediaFiles(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }));
+            const removedUrl = previews.galleryImages[index];
+            const localIndex = previews.galleryImages.slice(0, index).filter((url) => url.startsWith('blob:')).length;
+            if (removedUrl?.startsWith('blob:')) {
+                setMediaFiles(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== localIndex) }));
+            }
             setPreviews(prev => {
                 releaseLocalPreview(prev.galleryImages[index]);
                 return { ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) };
             });
         } else if (field === 'invitationImages' && index !== undefined) {
-            setMediaFiles(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) }));
+            const removedUrl = previews.invitationImages[index];
+            const localIndex = previews.invitationImages.slice(0, index).filter((url) => url.startsWith('blob:')).length;
+            if (removedUrl?.startsWith('blob:')) {
+                setMediaFiles(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== localIndex) }));
+            }
             setPreviews(prev => {
                 releaseLocalPreview(prev.invitationImages[index]);
                 return { ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) };
             });
         } else if (field === 'receptionVenuePhotos' && index !== undefined) {
-            setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) }));
+            const removedUrl = previews.receptionVenuePhotos[index];
+            const localIndex = previews.receptionVenuePhotos.slice(0, index).filter((url) => url.startsWith('blob:')).length;
+            if (removedUrl?.startsWith('blob:')) {
+                setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== localIndex) }));
+            }
             setPreviews(prev => {
                 releaseLocalPreview(prev.receptionVenuePhotos[index]);
                 return { ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) };
@@ -1317,11 +1348,14 @@ export default function BuilderForm() {
             if (mediaFiles.giftQr || editId) payload.gift_qr_image = giftQrUrl || previews.giftQr;
             
             // Handle invitation images: merge new uploads with existing previews if editing
-            const finalInvitationImages = invitationUrls.length > 0 ? invitationUrls : previews.invitationImages;
+            const persistedInvitationImages = previews.invitationImages.filter((url) => !url.startsWith('blob:'));
+            const finalInvitationImages = [...persistedInvitationImages, ...invitationUrls];
             payload.invitation_image = JSON.stringify(finalInvitationImages);
-            
-            if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
-            if (mediaFiles.receptionVenuePhotos.length > 0 || editId) payload.reception_venue_photos = receptionVenueUrls.length > 0 ? receptionVenueUrls : previews.receptionVenuePhotos;
+
+            const persistedGalleryImages = previews.galleryImages.filter((url) => !url.startsWith('blob:'));
+            const persistedReceptionPhotos = previews.receptionVenuePhotos.filter((url) => !url.startsWith('blob:'));
+            if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = [...persistedGalleryImages, ...galleryUrls];
+            if (mediaFiles.receptionVenuePhotos.length > 0 || editId) payload.reception_venue_photos = [...persistedReceptionPhotos, ...receptionVenueUrls];
 
             const publicSlug = await resolvePublicSlug(weddingId);
             const baseSubmitPayload: any = {
@@ -1395,6 +1429,9 @@ export default function BuilderForm() {
 
             if (submitError) throw submitError;
             if (submitPayload.public_slug) setExistingPublicSlug(submitPayload.public_slug);
+            if (!editId && typeof window !== 'undefined') {
+                window.localStorage.removeItem(`quickweds_builder_draft:${user.id}`);
+            }
 
             try {
                 const { data: sessionData } = await supabase.auth.getSession();

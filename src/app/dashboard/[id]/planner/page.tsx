@@ -1665,8 +1665,9 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
         .filter((v: any) => v.payment_status?.toLowerCase() === 'paid')
         .reduce((acc: number, v: any) => acc + (parseFloat(v.amount) || 0), 0);
     
-    // Total "Committed/Spent" is both the estimates you added AND what you already paid vendors
-    const totalCommitted = totalEst + totalSpentFromVendors;
+    // Estimates already represent planned cost; paid vendor amounts are displayed
+    // separately and must not reduce the available budget a second time.
+    const totalCommitted = totalEst;
     const budgetRemaining = (parseFloat(wedding?.total_budget) || 0) - totalCommitted;
     const usagePercent = wedding?.total_budget > 0 ? Math.min(100, Math.round((totalCommitted / wedding.total_budget) * 100)) : 0;
 

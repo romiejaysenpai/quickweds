@@ -1,0 +1,2402 @@
+[
+  {
+    "id": "classic",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "minimal",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "vintage",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "editorial",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "royal",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "whimsical",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "urban",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "tropical",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "midnight",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "sakura",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "vogue",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "rustic",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "film",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "glitch",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "garden",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "romantic",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "luxury",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "elopement",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "traditional",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "timeline",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "rsvpfocus",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "cinematic",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "elegance",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "artdeco",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "boho",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "nordic",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "celestial",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "riviera",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "heirloom",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "estate",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "moonlit",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "saffron",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "cinema-noir",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "modern-vow",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "atelier",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "wildflower",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "regency",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "lovescript",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "coastal-vow",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "orchid-noir",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "papercut",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "marigold-house",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "the-weekend",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "winter-rose",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "gallery",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "petal-note",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "sunset-ceremony",
+    "width": 375,
+    "overflow": 0,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "classic",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "minimal",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "vintage",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "editorial",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "royal",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "whimsical",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "urban",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "tropical",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "midnight",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "sakura",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "vogue",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "rustic",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "film",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "glitch",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "garden",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "romantic",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "luxury",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "elopement",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "traditional",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "timeline",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "rsvpfocus",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "cinematic",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "elegance",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "artdeco",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "boho",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "nordic",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "celestial",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "riviera",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "attire",
+        2
+      ],
+      [
+        "woman-figure",
+        4
+      ],
+      [
+        "man-figure",
+        4
+      ],
+      [
+        "bowtie",
+        2
+      ],
+      [
+        "necktie",
+        2
+      ],
+      [
+        "faq",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "heirloom",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "estate",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "moonlit",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "saffron",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "cinema-noir",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "modern-vow",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "atelier",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "wildflower",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "regency",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "lovescript",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "coastal-vow",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "orchid-noir",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "papercut",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "marigold-house",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "the-weekend",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "winter-rose",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "gallery",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "petal-note",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  },
+  {
+    "id": "sunset-ceremony",
+    "width": 1440,
+    "overflow": -15,
+    "duplicateIds": [
+      [
+        "woman-figure",
+        2
+      ],
+      [
+        "man-figure",
+        2
+      ]
+    ],
+    "rsvp": 1
+  }
+]

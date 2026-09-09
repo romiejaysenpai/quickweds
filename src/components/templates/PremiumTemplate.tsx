@@ -6,6 +6,7 @@ import {
     BioSection,
     CountdownTimer,
     DetailsSection,
+    FAQSection,
     GallerySection,
     GiftSection,
     SafeWeddingImage,
@@ -169,6 +170,7 @@ export default function PremiumTemplate({ wedding, gallery, isExpired }: Templat
                     <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={themedWedding} />
                     <GallerySection id="gallery" gallery={gallery} template={theme.baseTemplate} motifColor={theme.primary} />
                     <GiftSection id="gift" wedding={themedWedding} />
+                    <FAQSection wedding={themedWedding} />
                     <SharedNewSections id="additional" wedding={themedWedding} isExpired={isExpired} />
                 </div>
             </div>
