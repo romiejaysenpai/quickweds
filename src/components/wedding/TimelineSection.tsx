@@ -477,6 +477,54 @@ const STYLE_VARIANT_TIMELINE_DESIGNS: Record<string, Partial<TimelineDesign>> = 
         reminderTextClass: 'text-[#816066]',
         ornament: 'dots',
     },
+    v2: {
+        eyebrow: 'Editorial sequence',
+        title: 'Order of Events',
+        headerBadgeClass: 'rounded-none border border-foreground/20 bg-white shadow-sm uppercase tracking-widest',
+        frameClass: 'rounded-none border-2 border-foreground/15 bg-[#fbf9f6] p-6 sm:p-10',
+        spineClass: 'bg-foreground/25',
+        cardClass: 'rounded-none border border-foreground/15 bg-white shadow-sm',
+        timeClass: 'font-mono text-primary font-bold tracking-wider',
+        eventClass: 'text-foreground font-serif tracking-tight',
+        iconFrameClass: 'rounded-none border border-foreground/20 bg-white shadow-none',
+        ornament: 'rails',
+    },
+    v3: {
+        eyebrow: 'Romance timeline',
+        title: 'Our Day Together',
+        headerBadgeClass: 'rounded-full border border-white/60 bg-white/40 backdrop-blur-md shadow-md',
+        frameClass: 'rounded-[3rem] border border-white/50 bg-white/30 backdrop-blur-xl p-6 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.06)]',
+        spineClass: 'bg-gradient-to-b from-primary/20 via-primary/50 to-primary/20',
+        cardClass: 'rounded-2xl border border-white/60 bg-white/60 backdrop-blur-md shadow-sm',
+        timeClass: 'text-primary font-serif italic',
+        eventClass: 'text-foreground',
+        iconFrameClass: 'rounded-full border border-primary/30 bg-white/80 shadow-sm',
+        ornament: 'botanical',
+    },
+    v4: {
+        eyebrow: 'Media edition',
+        title: 'Schedule & Flow',
+        headerBadgeClass: 'rounded-none border-b-2 border-primary bg-transparent text-foreground uppercase tracking-[0.25em]',
+        frameClass: 'rounded-xl border border-border/80 bg-white p-6 sm:p-10 shadow-sm',
+        spineClass: 'bg-primary/30',
+        cardClass: 'rounded-lg border border-border/60 bg-neutral-50/50 hover:bg-white transition-colors',
+        timeClass: 'font-mono text-xs uppercase tracking-widest text-primary font-bold',
+        eventClass: 'text-foreground font-sans font-bold',
+        iconFrameClass: 'rounded-md border border-border bg-white shadow-sm',
+        ornament: 'rails',
+    },
+    v5: {
+        eyebrow: 'Minimal schedule',
+        title: 'The Timeline',
+        headerBadgeClass: 'rounded-full bg-foreground text-background px-4 py-1 text-xs font-mono font-bold',
+        frameClass: 'rounded-2xl border-2 border-foreground bg-white p-6 sm:p-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]',
+        spineClass: 'bg-foreground/20',
+        cardClass: 'rounded-xl border-2 border-foreground/80 bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)]',
+        timeClass: 'font-mono text-foreground font-black text-sm',
+        eventClass: 'text-foreground font-sans font-bold',
+        iconFrameClass: 'rounded-lg border-2 border-foreground bg-white',
+        ornament: 'corner',
+    },
 };
 
 const MOOD_TIMELINE_MAP: Record<string, string> = {
@@ -525,7 +573,14 @@ function getTimelineDesign(template: string, templateStyle?: string) {
         || 'classic';
 
     const base = TIMELINE_DESIGNS[resolvedKey] || TIMELINE_DESIGNS.classic;
-    const variant = templateStyle && templateStyle !== 'default' ? STYLE_VARIANT_TIMELINE_DESIGNS[templateStyle] : undefined;
+    let styleKey = templateStyle && templateStyle !== 'default' ? templateStyle : undefined;
+    if (styleKey && !STYLE_VARIANT_TIMELINE_DESIGNS[styleKey]) {
+        if (styleKey.endsWith('_v2') || styleKey === 'v2') styleKey = 'v2';
+        else if (styleKey.endsWith('_v3') || styleKey === 'v3') styleKey = 'v3';
+        else if (styleKey.endsWith('_v4') || styleKey === 'v4') styleKey = 'v4';
+        else if (styleKey.endsWith('_v5') || styleKey === 'v5') styleKey = 'v5';
+    }
+    const variant = styleKey ? STYLE_VARIANT_TIMELINE_DESIGNS[styleKey] : undefined;
     return {
         ...base,
         ...(variant || {}),

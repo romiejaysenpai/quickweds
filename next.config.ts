@@ -22,7 +22,22 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
   async headers() {
-    const contentSecurityPolicy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://*.ingest.sentry.io https://api.stripe.com https://www.google-analytics.com https://analytics.google.com; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; worker-src 'self' blob:";
+    const isDev = process.env.NODE_ENV !== 'production';
+    if (isDev) {
+      // In development, provide permissive headers without CSP/X-Frame-Options so the
+      // in-IDE simulator, webviews, and local dev tools can freely embed pages.
+      return [
+        {
+          source: '/:path*',
+          headers: [
+            { key: 'Access-Control-Allow-Origin', value: '*' },
+          ],
+        },
+      ];
+    }
+
+    const baseCsp = "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://*.ingest.sentry.io https://api.stripe.com https://www.google-analytics.com https://analytics.google.com; frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.google.com; worker-src 'self' blob:";
+    const contentSecurityPolicy = `${baseCsp}; frame-ancestors 'self'`;
     const securityHeaders = [
       { key: 'Content-Security-Policy', value: contentSecurityPolicy },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -48,7 +63,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: contentSecurityPolicy.replace("frame-ancestors 'self'", "frame-ancestors https: http://localhost:* http://127.0.0.1:*")
+            value: `${baseCsp}; frame-ancestors https: http://localhost:* http://127.0.0.1:*`,
           },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           {

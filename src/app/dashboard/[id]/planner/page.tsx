@@ -325,6 +325,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const [accessDebug, setAccessDebug] = useState<string>('');
     const [plannerError, setPlannerError] = useState('');
     const [checkingRole, setCheckingRole] = useState(true);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     // Data States
     const [wedding, setWedding] = useState<any>(null);
@@ -415,7 +416,9 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
         }
 
         const promise: Promise<void> = (async () => {
-            setLoading(true);
+            if (!hasLoadedOnce) {
+                setLoading(true);
+            }
             setPlannerError('');
             try {
                 const { data: sessionData } = await getCachedSession();
@@ -463,6 +466,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 setAccessRole('denied');
             } finally {
                 setLoading(false);
+                setHasLoadedOnce(true);
                 if (plannerLoadRef.current?.key === loadKey) {
                     plannerLoadRef.current = null;
                 }
@@ -485,7 +489,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
     const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
 
-    if (checkingRole || loading) {
+    if (!hasLoadedOnce && (checkingRole || loading)) {
         return (
             <main className="mobile-safe-screen flex items-center justify-center bg-background px-4 py-6">
                 <LoadingState
@@ -1119,6 +1123,12 @@ function getChecklistDueDate(weddingDateValue: string | null | undefined, months
 }
 
 function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], wedding, reload }: any) {
+    const [tasks, setTasksState] = useState<any[]>(initialTasks || []);
+
+    useEffect(() => {
+        setTasksState(initialTasks || []);
+    }, [initialTasks]);
+
     const [publishing, setPublishing] = useState(false);
     const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
     const [showBoxPacking, setShowBoxPacking] = useState(false);
@@ -1211,26 +1221,26 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                 custom_supplier_name: editTask.custom_supplier_name.trim() || null,
                 notes: editTask.notes.trim() || null,
             });
-            if (setTasks && updatedTask) {
+            if (updatedTask) {
                 const decodedTask = decodePlannerTask(updatedTask);
-                setTasks((current: any[]) => current.map((item: any) => (
-                    item.id === task.id
-                        ? {
-                            ...item,
-                            ...decodedTask,
-                            title: decodedTask.title || editTask.title.trim(),
-                            section: decodedTask.section || decodedTask.category || editTask.section,
-                            due_date: decodedTask.due_date ?? (editTask.due_date || null),
-                            assigned_to: decodedTask.assigned_to ?? (editTask.assigned_to.trim() || null),
-                            planner_vendor_id: decodedTask.planner_vendor_id ?? (editTask.planner_vendor_id || null),
-                            custom_supplier_name: decodedTask.custom_supplier_name ?? (editTask.custom_supplier_name.trim() || null),
-                            notes: decodedTask.notes ?? (editTask.notes.trim() || null),
-                        }
-                        : item
-                )));
+                const updatedItem = {
+                    ...task,
+                    ...decodedTask,
+                    title: decodedTask.title || editTask.title.trim(),
+                    section: decodedTask.section || decodedTask.category || editTask.section,
+                    due_date: decodedTask.due_date ?? (editTask.due_date || null),
+                    assigned_to: decodedTask.assigned_to ?? (editTask.assigned_to.trim() || null),
+                    planner_vendor_id: decodedTask.planner_vendor_id ?? (editTask.planner_vendor_id || null),
+                    custom_supplier_name: decodedTask.custom_supplier_name ?? (editTask.custom_supplier_name.trim() || null),
+                    notes: decodedTask.notes ?? (editTask.notes.trim() || null),
+                };
+                setTasksState((current: any[]) => current.map((item: any) => item.id === task.id ? updatedItem : item));
+                if (setTasks) {
+                    setTasks((current: any[]) => current.map((item: any) => item.id === task.id ? updatedItem : item));
+                }
             }
             cancelEditingTask();
-            await reload();
+            reload().catch(() => {});
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Unable to update checklist item.');
             console.warn('Error updating checklist item:', message);
@@ -1241,10 +1251,40 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
     }
 
     async function updateTask(task: any, patch: Record<string, unknown>) {
+        // Optimistic update: apply the change to local state immediately so the
+        // UI feels 100% instant (0ms delay, no loader animation, no network wait).
+        setTasksState((current: any[]) =>
+            current.map((item: any) =>
+                item.id === task.id ? { ...item, ...patch } : item
+            )
+        );
+        if (setTasks) {
+            setTasks((current: any[]) =>
+                current.map((item: any) =>
+                    item.id === task.id ? { ...item, ...patch } : item
+                )
+            );
+        }
         try {
             await updatePlannerItem(weddingId, 'task', task.id, patch);
-            await reload();
         } catch (err) {
+            // Revert the optimistic update on failure
+            const revert: Record<string, unknown> = {};
+            for (const key of Object.keys(patch)) {
+                revert[key] = task[key];
+            }
+            setTasksState((current: any[]) =>
+                current.map((item: any) =>
+                    item.id === task.id ? { ...item, ...revert } : item
+                )
+            );
+            if (setTasks) {
+                setTasks((current: any[]) =>
+                    current.map((item: any) =>
+                        item.id === task.id ? { ...item, ...revert } : item
+                    )
+                );
+            }
             const message = getPlannerErrorMessage(err, 'Unable to update checklist item.');
             console.warn('Error updating checklist item:', message);
             alert(`Unable to update checklist item: ${message}`);
@@ -1252,8 +1292,8 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
     }
 
     async function seedTwelveMonthChecklist() {
-        const existingKeys = new Set(initialTasks.map((task: any) => task.template_key).filter(Boolean));
-        const existingTitles = new Set(initialTasks.map((task: any) => `${task.section || 'General'}:${String(task.title || '').trim().toLowerCase()}`));
+        const existingKeys = new Set(tasks.map((task: any) => task.template_key).filter(Boolean));
+        const existingTitles = new Set(tasks.map((task: any) => `${task.section || 'General'}:${String(task.title || '').trim().toLowerCase()}`));
         const rows = TWELVE_MONTH_TASKS
             .filter(([key, title]) => !existingKeys.has(key) && !existingTitles.has(`12-Month Wedding Plan:${String(title).trim().toLowerCase()}`))
             .map(([template_key, title, monthsBefore, assignedTo]) => {
@@ -1283,11 +1323,14 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
     async function deleteTask(id: string) {
         if (deletingTaskId) return;
         setDeletingTaskId(id);
+        const previousTasks = tasks;
+        setTasksState((current: any[]) => current.filter((task: any) => task.id !== id));
+        if (setTasks) setTasks((current: any[]) => current.filter((task: any) => task.id !== id));
         try {
             await deletePlannerItem(weddingId, 'task', id);
-            if (setTasks) setTasks((current: any[]) => current.filter((task: any) => task.id !== id));
-            await reload();
         } catch (err) {
+            setTasksState(previousTasks);
+            if (setTasks) setTasks(previousTasks);
             const message = getPlannerErrorMessage(err, 'Unable to delete checklist item.');
             console.warn('Error deleting checklist item:', message);
             alert(message);
@@ -1296,13 +1339,13 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
         }
     }
 
-    const preparedCount = initialTasks.filter((t: any) => t.status === 'prepared' || t.status === 'completed').length;
-    const progress = initialTasks.length > 0 ? Math.round((preparedCount / initialTasks.length) * 100) : 0;
+    const preparedCount = tasks.filter((t: any) => t.status === 'prepared' || t.status === 'completed').length;
+    const progress = tasks.length > 0 ? Math.round((preparedCount / tasks.length) * 100) : 0;
 
     // Template box sections (e.g. "Bride's Box", "Emergency kit") render after the built-in sections.
     const templateSections: string[] = Array.from(
         new Set<string>(
-            initialTasks.map((task: any) => String(task.section || 'General')).filter((section: string) => !CHECKLIST_SECTIONS.includes(section))
+            tasks.map((task: any) => String(task.section || 'General')).filter((section: string) => !CHECKLIST_SECTIONS.includes(section))
         )
     ).sort((a: string, b: string) => a.localeCompare(b));
     const allChecklistSections = [...CHECKLIST_SECTIONS, ...templateSections];
@@ -1354,7 +1397,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
 
             {showBoxPacking && (
                 <div className="mb-8">
-                    <BoxPackingMode tasks={initialTasks} updateTask={updateTask} />
+                    <BoxPackingMode tasks={tasks} updateTask={updateTask} />
                 </div>
             )}
 
@@ -1376,7 +1419,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
 
             <div className="space-y-5">
                 {allChecklistSections.map((section) => {
-                    const sectionTasks = initialTasks.filter((task: any) => (task.section || 'General') === section);
+                    const sectionTasks = tasks.filter((task: any) => (task.section || 'General') === section);
                     if (sectionTasks.length === 0) return null;
                     return (
                         <div key={section} className="rounded-2xl border border-border bg-white overflow-hidden">
@@ -1490,7 +1533,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                         </div>
                     );
                 })}
-                {initialTasks.length === 0 && <div className="text-center py-12 opacity-50 font-serif italic text-sm">Your checklist is empty. Add an item, load the 12-month list, or browse the wedding-day checklist templates above.</div>}
+                {tasks.length === 0 && <div className="text-center py-12 opacity-50 font-serif italic text-sm">Your checklist is empty. Add an item, load the 12-month list, or browse the wedding-day checklist templates above.</div>}
             </div>
         </div>
     );

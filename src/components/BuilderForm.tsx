@@ -5,7 +5,7 @@ import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useWeddingDraft } from '@/hooks/useWeddingDraft';
 import { trackProductEvent } from '@/lib/product-events';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle, Download, Lock, Play } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle, Download, Lock, Play, Search } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,6 +24,8 @@ import {
     TEMPLATES,
     getTemplateStyleVariants,
     isTemplateStyleAvailable,
+    templateMatchesFilter,
+    type TemplateFilter,
 } from '@/lib/template-catalog';
 import {
     SECTION_BLOCK_LIBRARY,
@@ -525,6 +527,10 @@ export default function BuilderForm() {
     const [isDesktopPreview, setIsDesktopPreview] = useState(false);
     const [expandedSection, setExpandedSection] = useState<string | null>(null);
     const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null);
+    const [templateFilter, setTemplateFilter] = useState<TemplateFilter>('all');
+    const [templateSearch, setTemplateSearch] = useState('');
+    const [visibleTemplateCount, setVisibleTemplateCount] = useState(9);
+    const [areTemplateVariationsOpen, setAreTemplateVariationsOpen] = useState(false);
 
     useEffect(() => {
         const mediaQuery = window.matchMedia('(min-width: 1024px)');
@@ -1519,6 +1525,38 @@ export default function BuilderForm() {
                                 <input required type="time" name="weddingTime" value={formData.weddingTime} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                             </div>
                         </div>
+                        <div className="space-y-2">
+                            <label htmlFor="eventTimezone" className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Event Timezone</label>
+                            <select
+                                id="eventTimezone"
+                                aria-label="Event timezone"
+                                value={formData.eventTimezone || 'UTC'}
+                                onChange={e => setFormData((previous: any) => ({ ...previous, eventTimezone: e.target.value }))}
+                                className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]"
+                            >
+                                <option value="UTC">UTC</option>
+                                <option value="Asia/Manila">Asia/Manila (PHT)</option>
+                                <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                                <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+                                <option value="Asia/Hong_Kong">Asia/Hong Kong (HKT)</option>
+                                <option value="Asia/Seoul">Asia/Seoul (KST)</option>
+                                <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+                                <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                                <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                                <option value="Europe/London">Europe/London (GMT/BST)</option>
+                                <option value="Europe/Paris">Europe/Paris (CET)</option>
+                                <option value="Europe/Berlin">Europe/Berlin (CET)</option>
+                                <option value="America/New_York">America/New York (ET)</option>
+                                <option value="America/Chicago">America/Chicago (CT)</option>
+                                <option value="America/Denver">America/Denver (MT)</option>
+                                <option value="America/Los_Angeles">America/Los Angeles (PT)</option>
+                                <option value="America/Anchorage">America/Anchorage (AKT)</option>
+                                <option value="Pacific/Honolulu">Pacific/Honolulu (HST)</option>
+                                <option value="Australia/Sydney">Australia/Sydney (AEST)</option>
+                                <option value="Australia/Perth">Australia/Perth (AWST)</option>
+                                <option value="Pacific/Auckland">Pacific/Auckland (NZST)</option>
+                            </select>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Ceremony Location Name</label>
@@ -1692,6 +1730,21 @@ export default function BuilderForm() {
                 const styleVariants = getTemplateStyleVariants(formData.template);
                 const selectedStyleAvailable = isTemplateStyleAvailable(formData.template, formData.templateStyle);
                 const activeTemplateMeta = TEMPLATES.find((tmpl) => tmpl.id === formData.template);
+                const normalizedTemplateSearch = templateSearch.trim().toLowerCase();
+                const filteredTemplates = TEMPLATES.filter((template) => {
+                    const searchableText = `${template.name} ${template.desc} ${template.eyebrow} ${template.mood}`.toLowerCase();
+                    return templateMatchesFilter(template.id, templateFilter)
+                        && (!normalizedTemplateSearch || searchableText.includes(normalizedTemplateSearch));
+                });
+                const visibleTemplates = filteredTemplates.slice(0, visibleTemplateCount);
+                const templateFilters: Array<{ id: TemplateFilter; label: string }> = [
+                    { id: 'all', label: 'All' },
+                    { id: 'classic', label: 'Classic' },
+                    { id: 'modern', label: 'Modern' },
+                    { id: 'romantic', label: 'Romantic' },
+                    { id: 'destination', label: 'Destination' },
+                    { id: 'bold', label: 'Bold' },
+                ];
 
                 return (
                     <div className="space-y-6">
@@ -1703,9 +1756,48 @@ export default function BuilderForm() {
                                 </span>
                             )}
                         </div>
+                        <div className="space-y-3 rounded-2xl border border-border/70 bg-neutral/30 p-3 sm:p-4">
+                            <div className="relative">
+                                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary/60" />
+                                <input
+                                    type="search"
+                                    value={templateSearch}
+                                    onChange={(event) => {
+                                        setTemplateSearch(event.target.value);
+                                        setVisibleTemplateCount(9);
+                                    }}
+                                    placeholder="Search templates"
+                                    aria-label="Search templates"
+                                    className="min-h-[44px] w-full rounded-xl border border-border bg-white py-2 pl-10 pr-4 text-sm outline-none transition-colors focus:border-primary"
+                                />
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar" aria-label="Template categories">
+                                {templateFilters.map((filter) => (
+                                    <button
+                                        key={filter.id}
+                                        type="button"
+                                        aria-pressed={templateFilter === filter.id}
+                                        onClick={() => {
+                                            setTemplateFilter(filter.id);
+                                            setVisibleTemplateCount(9);
+                                        }}
+                                        className={`min-h-[38px] shrink-0 rounded-full px-4 text-xs font-bold transition-colors ${
+                                            templateFilter === filter.id
+                                                ? 'bg-primary text-white shadow-sm'
+                                                : 'border border-border bg-white text-text-secondary hover:border-primary/40 hover:text-primary'
+                                        }`}
+                                    >
+                                        {filter.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="px-1 text-[11px] text-text-secondary" role="status">
+                                Showing {Math.min(visibleTemplateCount, filteredTemplates.length)} of {filteredTemplates.length} templates
+                            </p>
+                        </div>
                         {/* ── Mobile: Collapsible Template List ── */}
                         <div className="sm:hidden space-y-1">
-                            {TEMPLATES.map((tmpl) => {
+                            {visibleTemplates.map((tmpl) => {
                                 const isLocked = !isPremium && !FREE_TEMPLATE_IDS.includes(tmpl.id as typeof FREE_TEMPLATE_IDS[number]);
                                 const isSelected = formData.template === tmpl.id;
                                 const isExpanded = expandedTemplateId === tmpl.id;
@@ -1839,7 +1931,7 @@ export default function BuilderForm() {
                         </div>
                         {/* ── Desktop: Original Card Grid ── */}
                         <div className="hidden sm:grid sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-                            {TEMPLATES.map((tmpl) => {
+                            {visibleTemplates.map((tmpl) => {
                                 const isLocked = !isPremium && !FREE_TEMPLATE_IDS.includes(tmpl.id as typeof FREE_TEMPLATE_IDS[number]);
                                 const isSelected = formData.template === tmpl.id;
                                 return (
@@ -1913,8 +2005,38 @@ export default function BuilderForm() {
                                 );
                             })}
                         </div>
+                        {filteredTemplates.length === 0 && (
+                            <div className="rounded-2xl border border-dashed border-border bg-neutral/30 px-5 py-10 text-center">
+                                <p className="font-bold text-foreground">No templates found</p>
+                                <p className="mt-1 text-sm text-text-secondary">Try another search or category.</p>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setTemplateSearch('');
+                                        setTemplateFilter('all');
+                                    }}
+                                    className="mt-4 min-h-[40px] rounded-xl border border-primary/20 bg-white px-4 text-xs font-bold text-primary"
+                                >
+                                    Clear filters
+                                </button>
+                            </div>
+                        )}
+                        {visibleTemplateCount < filteredTemplates.length && (
+                            <button
+                                type="button"
+                                onClick={() => setVisibleTemplateCount((count) => count + 9)}
+                                className="mx-auto flex min-h-[44px] items-center justify-center rounded-xl border border-primary/20 bg-primary/5 px-6 text-sm font-bold text-primary transition-colors hover:bg-primary hover:text-white"
+                            >
+                                Show 9 more templates
+                            </button>
+                        )}
                         <div className="space-y-4 rounded-[1.75rem] border border-border/70 bg-white/80 p-4 shadow-sm sm:p-5">
-                            <div className="flex items-start justify-between gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setAreTemplateVariationsOpen((isOpen) => !isOpen)}
+                                aria-expanded={areTemplateVariationsOpen}
+                                className="flex w-full items-start justify-between gap-3 text-left"
+                            >
                                 <div>
                                     <p className="text-xs font-bold uppercase tracking-widest text-primary">
                                         5 Design Variations
@@ -1923,14 +2045,18 @@ export default function BuilderForm() {
                                         Select from 5 distinct variations for <strong className="text-foreground">{activeTemplateMeta?.name || 'this template'}</strong>. Switching variations changes layout, typography, section flow, gallery, buttons, RSVP, and mobile layout without losing your saved content.
                                     </p>
                                 </div>
-                                {activeTemplateMeta && (
-                                    <span
-                                        className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full shadow-[0_0_0_5px_rgba(255,255,255,0.8)]"
-                                        style={{ backgroundColor: activeTemplateMeta.accent }}
-                                    />
-                                )}
-                            </div>
-                            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                                <span className="flex shrink-0 items-center gap-3">
+                                    {activeTemplateMeta && (
+                                        <span
+                                            className="mt-1 h-3.5 w-3.5 rounded-full shadow-[0_0_0_5px_rgba(255,255,255,0.8)]"
+                                            style={{ backgroundColor: activeTemplateMeta.accent }}
+                                        />
+                                    )}
+                                    <ChevronDown className={`h-4 w-4 text-text-secondary transition-transform ${areTemplateVariationsOpen ? 'rotate-180' : ''}`} />
+                                </span>
+                            </button>
+                            {areTemplateVariationsOpen && (
+                            <div className="grid grid-cols-1 gap-3.5 border-t border-border/50 pt-4 sm:grid-cols-2">
                                 {styleVariants.map((variant) => {
                                     const isSelected = formData.templateStyle === variant.id || (!formData.templateStyle && (variant.id === DEFAULT_TEMPLATE_STYLE || variant.id === 'classic_v1'));
                                     return (
@@ -1970,6 +2096,7 @@ export default function BuilderForm() {
                                     );
                                 })}
                             </div>
+                            )}
                         </div>
                     </div>
                 );
@@ -3231,8 +3358,7 @@ return (
                     <p role="status">{draft.status || 'Start with the essentials. Personalize whenever you are ready.'}</p>
                     <button type="button" className="min-h-12 rounded-xl border px-4" onClick={()=>setEssentialMode(value=>!value)}>{essentialMode?'Show full customization steps':'Use essential setup'}</button>
                     {draft.available && <div className="flex flex-wrap gap-3"><button type="button" className="min-h-12 px-4 border rounded-xl" onClick={draft.restore}>Restore saved draft</button><button type="button" className="min-h-12 px-4 border rounded-xl" onClick={draft.discard}>Keep current details</button></div>}
-                    <div className="flex flex-wrap gap-2">{[{label:'Details',step:0},{label:'Design',step:1},{label:'RSVP',step:7},{label:'Review / save',step:9}].map(item=><button type="button" key={item.step} onClick={()=>setCurrentStep(item.step)} className="min-h-12 rounded-xl border px-4">{item.label}</button>)}</div>
-                    <label className="block">Event timezone<input aria-label="Event timezone" className="ml-2 min-h-12 rounded-xl border px-3" value={formData.eventTimezone || 'UTC'} onChange={e=>setFormData((previous:any)=>({...previous,eventTimezone:e.target.value}))} placeholder="Asia/Manila"/></label>
+
                 </div>
                 <form noValidate={!formData.isPublished} onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                     {freeWebsiteLimitReached && (
@@ -3295,10 +3421,18 @@ return (
                         />
                     )}
 
-                    <div className="sticky bottom-0 sm:relative bg-white/90 backdrop-blur-md sm:bg-transparent -mx-4 sm:mx-0 px-4 py-4 sm:p-0 border-t sm:border-t-0 border-border z-20 flex justify-between items-center pt-6 sm:pt-8 gap-2 sm:gap-4">
+                    <div className="sticky bottom-0 z-40 -mx-4 flex items-center justify-between gap-2 border-t border-border bg-white/95 px-4 py-3 shadow-[0_-12px_30px_rgba(58,42,45,0.08)] backdrop-blur-md sm:-mx-8 sm:px-8 sm:py-4">
                         <button type="button" onClick={prevStep} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2 rounded-lg sm:rounded-xl text-primary font-bold text-sm sm:text-base min-h-[44px] min-w-[44px] ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'hover:bg-neutral transition-colors'}`}>
                             <ArrowLeft className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Back</span>
                         </button>
+                        {currentStep === 1 && (
+                            <div className="hidden min-w-0 flex-1 px-2 text-center sm:block">
+                                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-text-secondary">Selected layout</p>
+                                <p className="truncate text-sm font-bold text-foreground">
+                                    {TEMPLATES.find((template) => template.id === formData.template)?.name || 'Choose a template'}
+                                </p>
+                            </div>
+                        )}
                         <button type="submit" disabled={isSubmitting} className="bg-primary text-white px-6 sm:px-10 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold flex items-center gap-2 hover:bg-primary-hover shadow-lg shadow-primary/20 disabled:opacity-50 text-sm sm:text-base min-h-[44px] transition-all flex-1 sm:flex-none justify-center sm:justify-start">
                             {isSubmitting ? 'Processing...' : currentStep === STEPS.length - 1 ? <><span className="hidden sm:inline">{editId ? 'Update Invitation' : 'Create Invitation'}</span><span className="sm:hidden">Finish</span> <Send className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></> : <>Next <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></>}
                         </button>

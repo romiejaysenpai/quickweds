@@ -19,9 +19,9 @@ export type TemplateRecommendationInput = {
 
 const TEMPLATE_FILTERS: Record<Exclude<TemplateFilter, 'all'>, readonly string[]> = {
     classic: ['classic', 'traditional', 'elegance', 'vintage', 'royal', 'artdeco', 'chateau', 'baroque', 'estate', 'mizuhiki', 'classyphoto', 'streamline', 'marble', 'kimono', 'seigaiha', 'asanoha', 'camellia', 'snowwhite', 'emerald', 'washipaper', 'linea', 'heritage', 'oldpaper', 'truelove', 'hanaume', 'letter', 'japan', 'akamatsu'],
-    modern: ['minimal', 'timeline', 'rsvpfocus', 'vogue', 'editorial', 'kinfolk', 'neobrutalist', 'highfashion', 'bauhaus', 'atelier', 'papercut', 'neumorphism', 'magazinecover', 'museum', 'frostedglass', 'duotone', 'splash', 'teaceremony', 'notepaper', 'weddingtimes', 'linea', 'passport', 'fluidmodern', 'airport', 'noweddingnolife', 'minimumstyle', 'modernsquare', 'growthtale'],
-    romantic: ['romantic', 'whimsical', 'sakura', 'garden', 'rustic', 'boho', 'glassbotanical', 'cottagecore', 'storybook', 'petal-note', 'lovescript', 'palefloral', 'aromabotanical', 'mellowwave', 'flowerflow', 'luxeheart', 'faintblur', 'hydrangea', 'anemone', 'holynight', 'mimosa', 'mistveil', 'sunflower', 'enchanted', 'lapin', 'daisygarden', 'springrise', 'arrangeflowers', 'innocentpetals', 'bluebird', 'gardenwedding', 'music', 'weddingcake', 'kasumi'],
-    destination: ['elopement', 'tropical', 'cinematic', 'film', 'amalfi', 'desertmirage', 'travelogue', 'nordicdrift', 'sunsetriviera', 'coastal-vow', 'lunette', 'polaroid', 'teaceremony', 'oceanblue', 'forest', 'mermaidbeach', 'coralsea', 'yellowsummer', 'oceanus', 'passport', 'airport', 'deeporange', 'naturalcamper', 'konatsu', 'balloonrelease'],
+    modern: ['minimal', 'timeline', 'rsvpfocus', 'vogue', 'editorial', 'nordic', 'kinfolk', 'neobrutalist', 'highfashion', 'bauhaus', 'atelier', 'papercut', 'neumorphism', 'magazinecover', 'museum', 'frostedglass', 'duotone', 'splash', 'teaceremony', 'notepaper', 'weddingtimes', 'linea', 'passport', 'fluidmodern', 'airport', 'noweddingnolife', 'minimumstyle', 'modernsquare', 'growthtale'],
+    romantic: ['romantic', 'whimsical', 'sakura', 'garden', 'rustic', 'boho', 'riviera', 'glassbotanical', 'cottagecore', 'storybook', 'petal-note', 'lovescript', 'palefloral', 'aromabotanical', 'mellowwave', 'flowerflow', 'luxeheart', 'faintblur', 'hydrangea', 'anemone', 'holynight', 'mimosa', 'mistveil', 'sunflower', 'enchanted', 'lapin', 'daisygarden', 'springrise', 'arrangeflowers', 'innocentpetals', 'bluebird', 'gardenwedding', 'music', 'weddingcake', 'kasumi'],
+    destination: ['elopement', 'tropical', 'cinematic', 'film', 'amalfi', 'riviera', 'nordic', 'desertmirage', 'travelogue', 'nordicdrift', 'sunsetriviera', 'coastal-vow', 'lunette', 'polaroid', 'teaceremony', 'oceanblue', 'forest', 'mermaidbeach', 'coralsea', 'yellowsummer', 'oceanus', 'passport', 'airport', 'deeporange', 'naturalcamper', 'konatsu', 'balloonrelease'],
     bold: ['luxury', 'midnight', 'urban', 'glitch', 'vogue', 'editorial', 'gothicnoir', 'discofever', 'stargazer', 'cyberromantic', 'lofifilm', 'magazinecover', 'astronomy', 'splash', 'holynight', 'camellia', 'petlove', 'jazz', 'planetarium', 'emerald', 'retroflower', 'clearblue', 'musicfest', 'botanicalgreen', 'noweddingnolife', 'oceanus', 'enchanted', 'gradientleaf', 'royalblue', 'akamatsu', 'hanaume'],
 };
 
@@ -227,52 +227,51 @@ export function getTemplateStyleVariants(templateId?: string): TemplateStyleVari
     const targetId = (templateId || 'classic').toLowerCase();
     const explicit = TEMPLATE_STYLE_VARIANTS.filter((variant) => variant.templateId === targetId);
 
-    if (explicit.length >= 5) {
-        return explicit;
-    }
-
     // Default template accent map fallback
     const templateMeta = TEMPLATES.find((t) => t.id === targetId);
     const accent = templateMeta?.accent || '#C08081';
+    const templateName = templateMeta?.name || (targetId.charAt(0).toUpperCase() + targetId.slice(1));
 
     const defaultFive: TemplateStyleVariant[] = [
         {
             id: 'default',
             templateId: targetId,
             variationKey: 'v1',
-            name: `${templateMeta?.name || 'Classic'} Original (V1)`,
-            desc: 'The original signature layout with centered hero, standard section ordering, and standard gallery.',
+            name: `${templateName} Original (V1)`,
+            desc: `The signature ${templateName} layout with its original hero, section rhythm, and theme aesthetic.`,
             accent,
-            heroLayout: 'Centered Hero Overlay',
+            heroLayout: 'Signature Hero Overlay',
             typography: 'Signature Template Fonts',
             sectionArrangement: 'Standard Linear Flow',
             galleryStyle: 'Standard Grid',
-            buttonStyle: 'Signature Pill Button',
+            buttonStyle: 'Signature Theme Button',
             backgroundDesign: 'Signature Theme Background',
             rsvpStyle: 'Standard Embedded RSVP Card',
             mobileLayout: 'Standard Responsive Stack',
+            previewGradient: templateMeta?.previewGradient || `linear-gradient(135deg, #ffffff 0%, ${accent}22 50%, ${accent}44 100%)`,
         },
         {
             id: `${targetId}_v2`,
             templateId: targetId,
             variationKey: 'v2',
-            name: 'Split-Screen Modern Editorial (V2)',
+            name: `${templateName} Split-Screen Editorial (V2)`,
             desc: 'Asymmetric 50/50 split hero with photography focus, horizontal filmstrip gallery, and sharp border buttons.',
             accent,
             heroLayout: '50/50 Asymmetric Split Hero',
             typography: 'High-Contrast Bold Display Serif & Grotesk Sans',
             sectionArrangement: 'Story-First Priority Flow',
             galleryStyle: 'Horizontal Filmstrip Carousel',
-            buttonStyle: 'Sharp Gold-Bordered Box Button',
+            buttonStyle: 'Sharp Bordered Box Button',
             backgroundDesign: 'High-Contrast Duo-Tone Background',
             rsvpStyle: 'Side-by-Side Photo & Interactive Form',
             mobileLayout: 'Card-based Mobile Sections with Sticky Header',
+            previewGradient: `linear-gradient(135deg, #2b1f24 0%, #4a2830 50%, ${accent} 100%)`,
         },
         {
             id: `${targetId}_v3`,
             templateId: targetId,
             variationKey: 'v3',
-            name: 'Floating Glass Romance (V3)',
+            name: `${templateName} Floating Glass Romance (V3)`,
             desc: 'Elevated glassmorphism hero card over atmospheric backdrop with polaroid collage and soft script accents.',
             accent,
             heroLayout: 'Elevated Glassmorphism Floating Hero Card',
@@ -283,12 +282,13 @@ export function getTemplateStyleVariants(templateId?: string): TemplateStyleVari
             backgroundDesign: 'Textured Linen Canvas with Vector Accents',
             rsvpStyle: 'Elevated Modal Card with Gold Corners',
             mobileLayout: 'Accordion-style Mobile Sections with Quick Jump Tabs',
+            previewGradient: `linear-gradient(135deg, #fff0f3 0%, #fcd5ce 50%, ${accent}66 100%)`,
         },
         {
             id: `${targetId}_v4`,
             templateId: targetId,
             variationKey: 'v4',
-            name: 'Magazine Monogram Grid (V4)',
+            name: `${templateName} Magazine Monogram Grid (V4)`,
             desc: 'Monogram header banner with asymmetric 3-photo hero grid, 2x3 magazine layout, and underlined accent links.',
             accent,
             heroLayout: 'Monogram Header & Asymmetric 3-Photo Hero Grid',
@@ -299,12 +299,13 @@ export function getTemplateStyleVariants(templateId?: string): TemplateStyleVari
             backgroundDesign: 'Pure Light Minimalist Canvas',
             rsvpStyle: 'Step-by-Step Interactive Form Cards',
             mobileLayout: 'Fullscreen Mobile Swipe Cards',
+            previewGradient: `linear-gradient(135deg, #f7f7f7 0%, #e3e3e3 50%, ${accent} 100%)`,
         },
         {
             id: `${targetId}_v5`,
             templateId: targetId,
             variationKey: 'v5',
-            name: 'Minimalist Couture (V5)',
+            name: `${templateName} Minimalist Couture (V5)`,
             desc: 'Pure typography hero banner with inline countdown bar, minimal 3-column grid, and dual-tone shadow pill buttons.',
             accent,
             heroLayout: 'Pure Typography Banner with Inline Countdown',
@@ -315,33 +316,40 @@ export function getTemplateStyleVariants(templateId?: string): TemplateStyleVari
             backgroundDesign: 'Soft Motif Gradient with Organic Wave Dividers',
             rsvpStyle: 'Minimalist Bottom Drawer RSVP Card',
             mobileLayout: 'Single-Column Clean Scroll with Big Touch Targets',
+            previewGradient: `linear-gradient(135deg, #faf6f0 0%, #f0e6d8 50%, ${accent} 100%)`,
         },
     ];
 
-    // Combine explicit and dynamic variations to ensure 5 total unique variations
-    const map = new Map<string, TemplateStyleVariant>();
-    explicit.forEach((v) => map.set(v.id, v));
-    defaultFive.forEach((v) => {
-        if (!map.has(v.id)) map.set(v.id, v);
-    });
+    // Guarantee exactly 5 distinct variations (v1 through v5)
+    // Any explicit variation for this template replaces its corresponding slot
+    const slotMap = new Map<'v1' | 'v2' | 'v3' | 'v4' | 'v5', TemplateStyleVariant>();
+    defaultFive.forEach((v) => slotMap.set(v.variationKey, v));
+    explicit.forEach((v) => slotMap.set(v.variationKey, v));
 
-    return Array.from(map.values()).slice(0, 5);
+    return (['v1', 'v2', 'v3', 'v4', 'v5'] as const).map((key) => slotMap.get(key)!);
 }
 
 export function isTemplateStyleAvailable(templateId?: string, styleId?: string) {
-    if (!styleId || styleId === DEFAULT_TEMPLATE_STYLE || styleId === 'classic_v1' || styleId === 'v1') return true;
+    if (!styleId || styleId === DEFAULT_TEMPLATE_STYLE || styleId === 'classic_v1' || styleId === 'v1' || styleId.endsWith('_v1')) return true;
     const variants = getTemplateStyleVariants(templateId);
-    return variants.some((variant) => variant.id === styleId);
+    return variants.some((variant) =>
+        variant.id === styleId ||
+        variant.variationKey === styleId ||
+        styleId.endsWith(`_${variant.variationKey}`) ||
+        (variant.variationKey === 'v2' && ['luxury-planner', 'editorial-photo', 'romantic-estate'].includes(styleId))
+    );
 }
 
 export function getTemplateStyleLabel(styleId?: string) {
     if (!styleId || styleId === DEFAULT_TEMPLATE_STYLE) return 'Original (V1)';
     const found = TEMPLATE_STYLE_VARIANTS.find((variant) => variant.id === styleId);
     if (found) return found.name;
-    if (styleId.includes('_v2') || styleId === 'v2') return 'Split-Screen Modern (V2)';
-    if (styleId.includes('_v3') || styleId === 'v3') return 'Floating Glass Romance (V3)';
-    if (styleId.includes('_v4') || styleId === 'v4') return 'Magazine Monogram Grid (V4)';
-    if (styleId.includes('_v5') || styleId === 'v5') return 'Minimalist Couture (V5)';
+    const normalized = styleId.toLowerCase();
+    if (normalized.endsWith('_v1') || normalized === 'v1') return 'Original (V1)';
+    if (normalized.endsWith('_v2') || normalized === 'v2' || normalized === 'luxury-planner' || normalized === 'editorial-photo' || normalized === 'romantic-estate') return 'Split-Screen Modern (V2)';
+    if (normalized.endsWith('_v3') || normalized === 'v3') return 'Floating Glass Romance (V3)';
+    if (normalized.endsWith('_v4') || normalized === 'v4') return 'Magazine Monogram Grid (V4)';
+    if (normalized.endsWith('_v5') || normalized === 'v5') return 'Minimalist Couture (V5)';
     return 'Original (V1)';
 }
 
@@ -780,6 +788,26 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         mood: 'Constellations, midnight blue, and luminous promise',
         tier: 'premium',
         previewGradient: 'linear-gradient(135deg, #11162a 0%, #1e2748 52%, #9bade0 100%)',
+    },
+    {
+        id: 'nordic',
+        name: 'Nordic Serenity',
+        desc: 'Scandinavian organic minimalism with slate accents, serene typography, and clean airy lines.',
+        accent: '#475569',
+        eyebrow: 'Scandinavian Calm',
+        mood: 'Timber warmth, slate minimalism, and fresh morning light',
+        tier: 'free',
+        previewGradient: 'linear-gradient(135deg, #f4f6f5 0%, #e2e8f0 50%, #475569 100%)',
+    },
+    {
+        id: 'riviera',
+        name: 'Riviera Coast',
+        desc: 'Sun-drenched Mediterranean coastal romance with ocean sky blues and graceful typography.',
+        accent: '#0284C7',
+        eyebrow: 'Amalfi Romance',
+        mood: 'Ocean breeze, sun-bleached linen, and azure seaside bliss',
+        tier: 'free',
+        previewGradient: 'linear-gradient(135deg, #fffdfa 0%, #e0f2fe 50%, #0284c7 100%)',
     },
     {
         id: 'marigold-house',

@@ -6,6 +6,10 @@ import type { CSSProperties, ComponentType } from 'react';
 import type { TemplateProps, Wedding } from '@/types/wedding';
 
 const PremiumTemplate = dynamic(() => import('./PremiumTemplate'));
+const TemplateVariationV2 = dynamic(() => import('./variations/TemplateVariations').then((mod) => mod.TemplateVariationV2));
+const TemplateVariationV3 = dynamic(() => import('./variations/TemplateVariations').then((mod) => mod.TemplateVariationV3));
+const TemplateVariationV4 = dynamic(() => import('./variations/TemplateVariations').then((mod) => mod.TemplateVariationV4));
+const TemplateVariationV5 = dynamic(() => import('./variations/TemplateVariations').then((mod) => mod.TemplateVariationV5));
 
 export type TemplateId = keyof typeof TEMPLATE_COMPONENTS;
 export type ThemeFontVars = Record<'--font-serif' | '--font-sans', string>;
@@ -246,6 +250,50 @@ export function getWeddingPageStyle(wedding: Wedding, options?: { includeGradien
 }
 
 export function renderWeddingTemplate(props: TemplateProps) {
-    const Component = TEMPLATE_COMPONENTS[normalizeTemplateId(props.wedding.template)];
+    const templateId = normalizeTemplateId(props.wedding.template);
+    const styleKey = (props.wedding.template_style || 'v1').toLowerCase();
+    const isV1 = !styleKey || styleKey === 'default' || styleKey === 'v1' || styleKey.endsWith('_v1');
+
+    // If Variation 1 (Default), render the signature template component
+    if (isV1) {
+        const Component = TEMPLATE_COMPONENTS[templateId];
+        return <Component {...props} />;
+    }
+
+    // Variation 2: Split-Screen Modern Editorial
+    // Honor custom bespoke V2 implementations where available (luxury, editorial, romantic)
+    if (styleKey === 'v2' || styleKey.endsWith('_v2') || styleKey === 'luxury-planner' || styleKey === 'editorial-photo' || styleKey === 'romantic-estate') {
+        if (templateId === 'luxury') {
+            const LuxuryComp = TEMPLATE_COMPONENTS.luxury;
+            return <LuxuryComp {...props} wedding={{ ...props.wedding, template_style: 'luxury-planner' }} />;
+        }
+        if (templateId === 'editorial') {
+            const EditorialComp = TEMPLATE_COMPONENTS.editorial;
+            return <EditorialComp {...props} wedding={{ ...props.wedding, template_style: 'editorial-photo' }} />;
+        }
+        if (templateId === 'romantic') {
+            const RomanticComp = TEMPLATE_COMPONENTS.romantic;
+            return <RomanticComp {...props} wedding={{ ...props.wedding, template_style: 'romantic-estate' }} />;
+        }
+        return <TemplateVariationV2 {...props} />;
+    }
+
+    // Variation 3: Floating Glass Romance
+    if (styleKey === 'v3' || styleKey.endsWith('_v3')) {
+        return <TemplateVariationV3 {...props} />;
+    }
+
+    // Variation 4: Magazine Monogram Grid
+    if (styleKey === 'v4' || styleKey.endsWith('_v4')) {
+        return <TemplateVariationV4 {...props} />;
+    }
+
+    // Variation 5: Minimalist Couture
+    if (styleKey === 'v5' || styleKey.endsWith('_v5')) {
+        return <TemplateVariationV5 {...props} />;
+    }
+
+    // Fallback to signature template component
+    const Component = TEMPLATE_COMPONENTS[templateId];
     return <Component {...props} />;
 }
