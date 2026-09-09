@@ -13,7 +13,6 @@ import {
     EntranceReveal,
     VoiceGreeting,
     TemplateNavigation,
-    FAQSection,
 } from '@/components/wedding';
 import { getWeddingPageStyle, renderWeddingTemplate } from '@/components/templates/TemplateRenderer';
 import WeddingFontProvider from '@/components/WeddingFontProvider';
@@ -126,8 +125,6 @@ export default function WeddingPageClient({
                 <Suspense fallback={<div className="h-screen flex items-center justify-center font-serif italic text-primary">Refining layout...</div>}>
                     {renderWeddingTemplate({ wedding, gallery, isExpired })}
                 </Suspense>
-
-                <FAQSection id="faq" faqItems={wedding.faq_items} wedding={wedding} />
 
                 <TemplateNavigation wedding={wedding} />
 

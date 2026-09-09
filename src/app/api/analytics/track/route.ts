@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
 import { z } from 'zod';
 
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+        const supabase = getSupabaseAdminClient();
         const body = await req.json();
 
         // Validate request body
@@ -97,6 +98,7 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
     try {
+        const supabase = getSupabaseAdminClient();
         const { searchParams } = new URL(req.url);
         const weddingId = searchParams.get('weddingId');
 
@@ -134,7 +136,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Check if user is owner or collaborator
-        const hasAccess = await checkWeddingAccess(sanitizedWeddingId, user.id, user.email);
+        const hasAccess = await checkWeddingAccess(supabase, sanitizedWeddingId, user.id, user.email);
         if (!hasAccess) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
@@ -174,7 +176,7 @@ export async function GET(req: NextRequest) {
     }
 }
 
-async function checkWeddingAccess(weddingId: string, userId: string, userEmail?: string): Promise<boolean> {
+async function checkWeddingAccess(supabase: ReturnType<typeof getSupabaseAdminClient>, weddingId: string, userId: string, userEmail?: string): Promise<boolean> {
     // Check if user is owner
     const { data: wedding } = await supabase
         .from('weddings')

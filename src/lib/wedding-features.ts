@@ -242,10 +242,6 @@ export async function trackWeddingEvent(
             ? sanitizeInput(metadata.source, { maxLength: 50 }) 
             : 'direct';
         
-        const sanitizedReferrer = typeof document !== 'undefined' && document.referrer
-            ? sanitizeInput(document.referrer, { maxLength: 500 })
-            : null;
-
         // Sanitize metadata object - only allow primitive values
         const sanitizedMetadata: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(metadata)) {
@@ -261,13 +257,17 @@ export async function trackWeddingEvent(
             // Skip objects, arrays, functions, etc.
         }
 
-        await supabase.from('wedding_analytics_events').insert({
-            wedding_id: sanitizedWeddingId,
-            event_type: sanitizedEventType,
-            source,
-            session_id: sessionId,
-            referrer: sanitizedReferrer,
-            metadata: sanitizedMetadata,
+        await fetch('/api/analytics/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            keepalive: true,
+            body: JSON.stringify({
+                weddingId: sanitizedWeddingId,
+                eventType: sanitizedEventType,
+                source,
+                sessionId,
+                metadata: sanitizedMetadata,
+            }),
         });
     } catch (error) {
         console.warn('Analytics tracking unavailable:', error);

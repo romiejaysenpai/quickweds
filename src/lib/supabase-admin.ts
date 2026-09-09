@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-let cachedAdminClient: ReturnType<typeof createClient> | null = null;
+// The generated database type is not yet checked into this project. Keep the
+// server client permissive so newly migrated tables do not collapse to `never`.
+let cachedAdminClient: ReturnType<typeof createClient<any>> | null = null;
 
 export function getSupabaseAdminClient() {
     if (cachedAdminClient) {
@@ -17,7 +19,7 @@ export function getSupabaseAdminClient() {
         throw new Error('Missing Supabase admin configuration');
     }
 
-    cachedAdminClient = createClient(supabaseUrl, serviceRoleKey, {
+    cachedAdminClient = createClient<any>(supabaseUrl, serviceRoleKey, {
         auth: {
             persistSession: false,
             autoRefreshToken: false,
