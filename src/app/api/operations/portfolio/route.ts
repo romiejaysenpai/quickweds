@@ -16,10 +16,22 @@ export async function GET(req: NextRequest) {
         const weddings = [...new Map<string,any>([...owned.data,...invited.data].map((w:any)=>[w.id,w])).values()].filter(w=>!w.archived_at);
         if (!weddings.length) return NextResponse.json({weddings:[],attention:[]});
         const ids = weddings.map(w=>w.id);
+        // planner_tasks.due_date may not exist if the migration hasn't been applied yet.
+        // Gracefully degrade: skip checklist attention items rather than crash the page.
+        let plannerResult: { data: any[]; error: any } = { data: [], error: null };
+        try {
+            const raw = await db.from('planner_tasks').select('id,wedding_id,title,due_date,status').in('wedding_id',ids).neq('status','completed').not('due_date','is',null);
+            checked(raw);
+            plannerResult = raw;
+        } catch (e: any) {
+            const msg = String(e?.message || '').toLowerCase();
+            if (!msg.includes('does not exist') && !msg.includes("could not find")) throw e;
+            // Column missing – proceed without checklist items
+        }
         const results = await Promise.all([
             db.from('wedding_operations').select('id,wedding_id,title,kind,due_at,status').in('wedding_id',ids).eq('status','pending'),
             db.from('wedding_deliveries').select('id,wedding_id,recipient,last_error').in('wedding_id',ids).eq('status','failed'),
-            db.from('planner_tasks').select('id,wedding_id,title,due_date,status').in('wedding_id',ids).neq('status','completed').not('due_date','is',null),
+            Promise.resolve(plannerResult),
             allRows(()=>db.from('rsvps').select('id,wedding_id,rsvp_status,table_assignment').in('wedding_id',ids)),
         ]);
         results.forEach(checked);

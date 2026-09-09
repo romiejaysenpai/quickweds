@@ -9,18 +9,18 @@ test.describe('post-login routing', () => {
         }, '/dashboard')).toBe('/dashboard');
     });
 
-    test('sends a returning couple to the welcome dashboard even when coming from builder', () => {
+    test('returns a returning couple to the requested builder path after login', () => {
         expect(getPostLoginRedirect({
             user_id: 'returning-user', account_type: 'couple', onboarding_completed: true,
             has_weddings: true, dashboard_path: '/dashboard/wedding-1',
-        }, '/builder')).toBe('/dashboard');
+        }, '/builder')).toBe('/builder');
     });
 
-    test('sends a returning couple to the welcome dashboard even with an explicit wedding path', () => {
+    test('returns a returning couple to an explicit wedding path after login', () => {
         expect(getPostLoginRedirect({
             user_id: 'returning-user', account_type: 'couple', onboarding_completed: true,
             has_weddings: true, dashboard_path: '/dashboard/wedding-1',
-        }, '/dashboard/wedding-1/planner')).toBe('/dashboard');
+        }, '/dashboard/wedding-1/planner')).toBe('/dashboard/wedding-1/planner');
     });
 
     test('sends a first-time user to onboarding', () => {

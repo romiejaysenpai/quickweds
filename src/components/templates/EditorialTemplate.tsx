@@ -19,7 +19,8 @@ import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
 
 export default function EditorialTemplate({ wedding, gallery, isExpired }: TemplateProps) {
-    if (wedding.template_style === 'editorial-photo') {
+    const isV2 = wedding.template_style === 'editorial-photo' || wedding.template_style === 'editorial_v2' || wedding.template_style === 'v2';
+    if (isV2) {
         return (
             <div className="bg-[#f7f3ee] pb-24 text-[#201c19]">
                 <section className="relative min-h-screen overflow-hidden px-5 py-10 md:px-10">

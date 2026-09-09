@@ -176,8 +176,15 @@ function isMissingOptionalColumnError(error: unknown, columns: readonly string[]
 function getTemplateTestWedding(rawIdentifier: string) {
     if (!rawIdentifier.startsWith('template-')) return null;
 
-    const includeEntourageSection = !rawIdentifier.endsWith('-no-entourage');
-    const template = rawIdentifier.replace(/^template-/, '').replace(/-no-entourage$/, '') || 'classic';
+    let template_style = 'default';
+    let base = rawIdentifier;
+    if (base.includes('--style-')) {
+        const parts = base.split('--style-');
+        base = parts[0];
+        template_style = parts[1];
+    }
+    const includeEntourageSection = !base.endsWith('-no-entourage');
+    const template = base.replace(/^template-/, '').replace(/-no-entourage$/, '') || 'classic';
     const imageData =
         'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600"%3E%3Crect width="1200" height="1600" fill="%23f4d7c8"/%3E%3Ccircle cx="600" cy="620" r="260" fill="%23d16c78" opacity=".35"/%3E%3Cpath d="M260 1120c180-210 420-210 600 0" fill="none" stroke="%233a2a2d" stroke-width="32" stroke-linecap="round"/%3E%3C/svg%3E';
 
@@ -204,7 +211,7 @@ function getTemplateTestWedding(rawIdentifier: string) {
         gallery_layout: 'auto',
         custom_domain: '',
         template,
-        template_style: 'default',
+        template_style,
         section_title_font_style: 'default',
         section_title_color_style: 'motif',
         font_style: 'Elegant',

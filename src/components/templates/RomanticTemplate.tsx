@@ -20,7 +20,8 @@ import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
 
 export default function RomanticTemplate({ wedding, gallery, isExpired }: TemplateProps) {
-    if (wedding.template_style === 'romantic-estate') {
+    const isV2 = wedding.template_style === 'romantic-estate' || wedding.template_style === 'romantic_v2' || wedding.template_style === 'v2';
+    if (isV2) {
         return (
             <div className="relative bg-[#fff8f5] pb-24 font-serif text-[#55373b] selection:bg-[#b97983]/20">
                 <section className="relative min-h-screen overflow-hidden px-5 py-12">

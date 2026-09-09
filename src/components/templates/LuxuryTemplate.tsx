@@ -19,7 +19,8 @@ import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
 
 export default function LuxuryTemplate({ wedding, gallery, isExpired }: TemplateProps) {
-    if (wedding.template_style === 'luxury-planner') {
+    const isV2 = wedding.template_style === 'luxury-planner' || wedding.template_style === 'luxury_v2' || wedding.template_style === 'v2';
+    if (isV2) {
         return (
             <div className="bg-[#fbf7ef] text-[#2b2520] font-serif selection:bg-[#b9975b] selection:text-white pb-24">
                 <section className="relative min-h-screen overflow-hidden">

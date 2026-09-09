@@ -25,6 +25,10 @@ function normalizeGalleryLayout(layout?: string): GalleryLayout {
     if (layout === 'bento' || layout === 'vertical' || layout === 'horizontal' || layout === 'grid') {
         return layout;
     }
+    if (layout === 'carousel') return 'horizontal';
+    if (layout === 'polaroid') return 'bento';
+    if (layout === 'magazine') return 'grid';
+    if (layout === 'minimal') return 'vertical';
     return 'auto';
 }
 

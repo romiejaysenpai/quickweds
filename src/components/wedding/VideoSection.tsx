@@ -361,11 +361,59 @@ const STYLE_VARIANT_DESIGNS: Record<string, Partial<TeaserDesign>> = {
         badge: 'border-[#efd3d8] bg-white/85 text-[#55373b]',
         titleText: 'Estate Preview',
     },
+    v2: {
+        section: 'bg-[#F9F7F5] text-[#222]',
+        eyebrow: 'text-primary tracking-[0.3em] font-mono',
+        title: 'font-serif text-4xl sm:text-6xl uppercase tracking-tight',
+        header: 'max-w-5xl text-left',
+        frame: 'mt-12 rounded-none border-2 border-foreground/20 bg-white p-4 shadow-xl',
+        video: 'rounded-none',
+        badge: 'rounded-none border border-foreground/25 bg-white text-foreground',
+        icon: 'film',
+        titleText: 'Editorial Cinema',
+    },
+    v3: {
+        section: 'bg-gradient-to-b from-transparent via-white/50 to-transparent text-foreground',
+        eyebrow: 'text-primary tracking-[0.4em] font-serif italic',
+        title: 'font-serif text-4xl sm:text-6xl italic',
+        frame: 'mt-12 rounded-[2.5rem] border border-white/60 bg-white/40 backdrop-blur-xl p-4 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)]',
+        video: 'rounded-[2rem]',
+        badge: 'rounded-full border border-primary/30 bg-white/80 text-primary',
+        icon: 'heart',
+        titleText: 'Moments in Love',
+    },
+    v4: {
+        section: 'bg-white text-foreground',
+        eyebrow: 'text-text-secondary tracking-[0.35em] font-bold',
+        title: 'font-sans text-4xl sm:text-6xl font-black uppercase tracking-tighter',
+        frame: 'mt-12 rounded-2xl border border-border bg-neutral-50 p-3 shadow-md',
+        video: 'rounded-xl',
+        badge: 'rounded-lg border border-border bg-white text-foreground',
+        icon: 'sparkles',
+        titleText: 'Motion Story',
+    },
+    v5: {
+        section: 'bg-[#FAF6F0] text-foreground',
+        eyebrow: 'text-foreground/70 font-mono text-xs uppercase tracking-widest',
+        title: 'font-sans text-4xl sm:text-6xl font-black uppercase tracking-tight',
+        frame: 'mt-12 rounded-2xl border-2 border-foreground bg-white p-3 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]',
+        video: 'rounded-xl',
+        badge: 'rounded-lg border-2 border-foreground bg-foreground text-background',
+        icon: 'play',
+        titleText: 'Official Teaser',
+    },
 };
 
 function mergeDesign(template?: string | null, templateStyle?: string | null): TeaserDesign {
     const normalizedTemplate = (template || 'classic').toLowerCase();
-    const variant = templateStyle && templateStyle !== 'default' ? STYLE_VARIANT_DESIGNS[templateStyle] : undefined;
+    let styleKey = templateStyle && templateStyle !== 'default' ? templateStyle : undefined;
+    if (styleKey && !STYLE_VARIANT_DESIGNS[styleKey]) {
+        if (styleKey.endsWith('_v2') || styleKey === 'v2') styleKey = 'v2';
+        else if (styleKey.endsWith('_v3') || styleKey === 'v3') styleKey = 'v3';
+        else if (styleKey.endsWith('_v4') || styleKey === 'v4') styleKey = 'v4';
+        else if (styleKey.endsWith('_v5') || styleKey === 'v5') styleKey = 'v5';
+    }
+    const variant = styleKey ? STYLE_VARIANT_DESIGNS[styleKey] : undefined;
     return {
         ...DEFAULT_DESIGN,
         ...(DESIGNS[normalizedTemplate] || {}),

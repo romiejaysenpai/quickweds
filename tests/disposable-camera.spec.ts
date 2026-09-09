@@ -106,7 +106,7 @@ test.describe('Disposable Camera Mode', () => {
     await page.getByRole('button', { name: 'Capture Moments' }).click();
     const fileChooser = await fileChooserPromise;
 
-    await expect(page.locator('input[type="file"]')).toHaveAttribute('capture', 'environment');
+    await expect(page.locator('form input[type="file"]')).toHaveAttribute('capture', 'environment');
     await fileChooser.setFiles({
       name: 'memory.png',
       mimeType: 'image/png',
@@ -164,7 +164,7 @@ test.describe('Disposable Camera Mode', () => {
     const fileChooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Take Photo Now' }).click();
     const fileChooser = await fileChooserPromise;
-    await expect(page.locator('input[type="file"]')).toHaveAttribute('capture', 'environment');
+    await expect(page.locator('form input[type="file"]')).toHaveAttribute('capture', 'environment');
     await fileChooser.setFiles({
       name: 'memory.png',
       mimeType: 'image/png',
