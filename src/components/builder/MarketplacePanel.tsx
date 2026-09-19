@@ -30,7 +30,7 @@ export default function MarketplacePanel({
                         <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
                             <Bookmark className="w-4 h-4 text-primary" /> Theme Marketplace
                         </h4>
-                        <p className="text-xs text-text-secondary">Apply a curated look, then save your custom version as a reusable preset.</p>
+                        <p className="text-xs text-text-secondary">Apply a curated look, then keep your custom style as a reusable preset.</p>
                     </div>
                     <button
                         type="button"
@@ -38,7 +38,7 @@ export default function MarketplacePanel({
                         className="w-full sm:w-auto px-3 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-all min-h-[44px] inline-flex items-center justify-center gap-2"
                     >
                         <Save className="w-4 h-4" />
-                        Save Current
+                        Save Preset
                     </button>
                 </div>
 

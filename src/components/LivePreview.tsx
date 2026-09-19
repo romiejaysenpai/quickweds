@@ -89,6 +89,7 @@ export default function LivePreview({
                 accent_style: formData.accentStyle || 'none',
                 hero_image: previews.heroImage,
                 couple_photo: previews.couplePhoto,
+                teaser_video: previews.teaserVideo,
                 gift_qr_image: previews.giftQr,
                 invitation_image: JSON.stringify(previews.invitationImages),
                 gallery_layout: formData.galleryLayout || 'auto',
