@@ -404,7 +404,7 @@ export default function VideoSection({
             id={id}
             className={`relative overflow-hidden ${design.section}`}
             style={{
-                backgroundImage: `radial-gradient(circle at 12% 12%, ${motifColor}18, transparent 34%), radial-gradient(circle at 88% 18%, ${motifColor}12, transparent 32%)`,
+                backgroundImage: `radial-gradient(circle at 12% 12%, ${safeMotifColor}18, transparent 34%), radial-gradient(circle at 88% 18%, ${safeMotifColor}12, transparent 32%)`,
             }}
         >
             {design.rail && (
@@ -418,7 +418,7 @@ export default function VideoSection({
                     transition={{ duration: 0.8, ease: 'easeOut' }}
                 >
                     <div className={design.header}>
-                        <span className={`inline-flex items-center gap-2 text-[10px] font-black uppercase ${design.eyebrow}`}>
+                        <span className={`inline-flex items-center gap-2 text-xs font-semibold uppercase ${design.eyebrow}`}>
                             {renderIcon(design.icon)}
                             {design.label}
                         </span>
@@ -431,13 +431,9 @@ export default function VideoSection({
                     </div>
 
                     <div className={`relative mx-auto max-w-5xl ${design.frame}`}>
-                        <div className={`absolute left-5 top-5 z-10 inline-flex items-center gap-2 border px-3 py-2 text-[10px] font-bold uppercase tracking-[0.22em] shadow-lg ${design.badge}`}>
-                            <Play className="h-3 w-3 fill-current" />
-                            Play
-                        </div>
                         <video
                             src={video}
-                            className={`aspect-video h-auto w-full object-cover ${design.video}`}
+                            className={`aspect-video h-auto w-full object-contain ${design.video}`}
                             controls
                             poster={poster}
                             preload="metadata"

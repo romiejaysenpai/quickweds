@@ -12,7 +12,7 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -40,7 +40,7 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: any) {
                         {wedding.groom_name.split(' ')[0]}
                     </h1>
                     <div className="p-1 px-6 sm:px-8 md:px-12 lg:px-12 border-4 border-[#00695c] inline-block mb-8 sm:mb-10 md:mb-16 lg:mb-16 relative group-hover:bg-[#00695c] group-hover:text-white transition-all duration-500">
-                        <p className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-serif py-2 sm:py-3 md:py-4 lg:py-4">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</p>
+                        <p className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-serif py-2 sm:py-3 md:py-4 lg:py-4">{new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</p>
                     </div>
                     <br />
                     <motion.a
@@ -104,7 +104,6 @@ export default function TropicalTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

@@ -10,7 +10,7 @@ import {
     GallerySection, 
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -44,7 +44,7 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
                         </h1>
                         <div className="w-20 sm:w-24 md:w-32 h-[1px] mx-auto mb-10 sm:mb-12 md:mb-16" style={{ backgroundColor: motifColor }} />
                         <p className="text-lg sm:text-xl md:text-2xl font-serif italic text-neutral-600">
-                            {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                            {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { dateStyle: 'long' })}
                         </p>
                         <p className="text-base sm:text-lg md:text-xl font-light text-neutral-400 mt-4">
                             {wedding.venue_name}
@@ -73,7 +73,6 @@ export default function TimelineTemplate({ wedding, gallery, isExpired }: Templa
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <DetailsSection id="details" wedding={wedding} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}

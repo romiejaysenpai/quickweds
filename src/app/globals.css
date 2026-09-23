@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./wedding-design.css";
 
 :root {
   --primary: #D16C78;

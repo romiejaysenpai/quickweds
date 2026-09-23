@@ -2,7 +2,7 @@
 
 import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle, Download, Lock, Play } from 'lucide-react';
+import { Heart, Calendar, MapPin, Palette, CheckCircle2, ArrowRight, ArrowLeft, Send, Camera, Image as ImageIcon, Video, X, Layout, Sparkles, Plus, Trash2, Link as LinkIcon, DollarSign, Music, Shirt, Undo2, Redo2, ChevronDown, Eye, Smartphone, Clock, HelpCircle, FileSpreadsheet, Upload, AlertCircle, Download, Lock, Play, Save } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AttireIllustration from './AttireIllustration';
 import { supabase } from '@/lib/supabase';
@@ -11,6 +11,7 @@ import GenerationLoading from './GenerationLoading';
 import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
+import { BUILDER_DRAFT_STORAGE_KEY } from '@/lib/builder-storage';
 import MarketplacePanel from './builder/MarketplacePanel';
 import { MONOGRAM_SHAPES, MONOGRAM_ANIMATIONS, MonogramMark } from './MonogramMark';
 import { MonogramExporter } from './MonogramExporter';
@@ -468,6 +469,8 @@ const MAX_FREE_VIDEO_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_PREMIUM_VIDEO_FILE_BYTES = 100 * 1024 * 1024;
 const MAX_CONCURRENT_UPLOADS = 3;
 
+export { BUILDER_DRAFT_STORAGE_KEY } from '@/lib/builder-storage';
+
 export default function BuilderForm() {
     const router = useRouter();
     const { user, isAdmin, loading: authLoading } = useAuth();
@@ -479,6 +482,9 @@ export default function BuilderForm() {
     const [loadedEditId, setLoadedEditId] = useState<string | null>(null);
     const weddingLoadRef = useRef<{ id: string; requestId: number } | null>(null);
     const weddingLoadRequestIdRef = useRef(0);
+
+    const [detectedDraft, setDetectedDraft] = useState<{ formData: any; currentStep: number; updatedAt: string } | null>(null);
+    const [draftDismissed, setDraftDismissed] = useState(false);
 
     // Scroll to top of the page when the step changes
     useEffect(() => {
@@ -521,6 +527,57 @@ export default function BuilderForm() {
         canRedo,
         clear: initializeFormData,
     } = useLocalUndoRedo(INITIAL_FORM_DATA, 50);
+
+    // Detect saved local storage draft on mount
+    useEffect(() => {
+        if (editId || typeof window === 'undefined') return;
+        try {
+            const raw = window.localStorage.getItem(BUILDER_DRAFT_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.formData) {
+                    setDetectedDraft(parsed);
+                    if (searchParams?.get('resume') === 'draft') {
+                        initializeFormData(parsed.formData);
+                        if (typeof parsed.currentStep === 'number') setCurrentStep(parsed.currentStep);
+                        setDraftDismissed(true);
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to load local builder draft:', err);
+        }
+    }, [editId, searchParams, initializeFormData]);
+
+    // Auto-save local draft as user edits form data
+    useEffect(() => {
+        if (editId || typeof window === 'undefined' || isSubmitting) return;
+
+        const hasContent = Boolean(
+            formData.brideName?.trim() ||
+            formData.groomName?.trim() ||
+            formData.venueName?.trim() ||
+            formData.story?.trim() ||
+            currentStep > 0
+        );
+
+        if (!hasContent) return;
+
+        const timer = setTimeout(() => {
+            try {
+                const draftPayload = {
+                    formData,
+                    currentStep,
+                    updatedAt: new Date().toISOString(),
+                };
+                window.localStorage.setItem(BUILDER_DRAFT_STORAGE_KEY, JSON.stringify(draftPayload));
+            } catch (err) {
+                console.warn('Auto-save builder draft failed:', err);
+            }
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [formData, currentStep, editId, isSubmitting]);
 
     useEffect(() => {
         if (editId || !requestedTemplate || !TEMPLATES.some((template) => template.id === requestedTemplate)) return;
@@ -1015,6 +1072,16 @@ export default function BuilderForm() {
         URL.revokeObjectURL(url);
     };
 
+    const isPersistedMediaUrl = (url: unknown): url is string => (
+        typeof url === 'string'
+        && url.trim().length > 0
+        && !url.startsWith('blob:')
+    );
+
+    const persistedMediaUrls = (urls: unknown): string[] => (
+        Array.isArray(urls) ? urls.filter(isPersistedMediaUrl) : []
+    );
+
     const validateImageFiles = (files: File[]) => {
         const invalidType = files.find((file) => !file.type.startsWith('image/'));
         if (invalidType) {
@@ -1139,25 +1206,27 @@ export default function BuilderForm() {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (currentStep < STEPS.length - 1) {
-            nextStep();
-            return;
-        }
-
-        if (publishHealth.criticalItems.length > 0) {
-            const firstCriticalStep = Math.min(...publishHealth.criticalItems.map((item) => item.stepIndex));
-            alert(`Please fix ${publishHealth.criticalItems.length} launch blocker${publishHealth.criticalItems.length === 1 ? '' : 's'} before publishing. Start with: ${publishHealth.criticalItems[0].title}`);
-            if (Number.isFinite(firstCriticalStep)) {
-                setCurrentStep(firstCriticalStep);
+    const saveInvitation = async ({
+        enforcePublishHealth = true,
+        stayOnPage = false,
+    }: {
+        enforcePublishHealth?: boolean;
+        stayOnPage?: boolean;
+    } = {}) => {
+        if (enforcePublishHealth) {
+            if (publishHealth.criticalItems.length > 0) {
+                const firstCriticalStep = Math.min(...publishHealth.criticalItems.map((item) => item.stepIndex));
+                alert(`Please fix ${publishHealth.criticalItems.length} launch blocker${publishHealth.criticalItems.length === 1 ? '' : 's'} before publishing. Start with: ${publishHealth.criticalItems[0].title}`);
+                if (Number.isFinite(firstCriticalStep)) {
+                    setCurrentStep(firstCriticalStep);
+                }
+                return;
             }
-            return;
-        }
 
-        if (publishHealth.warningItems.length > 0) {
-            const proceed = window.confirm(`Your invitation is ${publishHealth.score}% complete and has ${publishHealth.warningItems.length} important warning${publishHealth.warningItems.length === 1 ? '' : 's'}.\n\nYou can publish now, but guests may have a better experience if you fix them first. Publish anyway?`);
-            if (!proceed) return;
+            if (publishHealth.warningItems.length > 0) {
+                const proceed = window.confirm(`Your invitation is ${publishHealth.score}% complete and has ${publishHealth.warningItems.length} important warning${publishHealth.warningItems.length === 1 ? '' : 's'}.\n\nYou can publish now, but guests may have a better experience if you fix them first. Publish anyway?`);
+                if (!proceed) return;
+            }
         }
 
         if (!user) {
@@ -1188,7 +1257,7 @@ export default function BuilderForm() {
         }
 
         setIsSubmitting(true);
-        setIsGenerating(true);
+        setIsGenerating(!stayOnPage);
 
         try {
             const weddingId = editId || uuidv4().slice(0, 8);
@@ -1304,18 +1373,31 @@ export default function BuilderForm() {
                 accent_style: formData.accentStyle,
             };
 
-            if (mediaFiles.heroImage || editId) payload.hero_image = heroUrl || previews.heroImage;
-            if (mediaFiles.couplePhoto || editId) payload.couple_photo = coupleUrl || previews.couplePhoto;
-            if (mediaFiles.teaserVideo || editId) payload.teaser_video = videoUrl || (formData as any).teaser_video; 
-            if (mediaFiles.backgroundMusic || editId || previews.backgroundMusic) payload.background_music_url = musicUrl || previews.backgroundMusic;
-            if (mediaFiles.giftQr || editId) payload.gift_qr_image = giftQrUrl || previews.giftQr;
+            if (mediaFiles.heroImage || editId) payload.hero_image = heroUrl || (isPersistedMediaUrl(previews.heroImage) ? previews.heroImage : '');
+            if (mediaFiles.couplePhoto || editId) payload.couple_photo = coupleUrl || (isPersistedMediaUrl(previews.couplePhoto) ? previews.couplePhoto : '');
+            if (mediaFiles.teaserVideo || editId) payload.teaser_video = videoUrl || (isPersistedMediaUrl(previews.teaserVideo) ? previews.teaserVideo : '');
+            if (mediaFiles.backgroundMusic || editId || previews.backgroundMusic) payload.background_music_url = musicUrl || (isPersistedMediaUrl(previews.backgroundMusic) ? previews.backgroundMusic : '');
+            if (mediaFiles.giftQr || editId) payload.gift_qr_image = giftQrUrl || (isPersistedMediaUrl(previews.giftQr) ? previews.giftQr : '');
             
-            // Handle invitation images: merge new uploads with existing previews if editing
-            const finalInvitationImages = invitationUrls.length > 0 ? invitationUrls : previews.invitationImages;
+            const existingInvitationImages = persistedMediaUrls(previews.invitationImages);
+            const finalInvitationImages = invitationUrls.length > 0
+                ? [...existingInvitationImages, ...invitationUrls]
+                : existingInvitationImages;
             payload.invitation_image = JSON.stringify(finalInvitationImages);
-            
-            if (mediaFiles.galleryImages.length > 0 || editId) payload.gallery_images = galleryUrls.length > 0 ? galleryUrls : (formData as any).gallery_images;
-            if (mediaFiles.receptionVenuePhotos.length > 0 || editId) payload.reception_venue_photos = receptionVenueUrls.length > 0 ? receptionVenueUrls : previews.receptionVenuePhotos;
+
+            const existingGalleryImages = persistedMediaUrls(previews.galleryImages);
+            if (mediaFiles.galleryImages.length > 0 || editId) {
+                payload.gallery_images = galleryUrls.length > 0
+                    ? [...existingGalleryImages, ...galleryUrls]
+                    : existingGalleryImages;
+            }
+
+            const existingReceptionVenuePhotos = persistedMediaUrls(previews.receptionVenuePhotos);
+            if (mediaFiles.receptionVenuePhotos.length > 0 || editId) {
+                payload.reception_venue_photos = receptionVenueUrls.length > 0
+                    ? [...existingReceptionVenuePhotos, ...receptionVenueUrls]
+                    : existingReceptionVenuePhotos;
+            }
 
             const publicSlug = await resolvePublicSlug(weddingId);
             const baseSubmitPayload: any = {
@@ -1411,6 +1493,16 @@ export default function BuilderForm() {
             }
 
             // Success
+            if (typeof window !== 'undefined') {
+                window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
+            }
+            if (stayOnPage && editId) {
+                setWeddingOwnerId(baseSubmitPayload.user_id);
+                setLoadedEditId(weddingId);
+                setIsGenerating(false);
+                alert('Changes saved. Your public invitation has been updated.');
+                return;
+            }
             router.push(`/dashboard/${weddingId}?created=true`);
 
         } catch (err: any) {
@@ -1420,11 +1512,26 @@ export default function BuilderForm() {
             if (errorMessage.includes('exceeded the maximum allowed size')) {
                 alert('Storage Limit Error: Your Supabase bucket has a 50MB default limit. Please compress your files or go to your Supabase Dashboard to check your storage settings.');
             } else {
-                alert('Error creating invitation: ' + errorMessage);
+                alert('Error saving invitation: ' + errorMessage);
             }
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleSaveChanges = async () => {
+        if (isSubmitting) return;
+        await saveInvitation({ enforcePublishHealth: false, stayOnPage: true });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (currentStep < STEPS.length - 1) {
+            nextStep();
+            return;
+        }
+
+        await saveInvitation({ enforcePublishHealth: true, stayOnPage: false });
     };
 
     const renderStep = () => {
@@ -3160,6 +3267,49 @@ return (
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                    {detectedDraft && !draftDismissed && !editId && (
+                        <div className="rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-amber-500/10 p-4 shadow-sm sm:p-5">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-sm">
+                                        <Sparkles className="h-5 w-5 animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-wider text-primary">Unsaved Draft Found</p>
+                                        <p className="mt-0.5 text-sm font-medium text-foreground">
+                                            We restored an unsaved draft on this browser ({new Date(detectedDraft.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}).
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (detectedDraft.formData) initializeFormData(detectedDraft.formData);
+                                            if (typeof detectedDraft.currentStep === 'number') setCurrentStep(detectedDraft.currentStep);
+                                            setDraftDismissed(true);
+                                        }}
+                                        className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-md shadow-primary/20 hover:bg-primary-hover"
+                                    >
+                                        Resume Draft
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (typeof window !== 'undefined') {
+                                                window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
+                                            }
+                                            setDetectedDraft(null);
+                                            setDraftDismissed(true);
+                                        }}
+                                        className="min-h-[40px] rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary hover:bg-neutral"
+                                    >
+                                        Discard
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {freeWebsiteLimitReached && (
                         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -3203,6 +3353,18 @@ return (
                         <button type="button" onClick={prevStep} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2 rounded-lg sm:rounded-xl text-primary font-bold text-sm sm:text-base min-h-[44px] min-w-[44px] ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'hover:bg-neutral transition-colors'}`}>
                             <ArrowLeft className="w-4 h-4 flex-shrink-0" /> <span className="hidden sm:inline">Back</span>
                         </button>
+                        {editId && (
+                            <button
+                                type="button"
+                                onClick={handleSaveChanges}
+                                disabled={isSubmitting}
+                                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary shadow-sm transition-all hover:-translate-y-0.5 hover:bg-primary/10 disabled:translate-y-0 disabled:opacity-50 sm:rounded-xl sm:px-5"
+                            >
+                                <Save className="h-4 w-4 flex-shrink-0" />
+                                <span className="hidden sm:inline">Save Changes</span>
+                                <span className="sm:hidden">Save</span>
+                            </button>
+                        )}
                         <button type="submit" disabled={isSubmitting} className="bg-primary text-white px-6 sm:px-10 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold flex items-center gap-2 hover:bg-primary-hover shadow-lg shadow-primary/20 disabled:opacity-50 text-sm sm:text-base min-h-[44px] transition-all flex-1 sm:flex-none justify-center sm:justify-start">
                             {isSubmitting ? 'Processing...' : currentStep === STEPS.length - 1 ? <><span className="hidden sm:inline">{editId ? 'Update Invitation' : 'Create Invitation'}</span><span className="sm:hidden">Finish</span> <Send className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></> : <>Next <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0" /></>}
                         </button>

@@ -10,12 +10,12 @@ import {
     GallerySection, 
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
 export default function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
-    const formattedDate = new Date(wedding.wedding_date).toLocaleDateString('en-US', {
+    const formattedDate = new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
         year: 'numeric'
@@ -95,7 +95,6 @@ export default function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

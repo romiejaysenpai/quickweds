@@ -82,22 +82,22 @@ function Lightbox({ images, index, onClose }: { images: string[]; index: number;
                 onClick={onClose}
             >
                 {/* Close */}
-                <button onClick={onClose} className="absolute top-4 sm:top-6 right-4 sm:right-6 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
+                <button aria-label="Close photo" onClick={onClose} className="absolute top-4 sm:top-6 right-4 sm:right-6 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
                     <X className="w-5 sm:w-6 h-5 sm:h-6" />
                 </button>
 
                 {/* Download */}
-                <button onClick={(e) => { e.stopPropagation(); handleDownload(); }} className="absolute top-4 sm:top-6 right-16 sm:right-20 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
+                <button aria-label="Download photo" onClick={(e) => { e.stopPropagation(); handleDownload(); }} className="absolute top-4 sm:top-6 right-16 sm:right-20 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
                     <Download className="w-5 sm:w-5 h-5 sm:h-5" />
                 </button>
 
                 {/* Prev */}
-                <button onClick={(e) => { e.stopPropagation(); prev(); }} className="absolute left-2 sm:left-4 md:left-8 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
+                <button aria-label="Previous photo" onClick={(e) => { e.stopPropagation(); prev(); }} className="absolute left-2 sm:left-4 md:left-8 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
                     <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6" />
                 </button>
 
                 {/* Next */}
-                <button onClick={(e) => { e.stopPropagation(); next(); }} className="absolute right-2 sm:right-4 md:right-8 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
+                <button aria-label="Next photo" onClick={(e) => { e.stopPropagation(); next(); }} className="absolute right-2 sm:right-4 md:right-8 z-10 w-10 sm:w-12 h-10 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px]">
                     <ChevronRight className="w-5 sm:w-6 h-5 sm:h-6" />
                 </button>
 
@@ -153,7 +153,7 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
             initial={{ opacity: 0, y: 32 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(i * 0.06, 0.36), duration: 0.5 }}
-            className={`group cursor-pointer overflow-hidden p-2 text-left transition-all duration-500 hover:-translate-y-1 ${visual.cardClass} ${modeClass}`}
+            className={`group cursor-pointer overflow-hidden text-left transition-transform duration-500 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current ${itemRadiusClass} ${modeClass}`}
             onClick={() => setLightboxIndex(i)}
             aria-label={`Open wedding gallery image ${i + 1}`}
         >
@@ -169,17 +169,8 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
                 <GalleryImage
                     src={img}
                     alt={`Wedding gallery image ${i + 1}`}
-                    className="group-hover:scale-110"
+                    className="group-hover:scale-[1.03]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/8 to-transparent opacity-100 transition-opacity duration-500 sm:opacity-0 sm:group-hover:opacity-100" />
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-4 opacity-100 transition-all duration-500 sm:translate-y-4 sm:p-5 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">
-                    <span className="rounded-full border border-white/55 bg-black/45 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md sm:px-4 sm:text-[10px] sm:tracking-[0.24em]">
-                        Memory {i + 1}
-                    </span>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary shadow-lg ring-1 ring-black/10">
-                        <ChevronRight className="h-5 w-5" />
-                    </div>
-                </div>
             </div>
         </motion.button>
     );
@@ -201,9 +192,6 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
                         </div>
                         <h2 className={`text-4xl sm:text-6xl ${typography.heading} ${visual.headingClass}`}>{visual.galleryTitle}</h2>
                         <div className={`mx-auto mt-6 ${visual.dividerClass}`} />
-                        <p className={`mx-auto mt-5 max-w-2xl text-sm leading-relaxed sm:text-base ${visual.bodyClass}`}>
-                            A curated look at the people, places, and details that shaped the celebration.
-                        </p>
                     </motion.div>
 
                     {resolvedLayout === 'horizontal' ? (

@@ -11,7 +11,7 @@ import {
     TimelineSection,
     VideoSection,
     AttireSection,
-    FAQSection,
+
 } from '@/components/wedding';
 import type { TemplateProps } from '@/types/wedding';
 
@@ -72,7 +72,7 @@ export default function MinimalTemplate({ wedding, gallery, isExpired }: Templat
                             animate={{ opacity: 1 }}
                             transition={{ delay: 1.2, duration: 0.8 }}
                         >
-                            {new Date(wedding.wedding_date).toLocaleDateString(undefined, {
+                            {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, {
                                 month: 'long',
                                 day: 'numeric',
                                 year: 'numeric',
@@ -124,7 +124,6 @@ export default function MinimalTemplate({ wedding, gallery, isExpired }: Templat
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

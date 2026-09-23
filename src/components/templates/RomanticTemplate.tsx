@@ -12,7 +12,7 @@ import {
     GallerySection, 
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -61,7 +61,7 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                             </div>
                             <div className="absolute -bottom-5 left-1/2 w-[82%] -translate-x-1/2 bg-white/88 px-6 py-5 text-center shadow-[0_20px_60px_rgba(85,55,59,0.12)] backdrop-blur">
                                 <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-[#b97983]">
-                                    {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                    {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                                 </p>
                                 <p className="mt-1 text-sm text-[#816066]">{wedding.venue_name}</p>
                             </div>
@@ -96,7 +96,6 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                 <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
                 <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
                 <AttireSection wedding={wedding} />
-                <FAQSection wedding={wedding} />
                 <GiftSection id="gift" wedding={wedding} />
                 <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
             </div>
@@ -165,7 +164,6 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

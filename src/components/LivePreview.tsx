@@ -1,13 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { getTemplateMeta, getTemplateStyleLabel } from '@/lib/template-catalog';
 import { serializeDressCodeValue } from '@/lib/dress-code';
 import { getSafeMonogramConfig } from '@/lib/monogram';
 
 const PREVIEW_STORAGE_KEY = 'quickweds-builder-preview';
 
-export default function LivePreview({
+function LivePreview({
     formData,
     previews,
     isMobileView = false,
@@ -89,6 +89,7 @@ export default function LivePreview({
                 accent_style: formData.accentStyle || 'none',
                 hero_image: previews.heroImage,
                 couple_photo: previews.couplePhoto,
+                teaser_video: previews.teaserVideo,
                 gift_qr_image: previews.giftQr,
                 invitation_image: JSON.stringify(previews.invitationImages),
                 gallery_layout: formData.galleryLayout || 'auto',
@@ -113,7 +114,13 @@ export default function LivePreview({
     useLayoutEffect(() => {
         payloadRevisionRef.current += 1;
         latestPayloadRef.current = { ...previewPayload, previewRevision: payloadRevisionRef.current };
-        sendUpdate();
+    }, [previewPayload]);
+
+    useEffect(() => {
+        // Coalesce typing bursts instead of serializing storage and rendering the
+        // entire wedding iframe synchronously before every input paint.
+        const timer = window.setTimeout(sendUpdate, 150);
+        return () => window.clearTimeout(timer);
     }, [previewPayload, sendUpdate]);
 
     const syncAfterFrameLoad = useCallback(() => {
@@ -173,3 +180,5 @@ export default function LivePreview({
         </div>
     );
 }
+
+export default memo(LivePreview);

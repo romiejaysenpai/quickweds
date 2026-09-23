@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Camera, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSectionContext } from '@/context/SectionContext';
 import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
@@ -52,7 +52,7 @@ export default function VenueDetailsSection({ wedding, id = 'reception-venue' }:
     const directionsUrl = getDirectionsUrl(wedding.reception_venue_name, wedding.reception_venue_address, wedding.reception_maps_link);
 
     return (
-        <section id={id} className={`relative z-10 overflow-hidden py-24 md:py-36 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section id={id} className={`relative z-10 overflow-hidden py-16 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <div className={visual.containerClass}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -61,9 +61,6 @@ export default function VenueDetailsSection({ wedding, id = 'reception-venue' }:
                     transition={{ duration: 0.8 }}
                     className="mx-auto mb-12 max-w-3xl text-center"
                 >
-                    <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-[1.4rem] border border-white/60 bg-white/75 text-primary shadow-[0_16px_40px_rgba(58,42,45,0.10)] backdrop-blur-sm">
-                        <MapPin className="h-6 w-6" />
-                    </div>
                     <div className="mb-4 flex items-center justify-center">
                         <span className={visual.badgeStyleClass || `text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
                             {visual.badgePrefix ? `${visual.badgePrefix}RECEPTION` : 'Reception Details'}
@@ -83,31 +80,26 @@ export default function VenueDetailsSection({ wedding, id = 'reception-venue' }:
                     )}
                 </motion.div>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(340px,1.05fr)] lg:gap-8">
+                <div className={`grid grid-cols-1 gap-6 ${photos.length > 0 ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]' : 'mx-auto max-w-4xl'} lg:gap-8`}>
                     {photos.length > 0 && (
-                        <div className={`grid grid-cols-2 gap-3 p-3 ${visual.cardClass}`}>
+                        <div className="grid grid-cols-2 gap-3">
                             {photos.slice(0, 4).map((src, index) => (
                                 <div
                                     key={`${src}-${index}`}
-                                    className={`relative overflow-hidden bg-neutral ${index === 0 && photos.length > 1 ? 'col-span-2 aspect-[16/10]' : 'aspect-square'} ${visual.isSharp ? 'rounded-none' : 'rounded-[1.25rem]'}`}
+                                    className={`relative overflow-hidden bg-neutral ${index === 0 ? 'col-span-2 aspect-[16/10]' : 'aspect-square'} ${visual.isSharp ? 'rounded-none' : 'rounded-[1.25rem]'}`}
                                 >
-                                    <img src={src} alt={`${venueName} photo ${index + 1}`} className="h-full w-full object-cover" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-                                    <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full border border-white/45 bg-black/35 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md">
-                                        <Camera className="h-3 w-3" />
-                                        Venue
-                                    </span>
+                                    <img src={src} alt={`${venueName} photo ${index + 1}`} className="h-full w-full object-cover" loading="lazy" />
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    <div className={`overflow-hidden p-3 ${visual.accentCardClass}`}>
+                    <div className={`overflow-hidden ${visual.cardClass}`}>
                         <div className={`overflow-hidden border border-primary/10 bg-neutral ${visual.isSharp ? 'rounded-none' : 'rounded-[1.5rem]'}`}>
                             {embedUrl ? (
                                 <iframe
                                     src={embedUrl}
-                                    className="h-[340px] w-full sm:h-[430px]"
+                                    className="h-[240px] w-full sm:h-[300px]"
                                     style={{ border: 0 }}
                                     allowFullScreen
                                     loading="lazy"

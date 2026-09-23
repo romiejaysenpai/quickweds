@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 
 import {
     BioSection,
+    AttireSection,
     CountdownTimer,
     DetailsSection,
     GallerySection,
@@ -102,7 +103,7 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
 
     return (
         <section className="relative isolate overflow-hidden px-5 py-5 sm:px-8 sm:py-8" style={{ backgroundColor: theme.surface, color: theme.ink }}>
-            <div className="relative mx-auto min-h-[42rem] max-w-[1440px] overflow-hidden rounded-[2rem] border border-white/30 shadow-[0_30px_100px_rgba(29,22,20,0.18)] sm:min-h-[46rem]" style={{ backgroundColor: theme.surface }}>
+            <div className="relative mx-auto min-h-[42rem] max-w-[1440px] overflow-hidden rounded-sm border border-current/15 sm:min-h-[46rem]" style={{ backgroundColor: theme.surface }}>
                 <Ornament theme={theme} />
 
                 {theme.layout === 'split' && (
@@ -124,15 +125,16 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
                     className={`relative z-10 flex min-h-[42rem] flex-col justify-center px-7 py-16 text-center sm:px-16 sm:py-20 ${theme.layout === 'split' ? 'md:w-[54%] md:text-left' : ''} ${(theme.layout === 'cinematic' || theme.layout === 'poster') ? 'text-white' : ''}`}
                 >
                     <p className="text-[10px] font-bold uppercase tracking-[0.32em] opacity-75 sm:text-xs">{theme.eyebrow}</p>
-                    <div className="mx-auto my-7 h-px w-16 opacity-70 md:mx-0" style={{ backgroundColor: theme.primary }} />
-                    <h1 className={`font-serif leading-[0.82] tracking-[-0.055em] ${theme.layout === 'editorial' ? 'text-5xl sm:text-7xl lg:text-[8rem]' : 'text-5xl sm:text-7xl lg:text-8xl'}`}>
+                    <div className="mx-auto my-7 h-px w-16 opacity-70 " style={{ backgroundColor: theme.primary }} />
+                    <h1 className={`font-serif leading-[1.05] tracking-[-0.055em] ${theme.layout === 'editorial' ? 'text-5xl sm:text-7xl lg:text-[8rem]' : 'text-5xl sm:text-7xl lg:text-8xl'}`}>
                         {title}
                     </h1>
-                    <p className="mt-8 max-w-md text-sm leading-7 opacity-80 sm:text-base md:mx-0">{theme.mood}</p>
+                    <p className="mt-8 max-w-md text-sm leading-7 opacity-80 sm:text-base ">{theme.mood}</p>
                     <div className="mt-10 flex flex-col gap-2 text-[10px] font-bold uppercase tracking-[0.25em] opacity-80 sm:text-xs">
                         <span>{formatDate(wedding.wedding_date)}</span>
                         <span className="opacity-60">{wedding.venue_name}</span>
                     </div>
+                    <a href="#rsvp" className="mx-auto mt-8 inline-flex min-h-12 items-center justify-center self-center border border-current px-8 py-3 text-sm tracking-wide">Join our celebration</a>
                     {theme.layout === 'split' && <div className="mt-10 overflow-hidden rounded-[1.5rem] md:hidden"><div className="aspect-[4/3]">{imagePanel}</div></div>}
                 </motion.div>
             </div>
@@ -168,6 +170,7 @@ export default function PremiumTemplate({ wedding, gallery, isExpired }: Templat
                     )}
                     <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={themedWedding} />
                     <GallerySection id="gallery" gallery={gallery} template={theme.baseTemplate} motifColor={theme.primary} />
+                    <AttireSection wedding={themedWedding} />
                     <GiftSection id="gift" wedding={themedWedding} />
                     <SharedNewSections id="additional" wedding={themedWedding} isExpired={isExpired} />
                 </div>

@@ -11,7 +11,7 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import { derivePalette, getTypography } from '@/lib/theme-engine';
@@ -62,7 +62,7 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
                                     Join The Adventure
                                 </motion.a>
                                 <div className="text-center lg:text-left">
-                                    <p className="text-sm uppercase tracking-widest opacity-60 font-bold">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                                    <p className="text-sm uppercase tracking-widest opacity-60 font-bold">{new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                                     <p className="text-[10px] uppercase tracking-[0.3em] opacity-40">{wedding.venue_name}</p>
                                 </div>
                             </div>
@@ -157,7 +157,6 @@ export default function BohoTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template="boho" motifColor={motifColor} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

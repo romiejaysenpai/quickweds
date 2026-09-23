@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, CheckCircle2 } from 'lucide-react';
+import { Send, CheckCircle2 } from 'lucide-react';
+
+import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import type { Wedding } from '@/types/wedding';
 
 interface GuestBookEntry {
     id: string;
@@ -14,9 +17,13 @@ interface GuestBookEntry {
 
 interface GuestBookProps {
     weddingId: string;
+    wedding?: Wedding;
 }
 
-export default function GuestBook({ weddingId }: GuestBookProps) {
+export default function GuestBook({ weddingId, wedding }: GuestBookProps) {
+    const visual = getTemplateVisualProfile(wedding?.template || 'classic', wedding?.motif_color || '#D16C78', false, wedding?.card_style);
+    const titleStyle = wedding ? getSectionTitleStyle(wedding, visual.headingClass) : { className: visual.headingClass, style: undefined };
+    const inputClass = `w-full rounded-lg border px-4 py-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-primary ${visual.isDark ? 'border-white/25 bg-black/15 text-white placeholder:text-white/60' : 'border-black/15 bg-white/60 text-[#292524] placeholder:text-[#57534e]'}`;
     const [entries, setEntries] = useState<GuestBookEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [name, setName] = useState('');
@@ -69,16 +76,15 @@ export default function GuestBook({ weddingId }: GuestBookProps) {
     };
 
     return (
-        <section id="guestbook" className="py-24 px-6">
+        <section id="guestbook" className={`py-16 md:py-24 px-4 sm:px-6 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <div className="max-w-4xl mx-auto">
-                <div className="text-center mb-16">
-                    <MessageSquare className="w-12 h-12 text-primary mx-auto mb-6 opacity-70" />
-                    <h2 className="text-4xl md:text-5xl font-serif text-[#4A4444] mb-4">Guest Book</h2>
-                    <p className="text-[#4A4444]/72 font-serif italic text-lg">Leave a message for the happy couple</p>
+                <div className="text-center mb-10">
+                    <h2 className={`text-4xl md:text-5xl mb-4 ${titleStyle.className}`} style={titleStyle.style}>Guest Book</h2>
+                    <p className={`text-lg leading-relaxed ${visual.bodyClass}`}>Leave a message for the happy couple</p>
                 </div>
 
                 {/* Submit Form */}
-                <div className="bg-white rounded-[3rem] p-8 md:p-12 soft-shadow border border-primary/5 mb-12">
+                <div className={`p-5 sm:p-8 mb-10 ${visual.cardClass}`}>
                     {submitted ? (
                         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
                             <CheckCircle2 className="w-12 h-12 text-accent mx-auto mb-4" />
@@ -88,17 +94,19 @@ export default function GuestBook({ weddingId }: GuestBookProps) {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <input
                                 required
+                                aria-label="Your name"
                                 placeholder="Your name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground placeholder:text-text-secondary/30"
+                                className={inputClass}
                             />
                             <textarea
                                 required
+                                aria-label="Your message to the couple"
                                 placeholder="Write your wishes for the couple..."
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
-                                className="w-full px-6 py-4 rounded-2xl border border-border focus:border-primary outline-none transition-all bg-neutral text-foreground h-32 resize-none placeholder:text-text-secondary/30"
+                                className={`${inputClass} min-h-32 resize-y`}
                             />
                             <button
                                 type="submit"
@@ -123,16 +131,16 @@ export default function GuestBook({ weddingId }: GuestBookProps) {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.05 }}
-                                    className="bg-white rounded-[2rem] p-8 soft-shadow border border-primary/5 hover:border-primary/20 transition-colors"
+                                    className={`border-t p-6 ${visual.isDark ? 'border-white/20 text-white' : 'border-black/15 text-[#292524]'}`}
                                 >
-                                    <p className="font-serif italic text-lg text-foreground/80 mb-4 leading-relaxed">&ldquo;{entry.message}&rdquo;</p>
+                                    <p className={`font-serif text-lg mb-4 leading-relaxed ${visual.bodyClass}`}>&ldquo;{entry.message}&rdquo;</p>
                                     <div className="flex items-center gap-3 pt-4 border-t border-border/50">
                                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                                             {entry.guest_name.charAt(0).toUpperCase()}
                                         </div>
                                         <div>
                                             <p className="font-bold text-sm">{entry.guest_name}</p>
-                                            <p className="text-[10px] uppercase tracking-widest text-[#4A4444]/68">
+                                            <p className={`text-xs mt-1 ${visual.bodyClass}`}>
                                                 {new Date(entry.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                             </p>
                                         </div>
@@ -144,7 +152,7 @@ export default function GuestBook({ weddingId }: GuestBookProps) {
                 )}
 
                 {!loading && entries.length === 0 && (
-                    <p className="text-center text-foreground/30 italic font-serif text-lg">Be the first to leave a message! ✨</p>
+                    <p className={`text-center font-serif text-lg ${visual.bodyClass}`}>Be the first to leave a message! ✨</p>
                 )}
             </div>
         </section>
