@@ -16,10 +16,84 @@ import { getWeddingPublicPath } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
 import { openExternalUrl } from '@/lib/native-actions';
 
+import { BUILDER_DRAFT_STORAGE_KEY } from '@/lib/builder-storage';
+
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
 
 async function copyText(text: string) {
     await copyToClipboard(text);
+}
+
+function LocalDraftBanner() {
+    const [draft, setDraft] = useState<{ updatedAt: string; brideName?: string; groomName?: string } | null>(null);
+    const [dismissed, setDismissed] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            const raw = window.localStorage.getItem(BUILDER_DRAFT_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.formData) {
+                    setDraft({
+                        updatedAt: parsed.updatedAt || new Date().toISOString(),
+                        brideName: parsed.formData.brideName || '',
+                        groomName: parsed.formData.groomName || '',
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('Could not parse local builder draft:', e);
+        }
+    }, []);
+
+    if (!draft || dismissed) return null;
+
+    const names = [draft.brideName, draft.groomName].filter(Boolean).join(' & ');
+    const label = names ? `for ${names}` : '';
+    const dateFormatted = new Date(draft.updatedAt).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-amber-500/10 p-4 shadow-md sm:p-5"
+        >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20">
+                        <Sparkles className="h-5 w-5 animate-pulse" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Unsaved Local Draft Detected</p>
+                        <p className="text-sm font-bold text-foreground">
+                            You have an unsaved wedding draft {label} on this browser (Saved {dateFormatted}).
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Link
+                        href="/builder?resume=draft"
+                        className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover"
+                    >
+                        Resume Draft <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                    <button
+                        type="button"
+                        onClick={() => setDismissed(true)}
+                        className="min-h-[40px] rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary hover:bg-neutral"
+                    >
+                        Dismiss
+                    </button>
+                </div>
+            </div>
+        </motion.div>
+    );
 }
 
 function getFirstName(user: any) {
@@ -843,6 +917,7 @@ export default function DashboardRedirect() {
             </AnimatePresence>
 
             <main className="qw-dashboard max-w-6xl mx-auto px-3 sm:px-6 pt-6 sm:pt-12">
+                <LocalDraftBanner />
                 <DashboardWelcomeHero
                     user={user}
                     weddings={weddings}

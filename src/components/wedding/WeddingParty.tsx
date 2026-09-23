@@ -18,11 +18,37 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const motifColor = wedding.motif_color || '#D16C78';
     const invitationStyle = getEntourageInvitationStyle(visual, motifColor, wedding.template || 'classic');
-    const leftColumn = visibleMembers.filter((_, index) => index % 2 === 0);
-    const rightColumn = visibleMembers.filter((_, index) => index % 2 === 1);
+    const portraitLayout = (visual.isOrganic || visual.mood === 'romantic' || visual.mood === 'cinematic') && visibleMembers.some(member => member.photo);
+    const roleGroups = Array.from(new Set(visibleMembers.map(member => member.role || 'Wedding party')));
+
+    if (portraitLayout) {
+        return (
+            <section id="entourage" className={`relative px-5 py-16 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+                <div className="mx-auto max-w-5xl">
+                    <h2 className={`mb-12 text-center text-4xl md:text-5xl ${titleStyle.className}`} style={titleStyle.style}>Our Wedding Party</h2>
+                    <div className="space-y-12">
+                        {roleGroups.map(role => (
+                            <div key={role}>
+                                <h3 className={`mb-6 text-center text-sm uppercase tracking-[0.16em] ${visual.bodyClass}`}>{role}</h3>
+                                <div className="flex flex-wrap justify-center gap-x-8 gap-y-10">
+                                    {visibleMembers.filter(member => (member.role || 'Wedding party') === role).map((member, index) => (
+                                        <div key={member.id || `${member.name}-${index}`} className="w-[min(100%,15rem)] text-center">
+                                            {member.photo && <img src={member.photo} alt={member.name} loading="lazy" decoding="async" className={`mb-5 aspect-[4/5] w-full object-cover ${visual.isOrganic ? 'rounded-t-[7rem]' : 'rounded-sm'}`} />}
+                                            <p className={`font-serif text-2xl ${visual.bodyClass}`}>{member.name}</p>
+                                            {member.bio && <p className={`mt-2 text-base leading-relaxed ${visual.bodyClass}`}>{member.bio}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     return (
-        <section id="entourage" className={`px-5 py-20 md:py-28 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section id="entourage" className={`relative px-4 py-16 sm:px-5 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <div className={`pointer-events-none absolute inset-0 overflow-hidden ${invitationStyle.overlayClass}`}>
                 <div className={invitationStyle.cornerTopClass} style={{ borderColor: `${motifColor}55` }} />
                 <div className={invitationStyle.cornerBottomClass} style={{ borderColor: `${motifColor}55` }} />
@@ -38,7 +64,7 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
                     <div className="relative mx-auto mb-11 max-w-3xl">
                         <div className="mb-5 flex items-center justify-center gap-4">
                             <span className="h-px w-10 opacity-70" style={{ backgroundColor: motifColor }} />
-                            <span className={visual.badgeStyleClass || `text-[10px] font-black uppercase tracking-[0.34em] ${visual.eyebrowClass}`}>
+                            <span className={visual.badgeStyleClass || `text-xs font-black uppercase tracking-[0.34em] ${visual.eyebrowClass}`}>
                                 {visual.badgePrefix ? `${visual.badgePrefix}ENTOURAGE` : 'The Wedding Party'}
                             </span>
                             <span className="h-px w-10 opacity-70" style={{ backgroundColor: motifColor }} />
@@ -56,29 +82,15 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
                         </div>
                     </div>
 
-                    <div className={`relative mx-auto grid max-w-4xl gap-x-12 gap-y-0 text-left md:grid-cols-2 ${invitationStyle.listFrameClass}`}>
-                        {[leftColumn, rightColumn].map((columnMembers, columnIndex) => (
-                            <div key={columnIndex} className={columnIndex === 1 ? invitationStyle.secondColumnClass : ''}>
-                                {columnMembers.map((member, i) => {
-                                    const originalIndex = (i * 2) + columnIndex;
-                                    return (
-                                        <EntourageLine
-                                            key={`${member.name}-${member.role || originalIndex}`}
-                                            member={member}
-                                            index={originalIndex}
-                                            visual={visual}
-                                            style={invitationStyle}
-                                            motifColor={motifColor}
-                                        />
-                                    );
-                                })}
-                            </div>
+                    <div className={`relative mx-auto grid max-w-4xl gap-x-12 text-left md:grid-cols-2 ${invitationStyle.listFrameClass}`}>
+                        {visibleMembers.map((member, index) => (
+                            <EntourageLine key={member.id || `${member.name}-${index}`} member={member} index={index} visual={visual} style={invitationStyle} motifColor={motifColor} />
                         ))}
                     </div>
 
                     <div className={`mx-auto mt-12 max-w-2xl text-center ${invitationStyle.footerClass}`}>
                         <span className="inline-block h-px w-16 align-middle opacity-60" style={{ backgroundColor: motifColor }} />
-                        <span className="mx-4 align-middle text-[10px] font-black uppercase tracking-[0.28em]">Thank you for being part of our story</span>
+                        <span className="mx-4 align-middle text-xs font-black uppercase tracking-[0.28em]">Thank you for being part of our story</span>
                         <span className="inline-block h-px w-16 align-middle opacity-60" style={{ backgroundColor: motifColor }} />
                     </div>
                 </div>
@@ -284,8 +296,8 @@ function EntourageLine({
             transition={{ delay: Math.min(index * 0.04, 0.36) }}
             className={`group border-b last:border-b-0 ${style.dividerClass} ${style.lineClass}`}
         >
-            <div className="grid grid-cols-[minmax(5.5rem,0.72fr)_auto_minmax(8rem,1fr)] items-baseline gap-3">
-                <p className={`min-w-0 break-words text-[10px] font-black uppercase leading-5 tracking-[0.18em] sm:text-[11px] ${style.roleClass}`}>
+            <div className="grid grid-cols-[minmax(0,0.8fr)_auto_minmax(0,1fr)] items-baseline gap-3">
+                <p className={`min-w-0 break-words text-xs font-black uppercase leading-5 tracking-[0.18em] sm:text-xs ${style.roleClass}`}>
                     {member.role || 'Entourage'}
                 </p>
                 <span className="h-px min-w-6 opacity-40 transition-all duration-300 group-hover:min-w-10" style={{ backgroundColor: motifColor }} />

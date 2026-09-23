@@ -157,8 +157,8 @@ export function getSectionTitleStyle(wedding: SectionTitleWedding, defaultClassN
         classNames.push('bg-clip-text text-transparent');
         style.backgroundImage = gradient;
     } else if (colorStyleId === 'motif') {
-        classNames.push('bg-clip-text text-transparent');
-        style.backgroundImage = getMotifSectionTitleGradient(wedding.motif_color);
+        // Default titles use the profile's ink; decorative gradients remain an explicit choice.
+        style.color = 'var(--wedding-heading, currentColor)';
     }
 
     return {
@@ -188,8 +188,21 @@ export function derivePalette(motifColor: string, isDark: boolean = false): Them
     };
 }
 
+export const TEMPLATE_FAMILIES: Record<string, string> = {
+    heirloom: 'garden', estate: 'elegance', moonlit: 'midnight', saffron: 'traditional',
+    'cinema-noir': 'cinematic', 'modern-vow': 'minimal', atelier: 'editorial', wildflower: 'boho',
+    regency: 'royal', lovescript: 'romantic', 'coastal-vow': 'tropical', 'orchid-noir': 'midnight',
+    papercut: 'minimal', 'marigold-house': 'traditional', 'the-weekend': 'elegance',
+    'winter-rose': 'royal', gallery: 'editorial', 'petal-note': 'romantic', 'sunset-ceremony': 'boho',
+};
+
+export function resolveTemplateFamily(template?: string) {
+    const id = (template || 'classic').toLowerCase();
+    return TEMPLATE_FAMILIES[id] || id;
+}
+
 function normalizeTemplate(template?: string) {
-    return (template || 'classic').toLowerCase();
+    return resolveTemplateFamily(template);
 }
 
 export function getTemplateMood(template?: string): TemplateMood {
@@ -903,7 +916,23 @@ export function getTemplateVisualProfile(
         }
     };
 
-    const initialProfile = getProfile();
+    const rawProfile = getProfile();
+    const soften = (classes: string) => classes
+        .replace(/shadow-\[[^\]]+\]|shadow-2xl|shadow-xl|shadow-lg/g, 'shadow-sm')
+        .replace(/backdrop-blur-\w+/g, '')
+        .replace(/md:rounded-\[3rem\]|rounded-\[2rem\]/g, 'rounded-2xl');
+    const initialProfile: TemplateVisualProfile = {
+        ...rawProfile,
+        sectionStyle: {
+            ...rawProfile.sectionStyle,
+            '--wedding-heading': rawProfile.isDark ? '#FFF8F0' : '#352C2C',
+            '--wedding-ink': rawProfile.isDark ? '#F1EAE2' : '#463D3B',
+        } as CSSProperties,
+        cardClass: soften(rawProfile.cardClass),
+        accentCardClass: soften(rawProfile.accentCardClass),
+        badgeStyleClass: `text-xs font-medium uppercase tracking-[0.18em] ${rawProfile.isDark ? 'text-white/75' : 'text-[#625550]'}`,
+        badgePrefix: '',
+    };
 
     if (cardStyleOverride && cardStyleOverride !== 'default') {
         const resolved = resolveCardContainerClasses(

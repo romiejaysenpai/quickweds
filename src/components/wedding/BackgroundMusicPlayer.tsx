@@ -2,9 +2,11 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { Music2, Pause, Play, Volume2 } from 'lucide-react';
+import { getTemplateVisualProfile } from '@/lib/theme-engine';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface BackgroundMusicPlayerProps {
+    template?: string;
     audioUrl: string;
     title?: string | null;
     motifColor?: string | null;
@@ -12,7 +14,8 @@ interface BackgroundMusicPlayerProps {
 
 const START_EVENT = 'quickweds:start-background-music';
 
-export default function BackgroundMusicPlayer({ audioUrl, title, motifColor }: BackgroundMusicPlayerProps) {
+export default function BackgroundMusicPlayer({ audioUrl, title, motifColor, template }: BackgroundMusicPlayerProps) {
+    const visual = getTemplateVisualProfile(template, motifColor || undefined);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isReady, setIsReady] = useState(false);
@@ -97,12 +100,12 @@ export default function BackgroundMusicPlayer({ audioUrl, title, motifColor }: B
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 16, scale: 0.96 }}
                     transition={{ duration: 0.3, ease: 'easeOut' }}
-                    className="fixed bottom-[calc(1rem+var(--safe-area-inset-bottom))] left-3 z-[70] sm:bottom-8 sm:left-8"
+                    className="fixed right-3 top-[calc(1rem+var(--safe-area-inset-top))] z-[70] sm:right-6 sm:top-6"
                 >
                     <button
                         type="button"
                         onClick={togglePlayback}
-                        className="group flex min-h-[48px] max-w-[calc(100vw-1.5rem)] items-center gap-3 rounded-full border border-white/55 bg-white/85 px-3 py-2 text-left shadow-[0_20px_60px_rgba(58,42,45,0.20)] backdrop-blur-xl transition-all hover:bg-white sm:max-w-sm sm:px-4"
+                        className={`group flex min-h-12 items-center gap-3 rounded-full border p-1 text-left shadow-sm sm:px-3 sm:py-2 ${visual.isDark ? 'border-white/20 bg-[#18181b] text-white' : 'border-black/15 bg-[#FFFCF7] text-[#352C2C]'}`}
                         aria-label={isPlaying ? 'Pause invitation music' : 'Play invitation music'}
                     >
                         <span
@@ -111,12 +114,12 @@ export default function BackgroundMusicPlayer({ audioUrl, title, motifColor }: B
                         >
                             {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
                         </span>
-                        <span className="min-w-0">
+                        <span className="hidden min-w-0 sm:block">
                             <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.22em] text-primary/70">
                                 {isPlaying ? <Volume2 className="h-3 w-3" /> : <Music2 className="h-3 w-3" />}
                                 Wedding Music
                             </span>
-                            <span className="mt-0.5 block max-w-[13rem] truncate text-xs font-bold text-foreground sm:text-sm">
+                            <span className="mt-0.5 block max-w-[13rem] truncate text-xs font-medium sm:text-sm">
                                 {title?.trim() || (isReady ? 'Tap to play our song' : 'Loading song...')}
                             </span>
                         </span>

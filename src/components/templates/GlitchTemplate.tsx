@@ -11,12 +11,12 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
 export default function GlitchTemplate({ wedding, gallery, isExpired }: any) {
-    const formattedDate = new Date(wedding.wedding_date).toLocaleDateString('en-US', {
+    const formattedDate = new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric'
@@ -48,11 +48,11 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: any) {
 
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                         <div className="border border-emerald-400/40 bg-black/60 p-4 rounded shadow-[0_0_15px_rgba(52,211,153,0.15)]">
-                            <p className="opacity-50 text-[10px] mb-1">// TIMESTAMP</p>
+                            <p className="opacity-50 text-[10px] mb-1">{'// TIMESTAMP'}</p>
                             <p className="text-sm font-bold text-emerald-200">{formattedDate}</p>
                         </div>
                         <div className="border border-emerald-400/40 bg-black/60 p-4 rounded shadow-[0_0_15px_rgba(52,211,153,0.15)]">
-                            <p className="opacity-50 text-[10px] mb-1">// COORDINATES</p>
+                            <p className="opacity-50 text-[10px] mb-1">{'// COORDINATES'}</p>
                             <p className="text-sm font-bold text-emerald-200">{wedding.venue_name}</p>
                         </div>
                     </div>
@@ -102,7 +102,6 @@ export default function GlitchTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

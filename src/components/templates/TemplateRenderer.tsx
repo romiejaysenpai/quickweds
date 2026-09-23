@@ -4,12 +4,15 @@ import dynamic from 'next/dynamic';
 import type { CSSProperties, ComponentType } from 'react';
 
 import type { TemplateProps, Wedding } from '@/types/wedding';
+import { getTemplateVisualProfile } from '@/lib/theme-engine';
+
+const ComposedTemplate = dynamic(() => import('./ComposedTemplate'));
 
 const PremiumTemplate = dynamic(() => import('./PremiumTemplate'));
 
 export type TemplateId = keyof typeof TEMPLATE_COMPONENTS;
 export type ThemeFontVars = Record<'--font-serif' | '--font-sans', string>;
-export type WeddingPageStyle = CSSProperties & Record<'--primary', string> & ThemeFontVars;
+export type WeddingPageStyle = CSSProperties & Record<`--${string}`, string> & ThemeFontVars;
 
 export const TEMPLATE_COMPONENTS = {
     classic: dynamic(() => import('./ClassicTemplate')),
@@ -129,12 +132,34 @@ export function getWeddingFontVariables(style?: string): ThemeFontVars {
 export function getWeddingPageStyle(wedding: Wedding, options?: { includeGradient?: boolean }): WeddingPageStyle {
     const fontVars = getWeddingFontVariables(wedding.font_style);
     const backgroundKey = String((wedding as Wedding & { background_style?: string }).background_style || 'cream');
-    const backgroundColor = BACKGROUND_COLOR_MAP[backgroundKey] || '#FFF8F4';
+    const visual = getTemplateVisualProfile(wedding.template, wedding.motif_color);
+    const backgroundColor = visual.isDark ? '#151315' : BACKGROUND_COLOR_MAP[backgroundKey] || '#FFF8F4';
 
     return {
         '--primary': wedding.motif_color || '#D16C78',
+        '--color-primary': wedding.motif_color || '#D16C78',
+        '--accent': '#D6B87C',
+        '--color-accent': '#D6B87C',
+        '--secondary': '#F2C1CC',
+        '--color-secondary': '#F2C1CC',
+        '--white': '#FFFFFF',
+        '--color-white': '#FFFFFF',
+        '--foreground': visual.isDark ? '#FFF8F0' : '#3A2A2D',
+        '--color-foreground': visual.isDark ? '#FFF8F0' : '#3A2A2D',
+        '--background': backgroundColor,
+        '--color-background': backgroundColor,
+        '--neutral': backgroundColor,
+        '--color-neutral': backgroundColor,
+        '--text-secondary': visual.isDark ? '#D8CFC8' : '#6B5E58',
+        '--color-text-secondary': visual.isDark ? '#D8CFC8' : '#6B5E58',
+        '--border': visual.isDark ? '#514748' : '#DED4CD',
+        '--color-border': visual.isDark ? '#514748' : '#DED4CD',
+        '--wedding-heading': visual.isDark ? '#FFF8F0' : '#352C2C',
+        '--wedding-ink': visual.isDark ? '#F1EAE2' : '#463D3B',
+        color: visual.isDark ? '#F1EAE2' : '#463D3B',
+        colorScheme: visual.isDark ? 'dark' : 'light',
         backgroundColor,
-        ...(options?.includeGradient
+        ...(options?.includeGradient && !visual.isDark
             ? {
                 backgroundImage: 'radial-gradient(circle at top, rgba(255,255,255,0.65), transparent 32%), linear-gradient(180deg, #fffaf6 0%, #fff5ef 52%, #f8ece7 100%)',
             }
@@ -144,6 +169,12 @@ export function getWeddingPageStyle(wedding: Wedding, options?: { includeGradien
 }
 
 export function renderWeddingTemplate(props: TemplateProps) {
-    const Component = TEMPLATE_COMPONENTS[normalizeTemplateId(props.wedding.template)];
-    return <Component {...props} />;
+    const template = normalizeTemplateId(props.wedding.template);
+    const Component = TEMPLATE_COMPONENTS[template];
+    const withoutPhoto = !props.wedding.hero_image && !props.wedding.couple_photo;
+    const composition = withoutPhoto ? '5' : props.wedding.template_style?.match(/(?:^|_)v([2-5])$/)?.[1];
+    const composed = withoutPhoto || (template !== 'classic' && composition);
+    return <div className="wedding-template" data-template={template} data-template-style={props.wedding.template_style || 'default'}>
+        {composed ? <ComposedTemplate {...props} composition={`v${composition}` as 'v2' | 'v3' | 'v4' | 'v5'} /> : <Component {...props} />}
+    </div>;
 }

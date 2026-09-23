@@ -13,7 +13,7 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -71,7 +71,7 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
                     <p className="text-lg sm:text-xl md:text-2xl font-serif italic mb-8 sm:mb-10 md:mb-12 lg:mb-12 max-w-3xl mx-auto opacity-80">His Majesty & Her Royal Highness cordially invite you to witness the union of two royal houses</p>
                     <div className="flex gap-4 sm:gap-6 md:gap-8 lg:gap-12 items-center justify-center mb-8 sm:mb-12 md:mb-16 lg:mb-16">
                         <div className="w-24 h-[1px] bg-primary/40" />
-                        <p className="text-sm uppercase tracking-[1em] font-black">{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                        <p className="text-sm uppercase tracking-[1em] font-black">{new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                         <div className="w-24 h-[1px] bg-primary/40" />
                     </div>
                 </motion.div>
@@ -112,7 +112,6 @@ export default function RoyalTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
                 <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
                 <AttireSection wedding={wedding} />
-                <FAQSection wedding={wedding} />
                 <GiftSection id="gift" wedding={wedding} invert />
                 <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
             </div>

@@ -73,3 +73,10 @@ firebase.json
 /quickweds/
 /quickweds-1/
 /quickweds-2/
+
+# codex temporary scratch and secret files
+.codex-*
+.codex-tmp/
+
+# local plugins / separate repositories
+web-to-mobile-magic-plugin/

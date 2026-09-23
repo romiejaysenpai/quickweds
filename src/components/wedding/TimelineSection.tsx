@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Clock, Gem, Mic2, Music2, PartyPopper } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
 import { useEffect } from 'react';
 import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
@@ -17,7 +17,6 @@ interface TimelineItem {
     event: string;
 }
 
-const timelineIcons = [Clock, Gem, Mic2, Music2, PartyPopper];
 
 interface TimelineDesign {
     eyebrow: string;
@@ -488,38 +487,6 @@ function getTimelineDesign(template: string, templateStyle?: string) {
     };
 }
 
-function TimelineReminderIllustration({ variant, color }: { variant: 'time' | 'finish' | 'enjoy'; color: string }) {
-    if (variant === 'finish') {
-        return (
-            <svg viewBox="0 0 120 72" className="mx-auto h-16 w-24" fill="none" aria-hidden="true">
-                <path d="M22 56c15-18 61-18 76 0" stroke={color} strokeWidth="2" strokeLinecap="round" />
-                <path d="M42 50c-5-11-2-27 11-31 8-2 15 1 19 8 10-2 17 3 19 12 2 7-1 14-7 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M51 30c6 7 14 7 21 0" stroke={color} strokeWidth="2" strokeLinecap="round" />
-                <path d="M35 61h50" stroke={color} strokeWidth="2" strokeLinecap="round" />
-            </svg>
-        );
-    }
-
-    if (variant === 'enjoy') {
-        return (
-            <svg viewBox="0 0 120 72" className="mx-auto h-16 w-24" fill="none" aria-hidden="true">
-                <path d="M36 56c6-18 10-29 24-29s18 11 24 29" stroke={color} strokeWidth="2" strokeLinecap="round" />
-                <path d="M47 30c4 5 8 8 13 8s9-3 13-8" stroke={color} strokeWidth="2" strokeLinecap="round" />
-                <path d="M25 22l8 7M95 22l-8 7M60 9v10M36 13l5 9M84 13l-5 9" stroke={color} strokeWidth="2" strokeLinecap="round" />
-                <path d="M43 58h34" stroke={color} strokeWidth="2" strokeLinecap="round" />
-            </svg>
-        );
-    }
-
-    return (
-        <svg viewBox="0 0 120 72" className="mx-auto h-16 w-24" fill="none" aria-hidden="true">
-            <circle cx="60" cy="34" r="20" stroke={color} strokeWidth="2" />
-            <path d="M60 22v13l9 6M37 18l-7-7M83 18l7-7M44 59l-7 7M76 59l7 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M44 13c5-5 27-5 32 0" stroke={color} strokeWidth="2" strokeLinecap="round" />
-        </svg>
-    );
-}
-
 function TimelineOrnament({ type, color }: { type?: TimelineDesign['ornament']; color: string }) {
     if (!type) return null;
 
@@ -610,7 +577,6 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
     if (!timeline) return null;
 
     const items = parseTimeline(timeline);
-    const hasAnyTime = items.some(i => i.time !== '');
 
     const template = wedding?.template || 'classic';
     const templateStyle = wedding?.template_style;
@@ -618,7 +584,6 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
     const visual = getTemplateVisualProfile(template, motifColor, false, wedding?.card_style);
     const titleStyle = getSectionTitleStyle(wedding || {}, visual.headingClass);
     const design = getTimelineDesign(template, templateStyle);
-    const isSharp = visual.isSharp;
     const isDark = visual.isDark;
     const isVintage = ['vintage', 'rustic', 'boho', 'artdeco'].includes(template);
 
@@ -640,16 +605,6 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                     <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-sm ${titleStyle.className}`} style={titleStyle.style}>
                         {design.title}
                     </h2>
-                    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                        <span className={`border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${isDark ? 'border-white/10 bg-white/5 text-white/75' : 'border-primary/10 bg-white/55 text-[#4A4444]/70'}`}>
-                            {items.length} {items.length === 1 ? 'moment' : 'moments'}
-                        </span>
-                        {hasAnyTime && (
-                            <span className={`border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${isDark ? 'border-white/10 bg-white/5 text-white/75' : 'border-primary/10 bg-white/55 text-[#4A4444]/70'}`}>
-                                Guest-friendly timing
-                            </span>
-                        )}
-                    </div>
                     {isVintage && (
                         <div className="flex items-center justify-center gap-3 mt-4 opacity-70">
                             <div className="h-px w-16 bg-primary" />
@@ -668,61 +623,23 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                 >
                     <TimelineOrnament type={design.ornament} color={motifColor} />
                     <div className="relative">
-                        <div className={`absolute bottom-5 left-[1.375rem] top-5 w-px sm:left-6 md:left-1/2 md:-translate-x-1/2 ${design.spineClass}`} />
-                        <div className="space-y-6 sm:space-y-8">
-                            {items.map((item, idx) => {
-                                const Icon = timelineIcons[idx % timelineIcons.length];
-                                const isLeft = idx % 2 === 0;
-                                const cardAlignmentClass = isLeft
-                                    ? 'md:order-1 md:text-right'
-                                    : 'md:order-3 md:text-left';
-
-                                return (
-                                    <motion.div
-                                        key={`${item.time}-${item.event}-${idx}`}
-                                        initial={{ opacity: 0, y: 18 }}
-                                        whileInView={{ opacity: 1, y: 0 }}
-                                        viewport={{ once: true }}
-                                        transition={{ delay: idx * 0.06 }}
-                                        className="relative grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[3rem_minmax(0,1fr)] sm:gap-4 md:grid-cols-[1fr_5rem_1fr] md:gap-5"
-                                    >
-                                        <div className={`order-2 min-w-0 p-4 text-left backdrop-blur sm:p-5 ${cardAlignmentClass} ${design.cardClass}`}>
-                                            <div className={`mb-3 inline-flex items-center gap-2 border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] sm:text-[10px] sm:tracking-[0.22em] ${isDark ? 'border-white/10 bg-white/5' : 'border-primary/10 bg-white/45'} ${design.timeClass}`}>
-                                                <span>{String(idx + 1).padStart(2, '0')}</span>
-                                                <span className={`h-px w-4 ${design.connectorClass}`} />
-                                                <span>{item.time || (hasAnyTime ? 'Soon' : `Part ${idx + 1}`)}</span>
-                                            </div>
-                                            <p className={`break-words font-serif text-base leading-snug sm:text-lg md:text-xl ${design.eventClass}`}>
-                                                {item.event}
-                                            </p>
-                                        </div>
-
-                                        <div className={`relative z-10 order-1 mx-auto flex h-11 w-11 items-center justify-center sm:h-12 sm:w-12 md:order-2 md:h-16 md:w-16 ${design.iconFrameClass}`} style={{ borderColor: `${motifColor}55`, color: motifColor }}>
-                                            <Icon className={`h-5 w-5 stroke-[1.6] sm:h-6 sm:w-6 md:h-7 md:w-7 ${template === 'artdeco' ? '-rotate-45' : ''}`} />
-                                        </div>
-
-                                        <div className={`hidden md:flex ${isLeft ? 'order-3' : 'order-1'} items-center justify-center`}>
-                                            <div className={`h-px w-8 sm:w-12 md:w-16 ${design.connectorClass}`} />
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
-                        </div>
+                        <ol className="mx-auto max-w-3xl">
+                            {items.map((item, idx) => (
+                                <motion.li
+                                    key={`${item.time}-${item.event}-${idx}`}
+                                    initial={{ opacity: 0, y: 12 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: Math.min(idx * 0.04, 0.24) }}
+                                    className={`grid grid-cols-[5.5rem_minmax(0,1fr)] gap-5 border-b py-6 last:border-0 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-8 sm:py-8 ${isDark ? 'border-white/15' : 'border-black/15'}`}
+                                >
+                                    <span className={`pt-1 text-sm font-semibold tabular-nums sm:text-base ${design.timeClass}`}>{item.time}</span>
+                                    <p className={`break-words font-serif text-xl leading-relaxed sm:text-2xl ${design.eventClass}`}>{item.event}</p>
+                                </motion.li>
+                            ))}
+                        </ol>
                     </div>
 
-                    <div className={`relative mt-10 grid gap-3 border-t pt-8 sm:grid-cols-3 ${isDark ? 'border-white/10' : 'border-primary/10'}`}>
-                        {[
-                            { title: 'Be on Time', body: 'Arrive early, settle in, and enjoy every transition with ease.', variant: 'time' as const },
-                            { title: 'Finish the Event', body: 'Stay through the special moments, final photos, and closing send-off.', variant: 'finish' as const },
-                            { title: 'Enjoy and Have Fun', body: 'Celebrate freely, take photos, dance, and make memories with us.', variant: 'enjoy' as const },
-                        ].map((reminder) => (
-                            <div key={reminder.title} className={`p-4 text-center ${design.reminderCardClass}`}>
-                                <TimelineReminderIllustration variant={reminder.variant} color={motifColor} />
-                                <p className="mt-3 text-[10px] font-black uppercase tracking-[0.24em] text-primary">{reminder.title}</p>
-                                <p className={`mt-2 text-xs leading-5 ${design.reminderTextClass}`}>{reminder.body}</p>
-                            </div>
-                        ))}
-                    </div>
                 </motion.div>
             </div>
         </section>

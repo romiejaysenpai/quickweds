@@ -10,7 +10,7 @@ import {
     GallerySection, 
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
@@ -62,7 +62,7 @@ export default function TraditionalTemplate({ wedding, gallery, isExpired }: Tem
                         transition={{ delay: 0.8, duration: 0.8 }}
                     >
                         <p className="text-xl sm:text-2xl tracking-[0.2em] font-light">
-                            {new Date(wedding.wedding_date).toLocaleDateString()}
+                            {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString()}
                         </p>
                         <p className="text-lg sm:text-xl italic text-neutral-400">
                             {wedding.venue_name}
@@ -105,7 +105,6 @@ export default function TraditionalTemplate({ wedding, gallery, isExpired }: Tem
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

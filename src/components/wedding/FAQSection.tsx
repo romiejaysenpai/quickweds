@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { HelpCircle, MessageCircleQuestion } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
 import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
 
@@ -47,33 +46,22 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
     const motifColor = wedding?.motif_color || '#D16C78';
     const visual = getTemplateVisualProfile(template, motifColor, false, wedding?.card_style);
     const titleStyle = wedding ? getSectionTitleStyle(wedding, visual.headingClass) : { className: visual.headingClass, style: undefined };
-    const isDark = ['royal', 'midnight', 'cinematic', 'urban', 'glitch', 'film'].includes(template);
+    const isDark = visual.isDark;
 
     return (
         <section id={id} className={`relative z-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
-            <div className="mx-auto max-w-5xl">
+            <div className="mx-auto max-w-3xl">
                 <motion.div
                     initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.25 }}
                     className="mb-10 text-center"
                 >
-                    <div className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border ${isDark ? 'border-white/15 bg-white/10' : 'border-primary/15 bg-white/70'} shadow-sm`}>
-                        <MessageCircleQuestion className="h-7 w-7 stroke-[1.6] text-primary" />
-                    </div>
-                    <div className="mb-3 flex items-center justify-center">
-                        <span className={visual.badgeStyleClass || `text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
-                            {visual.badgePrefix ? `${visual.badgePrefix}FAQS` : 'Guest notes'}
-                        </span>
-                    </div>
                     <h2 className={`text-3xl sm:text-4xl md:text-5xl ${titleStyle.className}`} style={titleStyle.style}>Questions & Details</h2>
                     <div className={`mx-auto mt-4 ${visual.dividerClass}`} />
-                    <p className={`mx-auto mt-4 max-w-2xl text-sm leading-6 ${isDark ? 'text-white/76' : 'text-[#4A4444]/74'}`}>
-                        A clean guide for the details guests usually ask about.
-                    </p>
                 </motion.div>
 
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="border-t border-current/15">
                     {items.map((item, index) => (
                         <motion.details
                             key={`${item.question}-${index}`}
@@ -81,14 +69,13 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.04 }}
-                            className={`group p-5 backdrop-blur ${visual.cardClass}`}
+                            className={`group border-b py-5 sm:py-6 ${isDark ? 'border-white/15 text-white' : 'border-black/15 text-[#4A4444]'}`}
                         >
-                            <summary className="flex cursor-pointer list-none items-start gap-3 font-serif text-lg leading-snug marker:hidden">
-                                <HelpCircle className="mt-0.5 h-5 w-5 flex-shrink-0 stroke-[1.6] text-primary" />
+                            <summary className="flex cursor-pointer list-none items-start gap-4 text-base sm:text-lg font-medium leading-relaxed marker:hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current">
                                 <span className="flex-1">{item.question}</span>
-                                <span className="ml-2 text-primary transition-transform group-open:rotate-45">+</span>
+                                <span aria-hidden="true" className="ml-2 text-xl transition-transform group-open:rotate-45">+</span>
                             </summary>
-                            <p className={`mt-4 pl-8 text-sm leading-6 ${isDark ? 'text-white/78' : 'text-[#4A4444]/76'}`}>
+                            <p className={`mt-3 pr-8 text-base leading-7 ${isDark ? 'text-white/78' : 'text-[#4A4444]/76'}`}>
                                 {item.answer}
                             </p>
                         </motion.details>

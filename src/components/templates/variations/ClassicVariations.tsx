@@ -13,7 +13,7 @@ import {
     TimelineSection,
     VideoSection,
     AttireSection,
-    FAQSection,
+
 } from '@/components/wedding';
 import type { TemplateProps } from '@/types/wedding';
 import { SharedNewSections } from '../shared';
@@ -46,16 +46,16 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
 
     return (
         <div className="template-variation-v1">
-            <section className="h-screen relative flex items-center justify-center overflow-hidden">
+            <section className="classic-invitation-hero relative flex flex-col items-center justify-center overflow-hidden bg-[#FAF6F0] md:min-h-[90svh]">
                 {wedding.hero_image ? (
-                    <div className="absolute inset-0 z-0">
+                    <div className="classic-invitation-photo relative order-2 mt-8 aspect-[4/3] w-full md:absolute md:inset-0 md:order-none md:mt-0 md:aspect-auto">
                         <Image
                             src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
                             alt={`${wedding.bride_name} and ${wedding.groom_name}`}
                             priority
                             fill
                             sizes="100vw"
-                            className="object-cover brightness-75 scale-105"
+                            className="object-contain md:object-cover md:brightness-75"
                         />
                     </div>
                 ) : (
@@ -64,13 +64,13 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
                         style={{ backgroundColor: motifColor + '20' }}
                     />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
+                <div className="absolute inset-0 hidden bg-gradient-to-b from-black/30 via-transparent to-black/60 md:block" />
 
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 1 }}
-                    className="relative text-center text-white z-10 px-4 sm:px-6"
+                    className="relative z-10 px-5 text-center text-[#352C2C] md:text-white"
                 >
                     <motion.div
                         variants={containerVariants}
@@ -86,7 +86,7 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
 
                         <motion.h1
                             variants={itemVariants}
-                            className="text-3xl sm:text-5xl md:text-7xl lg:text-9xl font-serif mb-8 sm:mb-10 md:mb-12 leading-tight"
+                            className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif mb-8 sm:mb-10 md:mb-12 leading-tight"
                         >
                             {wedding.bride_name} <br />
                             <span
@@ -109,14 +109,14 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
                             variants={itemVariants}
                             className="text-lg sm:text-xl md:text-2xl font-serif italic tracking-wide mb-8"
                         >
-                            {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                            {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { dateStyle: 'long' })}
                         </motion.p>
 
                         <motion.div variants={itemVariants}>
                             <a
                                 href="#rsvp"
                                 aria-label="Kindly Respond - RSVP"
-                                className="inline-flex min-h-[44px] items-center justify-center px-10 py-3 rounded-full border border-white/50 bg-black/20 backdrop-blur-sm text-white hover:bg-white hover:text-black transition-colors uppercase tracking-widest text-xs font-bold"
+                                className="inline-flex min-h-[44px] items-center justify-center px-10 py-3 rounded-full border border-current/50 bg-transparent text-[#352C2C] hover:bg-black/5 md:border-white/50 md:text-white md:hover:bg-white md:hover:text-black transition-colors uppercase tracking-widest text-xs font-bold"
                             >
                                 Kindly Respond
                             </a>
@@ -125,7 +125,7 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
                 </motion.div>
 
                 <motion.div
-                    className="absolute bottom-12 left-1/2 -translate-x-1/2"
+                    className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 md:block"
                     animate={{ y: [0, 10, 0] }}
                     transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                 >
@@ -152,7 +152,6 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
@@ -180,7 +179,7 @@ export function ClassicV2({ wedding, gallery, isExpired }: TemplateProps) {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:hidden" />
                     <div className="absolute bottom-6 left-6 text-white lg:hidden">
                         <span className="text-xs uppercase tracking-[0.3em] font-semibold opacity-90 block">We Are Getting Married</span>
-                        <h1 className="text-3xl font-serif mt-1">{wedding.bride_name} & {wedding.groom_name}</h1>
+                        <p className="text-3xl font-serif mt-1">{wedding.bride_name} & {wedding.groom_name}</p>
                     </div>
                 </div>
 
@@ -195,7 +194,7 @@ export function ClassicV2({ wedding, gallery, isExpired }: TemplateProps) {
                     </h1>
                     <div className="w-16 h-0.5 mb-6" style={{ backgroundColor: motifColor }} />
                     <p className="text-lg sm:text-xl font-sans tracking-wide text-foreground/80 mb-2">
-                        {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'full' })}
+                        {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { dateStyle: 'full' })}
                     </p>
                     <p className="text-sm font-sans text-text-secondary uppercase tracking-widest mb-8">
                         {wedding.venue_name} • {wedding.venue_address || 'Ceremony Location'}
@@ -232,7 +231,6 @@ export function ClassicV2({ wedding, gallery, isExpired }: TemplateProps) {
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
@@ -278,7 +276,7 @@ export function ClassicV3({ wedding, gallery, isExpired }: TemplateProps) {
                     </h1>
                     <div className="w-12 h-1 bg-primary/40 rounded-full mx-auto mb-6" />
                     <p className="text-lg font-serif italic mb-2">
-                        {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'full' })}
+                        {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { dateStyle: 'full' })}
                     </p>
                     <p className="text-xs uppercase tracking-widest text-text-secondary mb-8">
                         {wedding.venue_name}
@@ -312,7 +310,6 @@ export function ClassicV3({ wedding, gallery, isExpired }: TemplateProps) {
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle="v3" />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="polaroid" />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
@@ -338,7 +335,7 @@ export function ClassicV4({ wedding, gallery, isExpired }: TemplateProps) {
                         {wedding.bride_name} <span className="font-light italic lowercase font-serif text-3xl sm:text-5xl text-primary">&</span> {wedding.groom_name}
                     </h1>
                     <p className="text-xs uppercase tracking-[0.4em] font-bold text-text-secondary">
-                        {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'long' })} • {wedding.venue_name}
+                        {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { dateStyle: 'long' })} • {wedding.venue_name}
                     </p>
                 </div>
 
@@ -392,7 +389,6 @@ export function ClassicV4({ wedding, gallery, isExpired }: TemplateProps) {
             )}
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
@@ -419,7 +415,7 @@ export function ClassicV5({ wedding, gallery, isExpired }: TemplateProps) {
                 </h1>
                 <div className="max-w-md mx-auto p-6 rounded-2xl bg-white shadow-sm border border-border/50 mb-8">
                     <p className="text-sm font-semibold uppercase tracking-wider text-text-secondary mb-1">
-                        {new Date(wedding.wedding_date).toLocaleDateString(undefined, { dateStyle: 'full' })}
+                        {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { dateStyle: 'full' })}
                     </p>
                     <p className="text-xs text-text-secondary/80">{wedding.venue_name}</p>
                 </div>
@@ -452,7 +448,6 @@ export function ClassicV5({ wedding, gallery, isExpired }: TemplateProps) {
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="minimal" />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle="v5" />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
         </div>
     );

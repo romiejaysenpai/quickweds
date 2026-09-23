@@ -11,7 +11,7 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -37,7 +37,7 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                                 {wedding.groom_name}
                             </h1>
                             <div className="mt-8 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-[0.24em] text-[#6f645b]">
-                                <span>{new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                <span>{new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                                 <span className="h-px w-12 bg-[#b9975b]" />
                                 <span>{wedding.venue_name}</span>
                             </div>
@@ -69,7 +69,7 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                                     className="object-cover"
                                 />
                                 <div className="absolute -bottom-px -left-px bg-[#fbf7ef] px-6 py-5">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#b9975b]">Est. {new Date(wedding.wedding_date).getFullYear()}</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#b9975b]">Est. {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).getFullYear()}</p>
                                 </div>
                             </div>
                         </motion.div>
@@ -94,7 +94,6 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                 <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
                 <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
                 <AttireSection wedding={wedding} />
-                <FAQSection wedding={wedding} />
                 <GiftSection id="gift" wedding={wedding} />
                 <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
             </div>
@@ -131,7 +130,7 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-transparent hidden md:block" />
                     <div className="absolute top-12 right-12 text-right">
-                        <p className="text-white text-7xl font-light opacity-20">{new Date(wedding.wedding_date).getFullYear()}</p>
+                        <p className="text-white text-7xl font-light opacity-20">{new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).getFullYear()}</p>
                     </div>
                 </div>
             </section>
@@ -154,7 +153,6 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

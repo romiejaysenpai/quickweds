@@ -12,7 +12,7 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 
@@ -56,7 +56,7 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
                             {wedding.groom_name.split(' ')[0]}
                         </h1>
                         <div className="flex flex-wrap gap-4 sm:gap-6 md:gap-8 lg:gap-12 font-mono text-xs sm:text-sm md:text-sm lg:text-sm uppercase tracking-[0.3em] bg-black/50 backdrop-blur-md p-4 sm:p-5 md:p-6 lg:p-6 border-l-4 border-primary inline-flex">
-                            <p>[ DATE: {new Date(wedding.wedding_date).toLocaleDateString()} ]</p>
+                            <p>[ DATE: {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString()} ]</p>
                             <p>[ LOG: {wedding.venue_name} ]</p>
                         </div>
                     </motion.div>
@@ -104,7 +104,6 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
             <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

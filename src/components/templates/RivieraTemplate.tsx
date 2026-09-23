@@ -11,13 +11,13 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-    FAQSection
+
 } from '../wedding';
 import { SharedNewSections } from './shared';
 import type { TemplateProps } from '@/types/wedding';
 
 export default function RivieraTemplate({ wedding, gallery, isExpired }: TemplateProps) {
-    const formattedDate = new Date(wedding.wedding_date).toLocaleDateString('en-US', {
+    const formattedDate = new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
@@ -115,7 +115,6 @@ export default function RivieraTemplate({ wedding, gallery, isExpired }: Templat
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <FAQSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>

@@ -6,6 +6,7 @@ import { Send, CheckCircle2, Music, Users, AlertCircle, CalendarDays } from 'luc
 import type { RsvpEventResponse, WeddingRsvpEvent } from '@/types/wedding';
 import { trackWeddingEvent } from '@/lib/wedding-features';
 import confetti from 'canvas-confetti';
+import { getTemplateVisualProfile } from '@/lib/theme-engine';
 
 const DIETARY_OPTIONS = [
     'No Preference',
@@ -29,11 +30,10 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
         if (typeof wedding?.rsvp_events !== 'string') return [];
         try { const value = JSON.parse(wedding.rsvp_events); return Array.isArray(value) ? value.filter((event) => event?.id && event?.name) : []; } catch { return []; }
     })() as WeddingRsvpEvent[];
-    const isSharp = wedding?.template === 'editorial' || wedding?.template === 'minimal' || wedding?.template === 'vogue';
-    const isDark = wedding?.template === 'midnight' || wedding?.template === 'royal' || wedding?.template === 'urban';
-    const isVintage = wedding?.template === 'vintage' || wedding?.template === 'film' || wedding?.template === 'rustic';
-    const fieldClass = `w-full min-h-[48px] rounded-2xl border px-4 py-3 text-base outline-none transition-all placeholder:text-text-secondary/30 focus:border-primary sm:px-6 sm:py-4 ${
-        isDark ? 'border-white/10 bg-white/[0.08] text-white placeholder:text-white/30' :
+    const visual = getTemplateVisualProfile(wedding?.template, wedding?.motif_color);
+    const { isSharp, isDark, isVintage } = visual;
+    const fieldClass = `w-full min-h-[48px] rounded-2xl border px-4 py-3 text-base outline-none transition-all placeholder:text-text-secondary/70 focus:border-primary sm:px-6 sm:py-4 ${
+        isDark ? 'border-white/10 bg-white/[0.08] text-white placeholder:text-white/65' :
         isSharp ? 'rounded-none border-black/10 bg-white text-foreground' :
         isVintage ? 'border-[#d4c5b3] bg-white/70 text-foreground' :
         'border-border bg-neutral text-foreground'
@@ -102,7 +102,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
             // Confetti
             const end = Date.now() + 3 * 1000;
             const colors = [wedding?.motif_color || '#D4AF37', '#ffffff', '#ffd700'];
-            (function frame() {
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) (function frame() {
                 confetti({ particleCount: 2, angle: 60, spread: 55, origin: { x: 0 }, colors });
                 confetti({ particleCount: 2, angle: 120, spread: 55, origin: { x: 1 }, colors });
                 if (Date.now() < end) requestAnimationFrame(frame);
@@ -125,9 +125,9 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-12 rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 text-center soft-shadow"
+                className={`p-6 sm:p-10 border text-center ${visual.cardClass}`}
             >
-                <div className="w-20 h-20 bg-white dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center">
                     <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                 </div>
                 <h3 className="text-3xl font-serif mb-2 text-foreground">Thank You!</h3>
@@ -137,15 +137,15 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
     }
 
     return (
-        <div className={`mx-auto w-full max-w-3xl p-4 sm:p-8 md:p-12 rounded-[1.5rem] sm:rounded-[2rem] soft-shadow border transition-colors ${
-            isDark ? 'bg-black/40 border-primary/20 text-white backdrop-blur-md' : 
-            isSharp ? 'bg-white border-black/5 rounded-none' :
-            isVintage ? 'bg-[#fdfbf6] border-[#d4c5b3] rounded-3xl' :
-            'bg-white border-border'
+        <div className={`mx-auto w-full max-w-2xl p-0 sm:p-2 transition-colors ${
+            isDark ? 'text-white' :
+            isSharp ? 'text-[#352C2C]' :
+            isVintage ? 'text-[#352C2C]' :
+            'text-[#352C2C]'
         }`}>
-            <h2 className={`text-2xl font-serif font-bold mb-8 text-center italic text-primary`}>
+            <h3 className="sr-only">
                 RSVP for our Special Day
-            </h2>
+            </h3>
 
             {duplicateError && (
                 <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3">

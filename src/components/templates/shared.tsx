@@ -72,7 +72,7 @@ export function SharedNewSections({ wedding, isExpired, id }: SharedNewSectionsP
         >
             {wedding.is_thank_you_mode ? (
                 <section className={`px-6 py-8 md:py-14 ${visual.sectionClass}`} style={visual.sectionStyle}>
-                    <div className={`mx-auto max-w-4xl px-8 py-14 text-center ${visual.cardClass}`}>
+                    <div className={`mx-auto max-w-3xl px-5 py-10 text-center ${visual.bodyClass}`}>
                         <p className={`text-[10px] font-bold uppercase ${visual.eyebrowClass}`}>After the celebration</p>
                         <h2 className={`mt-4 text-4xl md:text-5xl ${titleStyle.className}`} style={titleStyle.style}>Thank You!</h2>
                         <div className={`mx-auto mt-5 ${visual.dividerClass}`} />
@@ -100,14 +100,14 @@ export function SharedNewSections({ wedding, isExpired, id }: SharedNewSectionsP
                 wedding={wedding}
             />
             <VenueDetailsSection wedding={wedding} />
-            <GuestBook weddingId={wedding.id} />
+            <GuestBook weddingId={wedding.id} wedding={wedding} />
             {wedding.spotify_playlist_url && (
-                <div className="fixed bottom-[calc(5.75rem+var(--safe-area-inset-bottom))] left-3 z-50 sm:bottom-6 sm:left-6">
+                <div className="mx-auto flex justify-center px-6 py-6">
                     <a
                         href={wedding.spotify_playlist_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex min-h-[44px] items-center gap-2 rounded-full border border-white/20 bg-[#1DB954] px-4 py-3 text-xs font-bold text-white shadow-[0_18px_40px_rgba(29,185,84,0.30)] backdrop-blur-sm transition-transform hover:scale-105 sm:px-5 sm:text-sm"
+                        className={`flex min-h-[44px] items-center gap-2 border-b border-current/25 px-2 py-3 text-sm ${visual.bodyClass}`}
                     >
                         <Music className="w-4 h-4" /> Our Playlist
                     </a>
