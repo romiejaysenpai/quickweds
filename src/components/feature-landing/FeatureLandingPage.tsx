@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { featureContent, featureKeys, type FeatureKey } from './content';
+import { SUPPORTED_CURRENCIES, formatCurrencyAmount, type SupportedCurrencyCode } from '@/lib/currency';
 
 const siteUrl = 'https://quickweds.site';
 const screenshotUrls: Record<FeatureKey, string> = {
@@ -212,31 +213,23 @@ function LegacyBudgetDemo() {
 }
 
 function BudgetDemo() {
-  const currencies = [
-    { code: 'USD', label: 'US Dollar ($)', symbol: '$', locale: 'en-US' },
-    { code: 'PHP', label: 'Philippine Peso (₱)', symbol: '₱', locale: 'en-PH' },
-    { code: 'JPY', label: 'Japanese Yen (¥)', symbol: '¥', locale: 'ja-JP' },
-    { code: 'EUR', label: 'Euro (€)', symbol: '€', locale: 'de-DE' },
-    { code: 'GBP', label: 'British Pound (£)', symbol: '£', locale: 'en-GB' },
-    { code: 'AUD', label: 'Australian Dollar (A$)', symbol: 'A$', locale: 'en-AU' },
-  ] as const;
-  const [currencyCode, setCurrencyCode] = useState<typeof currencies[number]['code']>('USD');
+  const [currencyCode, setCurrencyCode] = useState<SupportedCurrencyCode>('USD');
   const [budgetInput, setBudgetInput] = useState('0');
   const [expenses, setExpenses] = useState<Record<string, number>>({ Venue: 9800, Catering: 6200, Photo: 3400, Style: 2100 });
   const totalInputRef = useRef<HTMLInputElement>(null);
-  const currency = currencies.find((item) => item.code === currencyCode) ?? currencies[0];
+  const currency = SUPPORTED_CURRENCIES.find((item) => item.code === currencyCode) ?? SUPPORTED_CURRENCIES[0];
   const budget = Number(budgetInput) || 0;
   const spent = Object.values(expenses).reduce((total, amount) => total + amount, 0);
   const percent = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
   const remaining = budget - spent;
-  const formatMoney = (amount: number) => new Intl.NumberFormat(currency.locale, { style: 'currency', currency: currency.code, maximumFractionDigits: 0 }).format(amount);
+  const formatMoney = (amount: number) => formatCurrencyAmount(amount, currency.code);
   const updateBudget = (value: string) => setBudgetInput(value.replace(/\D/g, ''));
   const adjustBudget = (amount: number) => setBudgetInput(String(Math.max(0, budget + amount)));
   const updateExpense = (name: string, value: string) => setExpenses((current) => ({ ...current, [name]: Number(value.replace(/\D/g, '')) || 0 }));
 
   return <div className="grid gap-5 xl:grid-cols-[1.12fr_.88fr]">
     <section className="rounded-[1.75rem] border border-primary/15 bg-gradient-to-br from-white via-white to-[#fff8f4] p-5 shadow-[0_20px_50px_rgba(87,55,62,.1)] sm:p-7">
-      <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.2em] text-primary">Wedding budget calculator</p><h3 className="mt-2 text-2xl font-black tracking-[-.045em] text-foreground sm:text-3xl">Plan freely. Spend confidently.</h3><p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-text-secondary">Add your target, adjust the categories, and see your remaining budget instantly.</p></div><label className="rounded-xl border border-primary/15 bg-white px-3 py-2 shadow-sm"><span className="block text-[9px] font-black uppercase tracking-[.14em] text-text-secondary">Currency</span><select aria-label="Currency" value={currencyCode} onChange={(event) => setCurrencyCode(event.target.value as typeof currencies[number]['code'])} className="mt-1 max-w-40 bg-transparent text-sm font-black text-primary outline-none"><option value="USD">USD · $</option><option value="PHP">PHP · ₱</option><option value="JPY">JPY · ¥</option><option value="EUR">EUR · €</option><option value="GBP">GBP · £</option><option value="AUD">AUD · A$</option></select></label></div>
+      <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.2em] text-primary">Wedding budget calculator</p><h3 className="mt-2 text-2xl font-black tracking-[-.045em] text-foreground sm:text-3xl">Plan freely. Spend confidently.</h3><p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-text-secondary">Add your target, adjust the categories, and see your remaining budget instantly.</p></div><label className="rounded-xl border border-primary/15 bg-white px-3 py-2 shadow-sm"><span className="block text-[9px] font-black uppercase tracking-[.14em] text-text-secondary">Currency</span><select aria-label="Currency" value={currencyCode} onChange={(event) => setCurrencyCode(event.target.value as SupportedCurrencyCode)} className="mt-1 max-w-40 bg-transparent text-sm font-black text-primary outline-none">{SUPPORTED_CURRENCIES.map((item) => <option key={item.code} value={item.code}>{item.code} · {item.symbol}</option>)}</select></label></div>
       <div className="mt-6 rounded-[1.5rem] border border-primary/15 bg-white p-4 shadow-sm sm:p-5"><div className="flex items-start justify-between gap-4"><label className="block min-w-0"><span className="text-xs font-black uppercase tracking-[.18em] text-primary">Total wedding budget</span><span className="mt-2 flex items-baseline gap-1"><span className="text-2xl font-black text-primary">{currency.symbol}</span><input ref={totalInputRef} id="budget-calculator-total" aria-label="Total wedding budget" inputMode="numeric" pattern="[0-9]*" value={budgetInput} onFocus={() => { if (budgetInput === '0') setBudgetInput(''); }} onBlur={() => { if (!budgetInput) setBudgetInput('0'); }} onChange={(event) => updateBudget(event.target.value)} className="min-w-0 w-full max-w-64 bg-transparent text-4xl font-black tracking-[-.055em] text-foreground outline-none placeholder:text-primary/35 sm:text-5xl" /></span></label><CircleDollarSign className="h-11 w-11 shrink-0 text-primary/35" /></div><div className="mt-5 flex flex-wrap gap-2"><span className="mr-1 self-center text-[10px] font-black uppercase tracking-[.14em] text-text-secondary">Quick add</span>{[1000, 5000, 10000].map((amount) => <button type="button" key={amount} onClick={() => adjustBudget(amount)} className="rounded-full border border-primary/15 bg-primary/5 px-3 py-1.5 text-xs font-black text-primary transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">+ {formatMoney(amount)}</button>)}</div></div>
       <div className="mt-5 rounded-2xl bg-neutral p-4"><div className="flex items-center justify-between gap-4"><span className="text-sm font-black text-foreground">Your plan is {percent}% allocated</span><span className={`rounded-full px-3 py-1.5 text-xs font-black ${remaining < 0 ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'}`}>{budget === 0 ? 'Set a budget to begin' : `${formatMoney(Math.abs(remaining))} ${remaining < 0 ? 'over' : 'left'}`}</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white"><div className={`h-full rounded-full transition-[width] duration-300 ${remaining < 0 ? 'bg-red-500' : 'bg-primary'}`} style={{ width: `${percent}%` }} /></div><div className="mt-3 flex flex-wrap justify-between gap-2 text-xs font-bold text-text-secondary"><span>{formatMoney(spent)} allocated</span><span>{budget > 0 ? `${formatMoney(budget)} total` : 'Enter your target above'}</span></div></div>
       <div className="mt-6 space-y-3"><div className="flex items-center justify-between"><p className="text-xs font-black uppercase tracking-[.18em] text-text-secondary">Your categories</p><button type="button" onClick={() => setExpenses({ Venue: 0, Catering: 0, Photo: 0, Style: 0 })} className="text-xs font-black text-primary hover:text-primary-hover">Clear amounts</button></div>{Object.entries(expenses).map(([name, amount], index) => <label key={name} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-transparent bg-neutral px-4 py-3 transition focus-within:border-primary/30 focus-within:bg-white"><span className="flex items-center gap-2 text-sm font-bold text-foreground"><span className={`h-2.5 w-2.5 rounded-full ${['bg-primary', 'bg-secondary', 'bg-accent', 'bg-[#8eb8a3]'][index]}`} />{name}</span><span className="flex items-center gap-1 text-sm font-black"><span className="text-text-secondary">{currency.symbol}</span><input aria-label={`${name} budget`} inputMode="numeric" pattern="[0-9]*" value={amount || ''} placeholder="0" onChange={(event) => updateExpense(name, event.target.value)} className="w-24 bg-transparent text-right font-black text-foreground outline-none placeholder:text-text-secondary/50" /></span></label>)}</div>

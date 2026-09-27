@@ -62,7 +62,7 @@ async function getContext(req: NextRequest, weddingId: string) {
 
     const db = getSupabaseAdminClient() as any;
     const access = await getWeddingAccess(db, user, weddingId, {
-        select: 'id, user_id, bride_name, groom_name',
+        select: 'id, user_id, bride_name, groom_name, public_slug, custom_domain',
         collaboratorRoles: ['partner', 'coordinator'],
     });
 
@@ -105,6 +105,10 @@ export async function GET(req: NextRequest) {
     try {
         const context = await getContext(req, weddingId);
         if ('response' in context) return context.response;
+
+        if (req.nextUrl.searchParams.get('summaryOnly') === '1') {
+            return NextResponse.json({ wedding: context.wedding }, { headers: { 'Cache-Control': 'no-store' } });
+        }
 
         const settings = await getOrCreateSettings(context.db, weddingId);
         return NextResponse.json({ settings, wedding: context.wedding }, { headers: { 'Cache-Control': 'no-store' } });

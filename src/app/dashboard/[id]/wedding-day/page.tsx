@@ -101,6 +101,7 @@ export default function WeddingDayModePage() {
     const [settings, setSettings] = useState<WeddingDaySettings>(DEFAULT_SETTINGS);
     const [counters, setCounters] = useState<Counters>(EMPTY_COUNTERS);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [sendingReminder, setSendingReminder] = useState(false);
     const [message, setMessage] = useState('');
@@ -118,14 +119,18 @@ export default function WeddingDayModePage() {
     const backHref = openedFrom === 'planner' ? `/dashboard/${weddingId}/planner` : `/dashboard/${weddingId}`;
     const backLabel = openedFrom === 'planner' ? 'Wedding Planner' : 'Dashboard';
 
-    const loadData = useCallback(async () => {
+    const loadData = useCallback(async (showSpinner = true) => {
         const token = await getToken();
         if (!token) {
             router.push('/login');
             return;
         }
 
-        setLoading(true);
+        if (showSpinner) {
+            setLoading(true);
+        } else {
+            setRefreshing(true);
+        }
         setError('');
         try {
             const [settingsResponse, countersResponse] = await Promise.all([
@@ -151,7 +156,11 @@ export default function WeddingDayModePage() {
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unable to load wedding day mode.');
         } finally {
-            setLoading(false);
+            if (showSpinner) {
+                setLoading(false);
+            } else {
+                setRefreshing(false);
+            }
         }
     }, [router, weddingId]);
 
@@ -160,7 +169,7 @@ export default function WeddingDayModePage() {
             router.push('/login');
             return;
         }
-        if (user && weddingId) void loadData();
+        if (user && weddingId) void loadData(true);
     }, [authLoading, user, weddingId, router, loadData]);
 
     async function saveSettings(nextSettings = settings) {
@@ -274,8 +283,8 @@ export default function WeddingDayModePage() {
                     <Link href={backHref} className="inline-flex min-h-[40px] w-fit items-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-bold text-text-secondary">
                         <ArrowLeft className="h-4 w-4" /> {backLabel}
                     </Link>
-                    <button type="button" onClick={() => void loadData()} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-bold text-text-secondary">
-                        <RefreshCw className="h-4 w-4" /> Refresh
+                    <button type="button" onClick={() => void loadData(false)} disabled={refreshing} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-bold text-text-secondary disabled:opacity-60">
+                        <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
                     </button>
                 </div>
 

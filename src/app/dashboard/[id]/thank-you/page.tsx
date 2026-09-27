@@ -154,6 +154,19 @@ export default function ThankYouBuilderPage() {
         textarea.style.height = `${textarea.scrollHeight}px`;
     }, [message]);
 
+    async function refreshThankYouData(token: string) {
+        try {
+            const loadResponse = await fetch(`/api/weddings/thank-you/load?weddingId=${encodeURIComponent(weddingId)}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store',
+            });
+            const loadResult = await loadResponse.json().catch(() => ({}));
+            if (loadResponse.ok) setData({ ...EMPTY_LOAD_STATE, ...loadResult });
+        } catch (err) {
+            console.warn('Unable to refresh thank-you recipients:', err);
+        }
+    }
+
     const previewHtml = useMemo(() => getThankYouNoteHtml({
         recipientName: data.unsentRecipients[0]?.guest_name || 'Guest',
         brideName: wedding?.bride_name || '',
@@ -228,12 +241,16 @@ export default function ThankYouBuilderPage() {
                 : `Sent ${result.sent || 0} thank-you email${result.sent === 1 ? '' : 's'}.`);
 
             if (action === 'send') {
-                const loadResponse = await fetch(`/api/weddings/thank-you/load?weddingId=${encodeURIComponent(weddingId)}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                    cache: 'no-store',
-                });
-                const loadResult = await loadResponse.json().catch(() => ({}));
-                if (loadResponse.ok) setData({ ...EMPTY_LOAD_STATE, ...loadResult });
+                const sentCount = Math.max(0, Number(result.sent || 0));
+                if (sentCount > 0) {
+                    setData((current) => ({
+                        ...current,
+                        unsentRecipients: current.unsentRecipients.slice(sentCount),
+                        alreadySentCount: current.alreadySentCount + sentCount,
+                        emailsUsed: current.emailsUsed + sentCount,
+                    }));
+                }
+                void refreshThankYouData(token);
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unable to send thank-you email.');
