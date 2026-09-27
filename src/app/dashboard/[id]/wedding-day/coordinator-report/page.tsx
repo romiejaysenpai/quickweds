@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getCachedSession } from '@/lib/session-cache';
+import { getCurrencySymbol } from '@/lib/currency';
 
 // Types representing the API payload structure
 type Wedding = {
@@ -107,16 +108,6 @@ type TimelineEvent = {
 async function getToken() {
     const { data } = await getCachedSession();
     return data.session?.access_token || '';
-}
-
-function getCurrencySymbol(currency?: string | null) {
-    const normalized = String(currency || 'USD').toLowerCase();
-    if (normalized === 'usd') return '$';
-    if (normalized === 'jpy' || normalized === 'yen') return '¥';
-    if (normalized === 'php' || normalized === 'peso') return '₱';
-    if (normalized === 'eur') return '€';
-    if (normalized === 'gbp') return '£';
-    return '$';
 }
 
 export default function CoordinatorReportPage() {

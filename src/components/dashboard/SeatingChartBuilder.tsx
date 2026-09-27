@@ -234,6 +234,7 @@ export default function SeatingChartBuilder({
     const objectMoveFrameRef = useRef<number | null>(null);
     const lastTableDragPositionRef = useRef<Pick<Table, 'position_x' | 'position_y'> | null>(null);
     const lastObjectDragPositionRef = useRef<Pick<VenueObject, 'x' | 'y'> | null>(null);
+    const hasLoadedSeatingDataRef = useRef(false);
     const [loading, setLoading] = useState(true);
     const [guests, setGuests] = useState<EnhancedRSVP[]>([]);
     const [tables, setTables] = useState<Table[]>([]);
@@ -304,8 +305,8 @@ export default function SeatingChartBuilder({
         });
     }, []);
 
-    const loadData = useCallback(async () => {
-        setLoading(true);
+    const loadData = useCallback(async (showSpinner = true) => {
+        if (showSpinner || !hasLoadedSeatingDataRef.current) setLoading(true);
         try {
             const [guestsRes, tablesRes, assignmentsRes, layoutRes] = await Promise.all([
                 supabase
@@ -350,10 +351,11 @@ export default function SeatingChartBuilder({
             setGuests((guestsRes.data || []) as EnhancedRSVP[]);
             setTables(spreadDefaultPositions((tablesRes.data || []) as Table[]));
             setAssignments((assignmentsRes.data || []) as Assignment[]);
+            hasLoadedSeatingDataRef.current = true;
         } catch (err) {
             console.error('Error loading seating data:', err);
         } finally {
-            setLoading(false);
+            if (showSpinner || !hasLoadedSeatingDataRef.current) setLoading(false);
         }
     }, [spreadDefaultPositions, weddingId]);
 
@@ -584,6 +586,10 @@ export default function SeatingChartBuilder({
                             .update({ table_assignment: tableFormData.name })
                             .in('id', assignedRsvpIds);
                         if (syncError) throw syncError;
+                        const assignedRsvpIdSet = new Set(assignedRsvpIds);
+                        setGuests((current) => current.map((guest) => (
+                            assignedRsvpIdSet.has(guest.id) ? { ...guest, table_assignment: tableFormData.name } : guest
+                        )));
                     }
                 }
 
@@ -611,7 +617,7 @@ export default function SeatingChartBuilder({
             }
 
             setIsTableModalOpen(false);
-            await loadData();
+            void loadData(false);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown seating save error';
             const guidance = /permission denied|rls|row level security|could not find|blocked by database permissions/i.test(message)
@@ -703,7 +709,13 @@ export default function SeatingChartBuilder({
             if (error) throw error;
 
             if (selectedTable === tableId) setSelectedTable(null);
-            await loadData();
+            const assignedRsvpIdSet = new Set(assignedRsvpIds);
+            setTables((current) => current.filter((table) => table.id !== tableId));
+            setAssignments((current) => current.filter((assignment) => assignment.table_id !== tableId));
+            setGuests((current) => current.map((guest) => (
+                assignedRsvpIdSet.has(guest.id) ? { ...guest, table_assignment: undefined } : guest
+            )));
+            void loadData(false);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown seating delete error';
             alert(`Failed to delete table: ${message}`);
@@ -746,7 +758,8 @@ export default function SeatingChartBuilder({
 
             await syncRsvpTableAssignment(guest.id, table.table_name);
             if (data) setAssignments((current) => [...current, data]);
-            await loadData();
+            setGuests((current) => current.map((item) => item.id === guest.id ? { ...item, table_assignment: table.table_name } : item));
+            void loadData(false);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown seating assignment error';
             alert(`Failed to assign guest: ${message}`);
@@ -759,7 +772,9 @@ export default function SeatingChartBuilder({
             if (error) throw error;
 
             await syncRsvpTableAssignment(assignment.rsvp_id, null);
-            await loadData();
+            setAssignments((current) => current.filter((item) => item.id !== assignment.id));
+            setGuests((current) => current.map((guest) => guest.id === assignment.rsvp_id ? { ...guest, table_assignment: undefined } : guest));
+            void loadData(false);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Unknown seat removal error';
             alert(`Failed to remove assignment: ${message}`);

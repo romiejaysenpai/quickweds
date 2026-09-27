@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, use, useRef } from 'react';
+import { useState, useEffect, use, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode } from 'lucide-react';
 import Link from 'next/link';
@@ -13,6 +14,7 @@ import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/
 import { getCachedSession } from '@/lib/session-cache';
 import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate, getEntourageCardTheme } from '@/lib/entourage-proposal-templates';
 import { EntourageProposalCustomizerSection } from '@/components/EntourageProposalCustomizerSection';
+import { SUPPORTED_CURRENCIES, getCurrencySymbol, normalizeCurrencyCode } from '@/lib/currency';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
     loading: () => (
@@ -118,18 +120,44 @@ const PLANNER_TAB_DETAILS: {
     },
 ];
 
-function getCurrencySymbol(currency?: string | null) {
-    const normalized = String(currency || 'USD').toLowerCase();
-    if (normalized === 'usd') return '$';
-    if (normalized === 'jpy' || normalized === 'yen') return '\u00a5';
-    if (normalized === 'php' || normalized === 'peso') return '\u20b1';
-    return '\u20b1';
-}
-
 const VENDOR_PAYMENT_STATUS_OPTIONS: { value: VendorPaymentStatus; label: string }[] = [
     { value: 'not paid', label: 'Not Paid' },
     { value: 'pending', label: 'Pending' },
     { value: 'paid', label: 'Paid' },
+];
+
+const BUDGET_CATEGORIES = [
+    'Venue',
+    'Catering',
+    'Attire',
+    'Decor',
+    'Photography',
+    'Entertainment',
+    'Flowers',
+    'Beauty',
+    'Music',
+    'Transport',
+    'Stationery',
+    'Rings',
+    'Cake',
+    'Accommodation',
+    'Planner',
+    'Other',
+];
+
+const BUDGET_CATEGORY_COLORS = ['#D16C78', '#CBB26A', '#8EB8A3', '#7C6F8F', '#E2A16F', '#6E8CA0'];
+
+const SMART_BUDGET_ALLOCATIONS = [
+    { category: 'Venue', percent: 28, note: 'Venue, rentals, ceremony and reception basics' },
+    { category: 'Catering', percent: 24, note: 'Meals, drinks, cake-adjacent food costs' },
+    { category: 'Photography', percent: 10, note: 'Photo, video, albums, engagement shoot' },
+    { category: 'Decor', percent: 9, note: 'Styling, flowers, signage, rentals' },
+    { category: 'Attire', percent: 8, note: 'Dress, suit, accessories, alterations' },
+    { category: 'Entertainment', percent: 7, note: 'DJ, band, ceremony music, sound' },
+    { category: 'Beauty', percent: 4, note: 'Hair, makeup, prep appointments' },
+    { category: 'Transport', percent: 3, note: 'Cars, shuttles, guest movement' },
+    { category: 'Stationery', percent: 2, note: 'Invites, menus, place cards, postage' },
+    { category: 'Other', percent: 5, note: 'Buffer, fees, gifts, surprise costs' },
 ];
 
 const PLANNER_DELETE_TABLES: Record<string, string> = {
@@ -408,14 +436,14 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
         void guardAndLoad();
     }, [weddingId, user, authLoading, isAdmin, adminChecked, router]);
 
-    const loadPlannerData = async () => {
+    const loadPlannerData = async (showGlobalLoading = true) => {
         const loadKey = `${weddingId}:${user?.id || 'anonymous'}:${isAdmin ? 'admin' : 'user'}`;
         if (plannerLoadRef.current?.key === loadKey) {
             return plannerLoadRef.current.promise;
         }
 
         const promise: Promise<void> = (async () => {
-            setLoading(true);
+            if (showGlobalLoading) setLoading(true);
             setPlannerError('');
             try {
                 const { data: sessionData } = await getCachedSession();
@@ -462,7 +490,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                 setPlannerError(err instanceof Error ? err.message : 'Unable to verify planner access.');
                 setAccessRole('denied');
             } finally {
-                setLoading(false);
+                if (showGlobalLoading) setLoading(false);
                 if (plannerLoadRef.current?.key === loadKey) {
                     plannerLoadRef.current = null;
                 }
@@ -474,16 +502,25 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     };
 
     async function updateVendorStatus(id: string, status: string) {
+        let previousVendors: any[] = [];
         try {
-            const { error } = await supabase.from('planner_vendors').update({ payment_status: status }).eq('id', id);
-            if (error) throw error;
-            await loadPlannerData();
-        } catch (err: any) {
-            alert("Failed to update vendor: " + err.message);
+            setVendors((current: any[]) => {
+                previousVendors = current;
+                return current.map((vendor: any) => vendor.id === id ? { ...vendor, payment_status: status } : vendor);
+            });
+            const updatedVendor = await updatePlannerItem(weddingId, 'vendor', id, { payment_status: status });
+            if (updatedVendor) {
+                setVendors((current: any[]) => current.map((vendor: any) => vendor.id === id ? { ...vendor, ...updatedVendor } : vendor));
+            }
+        } catch (err) {
+            if (previousVendors.length > 0) setVendors(previousVendors);
+            const message = getPlannerErrorMessage(err, 'Failed to update vendor.');
+            alert("Failed to update vendor: " + message);
         }
     }
 
     const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
+    const refreshPlannerData = () => loadPlannerData(false);
 
     if (checkingRole || loading) {
         return <div className="min-h-screen flex items-center justify-center bg-background">
@@ -616,12 +653,12 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                     ) : (
                         <>
                             <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
-                            {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={loadPlannerData} />}
-                            {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={loadPlannerData} />}
-                            {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={loadPlannerData} hasPlannerPro={hasPlannerPro} />}
-                            {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
-                            {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={loadPlannerData} updateVendorStatus={updateVendorStatus} />}
+                            {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={refreshPlannerData} />}
+                            {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={refreshPlannerData} />}
+                            {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={refreshPlannerData} hasPlannerPro={hasPlannerPro} />}
+                            {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} setWedding={setWedding} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={refreshPlannerData} updateVendorStatus={updateVendorStatus} />}
+                            {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={refreshPlannerData} />}
+                            {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={refreshPlannerData} updateVendorStatus={updateVendorStatus} />}
                             {activeTab === 'seating' && (
                                 <SeatingChartBuilder
                                     weddingId={weddingId}
@@ -632,7 +669,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                             )}
                             {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
                             {activeTab === 'thanks' && <ThankYouPlannerLauncher weddingId={weddingId} confirmedGuests={confirmedGuests} />}
-                            {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={loadPlannerData} />}
+                            {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={refreshPlannerData} />}
                         </>
                     )}
                 </div>
@@ -824,7 +861,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                 const next = current.filter((invite: any) => String(invite.member_key) !== memberKey);
                 return [data.invitation, ...next];
             });
-            await reload();
+            void reload();
         } catch (err) {
             alert(err instanceof Error ? err.message : 'Unable to send proposal.');
         } finally {
@@ -1076,7 +1113,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
         if (!newTask.title.trim() || publishing) return;
         setPublishing(true);
         try {
-            await createPlannerItem(weddingId, 'task', {
+            const createdTask = await createPlannerItem(weddingId, 'task', {
                 title: newTask.title.trim(),
                 section: newTask.section,
                 status: 'pending',
@@ -1086,8 +1123,11 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                 custom_supplier_name: newTask.custom_supplier_name.trim() || null,
                 notes: newTask.notes.trim() || null,
             });
+            if (setTasks && createdTask) {
+                setTasks((current: any[]) => [...current, decodePlannerTask(createdTask)]);
+            }
             setNewTask((current) => ({ ...current, title: '', assigned_to: '', custom_supplier_name: '', notes: '' }));
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Failed to add checklist item.');
             console.warn('Error adding checklist item:', message);
@@ -1157,7 +1197,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
                 )));
             }
             cancelEditingTask();
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Unable to update checklist item.');
             console.warn('Error updating checklist item:', message);
@@ -1168,10 +1208,21 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
     }
 
     async function updateTask(task: any, patch: Record<string, unknown>) {
+        let previousTasks: any[] = [];
         try {
-            await updatePlannerItem(weddingId, 'task', task.id, patch);
-            await reload();
+            if (setTasks) {
+                setTasks((current: any[]) => {
+                    previousTasks = current;
+                    return current.map((item: any) => item.id === task.id ? decodePlannerTask({ ...item, ...patch }) : item);
+                });
+            }
+            const updatedTask = await updatePlannerItem(weddingId, 'task', task.id, patch);
+            if (setTasks && updatedTask) {
+                setTasks((current: any[]) => current.map((item: any) => item.id === task.id ? decodePlannerTask({ ...item, ...updatedTask }) : item));
+            }
+            void reload();
         } catch (err) {
+            if (previousTasks.length > 0 && setTasks) setTasks(previousTasks);
             const message = getPlannerErrorMessage(err, 'Unable to update checklist item.');
             console.warn('Error updating checklist item:', message);
             alert(`Unable to update checklist item: ${message}`);
@@ -1197,14 +1248,20 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
 
         if (rows.length === 0) return alert('The 12-month checklist is already loaded.');
         try {
-            await Promise.all(rows.map((row) => createPlannerItem(weddingId, 'task', row)));
+            const createdTasks = await Promise.all(rows.map((row) => createPlannerItem(weddingId, 'task', row)));
+            if (setTasks) {
+                setTasks((current: any[]) => [
+                    ...current,
+                    ...createdTasks.filter(Boolean).map((task: any) => decodePlannerTask(task)),
+                ]);
+            }
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Failed to load checklist.');
             console.warn('Error loading 12-month checklist:', message);
             alert(`Failed to load checklist: ${message}`);
             return;
         }
-        await reload();
+        void reload();
     }
 
     async function deleteTask(id: string) {
@@ -1213,7 +1270,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
         try {
             await deletePlannerItem(weddingId, 'task', id);
             if (setTasks) setTasks((current: any[]) => current.filter((task: any) => task.id !== id));
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Unable to delete checklist item.');
             console.warn('Error deleting checklist item:', message);
@@ -1414,7 +1471,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Unable to sync Google Calendar.');
             if (!silent) alert(`Synced ${data.synced || 0} schedule items to Google Calendar.`);
-            await reload();
+            void reload();
         } catch (err) {
             console.error('Google Calendar sync failed:', err);
             if (!silent) alert(err instanceof Error ? err.message : 'Unable to sync Google Calendar.');
@@ -1439,7 +1496,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
             alert(data.error || 'Unable to disconnect Google Calendar.');
             return;
         }
-        await reload();
+        void reload();
     }
 
     async function deleteGoogleCalendarEvent(eventId: string) {
@@ -1460,7 +1517,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
         if (!newEvent.title || !newEvent.starts_at || publishing) return;
         setPublishing(true);
         try {
-            await createPlannerItem(weddingId, 'event', {
+            const createdEvent = await createPlannerItem(weddingId, 'event', {
                 title: newEvent.title.trim(),
                 starts_at: new Date(newEvent.starts_at).toISOString(),
                 ends_at: newEvent.ends_at ? new Date(newEvent.ends_at).toISOString() : null,
@@ -1469,9 +1526,12 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
                 planner_task_id: newEvent.planner_task_id || null,
                 reminder_minutes: Number(newEvent.reminder_minutes) || 1440,
             });
+            if (setEvents && createdEvent) {
+                setEvents((current: any[]) => [...current, createdEvent].sort((a: any, b: any) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()));
+            }
             setNewEvent({ title: '', starts_at: '', ends_at: '', location: '', notes: '', planner_task_id: '', reminder_minutes: '1440' });
-            await reload();
-            await syncGoogleCalendar(true);
+            void reload();
+            void syncGoogleCalendar(true);
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Failed to add schedule.');
             console.error('Error adding planner event:', message);
@@ -1487,7 +1547,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
             await deleteGoogleCalendarEvent(id);
             await deletePlannerItem(weddingId, 'event', id);
             if (setEvents) setEvents((current: any[]) => current.filter((event: any) => event.id !== id));
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Unable to delete schedule.');
             console.warn('Error deleting schedule:', message);
@@ -1617,30 +1677,90 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
     );
 }
 
-function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendors = [], foodDrinks = [], reload, updateVendorStatus }: any) {
+function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wedding, vendors = [], foodDrinks = [], reload, updateVendorStatus }: any) {
     const [publishing, setPublishing] = useState(false);
-    const [newItem, setNewItem] = useState({ category: 'Venue', item_name: '', estimated_cost: '' });
+    const [newItem, setNewItem] = useState({ category: 'Venue', item_name: '', estimated_cost: '', due_date: '' });
+    const [savingBudgetItemId, setSavingBudgetItemId] = useState<string | null>(null);
+    const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
+    const [currencyMenuPosition, setCurrencyMenuPosition] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null);
+    const currencyButtonRef = useRef<HTMLButtonElement | null>(null);
+    const currencyMenuRef = useRef<HTMLDivElement | null>(null);
 
     // Local states for inputs to avoid jitter/focus issues and handle empty strings nicely
     const [localBudget, setLocalBudget] = useState<string | number>(wedding?.total_budget || '');
-    const [localCurrency, setLocalCurrency] = useState(wedding?.currency || 'USD');
+    const [localCurrency, setLocalCurrency] = useState(normalizeCurrencyCode(wedding?.currency));
     const [localGuestLimit, setLocalGuestLimit] = useState<string | number>(wedding?.guest_limit || '');
+    const [scenarioGuests, setScenarioGuests] = useState<string | number>(wedding?.guest_limit || '');
 
     useEffect(() => {
         if (wedding) {
             setLocalBudget(wedding.total_budget || '');
-            setLocalCurrency(wedding.currency || 'USD');
+            setLocalCurrency(normalizeCurrencyCode(wedding.currency));
             setLocalGuestLimit(wedding.guest_limit || '');
+            setScenarioGuests(wedding.guest_limit || '');
         }
     }, [wedding]);
 
-    // Standard categories plus any custom ones already in the budget
-    const defaultCategories = ['Venue', 'Catering', 'Attire', 'Decor', 'Photography', 'Entertainment', 'Other'];
-    const [categories, setCategories] = useState(defaultCategories);
+    const positionCurrencyMenu = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        const trigger = currencyButtonRef.current;
+        if (!trigger) return;
+
+        const rect = trigger.getBoundingClientRect();
+        const viewportPadding = 12;
+        const preferredWidth = Math.min(360, window.innerWidth - viewportPadding * 2);
+        const width = Math.max(Math.min(preferredWidth, 360), Math.min(rect.width, window.innerWidth - viewportPadding * 2));
+        const left = Math.min(
+            Math.max(viewportPadding, rect.left),
+            Math.max(viewportPadding, window.innerWidth - width - viewportPadding),
+        );
+        const preferredMaxHeight = Math.min(390, window.innerHeight - viewportPadding * 2);
+        const opensUp = rect.bottom + 10 + preferredMaxHeight > window.innerHeight && rect.top > preferredMaxHeight;
+        const top = opensUp
+            ? Math.max(viewportPadding, rect.top - preferredMaxHeight - 10)
+            : Math.min(rect.bottom + 10, window.innerHeight - 120);
+        const maxHeight = opensUp
+            ? Math.min(preferredMaxHeight, Math.max(220, rect.top - viewportPadding * 2))
+            : Math.min(preferredMaxHeight, Math.max(220, window.innerHeight - top - viewportPadding));
+
+        setCurrencyMenuPosition({ top, left, width, maxHeight });
+    }, []);
 
     useEffect(() => {
-        const customCats = initialBudgets.map((b: any) => b.category).filter((c: string) => !defaultCategories.includes(c));
-        const uniqueCats = Array.from(new Set([...defaultCategories, ...customCats]));
+        if (!currencyMenuOpen || typeof document === 'undefined') return;
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setCurrencyMenuOpen(false);
+        };
+        const closeOnOutsidePointer = (event: MouseEvent | TouchEvent) => {
+            const target = event.target as Node | null;
+            if (!target) return;
+            if (currencyButtonRef.current?.contains(target) || currencyMenuRef.current?.contains(target)) return;
+            setCurrencyMenuOpen(false);
+        };
+        const reposition = () => positionCurrencyMenu();
+
+        positionCurrencyMenu();
+        window.addEventListener('keydown', closeOnEscape);
+        window.addEventListener('resize', reposition);
+        window.addEventListener('scroll', reposition, true);
+        document.addEventListener('mousedown', closeOnOutsidePointer);
+        document.addEventListener('touchstart', closeOnOutsidePointer);
+
+        return () => {
+            window.removeEventListener('keydown', closeOnEscape);
+            window.removeEventListener('resize', reposition);
+            window.removeEventListener('scroll', reposition, true);
+            document.removeEventListener('mousedown', closeOnOutsidePointer);
+            document.removeEventListener('touchstart', closeOnOutsidePointer);
+        };
+    }, [currencyMenuOpen, positionCurrencyMenu]);
+
+    // Standard categories plus any custom ones already in the budget
+    const [categories, setCategories] = useState(BUDGET_CATEGORIES);
+
+    useEffect(() => {
+        const customCats = initialBudgets.map((b: any) => b.category).filter((c: string) => c && !BUDGET_CATEGORIES.includes(c));
+        const uniqueCats = Array.from(new Set([...BUDGET_CATEGORIES, ...customCats]));
         setCategories(uniqueCats);
     }, [initialBudgets]);
     
@@ -1659,13 +1779,18 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
         if (!newItem.item_name || publishing) return;
         setPublishing(true);
         try {
-            await createPlannerItem(weddingId, 'budget', {
+            const estimatedCost = Math.max(0, parseFloat(newItem.estimated_cost) || 0);
+            const createdBudget = await createPlannerItem(weddingId, 'budget', {
                 category: newItem.category, 
                 item_name: newItem.item_name,
-                estimated_cost: parseFloat(newItem.estimated_cost) || 0
+                estimated_cost: estimatedCost,
+                due_date: newItem.due_date || null,
             });
-            setNewItem({ category: newItem.category, item_name: '', estimated_cost: '' });
-            await reload();
+            if (setBudgets && createdBudget) {
+                setBudgets((current: any[]) => [...current, createdBudget]);
+            }
+            setNewItem({ category: newItem.category, item_name: '', estimated_cost: '', due_date: '' });
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Failed to add budget item.');
             console.error("Error adding budget item:", message);
@@ -1675,35 +1800,49 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
         }
     }
 
-    async function saveWeddingBudget(field: string, value: any) {
+    async function saveWeddingBudget(field: 'total_budget' | 'currency' | 'guest_limit', value: number | string) {
+        const previousValue = field === 'total_budget'
+            ? localBudget
+            : field === 'currency'
+                ? localCurrency
+                : localGuestLimit;
+        const normalizedValue = field === 'currency' ? normalizeCurrencyCode(String(value)) : value;
+
         try {
-            console.log(`Saving ${field}:`, value);
-            // 1. Update local states immediately for no-lag feel
-            if (field === 'total_budget') setLocalBudget(value);
-            if (field === 'currency') setLocalCurrency(value);
-            if (field === 'guest_limit') setLocalGuestLimit(value);
-
-            // 2. Persist to Supabase
-            const { error, data } = await supabase
-                .from('weddings')
-                .update({ [field]: value })
-                .eq('id', weddingId)
-                .select();
-
-            if (error) throw error;
-            
-            // If data is empty, it means RLS blocked the update
-            if (!data || data.length === 0) {
-                throw new Error("Update blocked by database permissions (RLS). Please run the Permission Fix SQL script.");
+            if (field === 'total_budget') setLocalBudget(normalizedValue);
+            if (field === 'currency') setLocalCurrency(normalizeCurrencyCode(String(normalizedValue)));
+            if (field === 'guest_limit') setLocalGuestLimit(normalizedValue);
+            if (setWedding) {
+                setWedding((current: any) => current ? { ...current, [field]: normalizedValue } : current);
             }
 
-            console.log("Save successful:", data);
-            await reload(); 
-        } catch (err: any) {
+            const { data: sessionData } = await getCachedSession();
+            const token = sessionData.session?.access_token;
+            if (!token) throw new Error('Please sign in again before saving budget settings.');
+
+            const response = await fetch('/api/planner/settings', {
+                method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ weddingId, [field]: normalizedValue }),
+            });
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.error || 'Unable to save budget settings.');
+            }
+        } catch (err) {
+            const message = getPlannerErrorMessage(err, 'Failed to save budget settings.');
             console.error("Error updating wedding budget:", err);
-            alert("Failed to update " + field + ": " + err.message);
-            // Revert local state on failure by reloading
-            await reload(); 
+            alert("Failed to update " + field + ": " + message);
+            if (field === 'total_budget') setLocalBudget(previousValue);
+            if (field === 'currency') setLocalCurrency(normalizeCurrencyCode(String(previousValue)));
+            if (field === 'guest_limit') setLocalGuestLimit(previousValue);
+            if (setWedding) {
+                setWedding((current: any) => current ? { ...current, [field]: previousValue } : current);
+            }
         }
     }
 
@@ -1712,7 +1851,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
         try {
             await deletePlannerItem(weddingId, 'budget', id);
             if (setBudgets) setBudgets((current: any[]) => current.filter((item: any) => item.id !== id));
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Unable to delete budget item.');
             console.warn('Error deleting budget item:', message);
@@ -1720,18 +1859,148 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
         }
     }
 
+    async function updateBudgetItem(id: string, values: Record<string, unknown>) {
+        setSavingBudgetItemId(id);
+        try {
+            const updatedItem = await updatePlannerItem(weddingId, 'budget', id, values);
+            if (setBudgets && updatedItem) {
+                setBudgets((current: any[]) => current.map((item: any) => item.id === id ? { ...item, ...updatedItem } : item));
+            }
+            void reload();
+        } catch (err) {
+            const message = getPlannerErrorMessage(err, 'Unable to update budget item.');
+            console.warn('Error updating budget item:', message);
+            alert(message);
+        } finally {
+            setSavingBudgetItemId(null);
+        }
+    }
+
     const foodDrinkBudgetTotal = foodDrinks
         .filter((item: any) => !item.planner_vendor_id)
         .reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0);
-    const totalEst = initialBudgets.reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0) + foodDrinkBudgetTotal;
+    const budgetEstimateTotal = initialBudgets.reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0);
+    const budgetActualTotal = initialBudgets.reduce((acc: number, item: any) => acc + (parseFloat(item.actual_cost) || 0), 0);
+    const projectedBudgetItemTotal = initialBudgets.reduce((acc: number, item: any) => {
+        const actual = parseFloat(item.actual_cost) || 0;
+        const estimated = parseFloat(item.estimated_cost) || 0;
+        return acc + (actual > 0 ? actual : estimated);
+    }, 0);
+    const projectedVariance = projectedBudgetItemTotal - budgetEstimateTotal;
+    const paidBudgetItemTotal = initialBudgets
+        .filter((item: any) => Boolean(item.is_paid))
+        .reduce((acc: number, item: any) => acc + ((parseFloat(item.actual_cost) || 0) || (parseFloat(item.estimated_cost) || 0)), 0);
+    const totalEst = budgetEstimateTotal + foodDrinkBudgetTotal;
     const totalSpentFromVendors = vendors
         .filter((v: any) => v.payment_status?.toLowerCase() === 'paid')
         .reduce((acc: number, v: any) => acc + (parseFloat(v.amount) || 0), 0);
+    const outstandingVendorTotal = vendors
+        .filter((v: any) => v.payment_status?.toLowerCase() !== 'paid')
+        .reduce((acc: number, v: any) => acc + (parseFloat(v.amount) || 0), 0);
     
-    // Total "Committed/Spent" is both the estimates you added AND what you already paid vendors
     const totalCommitted = totalEst + totalSpentFromVendors;
-    const budgetRemaining = (parseFloat(wedding?.total_budget) || 0) - totalCommitted;
-    const usagePercent = wedding?.total_budget > 0 ? Math.min(100, Math.round((totalCommitted / wedding.total_budget) * 100)) : 0;
+    const totalBudgetValue = parseFloat(String(localBudget)) || 0;
+    const guestTargetValue = parseInt(String(localGuestLimit), 10) || 0;
+    const budgetRemaining = totalBudgetValue - totalCommitted;
+    const usagePercent = totalBudgetValue > 0 ? Math.min(100, Math.round((totalCommitted / totalBudgetValue) * 100)) : 0;
+    const hasBudgetActivity = totalBudgetValue > 0 || totalCommitted > 0;
+    const perGuestBudget = guestTargetValue > 0 && totalBudgetValue > 0 ? totalBudgetValue / guestTargetValue : 0;
+    const trackedPerGuest = guestTargetValue > 0 && totalCommitted > 0 ? totalCommitted / guestTargetValue : 0;
+    const money = (amount: number) => amount.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    const getItemPayableAmount = (item: any) => (parseFloat(item.actual_cost) || 0) || (parseFloat(item.estimated_cost) || 0);
+    const getBudgetDueDate = (item: any) => {
+        if (!item?.due_date) return null;
+        const date = new Date(`${String(item.due_date).slice(0, 10)}T00:00:00`);
+        return Number.isNaN(date.getTime()) ? null : date;
+    };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thirtyDaysFromNow = new Date(today);
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    const unpaidBudgetItems = initialBudgets.filter((item: any) => !item.is_paid);
+    const overdueBudgetItems = unpaidBudgetItems
+        .filter((item: any) => {
+            const dueDate = getBudgetDueDate(item);
+            return dueDate && dueDate < today;
+        })
+        .sort((a: any, b: any) => (getBudgetDueDate(a)?.getTime() || 0) - (getBudgetDueDate(b)?.getTime() || 0));
+    const dueSoonBudgetItems = unpaidBudgetItems
+        .filter((item: any) => {
+            const dueDate = getBudgetDueDate(item);
+            return dueDate && dueDate >= today && dueDate <= thirtyDaysFromNow;
+        })
+        .sort((a: any, b: any) => (getBudgetDueDate(a)?.getTime() || 0) - (getBudgetDueDate(b)?.getTime() || 0));
+    const upcomingPayments = [...overdueBudgetItems, ...dueSoonBudgetItems];
+    const upcomingPaymentTotal = upcomingPayments.reduce((acc: number, item: any) => acc + getItemPayableAmount(item), 0);
+    const cateringBudgetTotal = initialBudgets
+        .filter((item: any) => String(item.category || '').toLowerCase() === 'catering')
+        .reduce((acc: number, item: any) => acc + (parseFloat(item.estimated_cost) || 0), 0);
+    const guestSensitiveTotal = foodDrinkBudgetTotal + cateringBudgetTotal;
+    const variableCostPerGuest = guestTargetValue > 0 ? guestSensitiveTotal / guestTargetValue : 0;
+    const scenarioGuestCount = Math.max(0, parseInt(String(scenarioGuests), 10) || 0);
+    const scenarioGuestDelta = scenarioGuestCount - guestTargetValue;
+    const scenarioBudgetImpact = variableCostPerGuest * scenarioGuestDelta;
+    const scenarioProjectedTotal = totalCommitted + scenarioBudgetImpact;
+    const categoryTotals = initialBudgets.reduce((totals: Record<string, number>, item: any) => {
+        const category = String(item.category || 'Other');
+        totals[category] = (totals[category] || 0) + (parseFloat(item.estimated_cost) || 0);
+        return totals;
+    }, {});
+    categoryTotals['Food & Drinks'] = foodDrinkBudgetTotal;
+    const allocationSuggestions = SMART_BUDGET_ALLOCATIONS.map((allocation) => {
+        const planned = allocation.category === 'Decor'
+            ? (categoryTotals.Decor || 0) + (categoryTotals.Flowers || 0)
+            : (categoryTotals[allocation.category] || 0);
+        const target = totalBudgetValue * (allocation.percent / 100);
+        return {
+            ...allocation,
+            planned,
+            target,
+            delta: planned - target,
+            percentOfBudget: totalBudgetValue > 0 ? Math.round((planned / totalBudgetValue) * 100) : 0,
+        };
+    });
+    const categoryBreakdown = [
+        ...categories.map((category, index) => {
+            const total = initialBudgets
+                .filter((item: any) => item.category === category)
+                .reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
+
+            return {
+                category,
+                total,
+                color: BUDGET_CATEGORY_COLORS[index % BUDGET_CATEGORY_COLORS.length],
+                percent: totalEst > 0 ? Math.round((total / totalEst) * 100) : 0,
+            };
+        }),
+        {
+            category: 'Food & Drinks',
+            total: foodDrinkBudgetTotal,
+            color: BUDGET_CATEGORY_COLORS[categories.length % BUDGET_CATEGORY_COLORS.length],
+            percent: totalEst > 0 ? Math.round((foodDrinkBudgetTotal / totalEst) * 100) : 0,
+        },
+    ]
+        .filter((entry) => entry.total > 0)
+        .sort((a, b) => b.total - a.total);
+    const budgetStatus = totalBudgetValue <= 0
+        ? {
+            label: 'Budget not set',
+            className: 'border-border bg-neutral text-text-secondary',
+        }
+        : budgetRemaining < 0
+            ? {
+                label: `Over by ${getCurrencySymbol(localCurrency)}${money(Math.abs(budgetRemaining))}`,
+                className: 'border-red-200 bg-red-50 text-red-700',
+            }
+            : usagePercent >= 90
+                ? {
+                    label: 'Nearly allocated',
+                    className: 'border-amber-200 bg-amber-50 text-amber-700',
+                }
+                : {
+                    label: 'On track',
+                    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                };
 
     // Chart Data
     const chartData = [
@@ -1743,6 +2012,66 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
 
     // Derive symbol from localCurrency for immediate UI feedback
     const currencySymbol = getCurrencySymbol(localCurrency);
+    const selectedCurrency = SUPPORTED_CURRENCIES.find((currency) => currency.code === localCurrency) ?? SUPPORTED_CURRENCIES[0];
+    const changeBudgetCurrency = (currencyCode: string) => {
+        const nextCurrency = normalizeCurrencyCode(currencyCode);
+        setCurrencyMenuOpen(false);
+        if (nextCurrency === localCurrency) return;
+        void saveWeddingBudget('currency', nextCurrency);
+    };
+    const csvCell = (value: unknown) => {
+        const text = String(value ?? '').replace(/"/g, '""');
+        return `"${text}"`;
+    };
+    const downloadBudgetCsv = () => {
+        const rows = [
+            ['Type', 'Category/Role', 'Item', 'Estimated', 'Actual/Paid', 'Variance', 'Status', 'Due date'],
+            ...initialBudgets.map((item: any) => {
+                const estimated = parseFloat(item.estimated_cost) || 0;
+                const actual = parseFloat(item.actual_cost) || 0;
+                return [
+                    'Budget item',
+                    item.category || '',
+                    item.item_name || '',
+                    estimated,
+                    actual,
+                    actual > 0 ? actual - estimated : '',
+                    item.is_paid ? 'Paid' : 'Unpaid',
+                    item.due_date ? String(item.due_date).slice(0, 10) : '',
+                ];
+            }),
+            ...foodDrinks.filter((item: any) => !item.planner_vendor_id).map((item: any) => [
+                'Food & drink',
+                item.item_type || 'Food & Drinks',
+                item.item_name || '',
+                parseFloat(item.estimated_cost) || 0,
+                '',
+                '',
+                'Included in budget',
+                '',
+            ]),
+            ...vendors.map((vendor: any) => [
+                'Supplier',
+                vendor.role || '',
+                vendor.name || '',
+                parseFloat(vendor.amount) || 0,
+                vendor.payment_status?.toLowerCase() === 'paid' ? (parseFloat(vendor.amount) || 0) : '',
+                '',
+                vendor.payment_status || 'not paid',
+                '',
+            ]),
+        ];
+        const csv = rows.map((row) => row.map(csvCell).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `quickweds-budget-${weddingId}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
 
     return (
         <div className="overflow-x-hidden rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-2xl sm:p-6 md:rounded-3xl lg:p-8">
@@ -1752,34 +2081,62 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                         <h2 className="font-serif text-2xl font-bold text-foreground md:text-3xl">Budget Tracker</h2>
                         <p className="mt-1 text-sm text-text-secondary">Set the whole wedding budget, then compare estimates, food costs, and paid vendors.</p>
                     </div>
-                    <div className="hidden items-center gap-2 rounded-full border border-border bg-neutral/40 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-text-secondary lg:inline-flex">
-                        <Wallet className="h-4 w-4 text-primary" />
-                        Live budget controls
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button type="button" onClick={downloadBudgetCsv} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-primary/20 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary transition hover:bg-primary hover:text-white">
+                            <Download className="h-4 w-4" />
+                            CSV
+                        </button>
+                        <button type="button" onClick={() => window.print()} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-text-secondary transition hover:border-primary/30 hover:text-primary">
+                            <Download className="h-4 w-4" />
+                            PDF
+                        </button>
+                        <div className={`inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-widest ${budgetStatus.className}`}>
+                            <Wallet className="h-4 w-4" />
+                            {budgetStatus.label}
+                        </div>
                     </div>
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(21rem,2fr)_repeat(3,minmax(9rem,1fr))]">
                     <div className="rounded-2xl border border-primary/15 bg-neutral/40 p-3 sm:col-span-2 sm:p-4 lg:col-span-1">
                         <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Whole Wedding Budget</p>
-                        <div className="mt-2 grid grid-cols-[minmax(6.75rem,8rem)_minmax(8rem,1fr)] gap-2 sm:grid-cols-[8rem_minmax(10rem,1fr)]">
-                            <select 
-                                value={localCurrency} 
-                                onChange={e => {
-                                    setLocalCurrency(e.target.value);
-                                    saveWeddingBudget('currency', e.target.value);
-                                }}
-                                aria-label="Budget currency"
-                                className="h-12 w-full rounded-xl border border-border bg-white px-3 text-sm font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-                            >
-                                <option value="USD">USD ($)</option>
-                                <option value="Yen">Yen (¥)</option>
-                                <option value="Peso">Peso (₱)</option>
-                            </select>
+                        <div className="mt-2 grid grid-cols-[minmax(8.25rem,0.95fr)_minmax(7.75rem,1fr)] gap-2 sm:grid-cols-[11rem_minmax(10rem,1fr)]">
+                            <div className="relative min-w-0">
+                                <button
+                                    ref={currencyButtonRef}
+                                    type="button"
+                                    aria-haspopup="listbox"
+                                    aria-expanded={currencyMenuOpen}
+                                    aria-label="Budget currency"
+                                    onClick={() => {
+                                        if (currencyMenuOpen) {
+                                            setCurrencyMenuOpen(false);
+                                            return;
+                                        }
+                                        positionCurrencyMenu();
+                                        setCurrencyMenuOpen(true);
+                                    }}
+                                    className="group flex h-12 w-full items-center justify-between gap-2 rounded-xl border border-primary/40 bg-white/85 px-2.5 text-left shadow-[0_12px_30px_rgba(209,108,120,0.2)] outline-none ring-1 ring-primary/15 backdrop-blur-xl transition hover:border-primary/60 hover:bg-white focus:border-primary focus:ring-2 focus:ring-primary/25"
+                                >
+                                    <span className="flex min-w-0 items-center gap-2">
+                                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-mono text-sm font-black text-primary ring-1 ring-primary/15">
+                                            {selectedCurrency.symbol}
+                                        </span>
+                                        <span className="min-w-0">
+                                            <span className="block truncate text-sm font-black text-foreground">{selectedCurrency.code}</span>
+                                            <span className="block truncate text-[10px] font-bold leading-tight text-text-secondary">{selectedCurrency.label}</span>
+                                        </span>
+                                    </span>
+                                    <ChevronDown className={`h-4 w-4 shrink-0 text-primary transition-transform ${currencyMenuOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                            </div>
                             <div className="relative min-w-0 flex-1">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold text-sm pointer-events-none">{currencySymbol}</span>
                                 <input 
                                     type="number" 
                                     inputMode="decimal"
+                                    min="0"
+                                    step="0.01"
                                     placeholder="0"
                                     value={localBudget}
                                     onChange={e => setLocalBudget(e.target.value)}
@@ -1793,6 +2150,62 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                             </div>
                         </div>
                     </div>
+                    {currencyMenuOpen && currencyMenuPosition && typeof document !== 'undefined' && createPortal(
+                        <div
+                            ref={currencyMenuRef}
+                            role="listbox"
+                            aria-label="Budget currencies"
+                            style={{
+                                top: currencyMenuPosition.top,
+                                left: currencyMenuPosition.left,
+                                width: currencyMenuPosition.width,
+                                maxHeight: currencyMenuPosition.maxHeight,
+                            }}
+                            className="fixed z-[9999] overflow-y-auto rounded-[1.35rem] border border-primary/30 bg-white/90 p-2 text-foreground shadow-[0_24px_80px_rgba(58,42,45,0.32)] ring-4 ring-primary/10 backdrop-blur-2xl"
+                        >
+                            <div className="mb-2 flex items-center justify-between gap-3 rounded-2xl border border-white/70 bg-[#3A2A2D]/90 px-3 py-3 text-white shadow-inner backdrop-blur-xl">
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-white/65">Budget Currency</p>
+                                    <p className="truncate font-serif text-lg font-bold text-white drop-shadow-sm">Choose currency</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrencyMenuOpen(false)}
+                                    className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-sm backdrop-blur transition hover:bg-white/25"
+                                    aria-label="Close currency selector"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+                            <div className="space-y-1.5">
+                                {SUPPORTED_CURRENCIES.map((currency) => {
+                                    const selected = currency.code === selectedCurrency.code;
+                                    return (
+                                        <button
+                                            key={currency.code}
+                                            type="button"
+                                            role="option"
+                                            aria-selected={selected}
+                                            onClick={() => changeBudgetCurrency(currency.code)}
+                                            className={`flex min-h-[52px] w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left shadow-sm backdrop-blur transition ${selected ? 'border-primary/25 bg-primary/10 text-primary' : 'border-border/70 bg-white/80 text-foreground hover:border-primary/25 hover:bg-primary/5'}`}
+                                        >
+                                            <span className="flex min-w-0 items-center gap-3">
+                                                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-mono text-sm font-black ring-1 ${selected ? 'bg-white text-primary ring-primary/20' : 'bg-neutral text-text-secondary ring-border'}`}>
+                                                    {currency.symbol}
+                                                </span>
+                                                <span className="min-w-0">
+                                                    <span className="block text-sm font-black">{currency.code}</span>
+                                                    <span className={`block truncate text-[11px] font-bold ${selected ? 'text-primary/70' : 'text-text-secondary'}`}>{currency.label}</span>
+                                                </span>
+                                            </span>
+                                            {selected && <CheckCircle2 className="h-4 w-4 shrink-0" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>,
+                        document.body,
+                    )}
                     <div className="rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Guests</p>
                         <div className="relative mt-2">
@@ -1800,6 +2213,8 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                                 <input 
                                     type="number" 
                                     inputMode="numeric"
+                                    min="0"
+                                    step="1"
                                     placeholder="0"
                                     value={localGuestLimit}
                                     onChange={e => setLocalGuestLimit(e.target.value)}
@@ -1813,13 +2228,13 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                         </div>
                     </div>
                     <div className="rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Spent</p>
-                        <p className={`mt-3 break-words font-mono text-xl font-black leading-tight tabular-nums ${totalCommitted > (wedding?.total_budget || 0) ? 'text-red-500' : 'text-primary'}`}>{currencySymbol}{totalCommitted.toLocaleString()}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Tracked</p>
+                        <p className={`mt-3 break-words font-mono text-xl font-black leading-tight tabular-nums ${totalCommitted > totalBudgetValue && totalBudgetValue > 0 ? 'text-red-500' : 'text-primary'}`}>{currencySymbol}{money(totalCommitted)}</p>
                     </div>
                     <div className="rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Remaining</p>
                         <p className={`mt-3 break-words font-mono text-xl font-black leading-tight tabular-nums ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                            {currencySymbol}{budgetRemaining.toLocaleString()}
+                            {budgetRemaining < 0 ? '-' : ''}{currencySymbol}{money(Math.abs(budgetRemaining))}
                         </p>
                     </div>
                 </div>
@@ -1829,15 +2244,21 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                 {/* Visual Usage */}
                 <div className="bg-neutral/30 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/50 grid gap-3 sm:grid-cols-[170px_1fr] sm:items-center shadow-inner">
                     <div className="h-[150px] min-h-[1px] w-full min-w-[1px] sm:h-[170px]">
-                        <LazyBudgetPieChart
-                            data={chartData}
-                            colors={COLORS}
-                            currencySymbol={currencySymbol}
-                            innerRadius={40}
-                            outerRadius={60}
-                            paddingAngle={5}
-                            tooltipRadius={12}
-                        />
+                        {hasBudgetActivity ? (
+                            <LazyBudgetPieChart
+                                data={chartData}
+                                colors={COLORS}
+                                currencySymbol={currencySymbol}
+                                innerRadius={40}
+                                outerRadius={60}
+                                paddingAngle={5}
+                                tooltipRadius={12}
+                            />
+                        ) : (
+                            <div className="flex h-full items-center justify-center rounded-full border border-dashed border-primary/25 bg-white text-primary">
+                                <Wallet className="h-10 w-10" />
+                            </div>
+                        )}
                     </div>
                     <div className="space-y-3">
                         <div className="flex justify-between items-end gap-2">
@@ -1854,7 +2275,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                                         <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i] }} />
                                         <span className="text-text-secondary font-bold truncate">{entry.name}</span>
                                     </div>
-                                    <span className="font-mono font-bold text-xs flex-shrink-0">{currencySymbol}{entry.value.toLocaleString()}</span>
+                                    <span className="font-mono font-bold text-xs flex-shrink-0">{currencySymbol}{money(entry.value)}</span>
                                 </div>
                             ))}
                         </div>
@@ -1862,14 +2283,14 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                 </div>
 
                 {/* Quick Info */}
-                <div className="bg-white border border-border rounded-xl sm:rounded-2xl p-3 sm:p-4 grid gap-2 soft-shadow sm:grid-cols-3 lg:grid-cols-1">
+                <div className="bg-white border border-border rounded-xl sm:rounded-2xl p-3 sm:p-4 grid gap-2 soft-shadow sm:grid-cols-2 lg:grid-cols-1">
                     <div className="flex items-center gap-3 rounded-xl bg-neutral/40 p-2.5">
                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 min-h-[44px] min-w-[44px]">
                             <PieChartIcon className="w-5 h-5 text-primary" />
                         </div>
                         <div>
                             <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary">Planned Total</p>
-                            <p className="text-base sm:text-lg md:text-xl font-mono font-bold">{currencySymbol}{totalEst.toLocaleString()}</p>
+                            <p className="text-base sm:text-lg md:text-xl font-mono font-bold">{currencySymbol}{money(totalEst)}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3 rounded-xl bg-neutral/40 p-2.5">
@@ -1878,7 +2299,10 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                         </div>
                         <div>
                             <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary">Paid to Vendors</p>
-                            <p className="text-base sm:text-lg md:text-xl font-mono font-bold">{currencySymbol}{totalSpentFromVendors.toLocaleString()}</p>
+                            <p className="text-base sm:text-lg md:text-xl font-mono font-bold">{currencySymbol}{money(totalSpentFromVendors)}</p>
+                            {outstandingVendorTotal > 0 && (
+                                <p className="mt-0.5 text-[10px] font-bold text-text-secondary">Outstanding {currencySymbol}{money(outstandingVendorTotal)}</p>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-center gap-3 rounded-xl bg-neutral/40 p-2.5">
@@ -1887,22 +2311,200 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                         </div>
                         <div>
                             <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary">Remaining Cash</p>
-                            <p className="text-base sm:text-lg md:text-xl font-mono font-bold text-emerald-600">{currencySymbol}{Math.max(0, budgetRemaining).toLocaleString()}</p>
+                            <p className="text-base sm:text-lg md:text-xl font-mono font-bold text-emerald-600">{currencySymbol}{money(Math.max(0, budgetRemaining))}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-xl bg-neutral/40 p-2.5">
+                        <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0 min-h-[44px] min-w-[44px]">
+                            <Users className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div>
+                            <p className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-text-secondary">Per Guest Budget</p>
+                            <p className="text-base sm:text-lg md:text-xl font-mono font-bold">
+                                {guestTargetValue > 0 ? `${currencySymbol}${money(perGuestBudget)}` : '--'}
+                            </p>
+                            {guestTargetValue > 0 && trackedPerGuest > 0 && (
+                                <p className="mt-0.5 text-[10px] font-bold text-text-secondary">Tracked {currencySymbol}{money(trackedPerGuest)}</p>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
 
+            <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_1fr]">
+                <div className="rounded-2xl border border-border/60 bg-white p-4 soft-shadow">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h3 className="font-serif text-lg font-bold text-foreground">Estimate vs Actual</h3>
+                            <p className="text-xs text-text-secondary">Actuals override estimates for projection once entered.</p>
+                        </div>
+                        <span className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${projectedVariance > 0 ? 'bg-red-50 text-red-700' : projectedVariance < 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral text-text-secondary'}`}>
+                            {projectedVariance > 0 ? 'Over estimate' : projectedVariance < 0 ? 'Under estimate' : 'Matched'}
+                        </span>
+                    </div>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                        <div className="rounded-xl bg-neutral/40 p-3">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary">Estimated</p>
+                            <p className="mt-2 font-mono text-lg font-black text-foreground">{currencySymbol}{money(budgetEstimateTotal)}</p>
+                        </div>
+                        <div className="rounded-xl bg-neutral/40 p-3">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary">Projected</p>
+                            <p className="mt-2 font-mono text-lg font-black text-primary">{currencySymbol}{money(projectedBudgetItemTotal)}</p>
+                            {budgetActualTotal > 0 && <p className="mt-1 text-[10px] font-bold text-text-secondary">Actual entered {currencySymbol}{money(budgetActualTotal)}</p>}
+                        </div>
+                        <div className="rounded-xl bg-neutral/40 p-3">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary">Variance</p>
+                            <p className={`mt-2 font-mono text-lg font-black ${projectedVariance > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                                {projectedVariance < 0 ? '-' : ''}{currencySymbol}{money(Math.abs(projectedVariance))}
+                            </p>
+                            {paidBudgetItemTotal > 0 && <p className="mt-1 text-[10px] font-bold text-text-secondary">Paid line items {currencySymbol}{money(paidBudgetItemTotal)}</p>}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border border-border/60 bg-white p-4 soft-shadow">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h3 className="font-serif text-lg font-bold text-foreground">Payment Schedule</h3>
+                            <p className="text-xs text-text-secondary">Unpaid line items due now or in the next 30 days.</p>
+                        </div>
+                        <p className="font-mono text-sm font-black text-primary">{currencySymbol}{money(upcomingPaymentTotal)}</p>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                        {upcomingPayments.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-primary/20 bg-neutral/30 p-4 text-sm text-text-secondary">
+                                No unpaid budget items are due in the next 30 days.
+                            </div>
+                        ) : upcomingPayments.slice(0, 5).map((item: any) => {
+                            const dueDate = getBudgetDueDate(item);
+                            const isOverdue = Boolean(dueDate && dueDate < today);
+                            return (
+                                <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl bg-neutral/35 p-3">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-bold text-foreground">{item.item_name}</p>
+                                        <p className={`text-[10px] font-black uppercase tracking-widest ${isOverdue ? 'text-red-600' : 'text-text-secondary'}`}>
+                                            {isOverdue ? 'Overdue' : 'Due soon'} {dueDate ? dueDate.toLocaleDateString() : ''}
+                                        </p>
+                                    </div>
+                                    <p className="shrink-0 font-mono text-sm font-black text-primary">{currencySymbol}{money(getItemPayableAmount(item))}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_1fr]">
+                <div className="rounded-2xl border border-primary/15 bg-neutral/30 p-4">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h3 className="font-serif text-lg font-bold text-foreground">Guest Count Simulator</h3>
+                            <p className="text-xs text-text-secondary">Uses catering and food/drink estimates to model guest-count changes.</p>
+                        </div>
+                        <label className="mt-2 block w-full sm:mt-0 sm:w-36">
+                            <span className="sr-only">Scenario guest count</span>
+                            <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={scenarioGuests}
+                                onChange={(e) => setScenarioGuests(e.target.value)}
+                                className="h-11 w-full rounded-xl border border-border bg-white px-3 text-right font-mono text-sm font-black outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                            />
+                        </label>
+                    </div>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                        <div className="rounded-xl bg-white p-3">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary">Variable / Guest</p>
+                            <p className="mt-2 font-mono text-lg font-black text-primary">{guestTargetValue > 0 ? `${currencySymbol}${money(variableCostPerGuest)}` : '--'}</p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary">Guest Change</p>
+                            <p className={`mt-2 font-mono text-lg font-black ${scenarioGuestDelta > 0 ? 'text-red-500' : scenarioGuestDelta < 0 ? 'text-emerald-600' : 'text-foreground'}`}>
+                                {scenarioGuestDelta > 0 ? '+' : ''}{scenarioGuestDelta}
+                            </p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-text-secondary">Budget Impact</p>
+                            <p className={`mt-2 font-mono text-lg font-black ${scenarioBudgetImpact > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                                {scenarioBudgetImpact < 0 ? '-' : ''}{currencySymbol}{money(Math.abs(scenarioBudgetImpact))}
+                            </p>
+                        </div>
+                    </div>
+                    <p className="mt-3 text-xs font-semibold text-text-secondary">
+                        Scenario tracked total: {currencySymbol}{money(Math.max(0, scenarioProjectedTotal))}
+                    </p>
+                </div>
+
+                <div className="rounded-2xl border border-border/60 bg-white p-4 soft-shadow">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h3 className="font-serif text-lg font-bold text-foreground">Smart Allocation</h3>
+                            <p className="text-xs text-text-secondary">Suggested category targets based on your whole wedding budget.</p>
+                        </div>
+                        <p className="font-mono text-sm font-black text-primary">{totalBudgetValue > 0 ? `${currencySymbol}${money(totalBudgetValue)}` : 'Set budget'}</p>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                        {allocationSuggestions.slice(0, 5).map((allocation) => {
+                            const overTarget = allocation.delta > totalBudgetValue * 0.03;
+                            return (
+                                <div key={allocation.category} className="rounded-xl border border-border/60 bg-neutral/25 p-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-foreground">{allocation.category}</p>
+                                            <p className="text-[10px] font-bold text-text-secondary">{allocation.note}</p>
+                                        </div>
+                                        <p className={`shrink-0 font-mono text-sm font-black ${overTarget ? 'text-red-500' : 'text-primary'}`}>{allocation.percentOfBudget}%</p>
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap justify-between gap-2 text-[10px] font-bold text-text-secondary">
+                                        <span>Target {currencySymbol}{money(allocation.target)}</span>
+                                        <span>Planned {currencySymbol}{money(allocation.planned)}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {categoryBreakdown.length > 0 && (
+                <div className="mb-5 rounded-2xl border border-border/50 bg-white p-4 soft-shadow">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h3 className="font-serif text-lg font-bold text-foreground">Category Breakdown</h3>
+                            <p className="text-xs text-text-secondary">Largest planned categories by estimate.</p>
+                        </div>
+                        <p className="font-mono text-sm font-black text-primary">{currencySymbol}{money(totalEst)} planned</p>
+                    </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        {categoryBreakdown.slice(0, 6).map((entry) => (
+                            <div key={entry.category} className="rounded-xl border border-border/60 bg-neutral/25 p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-bold text-foreground">{entry.category}</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">{entry.percent}% of planned</p>
+                                    </div>
+                                    <p className="shrink-0 font-mono text-sm font-black text-primary">{currencySymbol}{money(entry.total)}</p>
+                                </div>
+                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, entry.percent)}%`, backgroundColor: entry.color }} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <form onSubmit={addItem} className="mb-5 rounded-2xl border border-border/50 bg-neutral/30 p-4 lg:p-5">
                 <div className="mb-3 flex items-center justify-between gap-3">
                     <h3 className="font-serif text-lg font-bold text-foreground">Add Expense</h3>
                     <div className="hidden gap-2 text-[10px] font-black uppercase tracking-widest text-text-secondary sm:flex">
-                        <span>Planned {currencySymbol}{totalEst.toLocaleString()}</span>
-                        <span>Food {currencySymbol}{foodDrinkBudgetTotal.toLocaleString()}</span>
-                        <span>Paid {currencySymbol}{totalSpentFromVendors.toLocaleString()}</span>
+                        <span>Planned {currencySymbol}{money(totalEst)}</span>
+                        <span>Food {currencySymbol}{money(foodDrinkBudgetTotal)}</span>
+                        <span>Paid {currencySymbol}{money(totalSpentFromVendors)}</span>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1.35fr_minmax(11rem,0.9fr)_minmax(8rem,auto)] xl:items-end">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1.35fr_minmax(9rem,0.8fr)_minmax(9rem,0.85fr)_minmax(8rem,auto)] xl:items-end">
                     <div className="min-w-0">
                         <label className="block text-[9px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Category</label>
                         <select 
@@ -1933,12 +2535,23 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                                 required
                                 type="number" 
                                 inputMode="decimal"
+                                min="0"
+                                step="0.01"
                                 placeholder="0" 
                                 value={newItem.estimated_cost}
                                 onChange={e => setNewItem({...newItem, estimated_cost: e.target.value})}
                                 className="icon-field-left-compact min-h-[46px] w-full min-w-0 rounded-xl border border-border bg-white py-2.5 pl-8 pr-3 font-mono text-base tabular-nums outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                         </div>
+                    </div>
+                    <div className="min-w-0">
+                        <label className="block text-[9px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Payment Due</label>
+                        <input
+                            type="date"
+                            value={newItem.due_date}
+                            onChange={(e) => setNewItem({ ...newItem, due_date: e.target.value })}
+                            className="min-h-[46px] w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                        />
                     </div>
                     <button type="submit" disabled={publishing} className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60">
                         <Plus className="h-4 w-4" />
@@ -1953,6 +2566,13 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                     <h3 className="text-base sm:text-lg font-serif font-bold text-foreground flex items-center gap-2">
                         <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" /> Budget Estimates
                     </h3>
+                    {initialBudgets.length === 0 && (
+                        <div className="rounded-xl border border-dashed border-primary/25 bg-neutral/30 p-6 text-center">
+                            <Wallet className="mx-auto h-8 w-8 text-primary" />
+                            <p className="mt-3 font-serif text-lg font-bold text-foreground">No expense estimates yet.</p>
+                            <p className="mt-1 text-sm text-text-secondary">Add the first line item above to start building your wedding budget.</p>
+                        </div>
+                    )}
                     {categories.map(category => {
                         const items = initialBudgets.filter((b: any) => b.category === category);
                         if (items.length === 0) return null;
@@ -1962,18 +2582,85 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                             <div key={category} className="border border-border rounded-lg sm:rounded-xl overflow-hidden bg-white">
                                 <div className="bg-neutral/30 px-3 sm:px-4 py-2 flex justify-between items-center border-b border-border gap-2">
                                     <h4 className="font-bold text-xs sm:text-sm text-text-secondary uppercase tracking-widest">{category}</h4>
-                                    <span className="font-mono font-bold text-xs sm:text-sm whitespace-nowrap">{currencySymbol}{catTotal.toLocaleString()}</span>
+                                    <span className="font-mono font-bold text-xs sm:text-sm whitespace-nowrap">{currencySymbol}{money(catTotal)}</span>
                                 </div>
-                                <div className="divide-y divide-border/30 max-h-[310px] overflow-y-auto">
-                                    {items.map((item: any) => (
-                                        <div key={item.id} className="px-3 py-2.5 sm:px-4 flex justify-between items-center group hover:bg-neutral/10 gap-2 text-xs sm:text-sm">
-                                            <p className="font-serif break-words">{item.item_name}</p>
-                                            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                                                <span className="font-mono text-text-secondary text-xs sm:text-sm whitespace-nowrap">{currencySymbol}{Number(item.estimated_cost).toLocaleString()}</span>
-                                                <button type="button" onClick={() => deleteItem(item.id)} className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50" aria-label="Delete budget item"><Trash2 className="w-4 h-4" /></button>
+                                <div className="divide-y divide-border/30 max-h-[520px] overflow-y-auto">
+                                    {items.map((item: any) => {
+                                        const estimated = Number(item.estimated_cost || 0);
+                                        const actual = Number(item.actual_cost || 0);
+                                        const effectiveActual = actual > 0 ? actual : estimated;
+                                        const variance = effectiveActual - estimated;
+                                        const itemDueDate = item.due_date ? String(item.due_date).slice(0, 10) : '';
+                                        const isSaving = savingBudgetItemId === item.id;
+
+                                        return (
+                                            <div key={item.id} className="grid gap-3 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(6rem,0.75fr))_44px] lg:items-center">
+                                                <div className="min-w-0">
+                                                    <p className="font-serif text-sm font-bold text-foreground break-words">{item.item_name}</p>
+                                                    <p className={`mt-1 inline-flex rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${item.is_paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                                                        {item.is_paid ? 'Paid' : 'Unpaid'}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Estimate</label>
+                                                    <p className="mt-1 font-mono text-sm font-black text-text-secondary">{currencySymbol}{money(estimated)}</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Actual</label>
+                                                    <div className="relative mt-1">
+                                                        <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-text-secondary">{currencySymbol}</span>
+                                                        <input
+                                                            type="number"
+                                                            inputMode="decimal"
+                                                            min="0"
+                                                            step="0.01"
+                                                            defaultValue={actual || ''}
+                                                            onBlur={(e) => {
+                                                                const nextActual = Math.max(0, parseFloat(e.target.value) || 0);
+                                                                if (nextActual !== actual) {
+                                                                    updateBudgetItem(item.id, { actual_cost: nextActual });
+                                                                }
+                                                            }}
+                                                            className="h-10 w-full rounded-lg border border-border bg-white pl-6 pr-2 text-right font-mono text-sm font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Variance</label>
+                                                    <p className={`mt-1 font-mono text-sm font-black ${variance > 0 ? 'text-red-500' : variance < 0 ? 'text-emerald-600' : 'text-text-secondary'}`}>
+                                                        {variance < 0 ? '-' : ''}{currencySymbol}{money(Math.abs(variance))}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Due</label>
+                                                    <input
+                                                        type="date"
+                                                        defaultValue={itemDueDate}
+                                                        onBlur={(e) => {
+                                                            if (e.target.value !== itemDueDate) {
+                                                                updateBudgetItem(item.id, { due_date: e.target.value || null });
+                                                            }
+                                                        }}
+                                                        className="mt-1 h-10 w-full rounded-lg border border-border bg-white px-2 text-xs font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2 lg:justify-center">
+                                                    <label className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-border bg-white px-3 text-xs font-bold text-text-secondary">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={Boolean(item.is_paid)}
+                                                            onChange={(e) => updateBudgetItem(item.id, { is_paid: e.target.checked })}
+                                                            className="h-4 w-4 accent-primary"
+                                                        />
+                                                        Paid
+                                                    </label>
+                                                    <button type="button" onClick={() => deleteItem(item.id)} disabled={isSaving} className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 disabled:opacity-50" aria-label="Delete budget item">
+                                                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         );
@@ -2006,7 +2693,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, wedding, vendor
                                                 <p className="text-[7px] sm:text-[10px] uppercase tracking-widest text-primary font-black opacity-60 mt-0.5">{vendor.role}</p>
                                             </td>
                                             <td className="px-3 sm:px-4 py-2 text-right font-mono font-bold text-xs sm:text-sm">
-                                                {currencySymbol}{Number(vendor.amount || 0).toLocaleString()}
+                                                {currencySymbol}{money(Number(vendor.amount || 0))}
                                             </td>
                                             <td className="px-3 sm:px-4 py-2 text-center">
                                                 <VendorPaymentStatusSelect
@@ -2080,7 +2767,7 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
         if (!newItem.item_name || publishing) return;
         setPublishing(true);
         try {
-            await createPlannerItem(weddingId, 'foodDrink', {
+            const createdFoodDrink = await createPlannerItem(weddingId, 'foodDrink', {
                 item_type: newItem.item_type,
                 item_name: newItem.item_name.trim(),
                 serving_category: newItem.serving_category.trim() || null,
@@ -2090,8 +2777,11 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
                 custom_supplier_name: newItem.custom_supplier_name.trim() || null,
                 notes: newItem.notes.trim() || null,
             });
+            if (setFoodDrinks && createdFoodDrink) {
+                setFoodDrinks((current: any[]) => [...current, createdFoodDrink]);
+            }
             setNewItem({ item_type: 'food', item_name: '', serving_category: '', reference_image_url: '', estimated_cost: '', planner_vendor_id: '', custom_supplier_name: '', notes: '' });
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Failed to add food or drink.');
             console.warn('Error adding food/drink item:', message);
@@ -2107,7 +2797,7 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
         try {
             await deletePlannerItem(weddingId, 'foodDrink', id);
             if (setFoodDrinks) setFoodDrinks((current: any[]) => current.filter((item: any) => item.id !== id));
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Unable to delete food or drink item.');
             console.warn('Error deleting food or drink item:', message);
@@ -2225,7 +2915,7 @@ function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, 
         if (!newItem.title.trim() || publishing) return;
         setPublishing(true);
         try {
-            await createPlannerItem(weddingId, 'honeymoon', {
+            const createdHoneymoonItem = await createPlannerItem(weddingId, 'honeymoon', {
                 category: newItem.category,
                 title: newItem.title.trim(),
                 destination: newItem.destination.trim() || null,
@@ -2237,8 +2927,11 @@ function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, 
                 booking_link: newItem.booking_link.trim() || null,
                 notes: newItem.notes.trim() || null,
             });
+            if (setHoneymoonItems && createdHoneymoonItem) {
+                setHoneymoonItems((current: any[]) => [...current, createdHoneymoonItem]);
+            }
             setNewItem({ category: newItem.category, title: '', destination: '', start_date: '', end_date: '', estimated_cost: '', status: 'idea', supplier_name: '', booking_link: '', notes: '' });
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Failed to add honeymoon item.');
             console.error('Error adding honeymoon item:', message);
@@ -2249,8 +2942,25 @@ function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, 
     }
 
     async function updateItem(item: any, patch: Record<string, unknown>) {
-        const { error } = await supabase.from('planner_honeymoon_items').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', item.id);
-        if (!error) await reload();
+        let previousItems: any[] = [];
+        if (setHoneymoonItems) {
+            setHoneymoonItems((current: any[]) => {
+                previousItems = current;
+                return current.map((currentItem: any) => currentItem.id === item.id ? { ...currentItem, ...patch } : currentItem);
+            });
+        }
+        try {
+            const updatedItem = await updatePlannerItem(weddingId, 'honeymoon', item.id, patch);
+            if (setHoneymoonItems && updatedItem) {
+                setHoneymoonItems((current: any[]) => current.map((currentItem: any) => currentItem.id === item.id ? { ...currentItem, ...updatedItem } : currentItem));
+            }
+            void reload();
+        } catch (err) {
+            if (previousItems.length > 0 && setHoneymoonItems) setHoneymoonItems(previousItems);
+            const message = getPlannerErrorMessage(err, 'Unable to update honeymoon item.');
+            console.warn('Error updating honeymoon item:', message);
+            alert(message);
+        }
     }
 
     async function deleteItem(id: string) {
@@ -2258,7 +2968,7 @@ function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, 
         try {
             await deletePlannerItem(weddingId, 'honeymoon', id);
             if (setHoneymoonItems) setHoneymoonItems((current: any[]) => current.filter((item: any) => item.id !== id));
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Unable to delete honeymoon item.');
             console.warn('Error deleting honeymoon item:', message);
@@ -2386,7 +3096,7 @@ function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reloa
         if (!newItem.name || publishing) return;
         setPublishing(true);
         try {
-            await createPlannerItem(weddingId, 'vendor', {
+            const createdVendor = await createPlannerItem(weddingId, 'vendor', {
                 role: newItem.role, 
                 name: newItem.name,
                 phone: newItem.contact,
@@ -2394,6 +3104,9 @@ function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reloa
                 payment_status: newItem.payment_status,
                 payment_method: newItem.payment_method
             });
+            if (setVendors && createdVendor) {
+                setVendors((current: any[]) => [...current, createdVendor]);
+            }
             setNewItem({ 
                 role: newItem.role, 
                 name: '', 
@@ -2402,7 +3115,7 @@ function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reloa
                 payment_status: 'not paid', 
                 payment_method: 'cash' 
             });
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Failed to add supplier/vendor.');
             console.error("Error adding vendor:", message);
@@ -2419,7 +3132,7 @@ function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reloa
         try {
             await deletePlannerItem(weddingId, 'vendor', id);
             if (setVendors) setVendors((current: any[]) => current.filter((vendor: any) => vendor.id !== id));
-            await reload();
+            void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Unable to delete supplier/vendor.');
             console.warn('Error deleting vendor:', message);

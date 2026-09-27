@@ -1,7 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
-import { getAuthenticatedRequest } from '@/lib/api-rate-limit';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import {
@@ -59,6 +58,12 @@ function getMissingColumnName(error: any): string | null {
 function cleanString(value: unknown) {
     const text = String(value || '').trim();
     return text || null;
+}
+
+function getNonNegativeNumber(value: unknown) {
+    const amount = Number(value || 0);
+    if (!Number.isFinite(amount) || amount < 0) return 0;
+    return amount;
 }
 
 function getTaskFallbackCategory(values: Record<string, any>) {
@@ -122,9 +127,10 @@ function getCreatePayload(type: string, weddingId: string, values: Record<string
             wedding_id: weddingId,
             category: cleanString(values.category) || 'General',
             item_name: cleanString(values.item_name),
-            estimated_cost: Number(values.estimated_cost || 0),
-            actual_cost: Number(values.actual_cost || 0),
+            estimated_cost: getNonNegativeNumber(values.estimated_cost),
+            actual_cost: getNonNegativeNumber(values.actual_cost),
             is_paid: Boolean(values.is_paid),
+            due_date: values.due_date || null,
         };
     }
     if (type === 'vendor') {
@@ -201,6 +207,21 @@ function getUpdatePayload(type: string, values: Record<string, any>) {
 
     if (type === 'task' && payload.section && !payload.category) {
         payload.category = payload.section;
+    }
+
+    if (type === 'budget') {
+        if (Object.prototype.hasOwnProperty.call(payload, 'estimated_cost')) {
+            payload.estimated_cost = getNonNegativeNumber(payload.estimated_cost);
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'actual_cost')) {
+            payload.actual_cost = getNonNegativeNumber(payload.actual_cost);
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'is_paid')) {
+            payload.is_paid = payload.is_paid === true || payload.is_paid === 'true';
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'due_date') && !payload.due_date) {
+            payload.due_date = null;
+        }
     }
 
     if (type !== 'budget' && type !== 'vendor') {

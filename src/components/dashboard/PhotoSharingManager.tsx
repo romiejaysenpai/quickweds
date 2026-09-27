@@ -104,6 +104,7 @@ async function getAuthHeaders() {
 
 export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }: { weddingId: string; hasPlannerPro?: boolean }) {
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [actingId, setActingId] = useState<string | null>(null);
     const [photos, setPhotos] = useState<Photo[]>([]);
@@ -123,8 +124,12 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
         void loadData();
     }, [weddingId]);
 
-    async function loadData() {
-        setLoading(true);
+    async function loadData(showSpinner = true) {
+        if (showSpinner) {
+            setLoading(true);
+        } else {
+            setRefreshing(true);
+        }
         setError('');
         try {
             const headers = await getAuthHeaders();
@@ -142,7 +147,11 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unable to load photo portal.');
         } finally {
-            setLoading(false);
+            if (showSpinner) {
+                setLoading(false);
+            } else {
+                setRefreshing(false);
+            }
         }
     }
 
@@ -187,6 +196,8 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
 
     async function toggleCode(code: SharingCode) {
         setActingId(code.id);
+        const previousCodes = codes;
+        setCodes((current) => current.map((item) => item.id === code.id ? { ...item, is_active: !code.is_active } : item));
         try {
             const headers = await getAuthHeaders();
             const response = await fetch('/api/photos/sharing-codes', {
@@ -198,6 +209,7 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
             if (!response.ok) throw new Error(data.error || 'Failed to update sharing code.');
             setCodes((current) => current.map((item) => item.id === code.id ? data.code : item));
         } catch (err) {
+            setCodes(previousCodes);
             window.alert(err instanceof Error ? err.message : 'Failed to update sharing code.');
         } finally {
             setActingId(null);
@@ -207,6 +219,8 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
     async function deleteCode(codeId: string) {
         if (!window.confirm("Guests using this code won't be able to upload anymore. Delete it?")) return;
         setActingId(codeId);
+        const previousCodes = codes;
+        setCodes((current) => current.filter((code) => code.id !== codeId));
         try {
             const headers = await getAuthHeaders();
             const response = await fetch('/api/photos/sharing-codes', {
@@ -216,8 +230,8 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'Failed to delete sharing code.');
-            setCodes((current) => current.filter((code) => code.id !== codeId));
         } catch (err) {
+            setCodes(previousCodes);
             window.alert(err instanceof Error ? err.message : 'Failed to delete sharing code.');
         } finally {
             setActingId(null);
@@ -324,8 +338,8 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
                         <button type="button" onClick={() => void openExternalUrl(uploadUrl)} className="inline-flex min-h-[36px] flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-neutral px-3 py-2 text-xs font-bold text-foreground transition-all hover:bg-neutral/80 sm:flex-none">
                             <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" /> Open
                         </button>
-                        <button type="button" onClick={() => void loadData()} className="inline-flex min-h-[36px] flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-neutral px-3 py-2 text-xs font-bold text-foreground transition-all hover:bg-neutral/80 sm:flex-none">
-                            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" /> Refresh
+                        <button type="button" onClick={() => void loadData(false)} disabled={refreshing} className="inline-flex min-h-[36px] flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-neutral px-3 py-2 text-xs font-bold text-foreground transition-all hover:bg-neutral/80 disabled:opacity-60 sm:flex-none">
+                            <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
                         </button>
                     </div>
                 </div>

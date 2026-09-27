@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SUPPORTED_CURRENCY_CODES } from '@/lib/currency';
 
 // Stripe Checkout Validation
 export const checkoutSchema = z.object({
@@ -60,7 +61,7 @@ export const weddingBuilderSchema = z.object({
     template: z.string().max(100).optional(),
     isPremium: z.boolean().optional().default(false),
     totalBudget: z.coerce.number().min(0).optional().default(0),
-    currency: z.enum(['USD', 'PHP', 'JPY', 'EUR', 'GBP']).default('USD'),
+    currency: z.enum(SUPPORTED_CURRENCY_CODES).default('USD'),
     rsvpDeadline: z.string().optional(),
     coupleEmail: z.string().email().optional().or(z.literal('')),
 });

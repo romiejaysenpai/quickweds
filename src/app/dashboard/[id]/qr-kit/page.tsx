@@ -46,6 +46,7 @@ export default function QrKitPage() {
     const weddingId = params?.id || '';
     const [wedding, setWedding] = useState<WeddingSummary | null>(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState('');
     const [qrStatus, setQrStatus] = useState('');
     const openedFrom = searchParams?.get('from');
@@ -60,14 +61,18 @@ export default function QrKitPage() {
             ? 'Dashboard'
             : 'Wedding Day';
 
-    const loadWedding = useCallback(async () => {
+    const loadWedding = useCallback(async (showSpinner = true) => {
         const token = await getToken();
         if (!token) return router.push('/login');
 
-        setLoading(true);
+        if (showSpinner) {
+            setLoading(true);
+        } else {
+            setRefreshing(true);
+        }
         setError('');
         try {
-            const response = await fetch(`/api/planner/load?weddingId=${encodeURIComponent(weddingId)}`, {
+            const response = await fetch(`/api/wedding-day/settings?weddingId=${encodeURIComponent(weddingId)}&summaryOnly=1`, {
                 headers: { Authorization: `Bearer ${token}` },
                 cache: 'no-store',
             });
@@ -77,7 +82,11 @@ export default function QrKitPage() {
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unable to load QR kit.');
         } finally {
-            setLoading(false);
+            if (showSpinner) {
+                setLoading(false);
+            } else {
+                setRefreshing(false);
+            }
         }
     }, [router, weddingId]);
 
@@ -86,7 +95,7 @@ export default function QrKitPage() {
             router.push('/login');
             return;
         }
-        if (user && weddingId) void loadWedding();
+        if (user && weddingId) void loadWedding(true);
     }, [authLoading, user, weddingId, router, loadWedding]);
 
     const qrCards = useMemo(() => {
@@ -122,8 +131,8 @@ export default function QrKitPage() {
                         <ArrowLeft className="h-4 w-4" /> {backLabel}
                     </Link>
                     <div className="flex flex-col gap-2 sm:flex-row">
-                        <button type="button" onClick={() => void loadWedding()} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-bold text-text-secondary">
-                            <RefreshCw className="h-4 w-4" /> Refresh
+                        <button type="button" onClick={() => void loadWedding(false)} disabled={refreshing} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-bold text-text-secondary disabled:opacity-60">
+                            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
                         </button>
                         <button type="button" onClick={printPage} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white">
                             <Printer className="h-4 w-4" /> Print

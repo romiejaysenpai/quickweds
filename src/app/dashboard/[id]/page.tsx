@@ -32,6 +32,7 @@ import {
 } from '@/lib/guest-list';
 import { getCachedSession } from '@/lib/session-cache';
 import QrCodeActions from '@/components/dashboard/QrCodeActions';
+import { getCurrencySymbol } from '@/lib/currency';
 
 const AnalyticsPanel = dynamic(() => import('@/components/dashboard/AnalyticsPanel'), {
     loading: () => <DashboardPanelLoading label="Loading analytics..." />,
@@ -237,6 +238,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 setWedding(weddingData);
                 setAccountIsPro(hasAccountPro(workspaceResult.accountProfile));
                 setPlanUsage(workspaceResult.planUsage || EMPTY_PLANNER_USAGE);
+                setLoading(false);
 
                 const [rsvpsRes, vendorsRes, budgetsRes, countersRes] = await Promise.all([
                     supabase.from('rsvps').select('*').eq('wedding_id', id).order('created_at', { ascending: false }),
@@ -655,7 +657,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         { name: 'Remaining', value: Math.max(0, stats.remainingBudget) }
     ];
     const COLORS = ['#D16C78', '#E5E7EB'];
-    const currencySymbol = wedding?.currency === 'USD' ? '$' : wedding?.currency === 'JPY' ? '¥' : '₱';
+    const currencySymbol = getCurrencySymbol(wedding?.currency);
 
     return (
         <div className="mobile-safe-screen bg-background pb-20 mobile-safe-bottom">
