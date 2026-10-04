@@ -22,9 +22,60 @@ const WEDDING_OPTIONAL_COLUMNS = [
     'wedding_time',
     'venue_name',
     'venue_address',
-    'template',
+    'maps_link',
+    'reception_venue_name',
+    'reception_venue_address',
+    'reception_maps_link',
+    'reception_venue_photos',
+    'story',
+    'quote',
     'hero_image',
+    'couple_photo',
+    'teaser_video',
+    'gallery_images',
+    'gallery_layout',
     'custom_domain',
+    'template',
+    'template_style',
+    'card_style',
+    'background_style',
+    'section_title_font_style',
+    'section_title_color_style',
+    'font_style',
+    'motif_color',
+    'dress_code',
+    'contact_person',
+    'hashtag',
+    'rsvp_deadline',
+    'rsvp_events',
+    'program_timeline',
+    'faq_items',
+    'invitation_image',
+    'accent_style',
+    'logo_initials',
+    'logo_shape',
+    'logo_color',
+    'logo_font',
+    'logo_animation',
+    'gift_bank',
+    'gift_account_name',
+    'gift_account_number',
+    'gift_qr_image',
+    'gift_registry_links',
+    'cash_funds',
+    'payment_links',
+    'wedding_party',
+    'include_entourage_section',
+    'spotify_playlist_url',
+    'background_music_url',
+    'background_music_title',
+    'background_music_enabled',
+    'is_save_the_date',
+    'is_thank_you_mode',
+    'thank_you_message',
+    'photo_album_link',
+    'voice_greeting_url',
+    'couple_email',
     'public_slug',
     'total_budget',
     'currency',
@@ -33,10 +84,15 @@ const WEDDING_OPTIONAL_COLUMNS = [
     'notify_on_updates',
     'is_premium',
     'payment_status',
+    'payment_amount',
+    'stripe_payment_intent_id',
+    'plan_type',
     'deleted_at',
     'public_seat_finder_token',
     'seat_finder_enabled',
     'planner_calendar_token',
+    'created_at',
+    'updated_at',
 ] as const;
 
 const WEDDING_OPTIONAL_COLUMN_SET = new Set<string>(WEDDING_OPTIONAL_COLUMNS);
@@ -124,7 +180,12 @@ async function findWeddingById(db: any, weddingId: string) {
         }
 
         const missingColumn = getMissingColumnName(error);
-        if (missingColumn && WEDDING_OPTIONAL_COLUMN_SET.has(missingColumn) && !omittedColumns.has(missingColumn)) {
+        if (
+            missingColumn &&
+            missingColumn !== 'id' &&
+            missingColumn !== 'user_id' &&
+            !omittedColumns.has(missingColumn)
+        ) {
             omittedColumns.add(missingColumn);
             console.warn(`Planner wedding lookup retrying without missing weddings.${missingColumn} column.`);
             continue;

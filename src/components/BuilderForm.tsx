@@ -670,13 +670,14 @@ export default function BuilderForm() {
     const [showMonogramProModal, setShowMonogramProModal] = useState(false);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
     const [accountIsPro, setAccountIsPro] = useState(false);
+    const [weddingIsPro, setWeddingIsPro] = useState(false);
     const monogramExportRef = useRef<SVGSVGElement>(null);
     const [monogramExporting, setMonogramExporting] = useState<'png' | 'jpg' | 'mp4' | null>(null);
     const [monogramPreviewNonce, setMonogramPreviewNonce] = useState(0);
     const [activeWeddingCount, setActiveWeddingCount] = useState(0);
     const [entourageImportStatus, setEntourageImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [customizingMemberIndex, setCustomizingMemberIndex] = useState<number | null>(null);
-    const hasMonogramPro = isAdmin || accountIsPro;
+    const hasMonogramPro = isAdmin || accountIsPro || weddingIsPro;
     const freeWebsiteLimitReached = !editId && !isAdmin && !accountIsPro && activeWeddingCount >= 3;
     const publishHealth = useMemo(() => evaluateWeddingPublishHealth(formData, {
         heroImage: Boolean(mediaFiles.heroImage || previews.heroImage),
@@ -786,6 +787,12 @@ export default function BuilderForm() {
                     if (data && (result.accessRole === 'owner' || result.accessRole === 'partner')) {
                         // Builder features are included on the free plan. Paid status now unlocks Planner Pro.
                         setIsPremium(true);
+                        if (result.accountProfile) {
+                            setAccountIsPro(hasAccountPro(result.accountProfile));
+                        }
+                        if (data.is_premium || data.payment_status === 'paid') {
+                            setWeddingIsPro(true);
+                        }
                         setWeddingOwnerId(data.user_id || userId);
                         setExistingPublicSlug(typeof data.public_slug === 'string' ? data.public_slug : '');
                         const dressCodeSettings = parseDressCodeValue(data.dress_code, data.motif_color);
@@ -834,9 +841,9 @@ export default function BuilderForm() {
                         backgroundMusicEnabled: data.background_music_enabled || false,
                         weddingParty: readArrayField(data.wedding_party).map(normalizeWeddingPartyMember),
                         includeEntourageSection: data.include_entourage_section !== false,
-                        registryLinks: data.gift_registry_links || [],
-                        cashFunds: data.cash_funds || [],
-                        paymentLinks: data.payment_links || [],
+                        registryLinks: readArrayField(data.gift_registry_links),
+                        cashFunds: readArrayField(data.cash_funds),
+                        paymentLinks: readArrayField(data.payment_links),
                         isThankYouMode: data.is_thank_you_mode || false,
                         thankYouMessage: data.thank_you_message || '',
                         photoAlbumLink: data.photo_album_link || '',
@@ -860,7 +867,7 @@ export default function BuilderForm() {
                             backgroundMusic: (data as any).background_music_url || '',
                             giftQr: data.gift_qr_image || '',
                             invitationImages: inviteImages,
-                            galleryImages: data.gallery_images || [],
+                            galleryImages: readArrayField(data.gallery_images) as string[],
                             receptionVenuePhotos: readArrayField(data.reception_venue_photos) as string[],
                         });
                     }
@@ -1173,21 +1180,54 @@ export default function BuilderForm() {
 
     const removeFile = (field: string, index?: number) => {
         if (field === 'galleryImages' && index !== undefined) {
-            setMediaFiles(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }));
             setPreviews(prev => {
-                releaseLocalPreview(prev.galleryImages[index]);
+                const targetPreview = prev.galleryImages[index];
+                releaseLocalPreview(targetPreview);
+
+                if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
+                    const localBlobsBefore = prev.galleryImages
+                        .slice(0, index)
+                        .filter((url) => !isPersistedMediaUrl(url)).length;
+                    setMediaFiles(mPrev => ({
+                        ...mPrev,
+                        galleryImages: mPrev.galleryImages.filter((_, i) => i !== localBlobsBefore),
+                    }));
+                }
+
                 return { ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) };
             });
         } else if (field === 'invitationImages' && index !== undefined) {
-            setMediaFiles(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) }));
             setPreviews(prev => {
-                releaseLocalPreview(prev.invitationImages[index]);
+                const targetPreview = prev.invitationImages[index];
+                releaseLocalPreview(targetPreview);
+
+                if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
+                    const localBlobsBefore = prev.invitationImages
+                        .slice(0, index)
+                        .filter((url) => !isPersistedMediaUrl(url)).length;
+                    setMediaFiles(mPrev => ({
+                        ...mPrev,
+                        invitationImages: mPrev.invitationImages.filter((_, i) => i !== localBlobsBefore),
+                    }));
+                }
+
                 return { ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) };
             });
         } else if (field === 'receptionVenuePhotos' && index !== undefined) {
-            setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) }));
             setPreviews(prev => {
-                releaseLocalPreview(prev.receptionVenuePhotos[index]);
+                const targetPreview = prev.receptionVenuePhotos[index];
+                releaseLocalPreview(targetPreview);
+
+                if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
+                    const localBlobsBefore = prev.receptionVenuePhotos
+                        .slice(0, index)
+                        .filter((url) => !isPersistedMediaUrl(url)).length;
+                    setMediaFiles(mPrev => ({
+                        ...mPrev,
+                        receptionVenuePhotos: mPrev.receptionVenuePhotos.filter((_, i) => i !== localBlobsBefore),
+                    }));
+                }
+
                 return { ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) };
             });
         } else if (field === 'backgroundMusic') {
@@ -1496,6 +1536,36 @@ export default function BuilderForm() {
             if (typeof window !== 'undefined') {
                 window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
             }
+
+            // Sync saved media URLs into previews state, clear local pending mediaFiles, and clean up blob URLs
+            const updatedPreviews = {
+                heroImage: payload.hero_image || (isPersistedMediaUrl(previews.heroImage) ? previews.heroImage : ''),
+                couplePhoto: payload.couple_photo || (isPersistedMediaUrl(previews.couplePhoto) ? previews.couplePhoto : ''),
+                teaserVideo: payload.teaser_video || (isPersistedMediaUrl(previews.teaserVideo) ? previews.teaserVideo : ''),
+                backgroundMusic: payload.background_music_url || (isPersistedMediaUrl(previews.backgroundMusic) ? previews.backgroundMusic : ''),
+                giftQr: payload.gift_qr_image || (isPersistedMediaUrl(previews.giftQr) ? previews.giftQr : ''),
+                invitationImages: finalInvitationImages,
+                galleryImages: payload.gallery_images ?? existingGalleryImages,
+                receptionVenuePhotos: payload.reception_venue_photos ?? existingReceptionVenuePhotos,
+            };
+            setPreviews(updatedPreviews);
+            setMediaFiles({
+                heroImage: null,
+                couplePhoto: null,
+                giftQr: null,
+                invitationImages: [],
+                teaserVideo: null,
+                backgroundMusic: null,
+                galleryImages: [],
+                receptionVenuePhotos: [],
+            });
+            previewObjectUrlsRef.current.forEach((url) => {
+                try {
+                    URL.revokeObjectURL(url);
+                } catch {}
+            });
+            previewObjectUrlsRef.current.clear();
+
             if (stayOnPage && editId) {
                 setWeddingOwnerId(baseSubmitPayload.user_id);
                 setLoadedEditId(weddingId);
@@ -2337,7 +2407,7 @@ export default function BuilderForm() {
                             <div className="space-y-3 pt-4">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Style</label>
-                                    {!isPremium && (
+                                    {!hasMonogramPro && (
                                         <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
                                             Pro unlocks 14+ luxury crest styles
                                         </span>
@@ -2345,7 +2415,7 @@ export default function BuilderForm() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                                     {MONOGRAM_SHAPES.map((shape) => {
-                                        const isLocked = !isPremium && shape.pro;
+                                        const isLocked = !hasMonogramPro && shape.pro;
                                         const isSelected = formData.logoShape === shape.id;
                                         return (
                                             <button
@@ -2364,7 +2434,7 @@ export default function BuilderForm() {
                                                         : 'border-border bg-neutral/60 hover:border-primary/40 hover:bg-white'
                                                 }`}
                                             >
-                                                {shape.pro && (
+                                                {!hasMonogramPro && shape.pro && (
                                                     <span className="absolute top-2 right-2 rounded-md bg-gradient-to-r from-amber-500 to-rose-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm">
                                                         PRO
                                                     </span>
@@ -2391,7 +2461,7 @@ export default function BuilderForm() {
                             <div className="space-y-3 pt-4">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Motion Animation</label>
-                                    {!isPremium && (
+                                    {!hasMonogramPro && (
                                         <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
                                             Pro unlocks Website Motion Animations
                                         </span>
@@ -2399,7 +2469,7 @@ export default function BuilderForm() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                                     {MONOGRAM_ANIMATIONS.map((anim) => {
-                                        const isLocked = !isPremium && anim.id !== 'none';
+                                        const isLocked = !hasMonogramPro && anim.id !== 'none';
                                         const isSelected = (formData.logoAnimation || 'none') === anim.id;
                                         return (
                                             <button
@@ -2418,7 +2488,7 @@ export default function BuilderForm() {
                                                         : 'border-border bg-neutral/60 hover:border-primary/40 hover:bg-white'
                                                 }`}
                                             >
-                                                {anim.id !== 'none' && (
+                                                {!hasMonogramPro && anim.id !== 'none' && (
                                                     <span className="absolute top-2 right-2 rounded-md bg-gradient-to-r from-amber-500 to-rose-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm">
                                                         PRO
                                                     </span>
@@ -2441,7 +2511,7 @@ export default function BuilderForm() {
                                     color={formData.logoColor}
                                     motifColor={formData.motifColor}
                                     fontClassName={FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'}
-                                    isPro={isPremium}
+                                    isPro={hasMonogramPro}
                                     onRequirePro={() => setShowMonogramProModal(true)}
                                 />
                             </div>
@@ -2511,21 +2581,45 @@ export default function BuilderForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Teaser Video (Optional)</label>
-                            <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
-                                {mediaFiles.teaserVideo ? (
-                                    <div className="text-center p-4">
-                                        <Video className="w-8 h-8 text-primary mx-auto mb-2" />
-                                        <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
-                                        <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
+                            <div className="relative min-h-[12rem] rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
+                                {mediaFiles.teaserVideo || previews.teaserVideo ? (
+                                    <div className="relative z-10 flex h-full w-full flex-col items-center justify-center p-4 text-center">
+                                        {previews.teaserVideo ? (
+                                            <video src={previews.teaserVideo} controls className="max-h-28 max-w-full rounded-xl object-contain shadow-sm mb-2" />
+                                        ) : (
+                                            <Video className="w-8 h-8 text-primary mx-auto mb-2" />
+                                        )}
+                                        <p className="text-xs font-bold text-foreground truncate max-w-xs">
+                                            {mediaFiles.teaserVideo?.name || 'Save the Date Video'}
+                                        </p>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeFile('teaserVideo');
+                                                }}
+                                                className="text-xs text-red-500 hover:underline font-bold"
+                                            >
+                                                Remove
+                                            </button>
+                                            <span className="text-xs text-text-secondary">•</span>
+                                            <label className="text-xs text-primary hover:underline font-bold cursor-pointer">
+                                                Change Video
+                                                <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="sr-only" />
+                                            </label>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="text-center group-hover:scale-105 transition-transform">
-                                        <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                        <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
-                                        {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
-                                    </div>
+                                    <>
+                                        <div className="text-center group-hover:scale-105 transition-transform">
+                                            <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
+                                            <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
+                                            {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
+                                        </div>
+                                        <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    </>
                                 )}
-                                <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
                             </div>
                         </div>
 
