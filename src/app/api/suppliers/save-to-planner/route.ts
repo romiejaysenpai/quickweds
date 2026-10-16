@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
         let weddingQuery = db
             .from('weddings')
-            .select('id, user_id, is_premium, bride_name, groom_name')
+            .select('id, user_id, is_premium, payment_status, bride_name, groom_name')
             .is('deleted_at', null)
             .order('created_at', { ascending: false });
 
@@ -105,9 +105,15 @@ export async function POST(req: NextRequest) {
 
         if (existingError) throw existingError;
         if (existing) {
+            const updatePayload: Record<string, unknown> = {
+                role: profile.category,
+                name: profile.business_name,
+            };
+            if (profile.email) updatePayload.email = profile.email;
+            if (profile.phone || profile.whatsapp) updatePayload.phone = profile.phone || profile.whatsapp;
             const { error: updateError } = await db
                 .from('planner_vendors')
-                .update(vendorPayload)
+                .update(updatePayload)
                 .eq('id', existing.id);
 
             if (updateError) throw updateError;

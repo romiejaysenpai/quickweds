@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import { getRequestUser } from '@/lib/api-auth';
 import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
 import { z } from 'zod';
 
@@ -47,8 +48,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid wedding ID' }, { status: 400 });
         }
 
-
-
         // Sanitize metadata
         const sanitizedMetadata: Record<string, unknown> = {};
         if (metadata) {
@@ -68,6 +67,8 @@ export async function POST(req: NextRequest) {
         const referrer = req.headers.get('referer') || null;
         const sanitizedReferrer = referrer ? sanitizeInput(referrer, { maxLength: 500 }) : null;
 
+        const supabase = getSupabaseAdminClient() as any;
+
         // Insert analytics event
         const { error: insertError } = await supabase.from('wedding_analytics_events').insert({
             wedding_id: sanitizedWeddingId,
@@ -76,7 +77,6 @@ export async function POST(req: NextRequest) {
             session_id: sessionId ? sanitizeInput(sessionId, { maxLength: 100 }) : `ip-${Buffer.from(clientIP).toString('base64').slice(0, 16)}`,
             referrer: sanitizedReferrer,
             metadata: sanitizedMetadata,
-            ip_address: clientIP, // Store IP for additional security monitoring
         });
 
         if (insertError) {
@@ -109,18 +109,12 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid wedding ID' }, { status: 400 });
         }
 
-        // Get auth token from header
-        const authHeader = req.headers.get('authorization');
-        if (!authHeader?.startsWith('Bearer ')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const token = authHeader.slice(7);
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
+        const { user, error: authError } = await getRequestUser(req);
         if (authError || !user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const supabase = getSupabaseAdminClient() as any;
 
         // Check if user has access to this wedding
         const { data: wedding, error: weddingError } = await supabase
@@ -134,7 +128,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Check if user is owner or collaborator
-        const hasAccess = await checkWeddingAccess(sanitizedWeddingId, user.id, user.email);
+        const hasAccess = await checkWeddingAccess(supabase, sanitizedWeddingId, user.id, user.email);
         if (!hasAccess) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
@@ -153,16 +147,16 @@ export async function GET(req: NextRequest) {
         }
 
         // Calculate summary
-        const visitEvents = events?.filter(e => e.event_type === 'visit') || [];
-        const uniqueVisitors = new Set(visitEvents.map(e => e.session_id).filter(Boolean)).size;
+        const visitEvents = events?.filter((e: any) => e.event_type === 'visit') || [];
+        const uniqueVisitors = new Set(visitEvents.map((e: any) => e.session_id).filter(Boolean)).size;
 
         const summary = {
             totalEvents: events?.length || 0,
             totalVisits: visitEvents.length,
             uniqueVisitors,
-            qrScans: events?.filter(e => e.event_type === 'qr_scan').length || 0,
-            rsvpSubmissions: events?.filter(e => e.event_type === 'rsvp_submitted').length || 0,
-            shareActions: events?.filter(e => e.event_type?.startsWith('share_')).length || 0,
+            qrScans: events?.filter((e: any) => e.event_type === 'qr_scan').length || 0,
+            rsvpSubmissions: events?.filter((e: any) => e.event_type === 'rsvp_submitted').length || 0,
+            shareActions: events?.filter((e: any) => e.event_type?.startsWith('share_')).length || 0,
             sourceBreakdown: calculateSourceBreakdown(events || []),
             recentEvents: (events || []).slice(0, 50),
         };
@@ -174,7 +168,7 @@ export async function GET(req: NextRequest) {
     }
 }
 
-async function checkWeddingAccess(weddingId: string, userId: string, userEmail?: string): Promise<boolean> {
+async function checkWeddingAccess(supabase: any, weddingId: string, userId: string, userEmail?: string): Promise<boolean> {
     // Check if user is owner
     const { data: wedding } = await supabase
         .from('weddings')

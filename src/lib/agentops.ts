@@ -199,6 +199,15 @@ const BG_COLOR = '#FFF8F4';
 const TEXT_COLOR = '#3A2A2D';
 const SECONDARY_TEXT = '#7A5A61';
 
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function lifecycleEmailHtml(opts: {
     emoji: string;
     heading: string;
@@ -207,6 +216,7 @@ function lifecycleEmailHtml(opts: {
     ctaText: string;
     ctaUrl: string;
 }): string {
+    const safeUserName = escapeHtml(opts.userName);
     const bodyHtml = opts.bodyLines
         .map((line) => `<p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:${SECONDARY_TEXT};">${line}</p>`)
         .join('');
@@ -220,7 +230,7 @@ function lifecycleEmailHtml(opts: {
     <h1 style="margin:0;font-size:28px;color:${MAIN_COLOR};">${opts.heading}</h1>
   </td></tr>
   <tr><td style="padding:0 44px 28px;">
-    <p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:${TEXT_COLOR};">Hi ${opts.userName},</p>
+    <p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:${TEXT_COLOR};">Hi ${safeUserName},</p>
     ${bodyHtml}
   </td></tr>
   <tr><td align="center" style="padding:0 44px 42px;">
@@ -334,7 +344,16 @@ export async function executeLifecycleTask(
     db: ReturnType<typeof getSupabaseAdminClient>,
     task: LifecycleTask,
     dryRun = false
-): Promise<{ success: boolean; action: string; emailId?: string; error?: string }> {
+): Promise<{ success: boolean; status?: string; action: string; emailId?: string; error?: string }> {
+    if (task.suppressed) {
+        return {
+            success: false,
+            status: 'skipped_suppressed',
+            action: 'skipped_suppressed',
+            error: 'Task is suppressed because user is unsubscribed.',
+        };
+    }
+
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.quickweds.site').replace(/\/+$/, '');
     const stageConfig = STAGE_EMAILS[task.lifecycleStage];
 

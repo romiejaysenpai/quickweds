@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest) {
         const db = getSupabaseAdminClient() as unknown as SupabaseAdminClientLike;
         const access = await getWeddingAccess(db, auth.user, weddingId, {
             select: 'id, user_id',
-            collaboratorRoles: [],
+            collaboratorRoles: ['partner'],
         });
 
         if (!access.wedding) {

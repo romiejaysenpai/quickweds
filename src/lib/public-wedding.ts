@@ -97,9 +97,6 @@ function normalizeWeddingParty(value: unknown) {
             name: String(member.name || '').trim(),
             role: String(member.role || '').trim(),
             bio: typeof member.bio === 'string' ? member.bio.trim() : '',
-            email: typeof member.email === 'string' ? member.email.trim() : '',
-            proposalTemplateKey: typeof member.proposalTemplateKey === 'string' ? member.proposalTemplateKey : undefined,
-            proposalMessage: typeof member.proposalMessage === 'string' ? member.proposalMessage.trim() : '',
             photo: typeof member.photo === 'string' ? member.photo.trim() : '',
         }))
         .filter((member) => member.name.length > 0);
@@ -292,17 +289,41 @@ async function loadPublicWedding(rawIdentifier: string) {
     return publicWedding;
 }
 
-export async function invalidateWeddingPublicCache(...identifiers: Array<string | null | undefined>) {
-    const keys = identifiers
-        .filter((identifier): identifier is string => typeof identifier === 'string' && identifier.trim().length > 0)
-        .map((identifier) => publicWeddingCacheKey(identifier.trim()));
-
-    await redisDel(...keys);
-    revalidateTag('public-wedding', 'max');
+function publicWeddingCacheTag(identifier: string) {
+    return `public-wedding-${identifier.trim()}`;
 }
 
-export const getCachedPublicWedding = unstable_cache(
-    async (rawIdentifier: string) => loadPublicWedding(rawIdentifier),
-    ['public-wedding'],
-    { revalidate: 60, tags: ['public-wedding'] }
-);
+export async function invalidateWeddingPublicCache(...identifiers: Array<string | null | undefined>) {
+    const cleanIdentifiers = Array.from(
+        new Set(
+            identifiers
+                .filter((identifier): identifier is string => typeof identifier === 'string' && identifier.trim().length > 0)
+                .map((identifier) => identifier.trim())
+        )
+    );
+    const keys = cleanIdentifiers.map((identifier) => publicWeddingCacheKey(identifier));
+
+    await redisDel(...keys);
+    if (cleanIdentifiers.length > 0) {
+        for (const identifier of cleanIdentifiers) {
+            revalidateTag(publicWeddingCacheTag(identifier), 'max');
+        }
+    } else {
+        revalidateTag('public-wedding', 'max');
+    }
+}
+
+export function getCachedPublicWedding(rawIdentifier: string) {
+    const normalizedIdentifier = rawIdentifier.trim();
+    const cachedLoader = unstable_cache(
+        async () => loadPublicWedding(rawIdentifier),
+        ['public-wedding', normalizedIdentifier],
+        {
+            revalidate: 60,
+            tags: ['public-wedding', publicWeddingCacheTag(normalizedIdentifier)],
+        }
+    );
+    return cachedLoader();
+}
+
+export const getCachedPublicWeddingPayload = getCachedPublicWedding;

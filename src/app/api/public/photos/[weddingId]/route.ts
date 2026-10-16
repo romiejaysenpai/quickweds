@@ -6,6 +6,15 @@ import { getPhotoPortalSettings, isGalleryHiddenByReveal } from '@/lib/photo-por
 
 export const dynamic = 'force-dynamic';
 
+function isMissingWeddingDaySettingsError(error: unknown) {
+    const details = error && typeof error === 'object' ? error as { code?: string; message?: string } : {};
+    const message = String(details.message || '');
+    return details.code === '42P01'
+        || details.code === 'PGRST205'
+        || message.includes('wedding_day_settings')
+        || (message.includes('relation') && message.includes('does not exist'));
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ weddingId: string }> }) {
     const { weddingId: rawWeddingId } = await params;
 
@@ -21,7 +30,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ wedd
         if (!weddingRes.identifier || !weddingRes.wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
 
         const weddingId = weddingRes.wedding.id;
-        const settings = await getPhotoPortalSettings(db, weddingId);
+        const [settings, weddingDayRes] = await Promise.all([
+            getPhotoPortalSettings(db, weddingId),
+            db
+                .from('wedding_day_settings')
+                .select('photo_upload_enabled')
+                .eq('wedding_id', weddingId)
+                .maybeSingle(),
+        ]);
+
+        if (weddingDayRes.error && !isMissingWeddingDaySettingsError(weddingDayRes.error)) {
+            throw weddingDayRes.error;
+        }
+
+        const photoUploadEnabled = weddingDayRes.data?.photo_upload_enabled !== false;
         const galleryHidden = isGalleryHiddenByReveal(settings);
         const photosRes = galleryHidden
             ? { data: [], error: null }
@@ -35,7 +57,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ wedd
         if (photosRes.error) throw photosRes.error;
 
         return NextResponse.json(
-            { wedding: weddingRes.wedding, photos: photosRes.data || [], settings, galleryHidden },
+            {
+                wedding: weddingRes.wedding,
+                photos: photosRes.data || [],
+                settings: { ...settings, photo_upload_enabled: photoUploadEnabled },
+                photoUploadEnabled,
+                galleryHidden,
+            },
             { headers: { ...limited.headers, 'Cache-Control': 'no-store' } }
         );
     } catch (error) {

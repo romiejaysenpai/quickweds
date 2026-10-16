@@ -59,6 +59,8 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
         eventResponses: events.map((event) => ({ eventId: event.id, attendance: 'Yes' as const })) as RsvpEventResponse[],
     });
 
+    const isAttending = formData.attendance !== 'No';
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -74,15 +76,15 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                     guestName: formData.guestName.trim(),
                     guestEmail: formData.guestEmail.trim(),
                     attendance: formData.attendance,
-                    numGuests: formData.numGuests,
+                    numGuests: isAttending ? formData.numGuests : 0,
                     mealPreference: formData.mealPreference,
                     dietaryDetails: formData.dietaryDetails,
                     message: formData.message,
-                    plusOneNames: formData.plusOneNames,
+                    plusOneNames: isAttending ? formData.plusOneNames : '',
                     songRequest: formData.songRequest,
-                    childrenCount: formData.childrenCount,
+                    childrenCount: isAttending ? formData.childrenCount : 0,
                     householdName: formData.householdName.trim(),
-                    householdMembers: formData.householdMembers.split(/\n|,/).map((name) => name.trim()).filter(Boolean),
+                    householdMembers: isAttending ? formData.householdMembers.split(/\n|,/).map((name) => name.trim()).filter(Boolean) : [],
                     eventResponses: formData.eventResponses,
                 }),
             });
@@ -189,32 +191,41 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={`grid grid-cols-1 ${isAttending ? 'md:grid-cols-2' : ''} gap-4`}>
                     <div className="space-y-2">
                         <label className={labelClass}>Will you attend?</label>
                         <select
                             value={formData.attendance}
-                            onChange={(e) => setFormData(prev => ({ ...prev, attendance: e.target.value }))}
+                            onChange={(e) => {
+                                const nextAttendance = e.target.value;
+                                setFormData(prev => ({
+                                    ...prev,
+                                    attendance: nextAttendance,
+                                    ...(nextAttendance === 'No' ? { childrenCount: 0 } : {}),
+                                }));
+                            }}
                             className={fieldClass}
                         >
                             <option value="Yes">Yes, gladly!</option>
                             <option value="No">Regretfully, no.</option>
                         </select>
                     </div>
-                    <div className="space-y-2">
-                        <label className={labelClass}>Number of Guests</label>
-                        <input
-                                    type="number" min="1" max="100"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={formData.numGuests === 0 ? '' : formData.numGuests}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, numGuests: e.target.value === '' ? 0 : parseInt(e.target.value) }))}
-                                    className={`${fieldClass} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                                />
-                    </div>
+                    {isAttending && (
+                        <div className="space-y-2">
+                            <label className={labelClass}>Number of Guests</label>
+                            <input
+                                type="number" min="1" max="100"
+                                inputMode="numeric"
+                                placeholder="0"
+                                value={formData.numGuests === 0 ? '' : formData.numGuests}
+                                onChange={(e) => setFormData(prev => ({ ...prev, numGuests: e.target.value === '' ? 0 : parseInt(e.target.value) }))}
+                                className={`${fieldClass} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                            />
+                        </div>
+                    )}
                 </div>
 
-                {formData.numGuests > 1 && (
+                {isAttending && formData.numGuests > 1 && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
                         <label className={`${labelClass} flex items-center gap-2`}>
                             <Users className="w-4 h-4" /> Names of Additional Guests
@@ -234,7 +245,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                     <p className={`ml-1 text-xs ${isDark ? 'text-white/50' : 'text-text-secondary'}`}>Optional. Use this when one response represents a household.</p>
                 </div>
 
-                {formData.numGuests > 1 && (
+                {isAttending && formData.numGuests > 1 && (
                     <div className="space-y-2">
                         <label className={labelClass}>Household member names</label>
                         <textarea placeholder={'One name per line\nJamie Santos\nAvery Santos'} value={formData.householdMembers} onChange={(e) => setFormData((prev) => ({ ...prev, householdMembers: e.target.value }))} className={`${fieldClass} min-h-28 resize-y`} />
@@ -260,30 +271,32 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string, we
                     </fieldset>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className={labelClass}>Children Attending</label>
-                        <input
-                            type="number" min="0" max="100"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={formData.childrenCount === 0 ? '' : formData.childrenCount}
-                            onChange={(e) => setFormData(prev => ({ ...prev, childrenCount: e.target.value === '' ? 0 : parseInt(e.target.value) }))}
-                            className={`${fieldClass} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                        />
+                {isAttending && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className={labelClass}>Children Attending</label>
+                            <input
+                                type="number" min="0" max="100"
+                                inputMode="numeric"
+                                placeholder="0"
+                                value={formData.childrenCount === 0 ? '' : formData.childrenCount}
+                                onChange={(e) => setFormData(prev => ({ ...prev, childrenCount: e.target.value === '' ? 0 : parseInt(e.target.value) }))}
+                                className={`${fieldClass} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className={labelClass}>Dietary Preference</label>
+                            <select
+                                value={formData.mealPreference}
+                                onChange={(e) => setFormData(prev => ({ ...prev, mealPreference: e.target.value }))}
+                                className={fieldClass}
+                            >
+                                <option value="">Select...</option>
+                                {DIETARY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <label className={labelClass}>Dietary Preference</label>
-                        <select
-                            value={formData.mealPreference}
-                            onChange={(e) => setFormData(prev => ({ ...prev, mealPreference: e.target.value }))}
-                            className={fieldClass}
-                        >
-                            <option value="">Select...</option>
-                            {DIETARY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                    </div>
-                </div>
+                )}
 
                 {formData.mealPreference === 'Other (see message)' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">

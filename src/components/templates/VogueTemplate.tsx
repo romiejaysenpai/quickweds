@@ -46,7 +46,9 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: any) {
                         <div className="flex gap-4 sm:gap-6 md:gap-8 items-end mt-8 sm:mt-10 md:mt-12">
                             <div className="flex-1 border-t border-black pt-3 sm:pt-4 md:pt-4">
                                 <p className="text-xs font-bold uppercase tracking-widest mb-2">Ceremony</p>
-                                <p className="text-lg sm:text-lg md:text-xl font-serif italic">{wedding.wedding_date}</p>
+                                <p className="text-lg sm:text-lg md:text-xl font-serif italic">
+                                    {wedding.wedding_date ? (new Date(wedding.wedding_date).toString() !== 'Invalid Date' ? new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : wedding.wedding_date) : ''}
+                                </p>
                             </div>
                             <a href="#rsvp" aria-label="RSVP" className="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 min-h-[44px] bg-black text-white rounded-full flex items-center justify-center text-xs font-bold uppercase tracking-widest hover:scale-110 transition-transform flex-shrink-0">
                                 RSVP
@@ -78,7 +80,7 @@ export default function VogueTemplate({ wedding, gallery, isExpired }: any) {
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
-            <BioSection id="bio" wedding={wedding} />
+            <BioSection id="bio" wedding={wedding} hideStory />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"

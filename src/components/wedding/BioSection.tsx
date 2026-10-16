@@ -11,9 +11,11 @@ import SafeWeddingImage from './SafeWeddingImage';
 interface BioSectionProps {
     wedding: Wedding;
     id: string;
+    hideStory?: boolean;
+    hideQuote?: boolean;
 }
 
-export default function BioSection({ wedding, id }: BioSectionProps) {
+export default function BioSection({ wedding, id, hideStory = false, hideQuote = false }: BioSectionProps) {
     const { registerSection, unregisterSection } = useSectionContext();
     
     useEffect(() => {
@@ -72,19 +74,23 @@ export default function BioSection({ wedding, id }: BioSectionProps) {
                     </div>
                     <h2 className={`text-4xl md:text-6xl mb-6 leading-tight ${titleStyle.className}`} style={titleStyle.style}>Meant to Be</h2>
                     <div className={`mb-8 ${visual.dividerClass}`} />
-                    <div className="mb-8 md:mb-10 max-w-prose">
-                        <p className={`text-base md:text-lg leading-[1.85] whitespace-pre-line break-words text-left ${textColorBody}`}>
-                            {wedding.story || 'They say when you know, you know. For us, every moment since we met has been a beautiful step towards this day.'}
-                        </p>
-                    </div>
-                    <motion.div 
-                        className={quoteBoxStyle}
-                    >
-                        <Quote className="w-5 h-5 text-primary opacity-65 flex-shrink-0" />
-                        <p className={`italic font-serif text-base md:text-xl leading-relaxed ${textColorHeading}`}>
-                            {wedding.quote || "A successful marriage requires falling in love many times, always with the same person."}
-                        </p>
-                    </motion.div>
+                    {!hideStory && (
+                        <div className="mb-8 md:mb-10 max-w-prose">
+                            <p className={`text-base md:text-lg leading-[1.85] whitespace-pre-line break-words text-left ${textColorBody}`}>
+                                {wedding.story || 'They say when you know, you know. For us, every moment since we met has been a beautiful step towards this day.'}
+                            </p>
+                        </div>
+                    )}
+                    {!hideQuote && (
+                        <motion.div 
+                            className={quoteBoxStyle}
+                        >
+                            <Quote className="w-5 h-5 text-primary opacity-65 flex-shrink-0" />
+                            <p className={`italic font-serif text-base md:text-xl leading-relaxed ${textColorHeading}`}>
+                                {wedding.quote || "A successful marriage requires falling in love many times, always with the same person."}
+                            </p>
+                        </motion.div>
+                    )}
                 </motion.div>
             </div>
         </section>

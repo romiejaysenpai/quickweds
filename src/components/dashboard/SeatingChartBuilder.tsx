@@ -1434,7 +1434,7 @@ export default function SeatingChartBuilder({
                                     {seatFinderLoading === 'resend' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                                     Resend All
                                 </button>
-                                <a href={`/dashboard/${weddingId}/planner/check-in`} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
+                                <a href={`/dashboard/${weddingId}/check-in`} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary">
                                     <CheckCircle2 className="h-4 w-4" />
                                     Check-In
                                 </a>

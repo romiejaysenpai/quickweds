@@ -37,7 +37,10 @@ async function createSharingCode(req: NextRequest, body: Record<string, unknown>
         const context = await requireCodeAccess(req, weddingId);
         if ('response' in context) return context.response;
 
-        const maxUploads = Math.min(50, Math.max(1, Number(body.maxUploads || 3)));
+        const requestedMax = body.maxUploads != null ? Number(body.maxUploads) : 1000;
+        const maxUploads = Number.isFinite(requestedMax) && requestedMax > 3
+            ? Math.min(10000, Math.max(1, Math.floor(requestedMax)))
+            : 1000;
         let lastError: unknown = null;
 
         for (let attempt = 0; attempt < 5; attempt += 1) {

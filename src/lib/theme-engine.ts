@@ -488,18 +488,18 @@ export function getTemplateVisualProfile(
                 return {
                     ...base,
                     cardStyleId: 'cards_bordered',
-                    isDark: false,
-                    sectionClass: 'relative overflow-hidden bg-[#f7f4ed] text-stone-900',
-                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #f7f4ed 0%, #ebe5d8 100%)` },
+                    isDark: true,
+                    sectionClass: 'relative overflow-hidden bg-[#121212] text-stone-100',
+                    sectionStyle: { backgroundImage: `linear-gradient(180deg, #121212 0%, #1c1917 100%)` },
                     containerClass: 'relative mx-auto max-w-7xl px-4 sm:px-6 md:px-8',
-                    cardClass: 'rounded-none border-2 border-stone-800 bg-[#fffdfa] shadow-[10px_10px_0_rgba(0,0,0,0.06)]',
-                    accentCardClass: 'rounded-none border-2 border-amber-900 bg-amber-950/10 shadow-[10px_10px_0_rgba(0,0,0,0.1)]',
-                    imageFrameClass: 'rounded-none border-[12px] border-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] sepia-[0.2]',
-                    eyebrowClass: 'text-amber-900 tracking-[0.4em] font-mono font-bold uppercase',
-                    headingClass: 'font-serif tracking-normal text-stone-950',
-                    bodyClass: 'text-stone-800',
-                    dividerClass: 'h-0.5 w-28 bg-stone-800',
-                    badgeStyleClass: 'border border-stone-800 bg-[#fffdfa] font-mono px-3 py-1 text-[10px] tracking-[0.3em] uppercase',
+                    cardClass: 'rounded-none border-2 border-stone-700 bg-[#1e1e1e] text-stone-100 shadow-[8px_8px_0_rgba(0,0,0,0.4)]',
+                    accentCardClass: 'rounded-none border-2 border-amber-600 bg-amber-950/40 text-amber-100 shadow-[8px_8px_0_rgba(0,0,0,0.4)]',
+                    imageFrameClass: 'rounded-none border-[10px] border-white/90 shadow-[0_20px_50px_rgba(0,0,0,0.5)] sepia-[0.15]',
+                    eyebrowClass: 'text-amber-400 tracking-[0.4em] font-mono font-bold uppercase',
+                    headingClass: 'font-serif tracking-normal text-stone-100',
+                    bodyClass: 'text-stone-300',
+                    dividerClass: 'h-0.5 w-28 bg-stone-700',
+                    badgeStyleClass: 'border border-stone-700 bg-[#1e1e1e] text-stone-300 font-mono px-3 py-1 text-[10px] tracking-[0.3em] uppercase',
                     badgePrefix: '35MM FRAME N°',
                     ornament: 'film',
                     galleryTitle: 'Film Rolls',
@@ -917,10 +917,6 @@ export function getTemplateVisualProfile(
     };
 
     const rawProfile = getProfile();
-    const soften = (classes: string) => classes
-        .replace(/shadow-\[[^\]]+\]|shadow-2xl|shadow-xl|shadow-lg/g, 'shadow-sm')
-        .replace(/backdrop-blur-\w+/g, '')
-        .replace(/md:rounded-\[3rem\]|rounded-\[2rem\]/g, 'rounded-2xl');
     const initialProfile: TemplateVisualProfile = {
         ...rawProfile,
         sectionStyle: {
@@ -928,10 +924,10 @@ export function getTemplateVisualProfile(
             '--wedding-heading': rawProfile.isDark ? '#FFF8F0' : '#352C2C',
             '--wedding-ink': rawProfile.isDark ? '#F1EAE2' : '#463D3B',
         } as CSSProperties,
-        cardClass: soften(rawProfile.cardClass),
-        accentCardClass: soften(rawProfile.accentCardClass),
-        badgeStyleClass: `text-xs font-medium uppercase tracking-[0.18em] ${rawProfile.isDark ? 'text-white/75' : 'text-[#625550]'}`,
-        badgePrefix: '',
+        cardClass: rawProfile.cardClass,
+        accentCardClass: rawProfile.accentCardClass,
+        badgeStyleClass: rawProfile.badgeStyleClass,
+        badgePrefix: rawProfile.badgePrefix,
     };
 
     if (cardStyleOverride && cardStyleOverride !== 'default') {

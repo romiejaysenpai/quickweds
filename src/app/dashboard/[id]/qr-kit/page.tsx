@@ -21,6 +21,7 @@ type WeddingSummary = {
     id?: string | null;
     public_slug?: string | null;
     custom_domain?: string | null;
+    public_seat_finder_token?: string | null;
 };
 
 const QR_TYPES: QrType[] = [
@@ -102,10 +103,16 @@ export default function QrKitPage() {
         if (!wedding || typeof window === 'undefined') return [];
         const publicUrl = getWeddingPublicUrl(window.location.origin, wedding).replace(/\/+$/, '');
         const staffCheckInUrl = `${window.location.origin}/dashboard/${weddingId}/check-in`;
-        return QR_TYPES.map((type) => ({
-            ...type,
-            url: type.protected ? staffCheckInUrl : `${publicUrl}${type.path}`,
-        }));
+        return QR_TYPES.map((type) => {
+            let fullPath = type.path;
+            if (type.id === 'seat_finder' && wedding.public_seat_finder_token) {
+                fullPath = `${type.path}?token=${encodeURIComponent(wedding.public_seat_finder_token)}`;
+            }
+            return {
+                ...type,
+                url: type.protected ? staffCheckInUrl : `${publicUrl}${fullPath}`,
+            };
+        });
     }, [wedding, weddingId]);
 
     function printPage() {

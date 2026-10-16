@@ -72,6 +72,21 @@ async function checkDomainRateLimit(req: Request, weddingId: string) {
     return rateLimit.check(`${getClientIP(req)}:${weddingId}`);
 }
 
+const RESERVED_DOMAINS = new Set([
+    'quickweds.site',
+    'www.quickweds.site',
+    'quickweds.vercel.app',
+]);
+
+function isReservedPlatformDomain(domain: string) {
+    const normalized = domain.trim().toLowerCase();
+    return (
+        RESERVED_DOMAINS.has(normalized) ||
+        normalized.endsWith('.quickweds.site') ||
+        normalized.endsWith('.quickweds.vercel.app')
+    );
+}
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();
@@ -101,7 +116,34 @@ export async function POST(req: Request) {
             );
         }
 
-        const { domain } = validation.data;
+        const domain = validation.data.domain.trim().toLowerCase();
+
+        if (isReservedPlatformDomain(domain)) {
+            return NextResponse.json(
+                { error: 'Platform domains cannot be connected as custom domains.' },
+                { status: 400 }
+            );
+        }
+
+        const supabase = getSupabaseAdminClient() as any;
+        const { data: existingWedding, error: existingError } = await supabase
+            .from('weddings')
+            .select('id')
+            .eq('custom_domain', domain)
+            .neq('id', weddingId)
+            .is('deleted_at', null)
+            .maybeSingle();
+
+        if (existingError) {
+            return NextResponse.json({ error: 'Failed to verify domain availability' }, { status: 500 });
+        }
+
+        if (existingWedding) {
+            return NextResponse.json(
+                { error: 'This domain is already connected to another wedding.' },
+                { status: 409 }
+            );
+        }
 
         if (!process.env.VERCEL_PROJECT_ID || !process.env.VERCEL_TOKEN) {
             return NextResponse.json({ error: 'Vercel API keys are not configured in environment.' }, { status: 500 });
@@ -150,12 +192,19 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: access.error }, { status: access.status });
         }
 
+        if (!access.isPremium) {
+            return NextResponse.json(
+                { error: 'Planner Pro is required to manage a custom domain.' },
+                { status: 403 }
+            );
+        }
+
         const validation = domainSchema.safeParse({ domain });
         if (!validation.success) {
             return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
         }
 
-        if (access.customDomain && access.customDomain !== domain) {
+        if (!access.customDomain || access.customDomain !== domain) {
             return NextResponse.json({ error: 'Domain does not belong to this wedding' }, { status: 403 });
         }
 
@@ -198,12 +247,19 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ error: access.error }, { status: access.status });
     }
 
+    if (!access.isPremium) {
+        return NextResponse.json(
+            { error: 'Planner Pro is required to manage a custom domain.' },
+            { status: 403 }
+        );
+    }
+
     const validation = domainSchema.safeParse({ domain });
     if (!validation.success) {
         return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
     }
 
-    if (access.customDomain && access.customDomain !== domain) {
+    if (!access.customDomain || access.customDomain !== domain) {
         return NextResponse.json({ error: 'Domain does not belong to this wedding' }, { status: 403 });
     }
 

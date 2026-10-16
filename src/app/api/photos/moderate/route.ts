@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
+import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getWeddingAccess } from '@/lib/wedding-access';
 
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
 
         const { data: photo, error: lookupError } = await db
             .from('wedding_photos')
-            .select('id, wedding_id')
+            .select('id, wedding_id, cloudinary_public_id')
             .eq('id', photoId)
             .maybeSingle();
 
@@ -36,12 +37,22 @@ export async function POST(req: NextRequest) {
         if (String(photo.wedding_id) !== weddingId) return NextResponse.json({ error: 'Photo does not belong to this wedding.' }, { status: 403 });
 
         if (action === 'delete') {
+            if (typeof photo.cloudinary_public_id === 'string' && photo.cloudinary_public_id.startsWith('guest-uploads/')) {
+                const { error: storageError } = await db.storage
+                    .from('quickweds')
+                    .remove([photo.cloudinary_public_id]);
+                if (storageError) {
+                    console.warn('Failed to remove deleted photo from storage:', storageError.message || storageError);
+                }
+            }
+
             const { error: deleteError } = await db
                 .from('wedding_photos')
                 .delete()
                 .eq('id', photoId)
                 .eq('wedding_id', weddingId);
             if (deleteError) throw deleteError;
+            await invalidateDashboardCounters(weddingId);
             return NextResponse.json({ success: true, deletedId: photoId });
         }
 
@@ -59,6 +70,7 @@ export async function POST(req: NextRequest) {
             .single();
 
         if (updateError) throw updateError;
+        await invalidateDashboardCounters(weddingId);
         return NextResponse.json({ success: true, photo: data });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to update photo.';

@@ -144,7 +144,13 @@ export default function CountdownTimer({
     };
 
     // Suppress Hydration issue by displaying generic zeros/empty until mounted, allowing the DOM to match the server output
-    if (!isMounted) return <div className="sr-only">Loading timer...</div>;
+    if (!isMounted) {
+        return (
+            <section id={id} className={`px-4 py-12 text-center min-h-[160px] flex items-center justify-center opacity-0 ${className}`}>
+                <div className="sr-only">Loading timer...</div>
+            </section>
+        );
+    }
 
     const visual = getTemplateVisualProfile(template, motifColor, invert, cardStyle);
     const isEditorial = visual.mood === 'editorial';

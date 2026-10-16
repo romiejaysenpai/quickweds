@@ -24,6 +24,54 @@ function html(message: string, detail: string) {
     });
 }
 
+async function unsubscribeByToken(token: string) {
+    const db = getSupabaseAdminClient() as any;
+    const { data, error } = await db
+        .from('marketing_nurture_subscribers')
+        .update({
+            status: 'unsubscribed',
+            unsubscribed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        })
+        .eq('unsubscribe_token', token)
+        .select('email')
+        .maybeSingle();
+
+    if (error) throw error;
+    return data;
+}
+
+async function extractTokenFromRequest(req: NextRequest): Promise<string> {
+    const queryToken = new URL(req.url).searchParams.get('token')?.trim();
+    if (queryToken) return queryToken;
+
+    const contentType = (req.headers.get('content-type') || '').toLowerCase();
+    try {
+        if (contentType.includes('application/json')) {
+            const body = await req.json();
+            if (typeof body?.token === 'string') return body.token.trim();
+        } else if (
+            contentType.includes('application/x-www-form-urlencoded') ||
+            contentType.includes('multipart/form-data')
+        ) {
+            const formData = await req.formData();
+            const formToken = formData.get('token');
+            if (typeof formToken === 'string') return formToken.trim();
+        } else {
+            const rawText = await req.text();
+            if (rawText) {
+                const params = new URLSearchParams(rawText);
+                const parsedToken = params.get('token')?.trim();
+                if (parsedToken) return parsedToken;
+            }
+        }
+    } catch {
+        // Ignore body parse errors if token is missing
+    }
+
+    return '';
+}
+
 export async function GET(req: NextRequest) {
     const token = new URL(req.url).searchParams.get('token')?.trim();
     if (!token) {
@@ -31,19 +79,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const db = getSupabaseAdminClient() as any;
-        const { data, error } = await db
-            .from('marketing_nurture_subscribers')
-            .update({
-                status: 'unsubscribed',
-                unsubscribed_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-            })
-            .eq('unsubscribe_token', token)
-            .select('email')
-            .maybeSingle();
-
-        if (error) throw error;
+        const data = await unsubscribeByToken(token);
         if (!data) {
             return html('Link not found', 'This unsubscribe link may have already been removed or replaced.');
         }
@@ -51,5 +87,23 @@ export async function GET(req: NextRequest) {
         return html('You are unsubscribed', 'You will no longer receive QuickWeds marketing nurture emails.');
     } catch {
         return html('We could not update your preferences', 'Please contact QuickWeds support and we will help right away.');
+    }
+}
+
+export async function POST(req: NextRequest) {
+    const token = await extractTokenFromRequest(req);
+    if (!token) {
+        return NextResponse.json({ error: 'Missing unsubscribe token' }, { status: 400 });
+    }
+
+    try {
+        const data = await unsubscribeByToken(token);
+        if (!data) {
+            return NextResponse.json({ error: 'Unsubscribe link not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, status: 'unsubscribed' }, { status: 200 });
+    } catch {
+        return NextResponse.json({ error: 'Unable to update preferences' }, { status: 500 });
     }
 }

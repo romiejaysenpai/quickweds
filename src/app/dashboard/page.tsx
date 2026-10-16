@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -17,6 +17,7 @@ import { getCachedSession } from '@/lib/session-cache';
 import { openExternalUrl } from '@/lib/native-actions';
 
 import { BUILDER_DRAFT_STORAGE_KEY } from '@/lib/builder-storage';
+import { isRsvpDeadlineExpired } from '@/lib/rsvp-deadline';
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
 
@@ -24,28 +25,39 @@ async function copyText(text: string) {
     await copyToClipboard(text);
 }
 
-function LocalDraftBanner() {
-    const [draft, setDraft] = useState<{ updatedAt: string; brideName?: string; groomName?: string } | null>(null);
-    const [dismissed, setDismissed] = useState(false);
+function subscribeToStorage(onChange: () => void) {
+    window.addEventListener('storage', onChange);
+    return () => window.removeEventListener('storage', onChange);
+}
 
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
+function readLocalDraftRaw() {
+    try {
+        return window.localStorage.getItem(BUILDER_DRAFT_STORAGE_KEY);
+    } catch {
+        return null;
+    }
+}
+
+function LocalDraftBanner() {
+    const [dismissed, setDismissed] = useState(false);
+    const raw = useSyncExternalStore(subscribeToStorage, readLocalDraftRaw, () => null);
+
+    const draft = useMemo<{ updatedAt: string; brideName?: string; groomName?: string } | null>(() => {
+        if (!raw) return null;
         try {
-            const raw = window.localStorage.getItem(BUILDER_DRAFT_STORAGE_KEY);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                if (parsed && parsed.formData) {
-                    setDraft({
-                        updatedAt: parsed.updatedAt || new Date().toISOString(),
-                        brideName: parsed.formData.brideName || '',
-                        groomName: parsed.formData.groomName || '',
-                    });
-                }
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.formData) {
+                return {
+                    updatedAt: parsed.updatedAt || new Date().toISOString(),
+                    brideName: parsed.formData.brideName || '',
+                    groomName: parsed.formData.groomName || '',
+                };
             }
         } catch (e) {
             console.warn('Could not parse local builder draft:', e);
         }
-    }, []);
+        return null;
+    }, [raw]);
 
     if (!draft || dismissed) return null;
 
@@ -453,9 +465,9 @@ function CopyLinkButton({ wedding }: { wedding: { id: string; public_slug?: stri
 }
 
 function StatusBadge({ wedding }: { wedding: any }) {
-    const now = new Date();
-    const weddingDate = new Date(wedding.wedding_date);
-    const rsvpDeadline = new Date(wedding.rsvp_deadline);
+    // Both checks treat date-only values as "through the end of that day".
+    const weddingIsPast = isRsvpDeadlineExpired(wedding.wedding_date);
+    const rsvpClosed = isRsvpDeadlineExpired(wedding.rsvp_deadline);
 
     let label = '';
     let colorClass = '';
@@ -463,10 +475,10 @@ function StatusBadge({ wedding }: { wedding: any }) {
     if (wedding.is_thank_you_mode) {
         label = 'Thank You';
         colorClass = 'bg-accent/20 text-accent border-accent/30';
-    } else if (weddingDate < now) {
+    } else if (weddingIsPast) {
         label = 'Completed';
         colorClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-    } else if (rsvpDeadline < now) {
+    } else if (rsvpClosed) {
         label = 'RSVP Closed';
         colorClass = 'bg-neutral text-text-secondary border-border';
     } else {

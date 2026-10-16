@@ -5,7 +5,16 @@ import { getPublicAppUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
-function reminderHtml(input: {
+function escapeHtml(value: string | null | undefined) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function reminderHtml(rawInput: {
     title: string;
     couple: string;
     startsAt: string;
@@ -13,6 +22,15 @@ function reminderHtml(input: {
     notes?: string | null;
     plannerUrl: string;
 }) {
+    // Event fields are user-entered (owner or collaborators) — never interpolate them raw.
+    const input = {
+        title: escapeHtml(rawInput.title),
+        couple: escapeHtml(rawInput.couple),
+        startsAt: escapeHtml(rawInput.startsAt),
+        location: rawInput.location ? escapeHtml(rawInput.location) : '',
+        notes: rawInput.notes ? escapeHtml(rawInput.notes) : '',
+        plannerUrl: escapeHtml(rawInput.plannerUrl),
+    };
     return `
         <div style="font-family: Georgia, serif; background:#fff8f4; padding:32px; color:#3a2a2d;">
             <div style="max-width:620px; margin:0 auto; background:#fff; border-radius:28px; padding:32px; border:1px solid rgba(209,108,120,.18);">
@@ -32,7 +50,9 @@ function reminderHtml(input: {
 
 export async function GET(req: Request) {
     const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const cronSecret = process.env.CRON_SECRET;
+    // Fail closed: without a configured secret only local development may call this.
+    if (cronSecret ? authHeader !== `Bearer ${cronSecret}` : process.env.NODE_ENV !== 'development') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

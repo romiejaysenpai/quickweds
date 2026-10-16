@@ -27,9 +27,11 @@ function getCronSupabaseClient() {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // 1. Security Check
+  // 1. Security Check — fail closed if the secret is not configured
+  // (otherwise the literal header "Bearer undefined" would be accepted).
+  const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return res.status(401).end('Unauthorized');
   }
 

@@ -24,7 +24,7 @@ async function getContext(req: NextRequest, weddingId: string) {
     const { data: accountProfile } = await db
         .from('user_app_profiles')
         .select('is_pro, payment_status')
-        .eq('user_id', user.id)
+        .eq('user_id', access.wedding.user_id)
         .maybeSingle();
 
     const hasPro = hasPlannerProAccess({

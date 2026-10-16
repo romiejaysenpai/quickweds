@@ -57,7 +57,10 @@ export default function BackgroundMusicPlayer({ audioUrl, title, motifColor, tem
             void playAudio();
         };
 
-        const handleFirstInteraction = () => {
+        const handleFirstInteraction = (event: Event) => {
+            if ((event.target as Element | null)?.closest?.('[data-music-toggle]')) {
+                return;
+            }
             if (!hasInteracted) {
                 void playAudio();
             }
@@ -104,6 +107,7 @@ export default function BackgroundMusicPlayer({ audioUrl, title, motifColor, tem
                 >
                     <button
                         type="button"
+                        data-music-toggle="true"
                         onClick={togglePlayback}
                         className={`group flex min-h-12 items-center gap-3 rounded-full border p-1 text-left shadow-sm sm:px-3 sm:py-2 ${visual.isDark ? 'border-white/20 bg-[#18181b] text-white' : 'border-black/15 bg-[#FFFCF7] text-[#352C2C]'}`}
                         aria-label={isPlaying ? 'Pause invitation music' : 'Play invitation music'}

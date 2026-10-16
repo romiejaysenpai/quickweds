@@ -3,14 +3,78 @@ import { sendEmail } from '@/lib/email';
 import { getWelcomeEmailReact } from '@/emails/quickweds-transactional';
 import { getPrimaryAdminEmail } from '@/lib/admin';
 import { createRateLimitMiddleware, sanitizeEmail, sanitizeInput } from '@/lib/rate-limit';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 type SignupRecord = {
+  id?: string;
   email?: string;
   full_name?: string;
   display_name?: string;
   account_type?: string;
   source?: string;
 };
+
+const RECENT_SIGNUP_WINDOW_MS = 15 * 60 * 1000;
+
+async function isAuthorizedSignupNotification(
+  req: NextApiRequest,
+  userEmail: string,
+  recordId?: string
+): Promise<boolean> {
+  const configuredSecret =
+    process.env.SUPABASE_WEBHOOK_SECRET ||
+    process.env.WEBHOOK_SECRET ||
+    process.env.CRON_SECRET ||
+    '';
+  const headerSecret =
+    typeof req.headers['x-webhook-secret'] === 'string'
+      ? req.headers['x-webhook-secret'].trim()
+      : '';
+  const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+
+  if (configuredSecret && (headerSecret === configuredSecret || bearerToken === configuredSecret)) {
+    return true;
+  }
+
+  let db: any;
+  try {
+    db = getSupabaseAdminClient();
+  } catch {
+    return false;
+  }
+
+  const normalizedEmail = userEmail.trim().toLowerCase();
+
+  if (bearerToken) {
+    const { data: authData, error: authError } = await db.auth.getUser(bearerToken);
+    const authedEmail = authData?.user?.email?.trim().toLowerCase();
+    if (!authError && authedEmail && authedEmail === normalizedEmail) {
+      return true;
+    }
+  }
+
+  if (recordId) {
+    const { data: byIdData } = await db.auth.admin.getUserById(recordId);
+    const matchedUser = byIdData?.user;
+    if (matchedUser && matchedUser.email?.trim().toLowerCase() === normalizedEmail && matchedUser.created_at) {
+      const ageMs = Date.now() - new Date(matchedUser.created_at).getTime();
+      if (ageMs >= -60_000 && ageMs <= RECENT_SIGNUP_WINDOW_MS) {
+        return true;
+      }
+    }
+  }
+
+  const { data: usersData } = await db.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const users: Array<{ email?: string; created_at?: string }> = usersData?.users || [];
+  const recentMatch = users.find((u) => {
+    if (u.email?.trim().toLowerCase() !== normalizedEmail || !u.created_at) return false;
+    const ageMs = Date.now() - new Date(u.created_at).getTime();
+    return ageMs >= -60_000 && ageMs <= RECENT_SIGNUP_WINDOW_MS;
+  });
+
+  return Boolean(recentMatch);
+}
 
 function escapeHtml(value: string) {
   return value
@@ -91,6 +155,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (!userEmail) {
     return res.status(400).json({ error: 'Valid user email is required' });
+  }
+
+  const authorized = await isAuthorizedSignupNotification(req, userEmail, record.id);
+  if (!authorized) {
+    return res.status(401).json({ error: 'Unauthorized signup notification request' });
   }
 
   try {

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
+import { getWeddingAccess } from '@/lib/wedding-access';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -34,17 +35,13 @@ export async function PATCH(req: NextRequest) {
         if (tableError) throw tableError;
         if (!table) return NextResponse.json({ error: 'Table not found.' }, { status: 404 });
 
-        const { data: wedding, error: weddingError } = await db
-            .from('weddings')
-            .select('id, user_id')
-            .eq('id', table.wedding_id)
-            .maybeSingle();
+        const access = await getWeddingAccess(db, user, table.wedding_id, {
+            select: 'id, user_id',
+            collaboratorRoles: ['partner', 'coordinator'],
+        });
 
-        if (weddingError) throw weddingError;
-        if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
-
-        const canManage = wedding.user_id === user.id || isKnownAdminEmail(user.email);
-        if (!canManage) {
+        if (!access.wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
+        if (!access.canManage) {
             return NextResponse.json({ error: 'You do not have permission to move this table.' }, { status: 403 });
         }
 

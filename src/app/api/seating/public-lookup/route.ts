@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getSeatFinderErrorPayload, getSeatFinderPartySize, isSeatFinderSchemaError } from '@/lib/seat-finder';
 import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limit';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
+import { escapeLikePattern } from '@/lib/sql-like';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,7 +84,9 @@ export async function POST(req: NextRequest) {
 
         const weddingId = wedding.id;
         const selectColumns = 'id, wedding_id, guest_name, guest_email, phone, num_guests, table_assignment, plus_one_allowed, plus_one_name, plus_one_rsvp_status, guest_code, checked_in_at';
-        const exactCode = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_code', query.toUpperCase()).limit(2);
+        // Escape % and _ so lookups are exact (case-insensitive) and can't be used to enumerate guests.
+        const literalQuery = escapeLikePattern(query);
+        const exactCode = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_code', literalQuery.toUpperCase()).limit(2);
         if (exactCode.error) throw exactCode.error;
 
         let matches = exactCode.data || [];
@@ -95,7 +98,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (matches.length === 0 && query.includes('@')) {
-            const byEmail = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_email', query).limit(2);
+            const byEmail = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_email', literalQuery).limit(2);
             if (byEmail.error) throw byEmail.error;
             matches = byEmail.data || [];
         }
@@ -105,7 +108,7 @@ export async function POST(req: NextRequest) {
             matches = byPhone.data || [];
         }
         if (matches.length === 0) {
-            const byName = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_name', query).limit(2);
+            const byName = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_name', literalQuery).limit(2);
             if (byName.error) throw byName.error;
             matches = byName.data || [];
         }

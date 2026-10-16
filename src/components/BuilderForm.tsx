@@ -551,7 +551,7 @@ export default function BuilderForm() {
 
     // Auto-save local draft as user edits form data
     useEffect(() => {
-        if (editId || typeof window === 'undefined' || isSubmitting) return;
+        if (editId || typeof window === 'undefined' || isSubmitting || (detectedDraft && !draftDismissed)) return;
 
         const hasContent = Boolean(
             formData.brideName?.trim() ||
@@ -684,8 +684,8 @@ export default function BuilderForm() {
         couplePhoto: Boolean(mediaFiles.couplePhoto || previews.couplePhoto),
         giftQr: Boolean(mediaFiles.giftQr || previews.giftQr),
         backgroundMusic: Boolean(mediaFiles.backgroundMusic || previews.backgroundMusic),
-        galleryCount: mediaFiles.galleryImages.length + (Array.isArray(previews.galleryImages) ? previews.galleryImages.length : 0),
-        invitationCount: mediaFiles.invitationImages.length + (Array.isArray(previews.invitationImages) ? previews.invitationImages.length : 0),
+        galleryCount: (Array.isArray(previews.galleryImages) && previews.galleryImages.length > 0) ? previews.galleryImages.length : mediaFiles.galleryImages.length,
+        invitationCount: (Array.isArray(previews.invitationImages) && previews.invitationImages.length > 0) ? previews.invitationImages.length : mediaFiles.invitationImages.length,
     }), [formData, mediaFiles, previews]);
 
     const applyMotifColor = useCallback((color: string) => {
@@ -1612,11 +1612,11 @@ export default function BuilderForm() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-2">
                                 <label htmlFor="brideName" className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Bride&apos;s Name</label>
-                                <input id="brideName" required name="brideName" value={formData.brideName} onChange={handleChange} placeholder="Sarah" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
+                                <input id="brideName" name="brideName" value={formData.brideName} onChange={handleChange} placeholder="Sarah" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Groom&apos;s Name</label>
-                                <input required name="groomName" value={formData.groomName} onChange={handleChange} placeholder="John" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
+                                <input name="groomName" value={formData.groomName} onChange={handleChange} placeholder="John" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -1629,17 +1629,17 @@ export default function BuilderForm() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Date</label>
-                                <input required type="date" name="weddingDate" value={formData.weddingDate} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                <input type="date" name="weddingDate" value={formData.weddingDate} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Time</label>
-                                <input required type="time" name="weddingTime" value={formData.weddingTime} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                <input type="time" name="weddingTime" value={formData.weddingTime} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Ceremony Location Name</label>
-                                <input required name="venueName" value={formData.venueName} onChange={handleChange} placeholder="The Grand Plaza Chapel" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                <input name="venueName" value={formData.venueName} onChange={handleChange} placeholder="The Grand Plaza Chapel" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Ceremony Google Maps Link (Optional)</label>
@@ -1651,7 +1651,7 @@ export default function BuilderForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Ceremony Location Address</label>
-                            <AutoResizeTextarea required name="venueAddress" value={formData.venueAddress} onChange={handleChange} placeholder="123 Wedding Lane..." className="w-full min-h-[96px] resize-none rounded-lg border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white sm:rounded-xl sm:py-4" />
+                            <AutoResizeTextarea name="venueAddress" value={formData.venueAddress} onChange={handleChange} placeholder="123 Wedding Lane..." className="w-full min-h-[96px] resize-none rounded-lg border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white sm:rounded-xl sm:py-4" />
                         </div>
 
                         <Collapsible title="Reception / Venue Details" isOpen={expandedSection === 'receptionVenue'} onToggle={() => toggleSection('receptionVenue')} icon={MapPin}>
@@ -2514,6 +2514,29 @@ export default function BuilderForm() {
                                     isPro={hasMonogramPro}
                                     onRequirePro={() => setShowMonogramProModal(true)}
                                 />
+                                <div className="mt-4 rounded-2xl border border-border bg-white p-4 sm:p-5">
+                                    <div className="mb-3 flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-xs font-black uppercase tracking-[0.18em] text-foreground">Invitation-ready downloads</p>
+                                            <p className="mt-1 text-xs text-text-secondary">PNG has transparency. JPG and MP4 use a pure-white background.</p>
+                                        </div>
+                                        {!hasMonogramPro && <Lock className="h-4 w-4 text-text-secondary" />}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(['png', 'jpg', 'mp4'] as const).map((format) => (
+                                            <button
+                                                key={format}
+                                                type="button"
+                                                disabled={Boolean(monogramExporting)}
+                                                onClick={() => handleMonogramExport(format)}
+                                                className={`inline-flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50 ${!hasMonogramPro ? 'opacity-65' : ''}`}
+                                            >
+                                                <Download className="h-3.5 w-3.5" />
+                                                {monogramExporting === format ? `Preparing ${format.toUpperCase()}…` : `Download ${format.toUpperCase()}`}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -2549,12 +2572,6 @@ export default function BuilderForm() {
                                         </div>
                                     </div>
                                     <UpgradeButton weddingId={editId || ''} className="w-full justify-center py-3.5 text-sm" />
-                                </div>
-                                <div className="rounded-2xl border border-border bg-white p-4 sm:p-5">
-                                    <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-foreground">Invitation-ready downloads</p><p className="mt-1 text-xs text-text-secondary">PNG has transparency. JPG and MP4 use a pure-white background.</p></div>{!hasMonogramPro && <Lock className="h-4 w-4 text-text-secondary" />}</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(['png', 'jpg', 'mp4'] as const).map((format) => <button key={format} type="button" disabled={Boolean(monogramExporting)} onClick={() => handleMonogramExport(format)} className={`inline-flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50 ${!hasMonogramPro ? 'opacity-65' : ''}`}><Download className="h-3.5 w-3.5" />{monogramExporting === format ? `Preparing ${format.toUpperCase()}…` : `Download ${format.toUpperCase()}`}</button>)}
-                                    </div>
                                 </div>
                             </div>
                         )}
@@ -3301,9 +3318,15 @@ return (
                             <p className="text-[10px] uppercase tracking-[0.2em] font-black text-primary/60">Step {currentStep + 1} of {STEPS.length}</p>
                             <h2 className="text-xl font-serif font-bold text-foreground">{STEPS[currentStep].title}</h2>
                         </div>
-                        <div className="flex gap-1">
-                            {STEPS.map((_, idx) => (
-                                <div key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === currentStep ? 'bg-primary w-4' : idx < currentStep ? 'bg-secondary' : 'bg-neutral border border-border'} transition-all duration-300`} />
+                        <div className="flex gap-1 items-center">
+                            {STEPS.map((step, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => setCurrentStep(idx)}
+                                    aria-label={`Jump to step ${idx + 1}: ${step.title}`}
+                                    className={`h-2 rounded-full transition-all duration-300 ${idx === currentStep ? 'bg-primary w-4' : idx < currentStep ? 'bg-secondary w-2 hover:opacity-80' : 'bg-neutral border border-border w-2 hover:opacity-80'}`}
+                                />
                             ))}
                         </div>
                     </div>
@@ -3321,10 +3344,21 @@ return (
                 <div className="hidden lg:flex justify-between items-start mb-12 gap-2">
                     {STEPS.map((step, idx) => (
                         <div key={step.id} className="flex flex-col items-center relative flex-1 min-w-0">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 flex-shrink-0 transition-all duration-500 ${idx === currentStep ? 'bg-primary text-white scale-110 shadow-[0_0_20px_rgba(192,128,129,0.3)]' : idx < currentStep ? 'bg-secondary text-foreground' : 'bg-neutral text-text-secondary border border-border'}`}>
+                            <button
+                                type="button"
+                                onClick={() => setCurrentStep(idx)}
+                                aria-label={`Jump to step ${idx + 1}: ${step.title}`}
+                                className={`w-10 h-10 rounded-full flex items-center justify-center z-10 flex-shrink-0 transition-all duration-500 cursor-pointer hover:opacity-90 ${idx === currentStep ? 'bg-primary text-white scale-110 shadow-[0_0_20px_rgba(192,128,129,0.3)]' : idx < currentStep ? 'bg-secondary text-foreground' : 'bg-neutral text-text-secondary border border-border hover:border-primary/40'}`}
+                            >
                                 {idx < currentStep ? <CheckCircle2 className="w-5 h-5" /> : <step.icon className="w-5 h-5" />}
-                            </div>
-                            <span className={`text-[9px] uppercase tracking-widest mt-3 font-bold text-center leading-tight transition-colors duration-500 whitespace-nowrap ${idx === currentStep ? 'text-primary' : 'text-text-secondary'}`}>{step.title}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCurrentStep(idx)}
+                                className={`text-[9px] uppercase tracking-widest mt-3 font-bold text-center leading-tight transition-colors duration-500 whitespace-nowrap cursor-pointer hover:text-primary ${idx === currentStep ? 'text-primary' : 'text-text-secondary'}`}
+                            >
+                                {step.title}
+                            </button>
                             {idx < STEPS.length - 1 && <div className={`absolute top-5 left-[60%] w-[80%] h-[2px] -z-0 ${idx < currentStep ? 'bg-secondary' : 'bg-border'}`} />}
                         </div>
                     ))}

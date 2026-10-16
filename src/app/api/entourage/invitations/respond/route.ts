@@ -22,6 +22,46 @@ function hashToken(token: string) {
     return createHash('sha256').update(token).digest('hex');
 }
 
+function parseWeddingParty(raw: unknown): any[] {
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string' && raw.trim()) {
+        try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    }
+    return [];
+}
+
+function enrichInvitationWithMemberConfig(invitation: any) {
+    if (!invitation) return null;
+    const party = parseWeddingParty(invitation.weddings?.wedding_party);
+    const invKey = typeof invitation.member_key === 'string' ? invitation.member_key.trim() : '';
+    const invEmail = typeof invitation.email === 'string' ? invitation.email.trim().toLowerCase() : '';
+    const invName = typeof invitation.name === 'string' ? invitation.name.trim().toLowerCase() : '';
+
+    const matchedMember = party.find((member: any) => {
+        if (!member || typeof member !== 'object') return false;
+        const mKey = String(member.memberKey || member.id || '').trim();
+        if (invKey && mKey && invKey === mKey) return true;
+        const mEmail = typeof member.email === 'string' ? member.email.trim().toLowerCase() : '';
+        if (invEmail && mEmail && invEmail === mEmail) return true;
+        const mName = typeof member.name === 'string' ? member.name.trim().toLowerCase() : '';
+        if (invName && mName && invName === mName) return true;
+        return false;
+    });
+
+    return {
+        ...invitation,
+        proposalHeroImage: matchedMember?.proposalHeroImage || null,
+        requestAttireSize: matchedMember?.requestAttireSize !== undefined ? Boolean(matchedMember.requestAttireSize) : true,
+        requestDietaryNotes: matchedMember?.requestDietaryNotes !== undefined ? Boolean(matchedMember.requestDietaryNotes) : true,
+        requestPhoneNumber: matchedMember?.requestPhoneNumber !== undefined ? Boolean(matchedMember.requestPhoneNumber) : true,
+    };
+}
+
 async function findInvitationByToken(token: string) {
     const db = getSupabaseAdminClient() as any;
     const tokenHash = hashToken(token);
@@ -32,7 +72,7 @@ async function findInvitationByToken(token: string) {
         .maybeSingle();
 
     if (error) throw error;
-    return data;
+    return enrichInvitationWithMemberConfig(data);
 }
 
 export async function GET(req: NextRequest) {
@@ -92,7 +132,7 @@ export async function POST(req: NextRequest) {
             .from('entourage_invitations')
             .update(updateData)
             .eq('token_hash', tokenHash)
-            .select('id, wedding_id, member_key, name, email, role, message, template_key, card_theme, proposal_title, status, sent_at, responded_at, response_details, weddings(bride_name, groom_name, wedding_date, venue_name)')
+            .select('id, wedding_id, member_key, name, email, role, message, template_key, card_theme, proposal_title, status, sent_at, responded_at, response_details, weddings(bride_name, groom_name, wedding_date, venue_name, wedding_party)')
             .maybeSingle();
 
         if (error) throw error;
@@ -100,7 +140,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Proposal link not found.' }, { status: 404 });
         }
 
-        return NextResponse.json({ invitation });
+        return NextResponse.json({ invitation: enrichInvitationWithMemberConfig(invitation) });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to save proposal response.';
         return NextResponse.json({ error: message }, { status: 500 });

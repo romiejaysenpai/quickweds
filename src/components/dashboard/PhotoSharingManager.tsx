@@ -182,7 +182,7 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
             const response = await fetch('/api/photos/sharing-codes', {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ action: 'create', weddingId, maxUploads: settings.photo_limit_per_guest }),
+                body: JSON.stringify({ action: 'create', weddingId, maxUploads: 1000 }),
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'Failed to generate code.');
@@ -468,7 +468,10 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
 
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {codes.map((code) => {
-                        const maxUploads = Number(code.max_uploads ?? settings.photo_limit_per_guest);
+                        const rawMaxUploads = code.max_uploads == null ? null : Number(code.max_uploads);
+                        const maxUploads = rawMaxUploads !== null && Number.isFinite(rawMaxUploads) && rawMaxUploads > settings.photo_limit_per_guest
+                            ? rawMaxUploads
+                            : 1000;
                         const currentUploads = Number(code.current_uploads ?? 0);
                         return (
                             <div key={code.id} className="rounded-xl border border-border bg-white p-3 shadow-sm">
@@ -476,7 +479,7 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
                                     <p className="font-mono text-sm font-bold text-foreground">{code.code}</p>
                                     <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${code.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{code.is_active ? 'Active' : 'Paused'}</span>
                                 </div>
-                                <p className="mt-2 text-xs text-text-secondary">{currentUploads}/{maxUploads} uploads used</p>
+                                <p className="mt-2 text-xs text-text-secondary">{currentUploads}/{maxUploads} uploads used ({settings.photo_limit_per_guest} per guest)</p>
                                 <div className="mt-3 flex justify-end gap-1">
                                     <button type="button" onClick={() => toggleCode(code)} className="flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary hover:bg-neutral" title={code.is_active ? 'Pause code' : 'Activate code'}>
                                         {actingId === code.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}

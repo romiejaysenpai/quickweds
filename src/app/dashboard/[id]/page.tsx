@@ -270,16 +270,17 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         const pending = rsvps.filter(r => r.rsvp_status === 'pending');
 
         const totalGuests = confirmed.reduce((acc, r) => acc + (r.num_guests || 1), 0);
-        const totalChildren = rsvps.reduce((acc, r) => acc + (r.children_count || 0), 0);
+        const totalChildren = confirmed.reduce((acc, r) => acc + (r.children_count || 0), 0);
         const invitedCount = rsvps.filter(r => r.invitation_sent).length;
         const seatedCount = rsvps.filter(r => r.table_assignment).length;
         const groupedCount = rsvps.filter(r => r.guest_group).length;
 
-        // Meal preferences
+        // Meal preferences (only confirmed guests)
         const meals: Record<string, number> = {};
-        rsvps.forEach(r => {
+        confirmed.forEach(r => {
             const pref = r.meal_preference || 'No Preference';
-            meals[pref] = (meals[pref] || 0) + 1;
+            const count = Math.max(1, Number(r.num_guests || 1));
+            meals[pref] = (meals[pref] || 0) + count;
         });
 
         const groups: Record<string, number> = {};

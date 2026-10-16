@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 const MAX_UPLOADS_PER_SHARING_CODE = 3;
+const DEFAULT_SHARED_CODE_MAX_UPLOADS = 1000;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const EXTENSIONS: Record<string, string> = {
     'image/jpeg': 'jpg',
@@ -18,6 +19,15 @@ const EXTENSIONS: Record<string, string> = {
     'image/webp': 'webp',
     'image/gif': 'gif',
 };
+
+function isMissingWeddingDaySettingsError(error: unknown) {
+    const details = error && typeof error === 'object' ? error as { code?: string; message?: string } : {};
+    const message = String(details.message || '');
+    return details.code === '42P01'
+        || details.code === 'PGRST205'
+        || message.includes('wedding_day_settings')
+        || (message.includes('relation') && message.includes('does not exist'));
+}
 
 async function reservePhotoUpload(db: any, codeId: string, limit: number) {
     const { data, error } = await db.rpc('reserve_photo_upload', {
@@ -73,6 +83,20 @@ export async function POST(req: NextRequest) {
         if (weddingError) throw weddingError;
         if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
         const weddingId = wedding.id;
+
+        const { data: weddingDaySettings, error: weddingDayError } = await db
+            .from('wedding_day_settings')
+            .select('photo_upload_enabled')
+            .eq('wedding_id', weddingId)
+            .maybeSingle();
+
+        if (weddingDayError && !isMissingWeddingDaySettingsError(weddingDayError)) {
+            throw weddingDayError;
+        }
+        if (weddingDaySettings?.photo_upload_enabled === false) {
+            return NextResponse.json({ error: 'Photo uploads are currently paused by the couple.' }, { status: 403 });
+        }
+
         const settings = await getPhotoPortalSettings(db, weddingId);
 
         if (settings.disposable_camera_enabled && settings.guest_name_required && !rawUploaderName) {
@@ -98,14 +122,34 @@ export async function POST(req: NextRequest) {
 
         const currentUploads = Number(sharingCode.current_uploads ?? 0);
         const guestIdentifier = guestIdentifierInput || `${sharingCode.id}:${clientIP}`;
-        const configuredLimit = settings.disposable_camera_enabled
-            ? settings.photo_limit_per_guest
-            : MAX_UPLOADS_PER_SHARING_CODE;
-        const codeLimit = Math.min(Number(sharingCode.max_uploads ?? configuredLimit), configuredLimit);
+        const perGuestLimit = Math.max(
+            1,
+            Number(
+                settings.disposable_camera_enabled
+                    ? settings.photo_limit_per_guest
+                    : (settings.photo_limit_per_guest || MAX_UPLOADS_PER_SHARING_CODE)
+            )
+        );
+        const rawCodeMax = sharingCode.max_uploads == null ? null : Number(sharingCode.max_uploads);
+        const codeLimit = rawCodeMax !== null && Number.isFinite(rawCodeMax) && rawCodeMax > Math.max(perGuestLimit, MAX_UPLOADS_PER_SHARING_CODE)
+            ? rawCodeMax
+            : DEFAULT_SHARED_CODE_MAX_UPLOADS;
         let uploadSessionId = uploadSessionInput;
 
         if (currentUploads >= codeLimit) {
             return NextResponse.json({ error: `This sharing code has reached its ${codeLimit}-photo limit.` }, { status: 403 });
+        }
+
+        const { count: guestUploadCount, error: countError } = await db
+            .from('wedding_photos')
+            .select('id', { count: 'exact', head: true })
+            .eq('wedding_id', weddingId)
+            .eq('guest_identifier', guestIdentifier)
+            .neq('status', 'rejected');
+
+        if (countError) throw countError;
+        if (Number(guestUploadCount || 0) >= perGuestLimit) {
+            return NextResponse.json({ error: `You have reached the ${perGuestLimit}-photo limit for this roll.` }, { status: 403 });
         }
 
         if (hasUploadSessionStore()) {
@@ -129,20 +173,6 @@ export async function POST(req: NextRequest) {
         const reserved = await reservePhotoUpload(db, sharingCode.id, codeLimit);
         if (!reserved) {
             return NextResponse.json({ error: `This sharing code has reached its ${codeLimit}-photo limit.` }, { status: 403 });
-        }
-
-        if (settings.disposable_camera_enabled) {
-            const { count, error: countError } = await db
-                .from('wedding_photos')
-                .select('id', { count: 'exact', head: true })
-                .eq('wedding_id', weddingId)
-                .eq('guest_identifier', guestIdentifier)
-                .neq('status', 'rejected');
-
-            if (countError) throw countError;
-            if (Number(count || 0) >= settings.photo_limit_per_guest) {
-                return NextResponse.json({ error: `You have reached the ${settings.photo_limit_per_guest}-photo limit for this roll.` }, { status: 403 });
-            }
         }
 
         const extension = EXTENSIONS[file.type] || 'jpg';

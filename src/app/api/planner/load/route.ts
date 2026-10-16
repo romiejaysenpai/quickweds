@@ -271,7 +271,7 @@ export async function GET(req: NextRequest) {
             'entourage invitations'
         );
 
-        if (accessRole !== 'owner') {
+        if (accessRole !== 'owner' && accessRole !== 'partner' && accessRole !== 'coordinator') {
             return NextResponse.json({ accessRole, wedding, accountProfile, planUsage: EMPTY_PLANNER_USAGE, tasks: [], budgets: [], vendors: [], events: [], foodDrinks: [], googleCalendar: null, honeymoonItems: [], confirmedGuests: 0, entourageInvitations: entourageInvitationsForAccess });
         }
 
