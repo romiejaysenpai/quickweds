@@ -81,6 +81,7 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
                     </div>
                     {bridesmaids && (
                         <div className={`border-t px-1 py-5 ${isDark ? 'border-white/15' : 'border-black/10'}`}>
+                            <AttireIllustration color={bridesmaids.dressColor || bridesmaids.color} variant="bridesmaids" className="max-w-sm mb-2" />
                             <div className="flex items-center gap-2">
                                 <Sparkles className="h-4 w-4 text-primary" />
                                 <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">Bridesmaids Attire</p>
@@ -182,10 +183,8 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
                     {/* Bridesmaids Card (Optional) */}
                     {bridesmaids && (
                         <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.16 }} className={`rounded-3xl border border-border/80 bg-white/60 p-6 text-center shadow-sm backdrop-blur-sm sm:p-8 ${isDark ? 'border-white/15 bg-white/10' : ''}`}>
-                            <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full border-4 border-white shadow-xl" style={{ backgroundColor: bridesmaids.color }}>
-                                <Sparkles className="h-12 w-12 text-white/90 drop-shadow" />
-                            </div>
-                            <p className="mt-6 text-xs font-black uppercase tracking-[0.28em] text-primary">Bridesmaids Attire</p>
+                            <AttireIllustration color={bridesmaids.dressColor || bridesmaids.color} variant="bridesmaids" className="max-w-md" />
+                            <p className="mt-4 text-xs font-black uppercase tracking-[0.28em] text-primary">Bridesmaids Attire</p>
                             <h3 className={`mt-3 font-serif text-2xl sm:text-3xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>{bridesmaids.attire}</h3>
                             {bridesmaids.notes && (
                                 <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>{bridesmaids.notes}</p>

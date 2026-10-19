@@ -3152,55 +3152,106 @@ export default function BuilderForm() {
                     </div>
 
                     {formData.includeBridesmaidAttire && (
-                        <div className="space-y-4 pt-4 border-t border-border">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Type</label>
-                                    <input
-                                        name="bridesmaidDressCode"
-                                        value={formData.bridesmaidDressCode}
-                                        onChange={handleChange}
-                                        placeholder="e.g. Floor-length Gown, Garnet Red Only"
-                                        className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
-                                    />
+                        <div className="pt-4 border-t border-border">
+                            <div className="grid gap-6 lg:grid-cols-2">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Type</label>
+                                        <input
+                                            name="bridesmaidDressCode"
+                                            value={formData.bridesmaidDressCode}
+                                            onChange={handleChange}
+                                            placeholder="e.g. Floor-length Gown, Garnet Red Only"
+                                            className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Notes</label>
+                                        <input
+                                            name="bridesmaidDressCodeNotes"
+                                            value={formData.bridesmaidDressCodeNotes}
+                                            onChange={handleChange}
+                                            placeholder="e.g. Bridesmaids Attire - Garnet Red Only"
+                                            className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Dress Color</label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="color"
+                                                name="bridesmaidDressCodeColor"
+                                                value={formData.bridesmaidDressCodeColor || '#9B1D20'}
+                                                onChange={handleChange}
+                                                className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-transparent p-0"
+                                                aria-label="Pick bridesmaid dress color"
+                                            />
+                                            <input
+                                                type="text"
+                                                name="bridesmaidDressCodeColor"
+                                                value={formData.bridesmaidDressCodeColor || '#9B1D20'}
+                                                onChange={handleChange}
+                                                placeholder="#9B1D20"
+                                                className="min-h-[40px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-2 font-mono text-sm outline-none transition-all focus:border-primary"
+                                            />
+                                        </div>
+                                        {/* Quick Color Presets */}
+                                        <div className="pt-2">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-1.5">Color Presets</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {[
+                                                    { name: 'Garnet Red (Ref)', hex: '#9B1D20' },
+                                                    { name: 'Champagne Rose', hex: '#D6A79A' },
+                                                    { name: 'Brick Rose', hex: '#B94E48' },
+                                                    { name: 'Dusty Rose', hex: '#D16C78' },
+                                                    { name: 'Sage Green', hex: '#8A9A86' },
+                                                    { name: 'Emerald', hex: '#1B4D3E' },
+                                                    { name: 'Midnight Navy', hex: '#1D2A44' },
+                                                    { name: 'Plum Berry', hex: '#5A2A42' },
+                                                ].map((preset) => (
+                                                    <button
+                                                        key={preset.hex}
+                                                        type="button"
+                                                        onClick={() => setFormData((prev: any) => ({ ...prev, bridesmaidDressCodeColor: preset.hex }))}
+                                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
+                                                            (formData.bridesmaidDressCodeColor || '#9B1D20').toLowerCase() === preset.hex.toLowerCase()
+                                                                ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                                                                : 'border-border/70 bg-white hover:border-primary/50 text-text-secondary'
+                                                        }`}
+                                                    >
+                                                        <span className="h-3 w-3 rounded-full border border-white shadow-xs" style={{ backgroundColor: preset.hex }} />
+                                                        <span>{preset.name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Notes</label>
-                                    <input
-                                        name="bridesmaidDressCodeNotes"
-                                        value={formData.bridesmaidDressCodeNotes}
-                                        onChange={handleChange}
-                                        placeholder="e.g. Bridesmaids Attire - Garnet Red Only"
-                                        className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Bridesmaid Color</label>
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="color"
-                                        name="bridesmaidDressCodeColor"
-                                        value={formData.bridesmaidDressCodeColor}
-                                        onChange={handleChange}
-                                        className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-transparent p-0"
-                                        aria-label="Pick bridesmaid dress color"
-                                    />
-                                    <input
-                                        type="text"
-                                        name="bridesmaidDressCodeColor"
-                                        value={formData.bridesmaidDressCodeColor}
-                                        onChange={handleChange}
-                                        placeholder="#9B1D20"
-                                        className="min-h-[40px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-2 font-mono text-sm outline-none transition-all focus:border-primary"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData((prev: any) => ({ ...prev, bridesmaidDressCodeColor: '#9B1D20' }))}
-                                        className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-bold text-primary hover:bg-primary hover:text-white"
-                                    >
-                                        Garnet Red (#9B1D20)
-                                    </button>
+
+                                {/* Live Preview Card */}
+                                <div
+                                    className="relative flex min-h-[280px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral p-4 sm:min-h-[320px] sm:rounded-2xl"
+                                    style={{ boxShadow: `0 20px 55px ${(formData.bridesmaidDressCodeColor || '#9B1D20')}18` }}
+                                >
+                                    <div className="absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at 50% 30%, ${(formData.bridesmaidDressCodeColor || '#9B1D20')}22, transparent 48%)` }} />
+                                    <div className="relative">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-text-secondary/60">Live preview · Bridesmaids</p>
+                                        <p className="mt-1 font-serif text-xl font-bold text-foreground">{formData.bridesmaidDressCode || 'Floor-length Gown'}</p>
+                                        {formData.bridesmaidDressCodeNotes && (
+                                            <p className="mt-0.5 text-xs italic text-text-secondary">{formData.bridesmaidDressCodeNotes}</p>
+                                        )}
+                                    </div>
+                                    <div className="relative flex flex-1 items-center justify-center py-2">
+                                        <AttireIllustration
+                                            color={formData.bridesmaidDressCodeColor || '#9B1D20'}
+                                            variant="bridesmaids"
+                                            className="max-w-[280px]"
+                                        />
+                                    </div>
+                                    <div className="relative flex items-center justify-center gap-2 pt-2 border-t border-border/40">
+                                        <span className="h-4 w-4 rounded-full border border-white shadow-xs" style={{ backgroundColor: formData.bridesmaidDressCodeColor || '#9B1D20' }} />
+                                        <span className="font-mono text-xs font-bold text-text-secondary">{formData.bridesmaidDressCodeColor || '#9B1D20'}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
