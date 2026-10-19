@@ -6,6 +6,7 @@ export type AttireIllustrationVariant = 'builder' | 'sponsors' | 'guests';
 
 type AttireIllustrationProps = {
     color?: string;
+    suitColor?: string;
     variant?: AttireIllustrationVariant;
     className?: string;
 };
@@ -33,6 +34,7 @@ function mixColor(hex: string, target: '#ffffff' | '#242129', amount: number) {
  */
 export default function AttireIllustration({
     color = '#D16C78',
+    suitColor,
     variant = 'guests',
     className = '',
 }: AttireIllustrationProps) {
@@ -50,8 +52,9 @@ export default function AttireIllustration({
     const dressLight = mixColor(accent, '#ffffff', 0.22);
     const dressDark = mixColor(accent, '#242129', isSponsor ? 0.24 : 0.16);
     const paleAccent = mixColor(accent, '#ffffff', 0.68);
-    const suit = isSponsor ? '#1D2330' : '#2D3543';
-    const suitDark = isSponsor ? '#141923' : '#202733';
+    const defaultSuitHex = isSponsor ? '#1D2330' : '#2D3543';
+    const suit = suitColor ? normalizeColor(suitColor) : defaultSuitHex;
+    const suitDark = suitColor ? mixColor(suit, '#242129', 0.45) : (isSponsor ? '#141923' : '#202733');
     const womanSkin = isSponsor ? '#9D624B' : '#D29A79';
     const womanSkinLight = isSponsor ? '#BA7D62' : '#E3AE8B';
     const womanHair = isSponsor ? '#272127' : '#56372F';

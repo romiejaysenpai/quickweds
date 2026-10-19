@@ -39,6 +39,9 @@ export const PUBLIC_WEDDING_FIELDS = [
     'hashtag',
     'rsvp_deadline',
     'rsvp_events',
+    'rsvp_allow_plus_ones',
+    'rsvp_allow_children',
+    'rsvp_search_guest_list',
     'program_timeline',
     'faq_items',
     'invitation_image',
@@ -119,6 +122,9 @@ export function toPublicWedding(record: Record<string, unknown>) {
         reception_venue_photos: publicWedding.reception_venue_photos ?? [],
         gallery_images: publicWedding.gallery_images ?? [],
         rsvp_events: Array.isArray(publicWedding.rsvp_events) ? publicWedding.rsvp_events : [],
+        rsvp_allow_plus_ones: publicWedding.rsvp_allow_plus_ones !== false,
+        rsvp_allow_children: publicWedding.rsvp_allow_children !== false,
+        rsvp_search_guest_list: publicWedding.rsvp_search_guest_list !== false,
         gallery_layout: typeof publicWedding.gallery_layout === 'string' && publicWedding.gallery_layout
             ? publicWedding.gallery_layout
             : 'auto',

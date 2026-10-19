@@ -96,20 +96,34 @@ export async function POST(req: NextRequest) {
             }, { status: 403 });
         }
 
-        let existingResult = await db
-            .from('rsvps')
-            .select('id, rsvp_status, attendance, manual_entry, seat_lookup_token, guest_code')
-            .eq('wedding_id', weddingId)
-            .ilike('guest_name', escapeLikePattern(guestName))
-            .limit(1);
-
-        if (existingResult.error && ['manual_entry', 'seat_lookup_token', 'guest_code'].some((col) => String(existingResult.error.message || '').includes(col))) {
-            existingResult = await db
+        let existingResult = parsed.data.rsvpId
+            ? await db
                 .from('rsvps')
-                .select('id, rsvp_status, attendance')
+                .select('id, rsvp_status, attendance, manual_entry, seat_lookup_token, guest_code, table_assignment')
+                .eq('id', parsed.data.rsvpId)
+                .eq('wedding_id', weddingId)
+                .limit(1)
+            : await db
+                .from('rsvps')
+                .select('id, rsvp_status, attendance, manual_entry, seat_lookup_token, guest_code, table_assignment')
                 .eq('wedding_id', weddingId)
                 .ilike('guest_name', escapeLikePattern(guestName))
                 .limit(1);
+
+        if (existingResult.error && ['manual_entry', 'seat_lookup_token', 'guest_code', 'table_assignment'].some((col) => String(existingResult.error.message || '').includes(col))) {
+            existingResult = parsed.data.rsvpId
+                ? await db
+                    .from('rsvps')
+                    .select('id, rsvp_status, attendance')
+                    .eq('id', parsed.data.rsvpId)
+                    .eq('wedding_id', weddingId)
+                    .limit(1)
+                : await db
+                    .from('rsvps')
+                    .select('id, rsvp_status, attendance')
+                    .eq('wedding_id', weddingId)
+                    .ilike('guest_name', escapeLikePattern(guestName))
+                    .limit(1);
         }
 
         const { data: existing, error: duplicateError } = existingResult;
@@ -118,9 +132,11 @@ export async function POST(req: NextRequest) {
         const existingRsvp = existing?.[0] || null;
         const canUpdateExisting = Boolean(
             existingRsvp && (
+                Boolean(parsed.data.rsvpId) ||
                 existingRsvp.rsvp_status === 'pending' ||
                 existingRsvp.attendance === 'Pending' ||
-                existingRsvp.manual_entry === true
+                existingRsvp.manual_entry === true ||
+                Boolean(guestEmail && existingRsvp.guest_email === guestEmail)
             )
         );
 
@@ -204,6 +220,50 @@ export async function POST(req: NextRequest) {
 
         if (insertError) throw insertError;
         await invalidateDashboardCounters(weddingId);
+
+        // Sync household and party members so records are updated by name and couple can manage their table groupings
+        if (householdMembers.length > 0) {
+            for (const memberName of householdMembers) {
+                const cleanMember = memberName.trim();
+                if (!cleanMember || cleanMember.toLowerCase() === guestName.toLowerCase()) continue;
+                try {
+                    const existingMember = await db
+                        .from('rsvps')
+                        .select('id, table_assignment')
+                        .eq('wedding_id', weddingId)
+                        .ilike('guest_name', escapeLikePattern(cleanMember))
+                        .limit(1);
+
+                    const memberRow = existingMember?.data?.[0];
+                    if (memberRow) {
+                        await db
+                            .from('rsvps')
+                            .update({
+                                attendance: parsed.data.attendance,
+                                rsvp_status: parsed.data.attendance === 'Yes' ? 'confirmed' : 'declined',
+                                household_name: householdName || null,
+                            })
+                            .eq('id', memberRow.id)
+                            .eq('wedding_id', weddingId);
+                    } else if (parsed.data.attendance === 'Yes') {
+                        await db
+                            .from('rsvps')
+                            .insert({
+                                wedding_id: weddingId,
+                                guest_name: cleanMember,
+                                household_name: householdName || null,
+                                attendance: 'Yes',
+                                rsvp_status: 'confirmed',
+                                num_guests: 1,
+                                table_assignment: existingRsvp?.table_assignment || null,
+                                manual_entry: true,
+                            });
+                    }
+                } catch (memberErr) {
+                    console.warn('Sync party member failed:', cleanMember, memberErr);
+                }
+            }
+        }
 
         const notifications = await sendRsvpNotifications(db, {
             weddingId,

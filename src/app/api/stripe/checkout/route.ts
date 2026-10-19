@@ -7,7 +7,8 @@ import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib
 import { getWeddingAccess } from '@/lib/wedding-access';
 
 export async function POST(req: NextRequest) {
-    if (req.headers.get('x-quickweds-client') === 'ios-capacitor') {
+    const userAgent = req.headers.get('user-agent') || '';
+    if (req.headers.get('x-quickweds-client') === 'ios-capacitor' || userAgent.includes('QuickWeds-iOS-App')) {
         return NextResponse.json(
             { error: 'Paid upgrades are managed on the QuickWeds website.' },
             { status: 403 }

@@ -18,6 +18,7 @@ export const RATE_LIMITS = {
     // Strict limits for email sending (prevent abuse)
     RSVP_NOTIFY: { maxRequests: 30, windowMs: 60 * 60 * 1000 },      // 30 per hour
     RSVP_SUBMIT: { maxRequests: 5, windowMs: 60 * 1000 },            // 5 per minute
+    RSVP_GUEST_SEARCH: { maxRequests: 60, windowMs: 15 * 60 * 1000 }, // 60 per 15 minutes
     REMINDER_EMAIL: { maxRequests: 3, windowMs: 10 * 60 * 1000 },    // 3 per 10 minutes
     THANK_YOU_EMAIL: { maxRequests: 3, windowMs: 10 * 60 * 1000 },   // 3 per 10 minutes
     EMAIL_RESEND: { maxRequests: 3, windowMs: 10 * 60 * 1000 },      // 3 per 10 minutes

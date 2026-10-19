@@ -235,7 +235,34 @@ const STEPS = [
     { id: 'faq', title: 'FAQs', icon: HelpCircle },
 ];
 
-const ATTIRE_COLOR_OPTIONS = ['#111827', '#1A365D', '#276749', '#744210', '#E53E3E', '#805AD5', '#D6BCFA', '#FBD38D', '#D16C78', '#D6B87C', '#6B7A62', '#F8EEEA'];
+const ATTIRE_COLOR_OPTIONS = [
+    '#9B1D20', // Garnet Red (Bridesmaids)
+    '#D6A79A', // Champagne Rose (Principal Sponsors)
+    '#D8C5A6', // Warm Sand (Guest Attire)
+    '#D4B89E', // Nude Beige (Guest Attire)
+    '#B94E48', // Brick Rose (Guest Attire)
+    '#1E4D2B', // Emerald Green
+    '#276749', // Forest Green
+    '#8A9A86', // Sage Green
+    '#1A2B4C', // Deep Navy
+    '#6B8EAA', // Dusty Blue
+    '#111827', // Midnight Black
+    '#1D2330', // Formal Tuxedo
+    '#2D3543', // Charcoal Suit
+    '#6A1A24', // Rich Burgundy
+    '#C86D51', // Terracotta
+    '#B76E79', // Rose Gold
+    '#E8C5C8', // Blush Pink
+    '#D16C78', // Dusty Rose
+    '#D4AF37', // Champagne Gold
+    '#D6B87C', // Warm Gold
+    '#4A154B', // Royal Plum
+    '#B57EDC', // Soft Lavender
+    '#D6BCFA', // Lilac
+    '#744210', // Caramel Bronze
+    '#8B8589', // Classic Taupe
+    '#F8EEEA', // Pearl / Soft Ivory
+];
 
 const ACCENT_STYLES = [
     { id: 'none', name: 'None', desc: 'Clean layout' },
@@ -355,8 +382,22 @@ const INITIAL_FORM_DATA = {
     galleryLayout: 'auto',
     dressCode: '',
     dressCodeColor: '#000000',
+    dressCodeSuitColor: '#2D3543',
+    dressCodeColors: [] as string[],
+    dressCodeNotes: '',
     sponsorDressCode: '',
     sponsorDressCodeColor: '#1A365D',
+    sponsorDressCodeSuitColor: '#1D2330',
+    sponsorDressCodeColors: [] as string[],
+    sponsorDressCodeNotes: '',
+    bridesmaidDressCode: '',
+    bridesmaidDressCodeColor: '#9B1D20',
+    bridesmaidDressCodeColors: [] as string[],
+    bridesmaidDressCodeNotes: '',
+    includeBridesmaidAttire: false,
+    rsvpAllowPlusOnes: true,
+    rsvpAllowChildren: true,
+    rsvpSearchGuestList: true,
     programTimeline: '',
     faqItems: [] as any[],
     story: '',
@@ -819,8 +860,22 @@ export default function BuilderForm() {
                         galleryLayout: data.gallery_layout || 'auto',
                         dressCode: dressCodeSettings.guests.attire,
                         dressCodeColor: dressCodeSettings.guests.color,
+                        dressCodeSuitColor: dressCodeSettings.guests.suitColor || '#2D3543',
+                        dressCodeColors: dressCodeSettings.guests.colors || [dressCodeSettings.guests.color],
+                        dressCodeNotes: dressCodeSettings.guests.notes || '',
                         sponsorDressCode: dressCodeSettings.sponsors.attire,
                         sponsorDressCodeColor: dressCodeSettings.sponsors.color,
+                        sponsorDressCodeSuitColor: dressCodeSettings.sponsors.suitColor || '#1D2330',
+                        sponsorDressCodeColors: dressCodeSettings.sponsors.colors || [dressCodeSettings.sponsors.color],
+                        sponsorDressCodeNotes: dressCodeSettings.sponsors.notes || '',
+                        bridesmaidDressCode: dressCodeSettings.bridesmaids?.attire || 'Formal Dress',
+                        bridesmaidDressCodeColor: dressCodeSettings.bridesmaids?.color || '#9B1D20',
+                        bridesmaidDressCodeColors: dressCodeSettings.bridesmaids?.colors || ['#9B1D20'],
+                        bridesmaidDressCodeNotes: dressCodeSettings.bridesmaids?.notes || 'Garnet Red Only',
+                        includeBridesmaidAttire: Boolean(dressCodeSettings.bridesmaids),
+                        rsvpAllowPlusOnes: data.rsvp_allow_plus_ones !== false,
+                        rsvpAllowChildren: data.rsvp_allow_children !== false,
+                        rsvpSearchGuestList: data.rsvp_search_guest_list !== false,
                         programTimeline: data.program_timeline || '',
                         faqItems: readArrayField(data.faq_items),
                         story: data.story || '',
@@ -1381,9 +1436,30 @@ export default function BuilderForm() {
                 template_style: formData.templateStyle || DEFAULT_TEMPLATE_STYLE,
                 gallery_layout: formData.galleryLayout || 'auto',
                 dress_code: serializeDressCodeValue({
-                    sponsors: { attire: formData.sponsorDressCode, color: formData.sponsorDressCodeColor },
-                    guests: { attire: formData.dressCode, color: formData.dressCodeColor },
+                    sponsors: {
+                        attire: formData.sponsorDressCode,
+                        color: formData.sponsorDressCodeColor,
+                        suitColor: formData.sponsorDressCodeSuitColor,
+                        colors: formData.sponsorDressCodeColors?.length ? formData.sponsorDressCodeColors : [formData.sponsorDressCodeColor],
+                        notes: formData.sponsorDressCodeNotes,
+                    },
+                    guests: {
+                        attire: formData.dressCode,
+                        color: formData.dressCodeColor,
+                        suitColor: formData.dressCodeSuitColor,
+                        colors: formData.dressCodeColors?.length ? formData.dressCodeColors : [formData.dressCodeColor],
+                        notes: formData.dressCodeNotes,
+                    },
+                    bridesmaids: formData.includeBridesmaidAttire ? {
+                        attire: formData.bridesmaidDressCode,
+                        color: formData.bridesmaidDressCodeColor,
+                        colors: formData.bridesmaidDressCodeColors?.length ? formData.bridesmaidDressCodeColors : [formData.bridesmaidDressCodeColor],
+                        notes: formData.bridesmaidDressCodeNotes,
+                    } : undefined,
                 }),
+                rsvp_allow_plus_ones: formData.rsvpAllowPlusOnes !== false,
+                rsvp_allow_children: formData.rsvpAllowChildren !== false,
+                rsvp_search_guest_list: formData.rsvpSearchGuestList !== false,
                 program_timeline: formData.programTimeline,
                 faq_items: formData.faqItems,
                 story: formData.story,
@@ -1495,6 +1571,9 @@ export default function BuilderForm() {
                     'background_music_url',
                     'background_music_title',
                     'background_music_enabled',
+                    'rsvp_allow_plus_ones',
+                    'rsvp_allow_children',
+                    'rsvp_search_guest_list',
                 ].forEach((column) => {
                     if (isMissingOptionalWeddingColumnError(error, column)) {
                         delete fallbackPayload[column];
@@ -2828,45 +2907,69 @@ export default function BuilderForm() {
         {
             id: 'sponsors',
             label: 'Principal Sponsors',
-            description: 'Set the formal attire guidance and color reserved for principal sponsors.',
+            description: 'Set formal attire guidelines, dress and suit colors, and palette reserved for principal sponsors.',
             attireField: 'sponsorDressCode',
             colorField: 'sponsorDressCodeColor',
+            suitColorField: 'sponsorDressCodeSuitColor',
+            colorsField: 'sponsorDressCodeColors',
+            notesField: 'sponsorDressCodeNotes',
             variant: 'sponsors' as const,
         },
         {
             id: 'guests',
             label: 'Wedding Guests',
-            description: 'Set a separate attire instruction and color for all other guests.',
+            description: 'Set dress code, dress and suit colors, and color palette options for all wedding guests.',
             attireField: 'dressCode',
             colorField: 'dressCodeColor',
+            suitColorField: 'dressCodeSuitColor',
+            colorsField: 'dressCodeColors',
+            notesField: 'dressCodeNotes',
             variant: 'guests' as const,
         },
     ] as const;
 
+    const togglePaletteColor = (field: string, color: string) => {
+        setFormData((prev: any) => {
+            const current = Array.isArray(prev[field]) ? prev[field] : [];
+            if (current.includes(color)) {
+                return { ...prev, [field]: current.filter((c: string) => c !== color) };
+            }
+            return { ...prev, [field]: [...current, color] };
+        });
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center mb-4">
-                <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Dress Code</h2>
-                <p className="text-text-secondary">Create separate attire guidance for principal sponsors and wedding guests.</p>
+                <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Dress Code & Attire Colors</h2>
+                <p className="text-text-secondary">Customize dress and suit colors, palettes, and style guidelines for sponsors and guests.</p>
             </div>
 
             <div className="space-y-6 rounded-2xl border border-border bg-white/70 p-2 shadow-sm sm:rounded-[2rem] sm:p-6">
                 {attireGroups.map((group) => {
                     const attireValue = formData[group.attireField];
                     const colorValue = formData[group.colorField];
+                    const suitColorValue = formData[group.suitColorField];
+                    const notesValue = formData[group.notesField];
+                    const paletteColors = Array.isArray(formData[group.colorsField]) && formData[group.colorsField].length > 0
+                        ? formData[group.colorsField]
+                        : [colorValue];
 
                     return (
-                        <section key={group.id} className="overflow-hidden rounded-xl border border-border bg-white p-2.5 sm:rounded-[1.75rem] sm:p-5">
+                        <section key={group.id} className="overflow-hidden rounded-xl border border-border bg-white p-3 sm:rounded-[1.75rem] sm:p-5">
                             <div className="mb-5 flex items-start justify-between gap-4">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">{group.label}</p>
-                                    <p className="mt-2 text-sm leading-6 text-text-secondary">{group.description}</p>
+                                    <p className="mt-1 text-sm leading-6 text-text-secondary">{group.description}</p>
                                 </div>
-                                <span className="h-11 w-11 shrink-0 rounded-2xl border-2 border-white shadow-lg" style={{ backgroundColor: colorValue }} />
+                                <div className="flex items-center gap-1.5">
+                                    <span className="h-9 w-9 shrink-0 rounded-xl border-2 border-white shadow-md" style={{ backgroundColor: colorValue }} title="Dress color" />
+                                    <span className="h-9 w-9 shrink-0 rounded-xl border-2 border-white shadow-md" style={{ backgroundColor: suitColorValue }} title="Suit color" />
+                                </div>
                             </div>
 
-                            <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
-                                <div className="space-y-5 rounded-xl bg-neutral/45 p-3 sm:rounded-2xl sm:p-4">
+                            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-stretch">
+                                <div className="space-y-5 rounded-xl bg-neutral/45 p-3 sm:rounded-2xl sm:p-5">
                                     <div className="space-y-2">
                                         <label htmlFor={`${group.id}-attire`} className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Type</label>
                                         <input
@@ -2874,26 +2977,28 @@ export default function BuilderForm() {
                                             name={group.attireField}
                                             value={attireValue}
                                             onChange={handleChange}
-                                            placeholder={group.id === 'sponsors' ? 'e.g. Black Tie, Barong and Formal Gown' : 'e.g. Formal, Cocktail, Garden Formal'}
+                                            placeholder={group.id === 'sponsors' ? 'e.g. Formal, Barong and Evening Gown' : 'e.g. Semi-Formal, Cocktail, Garden Formal'}
                                             className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
                                         />
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Color Theme</label>
-                                        <div className="grid grid-cols-6 gap-2">
-                                            {ATTIRE_COLOR_OPTIONS.map((color) => (
-                                                <button
-                                                    key={color}
-                                                    type="button"
-                                                    onClick={() => setFormData((previous: any) => ({ ...previous, [group.colorField]: color }))}
-                                                    className={`relative h-9 rounded-xl border-2 transition-all ${colorValue === color ? 'scale-105 border-white ring-2 ring-primary shadow-lg' : 'border-border/60 shadow-sm hover:border-primary/50'}`}
-                                                    style={{ backgroundColor: color }}
-                                                    aria-label={`Select ${group.label.toLowerCase()} attire color ${color}`}
-                                                >
-                                                    {colorValue === color && <CheckCircle2 className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow" />}
-                                                </button>
-                                            ))}
+                                    <div className="space-y-2">
+                                        <label htmlFor={`${group.id}-notes`} className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Style Guidelines / Notes</label>
+                                        <input
+                                            id={`${group.id}-notes`}
+                                            name={group.notesField}
+                                            value={notesValue}
+                                            onChange={handleChange}
+                                            placeholder={group.id === 'sponsors' ? 'e.g. Champagne with a touch of Red (Never White) - Formal Attire' : 'e.g. Nude Beige & Brick Rose - Semi-formal attire'}
+                                            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none transition-all focus:border-primary"
+                                        />
+                                    </div>
+
+                                    {/* Dress & Gown Color */}
+                                    <div className="space-y-2 pt-2 border-t border-border/60">
+                                        <div className="flex items-center justify-between">
+                                            <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Dress / Gown Color</label>
+                                            <span className="font-mono text-xs font-bold text-primary">{colorValue}</span>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <input
@@ -2901,8 +3006,8 @@ export default function BuilderForm() {
                                                 name={group.colorField}
                                                 value={colorValue}
                                                 onChange={handleChange}
-                                                className="h-11 w-11 cursor-pointer rounded-2xl border border-border bg-transparent p-0"
-                                                aria-label={`Pick a custom ${group.label.toLowerCase()} attire color`}
+                                                className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-transparent p-0"
+                                                aria-label={`Pick dress color for ${group.label}`}
                                             />
                                             <input
                                                 type="text"
@@ -2910,29 +3015,197 @@ export default function BuilderForm() {
                                                 value={colorValue}
                                                 onChange={handleChange}
                                                 placeholder="#HEX"
-                                                className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-3 font-mono text-sm outline-none transition-all focus:border-primary"
+                                                className="min-h-[40px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-2 font-mono text-sm outline-none transition-all focus:border-primary"
                                             />
+                                        </div>
+                                    </div>
+
+                                    {/* Suit & Tuxedo Color */}
+                                    <div className="space-y-2 pt-2 border-t border-border/60">
+                                        <div className="flex items-center justify-between">
+                                            <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Suit / Tuxedo Color</label>
+                                            <span className="font-mono text-xs font-bold text-primary">{suitColorValue}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="color"
+                                                name={group.suitColorField}
+                                                value={suitColorValue}
+                                                onChange={handleChange}
+                                                className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-transparent p-0"
+                                                aria-label={`Pick suit color for ${group.label}`}
+                                            />
+                                            <input
+                                                type="text"
+                                                name={group.suitColorField}
+                                                value={suitColorValue}
+                                                onChange={handleChange}
+                                                placeholder="#HEX"
+                                                className="min-h-[40px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-2 font-mono text-sm outline-none transition-all focus:border-primary"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Multiple Color Palette Options */}
+                                    <div className="space-y-3 pt-2 border-t border-border/60">
+                                        <div className="flex items-center justify-between">
+                                            <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">
+                                                Attire Palette ({paletteColors.length} selected)
+                                            </label>
+                                            <span className="text-[10px] text-text-secondary">Click swatches to add/remove</span>
+                                        </div>
+
+                                        {/* Selected Palette Tags */}
+                                        <div className="flex flex-wrap gap-2">
+                                            {paletteColors.map((color: string) => (
+                                                <span
+                                                    key={color}
+                                                    className="flex items-center gap-1.5 rounded-full border border-border bg-white px-2.5 py-1 text-xs shadow-xs"
+                                                >
+                                                    <span className="h-3.5 w-3.5 rounded-full border border-black/10" style={{ backgroundColor: color }} />
+                                                    <span className="font-mono text-[10px] uppercase font-bold">{color}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => togglePaletteColor(group.colorsField, color)}
+                                                        className="ml-0.5 text-text-secondary/70 hover:text-red-500"
+                                                        aria-label={`Remove color ${color}`}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+
+                                        {/* Swatch grid */}
+                                        <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-36 overflow-y-auto p-1 rounded-xl border border-border/50 bg-white/70">
+                                            {ATTIRE_COLOR_OPTIONS.map((color) => {
+                                                const isSelected = paletteColors.includes(color);
+                                                return (
+                                                    <button
+                                                        key={color}
+                                                        type="button"
+                                                        onClick={() => togglePaletteColor(group.colorsField, color)}
+                                                        className={`relative h-8 rounded-lg border-2 transition-all ${
+                                                            isSelected ? 'scale-105 border-primary ring-2 ring-primary/40 shadow-md' : 'border-border/60 hover:border-primary/50'
+                                                        }`}
+                                                        style={{ backgroundColor: color }}
+                                                        aria-label={`Toggle color ${color}`}
+                                                        title={color}
+                                                    >
+                                                        {isSelected && <CheckCircle2 className="absolute inset-0 m-auto h-3.5 w-3.5 text-white drop-shadow" />}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>
 
+                                {/* Live preview card */}
                                 <div
-                                    className="relative flex min-h-[240px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral p-3 sm:min-h-[300px] sm:rounded-2xl sm:p-4"
+                                    className="relative flex min-h-[280px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral p-4 sm:min-h-[320px] sm:rounded-2xl"
                                     style={{ boxShadow: `0 20px 55px ${colorValue}18` }}
                                 >
                                     <div className="absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at 50% 30%, ${colorValue}22, transparent 48%)` }} />
                                     <div className="relative">
                                         <p className="text-[9px] font-black uppercase tracking-[0.2em] text-text-secondary/60">Live preview · {group.label}</p>
                                         <p className="mt-1 font-serif text-xl font-bold text-foreground">{attireValue || 'Formal Attire'}</p>
+                                        {notesValue && <p className="mt-0.5 text-xs italic text-text-secondary">{notesValue}</p>}
                                     </div>
                                     <div className="relative flex flex-1 items-center justify-center py-2">
-                                        <AttireIllustration color={colorValue} variant={group.variant} className="max-w-[300px]" />
+                                        <AttireIllustration color={colorValue} suitColor={suitColorValue} variant={group.variant} className="max-w-[280px]" />
                                     </div>
+                                    {paletteColors.length > 0 && (
+                                        <div className="relative flex flex-wrap items-center justify-center gap-1.5 pt-2 border-t border-border/40">
+                                            {paletteColors.map((c: string, idx: number) => (
+                                                <span key={idx} className="h-4 w-4 rounded-full border border-white shadow-xs" style={{ backgroundColor: c }} title={c} />
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </section>
                     );
                 })}
+
+                {/* Bridesmaids Attire Section (Image 1 reference: Garnet Red Only) */}
+                <section className="overflow-hidden rounded-xl border border-border bg-white p-3 sm:rounded-[1.75rem] sm:p-5">
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Bridesmaids Attire</p>
+                            <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                Specify dedicated dress color and instructions for bridesmaids (e.g. Garnet Red Only).
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={formData.includeBridesmaidAttire}
+                            aria-label="Toggle bridesmaids attire"
+                            onClick={() => setFormData((prev: any) => ({ ...prev, includeBridesmaidAttire: !prev.includeBridesmaidAttire }))}
+                            className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors ${
+                                formData.includeBridesmaidAttire ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'
+                            }`}
+                        >
+                            <span className={`flex items-center justify-center rounded-md ${!formData.includeBridesmaidAttire ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Off</span>
+                            <span className={`flex items-center justify-center rounded-md ${formData.includeBridesmaidAttire ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                        </button>
+                    </div>
+
+                    {formData.includeBridesmaidAttire && (
+                        <div className="space-y-4 pt-4 border-t border-border">
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Type</label>
+                                    <input
+                                        name="bridesmaidDressCode"
+                                        value={formData.bridesmaidDressCode}
+                                        onChange={handleChange}
+                                        placeholder="e.g. Floor-length Gown, Garnet Red Only"
+                                        className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Notes</label>
+                                    <input
+                                        name="bridesmaidDressCodeNotes"
+                                        value={formData.bridesmaidDressCodeNotes}
+                                        onChange={handleChange}
+                                        placeholder="e.g. Bridesmaids Attire - Garnet Red Only"
+                                        className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Bridesmaid Color</label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="color"
+                                        name="bridesmaidDressCodeColor"
+                                        value={formData.bridesmaidDressCodeColor}
+                                        onChange={handleChange}
+                                        className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-transparent p-0"
+                                        aria-label="Pick bridesmaid dress color"
+                                    />
+                                    <input
+                                        type="text"
+                                        name="bridesmaidDressCodeColor"
+                                        value={formData.bridesmaidDressCodeColor}
+                                        onChange={handleChange}
+                                        placeholder="#9B1D20"
+                                        className="min-h-[40px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-2 font-mono text-sm outline-none transition-all focus:border-primary"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData((prev: any) => ({ ...prev, bridesmaidDressCodeColor: '#9B1D20' }))}
+                                        className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-bold text-primary hover:bg-primary hover:text-white"
+                                    >
+                                        Garnet Red (#9B1D20)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </section>
             </div>
         </div>
     );
@@ -3114,7 +3387,10 @@ export default function BuilderForm() {
             </div>
 
             <div className="space-y-6 pt-4 border-t border-border">
-                <h4 className="text-sm font-bold text-foreground mx-1">RSVP Settings</h4>
+                <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-foreground mx-1">RSVP Settings</h4>
+                </div>
+
                 <div className="space-y-2">
                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">RSVP Deadline</label>
                     <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
@@ -3123,6 +3399,74 @@ export default function BuilderForm() {
                 <div className="space-y-2">
                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Contact Person</label>
                     <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                </div>
+
+                {/* RSVP Options requested by users: remove plus-ones, remove children, searchable guest list */}
+                <div className="space-y-4 pt-4 border-t border-border/60">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary ml-1">Guest Response Customizations</p>
+
+                    {/* Toggle: Allow Plus-Ones */}
+                    <div className="flex items-center justify-between rounded-2xl border border-border bg-white p-4">
+                        <div>
+                            <p className="text-sm font-bold text-foreground">Allow Plus-Ones & Additional Guests</p>
+                            <p className="text-xs text-text-secondary mt-0.5">Allow guests to RSVP for +1s or additional party members. Turn off to remove plus-ones from RSVPs.</p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={formData.rsvpAllowPlusOnes}
+                            aria-label="Toggle allow plus-ones"
+                            onClick={() => setFormData((prev: any) => ({ ...prev, rsvpAllowPlusOnes: !prev.rsvpAllowPlusOnes }))}
+                            className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors ${
+                                formData.rsvpAllowPlusOnes ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-neutral text-text-secondary'
+                            }`}
+                        >
+                            <span className={`flex items-center justify-center rounded-md ${!formData.rsvpAllowPlusOnes ? 'bg-white text-foreground shadow-sm' : ''}`}>Off</span>
+                            <span className={`flex items-center justify-center rounded-md ${formData.rsvpAllowPlusOnes ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                        </button>
+                    </div>
+
+                    {/* Toggle: Allow Children */}
+                    <div className="flex items-center justify-between rounded-2xl border border-border bg-white p-4">
+                        <div>
+                            <p className="text-sm font-bold text-foreground">Allow Children Attending</p>
+                            <p className="text-xs text-text-secondary mt-0.5">Let guests indicate children count. Turn off for adults-only celebrations or to remove children from RSVPs.</p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={formData.rsvpAllowChildren}
+                            aria-label="Toggle allow children"
+                            onClick={() => setFormData((prev: any) => ({ ...prev, rsvpAllowChildren: !prev.rsvpAllowChildren }))}
+                            className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors ${
+                                formData.rsvpAllowChildren ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-neutral text-text-secondary'
+                            }`}
+                        >
+                            <span className={`flex items-center justify-center rounded-md ${!formData.rsvpAllowChildren ? 'bg-white text-foreground shadow-sm' : ''}`}>Off</span>
+                            <span className={`flex items-center justify-center rounded-md ${formData.rsvpAllowChildren ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                        </button>
+                    </div>
+
+                    {/* Toggle: Searchable Guest List */}
+                    <div className="flex items-center justify-between rounded-2xl border border-border bg-white p-4">
+                        <div>
+                            <p className="text-sm font-bold text-foreground">Searchable Guest List Dropdown</p>
+                            <p className="text-xs text-text-secondary mt-0.5">Enable guests to search and select their name from your invited guest list to update their status and email.</p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={formData.rsvpSearchGuestList}
+                            aria-label="Toggle searchable guest list"
+                            onClick={() => setFormData((prev: any) => ({ ...prev, rsvpSearchGuestList: !prev.rsvpSearchGuestList }))}
+                            className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors ${
+                                formData.rsvpSearchGuestList ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-neutral text-text-secondary'
+                            }`}
+                        >
+                            <span className={`flex items-center justify-center rounded-md ${!formData.rsvpSearchGuestList ? 'bg-white text-foreground shadow-sm' : ''}`}>Off</span>
+                            <span className={`flex items-center justify-center rounded-md ${formData.rsvpSearchGuestList ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

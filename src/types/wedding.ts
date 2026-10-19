@@ -34,6 +34,9 @@ export interface Wedding {
     hashtag?: string;
     rsvp_deadline: string;
     rsvp_events?: WeddingRsvpEvent[] | string;
+    rsvp_allow_plus_ones?: boolean;
+    rsvp_allow_children?: boolean;
+    rsvp_search_guest_list?: boolean;
     program_timeline?: string;
     faq_items?: string | unknown[];
     invitation_image?: string; // Opt-in image
