@@ -8,7 +8,7 @@
 - PWA basics are present: manifest, icons, Apple web app metadata, service worker, offline route, and install prompt.
 - Privacy, terms, cookies, and support pages exist and are linked in Settings and footer.
 - Capacitor iOS scaffold exists in `ios/` with native bundle ID `com.quickweds.app`.
-- The iOS shell is configured to load `https://quickweds.site`, with local branded fallback in `public/index.html`.
+- The iOS shell is configured to load `https://quickweds.site`.
 - Account deletion is available directly inside Settings and backed by `/api/account/delete` with cascade cleanup.
 - App Store payment compliance (Guideline 3.1.1):
   - Paid upgrade buttons (`UpgradeButton`) are hidden inside the iOS Capacitor app shell.
