@@ -73,6 +73,9 @@ export interface Wedding {
     is_thank_you_mode?: boolean;
     thank_you_message?: string;
     photo_album_link?: string;
+    show_photos_in_thank_you_mode?: boolean;
+    show_guestbook_in_thank_you_mode?: boolean;
+    photo_recap_style?: 'polaroid' | 'grid';
     voice_greeting_url?: string;
     couple_email?: string; // Notification email for the couple
     // Metadata

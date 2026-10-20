@@ -109,10 +109,10 @@ const PLANNER_TAB_DETAILS: {
     },
     {
         tab: 'thanks',
-        label: 'Thank You',
-        icon: Mail,
-        headline: 'Thank You is part of Planner Pro',
-        body: 'Prepare post-wedding thank-you messages and keep guest follow-up simple.',
+        label: 'Post-Wedding',
+        icon: Sparkles,
+        headline: 'Post-Wedding is part of Planner Pro',
+        body: 'Switch to post-wedding recap mode, feature approved photos, share guestbook wishes, and send thank-you notes.',
     },
     {
         tab: 'honeymoon',
@@ -687,17 +687,17 @@ function ThankYouPlannerLauncher({ weddingId, confirmedGuests }: { weddingId: st
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                        <Mail className="h-6 w-6" />
+                        <Sparkles className="h-6 w-6" />
                     </div>
                     <p className="mt-5 text-[10px] font-black uppercase tracking-[0.18em] text-primary">Post-wedding</p>
-                    <h2 className="mt-1 font-serif text-2xl font-bold text-foreground sm:text-3xl">Thank You Card Builder</h2>
+                    <h2 className="mt-1 font-serif text-2xl font-bold text-foreground sm:text-3xl">Post-Wedding Mode</h2>
                     <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-                        Build a card-style email, send a test, and deliver it only to confirmed guests. Current confirmed headcount: {confirmedGuests}.
+                        Switch your site to recap mode, showcase approved disposable camera photos, share the guestbook Wall of Love, and send thank you emails to confirmed guests.
                     </p>
                 </div>
-                <Link href={`/dashboard/${weddingId}/thank-you?from=planner`} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover">
+                <Link href={`/dashboard/${weddingId}/post-wedding?from=planner`} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover">
                     <Sparkles className="h-4 w-4" />
-                    Open Builder
+                    Open Post-Wedding
                 </Link>
             </div>
         </section>

@@ -424,6 +424,9 @@ const INITIAL_FORM_DATA = {
     isThankYouMode: false,
     thankYouMessage: '',
     photoAlbumLink: '',
+    showPhotosInThankYouMode: true,
+    showGuestbookInThankYouMode: true,
+    photoRecapStyle: 'polaroid' as 'polaroid' | 'grid',
     accentStyle: 'none',
 };
 
@@ -902,6 +905,9 @@ export default function BuilderForm() {
                         isThankYouMode: data.is_thank_you_mode || false,
                         thankYouMessage: data.thank_you_message || '',
                         photoAlbumLink: data.photo_album_link || '',
+                        showPhotosInThankYouMode: data.show_photos_in_thank_you_mode !== false,
+                        showGuestbookInThankYouMode: data.show_guestbook_in_thank_you_mode !== false,
+                        photoRecapStyle: (data.photo_recap_style === 'grid' ? 'grid' : 'polaroid') as 'polaroid' | 'grid',
                         accentStyle: data.accent_style || 'none',
                         });
                         let inviteImages: string[] = [];
@@ -1486,6 +1492,9 @@ export default function BuilderForm() {
                 is_thank_you_mode: formData.isThankYouMode,
                 thank_you_message: formData.thankYouMessage,
                 photo_album_link: formData.photoAlbumLink,
+                show_photos_in_thank_you_mode: formData.showPhotosInThankYouMode !== false,
+                show_guestbook_in_thank_you_mode: formData.showGuestbookInThankYouMode !== false,
+                photo_recap_style: formData.photoRecapStyle || 'polaroid',
                 accent_style: formData.accentStyle,
             };
 
@@ -1574,6 +1583,9 @@ export default function BuilderForm() {
                     'rsvp_allow_plus_ones',
                     'rsvp_allow_children',
                     'rsvp_search_guest_list',
+                    'show_photos_in_thank_you_mode',
+                    'show_guestbook_in_thank_you_mode',
+                    'photo_recap_style',
                 ].forEach((column) => {
                     if (isMissingOptionalWeddingColumnError(error, column)) {
                         delete fallbackPayload[column];
@@ -3424,14 +3436,92 @@ export default function BuilderForm() {
                 </div>
 
                 {formData.isThankYouMode && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 pt-4 border-t border-border">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-5 pt-4 border-t border-border">
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Thank You Message</label>
                             <textarea name="thankYouMessage" value={formData.thankYouMessage} onChange={handleChange} placeholder="Thank you so much for celebrating with us..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none h-24 resize-none" />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Photo Album Link</label>
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">External Photo Album Link (Optional)</label>
                             <input name="photoAlbumLink" value={formData.photoAlbumLink} onChange={handleChange} placeholder="https://photos.google.com/..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
+                            <p className="text-[11px] text-text-secondary ml-1">Optional external gallery link (Google Photos, Dropbox, etc.)</p>
+                        </div>
+
+                        {/* Toggle: Display Approved Disposable Camera / Guest Photos */}
+                        <div className="rounded-2xl border border-border bg-neutral/40 p-4 space-y-3">
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-bold text-foreground">Display Approved Guest Photos</p>
+                                    <p className="text-xs text-text-secondary">Show approved pictures from your Disposable Camera &amp; Photo Portal directly on the wedding page.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={formData.showPhotosInThankYouMode}
+                                    onClick={() => setFormData((prev: any) => ({ ...prev, showPhotosInThankYouMode: !prev.showPhotosInThankYouMode }))}
+                                    className={`grid h-8 w-16 shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[8px] font-black uppercase tracking-widest transition-colors ${
+                                        formData.showPhotosInThankYouMode ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'
+                                    }`}
+                                >
+                                    <span className={`flex items-center justify-center rounded transition ${!formData.showPhotosInThankYouMode ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Off</span>
+                                    <span className={`flex items-center justify-center rounded transition ${formData.showPhotosInThankYouMode ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                                </button>
+                            </div>
+
+                            {formData.showPhotosInThankYouMode && (
+                                <div className="pt-2 border-t border-border/50">
+                                    <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary block mb-2">Photo Gallery Layout</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData((prev: any) => ({ ...prev, photoRecapStyle: 'polaroid' }))}
+                                            className={`p-3 rounded-xl border text-left text-xs transition ${
+                                                formData.photoRecapStyle !== 'grid'
+                                                    ? 'border-primary bg-primary/5 text-primary font-bold shadow-sm'
+                                                    : 'border-border bg-white text-text-secondary hover:border-text-secondary'
+                                            }`}
+                                        >
+                                            <span className="block font-bold">Polaroid Film Roll</span>
+                                            <span className="block text-[10px] opacity-75 mt-0.5">Nostalgic retro frames with guest captions</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData((prev: any) => ({ ...prev, photoRecapStyle: 'grid' }))}
+                                            className={`p-3 rounded-xl border text-left text-xs transition ${
+                                                formData.photoRecapStyle === 'grid'
+                                                    ? 'border-primary bg-primary/5 text-primary font-bold shadow-sm'
+                                                    : 'border-border bg-white text-text-secondary hover:border-text-secondary'
+                                            }`}
+                                        >
+                                            <span className="block font-bold">Clean Modern Grid</span>
+                                            <span className="block text-[10px] opacity-75 mt-0.5">Sleek gallery grid layout</span>
+                                        </button>
+                                    </div>
+                                    <p className="mt-2 text-[11px] text-text-secondary italic">
+                                        💡 Only photos approved in your Photo Portal Manager appear publicly.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Toggle: Display Guestbook Notes */}
+                        <div className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-neutral/40 p-4">
+                            <div>
+                                <p className="text-sm font-bold text-foreground">Display Guestbook &amp; Wishes</p>
+                                <p className="text-xs text-text-secondary">Highlight heartfelt guest wishes and let visitors leave post-wedding blessings.</p>
+                            </div>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={formData.showGuestbookInThankYouMode}
+                                onClick={() => setFormData((prev: any) => ({ ...prev, showGuestbookInThankYouMode: !prev.showGuestbookInThankYouMode }))}
+                                className={`grid h-8 w-16 shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[8px] font-black uppercase tracking-widest transition-colors ${
+                                    formData.showGuestbookInThankYouMode ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'
+                                }`}
+                            >
+                                <span className={`flex items-center justify-center rounded transition ${!formData.showGuestbookInThankYouMode ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Off</span>
+                                <span className={`flex items-center justify-center rounded transition ${formData.showGuestbookInThankYouMode ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                            </button>
                         </div>
                     </motion.div>
                 )}

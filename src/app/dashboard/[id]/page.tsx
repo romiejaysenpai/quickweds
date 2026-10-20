@@ -795,13 +795,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             <ArrowRight className="h-4 w-4 opacity-20" />
                                         </Link>
                                         <Link
-                                            href={`/dashboard/${wedding.id}/thank-you?from=dashboard`}
+                                            href={`/dashboard/${wedding.id}/post-wedding?from=dashboard`}
                                             onClick={closeMobileMenu}
                                             className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
                                         >
                                             <span className="flex items-center gap-3">
-                                                <Mail className="w-4 h-4" />
-                                                Thank You
+                                                <Sparkles className="w-4 h-4" />
+                                                Post-Wedding Mode
                                             </span>
                                             <ArrowRight className="h-4 w-4 opacity-20" />
                                         </Link>
@@ -986,8 +986,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         <Link href={`/dashboard/${wedding.id}/wedding-day?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
                                             <Bell className="w-4 h-4" /> Wedding Day
                                         </Link>
-                                        <Link href={`/dashboard/${wedding.id}/thank-you?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
-                                            <Mail className="w-4 h-4" /> Thank You
+                                        <Link href={`/dashboard/${wedding.id}/post-wedding?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
+                                            <Sparkles className="w-4 h-4" /> Post-Wedding
                                         </Link>
                                         <button type="button" onClick={() => openExternal(url)} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-bold text-text-secondary transition-all hover:-translate-y-0.5 hover:bg-neutral hover:text-foreground sm:text-sm">
                                             <ExternalLink className="w-4 h-4" /> Guest View

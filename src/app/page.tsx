@@ -38,6 +38,11 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import UpgradeButton from '@/components/UpgradeButton';
 import { submitInquiry } from '@/app/actions/support';
+import { ReviewModal } from '@/components/reviews/ReviewModal';
+import { ReviewCard } from '@/components/reviews/ReviewCard';
+import { DEFAULT_TESTIMONIALS, fetchApprovedReviews } from '@/lib/reviews';
+import type { AppReview } from '@/types/review';
+import { PenLine } from 'lucide-react';
 
 const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/lastfinal%20hero%20imagfe.png';
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/253b06e1-93cf-446c-a0fe-b3397777c185.png';
@@ -259,23 +264,7 @@ const solutionFeatureCards = [
   },
 ];
 
-const testimonials = [
-  {
-    names: 'Mia & Carlo',
-    detail: 'Planned a 120-guest wedding',
-    quote: 'QuickWeds made our RSVPs feel effortless. We finally had one place for guest answers, questions, budget notes, and the planning checklist.',
-  },
-  {
-    names: 'Sofia & Daniel',
-    detail: 'Shared planning with family',
-    quote: 'The dashboard helped us stop jumping between chats and spreadsheets. Our guests had the website, and we had the calm planning view.',
-  },
-  {
-    names: 'Ari & James',
-    detail: 'Built their site in one evening',
-    quote: 'We wanted something elegant without hiring a designer. QuickWeds gave us a beautiful site and the tools to manage everything behind it.',
-  },
-];
+const testimonials = DEFAULT_TESTIMONIALS;
 
 const faqs = [
   {
@@ -1361,9 +1350,29 @@ export default function Home() {
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasWeddingSite, setHasWeddingSite] = useState(false);
+  const [coupleReviews, setCoupleReviews] = useState<AppReview[]>(DEFAULT_TESTIMONIALS);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const { user, isAdmin, logout } = useAuth();
   const router = useRouter();
   const showDashboardLink = Boolean(user && hasWeddingSite);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchApprovedReviews(6).then((data) => {
+      if (isMounted && data && data.length > 0) {
+        setCoupleReviews(data);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleReviewSubmitted = (newReview: AppReview) => {
+    if (newReview.status === 'approved') {
+      setCoupleReviews((prev) => [newReview, ...prev]);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -1830,31 +1839,48 @@ export default function Home() {
               accent="together."
               body="QuickWeds is built for couples who want a beautiful guest experience and a calm planning dashboard behind it."
             />
+
+            {/* Reviews Header Action Bar */}
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 backdrop-blur-md shadow-sm sm:px-6 sm:py-3.5">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-0.5 text-secondary">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star key={star} className="h-4 w-4 fill-current text-[#eab308]" />
+                  ))}
+                </div>
+                <span className="text-xs sm:text-sm font-bold text-foreground">
+                  5.0 Rating • Loved by real couples
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary-hover hover:shadow-md"
+                >
+                  <PenLine className="h-3.5 w-3.5" />
+                  Leave a Review
+                </button>
+                <Link
+                  href="/reviews"
+                  className="flex items-center gap-1 rounded-xl border border-border/80 bg-white px-3.5 py-2 text-xs font-bold text-foreground hover:bg-neutral/30 hover:text-primary transition-colors"
+                >
+                  View All ({coupleReviews.length})
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+
             <div className="rounded-[1.75rem] border border-primary/10 bg-gradient-to-br from-primary/5 via-white to-secondary/10 p-3 shadow-[0_24px_70px_rgba(87,55,62,0.07)] sm:rounded-[2.5rem] sm:p-6 lg:p-8">
               <div className="grid gap-4 md:grid-cols-3">
-                {testimonials.map((testimonial, index) => (
-                  <article key={testimonial.names} className={`relative flex min-h-full flex-col overflow-hidden rounded-[1.4rem] border bg-white p-5 text-left shadow-[0_14px_38px_rgba(87,55,62,0.07)] sm:rounded-[2rem] sm:p-7 ${index === 1 ? 'border-primary/20 md:-translate-y-3' : 'border-border/80'}`}>
-                    <div className="absolute right-5 top-4 font-serif text-6xl font-bold leading-none text-primary/[0.07]" aria-hidden="true">“</div>
-                    <div className="mb-6 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-1 text-secondary" aria-label="5 out of 5 stars">
-                        {[0, 1, 2, 3, 4].map((star) => (
-                          <Star key={star} className="h-4 w-4 fill-current" />
-                        ))}
-                      </div>
-                      <span className="text-[9px] font-black uppercase tracking-[0.18em] text-primary/50">Story {String(index + 1).padStart(2, '0')}</span>
-                    </div>
-                    <Quote className="mb-4 h-8 w-8 text-primary/25" />
-                    <p className="flex-1 text-[15px] font-semibold leading-7 text-foreground sm:text-base sm:leading-8">&quot;{testimonial.quote}&quot;</p>
-                    <div className="mt-7 flex items-center gap-3 border-t border-border/80 pt-5">
-                      <div className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-primary/10 font-serif text-sm font-bold text-primary">
-                        {testimonial.names.split(' ').filter((name) => name !== '&').map((name) => name[0]).slice(0, 2).join('')}
-                      </div>
-                      <div>
-                        <p className="font-serif text-xl font-bold text-foreground">{testimonial.names}</p>
-                        <p className="mt-1 text-xs font-black uppercase tracking-[0.18em] text-primary/70">{testimonial.detail}</p>
-                      </div>
-                    </div>
-                  </article>
+                {coupleReviews.slice(0, 3).map((review, index) => (
+                  <ReviewCard
+                    key={review.id}
+                    review={review}
+                    index={index}
+                    featured={index === 1 || review.is_featured}
+                  />
                 ))}
               </div>
             </div>
@@ -2040,6 +2066,7 @@ export default function Home() {
               <ul className="space-y-0.5 sm:space-y-4">
                 <li><button type="button" onClick={openDemo} className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">View Live Demo</button></li>
                 <li><a href="#pricing" onClick={(event) => navigateToSection(event, 'pricing')} className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Pricing & Features</a></li>
+                <li><Link href="/reviews" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Couple Reviews</Link></li>
                 <li><Link href="/suppliers" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Vendor Directory</Link></li>
                 <li><Link href="/supplier/signup" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">List Your Business</Link></li>
               </ul>
@@ -2101,6 +2128,12 @@ export default function Home() {
       </div>
 
       <DemoSection isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
+
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        onReviewSubmitted={handleReviewSubmitted}
+      />
     </div>
   );
 }

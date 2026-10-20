@@ -68,6 +68,9 @@ export const PUBLIC_WEDDING_FIELDS = [
     'is_thank_you_mode',
     'thank_you_message',
     'photo_album_link',
+    'show_photos_in_thank_you_mode',
+    'show_guestbook_in_thank_you_mode',
+    'photo_recap_style',
     'voice_greeting_url',
     'created_at',
     'updated_at',
@@ -140,6 +143,9 @@ export function toPublicWedding(record: Record<string, unknown>) {
         background_music_enabled: publicWedding.background_music_enabled === true,
         is_save_the_date: publicWedding.is_save_the_date === true,
         is_thank_you_mode: publicWedding.is_thank_you_mode === true,
+        show_photos_in_thank_you_mode: publicWedding.show_photos_in_thank_you_mode !== false,
+        show_guestbook_in_thank_you_mode: publicWedding.show_guestbook_in_thank_you_mode !== false,
+        photo_recap_style: publicWedding.photo_recap_style === 'grid' ? 'grid' : 'polaroid',
     };
 }
 
@@ -242,11 +248,23 @@ function getTemplateTestWedding(rawIdentifier: string) {
         is_thank_you_mode: false,
         thank_you_message: '',
         photo_album_link: '',
+        show_photos_in_thank_you_mode: true,
+        show_guestbook_in_thank_you_mode: true,
+        photo_recap_style: 'polaroid',
         voice_greeting_url: '',
         created_at: '2026-01-01T00:00:00.000Z',
         updated_at: '2026-01-01T00:00:00.000Z',
     });
 }
+
+const OPTIONAL_PUBLIC_COLUMNS = [
+    'background_music_url',
+    'background_music_title',
+    'background_music_enabled',
+    'show_photos_in_thank_you_mode',
+    'show_guestbook_in_thank_you_mode',
+    'photo_recap_style',
+] as const;
 
 async function loadPublicWedding(rawIdentifier: string) {
     const templateTestWedding = getTemplateTestWedding(rawIdentifier);
@@ -262,12 +280,8 @@ async function loadPublicWedding(rawIdentifier: string) {
         PUBLIC_WEDDING_FIELDS.join(',')
     );
 
-    if (error && isMissingOptionalColumnError(error, ['background_music_url', 'background_music_title', 'background_music_enabled'])) {
-        const fallbackFields = PUBLIC_WEDDING_FIELDS.filter((field) => ![
-            'background_music_url',
-            'background_music_title',
-            'background_music_enabled',
-        ].includes(field));
+    if (error && isMissingOptionalColumnError(error, OPTIONAL_PUBLIC_COLUMNS)) {
+        const fallbackFields = PUBLIC_WEDDING_FIELDS.filter((field) => !OPTIONAL_PUBLIC_COLUMNS.includes(field as any));
         const fallback = await resolvePublicWeddingByIdentifier(db, rawIdentifier, fallbackFields.join(','));
 
         if (fallback.error) throw fallback.error;

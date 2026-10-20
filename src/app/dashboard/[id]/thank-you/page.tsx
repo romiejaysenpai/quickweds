@@ -92,8 +92,16 @@ export default function ThankYouBuilderPage() {
     const previewIframeRef = useRef<HTMLIFrameElement>(null);
     const [previewHeight, setPreviewHeight] = useState(520);
     const openedFrom = searchParams?.get('from');
-    const backHref = openedFrom === 'planner' ? `/dashboard/${weddingId}/planner` : `/dashboard/${weddingId}`;
-    const backLabel = openedFrom === 'planner' ? 'Wedding Planner' : 'Dashboard';
+    const backHref = openedFrom === 'planner'
+        ? `/dashboard/${weddingId}/planner`
+        : openedFrom === 'post-wedding'
+            ? `/dashboard/${weddingId}/post-wedding`
+            : `/dashboard/${weddingId}`;
+    const backLabel = openedFrom === 'planner'
+        ? 'Wedding Planner'
+        : openedFrom === 'post-wedding'
+            ? 'Post-Wedding Mode'
+            : 'Dashboard';
 
     const selectedTemplate = getThankYouTemplate(templateId);
     const style = normalizeThankYouStyle(templateId, { accentColor, fontFamily });
