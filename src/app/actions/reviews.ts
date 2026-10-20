@@ -69,7 +69,7 @@ export async function submitAppReview(input: SubmitReviewInput): Promise<{
         // Notify admin via email
         try {
           const { sendAdminNewReviewNotification } = await import('@/lib/app-review-auth');
-          void sendAdminNewReviewNotification(optimisticReview);
+          await sendAdminNewReviewNotification(optimisticReview);
         } catch (emailErr) {
           console.warn('Could not dispatch admin review email:', emailErr);
         }
@@ -82,7 +82,7 @@ export async function submitAppReview(input: SubmitReviewInput): Promise<{
       // Dispatch 1-Click moderation email to admin
       try {
         const { sendAdminNewReviewNotification } = await import('@/lib/app-review-auth');
-        void sendAdminNewReviewNotification(savedReview);
+        await sendAdminNewReviewNotification(savedReview);
       } catch (emailErr) {
         console.warn('Could not dispatch admin review email:', emailErr);
       }
@@ -104,6 +104,14 @@ export async function submitAppReview(input: SubmitReviewInput): Promise<{
         ...reviewPayload,
         created_at: new Date().toISOString(),
       };
+
+      try {
+        const { sendAdminNewReviewNotification } = await import('@/lib/app-review-auth');
+        await sendAdminNewReviewNotification(optimisticReview);
+      } catch (emailErr) {
+        console.warn('Could not dispatch admin review email:', emailErr);
+      }
+
       return { success: true, review: optimisticReview };
     }
   } catch (error: any) {

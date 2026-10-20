@@ -844,3 +844,111 @@ export function getMarketingNurtureEmail(input: MarketingNurtureEmailInput) {
         html: emailShell(step.subject, content, `${step.eyebrow}: ${step.heading}`),
     };
 }
+
+// ─── Admin Review Moderation Template ───────────────────────────
+
+export interface AdminReviewEmailInput {
+    id: string;
+    coupleNames: string;
+    weddingRole?: string;
+    detail?: string;
+    rating: number;
+    quote: string;
+    story?: string | null;
+    approveUrl: string;
+    featureUrl: string;
+    rejectUrl: string;
+    adminHubUrl: string;
+}
+
+export function getAdminReviewNotificationHtml(input: AdminReviewEmailInput): {
+    subject: string;
+    html: string;
+} {
+    const stars = Math.min(5, Math.max(1, Number(input.rating) || 5));
+    const starString = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+    const subject = `⭐ New Review: "${input.coupleNames}" (${stars} Stars) - Approval Needed`;
+    const previewText = `New couple review submitted by ${input.coupleNames} (${stars} / 5 stars). 1-click moderation inside.`;
+
+    const content = emailTable(`
+        ${logoBar()}
+        <tr><td class="qw-pad" style="padding:24px 44px 16px;">
+            ${eyebrow('QuickWeds Admin &bull; Review Moderation')}
+            ${heading1('New Couple Review Received')}
+        </td></tr>
+        <tr><td class="qw-pad" style="padding:0 44px 20px;">
+            ${paragraph('A couple has just submitted a review on QuickWeds. Because all reviews require admin verification before appearing publicly on the landing page, you can approve or feature it with 1 click below.')}
+        </td></tr>
+        <tr><td class="qw-pad" style="padding:0 44px 28px;">
+            ${card(`
+                <div style="margin-bottom:12px;">
+                    <span style="font-size:24px;color:#F59E0B;letter-spacing:3px;">${esc(starString)}</span>
+                    <span style="font-size:14px;font-weight:700;color:${C.textSecondary};margin-left:8px;font-family:${FONT_BODY};">${stars} / 5</span>
+                </div>
+                <p style="margin:0 0 14px;font-size:18px;line-height:1.5;font-weight:700;color:${C.text};font-family:${FONT_HEADING};">&ldquo;${esc(input.quote)}&rdquo;</p>
+                ${input.story ? `<p style="margin:0 0 16px;font-size:14px;line-height:1.65;color:${C.textSecondary};font-family:${FONT_BODY};white-space:pre-wrap;">${esc(input.story)}</p>` : ''}
+                <div style="border-top:1px solid ${C.border};padding-top:14px;margin-top:14px;">
+                    <p style="margin:0;font-size:15px;font-weight:700;color:${C.primary};font-family:${FONT_BODY};">${esc(input.coupleNames)}</p>
+                    <p style="margin:2px 0 0;font-size:12px;color:${C.textMuted};font-family:${FONT_BODY};">${esc(input.weddingRole || 'Couple')}${input.detail ? ` &bull; ${esc(input.detail)}` : ''}</p>
+                </div>
+            `, { bg: '#FFFDFC', border: C.border, padding: '28px' })}
+        </td></tr>
+        <tr><td class="qw-pad" style="padding:0 44px 12px;">
+            <p style="margin:0 0 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:${C.textMuted};text-align:center;font-family:${FONT_BODY};">1-Click Actions</p>
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td align="center" style="padding-bottom:10px;">
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                            <tr>
+                                <td align="center" style="border-radius:14px;background-color:#10B981;box-shadow:0 6px 18px rgba(16,185,129,0.25);">
+                                    <a class="qw-full-button" href="${esc(input.approveUrl)}" target="_blank" style="display:block;width:100%;box-sizing:border-box;padding:16px 24px;color:#ffffff;text-decoration:none;font-family:${FONT_BODY};font-weight:700;font-size:15px;text-align:center;border-radius:14px;">
+                                        &#10003; Approve &amp; Post to Landing Page
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding-bottom:10px;">
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                            <tr>
+                                <td align="center" style="border-radius:14px;background-color:${C.primary};box-shadow:0 6px 18px rgba(209,108,120,0.25);">
+                                    <a class="qw-full-button" href="${esc(input.featureUrl)}" target="_blank" style="display:block;width:100%;box-sizing:border-box;padding:14px 24px;color:#ffffff;text-decoration:none;font-family:${FONT_BODY};font-weight:700;font-size:14px;text-align:center;border-radius:14px;">
+                                        &#9733; Approve &amp; Feature as Top Testimonial
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center">
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                            <tr>
+                                <td align="center" style="border-radius:12px;background-color:#FEE2E2;border:1px solid #FECACA;">
+                                    <a class="qw-full-button" href="${esc(input.rejectUrl)}" target="_blank" style="display:block;width:100%;box-sizing:border-box;padding:11px 24px;color:#DC2626;text-decoration:none;font-family:${FONT_BODY};font-weight:700;font-size:13px;text-align:center;border-radius:12px;">
+                                        &#10005; Reject / Dismiss Review
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td></tr>
+        <tr><td class="qw-pad" align="center" style="padding:16px 44px 36px;">
+            <p style="margin:0 0 10px;font-size:13px;color:${C.textSecondary};font-family:${FONT_BODY};">
+                Prefer to review all entries together? <a href="${esc(input.adminHubUrl)}" style="color:${C.primary};font-weight:700;text-decoration:underline;">Open Admin Reviews Hub &rarr;</a>
+            </p>
+            <p style="margin:0;font-size:11px;color:${C.textMuted};font-family:${FONT_BODY};">These 1-click links are cryptographically signed with HMAC-SHA256 and expire in 30 days.</p>
+        </td></tr>
+        ${footer()}
+    `);
+
+    return {
+        subject,
+        html: emailShell(subject, content, previewText),
+    };
+}
+
