@@ -391,7 +391,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     }, [deferredSearchQuery, filterStatus, groupFilter, invitationFilter, filteredRsvps.length]);
 
     const [isSavingSettings, setIsSavingSettings] = useState(false);
-    const [activeTab, setActiveTab] = useState<'home' | 'guests' | 'analytics' | 'team' | 'settings'>('home');
+    const [activeTab, setActiveTab] = useState<'home' | 'guests' | 'analytics' | 'team' | 'settings'>(() => searchParams?.get('tab') === 'guests' ? 'guests' : 'home');
 
     // CSV Export
     const exportCSV = () => {

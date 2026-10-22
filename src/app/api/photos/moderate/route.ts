@@ -1,3 +1,5 @@
+import {isWeddingPhotoPath} from '@/lib/photo-path';
+import { hydratePhotoUrls } from '@/lib/photo-urls';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
 
         const { data: photo, error: lookupError } = await db
             .from('wedding_photos')
-            .select('id, wedding_id, cloudinary_public_id')
+            .select('id, wedding_id, storage_bucket, cloudinary_public_id')
             .eq('id', photoId)
             .maybeSingle();
 
@@ -37,12 +39,13 @@ export async function POST(req: NextRequest) {
         if (String(photo.wedding_id) !== weddingId) return NextResponse.json({ error: 'Photo does not belong to this wedding.' }, { status: 403 });
 
         if (action === 'delete') {
-            if (typeof photo.cloudinary_public_id === 'string' && photo.cloudinary_public_id.startsWith('guest-uploads/')) {
+            if(photo.storage_bucket==='quickweds-guest-photos'&&!isWeddingPhotoPath(photo.cloudinary_public_id,weddingId))throw new Error('Invalid private photo path.');
+            if (isWeddingPhotoPath(photo.cloudinary_public_id,weddingId)) {
                 const { error: storageError } = await db.storage
-                    .from('quickweds')
+                    .from(photo.storage_bucket === 'quickweds-guest-photos' ? 'quickweds-guest-photos' : 'quickweds')
                     .remove([photo.cloudinary_public_id]);
                 if (storageError) {
-                    console.warn('Failed to remove deleted photo from storage:', storageError.message || storageError);
+                    throw new Error('Unable to remove photo storage. Please retry.');
                 }
             }
 
@@ -66,12 +69,12 @@ export async function POST(req: NextRequest) {
             .update(update)
             .eq('id', photoId)
             .eq('wedding_id', weddingId)
-            .select('id, cloudinary_url, uploader_name, caption, message, is_approved, status, upload_source, created_at, approved_at, rejected_at')
+            .select('id, storage_bucket, cloudinary_public_id, cloudinary_url, uploader_name, caption, message, is_approved, status, upload_source, created_at, approved_at, rejected_at')
             .single();
 
         if (updateError) throw updateError;
         await invalidateDashboardCounters(weddingId);
-        return NextResponse.json({ success: true, photo: data });
+        return NextResponse.json({ success: true, photo: (await hydratePhotoUrls(db, [data],weddingId))[0] });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to update photo.';
         return NextResponse.json({ error: message }, { status: 500 });

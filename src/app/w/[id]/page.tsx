@@ -5,7 +5,7 @@ import { getCachedPublicWedding, getSupabaseErrorMessage } from '@/lib/public-we
 import type { Wedding } from '@/types/wedding';
 import { isRsvpDeadlineExpired } from '@/lib/rsvp-deadline';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 function WeddingUnavailable({ message }: { message?: string }) {
     return (

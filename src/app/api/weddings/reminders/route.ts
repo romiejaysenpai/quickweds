@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmail } from '@/lib/email';
+import { queueEmailBatch, retryStoredEmail } from '@/lib/email';
 import { reminderSchema, validateRequest } from '@/lib/validations';
 import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeEmail, sanitizeWeddingId } from '@/lib/rate-limit';
 import { getRequestUser } from '@/lib/api-auth';
@@ -7,8 +7,6 @@ import { isKnownAdminEmail } from '@/lib/admin';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import {
     FREE_PLAN_LIMITS,
-    getEmailLimitMessage,
-    getUserTriggeredEmailUsage,
     hasPlannerProAccess,
     logPlannerEmailEvent,
 } from '@/lib/planner-limits';
@@ -56,6 +54,7 @@ export async function POST(req: NextRequest) {
             .from('weddings')
             .select('*')
             .eq('id', weddingId)
+            .is('deleted_at', null)
             .maybeSingle();
 
         if (weddingError || !wedding) {
@@ -80,17 +79,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'You do not have permission to send reminders for this wedding.' }, { status: 403 });
         }
 
-        const { data: guests, error: guestError } = await db
-            .from('rsvps')
-            .select('guest_name, guest_email, rsvp_status, attendance')
-            .eq('wedding_id', weddingId);
-
-        if (guestError) {
-            return NextResponse.json({ error: guestError.message }, { status: 500 });
+        const guests: Array<any> = [];
+        for(let offset=0;offset<=5000;offset+=1000){
+            const {data,error}=await db.from('rsvps').select('id,guest_name,guest_email,rsvp_status,attendance').eq('wedding_id',weddingId).order('id').range(offset,offset+999);
+            if(error)throw error;guests.push(...(data||[]));if(guests.length>5000)return NextResponse.json({error:'This mailing exceeds the 5,000 guest safety limit.'},{status:400});if((data||[]).length<1000)break;
         }
-
         // CRITICAL FIX #2: Sanitize guest data before sending emails
-        const recipients: Array<{ guest_name: string | null; guest_email: string }> = (guests || []).filter((guest: any) => {
+        const recipients: Array<{ id:string; guest_name: string | null; guest_email: string }> = (guests || []).filter((guest: any) => {
             const normalizedStatus = guest.rsvp_status || (guest.attendance === 'Yes' ? 'confirmed' : guest.attendance === 'No' ? 'declined' : 'pending');
             const sanitizedEmail = sanitizeEmail(guest.guest_email || '');
             return sanitizedEmail && normalizedStatus === targetStatus;
@@ -99,6 +94,8 @@ export async function POST(req: NextRequest) {
             guest_name: sanitizeInput(guest.guest_name, { maxLength: 200 }),
             guest_email: sanitizeEmail(guest.guest_email),
         }));
+
+        const uniqueRecipients = [...new Map(recipients.map(guest=>[guest.guest_email.toLowerCase(),guest])).values()];
 
         // Sanitize wedding data for email
         const sanitizedBrideName = sanitizeInput(wedding.bride_name, { maxLength: 200 });
@@ -116,19 +113,9 @@ export async function POST(req: NextRequest) {
             .eq('user_id', wedding.user_id)
             .maybeSingle();
         const hasPlannerPro = hasPlannerProAccess({ isAdmin, wedding, accountProfile: ownerProfile });
-        const emailsUsed = await getUserTriggeredEmailUsage(db, weddingId);
 
-        if (!hasPlannerPro && emailsUsed + recipients.length > FREE_PLAN_LIMITS.userTriggeredEmails) {
-            return NextResponse.json({
-                error: getEmailLimitMessage(recipients.length, emailsUsed),
-                code: 'email_limit_reached',
-                used: emailsUsed,
-                limit: FREE_PLAN_LIMITS.userTriggeredEmails,
-                requested: recipients.length,
-            }, { status: 402 });
-        }
-
-        const results = await Promise.all(recipients.map((guest: { guest_name: string | null; guest_email: string }) => sendEmail({
+        const jobs = await queueEmailBatch(uniqueRecipients.map(guest => ({
+            tracking: { key: `rsvp-reminder:${weddingId}:${validation.data.requestId}:${guest.guest_email.toLowerCase()}`, weddingId, quotaLimit: hasPlannerPro ? null : FREE_PLAN_LIMITS.userTriggeredEmails, recoverable:true, guard:{table:'rsvps',id:guest.id,emailField:'guest_email'} },
             to: guest.guest_email,
             subject: `Reminder: ${sanitizedBrideName} & ${sanitizedGroomName} would love your RSVP`,
             html: `
@@ -151,22 +138,24 @@ export async function POST(req: NextRequest) {
                 </div>
             `,
         })));
-
-        const successCount = results.filter((result) => result.success).length;
+        const results=[];
+        for(const job of jobs.filter(job=>['queued','retryable','processing'].includes(job.state)).slice(0,5)){try{results.push(await retryStoredEmail(job));}catch{results.push({success:false});}}
+        const successCount = jobs.filter(job=>job.state==='accepted').length + results.filter(result=>result.success).length;
+        const newlyAccepted = results.filter(result => result.success && !('alreadyAccepted' in result && result.alreadyAccepted)).length;
 
         try {
             await db.from('wedding_reminders').insert({
                 wedding_id: weddingId,
-                recipient_count: recipients.length,
-                success_count: successCount,
+                recipient_count: uniqueRecipients.length,
+                success_count: newlyAccepted,
                 target_status: targetStatus,
                 channel: 'email',
             });
             await logPlannerEmailEvent(db, {
                 weddingId,
                 eventType: 'rsvp_reminder',
-                recipientCount: recipients.length,
-                successCount,
+                recipientCount: uniqueRecipients.length,
+                successCount: newlyAccepted,
                 userId: user.id,
             });
         } catch (error) {
@@ -174,8 +163,10 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json({
-            recipientCount: recipients.length,
+            recipientCount: uniqueRecipients.length,
             successCount,
+            queuedCount: Math.max(0, jobs.length - successCount),
+            failedCount: results.filter(result=>!result.success).length,
         });
     } catch (error) {
         return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to send reminders' }, { status: 500 });

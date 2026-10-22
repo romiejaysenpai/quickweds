@@ -204,8 +204,8 @@ function AccountTypeOnboardingContent() {
 
     const getGoalDestination = () => {
         if (selectedGoal === 'site') return '/builder';
-        if (selectedGoal === 'guests') return '/dashboard';
-        if (selectedGoal === 'planner') return '/dashboard';
+        if (selectedGoal === 'guests') return '/planner?goal=guests';
+        if (selectedGoal === 'planner') return '/planner';
         return '/builder';
     };
 

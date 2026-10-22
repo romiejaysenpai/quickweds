@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -16,7 +16,7 @@ import { getWeddingPublicPath } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
 import { openExternalUrl } from '@/lib/native-actions';
 
-import { BUILDER_DRAFT_STORAGE_KEY } from '@/lib/builder-storage';
+import { builderDraftKey, loadBuilderDraft } from '@/lib/builder-drafts';
 import { isRsvpDeadlineExpired } from '@/lib/rsvp-deadline';
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
@@ -25,40 +25,17 @@ async function copyText(text: string) {
     await copyToClipboard(text);
 }
 
-function subscribeToStorage(onChange: () => void) {
-    window.addEventListener('storage', onChange);
-    return () => window.removeEventListener('storage', onChange);
-}
-
-function readLocalDraftRaw() {
-    try {
-        return window.localStorage.getItem(BUILDER_DRAFT_STORAGE_KEY);
-    } catch {
-        return null;
-    }
-}
-
 function LocalDraftBanner() {
+    const { user } = useAuth();
     const [dismissed, setDismissed] = useState(false);
-    const raw = useSyncExternalStore(subscribeToStorage, readLocalDraftRaw, () => null);
-
-    const draft = useMemo<{ updatedAt: string; brideName?: string; groomName?: string } | null>(() => {
-        if (!raw) return null;
-        try {
-            const parsed = JSON.parse(raw);
-            if (parsed && parsed.formData) {
-                return {
-                    updatedAt: parsed.updatedAt || new Date().toISOString(),
-                    brideName: parsed.formData.brideName || '',
-                    groomName: parsed.formData.groomName || '',
-                };
-            }
-        } catch (e) {
-            console.warn('Could not parse local builder draft:', e);
-        }
-        return null;
-    }, [raw]);
-
+    const [draft, setDraft] = useState<{ updatedAt: string; brideName?: string; groomName?: string } | null>(null);
+    useEffect(() => {
+        let active = true;
+        if (user?.id) loadBuilderDraft(builderDraftKey(user.id)).then(value => {
+            if (active) setDraft(value ? { updatedAt: value.updatedAt, brideName: String(value.formData.brideName || ''), groomName: String(value.formData.groomName || '') } : null);
+        }).catch(() => { if (active) setDraft(null); });
+        return () => { active = false; };
+    }, [user?.id]);
     if (!draft || dismissed) return null;
 
     const names = [draft.brideName, draft.groomName].filter(Boolean).join(' & ');

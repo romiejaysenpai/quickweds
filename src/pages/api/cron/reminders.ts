@@ -92,17 +92,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             numGuests: guest.num_guests,
           });
 
-          await sendEmail({
+          const delivery = await sendEmail({
             to: guest.guest_email,
+            tracking: { key: `guest-reminder:${wedding.id}:${guest.id}:${trigger.type}:${wedding.wedding_date}`, weddingId: wedding.id },
             subject: `Reminder: ${wedding.bride_name} & ${wedding.groom_name}'s Wedding is Almost Here!`,
             react
           });
 
-          await supabase.from('rsvp_reminders').insert({
+          if (!delivery.success) continue;
+          const { error: logError } = await supabase.from('rsvp_reminders').insert({
             rsvp_id: guest.id,
             reminder_type: trigger.type
           });
           
+          if (logError) throw logError;
           sentCount++;
         }
 

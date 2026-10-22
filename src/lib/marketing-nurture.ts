@@ -227,14 +227,21 @@ export async function runMarketingNurture(db: any, options: MarketingNurtureRunO
             continue;
         }
 
+        const { data: currentSubscriber, error: consentError } = await db.from('marketing_nurture_subscribers').select('status,sequence_step').eq('user_id', subscriber.user_id).maybeSingle();
+        if (consentError) throw consentError;
+        if (currentSubscriber?.status !== 'active' || currentSubscriber.sequence_step !== subscriber.sequence_step) continue;
+        const { data: currentUser, error: userError } = await db.auth.admin.getUserById(subscriber.user_id);
+        if (userError) throw userError;
+        if (!currentUser?.user?.email) continue;
         const result = await sendEmail({
-            to: subscriber.email,
+            tracking: { key: `nurture:v1:${subscriber.user_id}:${subscriber.sequence_step}` },
+            to: currentUser.user.email,
             subject: email.subject,
             html: email.html,
         });
 
         const now = new Date().toISOString();
-        await db.from('marketing_nurture_events').insert({
+        const { error: eventError } = await db.from('marketing_nurture_events').insert({
             user_id: subscriber.user_id,
             email: subscriber.email,
             sequence_step: subscriber.sequence_step,
@@ -245,6 +252,7 @@ export async function runMarketingNurture(db: any, options: MarketingNurtureRunO
             created_at: now,
         });
 
+        if (eventError) throw eventError;
         if (result.success) {
             sent += 1;
             const nextStep = subscriber.sequence_step + 1;

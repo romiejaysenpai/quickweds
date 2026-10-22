@@ -90,18 +90,10 @@ export async function GET(req: Request) {
             timeStyle: 'short',
         });
 
-        await db.from('user_notifications').insert({
-            user_id: wedding.user_id,
-            wedding_id: wedding.id,
-            title: `Upcoming schedule: ${event.title}`,
-            message: `${startsAt}${event.location ? ` at ${event.location}` : ''}`,
-            type: 'info',
-            link: `/dashboard/${wedding.id}/planner?tab=calendar`,
-        });
-
         if (ownerEmail) {
-            await sendEmail({
+            const delivery = await sendEmail({
                 to: ownerEmail,
+                tracking: { key: `planner-reminder:${event.id}:${event.starts_at}`, weddingId: wedding.id },
                 subject: `QuickWeds reminder: ${event.title}`,
                 html: reminderHtml({
                     title: event.title,
@@ -112,9 +104,22 @@ export async function GET(req: Request) {
                     plannerUrl,
                 }),
             });
+            if (!delivery.success) continue;
         }
+        const { error: notificationError } = await db.from('user_notifications').upsert({
+            delivery_key: `planner-reminder:${event.id}:${event.starts_at}`,
+            user_id: wedding.user_id,
+            wedding_id: wedding.id,
+            title: `Upcoming schedule: ${event.title}`,
+            message: `${startsAt}${event.location ? ` at ${event.location}` : ''}`,
+            type: 'info',
+            link: `/dashboard/${wedding.id}/planner?tab=calendar`,
+        }, { onConflict: 'delivery_key' });
+        if (notificationError) throw notificationError;
 
-        await db.from('planner_events').update({ reminder_sent_at: new Date().toISOString() }).eq('id', event.id);
+
+        const { error: markerError } = await db.from('planner_events').update({ reminder_sent_at: new Date().toISOString() }).eq('id', event.id);
+        if (markerError) throw markerError;
         results.push({ id: event.id, title: event.title, email: Boolean(ownerEmail) });
     }
 

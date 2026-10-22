@@ -7,6 +7,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getPublicAppUrl } from '@/lib/site-url';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 import { sanitizeWeddingId } from '@/lib/rate-limit';
+import { hasPlannerProAccess, FREE_PLAN_LIMITS } from '@/lib/planner-limits';
 import { getWeddingAccess } from '@/lib/wedding-access';
 
 export const dynamic = 'force-dynamic';
@@ -32,13 +33,16 @@ export async function POST(req: NextRequest) {
 
         const db = getSupabaseAdminClient() as any;
         const access = await getWeddingAccess(db, user, weddingId, {
-            select: 'id, user_id, bride_name, groom_name, wedding_date, public_slug, custom_domain',
+            select: 'id, user_id, bride_name, groom_name, wedding_date, public_slug, custom_domain, is_premium, payment_status',
             collaboratorRoles: ['partner', 'coordinator'],
         });
 
         if (!access.wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
         if (!access.canManage) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+        const { data: ownerProfile, error: profileError } = await db.from('user_app_profiles').select('is_pro,payment_status').eq('user_id', access.wedding.user_id).maybeSingle();
+        if (profileError) throw profileError;
+        const pro = hasPlannerProAccess({ wedding: access.wedding, accountProfile: ownerProfile });
         const { data: rsvps, error: rsvpError } = await db
             .from('rsvps')
             .select('id, guest_name, guest_email, rsvp_status, attendance')
@@ -61,14 +65,14 @@ export async function POST(req: NextRequest) {
 
         const { data: existingLogs, error: logsError } = await db
             .from('automation_logs')
-            .select('target_email')
+            .select('id,target_email,status')
             .eq('wedding_id', weddingId)
             .eq('automation_type', AUTOMATION_TYPE)
             .in('target_email', emails);
 
         if (logsError) throw logsError;
 
-        const alreadySent = new Set((existingLogs || []).map((log: any) => normalizeEmail(log.target_email)));
+        const alreadySent = new Set((existingLogs || []).filter((log: any) => log.status === 'sent').map((log: any) => normalizeEmail(log.target_email)));
         const baseUrl = getPublicAppUrl();
         const publicUrl = getWeddingPublicUrl(baseUrl, access.wedding);
         const uploadUrl = `${publicUrl.replace(/\/+$/, '')}/photos`;
@@ -88,6 +92,7 @@ export async function POST(req: NextRequest) {
 
             const result = await sendEmail({
                 to: email,
+                tracking: { key: `photo-reminder:${weddingId}:${email}`, weddingId, quotaLimit: pro ? null : FREE_PLAN_LIMITS.userTriggeredEmails, recoverable:true, guard:{table:'rsvps',id:rsvp.id,emailField:'guest_email'} },
                 subject: `Share your photos from ${coupleName}'s wedding`,
                 html: getPhotoReminderEmailHtml({
                     guestName: rsvp.guest_name,
@@ -98,7 +103,7 @@ export async function POST(req: NextRequest) {
             });
 
             const status = result.success ? 'sent' : 'failed';
-            const { error: insertError } = await db.from('automation_logs').insert({
+            const logPayload = {
                 wedding_id: weddingId,
                 automation_type: AUTOMATION_TYPE,
                 target_email: email,
@@ -109,8 +114,11 @@ export async function POST(req: NextRequest) {
                     error: result.success ? null : result.error || 'Email send failed',
                     sent_by: user.id,
                 },
-            });
-
+            };
+            const previous = (existingLogs || []).find((log: any) => normalizeEmail(log.target_email) === email);
+            const { error: insertError } = previous
+                ? await db.from('automation_logs').update(logPayload).eq('id', previous.id).eq('wedding_id', weddingId)
+                : await db.from('automation_logs').insert(logPayload);
             if (insertError) throw insertError;
 
             if (result.success) {

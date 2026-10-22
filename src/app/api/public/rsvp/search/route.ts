@@ -5,18 +5,10 @@ import { escapeLikePattern } from '@/lib/sql-like';
 
 export const dynamic = 'force-dynamic';
 
-function maskEmail(email: string) {
-    if (!email || !email.includes('@')) return '';
-    const [local, domain] = email.split('@');
-    if (!domain) return '***';
-    if (local.length <= 2) return `${local[0]}***@${domain}`;
-    return `${local[0]}${'*'.repeat(Math.min(4, local.length - 2))}${local[local.length - 1]}@${domain}`;
-}
-
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const weddingId = sanitizeWeddingId(searchParams.get('weddingId') || '');
-    const query = (searchParams.get('q') || '').trim();
+    const query = (searchParams.get('q') || '').replace(/[(),]/g, '').trim().slice(0, 200);
 
     if (!weddingId) {
         return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
@@ -36,7 +28,7 @@ export async function GET(req: NextRequest) {
             .from('weddings')
             .select('id, rsvp_search_guest_list')
             .eq('id', weddingId)
-            .is('deleted_at', null)
+            .is('deleted_at', null).eq('planner_only', false)
             .maybeSingle();
 
         if (weddingError && !String(weddingError.message || '').includes('rsvp_search_guest_list')) {
@@ -57,7 +49,7 @@ export async function GET(req: NextRequest) {
         // Search by guest_name, household_name, or plus_one_name
         const { data: rows, error: searchError } = await db
             .from('rsvps')
-            .select('id, guest_name, guest_email, household_name, household_members, attendance, rsvp_status, num_guests, plus_one_allowed, plus_one_name, children_count, meal_preference, table_assignment')
+            .select('id, guest_name, guest_email, household_name')
             .eq('wedding_id', weddingId)
             .or(`guest_name.ilike.${likeFilter},household_name.ilike.${likeFilter},plus_one_name.ilike.${likeFilter}`)
             .limit(10);
@@ -66,7 +58,7 @@ export async function GET(req: NextRequest) {
             // Fallback for older schemas without household columns
             const fallbackResult = await db
                 .from('rsvps')
-                .select('id, guest_name, guest_email, attendance, rsvp_status, num_guests, plus_one_allowed, plus_one_name, children_count, meal_preference, table_assignment')
+                .select('id, guest_name, guest_email')
                 .eq('wedding_id', weddingId)
                 .ilike('guest_name', likeFilter)
                 .limit(10);
@@ -75,17 +67,7 @@ export async function GET(req: NextRequest) {
                 id: row.id,
                 guestName: row.guest_name,
                 householdName: null,
-                householdMembers: [],
-                attendance: row.attendance || null,
-                rsvpStatus: row.rsvp_status || 'pending',
-                numGuests: row.num_guests || 1,
-                plusOneAllowed: Boolean(row.plus_one_allowed),
-                plusOneName: row.plus_one_name || '',
-                childrenCount: row.children_count || 0,
-                mealPreference: row.meal_preference || '',
-                hasEmail: Boolean(row.guest_email),
-                maskedEmail: maskEmail(row.guest_email || ''),
-                tableAssignment: row.table_assignment || null,
+                verificationAvailable: Boolean(row.guest_email),
             }));
             return NextResponse.json({ guests }, { headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
         }
@@ -94,17 +76,7 @@ export async function GET(req: NextRequest) {
             id: row.id,
             guestName: row.guest_name,
             householdName: row.household_name || null,
-            householdMembers: Array.isArray(row.household_members) ? row.household_members : [],
-            attendance: row.attendance || null,
-            rsvpStatus: row.rsvp_status || 'pending',
-            numGuests: row.num_guests || 1,
-            plusOneAllowed: Boolean(row.plus_one_allowed),
-            plusOneName: row.plus_one_name || '',
-            childrenCount: row.children_count || 0,
-            mealPreference: row.meal_preference || '',
-            hasEmail: Boolean(row.guest_email),
-            maskedEmail: maskEmail(row.guest_email || ''),
-            tableAssignment: row.table_assignment || null,
+            verificationAvailable: Boolean(row.guest_email),
         }));
 
         return NextResponse.json({ guests }, { headers: { ...limited.headers, 'Cache-Control': 'no-store' } });

@@ -595,7 +595,8 @@ function FallingFeaturePill({
     const updateViewport = () => {
       isMobileRef.current = mediaQuery.matches;
       setIsMobile(mediaQuery.matches);
-      setNeedsJsScrollFallback(mediaQuery.matches && !CSS.supports('animation-timeline: scroll(root block)'));
+      // Use one transform driver on mobile; CSS timelines can freeze alongside Motion updates.
+      setNeedsJsScrollFallback(mediaQuery.matches);
       viewportHeightRef.current = window.innerHeight;
     };
 
@@ -611,10 +612,14 @@ function FallingFeaturePill({
 
   useEffect(() => {
     if (!needsJsScrollFallback) return;
+    if (reduceMotion) {
+      pillRef.current?.style.setProperty('--qw-pill-mobile-transform', `translate3d(${pill.mobileEndX}vw, ${pill.mobileEndY}px, 0) rotate(0deg)`);
+      return;
+    }
 
     const updateFallbackTransform = () => {
       const animationStart = 984 - window.innerHeight * 0.52 + pill.delay * 180;
-      const fallDistance = 520 + ((index * 47) % 5) * 32;
+      const fallDistance = 240 + ((index * 47) % 5) * 16;
       const progress = Math.max(0, Math.min(1, (window.scrollY - animationStart) / fallDistance));
       const easedProgress = 1 - Math.pow(1 - progress, 2.7);
       const x = pill.mobileStartX
@@ -638,10 +643,10 @@ function FallingFeaturePill({
       window.removeEventListener('scroll', updateFallbackTransform);
       window.removeEventListener('resize', updateFallbackTransform);
     };
-  }, [index, needsJsScrollFallback, pill]);
+  }, [index, needsJsScrollFallback, pill, reduceMotion]);
 
   const mobileDelayDistance = Number((pill.delay * 180).toFixed(1));
-  const mobileFallDistance = 520 + ((index * 47) % 5) * 32;
+  const mobileFallDistance = 240 + ((index * 47) % 5) * 16;
   const delayedProgress = useTransform(scrollY, (latest) => {
     const isMobile = isMobileRef.current;
     const animationStart = isMobile ? 984 - viewportHeightRef.current * 0.52 : 300;
@@ -1420,10 +1425,8 @@ export default function Home() {
     if (!target) return;
 
     window.history.pushState(null, '', `#${sectionId}`);
-    const previousScrollBehavior = document.documentElement.style.scrollBehavior;
-    document.documentElement.style.scrollBehavior = 'auto';
-    target.scrollIntoView({ block: 'start' });
-    document.documentElement.style.scrollBehavior = previousScrollBehavior;
+    const clearance = window.matchMedia('(min-width: 640px)').matches ? 104 : 88;
+    window.scrollTo({ top: Math.max(0, window.scrollY + target.getBoundingClientRect().top - clearance), behavior: 'instant' });
   };
   const openDemo = () => {
     setIsDemoOpen(true);

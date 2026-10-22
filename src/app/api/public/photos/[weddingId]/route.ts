@@ -1,3 +1,4 @@
+import { hydratePhotoUrls } from '@/lib/photo-urls';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limit';
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ wedd
         const photosRes = galleryHidden
             ? { data: [], error: null }
             : await db.from('wedding_photos')
-                .select('id, cloudinary_url, caption, message, uploader_name')
+                .select('id, storage_bucket, cloudinary_public_id, cloudinary_url, caption, message, uploader_name')
                 .eq('wedding_id', weddingId)
                 .eq('is_approved', true)
                 .eq('status', 'approved')
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ wedd
         return NextResponse.json(
             {
                 wedding: weddingRes.wedding,
-                photos: photosRes.data || [],
+                photos: await hydratePhotoUrls(db, photosRes.data || [],weddingId),
                 settings: { ...settings, photo_upload_enabled: photoUploadEnabled },
                 photoUploadEnabled,
                 galleryHidden,

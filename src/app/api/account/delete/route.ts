@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import { invalidateWeddingPublicCache } from '@/lib/public-wedding';
 
 async function safeDelete(db: any, table: string, column: string, value: string) {
     const { error } = await db.from(table).delete().eq(column, value);
@@ -27,12 +28,10 @@ export async function DELETE(req: NextRequest) {
 
         const { data: weddings, error: weddingsError } = await db
             .from('weddings')
-            .select('id')
+            .select('id, public_slug')
             .eq('user_id', user.id);
 
-        if (weddingsError) {
-            console.warn('Account deletion could not load owned weddings:', weddingsError.message);
-        }
+        if (weddingsError) throw weddingsError;
 
         const weddingIds = (weddings || [])
             .map((wedding: { id?: string | null }) => wedding.id)
@@ -59,20 +58,26 @@ export async function DELETE(req: NextRequest) {
 
             if (deleteWeddingsError) {
                 console.warn('Account deletion could not hard-delete weddings, falling back to soft delete:', deleteWeddingsError.message);
-                await db
+                const { error: softDeleteError } = await db
                     .from('weddings')
                     .update({ deleted_at: now, user_id: null })
                     .in('id', weddingIds);
+                if (softDeleteError) throw softDeleteError;
             }
+
+            await invalidateWeddingPublicCache(...weddingIds, ...(weddings || []).map(
+                (wedding: { public_slug?: string | null }) => wedding.public_slug
+            ));
         }
 
         const { error: deleteUserError } = await db.auth.admin.deleteUser(user.id);
         if (deleteUserError) {
             if (weddingIds.length > 0) {
-                await db
+                const { error: softDeleteError } = await db
                     .from('weddings')
                     .update({ deleted_at: now, user_id: null })
                     .in('id', weddingIds);
+                if (softDeleteError) throw softDeleteError;
             }
 
             const retry = await db.auth.admin.deleteUser(user.id);

@@ -1,4 +1,5 @@
 'use client';
+import { emailOperationId, completeEmailOperation } from '@/lib/email-operation';
 
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -77,9 +78,9 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
 
     const stats = useMemo(() => ([
         { label: 'Visits', value: summary.totalVisits, icon: Activity },
-        { label: 'Unique Guests', value: summary.uniqueVisitors, icon: Users },
+        { label: 'Visitor Sessions', value: summary.uniqueVisitors, icon: Users },
         { label: 'QR Visits', value: summary.qrScans, icon: QrCode },
-        { label: 'RSVP Conversion', value: `${summary.rsvpConversionRate}%`, icon: TrendingUp },
+        { label: 'Web RSVP Completion', value: `${summary.rsvpConversionRate}%`, icon: TrendingUp },
     ]), [summary]);
 
     const sendReminder = async () => {
@@ -95,6 +96,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                 body: JSON.stringify({
                     weddingId,
                     targetStatus: 'pending',
+                    requestId: emailOperationId(weddingId, 'rsvp-reminder'),
                 }),
             });
 
@@ -103,8 +105,9 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                 throw new Error(data.error || 'Failed to send reminders');
             }
 
+            if (data.successCount === data.recipientCount) completeEmailOperation(weddingId, 'rsvp-reminder');
             await loadSummary();
-            alert(`Reminder run completed. ${data.successCount}/${data.recipientCount} emails sent.`);
+            alert(`${data.successCount}/${data.recipientCount} emails accepted. ${data.queuedCount || 0} remain queued. Continue them from Planning overview → Email delivery recovery.`);
         } catch (error) {
             alert(error instanceof Error ? error.message : 'Failed to send reminders');
         } finally {
@@ -127,11 +130,11 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                     <h3 className="flex items-center gap-2 text-lg font-serif font-bold text-foreground sm:text-xl">
                         <BarChart3 className="h-5 w-5 flex-shrink-0 text-primary" /> Wedding Analytics
                     </h3>
-                    <p className="text-xs sm:text-sm text-text-secondary">Traffic, QR performance, RSVP conversion, and reminder follow-through.</p>
+                    <p className="text-xs sm:text-sm text-text-secondary">Traffic, QR performance, RSVP conversion, and email activity. Web completion counts visitor sessions with a recorded RSVP submission.</p>
                 </div>
                 <button
                     onClick={sendReminder}
-                    disabled={sendingReminder || pendingGuestCount === 0 || (!hasPlannerPro && guestEmailsUsed >= FREE_PLAN_LIMITS.userTriggeredEmails)}
+                    disabled={sendingReminder || pendingGuestCount === 0}
                     className="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-primary px-4 text-xs font-bold text-white transition-all hover:bg-primary-hover disabled:opacity-50 sm:w-auto sm:text-sm"
                 >
                     {sendingReminder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
@@ -194,7 +197,7 @@ export default function AnalyticsPanel({ weddingId, rsvpCount, pendingGuestCount
                     </div>
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-text-secondary">Responses after latest reminder</span>
-                        <span className="font-bold text-primary">{summary.reminderResponses}</span>
+                        <span className="font-bold text-primary">Not measured</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-text-secondary">Share actions logged</span>

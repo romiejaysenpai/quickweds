@@ -1,4 +1,6 @@
 'use client';
+import { emailOperationId, completeEmailOperation } from '@/lib/email-operation';
+import { guestPartySize } from '@/lib/guest-counts';
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
@@ -186,14 +188,7 @@ function getChairPositions(table: Table) {
 }
 
 function getPartySize(guest?: Pick<EnhancedRSVP, 'num_guests' | 'plus_one_allowed' | 'plus_one_name' | 'plus_one_rsvp_status'> | null) {
-    const explicitCount = Number(guest?.num_guests || 0);
-    if (Number.isFinite(explicitCount) && explicitCount > 1) return Math.floor(explicitCount);
-
-    const plusOneCounts =
-        Boolean(guest?.plus_one_allowed && guest?.plus_one_name) &&
-        guest?.plus_one_rsvp_status !== 'declined';
-
-    return plusOneCounts ? 2 : 1;
+    return guestPartySize(guest);
 }
 
 function drawRoundedRectPath(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
@@ -311,9 +306,9 @@ export default function SeatingChartBuilder({
             const [guestsRes, tablesRes, assignmentsRes, layoutRes] = await Promise.all([
                 supabase
                     .from('rsvps')
-                    .select('id, guest_name, guest_group, guest_email, rsvp_status, attendance, num_guests, table_assignment, plus_one_name, plus_one_allowed')
+                    .select('id, guest_name, guest_group, guest_email, rsvp_status, attendance, num_guests, table_assignment, plus_one_name, plus_one_allowed, plus_one_rsvp_status')
                     .eq('wedding_id', weddingId)
-                    .or('rsvp_status.eq.confirmed,attendance.eq.Yes')
+                    .or('rsvp_status.eq.confirmed,rsvp_status.eq.confirmed_manual,attendance.eq.Yes')
                     .order('created_at', { ascending: true }),
                 supabase.from('seating_tables').select('*').eq('wedding_id', weddingId).order('created_at', { ascending: true }),
                 supabase.from('seating_assignments').select('*').eq('wedding_id', weddingId),
@@ -414,11 +409,6 @@ export default function SeatingChartBuilder({
         const partySize = getPartySize(guestMap.get(assignment.rsvp_id));
         if (partySize <= 1) return `Seat ${startSeat}`;
         return `Seats ${startSeat}-${startSeat + partySize - 1}`;
-    };
-
-    const syncRsvpTableAssignment = async (rsvpId: string, tableName: string | null) => {
-        const { error } = await supabase.from('rsvps').update({ table_assignment: tableName }).eq('id', rsvpId);
-        if (error) throw error;
     };
 
     const saveLayout = async (nextLayout: SeatingLayout) => {
@@ -581,11 +571,7 @@ export default function SeatingChartBuilder({
                         .map((assignment) => assignment.rsvp_id);
 
                     if (assignedRsvpIds.length > 0) {
-                        const { error: syncError } = await supabase
-                            .from('rsvps')
-                            .update({ table_assignment: tableFormData.name })
-                            .in('id', assignedRsvpIds);
-                        if (syncError) throw syncError;
+
                         const assignedRsvpIdSet = new Set(assignedRsvpIds);
                         setGuests((current) => current.map((guest) => (
                             assignedRsvpIdSet.has(guest.id) ? { ...guest, table_assignment: tableFormData.name } : guest
@@ -697,14 +683,6 @@ export default function SeatingChartBuilder({
                 .filter((assignment) => assignment.table_id === tableId)
                 .map((assignment) => assignment.rsvp_id);
 
-            if (assignedRsvpIds.length > 0) {
-                const { error: clearError } = await supabase.from('rsvps').update({ table_assignment: null }).in('id', assignedRsvpIds);
-                if (clearError) throw clearError;
-
-                const { error: deleteAssignmentsError } = await supabase.from('seating_assignments').delete().eq('table_id', tableId);
-                if (deleteAssignmentsError) throw deleteAssignmentsError;
-            }
-
             const { error } = await supabase.from('seating_tables').delete().eq('id', tableId);
             if (error) throw error;
 
@@ -756,7 +734,6 @@ export default function SeatingChartBuilder({
 
             if (error) throw error;
 
-            await syncRsvpTableAssignment(guest.id, table.table_name);
             if (data) setAssignments((current) => [...current, data]);
             setGuests((current) => current.map((item) => item.id === guest.id ? { ...item, table_assignment: table.table_name } : item));
             void loadData(false);
@@ -771,7 +748,6 @@ export default function SeatingChartBuilder({
             const { error } = await supabase.from('seating_assignments').delete().eq('id', assignment.id);
             if (error) throw error;
 
-            await syncRsvpTableAssignment(assignment.rsvp_id, null);
             setAssignments((current) => current.filter((item) => item.id !== assignment.id));
             setGuests((current) => current.map((guest) => guest.id === assignment.rsvp_id ? { ...guest, table_assignment: undefined } : guest));
             void loadData(false);
@@ -857,7 +833,8 @@ export default function SeatingChartBuilder({
         setSeatFinderLoading(resendAll ? 'resend' : 'send');
         setSeatFinderStatus('');
         try {
-            const data = await callSeatFinderApi('/api/seating/send-seat-links', { weddingId, resendAll });
+            const data = await callSeatFinderApi('/api/seating/send-seat-links', { weddingId, resendAll, requestId: emailOperationId(weddingId, 'seat-links') });
+            if (!data.emailErrorCount) completeEmailOperation(weddingId, 'seat-links');
             setSeatFinderStatus(`Seat links sent: ${data.sent || 0}. No email: ${data.skippedNoEmail || 0}. Unassigned: ${data.skippedUnassigned || 0}.${data.emailErrorCount ? ` Email errors: ${data.emailErrorCount}.` : ''}`);
             if (!publicSeatFinderUrl) {
                 void generateSeatLinks();

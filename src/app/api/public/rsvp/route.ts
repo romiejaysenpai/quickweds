@@ -7,6 +7,7 @@ import { isMissingPublicSlugColumnError } from '@/lib/wedding-slugs';
 import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 import { makeGuestCode, makeSeatLookupToken } from '@/lib/seat-finder';
 import { isRsvpDeadlineExpired } from '@/lib/rsvp-deadline';
+import { createRsvpAccessToken, getRsvpManageUrl, verifyRsvpAccessToken } from '@/lib/rsvp-access';
 import { escapeLikePattern } from '@/lib/sql-like';
 
 function getPrimaryPlusOneName(raw: string) {
@@ -57,12 +58,12 @@ export async function POST(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
+        const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, rsvp_allow_plus_ones, rsvp_allow_children, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
         let weddingResult = await db
             .from('weddings')
             .select(weddingSelect)
             .eq('id', weddingId)
-            .is('deleted_at', null)
+            .is('deleted_at', null).eq('planner_only', false)
             .maybeSingle();
 
         if (weddingResult.error && isMissingPublicSlugColumnError(weddingResult.error)) {
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
                 .from('weddings')
                 .select(weddingSelect.replace('public_slug, ', ''))
                 .eq('id', weddingId)
-                .is('deleted_at', null)
+                .is('deleted_at', null).eq('planner_only', false)
                 .maybeSingle();
         }
 
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
                 .from('weddings')
                 .select(weddingSelect.replace('public_slug, ', '').replace('rsvp_events, ', ''))
                 .eq('id', weddingId)
-                .is('deleted_at', null)
+                .is('deleted_at', null).eq('planner_only', false)
                 .maybeSingle();
         }
 
@@ -96,69 +97,52 @@ export async function POST(req: NextRequest) {
             }, { status: 403 });
         }
 
-        let existingResult = parsed.data.rsvpId
+        const existingResult = parsed.data.rsvpId
             ? await db
                 .from('rsvps')
-                .select('id, rsvp_status, attendance, manual_entry, seat_lookup_token, guest_code, table_assignment')
+                .select('*')
                 .eq('id', parsed.data.rsvpId)
                 .eq('wedding_id', weddingId)
                 .limit(1)
             : await db
                 .from('rsvps')
-                .select('id, rsvp_status, attendance, manual_entry, seat_lookup_token, guest_code, table_assignment')
+                .select('*')
                 .eq('wedding_id', weddingId)
                 .ilike('guest_name', escapeLikePattern(guestName))
                 .limit(1);
-
-        if (existingResult.error && ['manual_entry', 'seat_lookup_token', 'guest_code', 'table_assignment'].some((col) => String(existingResult.error.message || '').includes(col))) {
-            existingResult = parsed.data.rsvpId
-                ? await db
-                    .from('rsvps')
-                    .select('id, rsvp_status, attendance')
-                    .eq('id', parsed.data.rsvpId)
-                    .eq('wedding_id', weddingId)
-                    .limit(1)
-                : await db
-                    .from('rsvps')
-                    .select('id, rsvp_status, attendance')
-                    .eq('wedding_id', weddingId)
-                    .ilike('guest_name', escapeLikePattern(guestName))
-                    .limit(1);
-        }
 
         const { data: existing, error: duplicateError } = existingResult;
 
         if (duplicateError) throw duplicateError;
         const existingRsvp = existing?.[0] || null;
-        const canUpdateExisting = Boolean(
-            existingRsvp && (
-                Boolean(parsed.data.rsvpId) ||
-                existingRsvp.rsvp_status === 'pending' ||
-                existingRsvp.attendance === 'Pending' ||
-                existingRsvp.manual_entry === true ||
-                Boolean(guestEmail && existingRsvp.guest_email === guestEmail)
-            )
-        );
-
+        if (parsed.data.rsvpId && !existingRsvp) return NextResponse.json({ error: 'Invitation not found.' }, { status: 404 });
+        const canUpdateExisting = Boolean(existingRsvp && parsed.data.accessToken && verifyRsvpAccessToken(parsed.data.accessToken, weddingId, existingRsvp.id, existingRsvp.guest_email || ''));
         if (existingRsvp && !canUpdateExisting) {
-            return NextResponse.json({
-                error: "You have already RSVP'd for this wedding. If you need to make changes, please contact the couple directly.",
-                code: 'duplicate_rsvp',
-            }, { status: 409 });
+            return NextResponse.json({ error: 'Please request a secure link from the guest list to update this invitation. If no email is on file, contact the couple.', code: 'verification_required' }, { status: 403 });
         }
+        const resolvedGuestEmail = existingRsvp ? existingRsvp.guest_email || '' : guestEmail;
+        const resolvedGuestName = existingRsvp ? existingRsvp.guest_name : guestName;
+        const invitationCap = existingRsvp ? Math.max(1, Number(existingRsvp.invited_guest_count ?? Math.max(existingRsvp.num_guests || 1, existingRsvp.plus_one_allowed ? 2 : 1))) : 50;
+        const isAttending = parsed.data.attendance === 'Yes';
+        if (isAttending && ((wedding.rsvp_allow_plus_ones === false && (parsed.data.numGuests > 1 || plusOneNames || householdMembers.length > 0)) || (existingRsvp && (parsed.data.numGuests > invitationCap || (!existingRsvp.plus_one_allowed && (parsed.data.numGuests > 1 || plusOneNames)))))) {
+            return NextResponse.json({ error: 'Your party exceeds this invitation. Please contact the couple.' }, { status: 400 });
+        }
+        if (isAttending && wedding.rsvp_allow_children === false && parsed.data.childrenCount > 0) return NextResponse.json({ error: 'Children are not included for this wedding.' }, { status: 400 });
+        if (isAttending && parsed.data.childrenCount > parsed.data.numGuests) return NextResponse.json({ error: 'Children cannot exceed the party size.' }, { status: 400 });
+        if (isAttending && householdMembers.length > Math.max(0, parsed.data.numGuests - 1)) return NextResponse.json({ error: 'Party member names exceed the party size.' }, { status: 400 });
 
         const isDeclined = parsed.data.attendance === 'No';
         const resolvedNumGuests = isDeclined ? 0 : (parsed.data.numGuests || 1);
         const resolvedChildrenCount = isDeclined ? 0 : (parsed.data.childrenCount || 0);
 
+        createRsvpAccessToken(weddingId, existingRsvp?.id || 'new', resolvedGuestEmail);
         const insertData: Record<string, unknown> = {
             wedding_id: weddingId,
-            guest_name: guestName,
-            guest_email: guestEmail || null,
+            ...(!existingRsvp ? { guest_name: resolvedGuestName, guest_email: resolvedGuestEmail || null } : {}),
             attendance: parsed.data.attendance,
             num_guests: resolvedNumGuests,
             rsvp_status: parsed.data.attendance === 'Yes' ? 'confirmed' : 'declined',
-            plus_one_allowed: !isDeclined && (resolvedNumGuests > 1 || Boolean(plusOneNames)),
+            ...(!existingRsvp ? { plus_one_allowed: !isDeclined && resolvedNumGuests > 1 } : {}),
         };
 
         if (canUpdateExisting) {
@@ -167,36 +151,37 @@ export async function POST(req: NextRequest) {
 
         if (parsed.data.attendance === 'Yes') {
             insertData.seat_lookup_token = existingRsvp?.seat_lookup_token || makeSeatLookupToken();
-            insertData.guest_code = existingRsvp?.guest_code || makeGuestCode(guestName);
+            insertData.guest_code = existingRsvp?.guest_code || makeGuestCode(resolvedGuestName);
         }
 
-        if (mealPreference && mealPreference !== 'No Preference') insertData.meal_preference = mealPreference;
-        if (dietaryDetails) insertData.dietary_details = dietaryDetails;
-        if (message) insertData.message = message;
-        if (plusOneNames && !isDeclined) {
-            insertData.plus_one_names = plusOneNames;
-            insertData.plus_one_name = getPrimaryPlusOneName(plusOneNames);
-            insertData.plus_one_rsvp_status = parsed.data.attendance === 'Yes' ? 'confirmed' : 'declined';
-        }
-        if (songRequest) insertData.song_request = songRequest;
-        if (isDeclined || resolvedChildrenCount > 0) insertData.children_count = resolvedChildrenCount;
-        if (householdName) insertData.household_name = householdName;
-        if (householdMembers.length > 0) insertData.household_members = householdMembers;
-
-        const configuredEvents = Array.isArray(wedding.rsvp_events) ? wedding.rsvp_events : [];
-        const allowedEventIds = new Set(configuredEvents.map((event: { id?: unknown }) => String(event?.id || '')).filter(Boolean));
-        const eventResponses = parsed.data.eventResponses.filter((response) => allowedEventIds.has(response.eventId));
-        if (eventResponses.length > 0) insertData.event_responses = eventResponses;
+        // Explicit values clear stale details when guests decline or remove an answer.
+        insertData.meal_preference = !isDeclined && mealPreference !== 'No Preference' ? mealPreference || null : null;
+        insertData.dietary_details = !isDeclined && mealPreference === 'Other (see message)' ? dietaryDetails || null : null;
+        insertData.message = message || null;
+        insertData.plus_one_names = !isDeclined && resolvedNumGuests > 1 ? plusOneNames || null : null;
+        insertData.plus_one_name = !isDeclined && resolvedNumGuests > 1 ? getPrimaryPlusOneName(plusOneNames) || null : null;
+        insertData.plus_one_rsvp_status = !isDeclined && resolvedNumGuests > 1 ? 'confirmed' : 'not_invited';
+        insertData.song_request = !isDeclined ? songRequest || null : null;
+        insertData.children_count = resolvedChildrenCount;
+        insertData.household_name = householdName || null;
+        insertData.household_members = !isDeclined ? householdMembers : [];
+        let configuredEvents = wedding.rsvp_events;
+        if (typeof configuredEvents === 'string') { try { configuredEvents = JSON.parse(configuredEvents); } catch { configuredEvents = []; } }
+        if (!Array.isArray(configuredEvents)) configuredEvents = [];
+        const allowedEventIds = new Set<string>(configuredEvents.map((event: { id?: unknown }) => String(event?.id || '')).filter(Boolean));
+        const responseIds = parsed.data.eventResponses.map((response) => response.eventId);
+        if (new Set(responseIds).size !== responseIds.length || responseIds.some((id) => !allowedEventIds.has(id))) return NextResponse.json({ error: 'Event responses contain an unknown or repeated event.' }, { status: 400 });
+        insertData.event_responses = [...allowedEventIds].map((eventId) => ({ eventId, attendance: isDeclined ? 'No' : parsed.data.eventResponses.find((response) => response.eventId === eventId)?.attendance || 'No' }));
 
         const persistRsvp = async (payload: Record<string, unknown>) => {
             if (canUpdateExisting && existingRsvp?.id) {
-                return db
-                    .from('rsvps')
-                    .update(payload)
-                    .eq('id', existingRsvp.id)
-                    .eq('wedding_id', weddingId)
-                    .select('id')
-                    .single();
+                let update = db.from('rsvps').update(payload).eq('id', existingRsvp.id).eq('wedding_id', weddingId);
+                // Reject stale capabilities and invitation limits; never restore snapshot identity.
+                for (const column of ['guest_email', 'guest_name', 'invited_guest_count', 'num_guests', 'plus_one_allowed', 'seat_lookup_token', 'guest_code', 'updated_at']) {
+                    if (existingRsvp[column] === undefined) continue;
+                    update = existingRsvp[column] === null ? update.is(column, null) : update.eq(column, existingRsvp[column]);
+                }
+                return update.select('id').maybeSingle();
             }
             return db
                 .from('rsvps')
@@ -219,62 +204,24 @@ export async function POST(req: NextRequest) {
         }
 
         if (insertError) throw insertError;
+        if (!rsvp) return NextResponse.json({ error: 'This invitation changed while you were responding. Reload and request a new secure link.', code: 'invitation_changed' }, { status: 409 });
         await invalidateDashboardCounters(weddingId);
 
-        // Sync household and party members so records are updated by name and couple can manage their table groupings
-        if (householdMembers.length > 0) {
-            for (const memberName of householdMembers) {
-                const cleanMember = memberName.trim();
-                if (!cleanMember || cleanMember.toLowerCase() === guestName.toLowerCase()) continue;
-                try {
-                    const existingMember = await db
-                        .from('rsvps')
-                        .select('id, table_assignment')
-                        .eq('wedding_id', weddingId)
-                        .ilike('guest_name', escapeLikePattern(cleanMember))
-                        .limit(1);
-
-                    const memberRow = existingMember?.data?.[0];
-                    if (memberRow) {
-                        await db
-                            .from('rsvps')
-                            .update({
-                                attendance: parsed.data.attendance,
-                                rsvp_status: parsed.data.attendance === 'Yes' ? 'confirmed' : 'declined',
-                                household_name: householdName || null,
-                            })
-                            .eq('id', memberRow.id)
-                            .eq('wedding_id', weddingId);
-                    } else if (parsed.data.attendance === 'Yes') {
-                        await db
-                            .from('rsvps')
-                            .insert({
-                                wedding_id: weddingId,
-                                guest_name: cleanMember,
-                                household_name: householdName || null,
-                                attendance: 'Yes',
-                                rsvp_status: 'confirmed',
-                                num_guests: 1,
-                                table_assignment: existingRsvp?.table_assignment || null,
-                                manual_entry: true,
-                            });
-                    }
-                } catch (memberErr) {
-                    console.warn('Sync party member failed:', cleanMember, memberErr);
-                }
-            }
-        }
+        // A household name is descriptive data, never authority to mutate another invitation.
+        const accessToken = createRsvpAccessToken(weddingId, rsvp.id, resolvedGuestEmail);
+        const manageRsvpUrl = getRsvpManageUrl(weddingId, rsvp.id, accessToken);
 
         const notifications = await sendRsvpNotifications(db, {
             weddingId,
             wedding,
-            guestName,
-            guestEmail,
+            guestName: resolvedGuestName,
+            guestEmail: resolvedGuestEmail,
+            manageRsvpUrl,
             attendance: parsed.data.attendance,
             numGuests: resolvedNumGuests,
             message,
-            dietaryDetails,
-            songRequest,
+            dietaryDetails: typeof insertData.dietary_details === 'string' ? insertData.dietary_details : '',
+            songRequest: typeof insertData.song_request === 'string' ? insertData.song_request : '',
             plusOneNames: isDeclined ? '' : plusOneNames,
             childrenCount: resolvedChildrenCount,
             guestCode: typeof insertData.guest_code === 'string' ? insertData.guest_code : '',
@@ -282,8 +229,8 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json(
-            { success: true, rsvpId: rsvp.id, notifications },
-            { headers: limited.headers }
+            { success: true, rsvpId: rsvp.id, accessToken, manageRsvpUrl, notifications },
+            { headers: { ...limited.headers, 'Cache-Control': 'no-store' } }
         );
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to submit RSVP.';

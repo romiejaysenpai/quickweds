@@ -54,6 +54,8 @@ async function queryById(db: any, identifier: string, select: string): Promise<R
         .from('weddings')
         .select(select)
         .eq('id', identifier)
+        .is('deleted_at', null)
+        .eq('planner_only', false)
         .maybeSingle();
 
     if (error) {
@@ -76,6 +78,8 @@ async function queryBySlug(db: any, identifier: string, select: string): Promise
         .from('weddings')
         .select(select)
         .eq('public_slug', identifier)
+        .is('deleted_at', null)
+        .eq('planner_only', false)
         .maybeSingle();
 
     if (error) {

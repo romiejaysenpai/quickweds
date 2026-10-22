@@ -66,7 +66,7 @@ export function sanitizeWeddingPublicIdentifier(value: string) {
 }
 
 export function isWeddingIdLike(value: string) {
-    return /^[a-zA-Z0-9]{4,32}$/.test(value);
+    return /^[a-zA-Z0-9]{4,32}$/.test(value) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 export function getWeddingPublicIdentifier(wedding: { id?: string | null; public_slug?: string | null }) {

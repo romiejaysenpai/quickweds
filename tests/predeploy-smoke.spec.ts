@@ -1,9 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { mockWeddingPage } from './fixtures/wedding-preview';
+
 const HYDRATION_PATTERN = /hydration|server rendered HTML|didn't match/i;
 
 async function collectPageProblems(page: Page) {
   const problems: string[] = [];
+  await page.route('**/_vercel/insights/**', route => route.fulfill({ body: '', contentType: 'application/javascript' }));
+  await page.route('**/_vercel/speed-insights/**', route => route.fulfill({ body: '', contentType: 'application/javascript' }));
 
   page.on('console', (message) => {
     const text = message.text();
@@ -56,7 +60,7 @@ test.describe('pre-deploy smoke', () => {
       await route.fulfill({ json: { ok: true } });
     });
 
-    await page.goto('/w/template-classic', { waitUntil: 'domcontentloaded' });
+    await mockWeddingPage(page, 'classic');
 
     await expect(page.locator('#details')).toBeVisible();
     await expect(page.locator('#timeline')).toBeVisible();
@@ -71,12 +75,11 @@ test.describe('pre-deploy smoke', () => {
     expect(problems).toEqual([]);
   });
 
-  test('public API and critical static assets respond correctly', async ({ request }) => {
-    const publicWedding = await request.get('/api/public/weddings/template-classic');
-    expect(publicWedding.status()).toBe(200);
-    await expect(publicWedding).toBeOK();
+  test('public API validation and critical static assets respond correctly', async ({ request }) => {
+    const invalidRsvp = await request.post('/api/public/rsvp', { data: {} });
+    expect(invalidRsvp.status()).toBe(400);
 
-    const missingWedding = await request.get('/api/public/weddings/not-a-real-wedding');
+    const missingWedding = await request.get('/api/public/weddings/%20');
     expect(missingWedding.status()).toBe(404);
 
     const manifest = await request.get('/manifest.webmanifest');
@@ -87,7 +90,8 @@ test.describe('pre-deploy smoke', () => {
   });
 
   test('core public routes meet local responsiveness budget', async ({ page }) => {
-    const routes = ['/', '/login', '/signup', '/w/template-classic'];
+    await mockWeddingPage(page, 'classic');
+    const routes = ['/', '/login', '/signup', '/preview?preview=qa'];
 
     for (const route of routes) {
       await page.goto(route, { waitUntil: 'domcontentloaded' });

@@ -16,6 +16,7 @@ const ALLOWED_UPDATE_FIELDS = new Set([
     'rsvp_status',
     'attendance',
     'num_guests',
+    'invited_guest_count',
     'guest_group',
     'table_assignment',
     'invitation_sent',
@@ -65,6 +66,7 @@ function normalizeGuestPayload(weddingId: string, input: Record<string, any>) {
         rsvp_status: rsvpStatus,
         attendance: input.attendance === 'Yes' || input.attendance === 'No' ? input.attendance : statusToAttendance(rsvpStatus),
         num_guests: Math.min(50, Math.max(1, Number(input.num_guests || 1))),
+        invited_guest_count: Math.min(50, Math.max(1, Math.floor(Number(input.invited_guest_count || input.num_guests || 1)), plusOneAllowed ? 2 : 1)),
         guest_group: nullableText(input.guest_group, 80),
         table_assignment: nullableText(input.table_assignment, 160),
         invitation_sent: invitationSent,
@@ -91,6 +93,9 @@ function normalizeUpdatePayload(input: Record<string, any>) {
             if (!Object.prototype.hasOwnProperty.call(input, 'attendance')) payload.attendance = statusToAttendance(status);
         } else if (key === 'attendance') {
             payload.attendance = value === 'Yes' || value === 'No' ? value : null;
+        } else if (key === 'invited_guest_count') {
+            const count = Number(value);
+            if (Number.isFinite(count)) payload[key] = Math.min(50, Math.max(1, Math.floor(count)));
         } else if (key === 'num_guests' || key === 'children_count') {
             payload[key] = Math.max(key === 'children_count' ? 0 : 1, Number(value || 0));
         } else if (key === 'invitation_sent') {
@@ -103,7 +108,18 @@ function normalizeUpdatePayload(input: Record<string, any>) {
         }
     }
 
+    if ('num_guests' in payload && !('invited_guest_count' in payload)) payload.invited_guest_count = Math.min(50, Math.max(1, Number(payload.num_guests), payload.plus_one_allowed ? 2 : 1));
     return payload;
+}
+
+function withoutCapacity<T>(payload: T): T {
+    if (Array.isArray(payload)) return payload.map((row) => withoutCapacity(row)) as T;
+    const copy = { ...(payload as Record<string, unknown>) }; delete copy.invited_guest_count; return copy as T;
+}
+async function persistWithCapacityFallback<T>(payload: T, persist: (value: T) => PromiseLike<any>) {
+    const result = await persist(payload);
+    if (result.error && String(result.error.message || '').includes('invited_guest_count')) return persist(withoutCapacity(payload));
+    return result;
 }
 
 async function getContext(req: NextRequest, weddingId: string) {
@@ -191,16 +207,17 @@ export async function POST(req: NextRequest) {
             const id = String(body.id || '');
             if (!id) return NextResponse.json({ error: 'Guest ID is required.' }, { status: 400 });
 
-            const existing = await db.from('rsvps').select('id, wedding_id, guest_email').eq('id', id).eq('wedding_id', weddingId).maybeSingle();
+            const existing = await db.from('rsvps').select('*').eq('id', id).eq('wedding_id', weddingId).maybeSingle();
             if (existing.error) throw existing.error;
             if (!existing.data) return NextResponse.json({ error: 'Guest not found.' }, { status: 404 });
 
             const payload = normalizeUpdatePayload(body.patch || {});
+            if (payload.plus_one_allowed === true && !('invited_guest_count' in payload)) payload.invited_guest_count = Math.max(2, existing.data.invited_guest_count || existing.data.num_guests || 1);
             const addsEmail = !existing.data.guest_email && Boolean(payload.guest_email);
             const limitResponse = await enforceGuestEmailLimit(db, weddingId, hasPro, addsEmail ? 1 : 0);
             if (limitResponse) return limitResponse;
 
-            const { data, error } = await db.from('rsvps').update(payload).eq('id', id).eq('wedding_id', weddingId).select(RSVP_SELECT).single();
+            const { data, error } = await persistWithCapacityFallback(payload, (value) => db.from('rsvps').update(value).eq('id', id).eq('wedding_id', weddingId).select(RSVP_SELECT).single());
             if (error) throw error;
             await invalidateDashboardCounters(weddingId);
             return NextResponse.json({ guest: data });
@@ -216,7 +233,7 @@ export async function POST(req: NextRequest) {
             const limitResponse = await enforceGuestEmailLimit(db, weddingId, hasPro, incomingEmailCount);
             if (limitResponse) return limitResponse;
 
-            const { data, error } = await db.from('rsvps').insert(payload).select(RSVP_SELECT);
+            const { data, error } = await persistWithCapacityFallback(payload, (value) => db.from('rsvps').insert(value).select(RSVP_SELECT));
             if (error) throw error;
             await invalidateDashboardCounters(weddingId);
             return NextResponse.json({ guests: data || [] });
@@ -228,7 +245,7 @@ export async function POST(req: NextRequest) {
         const limitResponse = await enforceGuestEmailLimit(db, weddingId, hasPro, payload.guest_email ? 1 : 0);
         if (limitResponse) return limitResponse;
 
-        const { data, error } = await db.from('rsvps').insert(payload).select(RSVP_SELECT).single();
+        const { data, error } = await persistWithCapacityFallback(payload, (value) => db.from('rsvps').insert(value).select(RSVP_SELECT).single());
         if (error) throw error;
         await invalidateDashboardCounters(weddingId);
         return NextResponse.json({ guest: data });

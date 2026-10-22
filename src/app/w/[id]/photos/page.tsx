@@ -95,6 +95,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
     const [codeStatus, setCodeStatus] = useState<CodeStatus | null>(null);
     const [codeChecking, setCodeChecking] = useState(false);
+    const uploadAttemptRef = useRef<{ fingerprint: string; id: string } | null>(null);
     const [uploadSessionId, setUploadSessionId] = useState('');
 
     useEffect(() => {
@@ -166,8 +167,8 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                     maxUploads: data.maxUploads,
                     currentUploads: data.currentUploads,
                     message: data.remainingUploads > 0
-                        ? `This sharing code can upload ${data.remainingUploads} more photo${data.remainingUploads === 1 ? '' : 's'}.`
-                        : `This sharing code has reached its ${data.maxUploads}-photo limit.`,
+                        ? `This browser can upload ${data.remainingUploads} more photo${data.remainingUploads === 1 ? '' : 's'}.`
+                        : `This browser or sharing code has reached its ${data.maxUploads}-photo limit.`,
                 });
             } catch (error) {
                 if (!isActive) return;
@@ -291,7 +292,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
         const normalizedCode = form.code.trim().toUpperCase();
         if (!normalizedCode) return alert('A sharing code is required to upload.');
         if (codeStatus?.valid === false) return alert(codeStatus.message || 'Please enter a valid sharing code.');
-        if (codeStatus?.remainingUploads === 0) return alert(codeStatus.message || 'This sharing code has reached its upload limit.');
+        if (codeStatus?.remainingUploads === 0) return alert(codeStatus.message || 'This browser or sharing code has reached its upload limit.');
 
         setSubmitting(true);
         try {
@@ -302,6 +303,9 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
             formData.set('uploaderName', form.uploader_name);
             formData.set('caption', form.caption || '');
             formData.set('file', uploadFile);
+            const fingerprint = JSON.stringify([selectedFile.name, selectedFile.size, selectedFile.lastModified, selectedFilter, overlayText]);
+            if (uploadAttemptRef.current?.fingerprint !== fingerprint) uploadAttemptRef.current = { fingerprint, id: crypto.randomUUID() };
+            formData.set('uploadRequestId', uploadAttemptRef.current.id);
             if (uploadSessionId) formData.set('uploadSessionId', uploadSessionId);
             formData.set('editMetadata', JSON.stringify({
                 filter: selectedFilter,
@@ -322,6 +326,7 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                 setUploadSessionId(result.uploadSessionId);
             }
 
+            uploadAttemptRef.current = null;
             // Success state
             const nextCurrentUploads = codeStatus?.valid ? codeStatus.currentUploads + 1 : null;
             const maxUploads = codeStatus?.valid ? codeStatus.maxUploads : settings?.photo_limit_per_guest || 3;
@@ -339,8 +344,8 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                                   remainingUploads: Math.max(0, prev.remainingUploads - 1),
                                   message:
                                       prev.remainingUploads > 1
-                                          ? `This sharing code can upload ${prev.remainingUploads - 1} more photo${prev.remainingUploads - 1 === 1 ? '' : 's'}.`
-                                      : `This sharing code has reached its ${prev.maxUploads}-photo limit.`,
+                                          ? `This browser can upload ${prev.remainingUploads - 1} more photo${prev.remainingUploads - 1 === 1 ? '' : 's'}.`
+                                      : `This browser or sharing code has reached its ${prev.maxUploads}-photo limit.`,
                           }
                         : prev
                 );

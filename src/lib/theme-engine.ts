@@ -194,6 +194,7 @@ export const TEMPLATE_FAMILIES: Record<string, string> = {
     regency: 'royal', lovescript: 'romantic', 'coastal-vow': 'tropical', 'orchid-noir': 'midnight',
     papercut: 'minimal', 'marigold-house': 'traditional', 'the-weekend': 'elegance',
     'winter-rose': 'royal', gallery: 'editorial', 'petal-note': 'romantic', 'sunset-ceremony': 'boho',
+    'editorial-luxe': 'editorial', monochrome: 'minimal', 'botanical-arch': 'garden', 'cinematic-vow': 'cinematic',
 };
 
 export function resolveTemplateFamily(template?: string) {
@@ -212,10 +213,10 @@ export function getTemplateMood(template?: string): TemplateMood {
     if (t === 'nordic') return 'nordic';
     if (t === 'riviera') return 'riviera';
 
-    if (['royal', 'midnight', 'artdeco', 'luxury'].includes(t)) return 'dark';
-    if (['cinematic', 'film'].includes(t)) return 'cinematic';
-    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus'].includes(t)) return 'editorial';
-    if (['boho', 'garden', 'rustic', 'sakura'].includes(t)) return 'organic';
+    if (['royal', 'midnight', 'artdeco', 'luxury', 'cinematic-vow'].includes(t)) return 'dark';
+    if (['cinematic', 'film', 'cinematic-vow'].includes(t)) return 'cinematic';
+    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus', 'editorial-luxe', 'monochrome'].includes(t)) return 'editorial';
+    if (['boho', 'garden', 'rustic', 'sakura', 'botanical-arch'].includes(t)) return 'organic';
     if (['tropical', 'elopement'].includes(t)) return 'destination';
     if (['vintage', 'traditional'].includes(t)) return 'vintage';
     if (['whimsical', 'romantic'].includes(t)) return 'playful';

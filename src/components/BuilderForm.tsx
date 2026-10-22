@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
 import { BUILDER_DRAFT_STORAGE_KEY } from '@/lib/builder-storage';
+import { builderDraftKey, readLegacyBuilderDraft, loadBuilderDraft, saveBuilderDraft, deleteBuilderDraft, type BuilderDraftSnapshot } from '@/lib/builder-drafts';
 import MarketplacePanel from './builder/MarketplacePanel';
 import { MONOGRAM_SHAPES, MONOGRAM_ANIMATIONS, MonogramMark } from './MonogramMark';
 import { MonogramExporter } from './MonogramExporter';
@@ -527,7 +528,7 @@ export default function BuilderForm() {
     const weddingLoadRef = useRef<{ id: string; requestId: number } | null>(null);
     const weddingLoadRequestIdRef = useRef(0);
 
-    const [detectedDraft, setDetectedDraft] = useState<{ formData: any; currentStep: number; updatedAt: string } | null>(null);
+    const [detectedDraft, setDetectedDraft] = useState<BuilderDraftSnapshot | null>(null);
     const [draftDismissed, setDraftDismissed] = useState(false);
 
     // Scroll to top of the page when the step changes
@@ -571,57 +572,6 @@ export default function BuilderForm() {
         canRedo,
         clear: initializeFormData,
     } = useLocalUndoRedo(INITIAL_FORM_DATA, 50);
-
-    // Detect saved local storage draft on mount
-    useEffect(() => {
-        if (editId || typeof window === 'undefined') return;
-        try {
-            const raw = window.localStorage.getItem(BUILDER_DRAFT_STORAGE_KEY);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                if (parsed && parsed.formData) {
-                    setDetectedDraft(parsed);
-                    if (searchParams?.get('resume') === 'draft') {
-                        initializeFormData(parsed.formData);
-                        if (typeof parsed.currentStep === 'number') setCurrentStep(parsed.currentStep);
-                        setDraftDismissed(true);
-                    }
-                }
-            }
-        } catch (err) {
-            console.warn('Failed to load local builder draft:', err);
-        }
-    }, [editId, searchParams, initializeFormData]);
-
-    // Auto-save local draft as user edits form data
-    useEffect(() => {
-        if (editId || typeof window === 'undefined' || isSubmitting || (detectedDraft && !draftDismissed)) return;
-
-        const hasContent = Boolean(
-            formData.brideName?.trim() ||
-            formData.groomName?.trim() ||
-            formData.venueName?.trim() ||
-            formData.story?.trim() ||
-            currentStep > 0
-        );
-
-        if (!hasContent) return;
-
-        const timer = setTimeout(() => {
-            try {
-                const draftPayload = {
-                    formData,
-                    currentStep,
-                    updatedAt: new Date().toISOString(),
-                };
-                window.localStorage.setItem(BUILDER_DRAFT_STORAGE_KEY, JSON.stringify(draftPayload));
-            } catch (err) {
-                console.warn('Auto-save builder draft failed:', err);
-            }
-        }, 1000);
-
-        return () => clearTimeout(timer);
-    }, [formData, currentStep, editId, isSubmitting]);
 
     useEffect(() => {
         if (editId || !requestedTemplate || !TEMPLATES.some((template) => template.id === requestedTemplate)) return;
@@ -701,6 +651,74 @@ export default function BuilderForm() {
         receptionVenuePhotos: [],
     });
     const previewObjectUrlsRef = useRef(new Set<string>());
+    const importedLegacyRef = useRef(false);
+    const [draftReadyKey, setDraftReadyKey] = useState('');
+    const [draftStatus, setDraftStatus] = useState('');
+    const baselineRef = useRef('');
+    const dirtyRef = useRef(false);
+    const scopeKey = userId ? builderDraftKey(userId, editId) : '';
+    const draftFingerprint = JSON.stringify({ formData, previews, files: Object.entries(mediaFiles).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => [key, (Array.isArray(value) ? value : value ? [value] : []).map(file => [file.name, file.size, file.lastModified])]) });
+    const restoreDraft = useCallback((draft: BuilderDraftSnapshot) => {
+        importedLegacyRef.current = Boolean(draft.legacyImport);
+        initializeFormData({ ...INITIAL_FORM_DATA, ...draft.formData });
+        setCurrentStep(draft.currentStep);
+        setMediaFiles(draft.mediaFiles as typeof mediaFiles);
+        const restored = { ...draft.previews };
+        for (const [key, value] of Object.entries(draft.mediaFiles)) {
+            const files = Array.isArray(value) ? value : value ? [value] : [];
+            if (!files.length) continue;
+            const urls = files.map(file => { const url = URL.createObjectURL(file); previewObjectUrlsRef.current.add(url); return url; });
+            restored[key] = Array.isArray(value)
+                ? [...(Array.isArray(restored[key]) ? (restored[key] as string[]).filter(url => !url.startsWith('blob:')) : []), ...urls]
+                : urls[0];
+        }
+        setPreviews(restored as typeof previews);
+        setDraftDismissed(true);
+        setDraftStatus('Recovered local draft. Save to update your invitation.');
+    }, [initializeFormData]);
+    useEffect(() => {
+        if (!scopeKey || (editId && loadedEditId !== editId)) return;
+        let active = true;
+        baselineRef.current = draftFingerprint;
+        dirtyRef.current = false;
+        setDraftDismissed(false);
+        setDetectedDraft(null);
+        loadBuilderDraft(scopeKey).then(draft => {
+            if (!active) return;
+            if (draft) {
+                setDetectedDraft(draft);
+                if (!editId && searchParams?.get('resume') === 'draft') restoreDraft(draft);
+            } else if (!editId) {
+                const legacy = readLegacyBuilderDraft(window.localStorage.getItem(BUILDER_DRAFT_STORAGE_KEY), mediaFiles, previews);
+                if (legacy) {
+                    setDetectedDraft(legacy);
+                    setDraftStatus('An older draft is available on this browser. Restore it only if it is yours; previously selected media must be selected again.');
+                }
+            }
+        }).catch(() => { if (active) setDraftStatus('Local recovery is unavailable. Keep this tab open until you save.'); })
+            .finally(() => { if (active) setDraftReadyKey(scopeKey); });
+        return () => { active = false; };
+        // A scope is initialized once after the saved wedding has loaded.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scopeKey, editId, loadedEditId, restoreDraft]);
+    useEffect(() => {
+        if (!scopeKey || draftReadyKey !== scopeKey || isSubmitting || (detectedDraft && !draftDismissed)) return;
+        dirtyRef.current = draftFingerprint !== baselineRef.current;
+        if (!dirtyRef.current) return;
+        setDraftStatus('Saving local draft…');
+        const timer = setTimeout(() => {
+            const draftPayload: BuilderDraftSnapshot = { formData, currentStep, updatedAt: new Date().toISOString(), mediaFiles, previews };
+            saveBuilderDraft(scopeKey, draftPayload).then(() => setDraftStatus('Draft saved on this device. Invitation changes still need saving.'))
+                .catch(() => setDraftStatus('Could not save a local draft. Save your invitation before leaving.'));
+        }, 750);
+        return () => clearTimeout(timer);
+    }, [scopeKey, draftReadyKey, draftFingerprint, formData, currentStep, mediaFiles, previews, isSubmitting, detectedDraft, draftDismissed]);
+    useEffect(() => {
+        const warn = (event: BeforeUnloadEvent) => { if (dirtyRef.current) { event.preventDefault(); event.returnValue = ''; } };
+        window.addEventListener('beforeunload', warn);
+        return () => window.removeEventListener('beforeunload', warn);
+    }, []);
+
 
     useEffect(() => {
         const objectUrls = previewObjectUrlsRef.current;
@@ -1377,14 +1395,14 @@ export default function BuilderForm() {
                 uploadWaiters.shift()?.();
             };
             const uploadToSupabase = async (file: File, folder: string) => {
-                const filename = `${folder}-${file.name.replace(/\s+/g, '_')}`;
+                const filename = `${folder}-${crypto.randomUUID()}.${file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'bin'}`;
                 const filePath = `${user.id}/${weddingId}/${filename}`;
 
                 await acquireUploadSlot();
                 try {
                     const { error: uploadError } = await supabase.storage
                         .from('quickweds')
-                        .upload(filePath, file, { upsert: true, contentType: file.type });
+                        .upload(filePath, file, { upsert: false, contentType: file.type });
 
                     if (uploadError) throw uploadError;
 
@@ -1422,6 +1440,7 @@ export default function BuilderForm() {
             const normalizedWeddingParty = (formData.weddingParty || []).map(normalizeWeddingPartyMember);
 
             const payload: any = {
+                ...(enforcePublishHealth ? { planner_only: false } : {}),
                 bride_name: formData.brideName,
                 groom_name: formData.groomName,
                 wedding_date: formData.weddingDate,
@@ -1624,8 +1643,11 @@ export default function BuilderForm() {
             }
 
             // Success
+            dirtyRef.current = false;
+            if (scopeKey) await deleteBuilderDraft(scopeKey).catch(() => undefined);
+            setDraftStatus('Invitation saved.');
             if (typeof window !== 'undefined') {
-                window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
+                if (importedLegacyRef.current) window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
             }
 
             // Sync saved media URLs into previews state, clear local pending mediaFiles, and clean up blob URLs
@@ -1639,6 +1661,7 @@ export default function BuilderForm() {
                 galleryImages: payload.gallery_images ?? existingGalleryImages,
                 receptionVenuePhotos: payload.reception_venue_photos ?? existingReceptionVenuePhotos,
             };
+            baselineRef.current = JSON.stringify({ formData, previews: updatedPreviews, files: Object.keys(mediaFiles).sort().map(key => [key, []]) });
             setPreviews(updatedPreviews);
             setMediaFiles({
                 heroImage: null,
@@ -3879,8 +3902,9 @@ return (
                     </div>
                 </div>
 
+                <p role="status" className="mb-3 text-xs text-text-secondary">{draftStatus}</p>
                 <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-                    {detectedDraft && !draftDismissed && !editId && (
+                    {detectedDraft && !draftDismissed && (
                         <div className="rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-amber-500/10 p-4 shadow-sm sm:p-5">
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex items-start gap-3">
@@ -3890,7 +3914,7 @@ return (
                                     <div>
                                         <p className="text-xs font-black uppercase tracking-wider text-primary">Unsaved Draft Found</p>
                                         <p className="mt-0.5 text-sm font-medium text-foreground">
-                                            We restored an unsaved draft on this browser ({new Date(detectedDraft.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}).
+                                            An unsaved draft is available on this browser ({new Date(detectedDraft.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}).
                                         </p>
                                     </div>
                                 </div>
@@ -3898,9 +3922,7 @@ return (
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            if (detectedDraft.formData) initializeFormData(detectedDraft.formData);
-                                            if (typeof detectedDraft.currentStep === 'number') setCurrentStep(detectedDraft.currentStep);
-                                            setDraftDismissed(true);
+                                            restoreDraft(detectedDraft);
                                         }}
                                         className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-md shadow-primary/20 hover:bg-primary-hover"
                                     >
@@ -3909,11 +3931,10 @@ return (
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            if (typeof window !== 'undefined') {
-                                                window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
-                                            }
+                                            if (detectedDraft.legacyImport && typeof window !== 'undefined') window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
                                             setDetectedDraft(null);
                                             setDraftDismissed(true);
+                                            if (scopeKey && !detectedDraft.legacyImport) void deleteBuilderDraft(scopeKey);
                                         }}
                                         className="min-h-[40px] rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary hover:bg-neutral"
                                     >

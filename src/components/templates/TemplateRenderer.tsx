@@ -44,6 +44,10 @@ export const TEMPLATE_COMPONENTS = {
     nordic: dynamic(() => import('./NordicTemplate')),
     celestial: dynamic(() => import('./CelestialTemplate')),
     riviera: dynamic(() => import('./RivieraTemplate')),
+    'editorial-luxe': dynamic(() => import('./EditorialLuxeTemplate')),
+    monochrome: dynamic(() => import('./MonochromeTemplate')),
+    'botanical-arch': dynamic(() => import('./BotanicalArchTemplate')),
+    'cinematic-vow': dynamic(() => import('./CinematicVowTemplate')),
     heirloom: PremiumTemplate,
     estate: PremiumTemplate,
     moonlit: PremiumTemplate,
@@ -199,8 +203,9 @@ export function getWeddingPageStyle(wedding: Wedding, options?: { includeGradien
 export function renderWeddingTemplate(props: TemplateProps) {
     const template = normalizeTemplateId(props.wedding.template);
     const Component = TEMPLATE_COMPONENTS[template];
-    const composition = props.wedding.template_style?.match(/(?:^|_)v([2-5])$/)?.[1];
-    const composed = Boolean(template !== 'classic' && composition);
+    const hasPortrait = Boolean(props.wedding.hero_image?.trim() || props.wedding.couple_photo?.trim());
+    const composition = props.wedding.template_style?.match(/(?:^|_)v([2-5])$/)?.[1] || (!hasPortrait ? '5' : undefined);
+    const composed = Boolean(composition && (template !== 'classic' || !hasPortrait));
     return <div className="wedding-template" data-template={template} data-template-style={props.wedding.template_style || 'default'}>
         {composed ? <ComposedTemplate {...props} composition={`v${composition}` as 'v2' | 'v3' | 'v4' | 'v5'} /> : <Component {...props} />}
     </div>;

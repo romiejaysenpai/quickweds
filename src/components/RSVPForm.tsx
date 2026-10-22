@@ -33,6 +33,13 @@ type SearchedGuest = {
     hasEmail?: boolean;
     maskedEmail?: string;
     tableAssignment?: string | null;
+    verificationAvailable?: boolean;
+    guestEmail?: string;
+    invitedGuestCount?: number;
+    dietaryDetails?: string;
+    message?: string;
+    songRequest?: string;
+    eventResponses?: RsvpEventResponse[];
 };
 
 type WeddingPreview = {
@@ -44,7 +51,7 @@ type WeddingPreview = {
     rsvp_search_guest_list?: boolean;
 };
 
-export default function RSVPForm({ weddingId, wedding }: { weddingId: string; wedding?: WeddingPreview }) {
+export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToken }: { weddingId: string; wedding?: WeddingPreview; verifiedGuest?: SearchedGuest; accessToken?: string }) {
     const events = (() => {
         if (Array.isArray(wedding?.rsvp_events)) return wedding.rsvp_events.filter((event) => event?.id && event?.name);
         if (typeof wedding?.rsvp_events !== 'string') return [];
@@ -67,9 +74,9 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
     }`;
     const labelClass = `ml-1 text-sm font-bold ${isDark ? 'text-white/70' : 'text-text-secondary'}`;
 
-    const allowPlusOnes = wedding?.rsvp_allow_plus_ones !== false;
+    const allowPlusOnes = wedding?.rsvp_allow_plus_ones !== false && (!verifiedGuest || verifiedGuest.plusOneAllowed === true);
     const allowChildren = wedding?.rsvp_allow_children !== false;
-    const enableSearch = wedding?.rsvp_search_guest_list !== false;
+    const enableSearch = !verifiedGuest && wedding?.rsvp_search_guest_list !== false;
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -81,25 +88,28 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
     const [searchResults, setSearchResults] = useState<SearchedGuest[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [selectedGuest, setSelectedGuest] = useState<SearchedGuest | null>(null);
+    const [selectedGuest, setSelectedGuest] = useState<SearchedGuest | null>(verifiedGuest || null);
     const searchRef = useRef<HTMLDivElement>(null);
 
     const [formData, setFormData] = useState({
-        guestName: '',
-        guestEmail: '',
-        attendance: 'Yes',
-        numGuests: 1,
-        mealPreference: '',
-        dietaryDetails: '',
-        message: '',
-        plusOneNames: '',
-        songRequest: '',
-        childrenCount: 0,
-        householdName: '',
-        householdMembers: '',
-        eventResponses: events.map((event) => ({ eventId: event.id, attendance: 'Yes' as const })) as RsvpEventResponse[],
+        guestName: verifiedGuest?.guestName || '',
+        guestEmail: verifiedGuest?.guestEmail || '',
+        attendance: verifiedGuest?.attendance === 'No' ? 'No' : 'Yes',
+        numGuests: Math.max(1, verifiedGuest?.numGuests || 1),
+        mealPreference: verifiedGuest?.mealPreference || '',
+        dietaryDetails: verifiedGuest?.dietaryDetails || '',
+        message: verifiedGuest?.message || '',
+        plusOneNames: verifiedGuest?.plusOneName || '',
+        songRequest: verifiedGuest?.songRequest || '',
+        childrenCount: verifiedGuest?.childrenCount || 0,
+        householdName: verifiedGuest?.householdName || '',
+        householdMembers: verifiedGuest?.householdMembers?.join('\n') || '',
+        eventResponses: verifiedGuest?.eventResponses || events.map((event) => ({ eventId: event.id, attendance: 'Yes' as const })) as RsvpEventResponse[],
     });
 
+    const [accessMessage, setAccessMessage] = useState('');
+    const [isRequestingAccess, setIsRequestingAccess] = useState(false);
+    const [manageUrl, setManageUrl] = useState('');
     const isAttending = formData.attendance !== 'No';
 
     // Debounced guest list search
@@ -142,26 +152,22 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleSelectGuest = (guest: SearchedGuest) => {
+    const handleSelectGuest = async (guest: SearchedGuest) => {
         setSelectedGuest(guest);
         setIsDropdownOpen(false);
-        setSearchQuery(guest.guestName);
-
-        setFormData((prev) => ({
-            ...prev,
-            guestName: guest.guestName,
-            attendance: guest.attendance === 'No' ? 'No' : 'Yes',
-            numGuests: allowPlusOnes ? Math.max(1, guest.numGuests || 1) : 1,
-            plusOneNames: allowPlusOnes ? (guest.plusOneName || '') : '',
-            childrenCount: allowChildren ? (guest.childrenCount || 0) : 0,
-            householdName: guest.householdName || '',
-            householdMembers: guest.householdMembers?.length ? guest.householdMembers.join('\n') : '',
-            mealPreference: guest.mealPreference || prev.mealPreference,
-        }));
+        setIsRequestingAccess(true);
+        setAccessMessage('');
+        try {
+            const response = await fetch('/api/public/rsvp/access', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ weddingId, rsvpId: guest.id }) });
+            const result = await response.json();
+            setAccessMessage(response.ok ? result.message : result.error || 'Unable to request a secure link. Please try again.');
+        } catch { setAccessMessage('Unable to request a secure link. Please try again.'); }
+        finally { setIsRequestingAccess(false); }
     };
 
     const handleClearSelectedGuest = () => {
         setSelectedGuest(null);
+        setAccessMessage('');
         setSearchQuery('');
         setFormData((prev) => ({
             ...prev,
@@ -188,11 +194,12 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     weddingId,
-                    rsvpId: selectedGuest?.id,
+                    rsvpId: verifiedGuest?.id,
+                    accessToken,
                     guestName: formData.guestName.trim(),
                     guestEmail: formData.guestEmail.trim(),
                     attendance: formData.attendance,
-                    numGuests: isAttending && allowPlusOnes ? formData.numGuests : 0,
+                    numGuests: isAttending ? (allowPlusOnes ? formData.numGuests : 1) : 1,
                     mealPreference: formData.mealPreference,
                     dietaryDetails: formData.dietaryDetails,
                     message: formData.message,
@@ -215,6 +222,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
                 return;
             }
 
+            setManageUrl(result.manageRsvpUrl || '');
             setIsSubmitted(true);
 
             // Confetti
@@ -247,10 +255,20 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
                     <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                 </div>
                 <h3 className="text-3xl font-serif mb-2 text-foreground">Thank You!</h3>
-                <p className="text-text-secondary italic">Your response has been received. We can&apos;t wait to celebrate together!</p>
+                <p className="text-text-secondary italic">Your response has been received. Thank you for letting us know!</p>
+                {manageUrl && <a href={manageUrl} className="mt-5 inline-block underline">Update your response (link expires in 30 minutes)</a>}
             </motion.div>
         );
     }
+
+    if (selectedGuest && !verifiedGuest) return (
+        <div className={`space-y-4 p-6 ${visual.cardClass}`} role="status">
+            <h3 className="text-xl font-bold">Verify your invitation</h3>
+            <p>{isRequestingAccess ? 'Requesting your secure link…' : accessMessage}</p>
+            <p>If you cannot access the email on your invitation, contact the couple to update it.</p>
+            <button type="button" onClick={handleClearSelectedGuest} className="underline">Back to guest search</button>
+        </div>
+    );
 
     return (
         <div className={`mx-auto w-full max-w-2xl p-0 sm:p-2 transition-colors ${
@@ -280,7 +298,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
 
             <form onSubmit={handleSubmit} className="space-y-5 text-left sm:space-y-6">
                 {/* Searchable guest list / Selected Guest Header */}
-                {selectedGuest ? (
+                {verifiedGuest ? (
                     <div className={`flex items-center justify-between rounded-2xl border p-4 shadow-xs ${isDark ? 'border-primary/30 bg-primary/10' : 'border-primary/20 bg-primary/5'}`}>
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-sm">
@@ -288,13 +306,14 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
                             </div>
                             <div>
                                 <p className="text-xs font-bold uppercase tracking-wider text-primary">Found on Guest List</p>
-                                <p className="font-serif text-lg font-bold">{selectedGuest.guestName}</p>
-                                {selectedGuest.householdName && (
-                                    <p className={`text-xs ${isDark ? 'text-white/60' : 'text-text-secondary'}`}>Household: {selectedGuest.householdName}</p>
+                                <p className="font-serif text-lg font-bold">{verifiedGuest.guestName}</p>
+                                {verifiedGuest.householdName && (
+                                    <p className={`text-xs ${isDark ? 'text-white/60' : 'text-text-secondary'}`}>Household: {verifiedGuest.householdName}</p>
                                 )}
                             </div>
                         </div>
                         <button
+                            hidden={Boolean(verifiedGuest)}
                             type="button"
                             onClick={handleClearSelectedGuest}
                             className={`flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
@@ -414,7 +433,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
                 {/* Email Address */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <label className={labelClass}>Email Address *</label>
+                        <label className={labelClass}>Email Address (optional)</label>
                         {selectedGuest?.hasEmail && (
                             <span className="text-xs text-text-secondary">
                                 Masked on file: {selectedGuest.maskedEmail}
@@ -422,7 +441,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
                         )}
                     </div>
                     <input
-                        required
+                        readOnly={Boolean(verifiedGuest)}
                         type="email"
                         placeholder="For your RSVP confirmation"
                         value={formData.guestEmail}
@@ -442,7 +461,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
                                 setFormData((prev) => ({
                                     ...prev,
                                     attendance: nextAttendance,
-                                    ...(nextAttendance === 'No' ? { childrenCount: 0 } : {}),
+                                    ...(nextAttendance === 'No' ? { childrenCount: 0, plusOneNames: '', householdMembers: '', mealPreference: '', dietaryDetails: '', songRequest: '', eventResponses: prev.eventResponses.map((item) => ({ ...item, attendance: 'No' as const })) } : {}),
                                 }));
                             }}
                             className={fieldClass}
@@ -458,7 +477,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
                             <input
                                 type="number"
                                 min="1"
-                                max="100"
+                                max={verifiedGuest?.invitedGuestCount || 50}
                                 inputMode="numeric"
                                 placeholder="1"
                                 value={formData.numGuests === 0 ? '' : formData.numGuests}
@@ -499,7 +518,7 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
                         className={fieldClass}
                     />
                     <p className={`ml-1 text-xs ${isDark ? 'text-white/50' : 'text-text-secondary'}`}>
-                        Optional. Use this when confirming RSVP on behalf of your family or household.
+                        Optional. Add a label for the guests included in your invitation.
                     </p>
                 </div>
 
@@ -513,13 +532,13 @@ export default function RSVPForm({ weddingId, wedding }: { weddingId: string; we
                             className={`${fieldClass} min-h-24 resize-y`}
                         />
                         <p className={`ml-1 text-xs ${isDark ? 'text-white/50' : 'text-text-secondary'}`}>
-                            Each family member will be recorded by name so the couple can arrange table groupings.
+                            These names describe your party. Separate invitations must be confirmed with their own secure links.
                         </p>
                     </div>
                 )}
 
                 {/* Event Responses */}
-                {events.length > 0 && (
+                {isAttending && events.length > 0 && (
                     <fieldset className={`space-y-3 rounded-2xl border p-4 sm:p-5 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-border bg-neutral/50'}`}>
                         <legend className={`px-2 text-sm font-bold ${isDark ? 'text-white' : 'text-foreground'}`}>Choose events</legend>
                         {events.map((event) => {

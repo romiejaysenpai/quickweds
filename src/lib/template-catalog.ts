@@ -19,10 +19,10 @@ export type TemplateRecommendationInput = {
 
 const TEMPLATE_FILTERS: Record<Exclude<TemplateFilter, 'all'>, readonly string[]> = {
     classic: ['classic', 'traditional', 'elegance', 'vintage', 'royal', 'artdeco'],
-    modern: ['minimal', 'timeline', 'rsvpfocus', 'vogue', 'editorial'],
-    romantic: ['romantic', 'whimsical', 'sakura', 'garden', 'rustic', 'boho'],
-    destination: ['elopement', 'tropical', 'cinematic', 'film'],
-    bold: ['luxury', 'midnight', 'urban', 'glitch', 'vogue', 'editorial'],
+    modern: ['minimal', 'timeline', 'rsvpfocus', 'vogue', 'editorial', 'editorial-luxe', 'monochrome'],
+    romantic: ['romantic', 'whimsical', 'sakura', 'garden', 'rustic', 'boho', 'botanical-arch'],
+    destination: ['elopement', 'tropical', 'cinematic', 'film', 'cinematic-vow'],
+    bold: ['luxury', 'midnight', 'urban', 'glitch', 'vogue', 'editorial', 'monochrome', 'cinematic-vow'],
 };
 
 export function templateMatchesFilter(templateId: string, filter: TemplateFilter) {
@@ -831,6 +831,46 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         mood: 'Warm light, open skies, and an evening to remember',
         tier: 'premium',
         previewGradient: 'linear-gradient(135deg, #fff6ec 0%, #f5d3a5 52%, #d4774f 100%)',
+    },
+    {
+        id: 'editorial-luxe',
+        name: 'Editorial Luxe',
+        desc: 'Asymmetrical two-column magazine cover with Didone typography and pull-quote accents.',
+        accent: '#B85A66',
+        eyebrow: 'Vogue & Harper Edition',
+        mood: 'Warm alabaster, editorial columns, and high-fashion serif',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #FAF7F2 0%, #EFE8DE 50%, #B85A66 100%)',
+    },
+    {
+        id: 'monochrome',
+        name: 'Monochrome Runway',
+        desc: 'Architectural stark minimalism, razor-thin hairline grid rules, and high contrast.',
+        accent: '#111111',
+        eyebrow: 'High Fashion Runway',
+        mood: 'Gallery white, stark ink, and timeless precision',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #FFFFFF 0%, #EEEEEE 52%, #111111 100%)',
+    },
+    {
+        id: 'botanical-arch',
+        name: 'Botanical Arch',
+        desc: 'Cathedral arch portrait framing with organic eucalyptus sage and deckle paper finish.',
+        accent: '#4A6B53',
+        eyebrow: 'Architectural Botanicals',
+        mood: 'Sage leaf, warm ecru, and cathedral curves',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #FAF9F5 0%, #E4EAE4 50%, #4A6B53 100%)',
+    },
+    {
+        id: 'cinematic-vow',
+        name: 'Cinematic Vow',
+        desc: '2.39:1 anamorphic letterbox framing, analog film badges, and golden-hour noir mood.',
+        accent: '#C89666',
+        eyebrow: 'Cinema 2.39:1',
+        mood: 'Warm amber, anamorphic letterbox, and love on film',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #12100E 0%, #292019 50%, #C89666 100%)',
     },
 ];
 

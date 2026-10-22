@@ -65,6 +65,7 @@ export type WeddingEmailProps = {
     guestCode?: string;
     checkInUrl?: string;
     confirmationImageUrl?: string;
+    manageRsvpUrl?: string;
     message?: string;
     dietaryDetails?: string;
     songRequest?: string;
@@ -381,7 +382,7 @@ export function GuestConfirmationEmail(props: WeddingEmailProps) {
                     badge={isAttending ? 'Confirmed' : 'Received'}
                 />
             }
-            footerNote={<Text style={footerTextStyle}>Need to update your RSVP? <Link href={props.weddingUrl} style={linkStyle}>Visit the invitation page</Link>.</Text>}
+            footerNote={<Text style={footerTextStyle}>Need to update your RSVP? <Link href={props.manageRsvpUrl || props.weddingUrl} style={linkStyle}>Open your secure RSVP link</Link>.</Text>}
         >
             <Section style={contentSectionStyle}>
                 <PromoBand

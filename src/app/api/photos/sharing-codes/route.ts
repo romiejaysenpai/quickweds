@@ -38,9 +38,8 @@ async function createSharingCode(req: NextRequest, body: Record<string, unknown>
         if ('response' in context) return context.response;
 
         const requestedMax = body.maxUploads != null ? Number(body.maxUploads) : 1000;
-        const maxUploads = Number.isFinite(requestedMax) && requestedMax > 3
-            ? Math.min(10000, Math.max(1, Math.floor(requestedMax)))
-            : 1000;
+        if (!Number.isInteger(requestedMax) || requestedMax < 1 || requestedMax > 10000) return NextResponse.json({ error: 'Upload limit must be a whole number from 1 to 10000.' }, { status: 400 });
+        const maxUploads = requestedMax;
         let lastError: unknown = null;
 
         for (let attempt = 0; attempt < 5; attempt += 1) {

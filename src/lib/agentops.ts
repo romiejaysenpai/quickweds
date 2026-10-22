@@ -50,13 +50,16 @@ function getUserName(user: { user_metadata?: Record<string, unknown> | null; ema
 
 export async function getEligibleLifecycleTasks(
     db: ReturnType<typeof getSupabaseAdminClient>,
-    limit = 25
+    limit = 25,
+    onlyUserId?: string
 ): Promise<LifecycleTask[]> {
     const tasks: LifecycleTask[] = [];
     const adminDb = db as any;
 
     // Fetch all auth users
-    const { data: usersData } = await adminDb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const userResult = onlyUserId ? await adminDb.auth.admin.getUserById(onlyUserId) : await adminDb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    if (userResult.error) throw userResult.error;
+    const usersData = onlyUserId ? { users: userResult.data?.user ? [userResult.data.user] : [] } : userResult.data;
     const users: Array<{
         id: string;
         email?: string;
@@ -70,7 +73,7 @@ export async function getEligibleLifecycleTasks(
     const { data: weddings } = await adminDb
         .from('weddings')
         .select('id, user_id, bride_name, groom_name, wedding_date, venue_name, public_slug, created_at, deleted_at')
-        .is('deleted_at', null);
+        .is('deleted_at', null).in('user_id', users.map(user => user.id));
 
     // Fetch all profiles
     const userIds = users.map((u) => u.id);
@@ -345,13 +348,15 @@ export async function executeLifecycleTask(
     task: LifecycleTask,
     dryRun = false
 ): Promise<{ success: boolean; status?: string; action: string; emailId?: string; error?: string }> {
-    if (task.suppressed) {
-        return {
-            success: false,
-            status: 'skipped_suppressed',
-            action: 'skipped_suppressed',
-            error: 'Task is suppressed because user is unsubscribed.',
-        };
+    const canonical = (await getEligibleLifecycleTasks(db, 1, task.userId)).find(candidate => candidate.id === task.id && candidate.lifecycleStage === task.lifecycleStage);
+    if (!canonical || canonical.suppressed) return { success: false, status: 'skipped_ineligible', action: 'skipped_ineligible', error: 'This task is no longer eligible.' };
+    task = canonical;
+    let unsubscribeUrl = '';
+    if (['planner_pro_education', 'guest_list_idle', 'post_wedding_followup'].includes(task.lifecycleStage)) {
+        const { data: subscription, error } = await (db as any).from('marketing_nurture_subscribers').select('status,unsubscribe_token').eq('user_id', task.userId).maybeSingle();
+        if (error) throw error;
+        if (subscription?.status !== 'active' || !subscription.unsubscribe_token) return { success: false, action: 'skipped_suppressed' };
+        unsubscribeUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.quickweds.site'}/api/marketing/unsubscribe?token=${encodeURIComponent(subscription.unsubscribe_token)}`;
     }
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.quickweds.site').replace(/\/+$/, '');
@@ -380,12 +385,14 @@ export async function executeLifecycleTask(
         });
     }
 
+    if (unsubscribeUrl) html += `<p><a href="${unsubscribeUrl}">Unsubscribe from planning tips</a></p>`;
     if (dryRun) {
         return { success: true, action: `dry_run:${task.lifecycleStage}` };
     }
 
     const result = await sendEmail({
         to: task.email,
+        tracking: { key: `lifecycle:${task.userId}:${task.lifecycleStage}:${task.weddingId || 'account'}` },
         subject,
         html,
     });

@@ -1,4 +1,5 @@
 'use client';
+import PhotoRecoveryPanel from './PhotoRecoveryPanel';
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -112,6 +113,8 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
     const [settings, setSettings] = useState<PortalSettings>(DEFAULT_SETTINGS);
     const [hasPro, setHasPro] = useState(hasPlannerPro);
     const [filter, setFilter] = useState<FilterKey>('all');
+    const [exporting, setExporting] = useState(false);
+    const [exportOffset, setExportOffset] = useState(0);
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
     const [error, setError] = useState('');
     const [qrStatus, setQrStatus] = useState('');
@@ -265,25 +268,21 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
         }
     }
 
-    function downloadApprovedPhotos() {
-        const approvedPhotos = photos.filter((photo) => getPhotoStatus(photo) === 'approved');
-        if (approvedPhotos.length === 0) {
-            window.alert('There are no approved photos to download yet.');
-            return;
-        }
-
-        approvedPhotos.forEach((photo, index) => {
-            window.setTimeout(() => {
-                const link = document.createElement('a');
-                link.href = photo.cloudinary_url;
-                link.download = `quickweds-photo-${index + 1}.jpg`;
-                link.target = '_blank';
-                link.rel = 'noopener noreferrer';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }, index * 250);
-        });
+    async function downloadApprovedPhotos() {
+        const approved = photos.filter(photo => getPhotoStatus(photo) === 'approved');
+        if (!approved.length) { window.alert('There are no approved photos to download yet.'); return; }
+        setExporting(true);
+        try {
+            const token = (await getCachedSession()).data.session?.access_token;
+            if (!token) throw new Error('Please sign in again.');
+            // Explicit batches avoid opening dozens of browser tabs or unbounded server work.
+            const batch = approved.slice(exportOffset, exportOffset + 5);
+            const response = await fetch('/api/photos/export', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ weddingId, photoIds: batch.map(photo => photo.id) }) });
+            if (!response.ok) { const result = await response.json(); throw new Error(result.error || 'Unable to export photos.'); }
+            const url = URL.createObjectURL(await response.blob()); const link = document.createElement('a'); link.href = url; link.download = `quickweds-photos-${exportOffset + 1}.zip`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+            setExportOffset(exportOffset + batch.length >= approved.length ? 0 : exportOffset + batch.length);
+        } catch (error) { window.alert(error instanceof Error ? error.message : 'Unable to export photos.'); }
+        finally { setExporting(false); }
     }
 
     function toggleFilter(filterId: string) {
@@ -494,13 +493,15 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
                 </div>
             </section>
 
+            <PhotoRecoveryPanel weddingId={weddingId} onRecovered={() => void loadData(false)} />
+
             <section className="rounded-xl border border-border bg-white soft-shadow dark:bg-white/5 sm:rounded-2xl">
                 <div className="border-b border-border/60 p-3 sm:p-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <h3 className="font-serif text-lg font-bold text-foreground">Uploaded Photos</h3>
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                            <button type="button" onClick={downloadApprovedPhotos} className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-foreground hover:border-primary/40">
-                                <Download className="h-4 w-4" /> Download Approved
+                            <button type="button" onClick={downloadApprovedPhotos} disabled={exporting} className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-foreground hover:border-primary/40">
+                                <Download className="h-4 w-4" /> {exporting ? 'Preparing ZIP…' : `ZIP (up to 5) · batch ${Math.floor(exportOffset / 5) + 1}`}
                             </button>
                             <div className="grid grid-cols-4 gap-1 rounded-xl bg-neutral p-1">
                                 {(['all', 'pending', 'approved', 'rejected'] as FilterKey[]).map((item) => (

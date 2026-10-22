@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, timingSafeEqual } from 'crypto';
 import { getPublicAppUrl } from '@/lib/site-url';
 
 const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
@@ -102,7 +102,9 @@ export async function refreshGoogleCalendarAccessToken(refreshToken: string) {
 
 export async function upsertGoogleCalendarEvent(accessToken: string, calendarId: string, event: any) {
     const endDate = event.ends_at || new Date(new Date(event.starts_at).getTime() + 60 * 60 * 1000).toISOString();
+    const stableId = createHash('sha256').update(`quickweds:${event.id}`).digest('hex');
     const body = {
+        ...(!event.google_event_id ? { id: stableId } : {}),
         summary: event.title,
         location: event.location || undefined,
         description: event.notes || undefined,
@@ -117,7 +119,7 @@ export async function upsertGoogleCalendarEvent(accessToken: string, calendarId:
     const url = event.google_event_id
         ? `https://www.googleapis.com/calendar/v3/calendars/${encodedCalendarId}/events/${encodeURIComponent(event.google_event_id)}`
         : `https://www.googleapis.com/calendar/v3/calendars/${encodedCalendarId}/events`;
-    const response = await fetch(url, {
+    let response = await fetch(url, {
         method: event.google_event_id ? 'PUT' : 'POST',
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -125,6 +127,9 @@ export async function upsertGoogleCalendarEvent(accessToken: string, calendarId:
         },
         body: JSON.stringify(body),
     });
+    if (!event.google_event_id && response.status === 409) {
+        response = await fetch(`${url}/${stableId}`, { method: 'PUT', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    }
     const data = await response.json();
     if (!response.ok) {
         throw new Error(data.error?.message || 'Unable to sync event to Google Calendar');

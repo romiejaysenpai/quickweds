@@ -326,15 +326,26 @@ export async function invalidateWeddingPublicCache(...identifiers: Array<string 
     await redisDel(...keys);
     if (cleanIdentifiers.length > 0) {
         for (const identifier of cleanIdentifiers) {
-            revalidateTag(publicWeddingCacheTag(identifier), 'max');
+            revalidateTag(publicWeddingCacheTag(identifier), { expire: 0 });
         }
     } else {
-        revalidateTag('public-wedding', 'max');
+        revalidateTag('public-wedding', { expire: 0 });
     }
 }
 
-export function getCachedPublicWedding(rawIdentifier: string) {
+export async function getCachedPublicWedding(rawIdentifier: string) {
     const normalizedIdentifier = rawIdentifier.trim();
+    const templateTestWedding = getTemplateTestWedding(normalizedIdentifier);
+    if (templateTestWedding) return templateTestWedding;
+
+    // Check revocation outside both caches. Cached content must never keep a
+    // deleted wedding public, even when deletion/cache invalidation race.
+    const active = await resolvePublicWeddingByIdentifier(
+        getSupabaseAdminClient(), normalizedIdentifier, 'id'
+    );
+    if (active.error) throw active.error;
+    if (!active.wedding) return null;
+
     const cachedLoader = unstable_cache(
         async () => loadPublicWedding(rawIdentifier),
         ['public-wedding', normalizedIdentifier],

@@ -1,3 +1,4 @@
+import { guestPartySize, isGuestAttending } from '@/lib/guest-counts';
 import { randomBytes } from 'crypto';
 
 export type SeatFinderRsvp = {
@@ -50,14 +51,11 @@ export function makeGuestCode(name?: string | null) {
 }
 
 export function isAttendingGuest(guest: Pick<SeatFinderRsvp, 'rsvp_status' | 'attendance'>) {
-    return guest.rsvp_status === 'confirmed' || guest.rsvp_status === 'confirmed_manual' || guest.attendance === 'Yes';
+    return isGuestAttending(guest);
 }
 
 export function getSeatFinderPartySize(guest?: Pick<SeatFinderRsvp, 'num_guests' | 'plus_one_allowed' | 'plus_one_name' | 'plus_one_rsvp_status'> | null) {
-    const explicitCount = Number(guest?.num_guests || 0);
-    if (Number.isFinite(explicitCount) && explicitCount > 1) return Math.floor(explicitCount);
-    const plusOneCounts = Boolean(guest?.plus_one_allowed && guest?.plus_one_name) && guest?.plus_one_rsvp_status !== 'declined';
-    return plusOneCounts ? 2 : 1;
+    return guestPartySize(guest);
 }
 
 export function escapeHtml(value: unknown) {

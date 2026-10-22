@@ -14,6 +14,16 @@ export async function GET(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
+        const { data: wedding, error: weddingError } = await db
+            .from('weddings')
+            .select('id')
+            .eq('id', weddingId)
+            .is('deleted_at', null).eq('planner_only', false)
+            .maybeSingle();
+
+        if (weddingError) throw weddingError;
+        if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
+
         const { data, error } = await db
             .from('guest_book')
             .select(GUEST_BOOK_COLUMNS)
@@ -24,7 +34,7 @@ export async function GET(req: NextRequest) {
         if (error) throw error;
         return NextResponse.json(
             { entries: data || [] },
-            { headers: { ...limited.headers, 'Cache-Control': 'public, max-age=30, stale-while-revalidate=120' } }
+            { headers: { ...limited.headers, 'Cache-Control': 'no-store' } }
         );
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to load guest book.';
@@ -53,7 +63,7 @@ export async function POST(req: NextRequest) {
             .from('weddings')
             .select('id')
             .eq('id', weddingId)
-            .is('deleted_at', null)
+            .is('deleted_at', null).eq('planner_only', false)
             .maybeSingle();
 
         if (weddingError) throw weddingError;

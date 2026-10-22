@@ -28,6 +28,7 @@ export const webhookSchema = z.object({
 
 // Wedding Reminder Validation
 export const reminderSchema = z.object({
+    requestId: z.uuid(),
     weddingId: z.string().min(1, 'Wedding ID is required'),
     targetStatus: z.enum(['pending', 'confirmed', 'declined']).default('pending'),
 });
@@ -69,10 +70,11 @@ export const weddingBuilderSchema = z.object({
 // RSVP Submission Validation
 export const rsvpSubmissionSchema = z.object({
     weddingId: z.string().min(1, 'Wedding ID is required'),
-    rsvpId: z.string().optional(),
+    rsvpId: z.string().max(100).optional(),
+    accessToken: z.string().max(2048).optional(),
     guestName: z.string().min(1, 'Guest name is required').max(200),
     guestEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
-    attendance: z.enum(['Yes', 'No', 'Maybe']),
+    attendance: z.enum(['Yes', 'No']),
     numGuests: z.coerce.number().int().min(1).max(50).optional().default(1),
     mealPreference: z.string().max(200).optional(),
     dietaryDetails: z.string().max(1000).optional().default(''),

@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { randomBytes, createHash } from 'crypto';
+import { createHmac, createHash } from 'crypto';
 import { z } from 'zod';
 import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
@@ -13,6 +13,7 @@ import { getEntourageProposalEmailHtml } from '@/lib/entourage-proposal-email';
 export const dynamic = 'force-dynamic';
 
 const sendSchema = z.object({
+    requestId: z.uuid(),
     weddingId: z.string().min(1).max(64),
     memberKey: z.string().trim().min(1).max(120),
     name: z.string().trim().min(1).max(160),
@@ -48,11 +49,6 @@ function normalizeHeroImageUrl(value: string | undefined, fallback?: string | nu
     }
 }
 
-function isSchemaMissingError(error: any) {
-    const message = `${error?.code || ''} ${error?.message || ''} ${error?.details || ''}`.toLowerCase();
-    return error?.code === 'PGRST204' || error?.code === '42703' || message.includes('schema cache') || message.includes('column');
-}
-
 export async function POST(req: NextRequest) {
     const limited = await createRateLimitMiddleware('ENTOURAGE_INVITE').check(getClientIP(req));
     if (limited.limited) return limited.response;
@@ -78,7 +74,9 @@ export async function POST(req: NextRequest) {
 
         const wedding = access.wedding as any;
         const template = getEntourageProposalTemplate(parsed.data.templateKey);
-        const token = randomBytes(32).toString('base64url');
+        const secret=process.env.RSVP_ACCESS_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE;
+        if(!secret)throw new Error('Invitation signing is unavailable.');
+        const token = createHmac('sha256',secret).update(`quickweds:entourage:v1:${parsed.data.weddingId}:${parsed.data.memberKey}:${parsed.data.requestId}`).digest('base64url');
         const tokenHash = hashToken(token);
         const appUrl = getAppUrl();
         const acceptUrl = `${appUrl}/entourage/respond/${token}?response=accept`;
@@ -110,27 +108,13 @@ export async function POST(req: NextRequest) {
             updated_at: now,
         };
 
-        let { data: invitation, error: saveError } = await db
-            .from('entourage_invitations')
-            .upsert(invitePayload, { onConflict: 'wedding_id,member_key' })
-            .select('id, wedding_id, member_key, name, email, role, message, template_key, card_theme, proposal_title, proposal_hero_image_url, status, sent_at, responded_at, created_at, updated_at')
-            .single();
-
-        // Keep existing proposal sending working for projects that have not yet run the
-        // optional proposal-customization migration. The email can still use the selected design.
-        if (saveError && isSchemaMissingError(saveError)) {
-            const { card_theme, proposal_title, proposal_hero_image_url, ...legacyInvitePayload } = invitePayload;
-            ({ data: invitation, error: saveError } = await db
-                .from('entourage_invitations')
-                .upsert(legacyInvitePayload, { onConflict: 'wedding_id,member_key' })
-                .select('id, wedding_id, member_key, name, email, role, message, template_key, status, sent_at, responded_at, created_at, updated_at')
-                .single());
-        }
-
-        if (saveError) throw saveError;
+        const {data:invitation,error:saveError}=await db.rpc('quickweds_prepare_entourage',{p_wedding:parsed.data.weddingId,p_request:parsed.data.requestId,p_fingerprint:createHash('sha256').update(JSON.stringify(parsed.data)).digest('hex'),p_data:invitePayload});
+        if(saveError)throw saveError;
+        const {token_hash: _tokenHash, send_fingerprint: _fingerprint, ...publicInvitation}=invitation;
 
         const emailResult = await sendEmail({
             to: invitePayload.email,
+            tracking:{key:`entourage:${parsed.data.weddingId}:${parsed.data.memberKey}:${parsed.data.requestId}`,weddingId:parsed.data.weddingId,recoverable:true,guard:{table:'entourage_invitations',id:invitation.id,emailField:'email',tokenHash}},
             subject: `${wedding.bride_name || 'Bride'} & ${wedding.groom_name || 'Groom'} — ${customTitle}`,
             html: getEntourageProposalEmailHtml({
                 inviteeName: invitePayload.name,
@@ -151,15 +135,15 @@ export async function POST(req: NextRequest) {
             await db
                 .from('entourage_invitations')
                 .update({ status: 'draft', updated_at: new Date().toISOString() })
-                .eq('id', invitation.id);
+                .eq('id', invitation.id).eq('send_operation_id',parsed.data.requestId).eq('status','sent');
 
             return NextResponse.json({
                 error: emailResult.error || 'Unable to send proposal email.',
-                invitation: { ...invitation, status: 'draft' },
+                invitation: { ...publicInvitation, status: 'draft' },
             }, { status: 502 });
         }
 
-        return NextResponse.json({ invitation, emailSent: true });
+        return NextResponse.json({ invitation:publicInvitation, emailSent: true });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to send entourage proposal.';
         return NextResponse.json({ error: message }, { status: 500 });

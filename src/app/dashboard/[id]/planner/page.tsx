@@ -3,6 +3,8 @@
 import { useState, useEffect, use, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
+import { emailOperationId, completeEmailOperation } from '@/lib/email-operation';
+import { calculatePlannerBudget } from '@/lib/planner-budget';
 import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode, Filter, ArrowUpDown, Calendar, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -15,6 +17,7 @@ import { getCachedSession } from '@/lib/session-cache';
 import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate, getEntourageCardTheme } from '@/lib/entourage-proposal-templates';
 import { EntourageProposalCustomizerSection } from '@/components/EntourageProposalCustomizerSection';
 import { SUPPORTED_CURRENCIES, getCurrencySymbol, normalizeCurrencyCode } from '@/lib/currency';
+import PlannerOverview from '@/components/dashboard/PlannerOverview';
 import BudgetStarterModal from '@/components/dashboard/BudgetStarterModal';
 import CustomCategoryModal from '@/components/dashboard/CustomCategoryModal';
 import BudgetDeleteConfirmModal from '@/components/dashboard/BudgetDeleteConfirmModal';
@@ -40,7 +43,7 @@ const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudg
     loading: () => <div className="h-full w-full animate-pulse rounded-full bg-neutral/50" />,
 });
 
-const PLANNER_TABS = ['checklist', 'entourage', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
+const PLANNER_TABS = ['overview', 'checklist', 'entourage', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
 type PlannerTab = typeof PLANNER_TABS[number];
 type VendorPaymentStatus = 'not paid' | 'pending' | 'paid';
 
@@ -51,6 +54,7 @@ const PLANNER_TAB_DETAILS: {
     headline: string;
     body: string;
 }[] = [
+    { tab: 'overview', label: 'Overview', icon: LayoutDashboard, headline: 'Your planning progress', body: 'Review readiness, catering, payments, gifts, and recent activity.' },
     {
         tab: 'checklist',
         label: 'Checklist',
@@ -656,6 +660,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                     ) : (
                         <>
                             <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
+                            {activeTab === 'overview' && <PlannerOverview weddingId={weddingId} />}
                             {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={refreshPlannerData} />}
                             {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={refreshPlannerData} />}
                             {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={refreshPlannerData} hasPlannerPro={hasPlannerPro} />}
@@ -844,6 +849,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                 body: JSON.stringify({
                     weddingId,
                     memberKey,
+                    requestId:emailOperationId(weddingId,`entourage:${memberKey}`),
                     name: member.name,
                     email: member.email,
                     role: member.role || 'Wedding Entourage',
@@ -859,6 +865,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'Unable to send proposal.');
+            completeEmailOperation(weddingId,`entourage:${memberKey}`);
 
             setInvitations((current: any[]) => {
                 const next = current.filter((invite: any) => String(invite.member_key) !== memberKey);
@@ -1251,7 +1258,13 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
 
         if (rows.length === 0) return alert('The 12-month checklist is already loaded.');
         try {
-            const createdTasks = await Promise.all(rows.map((row) => createPlannerItem(weddingId, 'task', row)));
+            const { data: sessionData } = await getCachedSession();
+            const token = sessionData.session?.access_token;
+            if (!token) throw new Error('Please sign in again.');
+            const response = await fetch('/api/planner/checklist', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ weddingId, rows }) });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Unable to create checklist.');
+            const createdTasks = result.tasks || [];
             if (setTasks) {
                 setTasks((current: any[]) => [
                     ...current,
@@ -1472,12 +1485,13 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
                 body: JSON.stringify({ weddingId }),
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Unable to sync Google Calendar.');
+            if (!response.ok || data.success === false) throw new Error(data.error || (data.errors || []).join('\n') || 'Unable to sync Google Calendar.');
             if (!silent) alert(`Synced ${data.synced || 0} schedule items to Google Calendar.`);
             void reload();
         } catch (err) {
             console.error('Google Calendar sync failed:', err);
-            if (!silent) alert(err instanceof Error ? err.message : 'Unable to sync Google Calendar.');
+            alert(err instanceof Error ? err.message : 'Unable to sync Google Calendar.');
+            void reload();
         } finally {
             setSyncingGoogle(false);
         }
@@ -1505,7 +1519,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
     async function deleteGoogleCalendarEvent(eventId: string) {
         if (!googleCalendar?.connected) return;
         const token = await getAuthToken();
-        await fetch('/api/planner/google-calendar/sync', {
+        const response = await fetch('/api/planner/google-calendar/sync', {
             method: 'DELETE',
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -1513,6 +1527,10 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
             },
             body: JSON.stringify({ weddingId, eventId }),
         });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || 'Google Calendar could not remove this event. Your planner event was kept so you can retry.');
+        }
     }
 
     async function addEvent(e: any) {
@@ -1939,7 +1957,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
         .filter((v: any) => v.payment_status?.toLowerCase() !== 'paid')
         .reduce((acc: number, v: any) => acc + (parseFloat(v.amount) || 0), 0);
     
-    const totalCommitted = totalEst + totalSpentFromVendors;
+    const totalCommitted = calculatePlannerBudget(initialBudgets, vendors, foodDrinks).committed;
     const totalBudgetValue = parseFloat(String(localBudget)) || 0;
     const guestTargetValue = parseInt(String(localGuestLimit), 10) || 0;
     const budgetRemaining = totalBudgetValue - totalCommitted;
