@@ -1,6 +1,7 @@
 'use client';
 
-import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Monitor, Smartphone } from 'lucide-react';
 import { getTemplateMeta, getTemplateStyleLabel } from '@/lib/template-catalog';
 import { serializeDressCodeValue } from '@/lib/dress-code';
 import { getSafeMonogramConfig } from '@/lib/monogram';
@@ -21,10 +22,12 @@ function LivePreview({
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const retryTimersRef = useRef<number[]>([]);
     const payloadRevisionRef = useRef(0);
+    const [viewportMode, setViewportMode] = useState<'mobile' | 'desktop'>('mobile');
     const previewChannel = isMobileView ? 'mobile' : 'desktop';
     const previewInstanceId = `${previewChannel}-${useId().replaceAll(':', '')}`;
     const previewStorageKey = `${PREVIEW_STORAGE_KEY}:${previewInstanceId}`;
     const templateMeta = getTemplateMeta(formData.template);
+    const isDesktopViewport = !isMobileView && viewportMode === 'desktop';
 
     const previewPayload = useMemo(() => {
         const monogram = getSafeMonogramConfig(
@@ -56,9 +59,30 @@ function LivePreview({
                 template_style: formData.templateStyle || 'default',
                 card_style: formData.cardStyle || 'default',
                 dress_code: serializeDressCodeValue({
-                    sponsors: { attire: formData.sponsorDressCode, color: formData.sponsorDressCodeColor },
-                    guests: { attire: formData.dressCode, color: formData.dressCodeColor },
+                    sponsors: {
+                        attire: formData.sponsorDressCode,
+                        color: formData.sponsorDressCodeColor,
+                        suitColor: formData.sponsorDressCodeSuitColor,
+                        colors: formData.sponsorDressCodeColors?.length ? formData.sponsorDressCodeColors : [formData.sponsorDressCodeColor],
+                        notes: formData.sponsorDressCodeNotes,
+                    },
+                    guests: {
+                        attire: formData.dressCode,
+                        color: formData.dressCodeColor,
+                        suitColor: formData.dressCodeSuitColor,
+                        colors: formData.dressCodeColors?.length ? formData.dressCodeColors : [formData.dressCodeColor],
+                        notes: formData.dressCodeNotes,
+                    },
+                    bridesmaids: formData.includeBridesmaidAttire ? {
+                        attire: formData.bridesmaidDressCode,
+                        color: formData.bridesmaidDressCodeColor,
+                        colors: formData.bridesmaidDressCodeColors?.length ? formData.bridesmaidDressCodeColors : [formData.bridesmaidDressCodeColor],
+                        notes: formData.bridesmaidDressCodeNotes,
+                    } : undefined,
                 }),
+                rsvp_allow_plus_ones: formData.rsvpAllowPlusOnes !== false,
+                rsvp_allow_children: formData.rsvpAllowChildren !== false,
+                rsvp_search_guest_list: formData.rsvpSearchGuestList !== false,
                 program_timeline: formData.programTimeline,
                 faq_items: formData.faqItems,
                 story: formData.story,
@@ -80,6 +104,7 @@ function LivePreview({
                 background_music_title: formData.backgroundMusicTitle,
                 background_music_enabled: Boolean(formData.backgroundMusicEnabled && previews.backgroundMusic),
                 wedding_party: formData.weddingParty,
+                include_entourage_section: formData.includeEntourageSection !== false,
                 gift_registry_links: formData.registryLinks,
                 cash_funds: formData.cashFunds,
                 payment_links: formData.paymentLinks,
@@ -153,26 +178,66 @@ function LivePreview({
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                     <div className="absolute -left-12 top-8 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
                     <div className="absolute -right-12 bottom-8 h-32 w-32 rounded-full bg-accent/10 blur-3xl" />
-                    <div className="mb-4 flex items-center justify-between px-1">
+                    <div className="mb-4 flex items-center justify-between gap-2 px-1">
                         <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-text-secondary/60">Live Preview</p>
                             <p className="mt-1 text-sm font-semibold text-foreground">{templateMeta.name}</p>
                             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-text-secondary/50">{getTemplateStyleLabel(formData.templateStyle)}</p>
                         </div>
-                        <span className="rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-primary shadow-sm">{templateMeta.eyebrow}</span>
+                        <div className="flex items-center gap-2">
+                            <div className="inline-flex items-center rounded-full border border-primary/15 bg-white/80 p-0.5 shadow-sm" role="group" aria-label="Preview viewport mode">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewportMode('mobile')}
+                                    aria-pressed={viewportMode === 'mobile'}
+                                    title="Mobile preview"
+                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
+                                        viewportMode === 'mobile'
+                                            ? 'bg-primary text-white shadow-sm'
+                                            : 'text-text-secondary hover:text-primary'
+                                    }`}
+                                >
+                                    <Smartphone className="h-3 w-3" />
+                                    <span>Mobile</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewportMode('desktop')}
+                                    aria-pressed={viewportMode === 'desktop'}
+                                    title="Desktop preview"
+                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
+                                        viewportMode === 'desktop'
+                                            ? 'bg-primary text-white shadow-sm'
+                                            : 'text-text-secondary hover:text-primary'
+                                    }`}
+                                >
+                                    <Monitor className="h-3 w-3" />
+                                    <span>Desktop</span>
+                                </button>
+                            </div>
+                            <span className="hidden xl:inline-block rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-primary shadow-sm">{templateMeta.eyebrow}</span>
+                        </div>
                     </div>
                 </>
             )}
 
-            <div className={`relative mx-auto w-full max-w-[360px] overflow-hidden rounded-[2.6rem] border-[10px] border-[#171717] bg-[#111111] shadow-[0_35px_80px_rgba(0,0,0,0.35)] ${isMobileView ? 'h-[620px]' : 'h-[640px]'}`}>
-                <div className="absolute left-1/2 top-0 z-30 h-7 w-36 -translate-x-1/2 rounded-b-[1.4rem] bg-black" />
-                <div className="absolute inset-[3px] overflow-hidden rounded-[2.1rem] bg-white">
+            <div
+                className={`relative mx-auto overflow-hidden border-[#171717] bg-[#111111] shadow-[0_35px_80px_rgba(0,0,0,0.35)] transition-all duration-300 ${
+                    isDesktopViewport
+                        ? 'max-w-full w-full h-[680px] rounded-2xl border-2'
+                        : `w-full max-w-[360px] rounded-[2.5rem] border-[8px] ${isMobileView ? 'h-[620px]' : 'h-[640px]'}`
+                }`}
+            >
+                {!isDesktopViewport && (
+                    <div className="absolute left-1/2 top-0 z-30 h-7 w-36 -translate-x-1/2 rounded-b-[1.4rem] bg-black" />
+                )}
+                <div className={`absolute inset-[3px] overflow-hidden bg-white ${isDesktopViewport ? 'rounded-xl' : 'rounded-[2.1rem]'}`}>
                     <iframe
                         ref={iframeRef}
                         src={`/preview?preview=${encodeURIComponent(previewInstanceId)}`}
                         allow="clipboard-write; clipboard-read"
                         onLoad={syncAfterFrameLoad}
-                        className="h-full w-full rounded-[2.1rem] border-0"
+                        className={`h-full w-full border-0 ${isDesktopViewport ? 'rounded-xl' : 'rounded-[2.1rem]'}`}
                         title="Live Preview"
                     />
                 </div>

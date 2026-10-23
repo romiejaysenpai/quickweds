@@ -38,7 +38,11 @@ export function useHotkeys(hotkeys: HotkeyMap, enabled = true) {
         }
 
         const keyCombo = getKeyCombo(event);
-        const callback = hotkeysRef.current[keyCombo];
+        const callback =
+            hotkeysRef.current[keyCombo] ||
+            (event.ctrlKey && !event.metaKey
+                ? hotkeysRef.current[keyCombo.replace(/^mod\+/, 'ctrl+')]
+                : undefined);
 
         if (callback) {
             callback(event);
@@ -56,8 +60,7 @@ export function useHotkeys(hotkeys: HotkeyMap, enabled = true) {
 function getKeyCombo(event: KeyboardEvent): string {
     const parts: string[] = [];
 
-    if (event.metaKey) parts.push('mod');
-    if (event.ctrlKey && !event.metaKey) parts.push('ctrl');
+    if (event.metaKey || event.ctrlKey) parts.push('mod');
     if (event.altKey) parts.push('alt');
     if (event.shiftKey) parts.push('shift');
 

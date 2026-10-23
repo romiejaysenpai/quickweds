@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, use, useRef, useCallback } from 'react';
+import { useState, useEffect, use, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode } from 'lucide-react';
+import { emailOperationId, completeEmailOperation } from '@/lib/email-operation';
+import { calculatePlannerBudget } from '@/lib/planner-budget';
+import { CheckCircle2, Circle, Plus, Trash2, ListTodo, Wallet, Users, LayoutDashboard, ArrowLeft, Loader2, PieChart as PieChartIcon, TrendingDown, DollarSign, Layout, Camera, Mail, LockKeyhole, Sparkles, Search, Home, ChevronDown, CalendarDays, Utensils, Clock, Image as ImageIcon, Download, Plane, MapPin, RefreshCw, Link as LinkIcon, Edit2, Save, X, Send, UserCheck, ClipboardCheck, QrCode, Filter, ArrowUpDown, Calendar, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -15,6 +17,10 @@ import { getCachedSession } from '@/lib/session-cache';
 import { DEFAULT_ENTOURAGE_PROPOSAL_TEMPLATE_KEY, ENTOURAGE_PROPOSAL_TEMPLATES, getEntourageProposalTemplate, getEntourageCardTheme } from '@/lib/entourage-proposal-templates';
 import { EntourageProposalCustomizerSection } from '@/components/EntourageProposalCustomizerSection';
 import { SUPPORTED_CURRENCIES, getCurrencySymbol, normalizeCurrencyCode } from '@/lib/currency';
+import PlannerOverview from '@/components/dashboard/PlannerOverview';
+import BudgetStarterModal from '@/components/dashboard/BudgetStarterModal';
+import CustomCategoryModal from '@/components/dashboard/CustomCategoryModal';
+import BudgetDeleteConfirmModal from '@/components/dashboard/BudgetDeleteConfirmModal';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
     loading: () => (
@@ -37,7 +43,7 @@ const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudg
     loading: () => <div className="h-full w-full animate-pulse rounded-full bg-neutral/50" />,
 });
 
-const PLANNER_TABS = ['checklist', 'entourage', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
+const PLANNER_TABS = ['overview', 'checklist', 'entourage', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
 type PlannerTab = typeof PLANNER_TABS[number];
 type VendorPaymentStatus = 'not paid' | 'pending' | 'paid';
 
@@ -48,6 +54,7 @@ const PLANNER_TAB_DETAILS: {
     headline: string;
     body: string;
 }[] = [
+    { tab: 'overview', label: 'Overview', icon: LayoutDashboard, headline: 'Your planning progress', body: 'Review readiness, catering, payments, gifts, and recent activity.' },
     {
         tab: 'checklist',
         label: 'Checklist',
@@ -106,10 +113,10 @@ const PLANNER_TAB_DETAILS: {
     },
     {
         tab: 'thanks',
-        label: 'Thank You',
-        icon: Mail,
-        headline: 'Thank You is part of Planner Pro',
-        body: 'Prepare post-wedding thank-you messages and keep guest follow-up simple.',
+        label: 'Post-Wedding',
+        icon: Sparkles,
+        headline: 'Post-Wedding is part of Planner Pro',
+        body: 'Switch to post-wedding recap mode, feature approved photos, share guestbook wishes, and send thank-you notes.',
     },
     {
         tab: 'honeymoon',
@@ -471,7 +478,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                     setPlannerError(data.error || 'Unable to verify planner access.');
                 }
 
-                if (data.accessRole !== 'owner') return;
+                if (!['owner', 'partner', 'coordinator', 'admin'].includes(data.accessRole)) return;
 
                 if (isAdmin) {
                     setAccessDebug(`Admin override - isAdmin=${isAdmin}, userEmail=${user?.email}`);
@@ -653,6 +660,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                     ) : (
                         <>
                             <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
+                            {activeTab === 'overview' && <PlannerOverview weddingId={weddingId} />}
                             {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={refreshPlannerData} />}
                             {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={refreshPlannerData} />}
                             {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={refreshPlannerData} hasPlannerPro={hasPlannerPro} />}
@@ -684,17 +692,17 @@ function ThankYouPlannerLauncher({ weddingId, confirmedGuests }: { weddingId: st
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                        <Mail className="h-6 w-6" />
+                        <Sparkles className="h-6 w-6" />
                     </div>
                     <p className="mt-5 text-[10px] font-black uppercase tracking-[0.18em] text-primary">Post-wedding</p>
-                    <h2 className="mt-1 font-serif text-2xl font-bold text-foreground sm:text-3xl">Thank You Card Builder</h2>
+                    <h2 className="mt-1 font-serif text-2xl font-bold text-foreground sm:text-3xl">Post-Wedding Mode</h2>
                     <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-                        Build a card-style email, send a test, and deliver it only to confirmed guests. Current confirmed headcount: {confirmedGuests}.
+                        Switch your site to recap mode, showcase approved disposable camera photos, share the guestbook Wall of Love, and send thank you emails to confirmed guests.
                     </p>
                 </div>
-                <Link href={`/dashboard/${weddingId}/thank-you?from=planner`} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover">
+                <Link href={`/dashboard/${weddingId}/post-wedding?from=planner`} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover">
                     <Sparkles className="h-4 w-4" />
-                    Open Builder
+                    Open Post-Wedding
                 </Link>
             </div>
         </section>
@@ -841,6 +849,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
                 body: JSON.stringify({
                     weddingId,
                     memberKey,
+                    requestId:emailOperationId(weddingId,`entourage:${memberKey}`),
                     name: member.name,
                     email: member.email,
                     role: member.role || 'Wedding Entourage',
@@ -856,6 +865,7 @@ function EntourageProposalPlanner({ weddingId, wedding, invitations, setInvitati
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'Unable to send proposal.');
+            completeEmailOperation(weddingId,`entourage:${memberKey}`);
 
             setInvitations((current: any[]) => {
                 const next = current.filter((invite: any) => String(invite.member_key) !== memberKey);
@@ -1248,7 +1258,13 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
 
         if (rows.length === 0) return alert('The 12-month checklist is already loaded.');
         try {
-            const createdTasks = await Promise.all(rows.map((row) => createPlannerItem(weddingId, 'task', row)));
+            const { data: sessionData } = await getCachedSession();
+            const token = sessionData.session?.access_token;
+            if (!token) throw new Error('Please sign in again.');
+            const response = await fetch('/api/planner/checklist', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ weddingId, rows }) });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Unable to create checklist.');
+            const createdTasks = result.tasks || [];
             if (setTasks) {
                 setTasks((current: any[]) => [
                     ...current,
@@ -1469,12 +1485,13 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
                 body: JSON.stringify({ weddingId }),
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Unable to sync Google Calendar.');
+            if (!response.ok || data.success === false) throw new Error(data.error || (data.errors || []).join('\n') || 'Unable to sync Google Calendar.');
             if (!silent) alert(`Synced ${data.synced || 0} schedule items to Google Calendar.`);
             void reload();
         } catch (err) {
             console.error('Google Calendar sync failed:', err);
-            if (!silent) alert(err instanceof Error ? err.message : 'Unable to sync Google Calendar.');
+            alert(err instanceof Error ? err.message : 'Unable to sync Google Calendar.');
+            void reload();
         } finally {
             setSyncingGoogle(false);
         }
@@ -1502,7 +1519,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
     async function deleteGoogleCalendarEvent(eventId: string) {
         if (!googleCalendar?.connected) return;
         const token = await getAuthToken();
-        await fetch('/api/planner/google-calendar/sync', {
+        const response = await fetch('/api/planner/google-calendar/sync', {
             method: 'DELETE',
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -1510,6 +1527,10 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
             },
             body: JSON.stringify({ weddingId, eventId }),
         });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || 'Google Calendar could not remove this event. Your planner event was kept so you can retry.');
+        }
     }
 
     async function addEvent(e: any) {
@@ -1686,6 +1707,22 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
     const currencyButtonRef = useRef<HTMLButtonElement | null>(null);
     const currencyMenuRef = useRef<HTMLDivElement | null>(null);
 
+    // Modals
+    const [starterModalOpen, setStarterModalOpen] = useState(false);
+    const [customCategoryModalOpen, setCustomCategoryModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<any | null>(null);
+    const [isDeletingItem, setIsDeletingItem] = useState(false);
+
+    // Safety buffer reserve (0%, 10%, 15%)
+    const [bufferPercent, setBufferPercent] = useState<number>(10);
+
+    // Search, Filter, Sort & View
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'unpaid' | 'paid' | 'overdue' | 'over_budget'>('all');
+    const [categoryFilter, setCategoryFilter] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<'category' | 'cost_desc' | 'cost_asc' | 'due_date' | 'variance'>('category');
+    const [activeView, setActiveView] = useState<'category' | 'timeline'>('category');
+
     // Local states for inputs to avoid jitter/focus issues and handle empty strings nicely
     const [localBudget, setLocalBudget] = useState<string | number>(wedding?.total_budget || '');
     const [localCurrency, setLocalCurrency] = useState(normalizeCurrencyCode(wedding?.currency));
@@ -1765,13 +1802,14 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
     }, [initialBudgets]);
     
     const handleAddCustomCategory = () => {
-        const cat = prompt("Enter custom budget category:");
-        if (cat) {
-            if (!categories.includes(cat)) {
-                setCategories([...categories, cat]);
-            }
-            setNewItem({...newItem, category: cat});
+        setCustomCategoryModalOpen(true);
+    };
+
+    const handleCustomCategoryAdded = (cat: string) => {
+        if (!categories.includes(cat)) {
+            setCategories((prev) => [...prev, cat]);
         }
+        setNewItem((prev) => ({ ...prev, category: cat }));
     };
 
     async function addItem(e: any) {
@@ -1846,16 +1884,37 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
         }
     }
 
-    async function deleteItem(id: string) {
-        if (!confirm("Delete this budget item?")) return;
+    async function confirmDeleteItem() {
+        if (!itemToDelete) return;
+        const id = itemToDelete.id;
+        setIsDeletingItem(true);
         try {
             await deletePlannerItem(weddingId, 'budget', id);
             if (setBudgets) setBudgets((current: any[]) => current.filter((item: any) => item.id !== id));
+            setItemToDelete(null);
             void reload();
         } catch (err) {
             const message = getPlannerErrorMessage(err, 'Unable to delete budget item.');
             console.warn('Error deleting budget item:', message);
             alert(message);
+        } finally {
+            setIsDeletingItem(false);
+        }
+    }
+
+    async function deleteItem(id: string) {
+        const item = initialBudgets.find((b: any) => b.id === id);
+        if (item) {
+            setItemToDelete(item);
+        } else {
+            try {
+                await deletePlannerItem(weddingId, 'budget', id);
+                if (setBudgets) setBudgets((current: any[]) => current.filter((item: any) => item.id !== id));
+                void reload();
+            } catch (err) {
+                const message = getPlannerErrorMessage(err, 'Unable to delete budget item.');
+                alert(message);
+            }
         }
     }
 
@@ -1890,7 +1949,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
     const paidBudgetItemTotal = initialBudgets
         .filter((item: any) => Boolean(item.is_paid))
         .reduce((acc: number, item: any) => acc + ((parseFloat(item.actual_cost) || 0) || (parseFloat(item.estimated_cost) || 0)), 0);
-    const totalEst = budgetEstimateTotal + foodDrinkBudgetTotal;
+    const totalEst = projectedBudgetItemTotal + foodDrinkBudgetTotal;
     const totalSpentFromVendors = vendors
         .filter((v: any) => v.payment_status?.toLowerCase() === 'paid')
         .reduce((acc: number, v: any) => acc + (parseFloat(v.amount) || 0), 0);
@@ -1898,7 +1957,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
         .filter((v: any) => v.payment_status?.toLowerCase() !== 'paid')
         .reduce((acc: number, v: any) => acc + (parseFloat(v.amount) || 0), 0);
     
-    const totalCommitted = totalEst + totalSpentFromVendors;
+    const totalCommitted = calculatePlannerBudget(initialBudgets, vendors, foodDrinks).committed;
     const totalBudgetValue = parseFloat(String(localBudget)) || 0;
     const guestTargetValue = parseInt(String(localGuestLimit), 10) || 0;
     const budgetRemaining = totalBudgetValue - totalCommitted;
@@ -2002,6 +2061,229 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                     className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
                 };
 
+    const contingencyAmount = Math.round(totalBudgetValue * (bufferPercent / 100));
+    const spendableBudget = Math.max(0, totalBudgetValue - contingencyAmount);
+    const spendableRemaining = spendableBudget - totalCommitted;
+
+    const unpaidCount = initialBudgets.filter((b: any) => !b.is_paid).length;
+    const paidCount = initialBudgets.filter((b: any) => Boolean(b.is_paid)).length;
+    const overdueCount = initialBudgets.filter((b: any) => {
+        if (b.is_paid) return false;
+        const dueDate = getBudgetDueDate(b);
+        return Boolean(dueDate && dueDate < today);
+    }).length;
+    const overBudgetCount = initialBudgets.filter((b: any) => {
+        const act = parseFloat(b.actual_cost) || 0;
+        const est = parseFloat(b.estimated_cost) || 0;
+        return act > est && act > 0;
+    }).length;
+
+    const filteredBudgets = initialBudgets.filter((item: any) => {
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            const nameMatch = String(item.item_name || '').toLowerCase().includes(query);
+            const catMatch = String(item.category || '').toLowerCase().includes(query);
+            if (!nameMatch && !catMatch) return false;
+        }
+        if (statusFilter === 'unpaid' && item.is_paid) return false;
+        if (statusFilter === 'paid' && !item.is_paid) return false;
+        if (statusFilter === 'overdue') {
+            if (item.is_paid) return false;
+            const dueDate = getBudgetDueDate(item);
+            if (!dueDate || dueDate >= today) return false;
+        }
+        if (statusFilter === 'over_budget') {
+            const act = parseFloat(item.actual_cost) || 0;
+            const est = parseFloat(item.estimated_cost) || 0;
+            if (act <= est || act === 0) return false;
+        }
+        if (categoryFilter !== 'all' && item.category !== categoryFilter) return false;
+        return true;
+    });
+
+    const sortedBudgets = [...filteredBudgets].sort((a: any, b: any) => {
+        if (sortBy === 'cost_desc') {
+            const costA = Math.max(parseFloat(a.actual_cost) || 0, parseFloat(a.estimated_cost) || 0);
+            const costB = Math.max(parseFloat(b.actual_cost) || 0, parseFloat(b.estimated_cost) || 0);
+            return costB - costA;
+        }
+        if (sortBy === 'cost_asc') {
+            const costA = Math.max(parseFloat(a.actual_cost) || 0, parseFloat(a.estimated_cost) || 0);
+            const costB = Math.max(parseFloat(b.actual_cost) || 0, parseFloat(b.estimated_cost) || 0);
+            return costA - costB;
+        }
+        if (sortBy === 'due_date') {
+            const dateA = getBudgetDueDate(a)?.getTime() || Infinity;
+            const dateB = getBudgetDueDate(b)?.getTime() || Infinity;
+            return dateA - dateB;
+        }
+        if (sortBy === 'variance') {
+            const varA = (parseFloat(a.actual_cost) || 0) - (parseFloat(a.estimated_cost) || 0);
+            const varB = (parseFloat(b.actual_cost) || 0) - (parseFloat(b.estimated_cost) || 0);
+            return varB - varA;
+        }
+        return 0;
+    });
+
+    const timelineGroups = useMemo(() => {
+        const groups: { title: string; count: number; total: number; items: any[]; isOverdue?: boolean }[] = [];
+        const overdueGroup: any[] = [];
+        const thisMonthGroup: any[] = [];
+        const nextMonthGroup: any[] = [];
+        const futureGroups: Record<string, { label: string; date: Date; items: any[] }> = {};
+        const noDateGroup: any[] = [];
+
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const nextMonthDate = new Date(currentYear, currentMonth + 1, 1);
+        const thisMonthName = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+        const nextMonthName = nextMonthDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+        for (const item of sortedBudgets) {
+            const dueDate = getBudgetDueDate(item);
+            if (!dueDate) {
+                noDateGroup.push(item);
+                continue;
+            }
+            if (!item.is_paid && dueDate < today) {
+                overdueGroup.push(item);
+                continue;
+            }
+            if (dueDate.getFullYear() === currentYear && dueDate.getMonth() === currentMonth) {
+                thisMonthGroup.push(item);
+                continue;
+            }
+            if (dueDate.getFullYear() === nextMonthDate.getFullYear() && dueDate.getMonth() === nextMonthDate.getMonth()) {
+                nextMonthGroup.push(item);
+                continue;
+            }
+            const key = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}`;
+            const label = dueDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+            if (!futureGroups[key]) {
+                futureGroups[key] = { label, date: dueDate, items: [] };
+            }
+            futureGroups[key].items.push(item);
+        }
+
+        if (overdueGroup.length > 0) {
+            const total = overdueGroup.reduce((s, it) => s + getItemPayableAmount(it), 0);
+            groups.push({ title: 'Overdue Payments', count: overdueGroup.length, total, items: overdueGroup, isOverdue: true });
+        }
+        if (thisMonthGroup.length > 0) {
+            const total = thisMonthGroup.reduce((s, it) => s + getItemPayableAmount(it), 0);
+            groups.push({ title: `This Month (${thisMonthName})`, count: thisMonthGroup.length, total, items: thisMonthGroup });
+        }
+        if (nextMonthGroup.length > 0) {
+            const total = nextMonthGroup.reduce((s, it) => s + getItemPayableAmount(it), 0);
+            groups.push({ title: `Next Month (${nextMonthName})`, count: nextMonthGroup.length, total, items: nextMonthGroup });
+        }
+        const sortedFutureKeys = Object.keys(futureGroups).sort();
+        for (const key of sortedFutureKeys) {
+            const fg = futureGroups[key];
+            const total = fg.items.reduce((s, it) => s + getItemPayableAmount(it), 0);
+            groups.push({ title: fg.label, count: fg.items.length, total, items: fg.items });
+        }
+        if (noDateGroup.length > 0) {
+            const total = noDateGroup.reduce((s, it) => s + getItemPayableAmount(it), 0);
+            groups.push({ title: 'No Due Date Assigned', count: noDateGroup.length, total, items: noDateGroup });
+        }
+
+        return groups;
+    }, [sortedBudgets, today]);
+
+    const renderBudgetItemRow = (item: any) => {
+        const estimated = Number(item.estimated_cost || 0);
+        const actual = Number(item.actual_cost || 0);
+        const effectiveActual = actual > 0 ? actual : estimated;
+        const variance = effectiveActual - estimated;
+        const itemDueDate = item.due_date ? String(item.due_date).slice(0, 10) : '';
+        const isSaving = savingBudgetItemId === item.id;
+        const dueDate = getBudgetDueDate(item);
+        const isOverdue = !item.is_paid && Boolean(dueDate && dueDate < today);
+
+        return (
+            <div key={item.id} className="grid gap-3 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(6rem,0.75fr))_44px] lg:items-center">
+                <div className="min-w-0">
+                    <p className="font-serif text-sm font-bold text-foreground break-words">{item.item_name}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${item.is_paid ? 'bg-emerald-50 text-emerald-700' : isOverdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+                            {item.is_paid ? 'Paid' : isOverdue ? 'Overdue' : 'Unpaid'}
+                        </span>
+                        {item.category && (
+                            <span className="rounded bg-neutral/60 px-1.5 py-0.5 text-[9px] font-bold text-text-secondary">
+                                {item.category}
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Estimate</label>
+                    <p className="mt-1 font-mono text-sm font-black text-text-secondary">{currencySymbol}{money(estimated)}</p>
+                </div>
+                <div>
+                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Actual</label>
+                    <div className="relative mt-1">
+                        <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-text-secondary">{currencySymbol}</span>
+                        <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            step="0.01"
+                            defaultValue={actual || ''}
+                            onBlur={(e) => {
+                                const nextActual = Math.max(0, parseFloat(e.target.value) || 0);
+                                if (nextActual !== actual) {
+                                    updateBudgetItem(item.id, { actual_cost: nextActual });
+                                }
+                            }}
+                            className="h-10 w-full rounded-lg border border-border bg-white pl-6 pr-2 text-right font-mono text-sm font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                        />
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Variance</label>
+                    <p className={`mt-1 font-mono text-sm font-black ${variance > 0 ? 'text-red-500' : variance < 0 ? 'text-emerald-600' : 'text-text-secondary'}`}>
+                        {variance < 0 ? '-' : ''}{currencySymbol}{money(Math.abs(variance))}
+                    </p>
+                </div>
+                <div>
+                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Due</label>
+                    <input
+                        type="date"
+                        defaultValue={itemDueDate}
+                        onBlur={(e) => {
+                            if (e.target.value !== itemDueDate) {
+                                updateBudgetItem(item.id, { due_date: e.target.value || null });
+                            }
+                        }}
+                        className={`mt-1 h-10 w-full rounded-lg border bg-white px-2 text-xs font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 ${isOverdue ? 'border-red-300 text-red-600' : 'border-border'}`}
+                    />
+                </div>
+                <div className="flex items-center justify-between gap-2 lg:justify-center">
+                    <label className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-border bg-white px-3 text-xs font-bold text-text-secondary cursor-pointer hover:bg-neutral/30">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(item.is_paid)}
+                            onChange={(e) => updateBudgetItem(item.id, { is_paid: e.target.checked })}
+                            className="h-4 w-4 accent-primary"
+                        />
+                        Paid
+                    </label>
+                    <button
+                        type="button"
+                        onClick={() => setItemToDelete(item)}
+                        disabled={isSaving}
+                        className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 disabled:opacity-50"
+                        aria-label="Delete budget item"
+                    >
+                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     // Chart Data
     const chartData = [
         { name: 'Allocated (Budget + Food)', value: totalEst },
@@ -2074,14 +2356,19 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
     };
 
     return (
-        <div className="overflow-x-hidden rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-2xl sm:p-6 md:rounded-3xl lg:p-8">
-            <div className="mb-5 border-b border-border/50 pb-5">
+        <div className="overflow-x-hidden rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-2xl sm:p-6 md:rounded-3xl lg:p-8 print:p-0 print:border-none print:shadow-none">
+            <div className="print:hidden">
+                <div className="mb-5 border-b border-border/50 pb-5">
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
                     <div className="min-w-0">
                         <h2 className="font-serif text-2xl font-bold text-foreground md:text-3xl">Budget Tracker</h2>
                         <p className="mt-1 text-sm text-text-secondary">Set the whole wedding budget, then compare estimates, food costs, and paid vendors.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                        <button type="button" onClick={() => setStarterModalOpen(true)} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary transition hover:bg-primary hover:text-white">
+                            <Sparkles className="h-4 w-4" />
+                            Starter Budget
+                        </button>
                         <button type="button" onClick={downloadBudgetCsv} className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-primary/20 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary transition hover:bg-primary hover:text-white">
                             <Download className="h-4 w-4" />
                             CSV
@@ -2238,6 +2525,42 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                         </p>
                     </div>
                 </div>
+
+                {/* Safety Buffer Reserve */}
+                {totalBudgetValue > 0 && (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/[0.03] p-3 sm:p-4">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <span className="text-xs font-bold text-foreground">Contingency Buffer:</span>
+                            <div className="inline-flex rounded-xl border border-border bg-white p-0.5 shadow-sm">
+                                {[0, 10, 15].map((pct) => (
+                                    <button
+                                        key={pct}
+                                        type="button"
+                                        onClick={() => setBufferPercent(pct)}
+                                        className={`rounded-lg px-2.5 py-1 text-[11px] font-black transition ${bufferPercent === pct ? 'bg-primary text-white shadow-sm' : 'text-text-secondary hover:text-foreground'}`}
+                                    >
+                                        {pct === 0 ? 'Off (0%)' : `${pct}%${pct === 10 ? ' (Recommended)' : ''}`}
+                                    </button>
+                                ))}
+                            </div>
+                            {bufferPercent > 0 && (
+                                <span className="font-mono text-xs font-bold text-primary">
+                                    {currencySymbol}{money(contingencyAmount)} safety reserve
+                                </span>
+                            )}
+                        </div>
+                        {bufferPercent > 0 && (
+                            <div className="flex flex-wrap items-center gap-3 text-xs">
+                                <span className="text-text-secondary">
+                                    Spendable Target: <strong className="font-mono text-foreground">{currencySymbol}{money(spendableBudget)}</strong>
+                                </span>
+                                <span className={`rounded-full px-3 py-1 font-mono text-[10px] font-black uppercase tracking-wider ${spendableRemaining < 0 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                                    {spendableRemaining < 0 ? `Dipping into reserve by ${currencySymbol}${money(Math.abs(spendableRemaining))}` : `${currencySymbol}${money(spendableRemaining)} safe remaining`}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-3 sm:gap-4 mb-4">
@@ -2563,108 +2886,215 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 {/* Estimates from Budget Table */}
                 <div className="space-y-3">
-                    <h3 className="text-base sm:text-lg font-serif font-bold text-foreground flex items-center gap-2">
-                        <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" /> Budget Estimates
-                    </h3>
-                    {initialBudgets.length === 0 && (
-                        <div className="rounded-xl border border-dashed border-primary/25 bg-neutral/30 p-6 text-center">
-                            <Wallet className="mx-auto h-8 w-8 text-primary" />
-                            <p className="mt-3 font-serif text-lg font-bold text-foreground">No expense estimates yet.</p>
-                            <p className="mt-1 text-sm text-text-secondary">Add the first line item above to start building your wedding budget.</p>
-                        </div>
-                    )}
-                    {categories.map(category => {
-                        const items = initialBudgets.filter((b: any) => b.category === category);
-                        if (items.length === 0) return null;
-                        const catTotal = items.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
-                        
-                        return (
-                            <div key={category} className="border border-border rounded-lg sm:rounded-xl overflow-hidden bg-white">
-                                <div className="bg-neutral/30 px-3 sm:px-4 py-2 flex justify-between items-center border-b border-border gap-2">
-                                    <h4 className="font-bold text-xs sm:text-sm text-text-secondary uppercase tracking-widest">{category}</h4>
-                                    <span className="font-mono font-bold text-xs sm:text-sm whitespace-nowrap">{currencySymbol}{money(catTotal)}</span>
-                                </div>
-                                <div className="divide-y divide-border/30 max-h-[520px] overflow-y-auto">
-                                    {items.map((item: any) => {
-                                        const estimated = Number(item.estimated_cost || 0);
-                                        const actual = Number(item.actual_cost || 0);
-                                        const effectiveActual = actual > 0 ? actual : estimated;
-                                        const variance = effectiveActual - estimated;
-                                        const itemDueDate = item.due_date ? String(item.due_date).slice(0, 10) : '';
-                                        const isSaving = savingBudgetItemId === item.id;
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="text-base sm:text-lg font-serif font-bold text-foreground flex items-center gap-2">
+                            <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" /> Budget Estimates
+                            <span className="text-xs font-normal text-text-secondary font-mono">
+                                ({filteredBudgets.length}{filteredBudgets.length !== initialBudgets.length ? ` / ${initialBudgets.length}` : ''})
+                            </span>
+                        </h3>
+                    </div>
 
-                                        return (
-                                            <div key={item.id} className="grid gap-3 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(6rem,0.75fr))_44px] lg:items-center">
-                                                <div className="min-w-0">
-                                                    <p className="font-serif text-sm font-bold text-foreground break-words">{item.item_name}</p>
-                                                    <p className={`mt-1 inline-flex rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${item.is_paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                                                        {item.is_paid ? 'Paid' : 'Unpaid'}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Estimate</label>
-                                                    <p className="mt-1 font-mono text-sm font-black text-text-secondary">{currencySymbol}{money(estimated)}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Actual</label>
-                                                    <div className="relative mt-1">
-                                                        <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-text-secondary">{currencySymbol}</span>
-                                                        <input
-                                                            type="number"
-                                                            inputMode="decimal"
-                                                            min="0"
-                                                            step="0.01"
-                                                            defaultValue={actual || ''}
-                                                            onBlur={(e) => {
-                                                                const nextActual = Math.max(0, parseFloat(e.target.value) || 0);
-                                                                if (nextActual !== actual) {
-                                                                    updateBudgetItem(item.id, { actual_cost: nextActual });
-                                                                }
-                                                            }}
-                                                            className="h-10 w-full rounded-lg border border-border bg-white pl-6 pr-2 text-right font-mono text-sm font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Variance</label>
-                                                    <p className={`mt-1 font-mono text-sm font-black ${variance > 0 ? 'text-red-500' : variance < 0 ? 'text-emerald-600' : 'text-text-secondary'}`}>
-                                                        {variance < 0 ? '-' : ''}{currencySymbol}{money(Math.abs(variance))}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[8px] font-black uppercase tracking-widest text-text-secondary">Due</label>
-                                                    <input
-                                                        type="date"
-                                                        defaultValue={itemDueDate}
-                                                        onBlur={(e) => {
-                                                            if (e.target.value !== itemDueDate) {
-                                                                updateBudgetItem(item.id, { due_date: e.target.value || null });
-                                                            }
-                                                        }}
-                                                        className="mt-1 h-10 w-full rounded-lg border border-border bg-white px-2 text-xs font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-                                                    />
-                                                </div>
-                                                <div className="flex items-center justify-between gap-2 lg:justify-center">
-                                                    <label className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-border bg-white px-3 text-xs font-bold text-text-secondary">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={Boolean(item.is_paid)}
-                                                            onChange={(e) => updateBudgetItem(item.id, { is_paid: e.target.checked })}
-                                                            className="h-4 w-4 accent-primary"
-                                                        />
-                                                        Paid
-                                                    </label>
-                                                    <button type="button" onClick={() => deleteItem(item.id)} disabled={isSaving} className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 disabled:opacity-50" aria-label="Delete budget item">
-                                                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                    {initialBudgets.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/[0.02] p-8 text-center">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                <Sparkles className="h-7 w-7" />
+                            </div>
+                            <h4 className="mt-4 font-serif text-xl font-bold text-foreground">Build your wedding budget in seconds</h4>
+                            <p className="mx-auto mt-1.5 max-w-md text-xs leading-relaxed text-text-secondary">
+                                No expense estimates added yet. Save hours of research by generating 10 benchmark-allocated wedding categories based on your target budget.
+                            </p>
+                            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setStarterModalOpen(true)}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
+                                >
+                                    <Sparkles className="h-4 w-4" />
+                                    Generate Starter Budget
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Search, Filter & View Controls */}
+                            <div className="space-y-3 rounded-2xl border border-border/60 bg-neutral/30 p-3 sm:p-4">
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    {/* Search Input */}
+                                    <div className="relative flex-1">
+                                        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-secondary" />
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Search expense or category..."
+                                            className="h-9 w-full rounded-xl border border-border bg-white pl-8 pr-7 text-xs font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setSearchQuery('')}
+                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-secondary hover:text-foreground"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* View Toggle (Categories vs Timeline) & Sort */}
+                                    <div className="flex items-center gap-2">
+                                        <div className="inline-flex rounded-xl border border-border bg-white p-0.5 shadow-sm">
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveView('category')}
+                                                className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${activeView === 'category' ? 'bg-primary text-white shadow-sm' : 'text-text-secondary hover:text-foreground'}`}
+                                            >
+                                                Categories
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveView('timeline')}
+                                                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${activeView === 'timeline' ? 'bg-primary text-white shadow-sm' : 'text-text-secondary hover:text-foreground'}`}
+                                            >
+                                                <Calendar className="h-3 w-3" />
+                                                Timeline
+                                            </button>
+                                        </div>
+
+                                        <select
+                                            value={sortBy}
+                                            onChange={(e: any) => setSortBy(e.target.value)}
+                                            className="h-8 rounded-xl border border-border bg-white px-2.5 text-[11px] font-bold text-text-secondary outline-none focus:border-primary cursor-pointer"
+                                        >
+                                            <option value="category">Sort: Category</option>
+                                            <option value="cost_desc">Cost: High → Low</option>
+                                            <option value="cost_asc">Cost: Low → High</option>
+                                            <option value="due_date">Due Date: Soonest</option>
+                                            <option value="variance">Highest Variance</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Status Filters & Category Filter */}
+                                <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-border/40">
+                                    <button
+                                        type="button"
+                                        onClick={() => setStatusFilter('all')}
+                                        className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${statusFilter === 'all' ? 'bg-foreground text-white' : 'bg-white border border-border text-text-secondary hover:text-foreground'}`}
+                                    >
+                                        All ({initialBudgets.length})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStatusFilter('unpaid')}
+                                        className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${statusFilter === 'unpaid' ? 'bg-amber-600 text-white' : 'bg-white border border-border text-text-secondary hover:text-foreground'}`}
+                                    >
+                                        Unpaid ({unpaidCount})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStatusFilter('paid')}
+                                        className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${statusFilter === 'paid' ? 'bg-emerald-600 text-white' : 'bg-white border border-border text-text-secondary hover:text-foreground'}`}
+                                    >
+                                        Paid ({paidCount})
+                                    </button>
+                                    {overdueCount > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setStatusFilter('overdue')}
+                                            className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${statusFilter === 'overdue' ? 'bg-red-600 text-white' : 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100'}`}
+                                        >
+                                            Overdue ({overdueCount})
+                                        </button>
+                                    )}
+                                    {overBudgetCount > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setStatusFilter('over_budget')}
+                                            className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${statusFilter === 'over_budget' ? 'bg-red-600 text-white' : 'bg-white border border-border text-text-secondary hover:text-foreground'}`}
+                                        >
+                                            Over Budget ({overBudgetCount})
+                                        </button>
+                                    )}
+
+                                    <select
+                                        value={categoryFilter}
+                                        onChange={(e) => setCategoryFilter(e.target.value)}
+                                        className="ml-auto h-6 rounded-lg border border-border bg-white px-2 text-[10px] font-bold text-text-secondary outline-none focus:border-primary cursor-pointer"
+                                    >
+                                        <option value="all">All Categories</option>
+                                        {categories.map((c) => (
+                                            <option key={c} value={c}>
+                                                {c}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
-                        );
-                    })}
+
+                            {/* Filter empty state */}
+                            {sortedBudgets.length === 0 && (
+                                <div className="rounded-xl border border-dashed border-border bg-white p-6 text-center">
+                                    <p className="text-xs font-bold text-text-secondary">No expenses match your search or filter.</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setStatusFilter('all');
+                                            setCategoryFilter('all');
+                                        }}
+                                        className="mt-2 text-xs font-bold text-primary hover:underline"
+                                    >
+                                        Reset Filters
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* View 1: Grouped by Categories */}
+                            {activeView === 'category' && categories.map((category) => {
+                                const items = sortedBudgets.filter((b: any) => b.category === category);
+                                if (items.length === 0) return null;
+                                const catTotal = items.reduce((acc: number, item: any) => acc + Number(item.estimated_cost || 0), 0);
+
+                                return (
+                                    <div key={category} className="border border-border rounded-lg sm:rounded-xl overflow-hidden bg-white shadow-sm">
+                                        <div className="bg-neutral/30 px-3 sm:px-4 py-2 flex justify-between items-center border-b border-border gap-2">
+                                            <h4 className="font-bold text-xs sm:text-sm text-text-secondary uppercase tracking-widest">
+                                                {category} ({items.length})
+                                            </h4>
+                                            <span className="font-mono font-bold text-xs sm:text-sm whitespace-nowrap">{currencySymbol}{money(catTotal)}</span>
+                                        </div>
+                                        <div className="divide-y divide-border/30 max-h-[520px] overflow-y-auto">
+                                            {items.map(renderBudgetItemRow)}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {/* View 2: Grouped by Timeline (Monthly Cash Flow) */}
+                            {activeView === 'timeline' && timelineGroups.map((group: any) => (
+                                <div
+                                    key={group.title}
+                                    className={`border rounded-lg sm:rounded-xl overflow-hidden bg-white shadow-sm ${group.isOverdue ? 'border-red-200' : 'border-border'}`}
+                                >
+                                    <div className={`px-3 sm:px-4 py-2 flex justify-between items-center border-b gap-2 ${group.isOverdue ? 'bg-red-50/80 border-red-200' : 'bg-neutral/30 border-border'}`}>
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className={`h-3.5 w-3.5 ${group.isOverdue ? 'text-red-600' : 'text-primary'}`} />
+                                            <h4 className={`font-bold text-xs sm:text-sm uppercase tracking-widest ${group.isOverdue ? 'text-red-700' : 'text-text-secondary'}`}>
+                                                {group.title} ({group.count})
+                                            </h4>
+                                        </div>
+                                        <span className="font-mono font-bold text-xs sm:text-sm whitespace-nowrap text-primary">
+                                            Due {currencySymbol}{money(group.total)}
+                                        </span>
+                                    </div>
+                                    <div className="divide-y divide-border/30 max-h-[520px] overflow-y-auto">
+                                        {group.items.map(renderBudgetItemRow)}
+                                    </div>
+                                </div>
+                            ))}
+                        </>
+                    )}
                 </div>
 
                 {/* Actual Spending from Vendors */}
@@ -2712,6 +3142,105 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                     </div>
                 </div>
             </div>
+            </div>
+
+            {/* Printable Budget Statement for PDF/Print */}
+            <div className="hidden print:block print:w-full print:p-6 print:text-black">
+                <div className="border-b-2 border-black pb-4 mb-6">
+                    <h1 className="text-2xl font-bold font-serif">QuickWeds Wedding Budget Statement</h1>
+                    <p className="text-xs text-gray-600 mt-1">
+                        {wedding?.title || 'Wedding Budget'} • Printed on {new Date().toLocaleDateString(undefined, { dateStyle: 'long' })}
+                    </p>
+                </div>
+                <div className="grid grid-cols-4 gap-3 mb-6 text-xs">
+                    <div className="border border-gray-300 rounded p-2.5">
+                        <span className="text-[10px] uppercase font-bold text-gray-500 block">Total Budget</span>
+                        <strong className="text-sm font-mono">{currencySymbol}{money(totalBudgetValue)}</strong>
+                    </div>
+                    <div className="border border-gray-300 rounded p-2.5">
+                        <span className="text-[10px] uppercase font-bold text-gray-500 block">Total Committed</span>
+                        <strong className="text-sm font-mono">{currencySymbol}{money(totalCommitted)}</strong>
+                    </div>
+                    <div className="border border-gray-300 rounded p-2.5">
+                        <span className="text-[10px] uppercase font-bold text-gray-500 block">Paid to Date</span>
+                        <strong className="text-sm font-mono">{currencySymbol}{money(paidBudgetItemTotal + totalSpentFromVendors)}</strong>
+                    </div>
+                    <div className="border border-gray-300 rounded p-2.5">
+                        <span className="text-[10px] uppercase font-bold text-gray-500 block">Remaining Cash</span>
+                        <strong className={`text-sm font-mono ${budgetRemaining < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                            {budgetRemaining < 0 ? '-' : ''}{currencySymbol}{money(Math.abs(budgetRemaining))}
+                        </strong>
+                    </div>
+                </div>
+                <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr className="border-b-2 border-black">
+                            <th className="py-2">Category</th>
+                            <th className="py-2">Expense Item</th>
+                            <th className="py-2 text-right">Estimate</th>
+                            <th className="py-2 text-right">Actual</th>
+                            <th className="py-2 text-right">Variance</th>
+                            <th className="py-2 text-center">Due Date</th>
+                            <th className="py-2 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                        {initialBudgets.map((b: any) => {
+                            const est = parseFloat(b.estimated_cost) || 0;
+                            const act = parseFloat(b.actual_cost) || 0;
+                            const v = act > 0 ? act - est : 0;
+                            return (
+                                <tr key={b.id}>
+                                    <td className="py-1.5 font-medium">{b.category}</td>
+                                    <td className="py-1.5">{b.item_name}</td>
+                                    <td className="py-1.5 text-right font-mono">{currencySymbol}{money(est)}</td>
+                                    <td className="py-1.5 text-right font-mono">{act > 0 ? `${currencySymbol}${money(act)}` : '-'}</td>
+                                    <td className="py-1.5 text-right font-mono">{v !== 0 ? `${v > 0 ? '+' : ''}${currencySymbol}${money(v)}` : '-'}</td>
+                                    <td className="py-1.5 text-center">{b.due_date ? String(b.due_date).slice(0, 10) : '-'}</td>
+                                    <td className="py-1.5 text-center font-bold">{b.is_paid ? 'PAID' : 'UNPAID'}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Starter Budget Modal */}
+            <BudgetStarterModal
+                isOpen={starterModalOpen}
+                onClose={() => setStarterModalOpen(false)}
+                weddingId={weddingId}
+                currentTotalBudget={totalBudgetValue}
+                currencySymbol={currencySymbol}
+                onSaveTotalBudget={async (amount) => {
+                    await saveWeddingBudget('total_budget', amount);
+                }}
+                createPlannerItem={createPlannerItem}
+                onSuccess={(newItems) => {
+                    if (setBudgets && newItems.length > 0) {
+                        setBudgets((current: any[]) => [...current, ...newItems]);
+                    }
+                    void reload();
+                }}
+            />
+
+            {/* Custom Category Modal */}
+            <CustomCategoryModal
+                isOpen={customCategoryModalOpen}
+                onClose={() => setCustomCategoryModalOpen(false)}
+                existingCategories={categories}
+                onAddCategory={handleCustomCategoryAdded}
+            />
+
+            {/* Delete Confirmation Modal */}
+            <BudgetDeleteConfirmModal
+                isOpen={Boolean(itemToDelete)}
+                onClose={() => setItemToDelete(null)}
+                item={itemToDelete}
+                currencySymbol={currencySymbol}
+                onConfirmDelete={confirmDeleteItem}
+                isDeleting={isDeletingItem}
+            />
         </div>
     );
 }

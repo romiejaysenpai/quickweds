@@ -123,7 +123,11 @@ async function safeSumRows(query: any, key: string) {
     return (result.data || []).reduce((total: number, row: Record<string, unknown>) => total + Number(row[key] || 0), 0);
 }
 
-export async function getUserTriggeredEmailUsage(db: any, weddingId: string) {
+export async function getUserTriggeredEmailUsage(db: any, weddingId: string, includeReservations = true) {
+    const ledger = await db.from('email_delivery_usage').select('baseline,reserved,consumed').eq('wedding_id', weddingId).maybeSingle();
+    if (ledger.error && !isSchemaMissingError(ledger.error)) throw ledger.error;
+    if (ledger.data) return Number(ledger.data.baseline) + (includeReservations ? Number(ledger.data.reserved) : 0) + Number(ledger.data.consumed);
+
     const tracked = await safeSumRows(
         db.from('planner_email_events').select('recipient_count').eq('wedding_id', weddingId),
         'recipient_count',

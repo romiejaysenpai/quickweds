@@ -22,6 +22,7 @@ import { useAuth } from '@/context/AuthContext';
 import { hasStoredSupabaseSession } from '@/lib/supabase-auth';
 import { getCachedSession } from '@/lib/session-cache';
 import {
+    completeClientOnboarding,
     getClientAccountProfileForIntent,
     getRoleAwareRedirect,
     getSafeAppPath,
@@ -198,6 +199,29 @@ function AccountTypeOnboardingContent() {
             setError(err instanceof Error ? err.message : 'Unable to save account type.');
         } finally {
             setSaving(null);
+        }
+    };
+
+    const getGoalDestination = () => {
+        if (selectedGoal === 'site') return '/builder';
+        if (selectedGoal === 'guests') return '/planner?goal=guests';
+        if (selectedGoal === 'planner') return '/planner';
+        return '/builder';
+    };
+
+    const finishOnboarding = async (destination: string) => {
+        setSaving('complete');
+        setError('');
+        try {
+            const token = await getAccessToken();
+            if (token) {
+                await completeClientOnboarding(token);
+            }
+        } catch (err) {
+            console.warn('Could not mark onboarding complete:', err);
+        } finally {
+            setSaving(null);
+            router.replace(destination);
         }
     };
 
@@ -417,20 +441,20 @@ function AccountTypeOnboardingContent() {
                                         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                                             <button
                                                 type="button"
-                                                onClick={() => router.replace('/builder')}
+                                                onClick={() => void finishOnboarding(getGoalDestination())}
                                                 disabled={saving === 'complete'}
                                                 className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover disabled:opacity-70"
                                             >
                                                 {saving === 'complete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Heart className="h-4 w-4" />}
-                                                Create Your Free Site
+                                                {selectedGoal === 'site' ? 'Create Your Free Site' : selectedGoalDetail.title}
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => router.replace('/dashboard')}
+                                                onClick={() => void finishOnboarding(selectedGoal === 'site' ? '/dashboard' : '/builder')}
                                                 disabled={saving === 'complete'}
                                                 className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-6 py-3 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:bg-primary hover:text-white disabled:opacity-70"
                                             >
-                                                Open Dashboard <ArrowRight className="h-4 w-4" />
+                                                {selectedGoal === 'site' ? 'Open Dashboard' : 'Create Your Free Site'} <ArrowRight className="h-4 w-4" />
                                             </button>
                                         </div>
                                     </motion.div>

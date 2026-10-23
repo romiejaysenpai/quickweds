@@ -11,6 +11,7 @@ async function buildSeatResponse(db: any, guest: any, source: 'personal_qr' | 'p
         .from('weddings')
         .select('id, bride_name, groom_name, wedding_date, seat_finder_enabled, seat_finder_show_map')
         .eq('id', guest.wedding_id)
+        .is('deleted_at', null)
         .maybeSingle();
     if (weddingError) throw weddingError;
     if (!wedding || wedding.seat_finder_enabled === false) {

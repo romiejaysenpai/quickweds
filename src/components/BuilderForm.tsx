@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
 import { BUILDER_DRAFT_STORAGE_KEY } from '@/lib/builder-storage';
+import { builderDraftKey, readLegacyBuilderDraft, loadBuilderDraft, saveBuilderDraft, deleteBuilderDraft, type BuilderDraftSnapshot } from '@/lib/builder-drafts';
 import MarketplacePanel from './builder/MarketplacePanel';
 import { MONOGRAM_SHAPES, MONOGRAM_ANIMATIONS, MonogramMark } from './MonogramMark';
 import { MonogramExporter } from './MonogramExporter';
@@ -235,7 +236,34 @@ const STEPS = [
     { id: 'faq', title: 'FAQs', icon: HelpCircle },
 ];
 
-const ATTIRE_COLOR_OPTIONS = ['#111827', '#1A365D', '#276749', '#744210', '#E53E3E', '#805AD5', '#D6BCFA', '#FBD38D', '#D16C78', '#D6B87C', '#6B7A62', '#F8EEEA'];
+const ATTIRE_COLOR_OPTIONS = [
+    '#9B1D20', // Garnet Red (Bridesmaids)
+    '#D6A79A', // Champagne Rose (Principal Sponsors)
+    '#D8C5A6', // Warm Sand (Guest Attire)
+    '#D4B89E', // Nude Beige (Guest Attire)
+    '#B94E48', // Brick Rose (Guest Attire)
+    '#1E4D2B', // Emerald Green
+    '#276749', // Forest Green
+    '#8A9A86', // Sage Green
+    '#1A2B4C', // Deep Navy
+    '#6B8EAA', // Dusty Blue
+    '#111827', // Midnight Black
+    '#1D2330', // Formal Tuxedo
+    '#2D3543', // Charcoal Suit
+    '#6A1A24', // Rich Burgundy
+    '#C86D51', // Terracotta
+    '#B76E79', // Rose Gold
+    '#E8C5C8', // Blush Pink
+    '#D16C78', // Dusty Rose
+    '#D4AF37', // Champagne Gold
+    '#D6B87C', // Warm Gold
+    '#4A154B', // Royal Plum
+    '#B57EDC', // Soft Lavender
+    '#D6BCFA', // Lilac
+    '#744210', // Caramel Bronze
+    '#8B8589', // Classic Taupe
+    '#F8EEEA', // Pearl / Soft Ivory
+];
 
 const ACCENT_STYLES = [
     { id: 'none', name: 'None', desc: 'Clean layout' },
@@ -355,8 +383,22 @@ const INITIAL_FORM_DATA = {
     galleryLayout: 'auto',
     dressCode: '',
     dressCodeColor: '#000000',
+    dressCodeSuitColor: '#2D3543',
+    dressCodeColors: [] as string[],
+    dressCodeNotes: '',
     sponsorDressCode: '',
     sponsorDressCodeColor: '#1A365D',
+    sponsorDressCodeSuitColor: '#1D2330',
+    sponsorDressCodeColors: [] as string[],
+    sponsorDressCodeNotes: '',
+    bridesmaidDressCode: '',
+    bridesmaidDressCodeColor: '#9B1D20',
+    bridesmaidDressCodeColors: [] as string[],
+    bridesmaidDressCodeNotes: '',
+    includeBridesmaidAttire: false,
+    rsvpAllowPlusOnes: true,
+    rsvpAllowChildren: true,
+    rsvpSearchGuestList: true,
     programTimeline: '',
     faqItems: [] as any[],
     story: '',
@@ -383,6 +425,9 @@ const INITIAL_FORM_DATA = {
     isThankYouMode: false,
     thankYouMessage: '',
     photoAlbumLink: '',
+    showPhotosInThankYouMode: true,
+    showGuestbookInThankYouMode: true,
+    photoRecapStyle: 'polaroid' as 'polaroid' | 'grid',
     accentStyle: 'none',
 };
 
@@ -483,7 +528,7 @@ export default function BuilderForm() {
     const weddingLoadRef = useRef<{ id: string; requestId: number } | null>(null);
     const weddingLoadRequestIdRef = useRef(0);
 
-    const [detectedDraft, setDetectedDraft] = useState<{ formData: any; currentStep: number; updatedAt: string } | null>(null);
+    const [detectedDraft, setDetectedDraft] = useState<BuilderDraftSnapshot | null>(null);
     const [draftDismissed, setDraftDismissed] = useState(false);
 
     // Scroll to top of the page when the step changes
@@ -527,57 +572,6 @@ export default function BuilderForm() {
         canRedo,
         clear: initializeFormData,
     } = useLocalUndoRedo(INITIAL_FORM_DATA, 50);
-
-    // Detect saved local storage draft on mount
-    useEffect(() => {
-        if (editId || typeof window === 'undefined') return;
-        try {
-            const raw = window.localStorage.getItem(BUILDER_DRAFT_STORAGE_KEY);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                if (parsed && parsed.formData) {
-                    setDetectedDraft(parsed);
-                    if (searchParams?.get('resume') === 'draft') {
-                        initializeFormData(parsed.formData);
-                        if (typeof parsed.currentStep === 'number') setCurrentStep(parsed.currentStep);
-                        setDraftDismissed(true);
-                    }
-                }
-            }
-        } catch (err) {
-            console.warn('Failed to load local builder draft:', err);
-        }
-    }, [editId, searchParams, initializeFormData]);
-
-    // Auto-save local draft as user edits form data
-    useEffect(() => {
-        if (editId || typeof window === 'undefined' || isSubmitting) return;
-
-        const hasContent = Boolean(
-            formData.brideName?.trim() ||
-            formData.groomName?.trim() ||
-            formData.venueName?.trim() ||
-            formData.story?.trim() ||
-            currentStep > 0
-        );
-
-        if (!hasContent) return;
-
-        const timer = setTimeout(() => {
-            try {
-                const draftPayload = {
-                    formData,
-                    currentStep,
-                    updatedAt: new Date().toISOString(),
-                };
-                window.localStorage.setItem(BUILDER_DRAFT_STORAGE_KEY, JSON.stringify(draftPayload));
-            } catch (err) {
-                console.warn('Auto-save builder draft failed:', err);
-            }
-        }, 1000);
-
-        return () => clearTimeout(timer);
-    }, [formData, currentStep, editId, isSubmitting]);
 
     useEffect(() => {
         if (editId || !requestedTemplate || !TEMPLATES.some((template) => template.id === requestedTemplate)) return;
@@ -657,6 +651,74 @@ export default function BuilderForm() {
         receptionVenuePhotos: [],
     });
     const previewObjectUrlsRef = useRef(new Set<string>());
+    const importedLegacyRef = useRef(false);
+    const [draftReadyKey, setDraftReadyKey] = useState('');
+    const [draftStatus, setDraftStatus] = useState('');
+    const baselineRef = useRef('');
+    const dirtyRef = useRef(false);
+    const scopeKey = userId ? builderDraftKey(userId, editId) : '';
+    const draftFingerprint = JSON.stringify({ formData, previews, files: Object.entries(mediaFiles).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => [key, (Array.isArray(value) ? value : value ? [value] : []).map(file => [file.name, file.size, file.lastModified])]) });
+    const restoreDraft = useCallback((draft: BuilderDraftSnapshot) => {
+        importedLegacyRef.current = Boolean(draft.legacyImport);
+        initializeFormData({ ...INITIAL_FORM_DATA, ...draft.formData });
+        setCurrentStep(draft.currentStep);
+        setMediaFiles(draft.mediaFiles as typeof mediaFiles);
+        const restored = { ...draft.previews };
+        for (const [key, value] of Object.entries(draft.mediaFiles)) {
+            const files = Array.isArray(value) ? value : value ? [value] : [];
+            if (!files.length) continue;
+            const urls = files.map(file => { const url = URL.createObjectURL(file); previewObjectUrlsRef.current.add(url); return url; });
+            restored[key] = Array.isArray(value)
+                ? [...(Array.isArray(restored[key]) ? (restored[key] as string[]).filter(url => !url.startsWith('blob:')) : []), ...urls]
+                : urls[0];
+        }
+        setPreviews(restored as typeof previews);
+        setDraftDismissed(true);
+        setDraftStatus('Recovered local draft. Save to update your invitation.');
+    }, [initializeFormData]);
+    useEffect(() => {
+        if (!scopeKey || (editId && loadedEditId !== editId)) return;
+        let active = true;
+        baselineRef.current = draftFingerprint;
+        dirtyRef.current = false;
+        setDraftDismissed(false);
+        setDetectedDraft(null);
+        loadBuilderDraft(scopeKey).then(draft => {
+            if (!active) return;
+            if (draft) {
+                setDetectedDraft(draft);
+                if (!editId && searchParams?.get('resume') === 'draft') restoreDraft(draft);
+            } else if (!editId) {
+                const legacy = readLegacyBuilderDraft(window.localStorage.getItem(BUILDER_DRAFT_STORAGE_KEY), mediaFiles, previews);
+                if (legacy) {
+                    setDetectedDraft(legacy);
+                    setDraftStatus('An older draft is available on this browser. Restore it only if it is yours; previously selected media must be selected again.');
+                }
+            }
+        }).catch(() => { if (active) setDraftStatus('Local recovery is unavailable. Keep this tab open until you save.'); })
+            .finally(() => { if (active) setDraftReadyKey(scopeKey); });
+        return () => { active = false; };
+        // A scope is initialized once after the saved wedding has loaded.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scopeKey, editId, loadedEditId, restoreDraft]);
+    useEffect(() => {
+        if (!scopeKey || draftReadyKey !== scopeKey || isSubmitting || (detectedDraft && !draftDismissed)) return;
+        dirtyRef.current = draftFingerprint !== baselineRef.current;
+        if (!dirtyRef.current) return;
+        setDraftStatus('Saving local draft…');
+        const timer = setTimeout(() => {
+            const draftPayload: BuilderDraftSnapshot = { formData, currentStep, updatedAt: new Date().toISOString(), mediaFiles, previews };
+            saveBuilderDraft(scopeKey, draftPayload).then(() => setDraftStatus('Draft saved on this device. Invitation changes still need saving.'))
+                .catch(() => setDraftStatus('Could not save a local draft. Save your invitation before leaving.'));
+        }, 750);
+        return () => clearTimeout(timer);
+    }, [scopeKey, draftReadyKey, draftFingerprint, formData, currentStep, mediaFiles, previews, isSubmitting, detectedDraft, draftDismissed]);
+    useEffect(() => {
+        const warn = (event: BeforeUnloadEvent) => { if (dirtyRef.current) { event.preventDefault(); event.returnValue = ''; } };
+        window.addEventListener('beforeunload', warn);
+        return () => window.removeEventListener('beforeunload', warn);
+    }, []);
+
 
     useEffect(() => {
         const objectUrls = previewObjectUrlsRef.current;
@@ -670,21 +732,22 @@ export default function BuilderForm() {
     const [showMonogramProModal, setShowMonogramProModal] = useState(false);
     const [savedPresets, setSavedPresets] = useState<WeddingTemplatePreset[]>([]);
     const [accountIsPro, setAccountIsPro] = useState(false);
+    const [weddingIsPro, setWeddingIsPro] = useState(false);
     const monogramExportRef = useRef<SVGSVGElement>(null);
     const [monogramExporting, setMonogramExporting] = useState<'png' | 'jpg' | 'mp4' | null>(null);
     const [monogramPreviewNonce, setMonogramPreviewNonce] = useState(0);
     const [activeWeddingCount, setActiveWeddingCount] = useState(0);
     const [entourageImportStatus, setEntourageImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [customizingMemberIndex, setCustomizingMemberIndex] = useState<number | null>(null);
-    const hasMonogramPro = isAdmin || accountIsPro;
+    const hasMonogramPro = isAdmin || accountIsPro || weddingIsPro;
     const freeWebsiteLimitReached = !editId && !isAdmin && !accountIsPro && activeWeddingCount >= 3;
     const publishHealth = useMemo(() => evaluateWeddingPublishHealth(formData, {
         heroImage: Boolean(mediaFiles.heroImage || previews.heroImage),
         couplePhoto: Boolean(mediaFiles.couplePhoto || previews.couplePhoto),
         giftQr: Boolean(mediaFiles.giftQr || previews.giftQr),
         backgroundMusic: Boolean(mediaFiles.backgroundMusic || previews.backgroundMusic),
-        galleryCount: mediaFiles.galleryImages.length + (Array.isArray(previews.galleryImages) ? previews.galleryImages.length : 0),
-        invitationCount: mediaFiles.invitationImages.length + (Array.isArray(previews.invitationImages) ? previews.invitationImages.length : 0),
+        galleryCount: (Array.isArray(previews.galleryImages) && previews.galleryImages.length > 0) ? previews.galleryImages.length : mediaFiles.galleryImages.length,
+        invitationCount: (Array.isArray(previews.invitationImages) && previews.invitationImages.length > 0) ? previews.invitationImages.length : mediaFiles.invitationImages.length,
     }), [formData, mediaFiles, previews]);
 
     const applyMotifColor = useCallback((color: string) => {
@@ -786,6 +849,12 @@ export default function BuilderForm() {
                     if (data && (result.accessRole === 'owner' || result.accessRole === 'partner')) {
                         // Builder features are included on the free plan. Paid status now unlocks Planner Pro.
                         setIsPremium(true);
+                        if (result.accountProfile) {
+                            setAccountIsPro(hasAccountPro(result.accountProfile));
+                        }
+                        if (data.is_premium || data.payment_status === 'paid') {
+                            setWeddingIsPro(true);
+                        }
                         setWeddingOwnerId(data.user_id || userId);
                         setExistingPublicSlug(typeof data.public_slug === 'string' ? data.public_slug : '');
                         const dressCodeSettings = parseDressCodeValue(data.dress_code, data.motif_color);
@@ -812,8 +881,22 @@ export default function BuilderForm() {
                         galleryLayout: data.gallery_layout || 'auto',
                         dressCode: dressCodeSettings.guests.attire,
                         dressCodeColor: dressCodeSettings.guests.color,
+                        dressCodeSuitColor: dressCodeSettings.guests.suitColor || '#2D3543',
+                        dressCodeColors: dressCodeSettings.guests.colors || [dressCodeSettings.guests.color],
+                        dressCodeNotes: dressCodeSettings.guests.notes || '',
                         sponsorDressCode: dressCodeSettings.sponsors.attire,
                         sponsorDressCodeColor: dressCodeSettings.sponsors.color,
+                        sponsorDressCodeSuitColor: dressCodeSettings.sponsors.suitColor || '#1D2330',
+                        sponsorDressCodeColors: dressCodeSettings.sponsors.colors || [dressCodeSettings.sponsors.color],
+                        sponsorDressCodeNotes: dressCodeSettings.sponsors.notes || '',
+                        bridesmaidDressCode: dressCodeSettings.bridesmaids?.attire || 'Formal Dress',
+                        bridesmaidDressCodeColor: dressCodeSettings.bridesmaids?.color || '#9B1D20',
+                        bridesmaidDressCodeColors: dressCodeSettings.bridesmaids?.colors || ['#9B1D20'],
+                        bridesmaidDressCodeNotes: dressCodeSettings.bridesmaids?.notes || 'Garnet Red Only',
+                        includeBridesmaidAttire: Boolean(dressCodeSettings.bridesmaids),
+                        rsvpAllowPlusOnes: data.rsvp_allow_plus_ones !== false,
+                        rsvpAllowChildren: data.rsvp_allow_children !== false,
+                        rsvpSearchGuestList: data.rsvp_search_guest_list !== false,
                         programTimeline: data.program_timeline || '',
                         faqItems: readArrayField(data.faq_items),
                         story: data.story || '',
@@ -834,12 +917,15 @@ export default function BuilderForm() {
                         backgroundMusicEnabled: data.background_music_enabled || false,
                         weddingParty: readArrayField(data.wedding_party).map(normalizeWeddingPartyMember),
                         includeEntourageSection: data.include_entourage_section !== false,
-                        registryLinks: data.gift_registry_links || [],
-                        cashFunds: data.cash_funds || [],
-                        paymentLinks: data.payment_links || [],
+                        registryLinks: readArrayField(data.gift_registry_links),
+                        cashFunds: readArrayField(data.cash_funds),
+                        paymentLinks: readArrayField(data.payment_links),
                         isThankYouMode: data.is_thank_you_mode || false,
                         thankYouMessage: data.thank_you_message || '',
                         photoAlbumLink: data.photo_album_link || '',
+                        showPhotosInThankYouMode: data.show_photos_in_thank_you_mode !== false,
+                        showGuestbookInThankYouMode: data.show_guestbook_in_thank_you_mode !== false,
+                        photoRecapStyle: (data.photo_recap_style === 'grid' ? 'grid' : 'polaroid') as 'polaroid' | 'grid',
                         accentStyle: data.accent_style || 'none',
                         });
                         let inviteImages: string[] = [];
@@ -860,7 +946,7 @@ export default function BuilderForm() {
                             backgroundMusic: (data as any).background_music_url || '',
                             giftQr: data.gift_qr_image || '',
                             invitationImages: inviteImages,
-                            galleryImages: data.gallery_images || [],
+                            galleryImages: readArrayField(data.gallery_images) as string[],
                             receptionVenuePhotos: readArrayField(data.reception_venue_photos) as string[],
                         });
                     }
@@ -1173,21 +1259,54 @@ export default function BuilderForm() {
 
     const removeFile = (field: string, index?: number) => {
         if (field === 'galleryImages' && index !== undefined) {
-            setMediaFiles(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }));
             setPreviews(prev => {
-                releaseLocalPreview(prev.galleryImages[index]);
+                const targetPreview = prev.galleryImages[index];
+                releaseLocalPreview(targetPreview);
+
+                if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
+                    const localBlobsBefore = prev.galleryImages
+                        .slice(0, index)
+                        .filter((url) => !isPersistedMediaUrl(url)).length;
+                    setMediaFiles(mPrev => ({
+                        ...mPrev,
+                        galleryImages: mPrev.galleryImages.filter((_, i) => i !== localBlobsBefore),
+                    }));
+                }
+
                 return { ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) };
             });
         } else if (field === 'invitationImages' && index !== undefined) {
-            setMediaFiles(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) }));
             setPreviews(prev => {
-                releaseLocalPreview(prev.invitationImages[index]);
+                const targetPreview = prev.invitationImages[index];
+                releaseLocalPreview(targetPreview);
+
+                if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
+                    const localBlobsBefore = prev.invitationImages
+                        .slice(0, index)
+                        .filter((url) => !isPersistedMediaUrl(url)).length;
+                    setMediaFiles(mPrev => ({
+                        ...mPrev,
+                        invitationImages: mPrev.invitationImages.filter((_, i) => i !== localBlobsBefore),
+                    }));
+                }
+
                 return { ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) };
             });
         } else if (field === 'receptionVenuePhotos' && index !== undefined) {
-            setMediaFiles(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) }));
             setPreviews(prev => {
-                releaseLocalPreview(prev.receptionVenuePhotos[index]);
+                const targetPreview = prev.receptionVenuePhotos[index];
+                releaseLocalPreview(targetPreview);
+
+                if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
+                    const localBlobsBefore = prev.receptionVenuePhotos
+                        .slice(0, index)
+                        .filter((url) => !isPersistedMediaUrl(url)).length;
+                    setMediaFiles(mPrev => ({
+                        ...mPrev,
+                        receptionVenuePhotos: mPrev.receptionVenuePhotos.filter((_, i) => i !== localBlobsBefore),
+                    }));
+                }
+
                 return { ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) };
             });
         } else if (field === 'backgroundMusic') {
@@ -1276,14 +1395,14 @@ export default function BuilderForm() {
                 uploadWaiters.shift()?.();
             };
             const uploadToSupabase = async (file: File, folder: string) => {
-                const filename = `${folder}-${file.name.replace(/\s+/g, '_')}`;
+                const filename = `${folder}-${crypto.randomUUID()}.${file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'bin'}`;
                 const filePath = `${user.id}/${weddingId}/${filename}`;
 
                 await acquireUploadSlot();
                 try {
                     const { error: uploadError } = await supabase.storage
                         .from('quickweds')
-                        .upload(filePath, file, { upsert: true, contentType: file.type });
+                        .upload(filePath, file, { upsert: false, contentType: file.type });
 
                     if (uploadError) throw uploadError;
 
@@ -1321,6 +1440,7 @@ export default function BuilderForm() {
             const normalizedWeddingParty = (formData.weddingParty || []).map(normalizeWeddingPartyMember);
 
             const payload: any = {
+                ...(enforcePublishHealth ? { planner_only: false } : {}),
                 bride_name: formData.brideName,
                 groom_name: formData.groomName,
                 wedding_date: formData.weddingDate,
@@ -1341,9 +1461,30 @@ export default function BuilderForm() {
                 template_style: formData.templateStyle || DEFAULT_TEMPLATE_STYLE,
                 gallery_layout: formData.galleryLayout || 'auto',
                 dress_code: serializeDressCodeValue({
-                    sponsors: { attire: formData.sponsorDressCode, color: formData.sponsorDressCodeColor },
-                    guests: { attire: formData.dressCode, color: formData.dressCodeColor },
+                    sponsors: {
+                        attire: formData.sponsorDressCode,
+                        color: formData.sponsorDressCodeColor,
+                        suitColor: formData.sponsorDressCodeSuitColor,
+                        colors: formData.sponsorDressCodeColors?.length ? formData.sponsorDressCodeColors : [formData.sponsorDressCodeColor],
+                        notes: formData.sponsorDressCodeNotes,
+                    },
+                    guests: {
+                        attire: formData.dressCode,
+                        color: formData.dressCodeColor,
+                        suitColor: formData.dressCodeSuitColor,
+                        colors: formData.dressCodeColors?.length ? formData.dressCodeColors : [formData.dressCodeColor],
+                        notes: formData.dressCodeNotes,
+                    },
+                    bridesmaids: formData.includeBridesmaidAttire ? {
+                        attire: formData.bridesmaidDressCode,
+                        color: formData.bridesmaidDressCodeColor,
+                        colors: formData.bridesmaidDressCodeColors?.length ? formData.bridesmaidDressCodeColors : [formData.bridesmaidDressCodeColor],
+                        notes: formData.bridesmaidDressCodeNotes,
+                    } : undefined,
                 }),
+                rsvp_allow_plus_ones: formData.rsvpAllowPlusOnes !== false,
+                rsvp_allow_children: formData.rsvpAllowChildren !== false,
+                rsvp_search_guest_list: formData.rsvpSearchGuestList !== false,
                 program_timeline: formData.programTimeline,
                 faq_items: formData.faqItems,
                 story: formData.story,
@@ -1370,6 +1511,9 @@ export default function BuilderForm() {
                 is_thank_you_mode: formData.isThankYouMode,
                 thank_you_message: formData.thankYouMessage,
                 photo_album_link: formData.photoAlbumLink,
+                show_photos_in_thank_you_mode: formData.showPhotosInThankYouMode !== false,
+                show_guestbook_in_thank_you_mode: formData.showGuestbookInThankYouMode !== false,
+                photo_recap_style: formData.photoRecapStyle || 'polaroid',
                 accent_style: formData.accentStyle,
             };
 
@@ -1455,6 +1599,12 @@ export default function BuilderForm() {
                     'background_music_url',
                     'background_music_title',
                     'background_music_enabled',
+                    'rsvp_allow_plus_ones',
+                    'rsvp_allow_children',
+                    'rsvp_search_guest_list',
+                    'show_photos_in_thank_you_mode',
+                    'show_guestbook_in_thank_you_mode',
+                    'photo_recap_style',
                 ].forEach((column) => {
                     if (isMissingOptionalWeddingColumnError(error, column)) {
                         delete fallbackPayload[column];
@@ -1493,9 +1643,43 @@ export default function BuilderForm() {
             }
 
             // Success
+            dirtyRef.current = false;
+            if (scopeKey) await deleteBuilderDraft(scopeKey).catch(() => undefined);
+            setDraftStatus('Invitation saved.');
             if (typeof window !== 'undefined') {
-                window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
+                if (importedLegacyRef.current) window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
             }
+
+            // Sync saved media URLs into previews state, clear local pending mediaFiles, and clean up blob URLs
+            const updatedPreviews = {
+                heroImage: payload.hero_image || (isPersistedMediaUrl(previews.heroImage) ? previews.heroImage : ''),
+                couplePhoto: payload.couple_photo || (isPersistedMediaUrl(previews.couplePhoto) ? previews.couplePhoto : ''),
+                teaserVideo: payload.teaser_video || (isPersistedMediaUrl(previews.teaserVideo) ? previews.teaserVideo : ''),
+                backgroundMusic: payload.background_music_url || (isPersistedMediaUrl(previews.backgroundMusic) ? previews.backgroundMusic : ''),
+                giftQr: payload.gift_qr_image || (isPersistedMediaUrl(previews.giftQr) ? previews.giftQr : ''),
+                invitationImages: finalInvitationImages,
+                galleryImages: payload.gallery_images ?? existingGalleryImages,
+                receptionVenuePhotos: payload.reception_venue_photos ?? existingReceptionVenuePhotos,
+            };
+            baselineRef.current = JSON.stringify({ formData, previews: updatedPreviews, files: Object.keys(mediaFiles).sort().map(key => [key, []]) });
+            setPreviews(updatedPreviews);
+            setMediaFiles({
+                heroImage: null,
+                couplePhoto: null,
+                giftQr: null,
+                invitationImages: [],
+                teaserVideo: null,
+                backgroundMusic: null,
+                galleryImages: [],
+                receptionVenuePhotos: [],
+            });
+            previewObjectUrlsRef.current.forEach((url) => {
+                try {
+                    URL.revokeObjectURL(url);
+                } catch {}
+            });
+            previewObjectUrlsRef.current.clear();
+
             if (stayOnPage && editId) {
                 setWeddingOwnerId(baseSubmitPayload.user_id);
                 setLoadedEditId(weddingId);
@@ -1542,11 +1726,11 @@ export default function BuilderForm() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-2">
                                 <label htmlFor="brideName" className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Bride&apos;s Name</label>
-                                <input id="brideName" required name="brideName" value={formData.brideName} onChange={handleChange} placeholder="Sarah" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
+                                <input id="brideName" name="brideName" value={formData.brideName} onChange={handleChange} placeholder="Sarah" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Groom&apos;s Name</label>
-                                <input required name="groomName" value={formData.groomName} onChange={handleChange} placeholder="John" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
+                                <input name="groomName" value={formData.groomName} onChange={handleChange} placeholder="John" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none transition-all text-base min-h-[44px]" />
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -1559,17 +1743,17 @@ export default function BuilderForm() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Date</label>
-                                <input required type="date" name="weddingDate" value={formData.weddingDate} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                <input type="date" name="weddingDate" value={formData.weddingDate} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Wedding Time</label>
-                                <input required type="time" name="weddingTime" value={formData.weddingTime} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                <input type="time" name="weddingTime" value={formData.weddingTime} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Ceremony Location Name</label>
-                                <input required name="venueName" value={formData.venueName} onChange={handleChange} placeholder="The Grand Plaza Chapel" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
+                                <input name="venueName" value={formData.venueName} onChange={handleChange} placeholder="The Grand Plaza Chapel" className="w-full px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-border bg-neutral focus:border-primary outline-none text-base min-h-[44px]" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Ceremony Google Maps Link (Optional)</label>
@@ -1581,7 +1765,7 @@ export default function BuilderForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Ceremony Location Address</label>
-                            <AutoResizeTextarea required name="venueAddress" value={formData.venueAddress} onChange={handleChange} placeholder="123 Wedding Lane..." className="w-full min-h-[96px] resize-none rounded-lg border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white sm:rounded-xl sm:py-4" />
+                            <AutoResizeTextarea name="venueAddress" value={formData.venueAddress} onChange={handleChange} placeholder="123 Wedding Lane..." className="w-full min-h-[96px] resize-none rounded-lg border border-border bg-neutral px-4 py-3 text-base outline-none transition-all focus:border-primary focus:bg-white sm:rounded-xl sm:py-4" />
                         </div>
 
                         <Collapsible title="Reception / Venue Details" isOpen={expandedSection === 'receptionVenue'} onToggle={() => toggleSection('receptionVenue')} icon={MapPin}>
@@ -2337,7 +2521,7 @@ export default function BuilderForm() {
                             <div className="space-y-3 pt-4">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Style</label>
-                                    {!isPremium && (
+                                    {!hasMonogramPro && (
                                         <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
                                             Pro unlocks 14+ luxury crest styles
                                         </span>
@@ -2345,7 +2529,7 @@ export default function BuilderForm() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                                     {MONOGRAM_SHAPES.map((shape) => {
-                                        const isLocked = !isPremium && shape.pro;
+                                        const isLocked = !hasMonogramPro && shape.pro;
                                         const isSelected = formData.logoShape === shape.id;
                                         return (
                                             <button
@@ -2364,7 +2548,7 @@ export default function BuilderForm() {
                                                         : 'border-border bg-neutral/60 hover:border-primary/40 hover:bg-white'
                                                 }`}
                                             >
-                                                {shape.pro && (
+                                                {!hasMonogramPro && shape.pro && (
                                                     <span className="absolute top-2 right-2 rounded-md bg-gradient-to-r from-amber-500 to-rose-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm">
                                                         PRO
                                                     </span>
@@ -2391,7 +2575,7 @@ export default function BuilderForm() {
                             <div className="space-y-3 pt-4">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Monogram Motion Animation</label>
-                                    {!isPremium && (
+                                    {!hasMonogramPro && (
                                         <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
                                             Pro unlocks Website Motion Animations
                                         </span>
@@ -2399,7 +2583,7 @@ export default function BuilderForm() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                                     {MONOGRAM_ANIMATIONS.map((anim) => {
-                                        const isLocked = !isPremium && anim.id !== 'none';
+                                        const isLocked = !hasMonogramPro && anim.id !== 'none';
                                         const isSelected = (formData.logoAnimation || 'none') === anim.id;
                                         return (
                                             <button
@@ -2418,7 +2602,7 @@ export default function BuilderForm() {
                                                         : 'border-border bg-neutral/60 hover:border-primary/40 hover:bg-white'
                                                 }`}
                                             >
-                                                {anim.id !== 'none' && (
+                                                {!hasMonogramPro && anim.id !== 'none' && (
                                                     <span className="absolute top-2 right-2 rounded-md bg-gradient-to-r from-amber-500 to-rose-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm">
                                                         PRO
                                                     </span>
@@ -2441,9 +2625,32 @@ export default function BuilderForm() {
                                     color={formData.logoColor}
                                     motifColor={formData.motifColor}
                                     fontClassName={FONTS.find(f => f.id === formData.logoFont)?.class || 'font-serif'}
-                                    isPro={isPremium}
+                                    isPro={hasMonogramPro}
                                     onRequirePro={() => setShowMonogramProModal(true)}
                                 />
+                                <div className="mt-4 rounded-2xl border border-border bg-white p-4 sm:p-5">
+                                    <div className="mb-3 flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-xs font-black uppercase tracking-[0.18em] text-foreground">Invitation-ready downloads</p>
+                                            <p className="mt-1 text-xs text-text-secondary">PNG has transparency. JPG and MP4 use a pure-white background.</p>
+                                        </div>
+                                        {!hasMonogramPro && <Lock className="h-4 w-4 text-text-secondary" />}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(['png', 'jpg', 'mp4'] as const).map((format) => (
+                                            <button
+                                                key={format}
+                                                type="button"
+                                                disabled={Boolean(monogramExporting)}
+                                                onClick={() => handleMonogramExport(format)}
+                                                className={`inline-flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50 ${!hasMonogramPro ? 'opacity-65' : ''}`}
+                                            >
+                                                <Download className="h-3.5 w-3.5" />
+                                                {monogramExporting === format ? `Preparing ${format.toUpperCase()}…` : `Download ${format.toUpperCase()}`}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -2480,12 +2687,6 @@ export default function BuilderForm() {
                                     </div>
                                     <UpgradeButton weddingId={editId || ''} className="w-full justify-center py-3.5 text-sm" />
                                 </div>
-                                <div className="rounded-2xl border border-border bg-white p-4 sm:p-5">
-                                    <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-foreground">Invitation-ready downloads</p><p className="mt-1 text-xs text-text-secondary">PNG has transparency. JPG and MP4 use a pure-white background.</p></div>{!hasMonogramPro && <Lock className="h-4 w-4 text-text-secondary" />}</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(['png', 'jpg', 'mp4'] as const).map((format) => <button key={format} type="button" disabled={Boolean(monogramExporting)} onClick={() => handleMonogramExport(format)} className={`inline-flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-xs font-bold text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50 ${!hasMonogramPro ? 'opacity-65' : ''}`}><Download className="h-3.5 w-3.5" />{monogramExporting === format ? `Preparing ${format.toUpperCase()}…` : `Download ${format.toUpperCase()}`}</button>)}
-                                    </div>
-                                </div>
                             </div>
                         )}
                     </div>
@@ -2511,21 +2712,45 @@ export default function BuilderForm() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Teaser Video (Optional)</label>
-                            <div className="relative h-48 rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
-                                {mediaFiles.teaserVideo ? (
-                                    <div className="text-center p-4">
-                                        <Video className="w-8 h-8 text-primary mx-auto mb-2" />
-                                        <p className="text-sm font-bold text-foreground">{mediaFiles.teaserVideo.name}</p>
-                                        <button type="button" onClick={() => setMediaFiles(prev => ({ ...prev, teaserVideo: null }))} className="text-xs text-red-500 hover:underline mt-2">Remove</button>
+                            <div className="relative min-h-[12rem] rounded-2xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-neutral hover:bg-neutral/80 transition-colors group">
+                                {mediaFiles.teaserVideo || previews.teaserVideo ? (
+                                    <div className="relative z-10 flex h-full w-full flex-col items-center justify-center p-4 text-center">
+                                        {previews.teaserVideo ? (
+                                            <video src={previews.teaserVideo} controls className="max-h-28 max-w-full rounded-xl object-contain shadow-sm mb-2" />
+                                        ) : (
+                                            <Video className="w-8 h-8 text-primary mx-auto mb-2" />
+                                        )}
+                                        <p className="text-xs font-bold text-foreground truncate max-w-xs">
+                                            {mediaFiles.teaserVideo?.name || 'Save the Date Video'}
+                                        </p>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeFile('teaserVideo');
+                                                }}
+                                                className="text-xs text-red-500 hover:underline font-bold"
+                                            >
+                                                Remove
+                                            </button>
+                                            <span className="text-xs text-text-secondary">•</span>
+                                            <label className="text-xs text-primary hover:underline font-bold cursor-pointer">
+                                                Change Video
+                                                <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="sr-only" />
+                                            </label>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="text-center group-hover:scale-105 transition-transform">
-                                        <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
-                                        <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
-                                        {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
-                                    </div>
+                                    <>
+                                        <div className="text-center group-hover:scale-105 transition-transform">
+                                            <Video className="w-8 h-8 text-primary/40 mx-auto mb-2" />
+                                            <span className="text-sm text-text-secondary font-medium">Upload Video {!isPremium ? '(Free < 50MB)' : '(Max 50MB)'}</span>
+                                            {!isPremium && <p className="text-[10px] text-primary mt-1 font-bold italic">Upgrade for larger files</p>}
+                                        </div>
+                                        <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    </>
                                 )}
-                                <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'teaserVideo')} className="absolute inset-0 opacity-0 cursor-pointer" />
                             </div>
                         </div>
 
@@ -2717,45 +2942,69 @@ export default function BuilderForm() {
         {
             id: 'sponsors',
             label: 'Principal Sponsors',
-            description: 'Set the formal attire guidance and color reserved for principal sponsors.',
+            description: 'Set formal attire guidelines, dress and suit colors, and palette reserved for principal sponsors.',
             attireField: 'sponsorDressCode',
             colorField: 'sponsorDressCodeColor',
+            suitColorField: 'sponsorDressCodeSuitColor',
+            colorsField: 'sponsorDressCodeColors',
+            notesField: 'sponsorDressCodeNotes',
             variant: 'sponsors' as const,
         },
         {
             id: 'guests',
             label: 'Wedding Guests',
-            description: 'Set a separate attire instruction and color for all other guests.',
+            description: 'Set dress code, dress and suit colors, and color palette options for all wedding guests.',
             attireField: 'dressCode',
             colorField: 'dressCodeColor',
+            suitColorField: 'dressCodeSuitColor',
+            colorsField: 'dressCodeColors',
+            notesField: 'dressCodeNotes',
             variant: 'guests' as const,
         },
     ] as const;
 
+    const togglePaletteColor = (field: string, color: string) => {
+        setFormData((prev: any) => {
+            const current = Array.isArray(prev[field]) ? prev[field] : [];
+            if (current.includes(color)) {
+                return { ...prev, [field]: current.filter((c: string) => c !== color) };
+            }
+            return { ...prev, [field]: [...current, color] };
+        });
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center mb-4">
-                <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Dress Code</h2>
-                <p className="text-text-secondary">Create separate attire guidance for principal sponsors and wedding guests.</p>
+                <h2 className="text-3xl font-serif font-bold text-foreground mb-2">Dress Code & Attire Colors</h2>
+                <p className="text-text-secondary">Customize dress and suit colors, palettes, and style guidelines for sponsors and guests.</p>
             </div>
 
             <div className="space-y-6 rounded-2xl border border-border bg-white/70 p-2 shadow-sm sm:rounded-[2rem] sm:p-6">
                 {attireGroups.map((group) => {
                     const attireValue = formData[group.attireField];
                     const colorValue = formData[group.colorField];
+                    const suitColorValue = formData[group.suitColorField];
+                    const notesValue = formData[group.notesField];
+                    const paletteColors = Array.isArray(formData[group.colorsField]) && formData[group.colorsField].length > 0
+                        ? formData[group.colorsField]
+                        : [colorValue];
 
                     return (
-                        <section key={group.id} className="overflow-hidden rounded-xl border border-border bg-white p-2.5 sm:rounded-[1.75rem] sm:p-5">
+                        <section key={group.id} className="overflow-hidden rounded-xl border border-border bg-white p-3 sm:rounded-[1.75rem] sm:p-5">
                             <div className="mb-5 flex items-start justify-between gap-4">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">{group.label}</p>
-                                    <p className="mt-2 text-sm leading-6 text-text-secondary">{group.description}</p>
+                                    <p className="mt-1 text-sm leading-6 text-text-secondary">{group.description}</p>
                                 </div>
-                                <span className="h-11 w-11 shrink-0 rounded-2xl border-2 border-white shadow-lg" style={{ backgroundColor: colorValue }} />
+                                <div className="flex items-center gap-1.5">
+                                    <span className="h-9 w-9 shrink-0 rounded-xl border-2 border-white shadow-md" style={{ backgroundColor: colorValue }} title="Dress color" />
+                                    <span className="h-9 w-9 shrink-0 rounded-xl border-2 border-white shadow-md" style={{ backgroundColor: suitColorValue }} title="Suit color" />
+                                </div>
                             </div>
 
-                            <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
-                                <div className="space-y-5 rounded-xl bg-neutral/45 p-3 sm:rounded-2xl sm:p-4">
+                            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-stretch">
+                                <div className="space-y-5 rounded-xl bg-neutral/45 p-3 sm:rounded-2xl sm:p-5">
                                     <div className="space-y-2">
                                         <label htmlFor={`${group.id}-attire`} className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Type</label>
                                         <input
@@ -2763,26 +3012,28 @@ export default function BuilderForm() {
                                             name={group.attireField}
                                             value={attireValue}
                                             onChange={handleChange}
-                                            placeholder={group.id === 'sponsors' ? 'e.g. Black Tie, Barong and Formal Gown' : 'e.g. Formal, Cocktail, Garden Formal'}
+                                            placeholder={group.id === 'sponsors' ? 'e.g. Formal, Barong and Evening Gown' : 'e.g. Semi-Formal, Cocktail, Garden Formal'}
                                             className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
                                         />
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Color Theme</label>
-                                        <div className="grid grid-cols-6 gap-2">
-                                            {ATTIRE_COLOR_OPTIONS.map((color) => (
-                                                <button
-                                                    key={color}
-                                                    type="button"
-                                                    onClick={() => setFormData((previous: any) => ({ ...previous, [group.colorField]: color }))}
-                                                    className={`relative h-9 rounded-xl border-2 transition-all ${colorValue === color ? 'scale-105 border-white ring-2 ring-primary shadow-lg' : 'border-border/60 shadow-sm hover:border-primary/50'}`}
-                                                    style={{ backgroundColor: color }}
-                                                    aria-label={`Select ${group.label.toLowerCase()} attire color ${color}`}
-                                                >
-                                                    {colorValue === color && <CheckCircle2 className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow" />}
-                                                </button>
-                                            ))}
+                                    <div className="space-y-2">
+                                        <label htmlFor={`${group.id}-notes`} className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Style Guidelines / Notes</label>
+                                        <input
+                                            id={`${group.id}-notes`}
+                                            name={group.notesField}
+                                            value={notesValue}
+                                            onChange={handleChange}
+                                            placeholder={group.id === 'sponsors' ? 'e.g. Champagne with a touch of Red (Never White) - Formal Attire' : 'e.g. Nude Beige & Brick Rose - Semi-formal attire'}
+                                            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none transition-all focus:border-primary"
+                                        />
+                                    </div>
+
+                                    {/* Dress & Gown Color */}
+                                    <div className="space-y-2 pt-2 border-t border-border/60">
+                                        <div className="flex items-center justify-between">
+                                            <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Dress / Gown Color</label>
+                                            <span className="font-mono text-xs font-bold text-primary">{colorValue}</span>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <input
@@ -2790,8 +3041,8 @@ export default function BuilderForm() {
                                                 name={group.colorField}
                                                 value={colorValue}
                                                 onChange={handleChange}
-                                                className="h-11 w-11 cursor-pointer rounded-2xl border border-border bg-transparent p-0"
-                                                aria-label={`Pick a custom ${group.label.toLowerCase()} attire color`}
+                                                className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-transparent p-0"
+                                                aria-label={`Pick dress color for ${group.label}`}
                                             />
                                             <input
                                                 type="text"
@@ -2799,29 +3050,248 @@ export default function BuilderForm() {
                                                 value={colorValue}
                                                 onChange={handleChange}
                                                 placeholder="#HEX"
-                                                className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-3 font-mono text-sm outline-none transition-all focus:border-primary"
+                                                className="min-h-[40px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-2 font-mono text-sm outline-none transition-all focus:border-primary"
                                             />
+                                        </div>
+                                    </div>
+
+                                    {/* Suit & Tuxedo Color */}
+                                    <div className="space-y-2 pt-2 border-t border-border/60">
+                                        <div className="flex items-center justify-between">
+                                            <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Suit / Tuxedo Color</label>
+                                            <span className="font-mono text-xs font-bold text-primary">{suitColorValue}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="color"
+                                                name={group.suitColorField}
+                                                value={suitColorValue}
+                                                onChange={handleChange}
+                                                className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-transparent p-0"
+                                                aria-label={`Pick suit color for ${group.label}`}
+                                            />
+                                            <input
+                                                type="text"
+                                                name={group.suitColorField}
+                                                value={suitColorValue}
+                                                onChange={handleChange}
+                                                placeholder="#HEX"
+                                                className="min-h-[40px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-2 font-mono text-sm outline-none transition-all focus:border-primary"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Multiple Color Palette Options */}
+                                    <div className="space-y-3 pt-2 border-t border-border/60">
+                                        <div className="flex items-center justify-between">
+                                            <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">
+                                                Attire Palette ({paletteColors.length} selected)
+                                            </label>
+                                            <span className="text-[10px] text-text-secondary">Click swatches to add/remove</span>
+                                        </div>
+
+                                        {/* Selected Palette Tags */}
+                                        <div className="flex flex-wrap gap-2">
+                                            {paletteColors.map((color: string) => (
+                                                <span
+                                                    key={color}
+                                                    className="flex items-center gap-1.5 rounded-full border border-border bg-white px-2.5 py-1 text-xs shadow-xs"
+                                                >
+                                                    <span className="h-3.5 w-3.5 rounded-full border border-black/10" style={{ backgroundColor: color }} />
+                                                    <span className="font-mono text-[10px] uppercase font-bold">{color}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => togglePaletteColor(group.colorsField, color)}
+                                                        className="ml-0.5 text-text-secondary/70 hover:text-red-500"
+                                                        aria-label={`Remove color ${color}`}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+
+                                        {/* Swatch grid */}
+                                        <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-36 overflow-y-auto p-1 rounded-xl border border-border/50 bg-white/70">
+                                            {ATTIRE_COLOR_OPTIONS.map((color) => {
+                                                const isSelected = paletteColors.includes(color);
+                                                return (
+                                                    <button
+                                                        key={color}
+                                                        type="button"
+                                                        onClick={() => togglePaletteColor(group.colorsField, color)}
+                                                        className={`relative h-8 rounded-lg border-2 transition-all ${
+                                                            isSelected ? 'scale-105 border-primary ring-2 ring-primary/40 shadow-md' : 'border-border/60 hover:border-primary/50'
+                                                        }`}
+                                                        style={{ backgroundColor: color }}
+                                                        aria-label={`Toggle color ${color}`}
+                                                        title={color}
+                                                    >
+                                                        {isSelected && <CheckCircle2 className="absolute inset-0 m-auto h-3.5 w-3.5 text-white drop-shadow" />}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>
 
+                                {/* Live preview card */}
                                 <div
-                                    className="relative flex min-h-[240px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral p-3 sm:min-h-[300px] sm:rounded-2xl sm:p-4"
+                                    className="relative flex min-h-[280px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral p-4 sm:min-h-[320px] sm:rounded-2xl"
                                     style={{ boxShadow: `0 20px 55px ${colorValue}18` }}
                                 >
                                     <div className="absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at 50% 30%, ${colorValue}22, transparent 48%)` }} />
                                     <div className="relative">
                                         <p className="text-[9px] font-black uppercase tracking-[0.2em] text-text-secondary/60">Live preview · {group.label}</p>
                                         <p className="mt-1 font-serif text-xl font-bold text-foreground">{attireValue || 'Formal Attire'}</p>
+                                        {notesValue && <p className="mt-0.5 text-xs italic text-text-secondary">{notesValue}</p>}
                                     </div>
                                     <div className="relative flex flex-1 items-center justify-center py-2">
-                                        <AttireIllustration color={colorValue} variant={group.variant} className="max-w-[300px]" />
+                                        <AttireIllustration color={colorValue} suitColor={suitColorValue} variant={group.variant} className="max-w-[280px]" />
                                     </div>
+                                    {paletteColors.length > 0 && (
+                                        <div className="relative flex flex-wrap items-center justify-center gap-1.5 pt-2 border-t border-border/40">
+                                            {paletteColors.map((c: string, idx: number) => (
+                                                <span key={idx} className="h-4 w-4 rounded-full border border-white shadow-xs" style={{ backgroundColor: c }} title={c} />
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </section>
                     );
                 })}
+
+                {/* Bridesmaids Attire Section (Image 1 reference: Garnet Red Only) */}
+                <section className="overflow-hidden rounded-xl border border-border bg-white p-3 sm:rounded-[1.75rem] sm:p-5">
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Bridesmaids Attire</p>
+                            <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                Specify dedicated dress color and instructions for bridesmaids (e.g. Garnet Red Only).
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={formData.includeBridesmaidAttire}
+                            aria-label="Toggle bridesmaids attire"
+                            onClick={() => setFormData((prev: any) => ({ ...prev, includeBridesmaidAttire: !prev.includeBridesmaidAttire }))}
+                            className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors ${
+                                formData.includeBridesmaidAttire ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'
+                            }`}
+                        >
+                            <span className={`flex items-center justify-center rounded-md ${!formData.includeBridesmaidAttire ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Off</span>
+                            <span className={`flex items-center justify-center rounded-md ${formData.includeBridesmaidAttire ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                        </button>
+                    </div>
+
+                    {formData.includeBridesmaidAttire && (
+                        <div className="pt-4 border-t border-border">
+                            <div className="grid gap-6 lg:grid-cols-2">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Type</label>
+                                        <input
+                                            name="bridesmaidDressCode"
+                                            value={formData.bridesmaidDressCode}
+                                            onChange={handleChange}
+                                            placeholder="e.g. Floor-length Gown, Garnet Red Only"
+                                            className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Attire Notes</label>
+                                        <input
+                                            name="bridesmaidDressCodeNotes"
+                                            value={formData.bridesmaidDressCodeNotes}
+                                            onChange={handleChange}
+                                            placeholder="e.g. Bridesmaids Attire - Garnet Red Only"
+                                            className="w-full rounded-xl border border-border bg-white px-4 py-3 outline-none transition-all focus:border-primary"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="ml-1 text-xs font-bold uppercase tracking-widest text-text-secondary">Dress Color</label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="color"
+                                                name="bridesmaidDressCodeColor"
+                                                value={formData.bridesmaidDressCodeColor || '#9B1D20'}
+                                                onChange={handleChange}
+                                                className="h-10 w-10 cursor-pointer rounded-xl border border-border bg-transparent p-0"
+                                                aria-label="Pick bridesmaid dress color"
+                                            />
+                                            <input
+                                                type="text"
+                                                name="bridesmaidDressCodeColor"
+                                                value={formData.bridesmaidDressCodeColor || '#9B1D20'}
+                                                onChange={handleChange}
+                                                placeholder="#9B1D20"
+                                                className="min-h-[40px] min-w-0 flex-1 rounded-xl border border-border bg-white px-4 py-2 font-mono text-sm outline-none transition-all focus:border-primary"
+                                            />
+                                        </div>
+                                        {/* Quick Color Presets */}
+                                        <div className="pt-2">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-1.5">Color Presets</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {[
+                                                    { name: 'Garnet Red (Ref)', hex: '#9B1D20' },
+                                                    { name: 'Champagne Rose', hex: '#D6A79A' },
+                                                    { name: 'Brick Rose', hex: '#B94E48' },
+                                                    { name: 'Dusty Rose', hex: '#D16C78' },
+                                                    { name: 'Sage Green', hex: '#8A9A86' },
+                                                    { name: 'Emerald', hex: '#1B4D3E' },
+                                                    { name: 'Midnight Navy', hex: '#1D2A44' },
+                                                    { name: 'Plum Berry', hex: '#5A2A42' },
+                                                ].map((preset) => (
+                                                    <button
+                                                        key={preset.hex}
+                                                        type="button"
+                                                        onClick={() => setFormData((prev: any) => ({ ...prev, bridesmaidDressCodeColor: preset.hex }))}
+                                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
+                                                            (formData.bridesmaidDressCodeColor || '#9B1D20').toLowerCase() === preset.hex.toLowerCase()
+                                                                ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                                                                : 'border-border/70 bg-white hover:border-primary/50 text-text-secondary'
+                                                        }`}
+                                                    >
+                                                        <span className="h-3 w-3 rounded-full border border-white shadow-xs" style={{ backgroundColor: preset.hex }} />
+                                                        <span>{preset.name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Live Preview Card */}
+                                <div
+                                    className="relative flex min-h-[280px] flex-col justify-between overflow-hidden rounded-xl border border-border bg-neutral p-4 sm:min-h-[320px] sm:rounded-2xl"
+                                    style={{ boxShadow: `0 20px 55px ${(formData.bridesmaidDressCodeColor || '#9B1D20')}18` }}
+                                >
+                                    <div className="absolute inset-0 opacity-70" style={{ background: `radial-gradient(circle at 50% 30%, ${(formData.bridesmaidDressCodeColor || '#9B1D20')}22, transparent 48%)` }} />
+                                    <div className="relative">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-text-secondary/60">Live preview · Bridesmaids</p>
+                                        <p className="mt-1 font-serif text-xl font-bold text-foreground">{formData.bridesmaidDressCode || 'Floor-length Gown'}</p>
+                                        {formData.bridesmaidDressCodeNotes && (
+                                            <p className="mt-0.5 text-xs italic text-text-secondary">{formData.bridesmaidDressCodeNotes}</p>
+                                        )}
+                                    </div>
+                                    <div className="relative flex flex-1 items-center justify-center py-2">
+                                        <AttireIllustration
+                                            color={formData.bridesmaidDressCodeColor || '#9B1D20'}
+                                            variant="bridesmaids"
+                                            className="max-w-[280px]"
+                                        />
+                                    </div>
+                                    <div className="relative flex items-center justify-center gap-2 pt-2 border-t border-border/40">
+                                        <span className="h-4 w-4 rounded-full border border-white shadow-xs" style={{ backgroundColor: formData.bridesmaidDressCodeColor || '#9B1D20' }} />
+                                        <span className="font-mono text-xs font-bold text-text-secondary">{formData.bridesmaidDressCodeColor || '#9B1D20'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </section>
             </div>
         </div>
     );
@@ -2989,21 +3459,102 @@ export default function BuilderForm() {
                 </div>
 
                 {formData.isThankYouMode && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 pt-4 border-t border-border">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-5 pt-4 border-t border-border">
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Thank You Message</label>
                             <textarea name="thankYouMessage" value={formData.thankYouMessage} onChange={handleChange} placeholder="Thank you so much for celebrating with us..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none h-24 resize-none" />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Photo Album Link</label>
+                            <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">External Photo Album Link (Optional)</label>
                             <input name="photoAlbumLink" value={formData.photoAlbumLink} onChange={handleChange} placeholder="https://photos.google.com/..." className="w-full px-4 py-3 rounded-xl border border-border bg-white focus:border-primary outline-none" />
+                            <p className="text-[11px] text-text-secondary ml-1">Optional external gallery link (Google Photos, Dropbox, etc.)</p>
+                        </div>
+
+                        {/* Toggle: Display Approved Disposable Camera / Guest Photos */}
+                        <div className="rounded-2xl border border-border bg-neutral/40 p-4 space-y-3">
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-bold text-foreground">Display Approved Guest Photos</p>
+                                    <p className="text-xs text-text-secondary">Show approved pictures from your Disposable Camera &amp; Photo Portal directly on the wedding page.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={formData.showPhotosInThankYouMode}
+                                    onClick={() => setFormData((prev: any) => ({ ...prev, showPhotosInThankYouMode: !prev.showPhotosInThankYouMode }))}
+                                    className={`grid h-8 w-16 shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[8px] font-black uppercase tracking-widest transition-colors ${
+                                        formData.showPhotosInThankYouMode ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'
+                                    }`}
+                                >
+                                    <span className={`flex items-center justify-center rounded transition ${!formData.showPhotosInThankYouMode ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Off</span>
+                                    <span className={`flex items-center justify-center rounded transition ${formData.showPhotosInThankYouMode ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                                </button>
+                            </div>
+
+                            {formData.showPhotosInThankYouMode && (
+                                <div className="pt-2 border-t border-border/50">
+                                    <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary block mb-2">Photo Gallery Layout</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData((prev: any) => ({ ...prev, photoRecapStyle: 'polaroid' }))}
+                                            className={`p-3 rounded-xl border text-left text-xs transition ${
+                                                formData.photoRecapStyle !== 'grid'
+                                                    ? 'border-primary bg-primary/5 text-primary font-bold shadow-sm'
+                                                    : 'border-border bg-white text-text-secondary hover:border-text-secondary'
+                                            }`}
+                                        >
+                                            <span className="block font-bold">Polaroid Film Roll</span>
+                                            <span className="block text-[10px] opacity-75 mt-0.5">Nostalgic retro frames with guest captions</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData((prev: any) => ({ ...prev, photoRecapStyle: 'grid' }))}
+                                            className={`p-3 rounded-xl border text-left text-xs transition ${
+                                                formData.photoRecapStyle === 'grid'
+                                                    ? 'border-primary bg-primary/5 text-primary font-bold shadow-sm'
+                                                    : 'border-border bg-white text-text-secondary hover:border-text-secondary'
+                                            }`}
+                                        >
+                                            <span className="block font-bold">Clean Modern Grid</span>
+                                            <span className="block text-[10px] opacity-75 mt-0.5">Sleek gallery grid layout</span>
+                                        </button>
+                                    </div>
+                                    <p className="mt-2 text-[11px] text-text-secondary italic">
+                                        💡 Only photos approved in your Photo Portal Manager appear publicly.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Toggle: Display Guestbook Notes */}
+                        <div className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-neutral/40 p-4">
+                            <div>
+                                <p className="text-sm font-bold text-foreground">Display Guestbook &amp; Wishes</p>
+                                <p className="text-xs text-text-secondary">Highlight heartfelt guest wishes and let visitors leave post-wedding blessings.</p>
+                            </div>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={formData.showGuestbookInThankYouMode}
+                                onClick={() => setFormData((prev: any) => ({ ...prev, showGuestbookInThankYouMode: !prev.showGuestbookInThankYouMode }))}
+                                className={`grid h-8 w-16 shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[8px] font-black uppercase tracking-widest transition-colors ${
+                                    formData.showGuestbookInThankYouMode ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-white text-text-secondary'
+                                }`}
+                            >
+                                <span className={`flex items-center justify-center rounded transition ${!formData.showGuestbookInThankYouMode ? 'bg-neutral text-foreground shadow-sm' : ''}`}>Off</span>
+                                <span className={`flex items-center justify-center rounded transition ${formData.showGuestbookInThankYouMode ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                            </button>
                         </div>
                     </motion.div>
                 )}
             </div>
 
             <div className="space-y-6 pt-4 border-t border-border">
-                <h4 className="text-sm font-bold text-foreground mx-1">RSVP Settings</h4>
+                <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-foreground mx-1">RSVP Settings</h4>
+                </div>
+
                 <div className="space-y-2">
                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">RSVP Deadline</label>
                     <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
@@ -3012,6 +3563,74 @@ export default function BuilderForm() {
                 <div className="space-y-2">
                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">Contact Person</label>
                     <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Name" className="w-full px-4 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                </div>
+
+                {/* RSVP Options requested by users: remove plus-ones, remove children, searchable guest list */}
+                <div className="space-y-4 pt-4 border-t border-border/60">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary ml-1">Guest Response Customizations</p>
+
+                    {/* Toggle: Allow Plus-Ones */}
+                    <div className="flex items-center justify-between rounded-2xl border border-border bg-white p-4">
+                        <div>
+                            <p className="text-sm font-bold text-foreground">Allow Plus-Ones & Additional Guests</p>
+                            <p className="text-xs text-text-secondary mt-0.5">Allow guests to RSVP for +1s or additional party members. Turn off to remove plus-ones from RSVPs.</p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={formData.rsvpAllowPlusOnes}
+                            aria-label="Toggle allow plus-ones"
+                            onClick={() => setFormData((prev: any) => ({ ...prev, rsvpAllowPlusOnes: !prev.rsvpAllowPlusOnes }))}
+                            className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors ${
+                                formData.rsvpAllowPlusOnes ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-neutral text-text-secondary'
+                            }`}
+                        >
+                            <span className={`flex items-center justify-center rounded-md ${!formData.rsvpAllowPlusOnes ? 'bg-white text-foreground shadow-sm' : ''}`}>Off</span>
+                            <span className={`flex items-center justify-center rounded-md ${formData.rsvpAllowPlusOnes ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                        </button>
+                    </div>
+
+                    {/* Toggle: Allow Children */}
+                    <div className="flex items-center justify-between rounded-2xl border border-border bg-white p-4">
+                        <div>
+                            <p className="text-sm font-bold text-foreground">Allow Children Attending</p>
+                            <p className="text-xs text-text-secondary mt-0.5">Let guests indicate children count. Turn off for adults-only celebrations or to remove children from RSVPs.</p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={formData.rsvpAllowChildren}
+                            aria-label="Toggle allow children"
+                            onClick={() => setFormData((prev: any) => ({ ...prev, rsvpAllowChildren: !prev.rsvpAllowChildren }))}
+                            className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors ${
+                                formData.rsvpAllowChildren ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-neutral text-text-secondary'
+                            }`}
+                        >
+                            <span className={`flex items-center justify-center rounded-md ${!formData.rsvpAllowChildren ? 'bg-white text-foreground shadow-sm' : ''}`}>Off</span>
+                            <span className={`flex items-center justify-center rounded-md ${formData.rsvpAllowChildren ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                        </button>
+                    </div>
+
+                    {/* Toggle: Searchable Guest List */}
+                    <div className="flex items-center justify-between rounded-2xl border border-border bg-white p-4">
+                        <div>
+                            <p className="text-sm font-bold text-foreground">Searchable Guest List Dropdown</p>
+                            <p className="text-xs text-text-secondary mt-0.5">Enable guests to search and select their name from your invited guest list to update their status and email.</p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={formData.rsvpSearchGuestList}
+                            aria-label="Toggle searchable guest list"
+                            onClick={() => setFormData((prev: any) => ({ ...prev, rsvpSearchGuestList: !prev.rsvpSearchGuestList }))}
+                            className={`grid h-9 w-[78px] shrink-0 grid-cols-2 rounded-lg border p-0.5 text-[9px] font-black uppercase tracking-widest transition-colors ${
+                                formData.rsvpSearchGuestList ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-neutral text-text-secondary'
+                            }`}
+                        >
+                            <span className={`flex items-center justify-center rounded-md ${!formData.rsvpSearchGuestList ? 'bg-white text-foreground shadow-sm' : ''}`}>Off</span>
+                            <span className={`flex items-center justify-center rounded-md ${formData.rsvpSearchGuestList ? 'bg-primary text-white shadow-sm' : ''}`}>On</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3207,9 +3826,15 @@ return (
                             <p className="text-[10px] uppercase tracking-[0.2em] font-black text-primary/60">Step {currentStep + 1} of {STEPS.length}</p>
                             <h2 className="text-xl font-serif font-bold text-foreground">{STEPS[currentStep].title}</h2>
                         </div>
-                        <div className="flex gap-1">
-                            {STEPS.map((_, idx) => (
-                                <div key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === currentStep ? 'bg-primary w-4' : idx < currentStep ? 'bg-secondary' : 'bg-neutral border border-border'} transition-all duration-300`} />
+                        <div className="flex gap-1 items-center">
+                            {STEPS.map((step, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => setCurrentStep(idx)}
+                                    aria-label={`Jump to step ${idx + 1}: ${step.title}`}
+                                    className={`h-2 rounded-full transition-all duration-300 ${idx === currentStep ? 'bg-primary w-4' : idx < currentStep ? 'bg-secondary w-2 hover:opacity-80' : 'bg-neutral border border-border w-2 hover:opacity-80'}`}
+                                />
                             ))}
                         </div>
                     </div>
@@ -3227,10 +3852,21 @@ return (
                 <div className="hidden lg:flex justify-between items-start mb-12 gap-2">
                     {STEPS.map((step, idx) => (
                         <div key={step.id} className="flex flex-col items-center relative flex-1 min-w-0">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 flex-shrink-0 transition-all duration-500 ${idx === currentStep ? 'bg-primary text-white scale-110 shadow-[0_0_20px_rgba(192,128,129,0.3)]' : idx < currentStep ? 'bg-secondary text-foreground' : 'bg-neutral text-text-secondary border border-border'}`}>
+                            <button
+                                type="button"
+                                onClick={() => setCurrentStep(idx)}
+                                aria-label={`Jump to step ${idx + 1}: ${step.title}`}
+                                className={`w-10 h-10 rounded-full flex items-center justify-center z-10 flex-shrink-0 transition-all duration-500 cursor-pointer hover:opacity-90 ${idx === currentStep ? 'bg-primary text-white scale-110 shadow-[0_0_20px_rgba(192,128,129,0.3)]' : idx < currentStep ? 'bg-secondary text-foreground' : 'bg-neutral text-text-secondary border border-border hover:border-primary/40'}`}
+                            >
                                 {idx < currentStep ? <CheckCircle2 className="w-5 h-5" /> : <step.icon className="w-5 h-5" />}
-                            </div>
-                            <span className={`text-[9px] uppercase tracking-widest mt-3 font-bold text-center leading-tight transition-colors duration-500 whitespace-nowrap ${idx === currentStep ? 'text-primary' : 'text-text-secondary'}`}>{step.title}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCurrentStep(idx)}
+                                className={`text-[9px] uppercase tracking-widest mt-3 font-bold text-center leading-tight transition-colors duration-500 whitespace-nowrap cursor-pointer hover:text-primary ${idx === currentStep ? 'text-primary' : 'text-text-secondary'}`}
+                            >
+                                {step.title}
+                            </button>
                             {idx < STEPS.length - 1 && <div className={`absolute top-5 left-[60%] w-[80%] h-[2px] -z-0 ${idx < currentStep ? 'bg-secondary' : 'bg-border'}`} />}
                         </div>
                     ))}
@@ -3266,8 +3902,9 @@ return (
                     </div>
                 </div>
 
+                <p role="status" className="mb-3 text-xs text-text-secondary">{draftStatus}</p>
                 <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-                    {detectedDraft && !draftDismissed && !editId && (
+                    {detectedDraft && !draftDismissed && (
                         <div className="rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-amber-500/10 p-4 shadow-sm sm:p-5">
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex items-start gap-3">
@@ -3277,7 +3914,7 @@ return (
                                     <div>
                                         <p className="text-xs font-black uppercase tracking-wider text-primary">Unsaved Draft Found</p>
                                         <p className="mt-0.5 text-sm font-medium text-foreground">
-                                            We restored an unsaved draft on this browser ({new Date(detectedDraft.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}).
+                                            An unsaved draft is available on this browser ({new Date(detectedDraft.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}).
                                         </p>
                                     </div>
                                 </div>
@@ -3285,9 +3922,7 @@ return (
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            if (detectedDraft.formData) initializeFormData(detectedDraft.formData);
-                                            if (typeof detectedDraft.currentStep === 'number') setCurrentStep(detectedDraft.currentStep);
-                                            setDraftDismissed(true);
+                                            restoreDraft(detectedDraft);
                                         }}
                                         className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-md shadow-primary/20 hover:bg-primary-hover"
                                     >
@@ -3296,11 +3931,10 @@ return (
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            if (typeof window !== 'undefined') {
-                                                window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
-                                            }
+                                            if (detectedDraft.legacyImport && typeof window !== 'undefined') window.localStorage.removeItem(BUILDER_DRAFT_STORAGE_KEY);
                                             setDetectedDraft(null);
                                             setDraftDismissed(true);
+                                            if (scopeKey && !detectedDraft.legacyImport) void deleteBuilderDraft(scopeKey);
                                         }}
                                         className="min-h-[40px] rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-text-secondary hover:bg-neutral"
                                     >

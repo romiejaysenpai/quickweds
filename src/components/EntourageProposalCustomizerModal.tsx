@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Check, Heart, Mail, Sparkles, Shirt, UtensilsCrossed, Phone, Eye, Edit3 } from 'lucide-react';
 import {
     EntourageProposalTemplateKey,
@@ -54,7 +54,11 @@ export function EntourageProposalCustomizerModal({
     );
     const [activeViewTab, setActiveViewTab] = useState<'edit' | 'preview'>('edit');
 
-    useEffect(() => {
+    // Re-sync the form whenever the modal is (re)opened or a different member is passed in.
+    // Uses React's "adjust state while rendering" pattern instead of setState inside an effect.
+    const [syncedWith, setSyncedWith] = useState<{ isOpen: boolean; member: WeddingPartyMember }>({ isOpen, member });
+    if (syncedWith.isOpen !== isOpen || syncedWith.member !== member) {
+        setSyncedWith({ isOpen, member });
         if (isOpen) {
             setTemplateKey(member.proposalTemplateKey || 'heartfelt');
             setCardTheme(member.proposalCardTheme || 'classic');
@@ -64,7 +68,7 @@ export function EntourageProposalCustomizerModal({
             setRequestDietaryNotes(member.requestDietaryNotes !== undefined ? member.requestDietaryNotes : true);
             setRequestPhoneNumber(member.requestPhoneNumber !== undefined ? member.requestPhoneNumber : false);
         }
-    }, [isOpen, member]);
+    }
 
     if (!isOpen) return null;
 
@@ -302,7 +306,7 @@ export function EntourageProposalCustomizerModal({
                                     {/* Headline Banner */}
                                     <div className={`rounded-2xl ${activeTheme.bgClass} border ${activeTheme.borderClass} p-4`}>
                                         <h4 className={`font-serif text-base font-bold ${activeTheme.textPrimary}`}>
-                                            "{title}"
+                                            &ldquo;{title}&rdquo;
                                         </h4>
                                         <p className={`mt-2 text-xs leading-relaxed ${activeTheme.textSecondary}`}>
                                             {message}

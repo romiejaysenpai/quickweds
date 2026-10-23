@@ -7,7 +7,8 @@ import { deleteGoogleCalendarEvent, refreshGoogleCalendarAccessToken, upsertGoog
 export const dynamic = 'force-dynamic';
 
 async function getOwnerConnection(db: any, weddingId: string, userId: string) {
-    const { data: wedding } = await db.from('weddings').select('id, user_id').eq('id', weddingId).maybeSingle();
+    const { data: wedding, error: weddingError } = await db.from('weddings').select('id, user_id').eq('id', weddingId).is('deleted_at', null).maybeSingle();
+    if (weddingError) throw weddingError;
     if (!wedding || wedding.user_id !== userId) {
         throw new Error('Only the wedding owner can sync Google Calendar');
     }
@@ -37,7 +38,7 @@ async function getAccessToken(db: any, connection: any) {
     }
     const refreshed = await refreshGoogleCalendarAccessToken(connection.refresh_token);
     const tokenExpiresAt = refreshed.expires_in ? new Date(Date.now() + refreshed.expires_in * 1000).toISOString() : null;
-    await db
+    const { error: persistTokenError } = await db
         .from('planner_google_calendar_connections')
         .update({
             access_token: refreshed.access_token,
@@ -46,6 +47,7 @@ async function getAccessToken(db: any, connection: any) {
             updated_at: new Date().toISOString(),
         })
         .eq('id', connection.id);
+    if (persistTokenError) throw persistTokenError;
     return refreshed.access_token;
 }
 
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest) {
         for (const event of events || []) {
             try {
                 const googleEvent = await upsertGoogleCalendarEvent(accessToken, connection.google_calendar_id || 'primary', event);
-                await db
+                const { error: persistEventError } = await db
                     .from('planner_events')
                     .update({
                         google_event_id: googleEvent.id,
@@ -80,19 +82,22 @@ export async function POST(req: NextRequest) {
                         google_sync_error: null,
                         updated_at: new Date().toISOString(),
                     })
-                    .eq('id', event.id);
+                    .eq('id', event.id).eq('wedding_id', weddingId);
+                if (persistEventError) throw persistEventError;
                 synced += 1;
             } catch (err) {
                 const message = err instanceof Error ? err.message : 'Google Calendar sync failed';
                 errors.push(`${event.title}: ${message}`);
-                await db.from('planner_events').update({ google_sync_error: message }).eq('id', event.id);
+                const { error: logError } = await db.from('planner_events').update({ google_sync_error: message }).eq('id', event.id).eq('wedding_id', weddingId);
+                if (logError) console.error('Unable to persist Google sync error:', logError.code);
             }
         }
 
-        await db
-            .from('planner_google_calendar_connections')
-            .update({ last_synced_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-            .eq('id', connection.id);
+        if (errors.length === 0) {
+            const { error: connectionError } = await db.from('planner_google_calendar_connections')
+                .update({ last_synced_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', connection.id);
+            if (connectionError) throw connectionError;
+        }
 
         return NextResponse.json({ success: errors.length === 0, synced, errors });
     } catch (err) {
@@ -112,14 +117,16 @@ export async function DELETE(req: NextRequest) {
     try {
         const connection = await getOwnerConnection(db, weddingId, user.id);
         const accessToken = await getAccessToken(db, connection);
-        const { data: event } = await db
+        const { data: event, error: eventError } = await db
             .from('planner_events')
             .select('id, google_event_id')
             .eq('id', eventId)
             .eq('wedding_id', weddingId)
             .maybeSingle();
 
-        if (event?.google_event_id) {
+        if (eventError) throw eventError;
+        if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
+        if (event.google_event_id) {
             await deleteGoogleCalendarEvent(accessToken, connection.google_calendar_id || 'primary', event.google_event_id);
         }
 

@@ -5,6 +5,7 @@ import type { CSSProperties, ComponentType } from 'react';
 
 import type { TemplateProps, Wedding } from '@/types/wedding';
 import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { FONT_STYLE_OVERRIDES, getWeddingFontStyleVariables } from '@/components/WeddingFontProvider';
 
 const ComposedTemplate = dynamic(() => import('./ComposedTemplate'));
 
@@ -43,6 +44,10 @@ export const TEMPLATE_COMPONENTS = {
     nordic: dynamic(() => import('./NordicTemplate')),
     celestial: dynamic(() => import('./CelestialTemplate')),
     riviera: dynamic(() => import('./RivieraTemplate')),
+    'editorial-luxe': dynamic(() => import('./EditorialLuxeTemplate')),
+    monochrome: dynamic(() => import('./MonochromeTemplate')),
+    'botanical-arch': dynamic(() => import('./BotanicalArchTemplate')),
+    'cinematic-vow': dynamic(() => import('./CinematicVowTemplate')),
     heirloom: PremiumTemplate,
     estate: PremiumTemplate,
     moonlit: PremiumTemplate,
@@ -63,6 +68,16 @@ export const TEMPLATE_COMPONENTS = {
     'petal-note': PremiumTemplate,
     'sunset-ceremony': PremiumTemplate,
 } satisfies Record<string, ComponentType<TemplateProps>>;
+
+const TEMPLATE_ID_ALIASES: Record<string, TemplateId> = {
+    minimalist: 'minimal',
+    bohemian: 'boho',
+    'art-deco': 'artdeco',
+    'classic-noir': 'cinema-noir',
+    autumn: 'rustic',
+    coastal: 'coastal-vow',
+    'modern-luxe': 'modern-vow',
+};
 
 const FONT_VARIABLES: Record<string, ThemeFontVars> = {
     Elegant: { '--font-serif': 'var(--font-playfair)', '--font-sans': 'var(--font-inter)' },
@@ -122,20 +137,38 @@ const BACKGROUND_COLOR_MAP: Record<string, string> = {
 
 export function normalizeTemplateId(template?: string): TemplateId {
     const normalized = (template || 'classic').toLowerCase();
+    if (normalized in TEMPLATE_ID_ALIASES) {
+        return TEMPLATE_ID_ALIASES[normalized];
+    }
     return normalized in TEMPLATE_COMPONENTS ? normalized as TemplateId : 'classic';
 }
 
 export function getWeddingFontVariables(style?: string): ThemeFontVars {
-    return FONT_VARIABLES[style || ''] || FONT_VARIABLES.Elegant;
+    const key = style
+        ? Object.keys(FONT_VARIABLES).find((k) => k.toLowerCase() === style.toLowerCase())
+        : undefined;
+    const baseVars = (key ? FONT_VARIABLES[key] : undefined) || FONT_VARIABLES.Elegant;
+    const overrideKey = style
+        ? Object.keys(FONT_STYLE_OVERRIDES).find((k) => k.toLowerCase() === style.toLowerCase())
+        : undefined;
+    const overrides = overrideKey ? FONT_STYLE_OVERRIDES[overrideKey] : undefined;
+    return {
+        ...baseVars,
+        ...(overrides as Partial<ThemeFontVars>),
+    };
 }
 
 export function getWeddingPageStyle(wedding: Wedding, options?: { includeGradient?: boolean }): WeddingPageStyle {
     const fontVars = getWeddingFontVariables(wedding.font_style);
+    const fontStyleVars = getWeddingFontStyleVariables(wedding.font_style, wedding.logo_font);
     const backgroundKey = String((wedding as Wedding & { background_style?: string }).background_style || 'cream');
-    const visual = getTemplateVisualProfile(wedding.template, wedding.motif_color);
+    const profileTemplate = wedding.template_style === 'luxury-planner' ? 'luxury-planner' : wedding.template;
+    const visual = getTemplateVisualProfile(profileTemplate, wedding.motif_color);
     const backgroundColor = visual.isDark ? '#151315' : BACKGROUND_COLOR_MAP[backgroundKey] || '#FFF8F4';
 
     return {
+        ...fontVars,
+        ...fontStyleVars,
         '--primary': wedding.motif_color || '#D16C78',
         '--color-primary': wedding.motif_color || '#D16C78',
         '--accent': '#D6B87C',
@@ -164,16 +197,15 @@ export function getWeddingPageStyle(wedding: Wedding, options?: { includeGradien
                 backgroundImage: 'radial-gradient(circle at top, rgba(255,255,255,0.65), transparent 32%), linear-gradient(180deg, #fffaf6 0%, #fff5ef 52%, #f8ece7 100%)',
             }
             : {}),
-        ...fontVars,
     };
 }
 
 export function renderWeddingTemplate(props: TemplateProps) {
     const template = normalizeTemplateId(props.wedding.template);
     const Component = TEMPLATE_COMPONENTS[template];
-    const withoutPhoto = !props.wedding.hero_image && !props.wedding.couple_photo;
-    const composition = withoutPhoto ? '5' : props.wedding.template_style?.match(/(?:^|_)v([2-5])$/)?.[1];
-    const composed = withoutPhoto || (template !== 'classic' && composition);
+    const hasPortrait = Boolean(props.wedding.hero_image?.trim() || props.wedding.couple_photo?.trim());
+    const composition = props.wedding.template_style?.match(/(?:^|_)v([2-5])$/)?.[1] || (!hasPortrait ? '5' : undefined);
+    const composed = Boolean(composition && (template !== 'classic' || !hasPortrait));
     return <div className="wedding-template" data-template={template} data-template-style={props.wedding.template_style || 'default'}>
         {composed ? <ComposedTemplate {...props} composition={`v${composition}` as 'v2' | 'v3' | 'v4' | 'v5'} /> : <Component {...props} />}
     </div>;

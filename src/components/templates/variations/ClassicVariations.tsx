@@ -46,16 +46,16 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
 
     return (
         <div className="template-variation-v1">
-            <section className="classic-invitation-hero relative flex flex-col items-center justify-center overflow-hidden bg-[#FAF6F0] md:min-h-[90svh]">
+            <section className="classic-invitation-hero relative flex min-h-[85svh] md:min-h-[90svh] flex-col items-center justify-center overflow-hidden bg-[#FAF6F0]">
                 {wedding.hero_image ? (
-                    <div className="classic-invitation-photo relative order-2 mt-8 aspect-[4/3] w-full md:absolute md:inset-0 md:order-none md:mt-0 md:aspect-auto">
+                    <div className="classic-invitation-photo absolute inset-0">
                         <Image
                             src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
                             alt={`${wedding.bride_name} and ${wedding.groom_name}`}
                             priority
                             fill
                             sizes="100vw"
-                            className="object-contain md:object-cover md:brightness-75"
+                            className="object-cover brightness-[0.72] md:brightness-75"
                         />
                     </div>
                 ) : (
@@ -64,13 +64,13 @@ export function ClassicV1({ wedding, gallery, isExpired }: TemplateProps) {
                         style={{ backgroundColor: motifColor + '20' }}
                     />
                 )}
-                <div className="absolute inset-0 hidden bg-gradient-to-b from-black/30 via-transparent to-black/60 md:block" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/70" />
 
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 1 }}
-                    className="relative z-10 px-5 text-center text-[#352C2C] md:text-white"
+                    className="relative z-10 px-5 py-16 text-center text-white drop-shadow-sm"
                 >
                     <motion.div
                         variants={containerVariants}

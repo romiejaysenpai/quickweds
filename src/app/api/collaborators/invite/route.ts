@@ -18,16 +18,9 @@ type WeddingInviteContext = {
     payment_status?: string | null;
 };
 
-type CollaboratorInvitePayload = {
-    wedding_id: string;
-    email: string;
-    role: 'partner' | 'coordinator';
-    status: 'pending';
-    invited_by_user_id?: string;
-};
-
 const inviteSchema = z.object({
-    weddingId: z.string().min(4).max(32).regex(/^[a-zA-Z0-9]+$/, 'Invalid wedding ID'),
+    requestId: z.uuid(),
+    weddingId: z.string().min(4).max(64).refine(value=>Boolean(sanitizeWeddingId(value)), 'Invalid wedding ID'),
     email: z.string().trim().email(),
     role: z.enum(['partner', 'coordinator']),
 });
@@ -35,58 +28,6 @@ const inviteSchema = z.object({
 function getAppUrl() {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.site';
     return appUrl.replace(/\/+$/, '');
-}
-
-function isMissingInvitedByColumn(error: unknown) {
-    return error instanceof Error
-        ? error.message.includes('invited_by_user_id')
-        : typeof (error as { message?: unknown })?.message === 'string'
-            && (error as { message: string }).message.includes('invited_by_user_id');
-}
-
-async function saveCollaboratorInvite(
-    supabase: SupabaseAdminClient,
-    payload: CollaboratorInvitePayload,
-) {
-    const save = async (includeInviter: boolean) => {
-        const writePayload = includeInviter
-            ? payload
-            : (({ invited_by_user_id: _invitedByUserId, ...rest }) => rest)(payload);
-
-        const { data: existing, error: lookupError } = await (supabase as any)
-            .from('wedding_collaborators')
-            .select('id')
-            .eq('wedding_id', payload.wedding_id)
-            .eq('email', payload.email)
-            .limit(1)
-            .maybeSingle();
-
-        if (lookupError) {
-            return { data: null, error: lookupError };
-        }
-
-        if (existing?.id) {
-            return (supabase as any)
-                .from('wedding_collaborators')
-                .update(writePayload)
-                .eq('id', existing.id)
-                .select()
-                .single();
-        }
-
-        return (supabase as any)
-            .from('wedding_collaborators')
-            .insert(writePayload)
-            .select()
-            .single();
-    };
-
-    const result = await save(true);
-    if (result.error && isMissingInvitedByColumn(result.error)) {
-        return save(false);
-    }
-
-    return result;
 }
 
 export async function POST(req: Request) {
@@ -172,33 +113,10 @@ export async function POST(req: Request) {
                 }, { status: 402 });
             }
 
-            const { count, error: collaboratorCountError } = await (supabase as any)
-                .from('wedding_collaborators')
-                .select('id', { count: 'exact', head: true })
-                .eq('wedding_id', weddingId);
-
-            if (collaboratorCountError) throw collaboratorCountError;
-            if (Number(count || 0) >= FREE_PLAN_LIMITS.collaborators) {
-                return NextResponse.json({
-                    error: 'Free workspaces include 1 partner collaborator. Upgrade to Planner Pro for coordinators and more helpers.',
-                    code: 'collaborator_limit_reached',
-                    limit: FREE_PLAN_LIMITS.collaborators,
-                    used: Number(count || 0),
-                }, { status: 402 });
-            }
         }
-
-        const { data: invite, error: inviteError } = await saveCollaboratorInvite(supabase, {
-            wedding_id: weddingId,
-            email: inviteEmail,
-            role,
-            status: 'pending',
-            invited_by_user_id: user.id,
-        });
-
-        if (inviteError) {
-            return NextResponse.json({ error: inviteError.message }, { status: 500 });
-        }
+        const {data:invite,error:inviteError}=await (supabase as any).rpc('quickweds_prepare_collaborator',{p_wedding:weddingId,p_email:inviteEmail,p_role:role,p_user:user.id,p_limit:hasPlannerPro?null:FREE_PLAN_LIMITS.collaborators});
+        if(inviteError)throw inviteError;
+        if(invite.status==='accepted')return NextResponse.json({collaborator:invite,emailSent:false,emailError:'This person already accepted the invitation.'});
 
         const roleLabel = role === 'partner' ? 'Partner' : 'Coordinator';
         const dashboardUrl = `${getAppUrl()}/dashboard`;
@@ -206,6 +124,7 @@ export async function POST(req: Request) {
         const groomName = sanitizeInput(weddingContext.groom_name || 'Groom', { maxLength: 100 });
         const emailResult = await sendEmail({
             to: inviteEmail,
+            tracking:{key:`collaborator:${weddingId}:${invite.id}:${role}:${parsed.data.requestId}`,weddingId,recoverable:true,guard:{table:'wedding_collaborators',id:invite.id,emailField:'email'}},
             subject: `You're invited to collaborate on ${brideName} & ${groomName}'s wedding`,
             html: getCollaboratorInviteHtml({
                 inviteeEmail: inviteEmail,

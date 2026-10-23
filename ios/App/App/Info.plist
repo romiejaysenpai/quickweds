@@ -30,6 +30,8 @@
 	<string>QuickWeds lets you take photos to add wedding memories, gallery images, and support screenshots when you choose to upload them.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>QuickWeds lets you choose photos and videos from your library for wedding websites, guest memories, supplier profiles, and support screenshots.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>QuickWeds lets you save wedding QR codes, guest passes, and custom monograms to your photo library.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

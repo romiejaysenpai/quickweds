@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         const [recipients, sentLogs, emailsUsed] = await Promise.all([
             getConfirmedThankYouRecipients(db, weddingId),
             getSentThankYouLogState(db, weddingId),
-            getUserTriggeredEmailUsage(db, weddingId),
+            getUserTriggeredEmailUsage(db, weddingId, false),
         ]);
 
         if (!sentLogs.schemaAvailable) {
@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
 
             const result = await sendEmail({
                 to: guest.guest_email,
+                tracking: { key: `thank-you:${weddingId}:${guest.guest_email.toLowerCase()}`, weddingId, quotaLimit: hasPlannerPro ? null : FREE_PLAN_LIMITS.userTriggeredEmails, recoverable:true, guard:{table:'rsvps',id:guest.id,emailField:'guest_email'} },
                 subject: payload.subject,
                 html,
             });

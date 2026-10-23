@@ -9,6 +9,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
+    const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
+    const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    if (!accessToken) {
+        return res.status(401).json({
+            error: 'Unauthorized. Public RSVP submissions must use /api/public/rsvp.',
+        });
+    }
+
     const weddingId = sanitizeWeddingId(req.body?.weddingId);
     if (weddingId) {
         const rateLimit = createRateLimitMiddleware('RSVP_NOTIFY');
@@ -26,6 +34,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
+        const db = getSupabaseAdminClient() as any;
+        const { data: authData, error: authError } = await db.auth.getUser(accessToken);
+        const user = authData?.user;
+        if (authError || !user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
         const validation = rsvpNotifySchema.safeParse(req.body);
 
         if (!validation.success) {
@@ -58,7 +73,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(400).json({ error: 'Valid wedding ID and guest name are required' });
         }
 
-        const db = getSupabaseAdminClient() as any;
         const { data: wedding, error: weddingError } = await db
             .from('weddings')
             .select('id, user_id, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos')
@@ -68,6 +82,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         if (weddingError || !wedding) {
             return res.status(404).json({ error: 'Wedding not found' });
+        }
+
+        if (wedding.user_id !== user.id) {
+            const userEmail = user.email?.trim().toLowerCase();
+            let hasAccess = false;
+            if (userEmail) {
+                const { data: collaborator } = await db
+                    .from('wedding_collaborators')
+                    .select('id')
+                    .eq('wedding_id', safeWeddingId)
+                    .eq('email', userEmail)
+                    .eq('status', 'accepted')
+                    .in('role', ['partner', 'coordinator'])
+                    .maybeSingle();
+                hasAccess = Boolean(collaborator);
+            }
+            if (!hasAccess) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
         }
 
         const result = await sendRsvpNotifications(db, {

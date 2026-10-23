@@ -91,7 +91,7 @@ export default function SupplierSaveButton({
             return;
         }
 
-        if (data.code === 'planner_pro_required') {
+        if (data.code === 'planner_pro_required' || data.code === 'planner_lite_limit_reached') {
             setUpgradeWeddingId(data.weddingId);
             setState('needs_pro');
             setMessage(data.error);

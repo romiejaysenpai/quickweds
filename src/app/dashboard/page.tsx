@@ -16,7 +16,8 @@ import { getWeddingPublicPath } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
 import { openExternalUrl } from '@/lib/native-actions';
 
-import { BUILDER_DRAFT_STORAGE_KEY } from '@/lib/builder-storage';
+import { builderDraftKey, loadBuilderDraft } from '@/lib/builder-drafts';
+import { isRsvpDeadlineExpired } from '@/lib/rsvp-deadline';
 
 const WELCOME_CHARACTER_URL = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/icons/qucky%20welcv0ome.png';
 
@@ -25,28 +26,16 @@ async function copyText(text: string) {
 }
 
 function LocalDraftBanner() {
-    const [draft, setDraft] = useState<{ updatedAt: string; brideName?: string; groomName?: string } | null>(null);
+    const { user } = useAuth();
     const [dismissed, setDismissed] = useState(false);
-
+    const [draft, setDraft] = useState<{ updatedAt: string; brideName?: string; groomName?: string } | null>(null);
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        try {
-            const raw = window.localStorage.getItem(BUILDER_DRAFT_STORAGE_KEY);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                if (parsed && parsed.formData) {
-                    setDraft({
-                        updatedAt: parsed.updatedAt || new Date().toISOString(),
-                        brideName: parsed.formData.brideName || '',
-                        groomName: parsed.formData.groomName || '',
-                    });
-                }
-            }
-        } catch (e) {
-            console.warn('Could not parse local builder draft:', e);
-        }
-    }, []);
-
+        let active = true;
+        if (user?.id) loadBuilderDraft(builderDraftKey(user.id)).then(value => {
+            if (active) setDraft(value ? { updatedAt: value.updatedAt, brideName: String(value.formData.brideName || ''), groomName: String(value.formData.groomName || '') } : null);
+        }).catch(() => { if (active) setDraft(null); });
+        return () => { active = false; };
+    }, [user?.id]);
     if (!draft || dismissed) return null;
 
     const names = [draft.brideName, draft.groomName].filter(Boolean).join(' & ');
@@ -453,9 +442,9 @@ function CopyLinkButton({ wedding }: { wedding: { id: string; public_slug?: stri
 }
 
 function StatusBadge({ wedding }: { wedding: any }) {
-    const now = new Date();
-    const weddingDate = new Date(wedding.wedding_date);
-    const rsvpDeadline = new Date(wedding.rsvp_deadline);
+    // Both checks treat date-only values as "through the end of that day".
+    const weddingIsPast = isRsvpDeadlineExpired(wedding.wedding_date);
+    const rsvpClosed = isRsvpDeadlineExpired(wedding.rsvp_deadline);
 
     let label = '';
     let colorClass = '';
@@ -463,10 +452,10 @@ function StatusBadge({ wedding }: { wedding: any }) {
     if (wedding.is_thank_you_mode) {
         label = 'Thank You';
         colorClass = 'bg-accent/20 text-accent border-accent/30';
-    } else if (weddingDate < now) {
+    } else if (weddingIsPast) {
         label = 'Completed';
         colorClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-    } else if (rsvpDeadline < now) {
+    } else if (rsvpClosed) {
         label = 'RSVP Closed';
         colorClass = 'bg-neutral text-text-secondary border-border';
     } else {

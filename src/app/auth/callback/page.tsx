@@ -41,7 +41,7 @@ export default function AuthCallbackPage() {
                         source: 'oauth_signup',
                     }
                 })
-            }).catch(err => console.error('OAuth Notification Error:', err));
+            }).catch(() => console.error('OAuth signup notification failed.'));
         };
 
         const resolvePostAuthPath = async (token: string, nextPath: string) => {
@@ -55,7 +55,6 @@ export default function AuthCallbackPage() {
         };
 
         const finishSignIn = async (user: User, token: string, nextPath: string) => {
-            console.log('User authenticated:', user.email);
             notifyNewOAuthUser(user);
             window.localStorage.removeItem('quickweds_auth_next');
             router.replace(await resolvePostAuthPath(token, nextPath));
@@ -96,10 +95,10 @@ export default function AuthCallbackPage() {
                 const errorDescription = url.searchParams.get('error_description');
                 const nextPath = getNextPath(url);
 
-                setDebug(`Path: ${url.pathname}?${url.searchParams.toString()}${url.hash ? '#...' : ''}`);
+                setDebug('Completing sign in.');
 
                 if (errorParam) {
-                    console.error('OAuth error from provider:', errorParam, errorDescription);
+                    console.error('OAuth provider returned an error.');
                     setError(`${errorParam}: ${errorDescription || 'No description'}`);
                     setTimeout(() => router.push('/login?error=oauth-failed'), 2000);
                     return;
@@ -107,12 +106,12 @@ export default function AuthCallbackPage() {
 
                 if (code) {
                     // Exchange the authorization code for a session when Supabase uses PKCE/code flow.
-                    const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+                    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
                     if (exchangeError) {
-                        console.error('Code exchange error:', exchangeError);
+                        console.error('OAuth code exchange failed.');
                         setError(`Code exchange failed: ${exchangeError.message}`);
-                        setDebug(`Error details: ${JSON.stringify(exchangeError)}`);
+                        setDebug('Authorization code exchange failed. Please sign in again.');
                         await clearLocalSupabaseSession();
                         window.localStorage.removeItem('quickweds_auth_next');
 
@@ -123,7 +122,6 @@ export default function AuthCallbackPage() {
                         return;
                     }
 
-                    console.log('Exchange successful:', exchangeData);
                 }
 
                 // Double-check session. This also handles implicit/hash OAuth callbacks where no code is present.
@@ -136,7 +134,7 @@ export default function AuthCallbackPage() {
                         router.replace('/login?error=session-expired');
                         return;
                     }
-                    console.error('Session error:', sessionError);
+                    console.error('OAuth session lookup failed.');
                     setError(`Session error: ${sessionError.message}`);
                     setTimeout(() => router.replace('/login?error=session-failed'), 2000);
                     return;
@@ -155,9 +153,9 @@ export default function AuthCallbackPage() {
                     router.replace('/login?error=session-expired');
                     return;
                 }
-                console.error('Auth callback unexpected error:', err);
+                console.error('OAuth callback failed unexpectedly.');
                 setError(`Unexpected error: ${err.message}`);
-                setDebug(`Stack: ${err.stack?.split('\n')[0]}`);
+                setDebug('Please try signing in again.');
                 setTimeout(() => router.replace('/login?error=unexpected'), 2000);
             }
         };

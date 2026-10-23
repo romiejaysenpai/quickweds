@@ -16,8 +16,11 @@ interface RateLimitConfig {
 // Predefined rate limit configurations
 export const RATE_LIMITS = {
     // Strict limits for email sending (prevent abuse)
+    RSVP_ACCESS_IP: { maxRequests: 10, windowMs: 60 * 60 * 1000 },
+    RSVP_ACCESS_GUEST: { maxRequests: 3, windowMs: 30 * 60 * 1000 },
     RSVP_NOTIFY: { maxRequests: 30, windowMs: 60 * 60 * 1000 },      // 30 per hour
     RSVP_SUBMIT: { maxRequests: 5, windowMs: 60 * 1000 },            // 5 per minute
+    RSVP_GUEST_SEARCH: { maxRequests: 60, windowMs: 15 * 60 * 1000 }, // 60 per 15 minutes
     REMINDER_EMAIL: { maxRequests: 3, windowMs: 10 * 60 * 1000 },    // 3 per 10 minutes
     THANK_YOU_EMAIL: { maxRequests: 3, windowMs: 10 * 60 * 1000 },   // 3 per 10 minutes
     EMAIL_RESEND: { maxRequests: 3, windowMs: 10 * 60 * 1000 },      // 3 per 10 minutes
@@ -319,14 +322,8 @@ export function sanitizeWeddingId(id: string): string {
         return '';
     }
     
-    // Wedding IDs are 8-character alphanumeric strings
-    const cleaned = id.trim().replace(/[^a-zA-Z0-9]/g, '');
-    
-    if (cleaned.length < 4 || cleaned.length > 32) {
-        return '';
-    }
-    
-    return cleaned;
+    const cleaned = id.trim();
+    return /^(?:[a-zA-Z0-9]{4,32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.test(cleaned) ? cleaned : '';
 }
 
 /**

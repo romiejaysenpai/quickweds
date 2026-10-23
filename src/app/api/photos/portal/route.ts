@@ -1,3 +1,4 @@
+import { hydratePhotoUrls } from '@/lib/photo-urls';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
@@ -24,7 +25,7 @@ async function getContext(req: NextRequest, weddingId: string) {
     const { data: accountProfile } = await db
         .from('user_app_profiles')
         .select('is_pro, payment_status')
-        .eq('user_id', user.id)
+        .eq('user_id', access.wedding.user_id)
         .maybeSingle();
 
     const hasPro = hasPlannerProAccess({
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
             getPhotoPortalSettings(context.db, weddingId),
             context.db
                 .from('wedding_photos')
-                .select('id, cloudinary_url, uploader_name, caption, message, is_approved, status, upload_source, created_at, approved_at, rejected_at')
+                .select('id, storage_bucket, cloudinary_public_id, cloudinary_url, uploader_name, caption, message, is_approved, status, upload_source, created_at, approved_at, rejected_at')
                 .eq('wedding_id', weddingId)
                 .order('created_at', { ascending: false }),
             context.db
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             settings,
-            photos: photosRes.data || [],
+            photos: await hydratePhotoUrls(context.db, photosRes.data || [],weddingId),
             codes: codesRes.data || [],
             hasPro: context.hasPro,
         });

@@ -87,7 +87,7 @@ export default function UrbanTemplate({ wedding, gallery, isExpired }: any) {
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
-            <BioSection id="bio" wedding={wedding} />
+            <BioSection id="bio" wedding={wedding} hideStory hideQuote />
             <div className="px-4 sm:px-6 md:px-12 lg:px-32 py-12 sm:py-16 md:py-24 lg:py-32"><DetailsSection id="details" wedding={wedding} invert /></div>
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"

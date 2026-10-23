@@ -34,6 +34,9 @@ export interface Wedding {
     hashtag?: string;
     rsvp_deadline: string;
     rsvp_events?: WeddingRsvpEvent[] | string;
+    rsvp_allow_plus_ones?: boolean;
+    rsvp_allow_children?: boolean;
+    rsvp_search_guest_list?: boolean;
     program_timeline?: string;
     faq_items?: string | unknown[];
     invitation_image?: string; // Opt-in image
@@ -70,6 +73,9 @@ export interface Wedding {
     is_thank_you_mode?: boolean;
     thank_you_message?: string;
     photo_album_link?: string;
+    show_photos_in_thank_you_mode?: boolean;
+    show_guestbook_in_thank_you_mode?: boolean;
+    photo_recap_style?: 'polaroid' | 'grid';
     voice_greeting_url?: string;
     couple_email?: string; // Notification email for the couple
     // Metadata

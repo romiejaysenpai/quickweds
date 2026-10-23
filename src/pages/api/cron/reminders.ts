@@ -27,9 +27,11 @@ function getCronSupabaseClient() {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // 1. Security Check
+  // 1. Security Check — fail closed if the secret is not configured
+  // (otherwise the literal header "Bearer undefined" would be accepted).
+  const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return res.status(401).end('Unauthorized');
   }
 
@@ -90,17 +92,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             numGuests: guest.num_guests,
           });
 
-          await sendEmail({
+          const delivery = await sendEmail({
             to: guest.guest_email,
+            tracking: { key: `guest-reminder:${wedding.id}:${guest.id}:${trigger.type}:${wedding.wedding_date}`, weddingId: wedding.id },
             subject: `Reminder: ${wedding.bride_name} & ${wedding.groom_name}'s Wedding is Almost Here!`,
             react
           });
 
-          await supabase.from('rsvp_reminders').insert({
+          if (!delivery.success) continue;
+          const { error: logError } = await supabase.from('rsvp_reminders').insert({
             rsvp_id: guest.id,
             reminder_type: trigger.type
           });
           
+          if (logError) throw logError;
           sentCount++;
         }
 

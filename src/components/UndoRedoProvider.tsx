@@ -11,8 +11,8 @@ interface UndoRedoState<T> {
 
 type Action<T> =
     | { type: 'UNDO' }
-    | { type: 'REDO' }
-    | { type: 'SET'; payload: T }
+    | { type: 'REDO'; maxHistory?: number }
+    | { type: 'SET'; payload: T; maxHistory?: number }
     | { type: 'CLEAR'; payload: T };
 
 function undoRedoReducer<T>(state: UndoRedoState<T>, action: Action<T>): UndoRedoState<T> {
@@ -34,8 +34,9 @@ function undoRedoReducer<T>(state: UndoRedoState<T>, action: Action<T>): UndoRed
             if (future.length === 0) return state;
             const next = future[0];
             const newFuture = future.slice(1);
+            const limit = action.maxHistory ?? 50;
             return {
-                past: [...past, present],
+                past: [...past, present].slice(-limit),
                 present: next,
                 future: newFuture,
             };
@@ -46,8 +47,9 @@ function undoRedoReducer<T>(state: UndoRedoState<T>, action: Action<T>): UndoRed
             if (JSON.stringify(action.payload) === JSON.stringify(present)) {
                 return state;
             }
+            const limit = action.maxHistory ?? 50;
             return {
-                past: [...past, present],
+                past: [...past, present].slice(-limit),
                 present: action.payload,
                 future: [],
             };
@@ -96,16 +98,6 @@ export function UndoRedoProvider<T>({
         future: [],
     });
 
-    // Limit history size
-    useEffect(() => {
-        if (state.past.length > maxHistory) {
-            dispatch({
-                type: 'CLEAR',
-                payload: state.present,
-            });
-        }
-    }, [state.past.length, maxHistory, state.present]);
-
     // Call onChange when present changes
     useEffect(() => {
         onChange?.(state.present);
@@ -115,16 +107,16 @@ export function UndoRedoProvider<T>({
         const resolvedState = typeof newState === 'function' 
             ? (newState as (prev: T) => T)(state.present) 
             : newState;
-        dispatch({ type: 'SET', payload: resolvedState });
-    }, [state.present]);
+        dispatch({ type: 'SET', payload: resolvedState, maxHistory });
+    }, [state.present, maxHistory]);
 
     const undo = useCallback(() => {
         dispatch({ type: 'UNDO' });
     }, []);
 
     const redo = useCallback(() => {
-        dispatch({ type: 'REDO' });
-    }, []);
+        dispatch({ type: 'REDO', maxHistory });
+    }, [maxHistory]);
 
     const clear = useCallback((newInitialState: T) => {
         dispatch({ type: 'CLEAR', payload: newInitialState });
@@ -179,30 +171,20 @@ export function useLocalUndoRedo<T>(initialState: T, maxHistory = 50) {
         future: [],
     });
 
-    // Limit history size
-    useEffect(() => {
-        if (state.past.length > maxHistory) {
-            dispatch({
-                type: 'CLEAR',
-                payload: state.present,
-            });
-        }
-    }, [state.past.length, maxHistory, state.present]);
-
     const setState = useCallback((newState: T | ((prev: T) => T)) => {
         const resolvedState = typeof newState === 'function' 
             ? (newState as (prev: T) => T)(state.present) 
             : newState;
-        dispatch({ type: 'SET', payload: resolvedState });
-    }, [state.present]);
+        dispatch({ type: 'SET', payload: resolvedState, maxHistory });
+    }, [state.present, maxHistory]);
 
     const undo = useCallback(() => {
         dispatch({ type: 'UNDO' });
     }, []);
 
     const redo = useCallback(() => {
-        dispatch({ type: 'REDO' });
-    }, []);
+        dispatch({ type: 'REDO', maxHistory });
+    }, [maxHistory]);
 
     const clear = useCallback((newInitialState: T) => {
         dispatch({ type: 'CLEAR', payload: newInitialState });

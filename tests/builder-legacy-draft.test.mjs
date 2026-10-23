@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';import ts from 'typescript';
+test('legacy draft import preserves form data, bounds the step and never invents recoverable files',()=>{
+ const code=ts.transpileModule(fs.readFileSync('src/lib/builder-drafts.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;const loadedModule={exports:{}};vm.runInNewContext(code,{module:loadedModule,exports:loadedModule.exports});const {readLegacyBuilderDraft}=loadedModule.exports;
+ const draft=readLegacyBuilderDraft(JSON.stringify({formData:{brideName:'Legacy draft'},currentStep:200}),{heroImage:null},{heroImage:''});assert.equal(draft.formData.brideName,'Legacy draft');assert.equal(draft.currentStep,9);assert.equal(draft.legacyImport,true);assert.equal(draft.mediaFiles.heroImage,null);assert.equal(readLegacyBuilderDraft('{bad',{},{}),undefined);assert.equal(readLegacyBuilderDraft('{"formData":[]}',{},{}),undefined);
+});

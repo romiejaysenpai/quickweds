@@ -14,6 +14,10 @@ type Invitation = {
     card_theme?: string | null;
     proposal_title?: string | null;
     template_key?: string | null;
+    proposalHeroImage?: string | null;
+    requestAttireSize?: boolean;
+    requestDietaryNotes?: boolean;
+    requestPhoneNumber?: boolean;
     status: 'draft' | 'sent' | 'accepted' | 'declined';
     response_details?: {
         attireSize?: string;
@@ -86,9 +90,9 @@ export default function EntourageProposalResponsePage({ params }: { params: Prom
         setError('');
         try {
             const detailsPayload = responseValue === 'accepted' ? {
-                attireSize: attireSize.trim() || undefined,
-                dietaryNotes: dietaryNotes.trim() || undefined,
-                phoneNumber: phoneNumber.trim() || undefined,
+                attireSize: invitation?.requestAttireSize !== false ? (attireSize.trim() || undefined) : undefined,
+                dietaryNotes: invitation?.requestDietaryNotes !== false ? (dietaryNotes.trim() || undefined) : undefined,
+                phoneNumber: invitation?.requestPhoneNumber !== false ? (phoneNumber.trim() || undefined) : undefined,
                 personalNote: personalNote.trim() || undefined,
             } : undefined;
 
@@ -128,6 +132,15 @@ export default function EntourageProposalResponsePage({ params }: { params: Prom
                         </div>
                     ) : invitation ? (
                         <div className="space-y-7">
+                            {invitation.proposalHeroImage && (
+                                <div className="overflow-hidden rounded-2xl border border-border/60 shadow-md">
+                                    <img
+                                        src={invitation.proposalHeroImage}
+                                        alt={`${coupleName} proposal`}
+                                        className="h-48 w-full object-cover sm:h-64"
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <Heart className="mx-auto h-12 w-12 text-primary animate-pulse" />
                                 <p className="mt-4 text-[10px] font-black uppercase tracking-[0.24em] text-primary">
@@ -144,7 +157,7 @@ export default function EntourageProposalResponsePage({ params }: { params: Prom
                             {/* Headline Title */}
                             <div className={`rounded-2xl border ${activeTheme.borderClass} ${activeTheme.bgClass} p-6`}>
                                 <h2 className={`font-serif text-xl font-bold sm:text-2xl ${activeTheme.textPrimary}`}>
-                                    "{proposalTitle}"
+                                    &ldquo;{proposalTitle}&rdquo;
                                 </h2>
                                 {invitation.message && (
                                     <blockquote className={`mt-3 font-serif text-base leading-8 ${activeTheme.textSecondary}`}>
@@ -188,44 +201,50 @@ export default function EntourageProposalResponsePage({ params }: { params: Prom
                                     <p className="text-xs text-text-secondary">Provide details to help the couple prepare attire and arrangements:</p>
                                     
                                     <div className="space-y-3">
-                                        <div>
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
-                                                <Shirt className="h-3.5 w-3.5 text-primary" /> Attire / Suit / Dress Size
-                                            </label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Medium, US 8, or Custom"
-                                                value={attireSize}
-                                                onChange={(e) => setAttireSize(e.target.value)}
-                                                className="mt-1 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-primary"
-                                            />
-                                        </div>
+                                        {invitation.requestAttireSize !== false && (
+                                            <div>
+                                                <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
+                                                    <Shirt className="h-3.5 w-3.5 text-primary" /> Attire / Suit / Dress Size
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. Medium, US 8, or Custom"
+                                                    value={attireSize}
+                                                    onChange={(e) => setAttireSize(e.target.value)}
+                                                    className="mt-1 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-primary"
+                                                />
+                                            </div>
+                                        )}
 
-                                        <div>
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
-                                                <UtensilsCrossed className="h-3.5 w-3.5 text-primary" /> Dietary Restrictions & Allergies
-                                            </label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Vegetarian, Peanut allergy, None"
-                                                value={dietaryNotes}
-                                                onChange={(e) => setDietaryNotes(e.target.value)}
-                                                className="mt-1 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-primary"
-                                            />
-                                        </div>
+                                        {invitation.requestDietaryNotes !== false && (
+                                            <div>
+                                                <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
+                                                    <UtensilsCrossed className="h-3.5 w-3.5 text-primary" /> Dietary Restrictions & Allergies
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. Vegetarian, Peanut allergy, None"
+                                                    value={dietaryNotes}
+                                                    onChange={(e) => setDietaryNotes(e.target.value)}
+                                                    className="mt-1 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-primary"
+                                                />
+                                            </div>
+                                        )}
 
-                                        <div>
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
-                                                <Phone className="h-3.5 w-3.5 text-primary" /> Phone / WhatsApp Number
-                                            </label>
-                                            <input
-                                                type="tel"
-                                                placeholder="e.g. +1 555-0199"
-                                                value={phoneNumber}
-                                                onChange={(e) => setPhoneNumber(e.target.value)}
-                                                className="mt-1 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-primary"
-                                            />
-                                        </div>
+                                        {invitation.requestPhoneNumber !== false && (
+                                            <div>
+                                                <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
+                                                    <Phone className="h-3.5 w-3.5 text-primary" /> Phone / WhatsApp Number
+                                                </label>
+                                                <input
+                                                    type="tel"
+                                                    placeholder="e.g. +1 555-0199"
+                                                    value={phoneNumber}
+                                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                                    className="mt-1 w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-primary"
+                                                />
+                                            </div>
+                                        )}
 
                                         <div>
                                             <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">

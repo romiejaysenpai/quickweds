@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Calendar, Image as ImageIcon, Gift, Clock, BookOpen, Send, HelpCircle, Shirt, MapPin, MoreHorizontal, X } from 'lucide-react';
+import { Heart, Calendar, Image as ImageIcon, Camera, Gift, Clock, BookOpen, Send, HelpCircle, Shirt, MapPin, MoreHorizontal, X } from 'lucide-react';
 import { getTemplateVisualProfile } from '@/lib/theme-engine';
 import type { Wedding } from '@/types/wedding';
 
@@ -21,6 +21,7 @@ const NAV_ITEMS = [
     { id: 'gift', label: 'Registry', icon: Gift },
     { id: 'bio', label: 'Story', icon: Heart },
     { id: 'gallery', label: 'Gallery', icon: ImageIcon },
+    { id: 'memories', label: 'Memories', icon: Camera },
     { id: 'faq', label: 'FAQs', icon: HelpCircle },
     { id: 'guestbook', label: 'Notes', icon: BookOpen },
 ];

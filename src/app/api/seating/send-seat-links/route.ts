@@ -146,6 +146,7 @@ export async function POST(req: NextRequest) {
             const seatUrl = `${appUrl}/seat/${encodeURIComponent(seatToken)}`;
             const result = await sendEmail({
                 to: guest.guest_email,
+                tracking: { key: `seat:${weddingId}:${guest.id}:${resendAll ? String(body.requestId || Math.floor(Date.now() / 600000)) : 'initial'}`, weddingId, recoverable:true, guard:{table:'rsvps',id:guest.id,emailField:'guest_email'} },
                 subject: `Your seat for ${weddingName}`,
                 html: getSeatEmailHtml({
                     guestName: guest.guest_name,

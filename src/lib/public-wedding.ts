@@ -39,6 +39,9 @@ export const PUBLIC_WEDDING_FIELDS = [
     'hashtag',
     'rsvp_deadline',
     'rsvp_events',
+    'rsvp_allow_plus_ones',
+    'rsvp_allow_children',
+    'rsvp_search_guest_list',
     'program_timeline',
     'faq_items',
     'invitation_image',
@@ -65,6 +68,9 @@ export const PUBLIC_WEDDING_FIELDS = [
     'is_thank_you_mode',
     'thank_you_message',
     'photo_album_link',
+    'show_photos_in_thank_you_mode',
+    'show_guestbook_in_thank_you_mode',
+    'photo_recap_style',
     'voice_greeting_url',
     'created_at',
     'updated_at',
@@ -97,9 +103,6 @@ function normalizeWeddingParty(value: unknown) {
             name: String(member.name || '').trim(),
             role: String(member.role || '').trim(),
             bio: typeof member.bio === 'string' ? member.bio.trim() : '',
-            email: typeof member.email === 'string' ? member.email.trim() : '',
-            proposalTemplateKey: typeof member.proposalTemplateKey === 'string' ? member.proposalTemplateKey : undefined,
-            proposalMessage: typeof member.proposalMessage === 'string' ? member.proposalMessage.trim() : '',
             photo: typeof member.photo === 'string' ? member.photo.trim() : '',
         }))
         .filter((member) => member.name.length > 0);
@@ -122,6 +125,9 @@ export function toPublicWedding(record: Record<string, unknown>) {
         reception_venue_photos: publicWedding.reception_venue_photos ?? [],
         gallery_images: publicWedding.gallery_images ?? [],
         rsvp_events: Array.isArray(publicWedding.rsvp_events) ? publicWedding.rsvp_events : [],
+        rsvp_allow_plus_ones: publicWedding.rsvp_allow_plus_ones !== false,
+        rsvp_allow_children: publicWedding.rsvp_allow_children !== false,
+        rsvp_search_guest_list: publicWedding.rsvp_search_guest_list !== false,
         gallery_layout: typeof publicWedding.gallery_layout === 'string' && publicWedding.gallery_layout
             ? publicWedding.gallery_layout
             : 'auto',
@@ -137,6 +143,9 @@ export function toPublicWedding(record: Record<string, unknown>) {
         background_music_enabled: publicWedding.background_music_enabled === true,
         is_save_the_date: publicWedding.is_save_the_date === true,
         is_thank_you_mode: publicWedding.is_thank_you_mode === true,
+        show_photos_in_thank_you_mode: publicWedding.show_photos_in_thank_you_mode !== false,
+        show_guestbook_in_thank_you_mode: publicWedding.show_guestbook_in_thank_you_mode !== false,
+        photo_recap_style: publicWedding.photo_recap_style === 'grid' ? 'grid' : 'polaroid',
     };
 }
 
@@ -239,11 +248,23 @@ function getTemplateTestWedding(rawIdentifier: string) {
         is_thank_you_mode: false,
         thank_you_message: '',
         photo_album_link: '',
+        show_photos_in_thank_you_mode: true,
+        show_guestbook_in_thank_you_mode: true,
+        photo_recap_style: 'polaroid',
         voice_greeting_url: '',
         created_at: '2026-01-01T00:00:00.000Z',
         updated_at: '2026-01-01T00:00:00.000Z',
     });
 }
+
+const OPTIONAL_PUBLIC_COLUMNS = [
+    'background_music_url',
+    'background_music_title',
+    'background_music_enabled',
+    'show_photos_in_thank_you_mode',
+    'show_guestbook_in_thank_you_mode',
+    'photo_recap_style',
+] as const;
 
 async function loadPublicWedding(rawIdentifier: string) {
     const templateTestWedding = getTemplateTestWedding(rawIdentifier);
@@ -259,12 +280,8 @@ async function loadPublicWedding(rawIdentifier: string) {
         PUBLIC_WEDDING_FIELDS.join(',')
     );
 
-    if (error && isMissingOptionalColumnError(error, ['background_music_url', 'background_music_title', 'background_music_enabled'])) {
-        const fallbackFields = PUBLIC_WEDDING_FIELDS.filter((field) => ![
-            'background_music_url',
-            'background_music_title',
-            'background_music_enabled',
-        ].includes(field));
+    if (error && isMissingOptionalColumnError(error, OPTIONAL_PUBLIC_COLUMNS)) {
+        const fallbackFields = PUBLIC_WEDDING_FIELDS.filter((field) => !OPTIONAL_PUBLIC_COLUMNS.includes(field as any));
         const fallback = await resolvePublicWeddingByIdentifier(db, rawIdentifier, fallbackFields.join(','));
 
         if (fallback.error) throw fallback.error;
@@ -292,17 +309,52 @@ async function loadPublicWedding(rawIdentifier: string) {
     return publicWedding;
 }
 
-export async function invalidateWeddingPublicCache(...identifiers: Array<string | null | undefined>) {
-    const keys = identifiers
-        .filter((identifier): identifier is string => typeof identifier === 'string' && identifier.trim().length > 0)
-        .map((identifier) => publicWeddingCacheKey(identifier.trim()));
-
-    await redisDel(...keys);
-    revalidateTag('public-wedding', 'max');
+function publicWeddingCacheTag(identifier: string) {
+    return `public-wedding-${identifier.trim()}`;
 }
 
-export const getCachedPublicWedding = unstable_cache(
-    async (rawIdentifier: string) => loadPublicWedding(rawIdentifier),
-    ['public-wedding'],
-    { revalidate: 60, tags: ['public-wedding'] }
-);
+export async function invalidateWeddingPublicCache(...identifiers: Array<string | null | undefined>) {
+    const cleanIdentifiers = Array.from(
+        new Set(
+            identifiers
+                .filter((identifier): identifier is string => typeof identifier === 'string' && identifier.trim().length > 0)
+                .map((identifier) => identifier.trim())
+        )
+    );
+    const keys = cleanIdentifiers.map((identifier) => publicWeddingCacheKey(identifier));
+
+    await redisDel(...keys);
+    if (cleanIdentifiers.length > 0) {
+        for (const identifier of cleanIdentifiers) {
+            revalidateTag(publicWeddingCacheTag(identifier), { expire: 0 });
+        }
+    } else {
+        revalidateTag('public-wedding', { expire: 0 });
+    }
+}
+
+export async function getCachedPublicWedding(rawIdentifier: string) {
+    const normalizedIdentifier = rawIdentifier.trim();
+    const templateTestWedding = getTemplateTestWedding(normalizedIdentifier);
+    if (templateTestWedding) return templateTestWedding;
+
+    // Check revocation outside both caches. Cached content must never keep a
+    // deleted wedding public, even when deletion/cache invalidation race.
+    const active = await resolvePublicWeddingByIdentifier(
+        getSupabaseAdminClient(), normalizedIdentifier, 'id'
+    );
+    if (active.error) throw active.error;
+    if (!active.wedding) return null;
+
+    const cachedLoader = unstable_cache(
+        async () => loadPublicWedding(rawIdentifier),
+        ['public-wedding', normalizedIdentifier],
+        {
+            revalidate: 60,
+            tags: ['public-wedding', publicWeddingCacheTag(normalizedIdentifier)],
+        }
+    );
+    return cachedLoader();
+}
+
+export const getCachedPublicWeddingPayload = getCachedPublicWedding;

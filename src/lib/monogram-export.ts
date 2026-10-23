@@ -13,7 +13,7 @@ function downloadBlob(blob: Blob, filename: string) {
     window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
-async function svgToCanvas(svg: SVGSVGElement, background: string | null) {
+export async function svgToCanvas(svg: SVGSVGElement, background: string | null) {
     await document.fonts?.ready;
     const clone = svg.cloneNode(true) as SVGSVGElement;
     clone.setAttribute('width', '1080');

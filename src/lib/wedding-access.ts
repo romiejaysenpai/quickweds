@@ -23,6 +23,7 @@ export async function getWeddingAccess(
         .from('weddings')
         .select(select)
         .eq('id', weddingId)
+        .is('deleted_at', null)
         .maybeSingle();
 
     if (weddingError) throw weddingError;

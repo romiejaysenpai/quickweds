@@ -107,7 +107,7 @@ export default function WhimsicalTemplate({ wedding, gallery, isExpired }: any) 
             </section>
 
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
-            <BioSection id="bio" wedding={wedding} />
+            <BioSection id="bio" wedding={wedding} hideStory />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"

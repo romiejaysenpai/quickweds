@@ -263,7 +263,11 @@ export default function CoordinatorReportPage() {
 
     // VIP guests
     const vipGuests = useMemo(() => {
-        return rsvps.filter((g) => String(g.guest_group || '').toLowerCase() === 'vip');
+        return rsvps.filter((g) => {
+            const isVip = String(g.guest_group || '').toLowerCase() === 'vip';
+            const isAttending = g.rsvp_status === 'confirmed' || g.rsvp_status === 'confirmed_manual' || g.attendance === 'Yes';
+            return isVip && isAttending;
+        });
     }, [rsvps]);
 
     // Guests with dietary restrictions
@@ -280,8 +284,7 @@ export default function CoordinatorReportPage() {
         // Vendors unpaid
         const outstandingVendors = vendors.map((vendor) => {
             const isPaid = vendor.payment_status?.toLowerCase() === 'paid';
-            const isPending = vendor.payment_status?.toLowerCase() === 'pending';
-            const paidAmount = isPaid ? vendor.amount : (isPending ? vendor.amount * 0.5 : 0); // hypothetical estimation
+            const paidAmount = isPaid ? vendor.amount : 0;
             const balance = vendor.amount - paidAmount;
 
             return {

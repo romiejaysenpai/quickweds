@@ -32,6 +32,9 @@ const eslintConfig = defineConfig([
     "playwright-report/**",
     "test-results/**",
     "test-api.js",
+    "web-to-mobile-magic-plugin/**",
+    ".codex-*/**",
+    "ios/**",
   ]),
 ]);
 

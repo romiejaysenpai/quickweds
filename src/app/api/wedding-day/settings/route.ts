@@ -62,7 +62,7 @@ async function getContext(req: NextRequest, weddingId: string) {
 
     const db = getSupabaseAdminClient() as any;
     const access = await getWeddingAccess(db, user, weddingId, {
-        select: 'id, user_id, bride_name, groom_name, public_slug, custom_domain',
+        select: 'id, user_id, bride_name, groom_name, public_slug, custom_domain, public_seat_finder_token',
         collaboratorRoles: ['partner', 'coordinator'],
     });
 

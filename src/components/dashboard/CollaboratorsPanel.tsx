@@ -1,4 +1,5 @@
 'use client';
+import { emailOperationId, completeEmailOperation } from '@/lib/email-operation';
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, ShieldCheck, UserPlus, X } from 'lucide-react';
@@ -81,6 +82,7 @@ export default function CollaboratorsPanel({
                 },
                 body: JSON.stringify({
                     weddingId,
+                    requestId:emailOperationId(weddingId,`collaborator:${invitedAddress}:${inviteRole}`),
                     email: invitedAddress,
                     role: inviteRole,
                 }),
@@ -89,6 +91,7 @@ export default function CollaboratorsPanel({
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || 'Failed to invite collaborator');
 
+            if(result.emailSent)completeEmailOperation(weddingId,`collaborator:${invitedAddress}:${inviteRole}`);
             setInviteEmail('');
             const emailError = typeof result.emailError === 'string' ? result.emailError : '';
             setNotice({

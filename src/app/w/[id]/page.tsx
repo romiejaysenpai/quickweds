@@ -3,15 +3,9 @@ import { Heart } from 'lucide-react';
 import WeddingPageClient from './WeddingPageClient';
 import { getCachedPublicWedding, getSupabaseErrorMessage } from '@/lib/public-wedding';
 import type { Wedding } from '@/types/wedding';
+import { isRsvpDeadlineExpired } from '@/lib/rsvp-deadline';
 
-export const revalidate = 60;
-
-function isRsvpDeadlineExpired(deadline: unknown) {
-    if (typeof deadline !== 'string' || deadline.trim().length === 0) return false;
-    const deadlineDate = new Date(deadline);
-    if (Number.isNaN(deadlineDate.getTime())) return false;
-    return deadlineDate < new Date();
-}
+export const dynamic = 'force-dynamic';
 
 function WeddingUnavailable({ message }: { message?: string }) {
     return (

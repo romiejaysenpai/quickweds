@@ -17,14 +17,14 @@
     "resend:sync-entourage": "node scripts/sync-resend-entourage-templates.mjs",
     "cap:sync": "cap sync ios",
     "cap:open:ios": "cap open ios",
-    "migrate:power-features": "node scripts/apply-supabase-power-features.js"
+    "migrate:power-features": "node scripts/apply-supabase-power-features.js",
+    "test:unit": "node scripts/test-unit.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
-    "@capacitor/cli": "^8.4.0",
-    "@capacitor/core": "^8.4.0",
-    "@capacitor/ios": "^8.4.0",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
     "@capacitor/share": "^8.0.1",
     "@react-email/components": "^1.0.12",
     "@sentry/nextjs": "^10.66.0",
@@ -38,9 +38,8 @@
     "cloudinary": "^2.9.0",
     "framer-motion": "^12.42.2",
     "jsqr": "^1.4.0",
-    "kimi": "^6.0.2",
     "lucide-react": "^0.562.0",
-    "next": "^16.2.10",
+    "next": "^16.4.2",
     "openai": "^6.48.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.7",
@@ -52,6 +51,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@electric-sql/pglite": "0.5.11",
     "@playwright/test": "^1.59.1",
     "@react-email/ui": "^6.7.0",
     "@tailwindcss/postcss": "^4",
@@ -62,6 +63,7 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "^16.2.10",
+    "eslint-plugin-react-hooks": "7.0.1",
     "pg": "^8.12.0",
     "react-email": "^6.7.0",
     "tailwindcss": "^4",

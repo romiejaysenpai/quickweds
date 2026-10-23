@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRateLimitMiddleware, getClientIP } from '@/lib/rate-limit';
 import { getCachedPublicWedding, getSupabaseErrorMessage } from '@/lib/public-wedding';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             {
                 headers: {
                     ...limited.headers,
-                    'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+                    'Cache-Control': 'no-store',
                 },
             }
         );

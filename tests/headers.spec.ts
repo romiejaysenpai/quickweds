@@ -15,7 +15,7 @@ test.describe('response headers', () => {
     expect(preflight.headers()['access-control-allow-origin']).toBeUndefined();
     expect(preflight.headers().allow).toContain('POST');
 
-    const publicWedding = await request.get('/api/public/weddings/no-such-wedding', {
+    const publicWedding = await request.get('/api/public/weddings/%20', {
       headers: { Origin: 'https://evil.example' },
     });
 

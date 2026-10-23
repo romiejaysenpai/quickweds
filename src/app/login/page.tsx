@@ -34,21 +34,26 @@ export default function LoginPage() {
 
     const getSafeNextPath = () => {
         if (typeof window === 'undefined') return '/dashboard';
-        return getSafeAppPath(new URLSearchParams(window.location.search).get('next'), '/dashboard');
+        const params = new URLSearchParams(window.location.search);
+        const requested = params.get('next') || (params.get('returnTo') === 'builder' ? '/builder' : params.get('returnTo'));
+        return getSafeAppPath(requested, '/dashboard');
     };
 
     const resolvePostAuthPath = async (token: string, nextPath: string) => {
+        const safeNext = getSafeAppPath(nextPath, '/dashboard');
         if (await getClientAdminStatus(token)) {
-            const safeNext = getSafeAppPath(nextPath, '/dashboard');
             return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
         }
 
         try {
-            const profile = await getClientAccountProfileForIntent(token, nextPath);
-            return getPostLoginRedirect(profile, nextPath);
+            const profile = await getClientAccountProfileForIntent(token, safeNext);
+            if (safeNext !== '/dashboard' && profile?.account_type) {
+                return getRoleAwareRedirect(profile.account_type, safeNext);
+            }
+            return getPostLoginRedirect(profile, safeNext);
         } catch {
-            // Gracefully degrade — if account profile table is missing, go to default path
-            return '/dashboard';
+            // Gracefully degrade — if account profile table is missing, go to requested safe path
+            return safeNext;
         }
     };
 
@@ -87,14 +92,11 @@ export default function LoginPage() {
             });
             if (error) throw error;
 
-            // Always send returning users to the welcome dashboard.
-            // The dashboard page itself handles showing the correct view
-            // (wedding list, empty state, or onboarding) based on the user's profile.
-            // Only honor the `next` param for onboarding-related paths.
             const nextPath = getSafeNextPath();
-            const redirectPath = nextPath.startsWith('/onboarding/account-type')
-                ? nextPath
-                : '/dashboard';
+            const token = data.session?.access_token;
+            const redirectPath = token
+                ? await resolvePostAuthPath(token, nextPath)
+                : nextPath;
 
             router.replace(redirectPath);
         } catch (err: any) {

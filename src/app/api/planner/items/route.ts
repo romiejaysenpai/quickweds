@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
+import { getWeddingAccess } from '@/lib/wedding-access';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import {
     getPlannerLimitMessage,
@@ -251,21 +252,18 @@ async function getAuthorizedPlannerContext(req: NextRequest, weddingId: string) 
     }
 
     const db = getSupabaseAdminClient() as any;
-    const { data: wedding, error: weddingError } = await db
-        .from('weddings')
-        .select('id, user_id, is_premium, payment_status')
-        .eq('id', weddingId)
-        .maybeSingle();
+    const access = await getWeddingAccess(db, user, weddingId, {
+        select: 'id, user_id, is_premium, payment_status',
+        collaboratorRoles: ['partner', 'coordinator'],
+    });
 
-    if (weddingError) throw weddingError;
-    if (!wedding) {
+    if (!access.wedding) {
         return { response: NextResponse.json({ error: 'Wedding not found.' }, { status: 404 }) };
     }
-
-    const canManage = wedding.user_id === user.id || isKnownAdminEmail(user.email);
-    if (!canManage) {
+    if (!access.canManage) {
         return { response: NextResponse.json({ error: 'You do not have permission to manage this planner.' }, { status: 403 }) };
     }
+    const wedding = access.wedding;
 
     const accountProfile = await db
         .from('user_app_profiles')

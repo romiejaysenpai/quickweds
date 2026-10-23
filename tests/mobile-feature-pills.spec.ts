@@ -37,7 +37,7 @@ test('mobile feature pills begin below the hero and fall below the Core Features
             top: rect.top,
             bottom: rect.bottom,
             opacity: Number(style.opacity),
-            animationRange: style.getPropertyValue('animation-range'),
+            animationRange: style.getPropertyValue('--qw-pill-mobile-animation-end'),
           };
         }),
       };
@@ -48,7 +48,8 @@ test('mobile feature pills begin below the hero and fall below the Core Features
   const falling = await readLayout(800);
   const settled = await readLayout(950);
 
-  expect(initial.animationName).toBe('qw-feature-pill-fall-mobile');
+  expect(initial.animationName).toBe('none');
+  await expect(page.locator('[data-qw-feature-pill]').first()).toHaveClass(/qw-mobile-js-scroll-fallback/);
   expect(initial.pills).toHaveLength(11);
   expect(new Set(initial.pills.map((pill) => pill.animationRange)).size).toBeGreaterThan(5);
   expect(Math.max(...initial.pills.map((pill) => pill.bottom))).toBeLessThan(initial.eyebrowTop ?? 0);
@@ -109,4 +110,18 @@ test('mobile feature pills use the JavaScript fallback without scroll-timeline s
   const after = await pill.evaluate((element) => getComputedStyle(element).transform);
 
   expect(after).not.toBe(before);
+});
+
+
+test('mobile feature pills stay still with reduced motion',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.setViewportSize({width:375,height:667});
+ await page.goto('/');
+ const pills=page.locator('[data-qw-feature-pill]');
+ await expect(pills.first()).toHaveClass(/qw-mobile-js-scroll-fallback/);
+ const before=await pills.evaluateAll(elements=>elements.map(element=>getComputedStyle(element).transform));
+ await page.evaluate(()=>window.scrollTo(0,950));
+ await page.waitForTimeout(100);
+ const after=await pills.evaluateAll(elements=>elements.map(element=>getComputedStyle(element).transform));
+ expect(after).toEqual(before);
 });

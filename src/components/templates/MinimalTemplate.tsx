@@ -49,7 +49,7 @@ export default function MinimalTemplate({ wedding, gallery, isExpired }: Templat
                         >
                             {wedding.bride_name} <br />
                             <span 
-                                className="font-light italic serif ml-0 sm:ml-2 md:ml-4"
+                                className="font-light italic font-serif ml-0 sm:ml-2 md:ml-4"
                                 style={{ color: motifColor }}
                             >
                                 &

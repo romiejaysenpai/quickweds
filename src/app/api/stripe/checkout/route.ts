@@ -7,7 +7,8 @@ import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib
 import { getWeddingAccess } from '@/lib/wedding-access';
 
 export async function POST(req: NextRequest) {
-    if (req.headers.get('x-quickweds-client') === 'ios-capacitor') {
+    const userAgent = req.headers.get('user-agent') || '';
+    if (req.headers.get('x-quickweds-client') === 'ios-capacitor' || userAgent.includes('QuickWeds-iOS-App')) {
         return NextResponse.json(
             { error: 'Paid upgrades are managed on the QuickWeds website.' },
             { status: 403 }
@@ -29,7 +30,8 @@ export async function POST(req: NextRequest) {
 
         const requestedScope = validation.data.scope || (validation.data.weddingId ? 'wedding' : 'account');
         const scope = requestedScope === 'account' ? 'account' : 'wedding';
-        const plan = scope === 'account' ? 'account_pro' : (validation.data.plan || 'planner_pro');
+        // Only one price exists today, so never trust a client-supplied higher-tier plan label.
+        const plan = scope === 'account' ? 'account_pro' : 'planner_pro';
         const weddingId = validation.data.weddingId ? sanitizeWeddingId(validation.data.weddingId) : '';
 
         let userId: string | null = null;
@@ -43,10 +45,25 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Wedding ID is required for Planner Pro checkout.' }, { status: 400 });
         }
 
+        const db = getSupabaseAdminClient() as any;
+        const { data: userProfile } = await db
+            .from('user_app_profiles')
+            .select('is_pro, payment_status')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        const hasAccountPro = Boolean(userProfile?.is_pro || userProfile?.payment_status === 'paid');
+
+        if (plan === 'account_pro' && hasAccountPro) {
+            return NextResponse.json(
+                { error: 'Account Pro is already unlocked for this account.' },
+                { status: 409 }
+            );
+        }
+
         if (scope === 'wedding') {
-            const db = getSupabaseAdminClient() as any;
             const access = await getWeddingAccess(db, user, weddingId, {
-                select: 'id, user_id, deleted_at',
+                select: 'id, user_id, deleted_at, is_premium, payment_status',
                 collaboratorRoles: ['partner'],
             });
 
@@ -56,6 +73,17 @@ export async function POST(req: NextRequest) {
 
             if (!access.canManage) {
                 return NextResponse.json({ error: 'You do not have permission to upgrade this wedding.' }, { status: 403 });
+            }
+
+            if (
+                access.wedding.is_premium ||
+                access.wedding.payment_status === 'paid' ||
+                hasAccountPro
+            ) {
+                return NextResponse.json(
+                    { error: 'Planner Pro is already unlocked for this wedding.' },
+                    { status: 409 }
+                );
             }
         }
 
@@ -79,6 +107,8 @@ export async function POST(req: NextRequest) {
         // Create Stripe checkout session
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
+            customer_email: user.email ?? undefined,
+            client_reference_id: user.id,
             line_items: [
                 {
                     price_data: {

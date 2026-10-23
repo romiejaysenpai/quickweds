@@ -7,6 +7,7 @@ import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib
 import { getWeddingAccess } from '@/lib/wedding-access';
 import { acquireQrCheckInLock } from '@/lib/qr-check-in-lock';
 import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
+import { escapeLikePattern } from '@/lib/sql-like';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,11 +54,12 @@ async function resolveGuest(db: any, weddingId: string, body: Record<string, any
     if (byToken.error) throw byToken.error;
     if (byToken.data) return byToken.data;
 
-    const byCode = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_code', lookup).maybeSingle();
+    const literalLookup = escapeLikePattern(lookup);
+    const byCode = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_code', literalLookup).maybeSingle();
     if (byCode.error) throw byCode.error;
     if (byCode.data) return byCode.data;
 
-    const byName = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_name', lookup).maybeSingle();
+    const byName = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_name', literalLookup).maybeSingle();
     if (byName.error) throw byName.error;
     return byName.data;
 }
@@ -78,15 +80,17 @@ export async function GET(req: NextRequest) {
 
         const { data: guests, error } = await db
             .from('rsvps')
-            .select('id, guest_name, guest_email, num_guests, table_assignment, guest_code, checked_in_at')
+            .select('id, guest_name, guest_email, num_guests, table_assignment, guest_code, checked_in_at, rsvp_status, attendance')
             .eq('wedding_id', weddingId)
             .order('guest_name', { ascending: true });
         if (error) throw error;
 
+        const attendingGuests = (guests || []).filter((g: any) => g.rsvp_status !== 'declined' && g.attendance !== 'No');
+
         return NextResponse.json({
             success: true,
             wedding: { id: wedding.id, name: [wedding.bride_name, wedding.groom_name].filter(Boolean).join(' & ') || 'Wedding' },
-            guests: (guests || []).map((guest: any) => ({
+            guests: attendingGuests.map((guest: any) => ({
                 ...guest,
                 partySize: getSeatFinderPartySize(guest),
             })),
@@ -111,6 +115,17 @@ export async function POST(req: NextRequest) {
         const context = await getAuthorizedWedding(req, weddingId);
         if (context.response) return context.response;
         const { db, user } = context;
+
+        const { data: weddingDaySettings } = await db
+            .from('wedding_day_settings')
+            .select('check_in_enabled')
+            .eq('wedding_id', weddingId)
+            .maybeSingle();
+
+        if (weddingDaySettings?.check_in_enabled === false) {
+            return NextResponse.json({ error: 'Guest check-in is currently paused by the couple.' }, { status: 403 });
+        }
+
         const guest = await resolveGuest(db, weddingId, body);
         if (!guest) return NextResponse.json({ error: 'Guest not found.', state: 'invalid_guest' }, { status: 404 });
 

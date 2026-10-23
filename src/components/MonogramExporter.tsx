@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { Download, Video, Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { MonogramMark } from './MonogramMark';
+import { downloadMonogramImage, svgToCanvas } from '@/lib/monogram-export';
 
 interface MonogramExporterProps {
     initials?: string;
@@ -33,7 +34,7 @@ export function MonogramExporter({
 }: MonogramExporterProps) {
     const [isExportingVideo, setIsExportingVideo] = useState(false);
     const [videoProgress, setVideoProgress] = useState(0);
-    const previewRef = useRef<HTMLDivElement>(null);
+    const svgRef = useRef<SVGSVGElement>(null);
 
     // Get final initials string
     const markText = (initials?.trim())
@@ -41,15 +42,17 @@ export function MonogramExporter({
         : `${brideName?.trim()?.[0] || 'A'} & ${groomName?.trim()?.[0] || 'B'}`;
 
     const accentColor = color || motifColor || '#C08081';
+    const resolvedFontFamily = fontFamily || 'Georgia, serif';
+    const filenameBase = `wedding-monogram-${markText.replace(/[^a-z0-9]/gi, '_')}`;
 
-    // Helper: Draw Monogram onto Canvas
+    // Fallback helper: Draw Monogram onto Canvas if SVG serialization is unavailable
     const drawMonogramToCanvas = (
         ctx: CanvasRenderingContext2D,
         width: number,
         height: number,
-        options: { transparent: boolean; frameProgress?: number }
+        options: { transparent: boolean; frameProgress?: number; sourceCanvas?: HTMLCanvasElement | null }
     ) => {
-        const { transparent, frameProgress = 0 } = options;
+        const { transparent, frameProgress = 0, sourceCanvas = null } = options;
 
         ctx.clearRect(0, 0, width, height);
 
@@ -59,34 +62,71 @@ export function MonogramExporter({
             ctx.fillRect(0, 0, width, height);
         }
 
+        if (sourceCanvas) {
+            ctx.save();
+            if (animation === 'draw') {
+                ctx.beginPath();
+                ctx.rect(0, 0, width * frameProgress, height);
+                ctx.clip();
+            } else if (animation === 'bloom') {
+                const scale = 0.72 + 0.28 * frameProgress;
+                ctx.translate(width / 2, height / 2);
+                ctx.scale(scale, scale);
+                ctx.translate(-width / 2, -height / 2);
+                ctx.globalAlpha = frameProgress;
+            } else if (animation === 'float') {
+                ctx.translate(0, 26 * (1 - frameProgress));
+            } else if (animation === 'reveal') {
+                ctx.translate(0, 52 * (1 - frameProgress));
+                ctx.globalAlpha = frameProgress;
+            }
+            ctx.drawImage(sourceCanvas, 0, 0, width, height);
+            ctx.restore();
+
+            if (animation === 'shimmer') {
+                const x = -width + width * 2.5 * frameProgress;
+                const gradient = ctx.createLinearGradient(x, 0, x + width * 0.38, 0);
+                gradient.addColorStop(0, 'rgba(255,255,255,0)');
+                gradient.addColorStop(0.5, 'rgba(255,255,255,0.52)');
+                gradient.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+            }
+            return;
+        }
+
         const cx = width / 2;
         const cy = height / 2;
         const radius = Math.min(width, height) * 0.38;
 
-        // Apply pulse or bounce offsets if animated
         let animScale = 1;
         let animY = 0;
-        let animRotation = 0;
+        let animAlpha = 1;
 
-        if (animation === 'pulse') {
-            animScale = 1 + Math.sin(frameProgress * Math.PI * 2) * 0.04;
-        } else if (animation === 'bounce') {
-            animY = Math.sin(frameProgress * Math.PI * 2) * 15;
-        } else if (animation === 'spin') {
-            animRotation = frameProgress * Math.PI * 2;
+        if (animation === 'bloom') {
+            animScale = 0.72 + 0.28 * frameProgress;
+            animAlpha = frameProgress;
+        } else if (animation === 'float') {
+            animY = 26 * (1 - frameProgress);
+        } else if (animation === 'reveal') {
+            animY = 52 * (1 - frameProgress);
+            animAlpha = frameProgress;
         }
 
         ctx.save();
+        if (animation === 'draw' && frameProgress > 0) {
+            ctx.beginPath();
+            ctx.rect(0, 0, width * frameProgress, height);
+            ctx.clip();
+        }
+        ctx.globalAlpha = animAlpha;
         ctx.translate(cx, cy + animY);
         ctx.scale(animScale, animScale);
 
-        // Draw Outer Shape Frame
         ctx.lineWidth = width * 0.015;
         ctx.strokeStyle = accentColor;
 
-        if (shape === 'circle' || shape === 'double-ring' || shape === 'laurel' || shape === 'vintage-wreath' || shape === 'wax-seal') {
-            ctx.save();
-            ctx.rotate(animRotation);
+        if (shape === 'circle' || shape === 'double-ring' || shape === 'laurel' || shape === 'wax-seal' || shape === 'intertwined') {
             ctx.beginPath();
             ctx.arc(0, 0, radius, 0, Math.PI * 2);
             ctx.stroke();
@@ -96,27 +136,22 @@ export function MonogramExporter({
                 ctx.strokeStyle = accentColor + '80';
                 ctx.stroke();
             }
-            ctx.restore();
-        } else if (shape === 'square' || shape === 'art-deco') {
+        } else if (shape === 'square' || shape === 'botanical-frame') {
             const side = radius * 1.8;
             ctx.beginPath();
-            ctx.roundRect(-side / 2, -side / 2, side, side, side * 0.15);
+            ctx.roundRect(-side / 2, -side / 2, side, side, shape === 'botanical-frame' ? side / 2 : side * 0.15);
             ctx.stroke();
-            if (shape === 'art-deco') {
-                ctx.strokeRect(-side * 0.42, -side * 0.42, side * 0.84, side * 0.84);
-            }
         } else if (shape === 'diamond') {
             ctx.save();
             ctx.rotate(Math.PI / 4);
             const side = radius * 1.6;
             ctx.strokeRect(-side / 2, -side / 2, side, side);
             ctx.restore();
-        } else if (shape === 'oval' || shape === 'romantic-heart') {
+        } else if (shape === 'oval') {
             ctx.beginPath();
-            ctx.ellipse(0, 0, radius * 1.1, radius * 0.85, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 0, radius * 0.85, radius, 0, 0, Math.PI * 2);
             ctx.stroke();
         } else {
-            // Minimal or default lines
             ctx.beginPath();
             ctx.moveTo(-radius * 1.2, -radius * 0.7);
             ctx.lineTo(radius * 1.2, -radius * 0.7);
@@ -125,14 +160,12 @@ export function MonogramExporter({
             ctx.stroke();
         }
 
-        // Draw Initials Text
         ctx.fillStyle = accentColor;
         const fontSize = Math.round(width * (markText.length > 4 ? 0.14 : 0.22));
-        ctx.font = `bold ${fontSize}px Georgia, serif`;
+        ctx.font = `bold ${fontSize}px ${resolvedFontFamily}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Shimmer effect overlay
         if (animation === 'shimmer') {
             const grad = ctx.createLinearGradient(-radius, 0, radius, 0);
             const shift = (frameProgress * 2) % 1;
@@ -147,7 +180,15 @@ export function MonogramExporter({
     };
 
     // Download PNG (Transparent)
-    const handleDownloadPng = () => {
+    const handleDownloadPng = async () => {
+        if (svgRef.current) {
+            try {
+                await downloadMonogramImage(svgRef.current, 'png', filenameBase);
+                return;
+            } catch (err) {
+                console.warn('SVG export fallback to canvas:', err);
+            }
+        }
         const canvas = document.createElement('canvas');
         canvas.width = 1200;
         canvas.height = 1200;
@@ -157,13 +198,21 @@ export function MonogramExporter({
         drawMonogramToCanvas(ctx, 1200, 1200, { transparent: true });
 
         const link = document.createElement('a');
-        link.download = `wedding-monogram-${markText.replace(/[^a-z0-9]/gi, '_')}.png`;
+        link.download = `${filenameBase}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
     };
 
     // Download JPG (White BG)
-    const handleDownloadJpg = () => {
+    const handleDownloadJpg = async () => {
+        if (svgRef.current) {
+            try {
+                await downloadMonogramImage(svgRef.current, 'jpg', filenameBase);
+                return;
+            } catch (err) {
+                console.warn('SVG export fallback to canvas:', err);
+            }
+        }
         const canvas = document.createElement('canvas');
         canvas.width = 1200;
         canvas.height = 1200;
@@ -173,7 +222,7 @@ export function MonogramExporter({
         drawMonogramToCanvas(ctx, 1200, 1200, { transparent: false });
 
         const link = document.createElement('a');
-        link.download = `wedding-monogram-${markText.replace(/[^a-z0-9]/gi, '_')}.jpg`;
+        link.download = `${filenameBase}.jpg`;
         link.href = canvas.toDataURL('image/jpeg', 0.95);
         link.click();
     };
@@ -189,6 +238,7 @@ export function MonogramExporter({
         setVideoProgress(0);
 
         try {
+            const sourceCanvas = svgRef.current ? await svgToCanvas(svgRef.current, '#ffffff').catch(() => null) : null;
             const canvas = document.createElement('canvas');
             canvas.width = 720;
             canvas.height = 720;
@@ -229,7 +279,7 @@ export function MonogramExporter({
             const renderLoop = () => {
                 if (currentFrame < totalFrames) {
                     const progress = currentFrame / totalFrames;
-                    drawMonogramToCanvas(ctx, 720, 720, { transparent: false, frameProgress: progress });
+                    drawMonogramToCanvas(ctx, 720, 720, { transparent: false, frameProgress: progress, sourceCanvas });
                     setVideoProgress(Math.round(progress * 100));
                     currentFrame++;
                     requestAnimationFrame(renderLoop);
@@ -243,12 +293,27 @@ export function MonogramExporter({
             console.error('Video export error:', err);
             setIsExportingVideo(false);
             alert('Failed to generate video export. Downloading high-res PNG instead.');
-            handleDownloadPng();
+            void handleDownloadPng();
         }
     };
 
     return (
         <div className="rounded-3xl border border-primary/10 bg-white/90 p-6 shadow-lg backdrop-blur-sm sm:p-8">
+            <div className="sr-only" aria-hidden="true">
+                <MonogramMark
+                    ref={svgRef}
+                    initials={initials}
+                    brideName={brideName}
+                    groomName={groomName}
+                    shape={shape}
+                    animation={animation}
+                    color={color}
+                    motifColor={motifColor}
+                    fontFamily={resolvedFontFamily}
+                    fontClassName={fontClassName}
+                    size="lg"
+                />
+            </div>
             <div className="flex flex-col items-center justify-between gap-4 sm:flex-row mb-6">
                 <div>
                     <h4 className="font-serif text-xl font-bold text-foreground">Download Your Monogram</h4>

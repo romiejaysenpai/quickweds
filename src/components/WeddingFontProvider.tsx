@@ -1,24 +1,75 @@
 import type { CSSProperties, ReactNode } from 'react';
+import {
+    Cormorant_Garamond,
+    Cinzel,
+    Great_Vibes,
+    Pinyon_Script,
+    Bodoni_Moda,
+    Libre_Baskerville,
+    Plus_Jakarta_Sans,
+} from 'next/font/google';
 
-/**
- * WeddingFontProvider
- *
- * Provides a compact, backward-compatible wedding font system.
- * The app loads three web fonts (Inter, Playfair Display, and Montserrat); legacy
- * font ids are intentionally mapped to those families or stable system fonts.
- * This keeps existing weddings visually compatible without downloading dozens
- * of near-duplicate font files on pages that render or preview templates:
- * - /builder (BuilderForm)
- * - /w/[slug] (public wedding pages)
- * - /preview
- *
- * The root layout only loads 3 core UI fonts (Inter, Playfair, Montserrat).
- * This component injects the remaining font CSS variables into a wrapper div
- * so child components can reference them via CSS custom properties.
- *
- * Usage: Wrap any page/layout that needs the full font catalog:
- *   <WeddingFontProvider>{children}</WeddingFontProvider>
- */
+const cormorantGaramond = Cormorant_Garamond({
+    variable: '--font-cormorant-loaded',
+    subsets: ['latin'],
+    weight: ['400', '500', '600', '700'],
+    style: ['normal', 'italic'],
+    display: 'swap',
+});
+
+const cinzel = Cinzel({
+    variable: '--font-cinzel-loaded',
+    subsets: ['latin'],
+    weight: ['400', '600', '700'],
+    display: 'swap',
+});
+
+const greatVibes = Great_Vibes({
+    variable: '--font-great-vibes',
+    subsets: ['latin'],
+    weight: '400',
+    display: 'swap',
+});
+
+const pinyonScript = Pinyon_Script({
+    variable: '--font-pinyon-loaded',
+    subsets: ['latin'],
+    weight: '400',
+    display: 'swap',
+});
+
+const bodoniModa = Bodoni_Moda({
+    variable: '--font-bodoni-loaded',
+    subsets: ['latin'],
+    weight: ['400', '600', '700'],
+    style: ['normal', 'italic'],
+    display: 'swap',
+});
+
+const libreBaskerville = Libre_Baskerville({
+    variable: '--font-libre-loaded',
+    subsets: ['latin'],
+    weight: ['400', '700'],
+    style: ['normal', 'italic'],
+    display: 'swap',
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+    variable: '--font-jakarta-loaded',
+    subsets: ['latin'],
+    weight: ['400', '500', '600', '700'],
+    display: 'swap',
+});
+
+const LOADED_FONT_CLASSNAMES = [
+    cormorantGaramond.variable,
+    cinzel.variable,
+    greatVibes.variable,
+    pinyonScript.variable,
+    bodoniModa.variable,
+    libreBaskerville.variable,
+    plusJakartaSans.variable,
+].join(' ');
 
 type WeddingFontProviderProps = {
     children: ReactNode;
@@ -27,64 +78,83 @@ type WeddingFontProviderProps = {
 };
 
 const SERIF_STACK = 'var(--font-playfair), Georgia, serif';
+const CORMORANT_STACK = 'var(--font-cormorant-loaded), var(--font-playfair), Georgia, serif';
+const CINZEL_STACK = 'var(--font-cinzel-loaded), var(--font-playfair), Georgia, serif';
+const BODONI_STACK = 'var(--font-bodoni-loaded), var(--font-playfair), "Times New Roman", serif';
+const LIBRE_STACK = 'var(--font-libre-loaded), var(--font-playfair), Georgia, serif';
 const SANS_STACK = 'var(--font-inter), system-ui, sans-serif';
+const JAKARTA_STACK = 'var(--font-jakarta-loaded), var(--font-inter), system-ui, sans-serif';
 const MODERN_STACK = 'var(--font-montserrat), var(--font-inter), system-ui, sans-serif';
-const SCRIPT_STACK = '"Brush Script MT", "Segoe Script", cursive';
-const DISPLAY_STACK = 'var(--font-playfair), "Times New Roman", serif';
+export const SCRIPT_STACK = 'var(--font-great-vibes), var(--font-pinyon-loaded), "Great Vibes", "Pinyon Script", cursive';
+const PINYON_STACK = 'var(--font-pinyon-loaded), var(--font-great-vibes), "Pinyon Script", "Great Vibes", cursive';
+const DISPLAY_STACK = 'var(--font-bodoni-loaded), var(--font-playfair), "Times New Roman", serif';
 
-type FontVariableMap = Record<string, string>;
+export type FontVariableMap = Record<string, string>;
 
-const BASE_FONT_VARIABLES: FontVariableMap = {
-    '--font-cormorant': SERIF_STACK,
-    '--font-eb-garamond': SERIF_STACK,
-    '--font-bodoni': DISPLAY_STACK,
+export const BASE_FONT_VARIABLES: FontVariableMap = {
+    '--font-cormorant': CORMORANT_STACK,
+    '--font-eb': CORMORANT_STACK,
+    '--font-eb-garamond': CORMORANT_STACK,
+    '--font-bodoni': BODONI_STACK,
     '--font-prata': DISPLAY_STACK,
-    '--font-lora': SERIF_STACK,
-    '--font-cardo': SERIF_STACK,
-    '--font-libre': SERIF_STACK,
-    '--font-marcellus': DISPLAY_STACK,
-    '--font-forum': DISPLAY_STACK,
-    '--font-alice': DISPLAY_STACK,
-    '--font-spectral': SERIF_STACK,
-    '--font-cinzel': DISPLAY_STACK,
+    '--font-lora': LIBRE_STACK,
+    '--font-cardo': CORMORANT_STACK,
+    '--font-libre': LIBRE_STACK,
+    '--font-marcellus': CINZEL_STACK,
+    '--font-forum': CINZEL_STACK,
+    '--font-alice': CORMORANT_STACK,
+    '--font-spectral': CORMORANT_STACK,
+    '--font-cinzel': CINZEL_STACK,
     '--font-abril': DISPLAY_STACK,
-    '--font-cormorant-upright': SERIF_STACK,
-    '--font-old-standard': SERIF_STACK,
-    '--font-caslon': SERIF_STACK,
-    '--font-quattrocento': SERIF_STACK,
+    '--font-cormorant-upright': CORMORANT_STACK,
+    '--font-old-standard': LIBRE_STACK,
+    '--font-caslon': LIBRE_STACK,
+    '--font-quattrocento': CINZEL_STACK,
     '--font-fraunces': DISPLAY_STACK,
-    '--font-cormorant-sc': DISPLAY_STACK,
-    '--font-tenor': SANS_STACK,
-    '--font-questrial': SANS_STACK,
+    '--font-cormorant-sc': CINZEL_STACK,
+    '--font-tenor': JAKARTA_STACK,
+    '--font-questrial': JAKARTA_STACK,
     '--font-syne': MODERN_STACK,
-    '--font-fauna': SERIF_STACK,
+    '--font-fauna': LIBRE_STACK,
     '--font-josefin': MODERN_STACK,
-    '--font-outfit': SANS_STACK,
+    '--font-outfit': JAKARTA_STACK,
     '--font-space': MODERN_STACK,
     '--font-script': SCRIPT_STACK,
     '--font-alex': SCRIPT_STACK,
     '--font-allura': SCRIPT_STACK,
     '--font-arizonia': SCRIPT_STACK,
     '--font-dancing': SCRIPT_STACK,
-    '--font-italianno': SCRIPT_STACK,
-    '--font-pinyon': SCRIPT_STACK,
+    '--font-italianno': PINYON_STACK,
+    '--font-pinyon': PINYON_STACK,
     '--font-sacramento': SCRIPT_STACK,
-    '--font-tangerine': SCRIPT_STACK,
+    '--font-tangerine': PINYON_STACK,
     '--font-parisienne': SCRIPT_STACK,
-    '--font-mrs-saint': SCRIPT_STACK,
-    '--font-monsieur': SCRIPT_STACK,
+    '--font-mrs-saint': PINYON_STACK,
+    '--font-monsieur': PINYON_STACK,
     '--font-homemade': SCRIPT_STACK,
-    '--font-herr': SCRIPT_STACK,
+    '--font-herr': PINYON_STACK,
     '--font-lavishly': SCRIPT_STACK,
 } as const;
 
-const FONT_STYLE_OVERRIDES: Record<string, FontVariableMap> = {
+export const FONT_STYLE_OVERRIDES: Record<string, FontVariableMap> = {
+    Classic: {
+        '--font-serif': CINZEL_STACK,
+        '--font-sans': CORMORANT_STACK,
+    },
+    Traditional: {
+        '--font-serif': CORMORANT_STACK,
+        '--font-sans': SANS_STACK,
+    },
+    Editorial: {
+        '--font-serif': LIBRE_STACK,
+        '--font-sans': SANS_STACK,
+    },
     Modern: {
         '--font-serif': MODERN_STACK,
         '--font-sans': SANS_STACK,
     },
     Clean: {
-        '--font-serif': SANS_STACK,
+        '--font-serif': JAKARTA_STACK,
         '--font-sans': SANS_STACK,
     },
     Bold: {
@@ -99,9 +169,13 @@ const FONT_STYLE_OVERRIDES: Record<string, FontVariableMap> = {
         '--font-serif': SCRIPT_STACK,
         '--font-sans': DISPLAY_STACK,
     },
+    PremiumScript: {
+        '--font-serif': PINYON_STACK,
+        '--font-sans': SERIF_STACK,
+    },
     SoftScript: {
         '--font-serif': SCRIPT_STACK,
-        '--font-sans': SERIF_STACK,
+        '--font-sans': CORMORANT_STACK,
     },
     Whimsy: {
         '--font-serif': SCRIPT_STACK,
@@ -116,16 +190,16 @@ const FONT_STYLE_OVERRIDES: Record<string, FontVariableMap> = {
         '--font-sans': SANS_STACK,
     },
     Luxe: {
-        '--font-serif': DISPLAY_STACK,
+        '--font-serif': BODONI_STACK,
         '--font-sans': SANS_STACK,
     },
     VogueEdit: {
-        '--font-serif': DISPLAY_STACK,
-        '--font-sans': SANS_STACK,
+        '--font-serif': BODONI_STACK,
+        '--font-sans': JAKARTA_STACK,
     },
 };
 
-function logoFontVariable(font?: string) {
+export function logoFontVariable(font?: string): FontVariableMap {
     if (!font) return {};
     return {
         [`--font-${font.toLowerCase()}`]: /script|brush|calligraphy|allura|alex|pinyon|sacramento|tangerine|paris|lavish/i.test(font)
@@ -134,14 +208,23 @@ function logoFontVariable(font?: string) {
     };
 }
 
+export function getWeddingFontStyleVariables(fontStyle?: string, logoFont?: string): FontVariableMap {
+    const overrideKey = fontStyle
+        ? Object.keys(FONT_STYLE_OVERRIDES).find((k) => k.toLowerCase() === fontStyle.toLowerCase())
+        : undefined;
+    return {
+        ...BASE_FONT_VARIABLES,
+        ...(overrideKey ? FONT_STYLE_OVERRIDES[overrideKey] : null),
+        ...logoFontVariable(logoFont),
+    };
+}
+
 export default function WeddingFontProvider({ children, fontStyle, logoFont }: WeddingFontProviderProps) {
     const style = {
-        ...BASE_FONT_VARIABLES,
         '--font-serif': SERIF_STACK,
         '--font-sans': SANS_STACK,
-        ...(fontStyle ? FONT_STYLE_OVERRIDES[fontStyle] : null),
-        ...logoFontVariable(logoFont),
+        ...getWeddingFontStyleVariables(fontStyle, logoFont),
     } as CSSProperties;
 
-    return <div style={style}>{children}</div>;
+    return <div className={LOADED_FONT_CLASSNAMES} style={style}>{children}</div>;
 }

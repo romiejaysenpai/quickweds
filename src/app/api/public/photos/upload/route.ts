@@ -1,10 +1,11 @@
-import { randomBytes } from 'crypto';
+import {recoverPhotoReservation} from '@/lib/photo-recovery';
+import { randomBytes, createHash, randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP, sanitizeInput } from '@/lib/rate-limit';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
 import { getPhotoPortalSettings } from '@/lib/photo-portal';
-import { createUploadSession, hasUploadSessionStore, incrementUploadCount, validateUploadSession } from '@/lib/upload-sessions';
+import { photoCookieName, readPhotoPrincipal } from '@/lib/photo-upload-access';
 import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 
 export const dynamic = 'force-dynamic';
@@ -19,21 +20,13 @@ const EXTENSIONS: Record<string, string> = {
     'image/gif': 'gif',
 };
 
-async function reservePhotoUpload(db: any, codeId: string, limit: number) {
-    const { data, error } = await db.rpc('reserve_photo_upload', {
-        p_code_id: codeId,
-        p_upload_limit: limit,
-    });
-
-    if (error) throw error;
-    return Boolean(data);
-}
-
-async function releasePhotoUploadReservation(db: any, codeId: string) {
-    const { error } = await db.rpc('release_photo_upload_reservation', {
-        p_code_id: codeId,
-    });
-    if (error) console.error('Failed to release photo upload reservation:', error);
+function isMissingWeddingDaySettingsError(error: unknown) {
+    const details = error && typeof error === 'object' ? error as { code?: string; message?: string } : {};
+    const message = String(details.message || '');
+    return details.code === '42P01'
+        || details.code === 'PGRST205'
+        || message.includes('wedding_day_settings')
+        || (message.includes('relation') && message.includes('does not exist'));
 }
 
 export async function POST(req: NextRequest) {
@@ -47,9 +40,10 @@ export async function POST(req: NextRequest) {
         const rawUploaderName = sanitizeInput(String(form.get('uploaderName') || ''), { maxLength: 120 });
         const uploaderName = rawUploaderName || 'Guest';
         const caption = sanitizeInput(String(form.get('caption') || ''), { maxLength: 500, allowNewlines: true });
-        const guestIdentifierInput = sanitizeInput(String(form.get('guestIdentifier') || ''), { maxLength: 160 });
-        const uploadSessionInput = sanitizeInput(String(form.get('uploadSessionId') || ''), { maxLength: 80 });
+        const requestId = String(form.get('uploadRequestId') || randomUUID());
+        if (!/^[0-9a-f-]{36}$/i.test(requestId)) return NextResponse.json({ error: 'Invalid upload request.' }, { status: 400 });
         const rawEditMetadata = String(form.get('editMetadata') || '');
+        if(rawEditMetadata.length>4096)return NextResponse.json({error:'Photo edit details are too large.'},{status:400});
         const file = form.get('file');
 
         if (!weddingIdentifier || !code || !(file instanceof File)) {
@@ -73,6 +67,20 @@ export async function POST(req: NextRequest) {
         if (weddingError) throw weddingError;
         if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
         const weddingId = wedding.id;
+
+        const { data: weddingDaySettings, error: weddingDayError } = await db
+            .from('wedding_day_settings')
+            .select('photo_upload_enabled')
+            .eq('wedding_id', weddingId)
+            .maybeSingle();
+
+        if (weddingDayError && !isMissingWeddingDaySettingsError(weddingDayError)) {
+            throw weddingDayError;
+        }
+        if (weddingDaySettings?.photo_upload_enabled === false) {
+            return NextResponse.json({ error: 'Photo uploads are currently paused by the couple.' }, { status: 403 });
+        }
+
         const settings = await getPhotoPortalSettings(db, weddingId);
 
         if (settings.disposable_camera_enabled && settings.guest_name_required && !rawUploaderName) {
@@ -85,86 +93,21 @@ export async function POST(req: NextRequest) {
 
         const { data: sharingCode, error: codeError } = await db
             .from('photo_sharing_codes')
-            .select('id, max_uploads, current_uploads')
+            .select('id, max_uploads, current_uploads, expires_at')
             .eq('wedding_id', weddingId)
             .eq('code', code)
             .eq('is_active', true)
             .maybeSingle();
 
         if (codeError) throw codeError;
-        if (!sharingCode) {
+        if (!sharingCode || (sharingCode.expires_at && !(new Date(sharingCode.expires_at).getTime() > Date.now()))) {
             return NextResponse.json({ error: 'Invalid or inactive sharing code. Please check with the couple.' }, { status: 403 });
         }
 
-        const currentUploads = Number(sharingCode.current_uploads ?? 0);
-        const guestIdentifier = guestIdentifierInput || `${sharingCode.id}:${clientIP}`;
-        const configuredLimit = settings.disposable_camera_enabled
-            ? settings.photo_limit_per_guest
-            : MAX_UPLOADS_PER_SHARING_CODE;
-        const codeLimit = Math.min(Number(sharingCode.max_uploads ?? configuredLimit), configuredLimit);
-        let uploadSessionId = uploadSessionInput;
-
-        if (currentUploads >= codeLimit) {
-            return NextResponse.json({ error: `This sharing code has reached its ${codeLimit}-photo limit.` }, { status: 403 });
-        }
-
-        if (hasUploadSessionStore()) {
-            const existingSession = uploadSessionId ? await validateUploadSession(uploadSessionId) : null;
-            let session = existingSession?.weddingId === weddingId ? existingSession : null;
-            if (!session) {
-                session = await createUploadSession(weddingId, guestIdentifier, 20);
-            }
-            uploadSessionId = session.sessionId;
-
-            const sessionCount = await incrementUploadCount(uploadSessionId);
-            if (!sessionCount.ok) {
-                return NextResponse.json({
-                    error: 'This upload session has reached its photo limit. Please refresh the page and try again later.',
-                    code: sessionCount.reason,
-                    uploadSessionId,
-                }, { status: 429 });
-            }
-        }
-
-        const reserved = await reservePhotoUpload(db, sharingCode.id, codeLimit);
-        if (!reserved) {
-            return NextResponse.json({ error: `This sharing code has reached its ${codeLimit}-photo limit.` }, { status: 403 });
-        }
-
-        if (settings.disposable_camera_enabled) {
-            const { count, error: countError } = await db
-                .from('wedding_photos')
-                .select('id', { count: 'exact', head: true })
-                .eq('wedding_id', weddingId)
-                .eq('guest_identifier', guestIdentifier)
-                .neq('status', 'rejected');
-
-            if (countError) throw countError;
-            if (Number(count || 0) >= settings.photo_limit_per_guest) {
-                return NextResponse.json({ error: `You have reached the ${settings.photo_limit_per_guest}-photo limit for this roll.` }, { status: 403 });
-            }
-        }
-
-        const extension = EXTENSIONS[file.type] || 'jpg';
-        const objectPath = `guest-uploads/${weddingId}/${Date.now()}_${randomBytes(12).toString('hex')}.${extension}`;
-        const buffer = Buffer.from(await file.arrayBuffer());
-
-        const { error: uploadError } = await db.storage
-            .from('quickweds')
-            .upload(objectPath, buffer, {
-                contentType: file.type,
-                cacheControl: '3600',
-                upsert: false,
-            });
-
-        if (uploadError) {
-            await releasePhotoUploadReservation(db, sharingCode.id);
-            throw uploadError;
-        }
-
-        const { data: publicUrlData } = db.storage.from('quickweds').getPublicUrl(objectPath);
-        const publicUrl = publicUrlData?.publicUrl;
-
+        const principal = readPhotoPrincipal(req.cookies.get(photoCookieName(weddingId, sharingCode.id))?.value || '', weddingId, sharingCode.id);
+        if (!principal) return NextResponse.json({ error: 'Please validate your sharing code before uploading.' }, { status: 403 });
+        const guestIdentifier = principal.principal;
+        const perGuestLimit = Math.max(1, settings.photo_limit_per_guest || MAX_UPLOADS_PER_SHARING_CODE);
         const autoApprove = settings.disposable_camera_enabled ? !settings.require_approval : false;
         const status = autoApprove ? 'approved' : 'pending';
         let editMetadata: Record<string, unknown> = {};
@@ -177,33 +120,45 @@ export async function POST(req: NextRequest) {
             editMetadata = {};
         }
 
-        const { error: insertError } = await db.from('wedding_photos').insert({
-            wedding_id: weddingId,
-            uploader_name: uploaderName,
-            cloudinary_url: publicUrl,
-            cloudinary_public_id: objectPath,
-            caption: caption || null,
-            message: caption || null,
-            guest_identifier: guestIdentifier,
-            upload_source: 'guest_upload',
-            status,
-            is_approved: autoApprove,
-            approved_at: autoApprove ? new Date().toISOString() : null,
-            metadata: {
-                disposable_camera_enabled: settings.disposable_camera_enabled,
-                file_type: file.type,
-                file_size: file.size,
-                edits: editMetadata,
-            },
-        });
+        const extension = EXTENSIONS[file.type] || 'jpg';
+        let objectPath = `guest-uploads/${weddingId}/${Date.now()}_${randomBytes(12).toString('hex')}.${extension}`;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const { data: privateUrl } = db.storage.from('quickweds-guest-photos').getPublicUrl(objectPath);
+        const photoData={uploader_name:uploaderName,caption:caption||null,status,is_approved:autoApprove,cloudinary_url:privateUrl?.publicUrl,metadata:{disposable_camera_enabled:settings.disposable_camera_enabled,file_type:file.type,file_size:file.size,edits:editMetadata}};
+        const args={p_wedding:weddingId,p_code:sharingCode.id,p_principal:guestIdentifier,p_request:requestId,p_hash:createHash('sha256').update(buffer).digest('hex'),p_path:objectPath,p_guest_limit:perGuestLimit,p_data:photoData};
+        const { data: initialReservation, error: reservationError } = await db.rpc('quickweds_reserve_photo', args);
+        let reservation = initialReservation;
+        if (reservationError) throw reservationError;
+        if(reservation.state==='busy' && reservation.id){
+            const recovered=await recoverPhotoReservation(db,weddingId,reservation.id);
+            if(recovered.state==='complete')return NextResponse.json({success:true,photoId:recovered.photoId},{headers:limited.headers});
+            if(recovered.state==='released'){const retried=await db.rpc('quickweds_reserve_photo',args);if(retried.error)throw retried.error;reservation=retried.data;}
+        }
+        if (reservation.state === 'complete') return NextResponse.json({ success: true, photoId: reservation.photo_id }, { headers: limited.headers });
+        if (reservation.state !== 'reserved') return NextResponse.json({ error: reservation.state === 'limited' ? 'This roll or sharing code has reached its upload limit.' : 'This upload is already processing, or its request changed. Retry the same photo shortly.', code: reservation.state }, { status: reservation.state === 'limited' ? 403 : 409 });
+        objectPath = reservation.object_path;
+        const { error: uploadError } = await db.storage
+            .from('quickweds-guest-photos')
+            .upload(objectPath, buffer, {
+                contentType: file.type,
+                cacheControl: '3600',
+                upsert: false,
+            });
+
+        if (uploadError) {
+            // An uncertain storage result must be checked after its lease, never delete a possibly completed object.
+            return NextResponse.json({error:'Upload could not be confirmed. Retry the same photo after five minutes; your quota will be reconciled safely.'},{status:503});
+        }
+
+        const { data: photoId, error: insertError } = await db.rpc('quickweds_complete_photo',{p_id:reservation.id,p_data:photoData,p_claim:reservation.claim_token});
 
         if (insertError) {
-            await releasePhotoUploadReservation(db, sharingCode.id);
+            console.error('Photo completion needs reconciliation:', reservation.id);
             throw insertError;
         }
         await invalidateDashboardCounters(weddingId);
 
-        return NextResponse.json({ success: true, uploadSessionId: uploadSessionId || null }, { headers: limited.headers });
+        return NextResponse.json({ success: true, photoId }, { headers: limited.headers });
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to upload photo.';
         console.error('Guest photo upload failed:', message);

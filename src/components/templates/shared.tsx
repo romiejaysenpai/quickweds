@@ -3,12 +3,13 @@ import type { CSSProperties } from 'react';
 
 import {
     GuestBook,
+    PostWeddingMemories,
     RSVPSection,
     VenueDetailsSection,
     VenueMap,
     WeddingPartySection,
 } from '@/components/wedding';
-import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import { getTemplateVisualProfile } from '@/lib/theme-engine';
 import type { Wedding, WeddingPartyMember } from '@/types/wedding';
 
 function parseWeddingParty(wedding: Wedding): WeddingPartyMember[] {
@@ -60,7 +61,6 @@ interface SharedNewSectionsProps {
 export function SharedNewSections({ wedding, isExpired, id }: SharedNewSectionsProps) {
     const partyMembers = parseWeddingParty(wedding);
     const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || '#D16C78', false, wedding.card_style);
-    const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
 
     return (
         <div
@@ -71,26 +71,7 @@ export function SharedNewSections({ wedding, isExpired, id }: SharedNewSectionsP
             style={{ '--template-motif': wedding.motif_color || '#D16C78' } as CSSProperties}
         >
             {wedding.is_thank_you_mode ? (
-                <section className={`px-6 py-8 md:py-14 ${visual.sectionClass}`} style={visual.sectionStyle}>
-                    <div className={`mx-auto max-w-3xl px-5 py-10 text-center ${visual.bodyClass}`}>
-                        <p className={`text-[10px] font-bold uppercase ${visual.eyebrowClass}`}>After the celebration</p>
-                        <h2 className={`mt-4 text-4xl md:text-5xl ${titleStyle.className}`} style={titleStyle.style}>Thank You!</h2>
-                        <div className={`mx-auto mt-5 ${visual.dividerClass}`} />
-                        <p className={`mx-auto mt-6 max-w-2xl text-lg leading-relaxed md:text-xl ${visual.bodyClass}`}>
-                            {wedding.thank_you_message || 'Thank you so much for celebrating our special day with us.'}
-                        </p>
-                        {wedding.photo_album_link && (
-                            <a
-                                href={wedding.photo_album_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-8 inline-flex items-center justify-center rounded-full bg-primary px-10 py-4 font-bold text-white shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-xl"
-                            >
-                                View Wedding Album
-                            </a>
-                        )}
-                    </div>
-                </section>
+                <PostWeddingMemories wedding={wedding} />
             ) : null}
             <WeddingPartySection members={partyMembers} wedding={wedding} />
             <VenueMap
@@ -100,7 +81,10 @@ export function SharedNewSections({ wedding, isExpired, id }: SharedNewSectionsP
                 wedding={wedding}
             />
             <VenueDetailsSection wedding={wedding} />
-            <GuestBook weddingId={wedding.id} wedding={wedding} />
+            {/* If thank you mode is on and guestbook is already rendered in PostWeddingMemories, avoid duplicate */}
+            {(!wedding.is_thank_you_mode || wedding.show_guestbook_in_thank_you_mode === false) && (
+                <GuestBook weddingId={wedding.id} wedding={wedding} />
+            )}
             {wedding.spotify_playlist_url && (
                 <div className="mx-auto flex justify-center px-6 py-6">
                     <a
@@ -113,7 +97,10 @@ export function SharedNewSections({ wedding, isExpired, id }: SharedNewSectionsP
                     </a>
                 </div>
             )}
-            <RSVPSection wedding={wedding} isExpired={isExpired} />
+            {/* If thank you mode is on, the celebration has ended; omit active RSVP form */}
+            {!wedding.is_thank_you_mode && (
+                <RSVPSection wedding={wedding} isExpired={isExpired} />
+            )}
         </div>
     );
 }

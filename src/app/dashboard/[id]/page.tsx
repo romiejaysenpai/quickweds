@@ -270,16 +270,17 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         const pending = rsvps.filter(r => r.rsvp_status === 'pending');
 
         const totalGuests = confirmed.reduce((acc, r) => acc + (r.num_guests || 1), 0);
-        const totalChildren = rsvps.reduce((acc, r) => acc + (r.children_count || 0), 0);
+        const totalChildren = confirmed.reduce((acc, r) => acc + (r.children_count || 0), 0);
         const invitedCount = rsvps.filter(r => r.invitation_sent).length;
         const seatedCount = rsvps.filter(r => r.table_assignment).length;
         const groupedCount = rsvps.filter(r => r.guest_group).length;
 
-        // Meal preferences
+        // Meal preferences (only confirmed guests)
         const meals: Record<string, number> = {};
-        rsvps.forEach(r => {
+        confirmed.forEach(r => {
             const pref = r.meal_preference || 'No Preference';
-            meals[pref] = (meals[pref] || 0) + 1;
+            const count = Math.max(1, Number(r.num_guests || 1));
+            meals[pref] = (meals[pref] || 0) + count;
         });
 
         const groups: Record<string, number> = {};
@@ -390,7 +391,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
     }, [deferredSearchQuery, filterStatus, groupFilter, invitationFilter, filteredRsvps.length]);
 
     const [isSavingSettings, setIsSavingSettings] = useState(false);
-    const [activeTab, setActiveTab] = useState<'home' | 'guests' | 'analytics' | 'team' | 'settings'>('home');
+    const [activeTab, setActiveTab] = useState<'home' | 'guests' | 'analytics' | 'team' | 'settings'>(() => searchParams?.get('tab') === 'guests' ? 'guests' : 'home');
 
     // CSV Export
     const exportCSV = () => {
@@ -794,13 +795,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             <ArrowRight className="h-4 w-4 opacity-20" />
                                         </Link>
                                         <Link
-                                            href={`/dashboard/${wedding.id}/thank-you?from=dashboard`}
+                                            href={`/dashboard/${wedding.id}/post-wedding?from=dashboard`}
                                             onClick={closeMobileMenu}
                                             className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
                                         >
                                             <span className="flex items-center gap-3">
-                                                <Mail className="w-4 h-4" />
-                                                Thank You
+                                                <Sparkles className="w-4 h-4" />
+                                                Post-Wedding Mode
                                             </span>
                                             <ArrowRight className="h-4 w-4 opacity-20" />
                                         </Link>
@@ -985,8 +986,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         <Link href={`/dashboard/${wedding.id}/wedding-day?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
                                             <Bell className="w-4 h-4" /> Wedding Day
                                         </Link>
-                                        <Link href={`/dashboard/${wedding.id}/thank-you?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
-                                            <Mail className="w-4 h-4" /> Thank You
+                                        <Link href={`/dashboard/${wedding.id}/post-wedding?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
+                                            <Sparkles className="w-4 h-4" /> Post-Wedding
                                         </Link>
                                         <button type="button" onClick={() => openExternal(url)} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-bold text-text-secondary transition-all hover:-translate-y-0.5 hover:bg-neutral hover:text-foreground sm:text-sm">
                                             <ExternalLink className="w-4 h-4" /> Guest View

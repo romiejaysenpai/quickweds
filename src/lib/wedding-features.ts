@@ -274,7 +274,7 @@ export async function trackWeddingEvent(
     }
 }
 
-export async function getWeddingAnalyticsSummary(weddingId: string, rsvpCount: number): Promise<WeddingAnalyticsSummary> {
+export async function getWeddingAnalyticsSummary(weddingId: string, _rsvpCount: number): Promise<WeddingAnalyticsSummary> {
     const emptySummary: WeddingAnalyticsSummary = {
         totalVisits: 0,
         uniqueVisitors: 0,
@@ -288,15 +288,15 @@ export async function getWeddingAnalyticsSummary(weddingId: string, rsvpCount: n
     };
 
     try {
-        const [eventsRes, remindersRes, reminderRsvpRes] = await Promise.all([
+        const [eventsRes, remindersRes] = await Promise.all([
             supabase.from('wedding_analytics_events').select('*').eq('wedding_id', weddingId),
             supabase.from('wedding_reminders').select('*').eq('wedding_id', weddingId).order('sent_at', { ascending: false }),
-            supabase.from('rsvps').select('created_at').eq('wedding_id', weddingId).order('created_at', { ascending: false }),
         ]);
 
         const events = eventsRes.data || [];
         const reminders = remindersRes.data || [];
-        const reminderRsvps = reminderRsvpRes.data || [];
+        if (eventsRes.error) throw eventsRes.error;
+        if (remindersRes.error) throw remindersRes.error;
 
         const visitEvents = events.filter((event) => event.event_type === 'visit');
         const sourceBreakdownMap = visitEvents.reduce<Record<string, number>>((acc, event) => {
@@ -305,19 +305,19 @@ export async function getWeddingAnalyticsSummary(weddingId: string, rsvpCount: n
             return acc;
         }, {});
 
-        const lastReminderAt = reminders[0]?.sent_at ? new Date(reminders[0].sent_at).getTime() : null;
-        const reminderResponses = lastReminderAt
-            ? reminderRsvps.filter((entry) => new Date(entry.created_at).getTime() > lastReminderAt).length
-            : 0;
-
-        const uniqueVisitors = new Set(visitEvents.map((event) => event.session_id).filter(Boolean)).size;
+        // Imported/manual RSVP records are not web conversions. Attribute only
+        // measured submit sessions that also have a visit in this dataset.
+        const visitSessions = new Set(visitEvents.map((event) => event.session_id).filter(Boolean));
+        const submittedSessions = new Set(events.filter((event) => event.event_type === 'rsvp_submitted' && visitSessions.has(event.session_id)).map((event) => event.session_id));
+        const uniqueVisitors = visitSessions.size;
+        const reminderResponses = 0; // No recipient-linked attribution is recorded yet.
         const totalVisits = visitEvents.length;
 
         return {
             totalVisits,
             uniqueVisitors,
             qrScans: events.filter((event) => event.event_type === 'qr_scan').length,
-            rsvpConversionRate: uniqueVisitors > 0 ? Math.round((rsvpCount / uniqueVisitors) * 100) : 0,
+            rsvpConversionRate: uniqueVisitors > 0 ? Math.round((submittedSessions.size / uniqueVisitors) * 100) : 0,
             shareActions: events.filter((event) => event.event_type.startsWith('share_')).length,
             remindersSent: reminders.length,
             reminderRecipients: reminders.reduce((acc, reminder) => acc + (reminder.recipient_count || 0), 0),

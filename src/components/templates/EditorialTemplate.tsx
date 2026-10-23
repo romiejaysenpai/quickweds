@@ -157,7 +157,7 @@ export default function EditorialTemplate({ wedding, gallery, isExpired }: any) 
                             />
                         )}
                         <span className="inline-block px-4 py-1 bg-primary text-xs font-black uppercase tracking-widest mb-12">Special Invitation</span>
-                        <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl lg:text-[18vw] font-serif leading-[0.75] tracking-tighter mb-16 mix-blend-screen drop-shadow-2xl">
+                        <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[clamp(3.5rem,7.5vw,6.5rem)] font-serif leading-[0.88] tracking-tight mb-12 drop-shadow-2xl">
                             {wedding.bride_name.split(' ')[0]} <br />
                             & <span className="text-primary italic font-light">{wedding.groom_name.split(' ')[0]}</span>
                         </h1>

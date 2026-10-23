@@ -1,4 +1,5 @@
 import 'server-only';
+import {createHash} from 'crypto';
 
 import { sendEmail } from '@/lib/email';
 import { getCoupleNotificationReact, getGuestConfirmationReact } from '@/emails/quickweds-transactional';
@@ -19,6 +20,7 @@ type RsvpNotificationInput = {
     childrenCount?: number;
     guestCode?: string | null;
     seatLookupToken?: string | null;
+    manageRsvpUrl?: string;
 };
 
 function getRootDomain() {
@@ -94,6 +96,7 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
         childrenCount = 0,
         guestCode = '',
         seatLookupToken = '',
+        manageRsvpUrl,
     } = input;
 
     let recipientEmail =
@@ -143,11 +146,13 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
         }
     }
 
+    const eventKey=createHash('sha256').update(JSON.stringify({...input,manageRsvpUrl:undefined})).digest('hex');
     const emailJobs: ReturnType<typeof sendEmail>[] = [];
 
     if (recipientEmail && wedding.notify_on_rsvp !== false) {
         emailJobs.push(sendEmail({
             to: recipientEmail,
+            tracking:{key:`rsvp-owner:${weddingId}:${eventKey}:${Math.floor(Date.now()/600000)}`},
             subject: `${attendance === 'Yes' ? 'RSVP Confirmed' : 'RSVP Update'}: ${guestName} - ${wedding.bride_name} & ${wedding.groom_name}`,
             react: getCoupleNotificationReact({
                 guestName,
@@ -172,6 +177,7 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
     if (guestEmail) {
         emailJobs.push(sendEmail({
             to: guestEmail,
+            tracking:{key:`rsvp-guest:${weddingId}:${eventKey}:${Math.floor(Date.now()/600000)}`},
             subject: attendance === 'Yes' ? "We can't wait to see you! (RSVP Confirmation)" : 'RSVP Confirmation',
             react: getGuestConfirmationReact({
                 guestName,
@@ -188,6 +194,7 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
                 guestCode: guestCode || undefined,
                 checkInUrl: checkInUrl || undefined,
                 confirmationImageUrl: confirmationImageUrl || undefined,
+                manageRsvpUrl,
             }),
         }));
     }
