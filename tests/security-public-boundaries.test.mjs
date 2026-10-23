@@ -164,3 +164,27 @@ test('A06 owner/admin/collaborator authorization rejects a deleted wedding first
   assert.equal(result.wedding, null);
   assert.ok(db.queries[0].filters.some(([key, value]) => key === 'deleted_at' && value === null));
 });
+
+test('legacy wedding schema loads by ID and slug while preserving deletion and modern privacy guards', async () => {
+  const {resolvePublicWeddingByIdentifier}=loadModule('src/lib/public-wedding-lookup.ts');
+  function dbFor(row,error={code:'42703',message:'column weddings.planner_only does not exist'}){
+    const queries=[];
+    return {queries,from(){const filters=[];const entry={filters,select:''};queries.push(entry);const q={select(fields){entry.select=fields;return q;},eq(k,v){filters.push([k,v]);return q;},is(k,v){filters.push([k,v]);return q;},async maybeSingle(){if(filters.some(([k])=>k==='planner_only')&&error)return {data:null,error};return {data:filters.every(([k,v])=>row[k]===v)?row:null,error:null};}};return q;}};
+  }
+  for(const identifier of ['abcd1234','synthetic-couple']){
+    const legacy={id:'abcd1234',public_slug:'synthetic-couple',deleted_at:null};
+    const db=dbFor(legacy);const result=await resolvePublicWeddingByIdentifier(db,identifier,'id');
+    assert.equal(result.error,null);assert.ok(result.wedding);assert.equal(db.queries.length,2);
+    assert.ok(db.queries.every(q=>q.select==='id'&&q.filters.some(([k,v])=>k==='deleted_at'&&v===null)));
+    const deleted=dbFor({...legacy,deleted_at:'2026-10-01'});
+    assert.equal((await resolvePublicWeddingByIdentifier(deleted,identifier,'id')).wedding,null);
+    const modern=dbFor({...legacy,planner_only:true},null);
+    assert.equal((await resolvePublicWeddingByIdentifier(modern,identifier,'id')).wedding,null);
+    assert.ok(modern.queries.every(q=>q.filters.some(([k,v])=>k==='planner_only'&&v===false)));
+    const active=dbFor({...legacy,planner_only:false},null);assert.ok((await resolvePublicWeddingByIdentifier(active,identifier,'id')).wedding);
+    for(const error of [{code:'42501',message:'column weddings.planner_only does not exist'},{code:'PGRST204',message:'column weddings.planner_only does not exist'},{code:'42703',message:'column weddings.deleted_at does not exist',hint:'weddings.planner_only'},{code:'42703',message:'column weddings.planner_only_extra does not exist'}]){
+      const broken=dbFor(legacy,error);const failed=await resolvePublicWeddingByIdentifier(broken,identifier,'id');
+      assert.ok(failed.error);assert.equal(broken.queries.length,1);
+    }
+  }
+});

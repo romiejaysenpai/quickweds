@@ -49,50 +49,60 @@ function isDeleted(record: Record<string, any> | null) {
     return Boolean(record && 'deleted_at' in record && record.deleted_at);
 }
 
-async function queryById(db: any, identifier: string, select: string): Promise<ResolveWeddingResult> {
-    const { data, error } = await db
+// Only a database-confirmed absent column permits legacy mode. Permission and
+// schema-cache failures must keep the privacy filter and fail closed.
+function isMissingPlannerOnlyColumn(error: unknown) {
+    if (!error || typeof error !== 'object') return false;
+    const record = error as { code?: string; message?: string };
+    return record.code === '42703' && typeof record.message === 'string' && /^column "?weddings"?\."?planner_only"? does not exist$/i.test(record.message);
+}
+
+async function queryById(db: any, identifier: string, select: string, legacySchema = false): Promise<ResolveWeddingResult> {
+    let query = db
         .from('weddings')
         .select(select)
         .eq('id', identifier)
-        .is('deleted_at', null)
-        .eq('planner_only', false)
-        .maybeSingle();
+        .is('deleted_at', null);
+    if (!legacySchema) query = query.eq('planner_only', false);
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
+        if (!legacySchema && isMissingPlannerOnlyColumn(error)) return queryById(db, identifier, selectWithoutColumn(select, 'planner_only'), true);
         const missingColumn = isMissingPublicSlugColumnError(error)
             ? 'public_slug'
             : getMissingWeddingColumn(error);
         const fallbackSelect = missingColumn ? selectWithoutColumn(select, missingColumn) : select;
         if (fallbackSelect && fallbackSelect !== select) {
-            return queryById(db, identifier, fallbackSelect);
+            return queryById(db, identifier, fallbackSelect, legacySchema);
         }
     }
 
     if (error) return { wedding: null, error };
-    if (!data || isDeleted(data)) return { wedding: null, error: null };
+    if (!data || isDeleted(data) || data.planner_only === true) return { wedding: null, error: null };
     return { wedding: data, error: null };
 }
 
-async function queryBySlug(db: any, identifier: string, select: string): Promise<ResolveWeddingResult> {
-    const { data, error } = await db
+async function queryBySlug(db: any, identifier: string, select: string, legacySchema = false): Promise<ResolveWeddingResult> {
+    let query = db
         .from('weddings')
         .select(select)
         .eq('public_slug', identifier)
-        .is('deleted_at', null)
-        .eq('planner_only', false)
-        .maybeSingle();
+        .is('deleted_at', null);
+    if (!legacySchema) query = query.eq('planner_only', false);
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
+        if (!legacySchema && isMissingPlannerOnlyColumn(error)) return queryBySlug(db, identifier, selectWithoutColumn(select, 'planner_only'), true);
         if (isMissingPublicSlugColumnError(error)) return { wedding: null, error: null };
         const missingColumn = getMissingWeddingColumn(error);
         const fallbackSelect = missingColumn ? selectWithoutColumn(select, missingColumn) : select;
         if (fallbackSelect && fallbackSelect !== select) {
-            return queryBySlug(db, identifier, fallbackSelect);
+            return queryBySlug(db, identifier, fallbackSelect, legacySchema);
         }
         return { wedding: null, error };
     }
 
-    if (!data || isDeleted(data)) return { wedding: null, error: null };
+    if (!data || isDeleted(data) || data.planner_only === true) return { wedding: null, error: null };
     return { wedding: data, error: null };
 }
 
