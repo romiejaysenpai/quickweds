@@ -113,8 +113,8 @@ export default function RomanticTemplate({ wedding, gallery, isExpired }: any) {
                     <div className="mb-8 sm:mb-10 md:mb-12">
                         <Heart className="w-12 h-12 text-primary fill-primary mx-auto animate-pulse" />
                     </div>
-                    <span className="text-xs uppercase tracking-[1em] font-bold opacity-30 mb-8 block">WE FALLING IN LOVE</span>
-                    <h1 className="text-4xl sm:text-5xl md:text-8xl lg:text-9xl mb-8 leading-tight drop-shadow-xl">
+                    <span className="text-[10px] sm:text-xs uppercase tracking-[0.5em] sm:tracking-[0.8em] font-sans font-bold opacity-40 mb-8 block">A LIFETIME OF LOVE</span>
+                    <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl mb-8 leading-tight drop-shadow-xl break-words">
                         {wedding.bride_name} <br />
                         <span className="font-light italic text-primary/60">&</span> <br />
                         {wedding.groom_name}

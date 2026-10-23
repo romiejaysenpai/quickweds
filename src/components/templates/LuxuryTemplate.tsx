@@ -108,15 +108,15 @@ export default function LuxuryTemplate({ wedding, gallery, isExpired }: any) {
                 <div className="md:col-span-5 flex flex-col justify-center px-4 sm:px-6 md:px-16 py-12 sm:py-16 md:py-24 bg-black z-10 border-r border-[#C5A059]/10">
                     <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1.5 }}>
                         <div className="w-16 h-[2px] bg-[#C5A059] mb-12" />
-                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-serif text-white uppercase tracking-tighter mb-8 leading-none">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-serif text-white uppercase tracking-tighter mb-8 leading-[0.95] break-words">
                             {wedding.bride_name} <br />
                             <span className="text-[#C5A059]">&</span> <br />
                             {wedding.groom_name}
                         </h1>
-                        <p className="text-lg sm:text-xl md:text-xl lg:text-xl font-serif italic mb-12 sm:mb-16 md:mb-20 max-w-sm text-[#C5A059]/60">
+                        <p className="text-lg sm:text-xl font-serif italic mb-12 sm:mb-16 md:mb-20 max-w-sm text-[#C5A059]/60">
                             A celebration of rare elegance and timeless devotion.
                         </p>
-                        <a href="#rsvp" aria-label="Request Presence - RSVP" className="px-10 py-5 bg-[#C5A059] text-black font-bold uppercase tracking-[0.3em] text-xs hover:bg-white transition-all shadow-[0_20px_50px_rgba(197,160,89,0.3)]">Request Presence</a>
+                        <a href="#rsvp" aria-label="Request Presence - RSVP" className="inline-flex min-h-[48px] items-center justify-center px-10 py-4 bg-[#C5A059] text-black font-bold uppercase tracking-[0.3em] text-xs hover:bg-white transition-all shadow-[0_20px_50px_rgba(197,160,89,0.3)]">Request Presence</a>
                     </motion.div>
                 </div>
                 <div className="md:col-span-7 h-[50vh] md:h-full relative overflow-hidden group z-0">
