@@ -1,6 +1,9 @@
 export const templatePreviewBaseUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/templates%20imges/templets%20screenshots';
 
 export const landingTemplatePreviews = [
+  { id: 'love-letter', name: 'Love Letter', mood: 'Modern stationery', image: '/templates/love-letter.png' },
+  { id: 'butter-blue', name: 'Butter & Blue', mood: 'Destination postcard', image: '/templates/butter-blue.png' },
+  { id: 'ribbon-romance', name: 'Ribbon Romance', mood: 'Tied with love', image: '/templates/ribbon-romance.png' },
   { id: 'classic', name: 'Classic Elegance', mood: 'Timeless romance', image: `${templatePreviewBaseUrl}/t1.jpg` },
   { id: 'minimal', name: 'Modern Minimal', mood: 'Clean editorial', image: `${templatePreviewBaseUrl}/t2.jpg` },
   { id: 'romantic', name: 'Romantic', mood: 'Soft love story', image: `${templatePreviewBaseUrl}/t3.jpg` },

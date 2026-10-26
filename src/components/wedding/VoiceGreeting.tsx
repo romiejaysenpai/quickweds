@@ -39,13 +39,13 @@ export default function VoiceGreeting({ audioUrl, motifColor }: VoiceGreetingPro
             
             <AnimatePresence>
                 {isVisible && (
-                    <motion.div
+                    <motion.div data-wedding-media-control="true"
                         initial={{ opacity: 0, x: 50 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 50 }}
                         className="fixed bottom-[calc(5.75rem+var(--safe-area-inset-bottom))] right-3 z-[60] sm:bottom-32 sm:right-10"
                     >
-                        <motion.button
+                        <motion.button data-wedding-control="media"
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={togglePlay}
@@ -55,7 +55,7 @@ export default function VoiceGreeting({ audioUrl, motifColor }: VoiceGreetingPro
                                 shadow-2xl soft-shadow transition-all group
                             `}
                         >
-                            <div 
+                            <div data-wedding-overlay="true"
                                 className="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors"
                                 style={{ color: motifColor, backgroundColor: isPlaying ? motifColor : undefined }}
                             >

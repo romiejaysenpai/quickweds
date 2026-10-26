@@ -49,7 +49,7 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
     const isDark = visual.isDark;
 
     return (
-        <section id={id} className={`relative z-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section data-wedding-section="faq" id={id} className={`relative z-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <div className="mx-auto max-w-3xl">
                 <motion.div
                     initial={{ opacity: 0, y: 24 }}
@@ -58,7 +58,7 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
                     className="mb-10 text-center"
                 >
                     <h2 className={`text-3xl sm:text-4xl md:text-5xl ${titleStyle.className}`} style={titleStyle.style}>Questions & Details</h2>
-                    <div className={`mx-auto mt-4 ${visual.dividerClass}`} />
+                    <div data-wedding-divider="true" className={`mx-auto mt-4 ${visual.dividerClass}`} />
                 </motion.div>
 
                 <div className="border-t border-current/15">
@@ -71,7 +71,7 @@ export default function FAQSection({ faqItems, wedding, id = 'faq' }: { faqItems
                             transition={{ delay: index * 0.04 }}
                             className={`group border-b py-5 sm:py-6 ${isDark ? 'border-white/15 text-white' : 'border-black/15 text-[#4A4444]'}`}
                         >
-                            <summary className="flex cursor-pointer list-none items-start gap-4 text-base sm:text-lg font-medium leading-relaxed marker:hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current">
+                            <summary data-wedding-control="quiet" className="flex cursor-pointer list-none items-start gap-4 text-base sm:text-lg font-medium leading-relaxed marker:hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current">
                                 <span className="flex-1">{item.question}</span>
                                 <span aria-hidden="true" className="ml-2 text-xl transition-transform group-open:rotate-45">+</span>
                             </summary>

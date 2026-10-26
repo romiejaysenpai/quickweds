@@ -58,7 +58,7 @@ function GalleryImage({ src, alt, className }: { src: string; alt: string; class
     );
 }
 
-function Lightbox({ images, index, onClose }: { images: string[]; index: number; onClose: () => void }) {
+export function Lightbox({ images, index, onClose }: { images: string[]; index: number; onClose: () => void }) {
     const [current, setCurrent] = useState(index);
 
     const prev = () => setCurrent((c) => (c === 0 ? images.length - 1 : c - 1));
@@ -177,7 +177,7 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
 
     return (
         <>
-        <section id={id} className={`py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section data-wedding-section="GallerySection" id={id} className={`py-24 sm:py-32 ${visual.sectionClass}`} style={visual.sectionStyle}>
                 <div className={visual.containerClass}>
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
@@ -191,7 +191,7 @@ export default function GallerySection({ gallery, masonry = false, template = 'c
                             </span>
                         </div>
                         <h2 className={`text-4xl sm:text-6xl ${typography.heading} ${visual.headingClass}`}>{visual.galleryTitle}</h2>
-                        <div className={`mx-auto mt-6 ${visual.dividerClass}`} />
+                        <div data-wedding-divider="true" className={`mx-auto mt-6 ${visual.dividerClass}`} />
                     </motion.div>
 
                     {resolvedLayout === 'horizontal' ? (

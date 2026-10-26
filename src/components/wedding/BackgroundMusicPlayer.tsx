@@ -98,21 +98,21 @@ export default function BackgroundMusicPlayer({ audioUrl, title, motifColor, tem
             />
 
             <AnimatePresence>
-                <motion.div
+                <motion.div data-wedding-media-control="true"
                     initial={{ opacity: 0, y: 16, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 16, scale: 0.96 }}
                     transition={{ duration: 0.3, ease: 'easeOut' }}
                     className="fixed right-3 top-[calc(1rem+var(--safe-area-inset-top))] z-[70] sm:right-6 sm:top-6"
                 >
-                    <button
+                    <button data-wedding-control="media"
                         type="button"
                         data-music-toggle="true"
                         onClick={togglePlayback}
                         className={`group flex min-h-12 items-center gap-3 rounded-full border p-1 text-left shadow-sm sm:px-3 sm:py-2 ${visual.isDark ? 'border-white/20 bg-[#18181b] text-white' : 'border-black/15 bg-[#FFFCF7] text-[#352C2C]'}`}
                         aria-label={isPlaying ? 'Pause invitation music' : 'Play invitation music'}
                     >
-                        <span
+                        <span data-wedding-overlay="true"
                             className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white shadow-lg transition-transform group-hover:scale-105"
                             style={{ backgroundColor: motifColor || '#D16C78' }}
                         >

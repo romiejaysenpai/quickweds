@@ -1,10 +1,11 @@
 'use client';
 
-import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Monitor, Smartphone } from 'lucide-react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
+import { ExternalLink, Monitor } from 'lucide-react';
 import { getTemplateMeta, getTemplateStyleLabel } from '@/lib/template-catalog';
 import { serializeDressCodeValue } from '@/lib/dress-code';
 import { getSafeMonogramConfig } from '@/lib/monogram';
+import { getBuilderRecapSettings } from '@/lib/builder-design-selection';
 
 const PREVIEW_STORAGE_KEY = 'quickweds-builder-preview';
 
@@ -22,12 +23,11 @@ function LivePreview({
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const retryTimersRef = useRef<number[]>([]);
     const payloadRevisionRef = useRef(0);
-    const [viewportMode, setViewportMode] = useState<'mobile' | 'desktop'>('mobile');
+    const channelRef = useRef<BroadcastChannel | null>(null);
     const previewChannel = isMobileView ? 'mobile' : 'desktop';
     const previewInstanceId = `${previewChannel}-${useId().replaceAll(':', '')}`;
     const previewStorageKey = `${PREVIEW_STORAGE_KEY}:${previewInstanceId}`;
     const templateMeta = getTemplateMeta(formData.template);
-    const isDesktopViewport = !isMobileView && viewportMode === 'desktop';
 
     const previewPayload = useMemo(() => {
         const monogram = getSafeMonogramConfig(
@@ -111,6 +111,7 @@ function LivePreview({
                 is_thank_you_mode: formData.isThankYouMode,
                 thank_you_message: formData.thankYouMessage,
                 photo_album_link: formData.photoAlbumLink,
+                ...getBuilderRecapSettings(formData),
                 accent_style: formData.accentStyle || 'none',
                 hero_image: previews.heroImage,
                 couple_photo: previews.couplePhoto,
@@ -130,11 +131,42 @@ function LivePreview({
         const payload = latestPayloadRef.current;
         try {
             window.sessionStorage.setItem(previewStorageKey, JSON.stringify(payload));
+            window.localStorage.setItem(previewStorageKey, JSON.stringify(payload));
         } catch {
             // postMessage remains available if storage is unavailable.
         }
+        try {
+            channelRef.current?.postMessage({
+                type: 'UPDATE_PREVIEW',
+                previewInstanceId,
+                payload,
+            });
+        } catch {
+            // Ignore channel broadcast error if unavailable.
+        }
         iframeRef.current?.contentWindow?.postMessage(payload, window.location.origin);
-    }, [previewStorageKey]);
+    }, [previewStorageKey, previewInstanceId]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+            const channel = new BroadcastChannel('quickweds-preview-sync');
+            channelRef.current = channel;
+            channel.onmessage = (event: MessageEvent) => {
+                if (event.data?.type === 'PREVIEW_READY' && event.data?.previewInstanceId === previewInstanceId) {
+                    sendUpdate();
+                }
+            };
+        }
+        return () => {
+            channelRef.current?.close();
+            channelRef.current = null;
+            try {
+                window.localStorage.removeItem(previewStorageKey);
+            } catch {
+                // Ignore storage cleanup issues
+            }
+        };
+    }, [previewInstanceId, previewStorageKey, sendUpdate]);
 
     useLayoutEffect(() => {
         payloadRevisionRef.current += 1;
@@ -185,59 +217,36 @@ function LivePreview({
                             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-text-secondary/50">{getTemplateStyleLabel(formData.templateStyle)}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="inline-flex items-center rounded-full border border-primary/15 bg-white/80 p-0.5 shadow-sm" role="group" aria-label="Preview viewport mode">
-                                <button
-                                    type="button"
-                                    onClick={() => setViewportMode('mobile')}
-                                    aria-pressed={viewportMode === 'mobile'}
-                                    title="Mobile preview"
-                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
-                                        viewportMode === 'mobile'
-                                            ? 'bg-primary text-white shadow-sm'
-                                            : 'text-text-secondary hover:text-primary'
-                                    }`}
-                                >
-                                    <Smartphone className="h-3 w-3" />
-                                    <span>Mobile</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setViewportMode('desktop')}
-                                    aria-pressed={viewportMode === 'desktop'}
-                                    title="Desktop preview"
-                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${
-                                        viewportMode === 'desktop'
-                                            ? 'bg-primary text-white shadow-sm'
-                                            : 'text-text-secondary hover:text-primary'
-                                    }`}
-                                >
-                                    <Monitor className="h-3 w-3" />
-                                    <span>Desktop</span>
-                                </button>
-                            </div>
-                            <span className="hidden xl:inline-block rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-primary shadow-sm">{templateMeta.eyebrow}</span>
+                            <a
+                                href={`/preview?preview=${encodeURIComponent(previewInstanceId)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Open full desktop preview in new tab"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-white/90 px-3 py-1.5 text-[11px] font-bold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-white hover:text-primary active:scale-95"
+                            >
+                                <Monitor className="h-3.5 w-3.5 text-primary" />
+                                <span>Desktop View</span>
+                                <ExternalLink className="h-3 w-3 text-text-secondary/60" />
+                            </a>
+                            <span className="hidden 2xl:inline-block rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-primary shadow-sm">{templateMeta.eyebrow}</span>
                         </div>
                     </div>
                 </>
             )}
 
             <div
-                className={`relative mx-auto overflow-hidden border-[#171717] bg-[#111111] shadow-[0_35px_80px_rgba(0,0,0,0.35)] transition-all duration-300 ${
-                    isDesktopViewport
-                        ? 'max-w-full w-full h-[680px] rounded-2xl border-2'
-                        : `w-full max-w-[360px] rounded-[2.5rem] border-[8px] ${isMobileView ? 'h-[620px]' : 'h-[640px]'}`
+                className={`relative mx-auto overflow-hidden border-[#171717] bg-[#111111] shadow-[0_35px_80px_rgba(0,0,0,0.35)] transition-all duration-300 w-full max-w-[360px] rounded-[2.5rem] border-[8px] ${
+                    isMobileView ? 'h-[620px]' : 'h-[640px]'
                 }`}
             >
-                {!isDesktopViewport && (
-                    <div className="absolute left-1/2 top-0 z-30 h-7 w-36 -translate-x-1/2 rounded-b-[1.4rem] bg-black" />
-                )}
-                <div className={`absolute inset-[3px] overflow-hidden bg-white ${isDesktopViewport ? 'rounded-xl' : 'rounded-[2.1rem]'}`}>
+                <div className="absolute left-1/2 top-0 z-30 h-7 w-36 -translate-x-1/2 rounded-b-[1.4rem] bg-black" />
+                <div className="absolute inset-[3px] overflow-hidden bg-white rounded-[2.1rem]">
                     <iframe
                         ref={iframeRef}
                         src={`/preview?preview=${encodeURIComponent(previewInstanceId)}`}
                         allow="clipboard-write; clipboard-read"
                         onLoad={syncAfterFrameLoad}
-                        className={`h-full w-full border-0 ${isDesktopViewport ? 'rounded-xl' : 'rounded-[2.1rem]'}`}
+                        className="h-full w-full border-0 rounded-[2.1rem]"
                         title="Live Preview"
                     />
                 </div>

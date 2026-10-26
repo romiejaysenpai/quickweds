@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { motion } from 'framer-motion';
 import { CalendarHeart } from 'lucide-react';
 import { useSectionContext } from '@/context/SectionContext';
 import { getTemplateVisualProfile } from '@/lib/theme-engine';
@@ -26,15 +25,10 @@ interface CountdownTimerProps {
 }
 
 function generateICS(props: CountdownTimerProps): string {
-    const date = new Date(props.weddingDate);
+    const date = parseWeddingTargetDate(props.weddingDate, props.weddingTime);
     const pad = (n: number) => String(n).padStart(2, '0');
     const formatDate = (d: Date) =>
         `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-
-    if (props.weddingTime) {
-        const [h, m] = props.weddingTime.split(':').map(Number);
-        date.setHours(h || 0, m || 0);
-    }
 
     const endDate = new Date(date);
     endDate.setHours(endDate.getHours() + 4); 
@@ -71,9 +65,14 @@ function parseWeddingTargetDate(weddingDate: string, weddingTime?: string): Date
     }
 
     if (weddingTime && typeof weddingTime === 'string' && weddingTime.trim().length > 0) {
-        const timeParts = weddingTime.trim().split(':').map(Number);
-        if (!isNaN(timeParts[0])) {
-            target.setHours(timeParts[0], timeParts[1] || 0, 0, 0);
+        const timeMatch = weddingTime.trim().match(/^(\d{1,2})(?::(\d{1,2}))?\s*(am|pm)?$/i);
+        if (timeMatch) {
+            let hour = Number(timeMatch[1]);
+            const minute = Number(timeMatch[2] || 0);
+            if (hour <= 23 && minute <= 59 && (!timeMatch[3] || hour <= 12)) {
+                if (timeMatch[3]) hour = (hour % 12) + (timeMatch[3].toLowerCase() === 'pm' ? 12 : 0);
+                target.setHours(hour, minute, 0, 0);
+            }
         }
     } else {
         target.setHours(12, 0, 0, 0); // Default to 12:00 PM local time
@@ -119,6 +118,7 @@ export default function CountdownTimer({
                 return;
             }
 
+            setIsPast(false);
             setTimeLeft({
                 days: Math.floor(diff / (1000 * 60 * 60 * 24)),
                 hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
@@ -146,7 +146,7 @@ export default function CountdownTimer({
     // Suppress Hydration issue by displaying generic zeros/empty until mounted, allowing the DOM to match the server output
     if (!isMounted) {
         return (
-            <section id={id} className={`px-4 py-12 text-center min-h-[160px] flex items-center justify-center opacity-0 ${className}`}>
+            <section data-wedding-section="CountdownTimer" id={id} className={`px-4 py-12 text-center min-h-[160px] flex items-center justify-center opacity-0 ${className}`}>
                 <div className="sr-only">Loading timer...</div>
             </section>
         );
@@ -156,15 +156,6 @@ export default function CountdownTimer({
     const isEditorial = visual.mood === 'editorial';
     const isDark = visual.isDark;
     const sectionClasses = `${visual.sectionClass} ${className}`;
-    if (isPast) {
-        return (
-            <section id={id} className={`px-4 py-12 text-center ${sectionClasses}`} style={visual.sectionStyle}>
-                <h2 className={`text-3xl sm:text-4xl ${visual.headingClass}`}>Happily ever after has begun</h2>
-                <p className={`mt-4 text-base ${visual.bodyClass}`}>Thank you for celebrating with us.</p>
-            </section>
-        );
-    }
-
     const units = [
         { label: 'Days', value: timeLeft.days },
         { label: 'Hours', value: timeLeft.hours },
@@ -173,12 +164,12 @@ export default function CountdownTimer({
     ];
 
     return (
-        <section id={id} className={`px-4 py-12 sm:px-6 sm:py-16 ${sectionClasses}`} style={visual.sectionStyle}>
-            <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mx-auto max-w-3xl text-center">
+        <section data-wedding-section="CountdownTimer" id={id} className={`px-4 py-12 sm:px-6 sm:py-16 ${sectionClasses}`} style={visual.sectionStyle}>
+            <div className="mx-auto max-w-3xl text-center">
                 <h2 className={`text-2xl sm:text-3xl ${visual.headingClass}`}>
-                    Counting down <span className={isEditorial ? '' : 'italic'}>to forever</span>
+                    {isPast ? 'Our wedding day has arrived' : <>Counting down <span className={isEditorial ? '' : 'italic'}>to forever</span></>}
                 </h2>
-                <div className={`my-7 grid grid-cols-4 divide-x border-y py-6 sm:py-8 ${isDark ? 'divide-white/15 border-white/15 text-white' : 'divide-black/15 border-black/15 text-[#4A4444]'}`}>
+                <div role="timer" aria-label="Time until the wedding" className={`my-7 grid grid-cols-4 divide-x border-y py-6 sm:py-8 ${isDark ? 'divide-white/15 border-white/15 text-white' : 'divide-black/15 border-black/15 text-[#4A4444]'}`}>
                     {units.map((unit) => (
                         <div key={unit.label} className="min-w-0 px-1 sm:px-4">
                             <span className="block font-serif text-3xl tabular-nums leading-none sm:text-5xl">{String(unit.value).padStart(2, '0')}</span>
@@ -186,10 +177,10 @@ export default function CountdownTimer({
                         </div>
                     ))}
                 </div>
-                <button type="button" onClick={handleAddToCalendar} className={`inline-flex min-h-11 items-center gap-2 border-b border-current/40 px-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current ${visual.bodyClass}`}>
+                {!isPast && <button type="button" onClick={handleAddToCalendar} className={`inline-flex min-h-11 items-center gap-2 border-b border-current/40 px-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current ${visual.bodyClass}`}>
                     <CalendarHeart className="h-4 w-4" aria-hidden="true" /> Save the date
-                </button>
-            </motion.div>
+                </button>}
+            </div>
         </section>
     );
 }

@@ -30,6 +30,7 @@ export const PUBLIC_WEDDING_FIELDS = [
     'template',
     'template_style',
     'card_style',
+    'background_style',
     'section_title_font_style',
     'section_title_color_style',
     'font_style',
@@ -258,6 +259,7 @@ function getTemplateTestWedding(rawIdentifier: string) {
 }
 
 const OPTIONAL_PUBLIC_COLUMNS = [
+    'background_style',
     'background_music_url',
     'background_music_title',
     'background_music_enabled',

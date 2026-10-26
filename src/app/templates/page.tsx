@@ -21,7 +21,7 @@ export default function TemplatesPage() {
             Find the design that feels <span className="text-primary">like your day.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base text-text-secondary sm:text-lg">
-            Start with a polished layout, then make it entirely your own with your story, photos, schedule, and RSVP details. All templates are 100% free.
+            Start with a polished layout, then make it entirely your own with your story, photos, schedule, and RSVP details. Every design shown here is free to use. Find additional premium designs in the builder.
           </p>
         </div>
 

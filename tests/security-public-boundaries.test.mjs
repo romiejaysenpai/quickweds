@@ -188,3 +188,39 @@ test('legacy wedding schema loads by ID and slug while preserving deletion and m
     }
   }
 });
+
+test('public wedding customization projection keeps backgrounds while stripping private planner fields', async () => {
+  const { PUBLIC_WEDDING_FIELDS, toPublicWedding } = loadModule('src/lib/public-wedding.ts', {
+    '@/lib/public-wedding-lookup': {}, '@/lib/supabase-admin': {}, '@/lib/redis': {},
+    'next/cache': {},
+  });
+  assert.ok(PUBLIC_WEDDING_FIELDS.includes('background_style'));
+  const record = toPublicWedding({ id: 'synthetic', background_style: 'white', card_style: 'arch_panel',
+    gallery_layout: 'horizontal', motif_color: '#224466', template_style: 'reference-46',
+    section_title_font_style: 'romantic-script', logo_shape: 'crest',
+    user_id: 'private-owner', couple_email: 'private@example.test', planner_only: true });
+  for (const field of ['background_style', 'card_style', 'gallery_layout', 'motif_color', 'template_style', 'section_title_font_style', 'logo_shape']) assert.ok(record[field]);
+  for (const field of ['user_id', 'couple_email', 'planner_only']) assert.equal(field in record, false);
+});
+
+test('public query requests the builder background and tolerates older schemas', async () => {
+  for (const olderSchema of [false, true]) {
+    const projections = [];
+    const row = { id: 'synthetic-customized', public_slug: 'synthetic-customized', background_style: 'linen', user_id: 'private' };
+    const { getCachedPublicWedding } = loadModule('src/lib/public-wedding.ts', {
+      '@/lib/public-wedding-lookup': { resolvePublicWeddingByIdentifier: async (_db, identifier, projection) => {
+        projections.push(projection);
+        if (olderSchema && projection.includes('background_style')) return { wedding: null, identifier, error: { message: 'column background_style does not exist' } };
+        return { identifier, error: null, wedding: Object.fromEntries(Object.entries(row).filter(([key]) => projection.split(',').includes(key))) };
+      } },
+      '@/lib/supabase-admin': { getSupabaseAdminClient: () => ({}) },
+      '@/lib/redis': { redisJsonGet: async () => null, redisJsonSet: async () => {} },
+      'next/cache': { unstable_cache: fn => fn },
+    });
+    const result = await getCachedPublicWedding('synthetic-customized');
+    assert.ok(projections.some(projection => projection.includes('background_style')));
+    assert.equal(result.background_style, olderSchema ? undefined : 'linen');
+    assert.equal(result.user_id, undefined);
+    if (olderSchema) assert.ok(projections.length === 3);
+  }
+});

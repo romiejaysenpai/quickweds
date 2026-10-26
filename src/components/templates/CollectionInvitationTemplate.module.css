@@ -1,0 +1,621 @@
+.page {
+    --collection-soft: color-mix(in srgb, var(--ref-accent) 14%, var(--ref-paper));
+    --collection-edge: color-mix(in srgb, var(--ref-accent) 38%, var(--ref-paper));
+    --collection-script: var(--invitation-title-font, var(--font-script));
+    padding: 36px 16px 72px;
+    background: color-mix(in srgb, var(--ref-accent) 22%, #e4e2df);
+    color: var(--ref-ink);
+    font-family: var(--invitation-body-font, var(--font-sans));
+    overflow-wrap: anywhere;
+}
+.invitation {
+    width: 100%;
+    max-width: 520px;
+    margin-inline: auto;
+    overflow: hidden;
+    isolation: isolate;
+    background: var(--ref-paper);
+    box-shadow: 0 18px 60px #17181720;
+}
+@media (min-width: 768px) {
+    .invitation {
+        max-width: 860px;
+        border-radius: 20px;
+        box-shadow: 0 25px 80px #17181728;
+    }
+}
+@media (min-width: 1024px) {
+    .invitation {
+        max-width: 1080px;
+        border-radius: 28px;
+        box-shadow: 0 35px 100px #17181735;
+    }
+}
+/* The global template hero guard also matches nested first sections; these are paper panels. */
+.invitation section { min-height: 0 !important; }
+.hero { position: relative; text-align: center; padding: 100px 38px 50px; overflow: hidden; }
+.heroCopy { position: relative; z-index: 2; }
+.eyebrow { font-size: 10px; letter-spacing: .24em; line-height: 1.8; text-transform: uppercase; margin-bottom: 28px; }
+.names { font: 400 clamp(34px, 8vw, 54px)/1.1 var(--invitation-heading-font, var(--font-serif)); margin-bottom: 25px; letter-spacing: .025em; }
+.names span { display: block; }
+.names em { font: 400 .8em/1.3 var(--invitation-heading-font, var(--font-serif)); display: block; color: var(--invitation-link, var(--ref-accent)); }
+.date { font-family: var(--invitation-heading-font, var(--font-serif)); display: block; letter-spacing: .1em; font-size: 18px; margin: 22px 0 30px; }
+.portrait { position: relative; width: 100%; aspect-ratio: 4/5; margin-top: 35px; overflow: hidden; z-index: 1; }
+.photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+.panel { padding: 65px 42px; position: relative; text-align: center; overflow: hidden; }
+.panel > :not(.branch, .artwork, .shell, .snow, .lights, .pearls, .calla) { position: relative; z-index: 1; }
+.panel > p, .panel blockquote { font-size: 14px; line-height: 1.9; white-space: pre-line; }
+.title { font: 400 clamp(28px, 6vw, 38px)/1.2 var(--collection-script); margin-bottom: 27px; letter-spacing: .025em; }
+.heart { margin: 28px auto 0; color: var(--invitation-link, var(--ref-accent)); }
+.welcome blockquote { border-block: 1px solid var(--collection-edge); margin: 30px 0 0; padding-block: 24px; font-family: var(--invitation-heading-font, var(--font-serif)); font-style: italic; }
+.branch { width: 190px; color: var(--ref-accent); pointer-events: none; }
+.corner { position: absolute; width: 215px; top: -45px; right: -35px; transform: rotate(-110deg); opacity: .65; z-index: 0; }
+.artwork { position: absolute; pointer-events: none; top: 0; left: 0; right: 0; height: 125px; background: var(--collection-art) center top / contain no-repeat; z-index: 0; }
+.panel .artwork { opacity: .48; height: 64px; width: 35%; left: auto; right: -12px; top: -24px; transform: rotate(170deg); }
+/* Native panel ornaments occupy the upper margin instead of crossing editable titles. */
+.panel > .corner { width: 120px; top: -72px; right: -20px; transform: rotate(-90deg); }
+.shell { position: absolute; width: 110px; bottom: 3px; right: -20px; color: var(--ref-accent); opacity: .28; pointer-events: none; }
+.snow { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--ref-accent); pointer-events: none; }
+.lights { position: absolute; width: 125%; height: auto; bottom: 8px; left: -12%; color: #f6eac7; pointer-events: none; opacity: .8; }
+.pearls { position: absolute; width: 100%; top: 0; left: 0; color: var(--ref-accent); pointer-events: none; }
+.panel:not(.program) > .pearls { display: none; }
+.calla { position: absolute; pointer-events: none; width: 135px; right: -12px; top: -20px; color: var(--ref-accent); opacity: .55; transform: rotate(15deg); }
+.calendar { max-width: 310px; margin: 0 auto 40px; }
+.calendar > p { font: 400 25px/1.3 var(--collection-script); margin: 0 0 25px; }
+.calendarGrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; font: 15px var(--invitation-heading-font, var(--font-serif)); }
+.calendarGrid > span { display: grid; place-items: center; aspect-ratio: 1; min-width: 0; }
+.calendarGrid .weekday { font: 9px var(--invitation-body-font, var(--font-sans)); opacity: .7; }
+.selectedDay { border: 1px solid currentColor; border-radius: 50%; color: var(--invitation-link, var(--ref-accent)); }
+.countdown { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 25px; }
+.countdown strong { font: 400 clamp(24px, 6vw, 40px)/1.2 var(--invitation-heading-font, var(--font-serif)); display: block; }
+.countdown span { font-size: 8px; letter-spacing: .07em; text-transform: uppercase; display: block; margin-top: 8px; }
+.countdown > div + div { border-left: 1px solid var(--collection-edge); }
+.timeline { list-style: none; padding: 0; margin: 40px auto 0; max-width: 330px; text-align: left; }
+.timeline li { display: grid; grid-template-columns: 48px 1fr; gap: 20px; position: relative; padding-bottom: 35px; min-height: 90px; }
+.timeline li:last-child { padding-bottom: 0; }
+.timeline li:not(:last-child)::before { content: ''; position: absolute; top: 38px; bottom: 0; left: 23px; border-left: 1px solid var(--collection-edge); }
+.timelineIcon { display: grid; place-items: center; width: 48px; height: 48px; color: var(--invitation-link, var(--ref-accent)); }
+.timeline time { font: 400 25px/1.2 var(--invitation-heading-font, var(--font-serif)); }
+.timeline p { font-size: 12px; line-height: 1.7; margin-top: 5px; white-space: pre-line; }
+.storyPortrait { width: 100%; aspect-ratio: 5/4; margin-top: 28px; overflow: hidden; }
+.attireGroup + .attireGroup { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--collection-edge); }
+.attireGroup h3 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 20px; }
+.attireGroup p { font-size: 13px; line-height: 1.8; white-space: pre-line; }
+.attireIllustration { width: 132px; height: 142px; margin: 0 auto 16px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 22px 0; }
+.swatches span { width: 36px; height: 36px; border: 1px solid #00000012; border-radius: 50%; }
+.gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.galleryButton { overflow: hidden; background: var(--collection-soft); aspect-ratio: 4/5; border: 0; padding: 0; cursor: zoom-in; width: 100%; }
+.galleryButton:first-child { grid-column: 1/-1; aspect-ratio: 4/3; }
+.galleryButton:focus-visible { outline: 2px solid var(--invitation-link); outline-offset: 3px; }
+.music { position: relative; z-index: 3; padding: 20px 28px; text-align: center; background: var(--collection-soft); }
+.music p { font-size: 12px; margin-bottom: 12px; }
+.music audio { width: 100%; height: 40px; }
+.shared { position: relative; background: var(--ref-paper); }
+.shared [data-wedding-section] { padding-inline: 30px !important; }
+.shared :global(.template-lower-sections) { max-width: 100%; }
+.splitMonogram { width: 170px; min-height: 180px; margin: 20px auto 40px; position: relative; font: 400 76px var(--invitation-heading-font, var(--font-serif)); display: grid; grid-template-columns: 1fr 1fr; align-items: center; }
+.splitMonogram::before { content: ''; position: absolute; inset: 0 auto 0 50%; border-left: 1px solid currentColor; }
+.splitMonogram > span:first-child { align-self: start; }
+.splitMonogram > span:last-child { align-self: end; }
+.splitMonogram > .branch { position: absolute; width: 135px; top: 25px; left: 20px; transform: rotate(-25deg); }
+.envelope { position: relative; height: 130px; background: color-mix(in srgb, var(--ref-accent) 17%, var(--ref-paper)); clip-path: polygon(0 0, 50% 30%, 100% 0, 100% 100%, 0 100%); margin-top: -65px; z-index: 3; box-shadow: inset 0 -10px 40px #0000000b; }
+.envelope::before, .envelope::after { content: ''; position: absolute; bottom: 0; height: 100%; width: 65%; border: 1px solid var(--collection-edge); transform: rotate(30deg); transform-origin: bottom left; }
+.envelope::after { right: 0; transform: rotate(-30deg); transform-origin: bottom right; }
+.seal { border-radius: 50%; border: 4px double var(--collection-edge); background: var(--collection-soft); box-shadow: 0 3px 8px #0002; position: absolute; z-index: 2; width: 55px; height: 55px; top: 40px; left: calc(50% - 27px); display: grid; place-items: center; font: 22px var(--collection-script); }
+
+/* 31: pale winter paper, snowy illustration and restrained, fine framing. */
+.page[data-layout='winter-castle'] .invitation { background-image: repeating-linear-gradient(17deg, #00000003 0 1px, transparent 1px 4px); }
+.page[data-layout='winter-castle'] .hero { padding-top: 260px; background: radial-gradient(ellipse at 50% 30%, var(--collection-soft), transparent 70%); }
+.page[data-layout='winter-castle'] .hero > .artwork { height: 250px; }
+.page[data-layout='winter-castle'] .panel .artwork { background-image: url('/templates/collection-winter.webp'); height: 64px; opacity: .28; }
+.page[data-layout='winter-castle'] .portrait { border: 1px solid var(--collection-edge); padding: 7px; }
+.page[data-layout='winter-castle'] .panel { border-top: 1px solid var(--collection-edge); background: radial-gradient(ellipse at 20% 80%, var(--collection-soft), transparent 60%); }
+.page[data-layout='winter-castle'] .timeline { display: flex; gap: 12px; max-width: 100%; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0 0 12px; }
+.page[data-layout='winter-castle'] .timeline li { display: flex; flex-direction: column; min-width: 72%; min-height: 150px; padding: 24px; background: var(--collection-soft); scroll-snap-align: start; }
+.page[data-layout='winter-castle'] .timeline li::before { display: none; }
+
+/* 32: dark olive deckle panels with festoon lights crossing the paper. */
+.page[data-layout='olive-lights'] .welcome, .page[data-layout='olive-lights'] .datePanel, .page[data-layout='olive-lights'] .program { background: var(--ref-accent); color: var(--ref-on-accent); padding-bottom: 100px; }
+.page[data-layout='olive-lights'] .welcome { clip-path: polygon(0 1%, 9% 0, 19% 2%, 31% 0, 47% 1%, 60% 0, 72% 2%, 85% 0, 100% 1%, 100% 100%, 0 100%); }
+.page[data-layout='olive-lights'] .program { clip-path: polygon(0 1%, 17% 0, 29% 2%, 45% 0, 58% 1%, 74% 0, 90% 2%, 100% 0, 100% 100%, 0 100%); }
+.page[data-layout='olive-lights'] :is(.welcome, .datePanel, .program) :is(.title, .calendar, .timelineIcon, .heart, .selectedDay) { color: inherit; }
+.page[data-layout='olive-lights'] .portrait { aspect-ratio: 3/4; width: 82%; margin-inline: auto; }
+.page[data-layout='olive-lights'] .timeline { text-align: center; }
+.page[data-layout='olive-lights'] .timeline li { display: block; padding-bottom: 40px; }
+.page[data-layout='olive-lights'] .timelineIcon, .page[data-layout='olive-lights'] .timeline li::before { display: none; }
+.page[data-layout='olive-lights'] .timeline time { font-size: 34px; }
+
+/* 33 and 42: divided initials, climbing watercolor branches, hairline black frame. */
+.page:is([data-layout='split-monogram'], [data-layout='rose-monogram']) .invitation { border: 1px solid var(--ref-ink); }
+.page:is([data-layout='split-monogram'], [data-layout='rose-monogram']) .hero { padding-top: 50px; }
+.page:is([data-layout='split-monogram'], [data-layout='rose-monogram']) .names { font-size: 30px; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.page:is([data-layout='split-monogram'], [data-layout='rose-monogram']) .hero > .artwork { top: 10px; right: -65px; left: auto; width: 70%; height: 220px; transform: rotate(30deg); opacity: .45; }
+.page:is([data-layout='split-monogram'], [data-layout='rose-monogram']) .panel { padding-block: 48px; }
+.page[data-layout='rose-monogram'] .invitation { background: radial-gradient(ellipse at top right, var(--collection-soft), transparent 45%), var(--ref-paper); }
+.page[data-layout='rose-monogram'] .corner { opacity: .85; }
+.page[data-layout='rose-monogram'] .panel { padding-top: 120px; }
+.page[data-layout='rose-monogram'] .panel > .corner { width: 140px; top: -15px; right: -12px; transform: rotate(-20deg); }
+.page[data-layout='rose-monogram'] .swatches span { box-shadow: inset 8px -5px 10px #0002, inset -8px 5px 10px #fff6; }
+
+/* 34: calla stationery with photo tucked into a folded wax-sealed envelope. */
+.page[data-layout='calla-envelope'] .hero { padding-top: 120px; }
+.page[data-layout='calla-envelope'] .portrait { clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%); }
+.page[data-layout='calla-envelope'] .names { font-size: 47px; text-align: left; }
+.page[data-layout='calla-envelope'] .names span::first-letter { font-family: inherit; font-size: 1.45em; }
+.page[data-layout='calla-envelope'] .timeline li { display: block; text-align: left; padding: 28px 20px; border: 1px solid var(--collection-edge); border-width: 1px 1px 0 0; border-radius: 0 65px 65px 0; margin: 0 10px 0 30px; }
+.page[data-layout='calla-envelope'] .timeline li:nth-child(even) { border-width: 1px 0 0 1px; border-radius: 65px 0 0 65px; margin: 0 30px 0 10px; text-align: right; }
+.page[data-layout='calla-envelope'] .timelineIcon { display: none; }
+.page[data-layout='calla-envelope'] .timeline li::before { inset: -4px auto auto -4px; width: 8px; height: 8px; border: 0; border-radius: 50%; background: var(--ref-accent); }
+.page[data-layout='calla-envelope'] .countdown > div { padding: 16px 3px; background: var(--ref-accent); color: var(--ref-on-accent); border: 0; border-radius: 8px; }
+
+/* 35: airy hydrangea coast, a full-height opening photograph and pastel blue paper. */
+.page[data-layout='hydrangea-coast'] .hero { padding: 0; }
+.page[data-layout='hydrangea-coast'] .hero .portrait { aspect-ratio: 3/5; margin: 0; }
+.page[data-layout='hydrangea-coast'][data-has-photo='true'] .heroCopy { position: absolute; top: 15%; left: 24px; right: 24px; color: white; text-shadow: 0 2px 18px #0008; }
+.page[data-layout='hydrangea-coast'][data-has-photo='false'] .heroCopy { padding: 70px 30px; }
+.page[data-layout='hydrangea-coast'] .names { font-size: 36px; }
+.page[data-layout='hydrangea-coast'] .names em { color: inherit; }
+.page[data-layout='hydrangea-coast'] .panel { padding-block: 90px; }
+.page[data-layout='hydrangea-coast'] .storyPortrait { border-radius: 50% 50% 0 0; width: 60%; aspect-ratio: 3/4; margin-inline: auto; }
+.page[data-layout='hydrangea-coast'] .attire { background: linear-gradient(#ffffffaa, #ffffffaa), var(--collection-art) center/cover, var(--collection-soft); }
+.page[data-layout='hydrangea-coast'] .program { margin: 30px; padding: 40px 20px; background: var(--ref-paper); border: 1px solid var(--collection-edge); }
+.page[data-layout='hydrangea-coast'] .timeline li { grid-template-columns: 45px 1fr; gap: 10px; min-height: 54px; padding-bottom: 14px; }
+.page[data-layout='hydrangea-coast'] .timelineIcon { width: 30px; height: 30px; }
+.page[data-layout='hydrangea-coast'] .timeline time { font-size: 16px; }
+
+/* 36: spare blush flower stems and a softly fading portrait. */
+.page[data-layout='blush-botanical'] .hero { padding-top: 125px; }
+.page[data-layout='blush-botanical'] .portrait { mask-image: linear-gradient(#000 65%, transparent); }
+.page[data-layout='blush-botanical'] .panel { padding-block: 85px; }
+.page[data-layout='blush-botanical'] .title { font-size: 40px; }
+.page[data-layout='blush-botanical'] .date { font-size: 29px; }
+.page[data-layout='blush-botanical'] .gifts { border-radius: 45% 45% 35% 35% / 8% 8% 8% 8%; margin: 15px 15px 45px; background: var(--collection-soft); }
+.page[data-layout='blush-botanical'] .gifts [data-wedding-section] { background: transparent !important; }
+
+/* 37: white and sage branches, circular icon timeline and a rounded fine countdown frame. */
+.page[data-layout='sage-wreath'] .invitation { border: 1px solid var(--ref-ink); }
+.page[data-layout='sage-wreath'] .hero { padding-inline: 20px; }
+.page[data-layout='sage-wreath'] .hero > .artwork { height: 120px; }
+.page[data-layout='sage-wreath'] .names { font-size: 43px; }
+.page[data-layout='sage-wreath'] .datePanel { margin: 20px; border: 1px solid var(--collection-edge); border-radius: 25px; padding-inline: 20px; }
+.page[data-layout='sage-wreath'] .timelineIcon { border: 1px solid var(--collection-edge); border-radius: 50%; }
+.page[data-layout='sage-wreath'] .swatches { max-width: 230px; margin-inline: auto; }
+
+/* 38: monochrome portrait cutouts, alternating photographs and editorial white space. */
+.page[data-layout='monochrome-collage'] .hero { padding-top: 35px; }
+.page[data-layout='monochrome-collage'] .portrait { border-radius: 35px 0 35px 0; margin: 0 0 22px; }
+.page[data-layout='monochrome-collage'] .photo { filter: grayscale(1); }
+.page[data-layout='monochrome-collage'] .heroCopy { text-align: left; }
+.page[data-layout='monochrome-collage'] .names { font-size: 44px; }
+.page[data-layout='monochrome-collage'] .names em { display: inline; }
+.page[data-layout='monochrome-collage'] .storyPortrait { width: 72%; aspect-ratio: 1; border-radius: 35px 0 35px 0; margin-left: auto; }
+.page[data-layout='monochrome-collage'] .gallery { gap: 28px; }
+.page[data-layout='monochrome-collage'] .galleryButton { grid-column: auto; border-radius: 35px 0 35px 0; aspect-ratio: 3/4; }
+.page[data-layout='monochrome-collage'] .galleryButton:nth-child(even) { transform: translateY(28px); }
+.page[data-layout='monochrome-collage'] .timeline { border-left: 0; }
+.page[data-layout='monochrome-collage'] .swatches span { width: 80px; height: 28px; border-radius: 18px; }
+
+/* 39: candy blue stripes, scalloped paper edges and arched photographs. */
+.page[data-layout='blue-scallop'] .invitation { border-radius: 26px; }
+.page[data-layout='blue-scallop'] .hero { padding-top: 100px; }
+.page[data-layout='blue-scallop'] .portrait { border-radius: 50% 50% 0 0; width: 76%; margin-inline: auto; }
+.page[data-layout='blue-scallop'] .program, .page[data-layout='blue-scallop'] .attire { background: var(--collection-soft); border: 0; }
+.page[data-layout='blue-scallop'] :is(.program, .attire)::before, .page[data-layout='blue-scallop'] :is(.program, .attire)::after { content: ''; position: absolute; inset: 0 0 auto; height: 15px; background: radial-gradient(circle at 50% 0, var(--ref-paper) 13px, transparent 14px) 0 0 / 28px 15px repeat-x; pointer-events: none; }
+.page[data-layout='blue-scallop'] :is(.program, .attire)::after { inset: auto 0 0; transform: rotate(180deg); }
+.page[data-layout='blue-scallop'] .attire { background: repeating-linear-gradient(90deg, transparent 0 14px, var(--ref-paper) 14px 22px), var(--collection-soft); padding-inline: 34px; }
+.page[data-layout='blue-scallop'] .attireGroup { background: var(--collection-soft); border: 1px solid var(--ref-paper); border-radius: 90px 90px 20px 20px; padding: 30px 16px; }
+.page[data-layout='blue-scallop'] .timelineIcon { background: var(--ref-paper); border-radius: 50%; }
+.page[data-layout='blue-scallop'] .galleryButton { border-radius: 22px; }
+
+/* 40: rich cocoa paper interrupted by tall white capsules. */
+.page[data-layout='cocoa-capsule'] .invitation { background: var(--ref-accent); padding-top: 25px; }
+.page[data-layout='cocoa-capsule'] .hero, .page[data-layout='cocoa-capsule'] .panel, .page[data-layout='cocoa-capsule'] .shared { background: var(--ref-paper); border-radius: 220px; margin-block: 32px; padding-top: 75px; padding-bottom: 75px; }
+.page[data-layout='cocoa-capsule'] .hero { padding-top: 0; border-radius: 0 0 220px 220px; margin-top: 0; }
+.page[data-layout='cocoa-capsule'] .portrait { border-radius: 50%; width: 78%; aspect-ratio: 3/4; margin-inline: auto; }
+.page[data-layout='cocoa-capsule'] .heroCopy { padding-top: 45px; }
+.page[data-layout='cocoa-capsule'] .welcome, .page[data-layout='cocoa-capsule'] .program { background: transparent; color: var(--ref-on-accent); border-radius: 0; }
+.page[data-layout='cocoa-capsule'] :is(.welcome, .program) :is(.title, .timelineIcon, .heart) { color: inherit; }
+.page[data-layout='cocoa-capsule'] .shared [data-wedding-section] { background: transparent !important; }
+
+/* 41: icy blue watercolor flower canopy, winter stationery and carousel-like day cards. */
+.page[data-layout='winter-blue'] .hero { padding-top: 210px; }
+.page[data-layout='winter-blue'] .hero > .artwork { height: 205px; }
+.page[data-layout='winter-blue'] .hero .portrait { border: 1px solid var(--collection-edge); padding: 8px; }
+.page[data-layout='winter-blue'] .program .timeline { display: flex; overflow-x: auto; gap: 12px; max-width: 100%; scroll-snap-type: x mandatory; }
+.page[data-layout='winter-blue'] .timeline li { min-width: 74%; padding: 22px; display: block; background: var(--collection-soft); scroll-snap-align: start; }
+.page[data-layout='winter-blue'] .timeline li::before { display: none; }
+.page[data-layout='winter-blue'] .swatches span { border-radius: 0; }
+
+/* 43: silver beveled stationery, pearl garlands and a ceremonial tray frame. */
+.page[data-layout='pearl-ballroom'] .hero { padding-top: 140px; }
+.page[data-layout='pearl-ballroom'] .portrait { border-radius: 0 0 50% 50%; border: 7px double var(--collection-edge); padding: 8px; }
+.page[data-layout='pearl-ballroom'] .program { padding-top: 150px; }
+.page[data-layout='pearl-ballroom'] .timeline { padding: 35px 24px; border: 10px ridge var(--collection-edge); border-radius: 55px; box-shadow: inset 0 0 0 3px var(--ref-paper), inset 0 0 0 5px var(--collection-edge), 0 6px 10px #0001; background: var(--collection-soft); }
+.page[data-layout='pearl-ballroom'] .timeline li { grid-template-columns: 32px 1fr; gap: 12px; }
+.page[data-layout='pearl-ballroom'] .timelineIcon { width: 32px; }
+.page[data-layout='pearl-ballroom'] .timeline li::before { left: 15px; }
+.page[data-layout='pearl-ballroom'] .galleryButton { border: 5px double var(--collection-edge); padding: 5px; }
+
+/* 44: pale sea glass and blush with soft torn-wave boundaries. */
+.page[data-layout='sea-glass'] .hero { padding: 0; }
+.page[data-layout='sea-glass'] .portrait { margin: 0; aspect-ratio: 4/5; }
+.page[data-layout='sea-glass'] .heroCopy { padding: 45px 30px; background: var(--collection-soft); }
+.page[data-layout='sea-glass'] .names { font-size: 34px; }
+.page[data-layout='sea-glass'] .panel { background: var(--collection-soft); }
+.page[data-layout='sea-glass'] .panel:nth-child(even) { background: var(--ref-paper); clip-path: polygon(0 1%, 8% 2%, 17% 0, 28% 2%, 39% 1%, 48% 3%, 58% 1%, 70% 2%, 81% 0, 91% 2%, 100% 1%, 100% 100%, 0 100%); }
+.page[data-layout='sea-glass'] .timeline { text-align: center; }
+.page[data-layout='sea-glass'] .timeline li { display: block; padding-bottom: 55px; }
+.page[data-layout='sea-glass'] .timeline li::before { left: 50%; top: auto; bottom: 12px; height: 30px; border-left-style: dotted; }
+.page[data-layout='sea-glass'] .timelineIcon { margin-inline: auto; }
+
+/* 45: ocean watercolor, etched shells, coral branches and translucent note panels. */
+.page[data-layout='ocean-coral'] .invitation { background: radial-gradient(ellipse at 0 20%, var(--collection-soft), transparent 34%), radial-gradient(ellipse at 100% 70%, var(--collection-soft), transparent 40%), var(--ref-paper); }
+.page[data-layout='ocean-coral'] .hero { padding-top: 190px; }
+.page[data-layout='ocean-coral'] .hero > .shell { width: 130px; left: -20px; top: 10px; }
+.page[data-layout='ocean-coral'] .program, .page[data-layout='ocean-coral'] .datePanel { background: color-mix(in srgb, var(--ref-paper) 75%, transparent); border: 1px solid var(--collection-edge); border-radius: 40px; margin: 24px; padding-inline: 22px; }
+.page[data-layout='ocean-coral'] .timeline { text-align: center; }
+.page[data-layout='ocean-coral'] .timeline li { display: block; padding-bottom: 35px; }
+.page[data-layout='ocean-coral'] .timeline li::before { display: none; }
+.page[data-layout='ocean-coral'] .timelineIcon { margin-inline: auto; }
+.page[data-layout='ocean-coral'] .swatches span { border-radius: 5px 50% 50% 50%; }
+
+/* 46: coastal blue lace, pearl trims, clipped note paper and a folded keepsake. */
+.page[data-layout='coastal-silver'] .hero { padding-top: 110px; }
+.page[data-layout='coastal-silver'] .portrait { transform: rotate(-3deg); width: 83%; margin: 10px auto 30px; padding: 12px 12px 42px; background: var(--ref-paper); border: 1px solid var(--collection-edge); box-shadow: 0 7px 15px #0001; }
+.page[data-layout='coastal-silver'] .datePanel { background: var(--ref-accent); color: var(--ref-on-accent); border-block: 15px dotted var(--ref-paper); border-radius: 80px; margin: 15px 0; padding-top: 90px; }
+.page[data-layout='coastal-silver'] .datePanel :is(.title, .selectedDay) { color: inherit; }
+.page[data-layout='coastal-silver'] .program { padding-top: 110px; }
+.page[data-layout='coastal-silver'] .gifts { margin: 30px; border: 12px ridge var(--collection-edge); border-radius: 35px; }
+.page[data-layout='coastal-silver'] .additional [data-wedding-section='rsvp'] { position: relative; margin: 35px 18px; padding-top: 75px !important; border: 1px solid var(--collection-edge); box-shadow: 0 7px 20px #0000000a; }
+.page[data-layout='coastal-silver'] .additional [data-wedding-section='rsvp']::before { content: ''; display: block; position: absolute; top: 12px; bottom: auto; left: calc(50% - 20px); right: auto; width: 40px; height: 40px; border: 5px solid var(--ref-accent); border-radius: 10px 10px 3px 3px; background: var(--collection-soft); z-index: 2; pointer-events: none; }
+
+/* 47: gold sprigs, slender rounded portrait corners and bordered program paper. */
+.page[data-layout='gold-leaf-frame'] .invitation { border: 1px solid var(--ref-ink); }
+.page[data-layout='gold-leaf-frame'] .portrait { border-radius: 38px 0; border: 1px solid var(--ref-accent); padding: 9px; outline: 1px solid var(--collection-edge); outline-offset: 7px; }
+.page[data-layout='gold-leaf-frame'] .hero { padding-top: 150px; }
+.page[data-layout='gold-leaf-frame'] .program { margin: 25px; border: 1px solid var(--ref-accent); border-radius: 28px; padding-inline: 22px; }
+.page[data-layout='gold-leaf-frame'] .timeline { text-align: center; }
+.page[data-layout='gold-leaf-frame'] .timeline li { display: block; padding-bottom: 40px; }
+.page[data-layout='gold-leaf-frame'] .timelineIcon, .page[data-layout='gold-leaf-frame'] .timeline li::before { display: none; }
+.page[data-layout='gold-leaf-frame'] .timeline time { color: var(--invitation-link); font-family: var(--collection-script); font-size: 37px; }
+
+/* 48: full photograph opening, navy program paper and formal hairline rules. */
+.page[data-layout='navy-celebration'] .hero { padding: 0; }
+.page[data-layout='navy-celebration'] .portrait { margin: 0; aspect-ratio: 3/4; }
+.page[data-layout='navy-celebration'] .heroCopy { background: var(--ref-accent); color: var(--ref-on-accent); padding: 55px 30px; }
+.page[data-layout='navy-celebration'] .names em { color: inherit; }
+.page[data-layout='navy-celebration'] .datePanel, .page[data-layout='navy-celebration'] .program { background: var(--ref-accent); color: var(--ref-on-accent); }
+.page[data-layout='navy-celebration'] :is(.datePanel, .program) :is(.title, .selectedDay, .timelineIcon) { color: inherit; }
+.page[data-layout='navy-celebration'] .timeline li { padding-bottom: 20px; min-height: 60px; }
+.page[data-layout='navy-celebration'] .timeline time { font-size: 18px; }
+.page[data-layout='navy-celebration'] .galleryButton { padding: 7px; border: 1px solid var(--collection-edge); }
+.page[data-layout='navy-celebration'] .title { text-transform: uppercase; letter-spacing: .12em; font-size: 29px; }
+
+/* 49: dense blue floral border surrounding clean, inset chinoiserie cartouches. */
+.page[data-layout='blue-chinoiserie'] .invitation { padding: 25px; background: var(--collection-art) center/440px auto repeat-y, var(--collection-soft); }
+.page[data-layout='blue-chinoiserie'] .hero, .page[data-layout='blue-chinoiserie'] .panel, .page[data-layout='blue-chinoiserie'] .shared { background: var(--ref-paper); border: 1px solid var(--ref-accent); margin-bottom: 35px; padding-inline: 24px; }
+.page[data-layout='blue-chinoiserie'] .hero { border-radius: 100px 100px 100px 100px / 45px 45px 45px 45px; padding-top: 65px; }
+.page[data-layout='blue-chinoiserie'] .artwork { display: none; }
+.page[data-layout='blue-chinoiserie'] .title { text-transform: uppercase; font-family: var(--invitation-heading-font); }
+.page[data-layout='blue-chinoiserie'] .timeline { text-align: center; }
+.page[data-layout='blue-chinoiserie'] .timeline li { display: block; padding-bottom: 45px; }
+.page[data-layout='blue-chinoiserie'] .timelineIcon { margin: 0 auto 14px; }
+.page[data-layout='blue-chinoiserie'] .timeline li::before { display: none; }
+.page[data-layout='blue-chinoiserie'] .swatches span { border-radius: 0; width: 65px; height: 65px; box-shadow: inset 9px -8px 12px #0001; }
+
+/* 50: olive panels joined with broad, flowing white scallops and line-drawn flowers. */
+.page[data-layout='olive-wave'] .welcome, .page[data-layout='olive-wave'] .datePanel, .page[data-layout='olive-wave'] .story { background: var(--ref-accent); color: var(--ref-on-accent); }
+.page[data-layout='olive-wave'] :is(.welcome, .datePanel, .story) :is(.title, .selectedDay, .heart) { color: inherit; }
+.page[data-layout='olive-wave'] .hero { padding-top: 65px; padding-bottom: 0; background: var(--ref-accent); }
+.page[data-layout='olive-wave'] .heroCopy { background: var(--ref-paper); margin: -65px -38px 0; padding: 65px 38px 30px; border-radius: 0 0 45% 45% / 0 0 12% 12%; }
+.page[data-layout='olive-wave'] .portrait { border-radius: 30px; width: 85%; margin: 30px auto; }
+.page[data-layout='olive-wave'] .names { font-size: 40px; }
+.page[data-layout='olive-wave'] .program { padding-top: 90px; }
+.page[data-layout='olive-wave'] .program::before { content: ''; position: absolute; top: -14px; left: 0; width: 100%; height: 28px; background: radial-gradient(ellipse at center, var(--ref-accent) 69%, transparent 72%) 0 0 / 80px 28px repeat-x; }
+.page[data-layout='olive-wave'] .shared { border-radius: 35px 35px 0 0; }
+
+/* Finishing details follow each collection's stationery language. All color and font
+   decisions continue to resolve from the couple's editable theme tokens. */
+.heroCopy, .attireGroup { min-width: 0; }
+.names { text-wrap: balance; }
+.title { text-wrap: balance; }
+.panel > p, .panel blockquote { max-width: 36ch; margin-inline: auto; }
+.panel blockquote { text-wrap: pretty; }
+.date { font-variant-numeric: lining-nums tabular-nums; }
+.calendarGrid { font-variant-numeric: tabular-nums; }
+.selectedDay { background: color-mix(in srgb, currentColor 8%, transparent); }
+.countdown strong, .timeline time { font-variant-numeric: lining-nums tabular-nums; }
+.countdown span { font-size: 10px; line-height: 1.4; }
+.timeline p { font-size: 14px; }
+.timeline li > div { min-width: 0; }
+.timelineIcon { flex-shrink: 0; }
+.programNavigation { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 30px; text-align: left; }
+.programNavigation > span { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.programNavigation > div { display: flex; gap: 8px; }
+.programNavigation button { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--collection-edge); border-radius: 50%; background: var(--ref-paper); color: var(--ref-ink); cursor: pointer; }
+.programNavigation button:focus-visible { outline: 2px solid var(--invitation-link); outline-offset: 3px; }
+.programNavigation + .timeline { margin-top: 15px; }
+.galleryButton { position: relative; min-width: 0; }
+.galleryZoom { position: absolute; bottom: 10px; right: 10px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--invitation-action); color: var(--invitation-on-action); box-shadow: 0 2px 10px #0002; pointer-events: none; }
+.galleryButton .photo { transition: transform .35s ease; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .galleryButton:hover .photo { transform: scale(1.045); }
+}
+
+/* Winter collections: fine double mounts, numbered day cards and frosted rules. */
+.page:is([data-layout='winter-castle'], [data-layout='winter-blue']) .timeline { overscroll-behavior-inline: contain; scrollbar-width: thin; scrollbar-color: var(--collection-edge) transparent; padding-bottom: 14px; }
+.page:is([data-layout='winter-castle'], [data-layout='winter-blue']) .timeline li { flex-shrink: 0; border: 1px solid var(--collection-edge); min-height: 190px; justify-content: flex-end; gap: 14px; }
+.page:is([data-layout='winter-castle'], [data-layout='winter-blue']) .timeline li::after { content: attr(data-step); position: absolute; top: 18px; right: 18px; font-size: 11px; letter-spacing: .12em; opacity: .65; }
+.page[data-layout='winter-castle'] .galleryButton { padding: 6px; border: 1px solid var(--collection-edge); }
+.page[data-layout='winter-castle'] .storyPortrait { border: 5px double var(--collection-edge); padding: 5px; }
+.page[data-layout='winter-blue'] .timelineIcon { margin-bottom: 18px; }
+.page[data-layout='winter-blue'] .galleryButton { border: 6px solid var(--ref-paper); outline: 1px solid var(--collection-edge); }
+.page[data-layout='winter-blue'] .gallery { gap: 16px; padding: 1px; }
+
+/* Olive lights: generous dark-paper spacing and a keepsake photo mount. */
+.page[data-layout='olive-lights'] :is(.welcome, .datePanel, .program) { --collection-edge: color-mix(in srgb, var(--ref-on-accent) 35%, transparent); }
+.page[data-layout='olive-lights'] .portrait { padding: 7px; border: 1px solid var(--collection-edge); box-shadow: 9px 9px 0 var(--collection-soft); }
+.page[data-layout='olive-lights'] .timeline li + li { padding-top: 24px; border-top: 1px solid var(--collection-edge); }
+.page[data-layout='olive-lights'] .galleryButton { padding: 6px; border: 1px solid var(--collection-edge); }
+
+/* Monogram invitations: quiet botanical dividers, contrasting photo silhouettes. */
+.page:is([data-layout='split-monogram'], [data-layout='rose-monogram']) .splitMonogram { margin-bottom: 32px; }
+.page:is([data-layout='split-monogram'], [data-layout='rose-monogram']) .date { font-size: 16px; letter-spacing: .15em; }
+.page[data-layout='split-monogram'] .storyPortrait { border-radius: 50% 50% 0 0; padding: 7px; border: 1px solid var(--collection-edge); }
+.page[data-layout='split-monogram'] .galleryButton { border-radius: 45% 45% 0 0; }
+.page[data-layout='split-monogram'] .galleryButton:first-child { border-radius: 0; }
+.page[data-layout='rose-monogram'] .portrait { border-radius: 120px 120px 0 0; border: 1px solid var(--collection-edge); padding: 6px; }
+.page[data-layout='rose-monogram'] .galleryButton { padding: 6px; background: var(--ref-paper); border: 1px solid var(--collection-edge); }
+.page[data-layout='rose-monogram'] .calendar { padding: 24px 12px; border-block: 1px solid var(--collection-edge); }
+
+/* Calla envelope: softer folds and an alternating loop of itinerary lines. */
+.page[data-layout='calla-envelope'] .envelope { background-image: linear-gradient(135deg, #ffffff18, transparent 55%); }
+.page[data-layout='calla-envelope'] .seal { box-shadow: inset 0 0 0 2px var(--ref-paper), 0 4px 9px #0002; }
+.page[data-layout='calla-envelope'] .timeline li:nth-child(even)::before { left: auto; right: -4px; }
+.page[data-layout='calla-envelope'] .galleryButton { border-radius: 30px 0; }
+.page[data-layout='calla-envelope'] .galleryButton:first-child { padding: 7px; border: 1px solid var(--collection-edge); border-radius: 0; }
+
+/* Hydrangea coast: readable photograph lettering and airy, architectural frames. */
+.page[data-layout='hydrangea-coast'][data-has-photo='true'] .hero .portrait::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#0005, #0002 52%, transparent 80%); pointer-events: none; }
+.page[data-layout='hydrangea-coast'] .heroCopy .date { letter-spacing: .14em; }
+.page[data-layout='hydrangea-coast'] .program { outline: 1px solid var(--collection-edge); outline-offset: -9px; padding-block: 48px; }
+.page[data-layout='hydrangea-coast'] .timeline li::before { left: 14px; top: 30px; }
+.page[data-layout='hydrangea-coast'] .gallery { gap: 8px; }
+.page[data-layout='hydrangea-coast'] .galleryButton:first-child { aspect-ratio: 3/4; border-radius: 45% 45% 0 0; }
+
+/* Blush botanicals: softened portrait edges and petal-shaped photo pairings. */
+.page[data-layout='blush-botanical'] .eyebrow { letter-spacing: .3em; }
+.page[data-layout='blush-botanical'] .storyPortrait { border-radius: 42% 42% 0 0; }
+.page[data-layout='blush-botanical'] .gallery { gap: 16px; }
+.page[data-layout='blush-botanical'] .galleryButton { border-radius: 80px 80px 0 0; }
+.page[data-layout='blush-botanical'] .galleryButton:first-child { border-radius: 4px; }
+.page[data-layout='blush-botanical'] .timelineIcon { border-bottom: 1px solid var(--collection-edge); }
+
+/* Sage wreath: restrained oval matting with a continuous circular itinerary. */
+.page[data-layout='sage-wreath'] .portrait { border: 5px double var(--collection-edge); padding: 7px; }
+.page[data-layout='sage-wreath'] .timelineIcon { background: var(--ref-paper); }
+.page[data-layout='sage-wreath'] .timeline li::before { top: 48px; }
+.page[data-layout='sage-wreath'] .galleryButton { border: 1px solid var(--collection-edge); padding: 5px; }
+.page[data-layout='sage-wreath'] .galleryButton:first-child { border-radius: 150px 150px 0 0; }
+
+/* Monochrome: magazine-like rhythm, displaced cutouts and generous last-row space. */
+.page[data-layout='monochrome-collage'] .eyebrow { letter-spacing: .26em; }
+.page[data-layout='monochrome-collage'] .gallery { padding-bottom: 32px; gap: 20px; }
+.page[data-layout='monochrome-collage'] .timelineIcon { border-bottom: 1px solid var(--collection-edge); }
+.page[data-layout='monochrome-collage'] .timeline time { font-size: 22px; }
+.page[data-layout='monochrome-collage'] .welcome blockquote { text-align: left; }
+
+/* Blue scallops: delicate striped mounts and smaller, balanced rounded corners. */
+.page[data-layout='blue-scallop'] .portrait { border: 1px solid var(--collection-edge); padding: 6px; background: var(--ref-paper); }
+.page[data-layout='blue-scallop'] .gallery { gap: 14px; }
+.page[data-layout='blue-scallop'] .galleryButton { padding: 6px; background: repeating-linear-gradient(90deg, var(--collection-soft) 0 6px, var(--ref-paper) 6px 12px); }
+.page[data-layout='blue-scallop'] .calendarGrid .selectedDay { border-radius: 12px 12px 4px 4px; }
+.page[data-layout='blue-scallop'] .timeline li::before { border-left-style: dashed; }
+
+/* Cocoa capsules: tall oval portraits, light-on-cocoa hairlines and curved galleries. */
+.page[data-layout='cocoa-capsule'] :is(.welcome, .program) { --collection-edge: color-mix(in srgb, var(--ref-on-accent) 35%, transparent); }
+.page[data-layout='cocoa-capsule'] .portrait { padding: 7px; border: 1px solid var(--collection-edge); }
+.page[data-layout='cocoa-capsule'] .galleryButton { border-radius: 100px; }
+.page[data-layout='cocoa-capsule'] .galleryButton:first-child { border-radius: 160px 160px 8px 8px; }
+.page[data-layout='cocoa-capsule'] .attireIllustration { border-bottom: 1px solid var(--collection-edge); padding-bottom: 16px; }
+
+/* Ballroom pearls: a finer metallic bevel and double-mounted keepsake photographs. */
+.page[data-layout='pearl-ballroom'] .timeline { border-width: 6px; border-style: double; padding: 35px 20px; box-shadow: inset 0 0 0 3px var(--ref-paper), inset 0 0 0 4px var(--collection-edge), 0 7px 24px #0000000c; }
+.page[data-layout='pearl-ballroom'] .gallery { gap: 18px; }
+.page[data-layout='pearl-ballroom'] .galleryButton:first-child { border-radius: 110px 110px 0 0; }
+.page[data-layout='pearl-ballroom'] .calendar { border-block: 1px solid var(--collection-edge); padding-block: 22px; }
+
+/* Sea glass: soft corner cuts, muted frames and dotted vertical rhythm. */
+.page[data-layout='sea-glass'] .storyPortrait { border-radius: 60px 0; border: 6px solid var(--ref-paper); }
+.page[data-layout='sea-glass'] .galleryButton { border-radius: 28px 0; }
+.page[data-layout='sea-glass'] .timeline time { font-size: 30px; }
+.page[data-layout='sea-glass'] .calendarGrid .selectedDay { border-style: dashed; }
+
+/* Ocean coral: etched shell medallions and softly washed translucent frames. */
+.page[data-layout='ocean-coral'] .portrait { border-radius: 160px 160px 12px 12px; border: 1px solid var(--collection-edge); padding: 7px; }
+.page[data-layout='ocean-coral'] .galleryButton { border-radius: 18px; padding: 5px; border: 1px solid var(--collection-edge); }
+.page[data-layout='ocean-coral'] .timelineIcon { border: 1px solid var(--collection-edge); border-radius: 50%; margin-bottom: 14px; }
+.page[data-layout='ocean-coral'] .program { box-shadow: inset 0 0 0 5px var(--ref-paper); }
+
+/* Coastal silver: clean Polaroid mounts, pearl-like edges and a lighter gift frame. */
+.page[data-layout='coastal-silver'] .gifts { margin-inline: 22px; border: 6px double var(--collection-edge); }
+.page[data-layout='coastal-silver'] .gallery { gap: 18px; }
+.page[data-layout='coastal-silver'] .galleryButton { padding: 6px 6px 24px; border: 1px solid var(--collection-edge); background: var(--ref-paper); }
+.page[data-layout='coastal-silver'] .galleryButton:first-child { border-radius: 80px 80px 0 0; }
+.page[data-layout='coastal-silver'] .timelineIcon { border: 1px solid var(--collection-edge); border-radius: 50%; }
+
+/* Gold leaves: crisp double rules and gilded asymmetric photo corners. */
+.page[data-layout='gold-leaf-frame'] .calendar { border-block: 3px double var(--collection-edge); padding-block: 24px; }
+.page[data-layout='gold-leaf-frame'] .galleryButton { padding: 6px; border: 1px solid var(--ref-accent); border-radius: 28px 0; }
+.page[data-layout='gold-leaf-frame'] .timeline li + li { border-top: 1px solid var(--collection-edge); padding-top: 24px; }
+
+/* Navy celebration: formal inset rules and a compact, legible order of the day. */
+.page[data-layout='navy-celebration'] :is(.heroCopy, .datePanel, .program) { --collection-edge: color-mix(in srgb, var(--ref-on-accent) 35%, transparent); }
+.page[data-layout='navy-celebration'] .heroCopy { border-block: 4px double var(--collection-edge); }
+.page[data-layout='navy-celebration'] .timelineIcon { border: 1px solid var(--collection-edge); border-radius: 50%; }
+.page[data-layout='navy-celebration'] .program { border-block: 1px solid var(--collection-edge); }
+.page[data-layout='navy-celebration'] .gallery { gap: 16px; }
+.page[data-layout='navy-celebration'] .calendarGrid .selectedDay { border: 3px double currentColor; }
+
+/* Chinoiserie: porcelain-style inset keylines with airy floral margins. */
+.page[data-layout='blue-chinoiserie'] .portrait { border: 3px double var(--collection-edge); padding: 5px; border-radius: 70px 70px 0 0; }
+.page[data-layout='blue-chinoiserie'] .program { outline: 1px solid var(--collection-edge); outline-offset: -7px; }
+.page[data-layout='blue-chinoiserie'] .galleryButton { border: 3px double var(--collection-edge); padding: 5px; }
+.page[data-layout='blue-chinoiserie'] .gallery { gap: 12px; }
+
+/* Olive waves: rounded windows and delicate linework echo the flowing paper joins. */
+.page[data-layout='olive-wave'] :is(.welcome, .datePanel, .story) { --collection-edge: color-mix(in srgb, var(--ref-on-accent) 35%, transparent); }
+.page[data-layout='olive-wave'] .storyPortrait { border-radius: 24px; }
+.page[data-layout='olive-wave'] .galleryButton { border-radius: 50px 0; }
+.page[data-layout='olive-wave'] .galleryButton:first-child { border-radius: 28px; }
+.page[data-layout='olive-wave'] .timelineIcon { border: 1px solid var(--collection-edge); border-radius: 50%; }
+
+/* Explicit builder choices override native cards as well as shared guest cards. */
+.page.page:is([data-card-style='arch_panel'], [data-card-style='cards_bordered'], [data-card-style='editorial_rules'], [data-card-style='full_bleed_strip'], [data-card-style='borderless_glass'], [data-card-style='soft_parchment']) .panel {
+    --collection-edge: color-mix(in srgb, var(--ref-accent) 38%, var(--ref-paper));
+    color: var(--ref-ink);
+    background: var(--invitation-card-surface);
+    border-style: solid;
+    border-width: var(--invitation-card-border-width);
+    border-color: var(--invitation-card-border);
+    border-radius: var(--invitation-card-radius);
+    box-shadow: var(--invitation-card-shadow);
+    backdrop-filter: var(--invitation-card-filter);
+    clip-path: none;
+}
+.page.page:is([data-card-style='arch_panel'], [data-card-style='cards_bordered'], [data-card-style='editorial_rules'], [data-card-style='full_bleed_strip'], [data-card-style='borderless_glass'], [data-card-style='soft_parchment']) .panel::before,
+.page.page:is([data-card-style='arch_panel'], [data-card-style='cards_bordered'], [data-card-style='editorial_rules'], [data-card-style='full_bleed_strip'], [data-card-style='borderless_glass'], [data-card-style='soft_parchment']) .panel::after { display: none; }
+@media (max-width: 540px) {
+    .page { padding: 0; }
+    .invitation { max-width: 100%; box-shadow: none; }
+    .panel { padding-inline: 27px; }
+    .hero { padding-inline: 26px; }
+    .page[data-layout='olive-wave'] .heroCopy { margin-inline: -26px; padding-inline: 26px; }
+    .page[data-layout='blue-chinoiserie'] .invitation { padding: 17px; }
+    .page[data-layout='blue-chinoiserie'] .panel, .page[data-layout='blue-chinoiserie'] .shared { padding-inline: 15px; }
+    .shared [data-wedding-section] { padding-inline: 22px !important; }
+    .panel > p, .panel blockquote, .attireGroup p { font-size: 14px; line-height: 1.85; }
+    .page[data-layout='calla-envelope'] .names { font-size: clamp(30px, 9vw, 43px); }
+    .page[data-layout='blush-botanical'] .title { font-size: 34px; }
+    .page[data-layout='pearl-ballroom'] .timeline { padding-inline: 16px; }
+    .page[data-layout='blue-chinoiserie'] .hero { padding-inline: 16px; }
+    .page[data-layout='blue-chinoiserie'] .title { font-size: 27px; letter-spacing: .015em; }
+    .page[data-layout='blue-chinoiserie'] .swatches span { width: 48px; height: 48px; }
+    .page[data-layout='hydrangea-coast'] .heroCopy { top: 9%; }
+    .page[data-layout='hydrangea-coast'] .heroCopy .names { font-size: clamp(28px, 8vw, 36px); }
+    .page[data-layout='coastal-silver'] .gifts { margin-inline: 16px; }
+    .countdown { gap: 5px; }
+    .countdown span { font-size: 9px; letter-spacing: .03em; }
+}
+@media (prefers-reduced-motion: reduce) { .timeline { scroll-behavior: auto; } .galleryButton .photo { transition: none; } }
+
+/* Secondary paper frames provide continuity across editable collection sections.
+   These are motif-driven defaults only: the builder's explicit card geometry wins. */
+.page {
+    --collection-frame-width: 1px;
+    --collection-frame-style: solid;
+    --collection-frame-radius: 0;
+    --collection-frame-inset: 14px;
+}
+.page[data-layout='winter-castle'] { --collection-frame-width: 3px; --collection-frame-style: double; --collection-frame-radius: 2px; }
+.page[data-layout='olive-lights'] { --collection-frame-width: 1px 0; }
+.page[data-layout='split-monogram'] { --collection-frame-width: 1px 0 1px 1px; --collection-frame-radius: 24px 0; }
+.page[data-layout='calla-envelope'] { --collection-frame-width: 3px; --collection-frame-style: double; --collection-frame-radius: 28px 0; }
+.page[data-layout='hydrangea-coast'] { --collection-frame-radius: 50% 50% 4px 4px / 25px 25px 4px 4px; }
+.page[data-layout='blush-botanical'] { --collection-frame-radius: 32px 0 32px 0; --collection-frame-width: 1px 0 1px 1px; }
+.page[data-layout='sage-wreath'] { --collection-frame-radius: 42px 42px 8px 8px / 24px 24px 8px 8px; --collection-frame-width: 3px; --collection-frame-style: double; }
+.page[data-layout='monochrome-collage'] { --collection-frame-width: 1px 0; }
+.page[data-layout='blue-scallop'] { --collection-frame-radius: 26px; --collection-frame-style: dotted; --collection-frame-width: 2px; }
+.page[data-layout='cocoa-capsule'] { --collection-frame-radius: 50% / 22%; }
+.page[data-layout='winter-blue'] { --collection-frame-width: 1px 0; --collection-frame-style: dotted; }
+.page[data-layout='rose-monogram'] { --collection-frame-width: 1px; --collection-frame-radius: 24px 0 24px 0; }
+.page[data-layout='pearl-ballroom'] { --collection-frame-width: 3px; --collection-frame-style: double; --collection-frame-radius: 32px; }
+.page[data-layout='sea-glass'] { --collection-frame-width: 1px 0; --collection-frame-style: dashed; --collection-frame-radius: 28px; }
+.page[data-layout='ocean-coral'] { --collection-frame-radius: 40px 40px 16px 16px; --collection-frame-style: dotted; --collection-frame-width: 2px; }
+.page[data-layout='coastal-silver'] { --collection-frame-width: 3px; --collection-frame-style: double; --collection-frame-radius: 26px; }
+.page[data-layout='gold-leaf-frame'] { --collection-frame-width: 3px; --collection-frame-style: double; --collection-frame-radius: 24px 0; }
+.page[data-layout='navy-celebration'] { --collection-frame-width: 3px 0; --collection-frame-style: double; }
+.page[data-layout='blue-chinoiserie'] { --collection-frame-width: 3px; --collection-frame-style: double; --collection-frame-radius: 18px 18px 2px 2px; --collection-frame-inset: 8px; }
+.page[data-layout='olive-wave'] { --collection-frame-width: 1px 0; --collection-frame-radius: 30px; }
+.page:is([data-card-style='default'], :not([data-card-style])) :is(.welcome, .story)::before,
+.page:is([data-card-style='default'], :not([data-card-style])):not([data-layout='blue-scallop']) .attire::before {
+    content: ''; position: absolute; inset: var(--collection-frame-inset);
+    border-width: var(--collection-frame-width); border-style: var(--collection-frame-style);
+    border-color: var(--collection-edge); border-radius: var(--collection-frame-radius);
+    pointer-events: none; z-index: 0;
+}
+/* Keep scalloped paper edges, pearl garlands and illustrated program margins intact. */
+.page:is([data-card-style='default'], :not([data-card-style])) :is(.galleryPanel, .datePanel) {
+    outline: 1px solid var(--collection-edge); outline-offset: -9px;
+}
+.page:is([data-card-style='default'], :not([data-card-style])) .attireGroup h3 {
+    padding-bottom: 12px; border-bottom: 1px solid var(--collection-edge);
+    width: fit-content; max-width: 100%; margin-inline: auto;
+}
+.page:is([data-card-style='default'], :not([data-card-style])) .selectedDay {
+    outline: 1px solid var(--collection-edge); outline-offset: 3px;
+}
+.page[data-layout='olive-lights'] :is(.welcome, .datePanel, .program),
+.page[data-layout='coastal-silver'] .datePanel {
+    --collection-edge: color-mix(in srgb, var(--ref-on-accent) 38%, transparent);
+}
+@media (max-width: 380px) { .page { --collection-frame-inset: 9px; } }
+
+/* One quiet arrival, never a loop or a hidden-content dependency. */
+@keyframes collectionTypeArrival {
+    from { opacity: .82; translate: 0 7px; }
+    to { opacity: 1; translate: 0 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .heroCopy { animation: collectionTypeArrival 700ms cubic-bezier(.2,.7,.3,1) both; }
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+    .timelineIcon { transition: transform 220ms ease; }
+    .timeline li:hover .timelineIcon { transform: translateY(-3px); }
+}
+
+/* Each collection wireframe gives its live clock and calendar matching edges.
+   The couple's motif supplies all ink and tinted paper. */
+.page {
+    --date-edge: color-mix(in srgb, currentColor 34%, transparent);
+    --clock-border: 1px solid var(--date-edge);
+    --clock-radius: 0;
+    --clock-wash: color-mix(in srgb, currentColor 4%, transparent);
+    --clock-cell-border: 0 solid transparent;
+    --clock-cell-radius: 0;
+    --clock-cell-wash: transparent;
+    --clock-divider: 1px solid var(--date-edge);
+    --calendar-border: 0 solid transparent;
+    --calendar-radius: 0;
+    --calendar-wash: transparent;
+    --day-radius: 50%;
+}
+.datePanel .countdown { margin: 4px auto 28px; padding: 16px 6px; border: var(--clock-border); border-radius: var(--clock-radius); background: var(--clock-wash); }
+.datePanel .countdown > div { min-width: 0; padding: 5px 1px; border: var(--clock-cell-border); border-radius: var(--clock-cell-radius); background: var(--clock-cell-wash); }
+.datePanel .countdown > div + div { border-left: var(--clock-divider); }
+.datePanel .countdown strong { font-weight: 500; }
+.datePanel .calendar { margin-bottom: 0; padding: 16px 7px; border: var(--calendar-border); border-radius: var(--calendar-radius); background: var(--calendar-wash); }
+.datePanel .selectedDay { border-radius: var(--day-radius); }
+
+.page[data-layout='winter-castle'] { --clock-border: 3px double var(--date-edge); --clock-radius: 2px; --calendar-border: 1px solid var(--date-edge); --day-radius: 0; }
+.page[data-layout='olive-lights'] { --clock-border: 0 solid transparent; --clock-cell-wash: color-mix(in srgb, currentColor 9%, transparent); --clock-divider: 0 solid transparent; --calendar-border: 1px solid var(--date-edge); --calendar-radius: 2px; }
+.page[data-layout='split-monogram'] { --clock-border: 1px solid var(--date-edge); --clock-radius: 24px 0; --calendar-border: 1px solid var(--date-edge); --calendar-radius: 0 24px; }
+.page[data-layout='calla-envelope'] { --clock-border: 3px double var(--date-edge); --clock-radius: 28px 0; --calendar-border: 3px double var(--date-edge); --calendar-radius: 0 28px; }
+.page[data-layout='hydrangea-coast'] { --clock-border: 0 solid transparent; --clock-cell-border: 1px solid var(--date-edge); --clock-cell-radius: 50% 50% 3px 3px; --clock-divider: 0 solid transparent; --calendar-radius: 50% 50% 3px 3px / 22px 22px 3px 3px; --calendar-wash: color-mix(in srgb, var(--ref-accent) 7%, transparent); }
+.page[data-layout='blush-botanical'] { --clock-border: 1px solid var(--date-edge); --clock-radius: 30px 0 30px 0; --calendar-border: 1px solid var(--date-edge); --calendar-radius: 0 30px 0 30px; }
+.page[data-layout='sage-wreath'] { --clock-border: 3px double var(--date-edge); --clock-radius: 42px 42px 8px 8px / 24px 24px 8px 8px; --calendar-border: 1px solid var(--date-edge); --calendar-radius: 50%; }
+.page[data-layout='monochrome-collage'] { --clock-border: 1px solid var(--date-edge); --clock-wash: transparent; --calendar-border: 1px solid var(--date-edge); --day-radius: 0; }
+.page[data-layout='blue-scallop'] { --clock-border: 2px dotted var(--date-edge); --clock-radius: 26px; --calendar-border: 2px dotted var(--date-edge); --calendar-radius: 26px; }
+.page[data-layout='cocoa-capsule'] { --clock-border: 1px solid var(--date-edge); --clock-radius: 50% / 22%; --calendar-border: 1px solid var(--date-edge); --calendar-radius: 50% / 18%; }
+.page[data-layout='winter-blue'] { --clock-border: 1px dashed var(--date-edge); --clock-cell-wash: color-mix(in srgb, currentColor 5%, transparent); --calendar-border: 1px dashed var(--date-edge); --calendar-radius: 4px; }
+.page[data-layout='rose-monogram'] { --clock-border: 1px solid var(--date-edge); --clock-radius: 24px 0 24px 0; --calendar-border: 1px solid var(--date-edge); --calendar-radius: 0 24px 0 24px; }
+.page[data-layout='pearl-ballroom'] { --clock-border: 3px double var(--date-edge); --clock-radius: 32px; --calendar-border: 3px double var(--date-edge); --calendar-radius: 32px; }
+.page[data-layout='sea-glass'] { --clock-border: 1px dashed var(--date-edge); --clock-radius: 28px 0; --calendar-border: 1px dashed var(--date-edge); --calendar-radius: 0 28px; }
+.page[data-layout='ocean-coral'] { --clock-border: 2px dotted var(--date-edge); --clock-radius: 40px 40px 16px 16px; --calendar-border: 1px solid var(--date-edge); --calendar-radius: 40px 40px 16px 16px; }
+.page[data-layout='coastal-silver'] { --clock-border: 3px double var(--date-edge); --clock-radius: 26px; --calendar-border: 3px double var(--date-edge); --calendar-radius: 26px; --day-radius: 4px; }
+.page[data-layout='gold-leaf-frame'] { --clock-border: 3px double var(--date-edge); --clock-radius: 24px 0; --calendar-border: 1px solid var(--date-edge); --calendar-radius: 0 24px; }
+.page[data-layout='navy-celebration'] { --clock-border: 3px double var(--date-edge); --clock-radius: 0; --calendar-border: 3px double var(--date-edge); --day-radius: 0; }
+.page[data-layout='blue-chinoiserie'] { --clock-border: 3px double var(--date-edge); --clock-radius: 18px 18px 2px 2px; --calendar-border: 3px double var(--date-edge); --calendar-radius: 18px 18px 2px 2px; }
+.page[data-layout='olive-wave'] { --clock-border: 0 solid transparent; --clock-cell-border: 1px solid var(--date-edge); --clock-cell-radius: 30px; --clock-divider: 0 solid transparent; --calendar-border: 1px solid var(--date-edge); --calendar-radius: 30px; }
+@media (max-width: 380px) { .datePanel .countdown { padding-inline: 4px; gap: 2px; } .datePanel .countdown > div { padding-inline: 0; } }

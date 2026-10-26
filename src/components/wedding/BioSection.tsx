@@ -39,7 +39,7 @@ export default function BioSection({ wedding, id, hideStory = false, hideQuote =
     const textColorBody = isDark ? 'text-white/80' : 'text-[#4A4444]/80';
 
     return (
-        <section id={id} className={`relative z-20 overflow-hidden ${overlapClass}`}>
+        <section data-wedding-section="BioSection" id={id} className={`relative z-20 overflow-hidden ${overlapClass}`}>
             <div className="absolute inset-0 -z-10 opacity-80" style={visual.sectionStyle} />
             <div className={`${visual.containerClass} grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-20 items-center`}>
                 <motion.div 
@@ -73,7 +73,7 @@ export default function BioSection({ wedding, id, hideStory = false, hideQuote =
                         </span>
                     </div>
                     <h2 className={`text-4xl md:text-6xl mb-6 leading-tight ${titleStyle.className}`} style={titleStyle.style}>Meant to Be</h2>
-                    <div className={`mb-8 ${visual.dividerClass}`} />
+                    <div data-wedding-divider="true" className={`mb-8 ${visual.dividerClass}`} />
                     {!hideStory && (
                         <div className="mb-8 md:mb-10 max-w-prose">
                             <p className={`text-base md:text-lg leading-[1.85] whitespace-pre-line break-words text-left ${textColorBody}`}>

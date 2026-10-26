@@ -54,7 +54,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
     const insetClass = visual.isDark ? 'bg-white/5 border-white/15' : 'bg-white/55 border-black/10';
 
     return (
-        <section id={id} className={`py-16 md:py-24 relative z-10 overflow-hidden ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section data-wedding-section="gift" id={id} className={`py-16 md:py-24 relative z-10 overflow-hidden ${visual.sectionClass}`} style={visual.sectionStyle}>
             {/* Background Decoration */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
 
@@ -67,7 +67,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                     className="text-center mb-10 md:mb-14"
                 >
                     <div className="mb-6 flex items-center justify-center">
-                        <span className={visual.badgeStyleClass || `text-xs md:text-xs uppercase font-black block ${visual.eyebrowClass}`}>
+                        <span data-wedding-badge="true" className={visual.badgeStyleClass || `text-xs md:text-xs uppercase font-black block ${visual.eyebrowClass}`}>
                             {visual.badgePrefix ? `${visual.badgePrefix}REGISTRY` : 'With love'}
                         </span>
                     </div>
@@ -82,7 +82,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                     <div className="flex-1 space-y-5 md:space-y-6 w-full">
                         {/* Bank Details Spotlight */}
                         {(wedding.gift_bank || wedding.gift_account_name || wedding.gift_account_number) && (
-                            <motion.div
+                            <motion.div data-wedding-card="true"
                                 initial={{ opacity: 0, x: -40 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
@@ -90,7 +90,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                                 className={`relative group p-5 sm:p-7 ${cardClass}`}
                             >
                                 <details className="group/details">
-                                    <summary className="cursor-pointer py-2 text-base font-medium focus-visible:outline-2 focus-visible:outline-offset-4">Bank transfer details</summary>
+                                    <summary data-wedding-control="quiet" className="cursor-pointer py-2 text-base font-medium focus-visible:outline-2 focus-visible:outline-offset-4">Bank transfer details</summary>
                                 <div className="mt-6 space-y-5 relative z-10 text-left">
                                     {wedding.gift_bank && (
                                         <div>
@@ -105,11 +105,11 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                                         </div>
                                     )}
                                     {wedding.gift_account_number && (
-                                        <div className="bg-primary/[0.03] p-6 rounded-2xl border border-primary/5">
+                                        <div data-wedding-card="true" className="bg-primary/[0.03] p-6 rounded-2xl border border-primary/5">
                                             <p className={`text-xs uppercase tracking-[0.3em] font-black mb-3 ${labelClass}`}>Account number</p>
                                             <p className="font-mono text-base md:text-xl select-all font-medium flex flex-wrap items-center justify-between gap-3 [overflow-wrap:anywhere]">
                                                 {wedding.gift_account_number}
-                                                <button
+                                                <button data-wedding-control="primary"
                                                     type="button"
                                                     onClick={() => {
                                                         if (!wedding.gift_account_number) return;
@@ -129,7 +129,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
 
                         {/* Gift Registry Links with Premium List Style */}
                         {registryLinks.length > 0 && (
-                            <motion.div
+                            <motion.div data-wedding-card="true"
                                 initial={{ opacity: 0, x: -40 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
@@ -142,7 +142,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {registryLinks.map((link, i) => (
-                                        <motion.a
+                                        <motion.a data-wedding-control="secondary"
                                             key={i}
                                             href={link.url}
                                             target="_blank"
@@ -165,7 +165,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                         )}
 
                         {paymentLinks.length > 0 && (
-                            <motion.div
+                            <motion.div data-wedding-card="true"
                                 initial={{ opacity: 0, x: -40 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
@@ -178,7 +178,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                                 </div>
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     {paymentLinks.map((link, i) => (
-                                        <a
+                                        <a data-wedding-control="secondary"
                                             key={`${link.title || link.label || link.type || 'payment'}-${i}`}
                                             href={link.url}
                                             target="_blank"
@@ -196,7 +196,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                         )}
 
                         {cashFunds.length > 0 && (
-                            <motion.div
+                            <motion.div data-wedding-card="true"
                                 initial={{ opacity: 0, x: -40 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
@@ -215,7 +215,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                                         const currency = fund.currency || '';
 
                                         return (
-                                            <div key={`${fund.title}-${i}`} className={`rounded-xl border p-5 ${insetClass}`}>
+                                            <div data-wedding-card="true" key={`${fund.title}-${i}`} className={`rounded-xl border p-5 ${insetClass}`}>
                                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                                     <div>
                                                         <h3 className="font-serif text-2xl leading-tight">{fund.title}</h3>
@@ -243,7 +243,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                     {/* QR Code Showcase */}
                     {wedding.gift_qr_image && (
                         <div className="w-full shrink-0 lg:sticky lg:top-32 lg:w-[300px]">
-                            <div className={`relative overflow-hidden p-5 sm:p-7 md:p-9 ${cardClass}`}>
+                            <div data-wedding-card="true" className={`relative overflow-hidden p-5 sm:p-7 md:p-9 ${cardClass}`}>
                                 <div className="relative z-10 text-center">
                                     <p className={`text-xs font-black uppercase tracking-[0.36em] ${visual.eyebrowClass}`}>
                                         Instant Transfer
@@ -257,7 +257,7 @@ export default function GiftSection({ wedding, invert = false, id }: GiftSection
                                 </div>
 
                                 <div className="relative z-10 mx-auto mt-8 max-w-[220px]">
-                                    <div className={`bg-white p-3 shadow-[0_18px_55px_rgba(0,0,0,0.18)] ${isSharp ? 'rounded-none' : 'rounded-[1.65rem]'}`}>
+                                    <div data-wedding-overlay="true" className={`bg-white p-3 shadow-[0_18px_55px_rgba(0,0,0,0.18)] ${isSharp ? 'rounded-none' : 'rounded-[1.65rem]'}`}>
                                         <div className={`bg-white p-3 ring-1 ring-black/10 ${isSharp ? 'rounded-none' : 'rounded-[1.15rem]'}`}>
                                             <img
                                                 src={wedding.gift_qr_image}

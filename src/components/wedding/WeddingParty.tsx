@@ -23,7 +23,7 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
 
     if (portraitLayout) {
         return (
-            <section id="entourage" className={`relative px-5 py-16 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+            <section data-wedding-section="entourage" id="entourage" className={`relative px-5 py-16 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
                 <div className="mx-auto max-w-5xl">
                     <h2 className={`mb-12 text-center text-4xl md:text-5xl ${titleStyle.className}`} style={titleStyle.style}>Our Wedding Party</h2>
                     <div className="space-y-12">
@@ -32,7 +32,7 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
                                 <h3 className={`mb-6 text-center text-sm uppercase tracking-[0.16em] ${visual.bodyClass}`}>{role}</h3>
                                 <div className="flex flex-wrap justify-center gap-x-8 gap-y-10">
                                     {visibleMembers.filter(member => (member.role || 'Wedding party') === role).map((member, index) => (
-                                        <div key={member.id || `${member.name}-${index}`} className="w-[min(100%,15rem)] text-center">
+                                        <div data-wedding-card="true" key={member.id || `${member.name}-${index}`} className="w-[min(100%,15rem)] text-center">
                                             {member.photo && <img src={member.photo} alt={member.name} loading="lazy" decoding="async" className={`mb-5 aspect-[4/5] w-full object-cover ${visual.isOrganic ? 'rounded-t-[7rem]' : 'rounded-sm'}`} />}
                                             <p className={`font-serif text-2xl ${visual.bodyClass}`}>{member.name}</p>
                                             {member.bio && <p className={`mt-2 text-base leading-relaxed ${visual.bodyClass}`}>{member.bio}</p>}
@@ -48,7 +48,7 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
     }
 
     return (
-        <section id="entourage" className={`relative px-4 py-16 sm:px-5 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section data-wedding-section="entourage" id="entourage" className={`relative px-4 py-16 sm:px-5 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <div className={`pointer-events-none absolute inset-0 overflow-hidden ${invitationStyle.overlayClass}`}>
                 <div className={invitationStyle.cornerTopClass} style={{ borderColor: `${motifColor}55` }} />
                 <div className={invitationStyle.cornerBottomClass} style={{ borderColor: `${motifColor}55` }} />
@@ -57,14 +57,14 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
             </div>
 
             <div className="relative mx-auto max-w-5xl">
-                <div className={`relative mx-auto overflow-hidden px-5 py-14 text-center sm:px-10 md:px-14 md:py-16 ${invitationStyle.paperClass}`} style={invitationStyle.paperStyle}>
+                <div data-wedding-card="true" className={`relative mx-auto overflow-hidden px-5 py-14 text-center sm:px-10 md:px-14 md:py-16 ${invitationStyle.paperClass}`} style={invitationStyle.paperStyle}>
                     <div className="pointer-events-none absolute inset-x-8 top-7 h-px opacity-70" style={{ background: invitationStyle.ruleGradient }} />
                     <div className="pointer-events-none absolute inset-x-8 bottom-7 h-px opacity-70" style={{ background: invitationStyle.ruleGradient }} />
 
                     <div className="relative mx-auto mb-11 max-w-3xl">
                         <div className="mb-5 flex items-center justify-center gap-4">
                             <span className="h-px w-10 opacity-70" style={{ backgroundColor: motifColor }} />
-                            <span className={visual.badgeStyleClass || `text-xs font-black uppercase tracking-[0.34em] ${visual.eyebrowClass}`}>
+                            <span data-wedding-badge="true" className={visual.badgeStyleClass || `text-xs font-black uppercase tracking-[0.34em] ${visual.eyebrowClass}`}>
                                 {visual.badgePrefix ? `${visual.badgePrefix}ENTOURAGE` : 'The Wedding Party'}
                             </span>
                             <span className="h-px w-10 opacity-70" style={{ backgroundColor: motifColor }} />

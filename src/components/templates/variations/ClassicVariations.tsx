@@ -214,7 +214,7 @@ export function ClassicV2({ wedding, gallery, isExpired }: TemplateProps) {
 
             {/* Story-First Section Flow */}
             <BioSection id="bio" wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="carousel" />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout && wedding.gallery_layout !== 'auto' ? wedding.gallery_layout : 'horizontal'} cardStyle={wedding.card_style} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle="v2" />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
@@ -308,7 +308,7 @@ export function ClassicV3({ wedding, gallery, isExpired }: TemplateProps) {
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <BioSection id="bio" wedding={wedding} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle="v3" />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="polaroid" />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout && wedding.gallery_layout !== 'auto' ? wedding.gallery_layout : 'vertical'} cardStyle={wedding.card_style} />
             <AttireSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
@@ -372,7 +372,7 @@ export function ClassicV4({ wedding, gallery, isExpired }: TemplateProps) {
 
             {/* Media Showcase Priority Flow */}
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle="v4" />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="magazine" />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout && wedding.gallery_layout !== 'auto' ? wedding.gallery_layout : 'bento'} cardStyle={wedding.card_style} />
             <BioSection id="bio" wedding={wedding} />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
@@ -445,7 +445,7 @@ export function ClassicV5({ wedding, gallery, isExpired }: TemplateProps) {
             <DetailsSection id="details" wedding={wedding} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <BioSection id="bio" wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout="minimal" />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout && wedding.gallery_layout !== 'auto' ? wedding.gallery_layout : 'grid'} cardStyle={wedding.card_style} />
             <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle="v5" />
             <AttireSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />

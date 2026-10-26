@@ -1,0 +1,288 @@
+/* Opt-in page theme: shared planner components retain their behavior while the
+   invitation owns their presentation. Status messages, QR codes and media are exempt. */
+.theme.theme { font-family: var(--invitation-body-font); color: var(--invitation-ink); background: var(--invitation-paper); }
+.theme.theme [data-wedding-section], .theme.theme [data-wedding-footer] {
+    --wedding-heading: var(--invitation-ink) !important;
+    --wedding-ink: var(--invitation-ink) !important;
+    color: var(--invitation-ink) !important;
+    background: var(--invitation-paper) !important;
+    font-family: var(--invitation-body-font);
+    min-height: 0 !important;
+}
+.theme.theme > [data-wedding-section], .theme.theme > [data-wedding-footer] {
+    max-width: 520px;
+    margin-inline: auto;
+    padding-inline: 28px;
+    width: 100%;
+}
+@media (min-width: 768px) {
+    .theme.theme > [data-wedding-section], .theme.theme > [data-wedding-footer] {
+        max-width: 860px;
+        padding-inline: 40px;
+    }
+}
+@media (min-width: 1024px) {
+    .theme.theme > [data-wedding-section], .theme.theme > [data-wedding-footer] {
+        max-width: 1160px;
+        padding-inline: 56px;
+    }
+}
+@media (min-width: 1280px) {
+    .theme.theme > [data-wedding-section], .theme.theme > [data-wedding-footer] {
+        max-width: 1280px;
+        padding-inline: 64px;
+    }
+}
+.theme.theme [data-wedding-card] {
+    color: var(--invitation-ink) !important;
+    background: var(--invitation-card-surface) !important;
+    border-color: var(--invitation-card-border) !important;
+    border-width: var(--invitation-card-border-width) !important;
+    backdrop-filter: var(--invitation-card-filter);
+    border-radius: var(--invitation-card-radius) !important;
+    box-shadow: var(--invitation-card-shadow) !important;
+}
+.theme.theme :where([data-wedding-section], [data-wedding-footer], [data-wedding-navigation], [data-wedding-media-control]) :where(p, span, label, legend, small, strong, em, h3, h4, li, summary, a, button) {
+    font-family: var(--invitation-body-font);
+}
+.theme.theme :where([data-wedding-section], [data-wedding-footer]) :where(p, span, label, legend, small, strong, em, h3, h4, li, summary, a):not([data-wedding-status], [data-wedding-status] *, [data-wedding-overlay], [data-wedding-overlay] *, [data-wedding-control], [data-wedding-control] *) {
+    color: var(--invitation-ink) !important;
+}
+.theme.theme [data-wedding-section] h2, .theme.theme [data-wedding-footer] [class~='font-serif'] {
+    font-family: var(--invitation-title-font) !important;
+}
+.theme.theme [data-wedding-section] h2:not([class~='text-transparent']) { color: var(--invitation-ink); background-image: none; }
+.theme.theme [data-wedding-section] :where([class*='text-primary'], [class*='text-accent']):not([data-wedding-control], [data-wedding-control] *, [data-wedding-overlay] *, [data-wedding-status], [data-wedding-status] *) { color: var(--invitation-link) !important; }
+.theme.theme [data-wedding-field] {
+    font-family: var(--invitation-body-font) !important;
+    background: var(--invitation-paper) !important;
+    color: var(--invitation-ink) !important;
+    border-color: var(--invitation-border) !important;
+    border-radius: var(--invitation-button-radius) !important;
+    box-shadow: none;
+    accent-color: var(--invitation-action);
+}
+.theme.theme [data-wedding-field]::placeholder { color: var(--invitation-muted); opacity: .85; }
+.theme.theme [data-wedding-control] {
+    font-family: var(--invitation-body-font) !important;
+    border-radius: var(--invitation-button-radius) !important;
+    border-color: var(--invitation-border) !important;
+    box-shadow: none !important;
+    text-shadow: none;
+}
+.theme.theme [data-wedding-control='primary'] {
+    background: var(--invitation-action) !important;
+    color: var(--invitation-on-action) !important;
+    border-color: var(--invitation-action) !important;
+}
+.theme.theme [data-wedding-control='secondary'] {
+    background: var(--invitation-paper) !important;
+    color: var(--invitation-link) !important;
+    border-color: var(--invitation-link) !important;
+}
+.theme.theme [data-wedding-control='navigation'], .theme.theme [data-wedding-control='media'] {
+    background: transparent !important;
+    color: var(--invitation-link) !important;
+}
+.theme.theme [data-wedding-control] :where(span, svg):not([data-wedding-status], [data-wedding-status] *) { color: inherit !important; }
+.theme.theme :where([data-wedding-control], [data-wedding-field]):focus-visible { outline: 2px solid var(--invitation-link) !important; outline-offset: 3px; }
+.theme.theme [data-wedding-control]:disabled { opacity: .55; cursor: not-allowed; }
+.theme.theme [data-wedding-control='navigation'][aria-current], .theme.theme [data-wedding-control='navigation'][aria-expanded='true'] {
+    background: var(--invitation-action) !important;
+    color: var(--invitation-on-action) !important;
+}
+.theme.theme [data-wedding-navigation], .theme.theme [data-wedding-media-control] {
+    background: var(--invitation-paper) !important;
+    color: var(--invitation-ink) !important;
+    border-color: var(--invitation-border) !important;
+    border-radius: var(--invitation-card-radius) !important;
+    font-family: var(--invitation-body-font);
+}
+.theme.theme [data-wedding-navigation] :where(span, svg) { color: inherit !important; }
+.theme.theme [data-wedding-footer] { border-color: var(--invitation-border); }
+.theme.theme [data-wedding-footer] :where(p, a) { color: var(--invitation-ink) !important; }
+@media(max-width:540px) { .theme.theme > [data-wedding-section], .theme.theme > [data-wedding-footer] { max-width: 100%; } }
+
+.theme.theme [data-wedding-control='quiet'] { background: transparent !important; color: var(--invitation-ink) !important; }
+.theme.theme [data-wedding-section] h3 { font-family: var(--invitation-heading-font) !important; }
+.theme.theme [data-wedding-section] :where(div, details)[class*='text-']:not([data-wedding-status], [data-wedding-status] *, [data-wedding-overlay], [data-wedding-overlay] *) { color: var(--invitation-ink) !important; }
+
+.theme.theme [data-wedding-entrance] { background: var(--invitation-paper) !important; color: var(--invitation-ink) !important; font-family: var(--invitation-body-font); }
+.theme.theme [data-wedding-entrance] [class~='font-serif'] { font-family: var(--invitation-heading-font) !important; }
+
+.theme.theme [data-wedding-media-control] :where(p, span):not([data-wedding-overlay] *) { color: var(--invitation-ink) !important; }
+.theme.theme [data-wedding-media-control] [data-wedding-overlay] { background: var(--invitation-action) !important; color: var(--invitation-on-action) !important; }
+
+.theme.theme [data-wedding-footer] img { filter: grayscale(1) brightness(.3) !important; }
+.theme.theme h2[class~='text-transparent'] { color: transparent !important; }
+
+.theme.theme :where([data-wedding-control='primary'], [data-wedding-control='secondary']) { min-height: 44px; }
+
+.theme.theme [data-wedding-section] [data-wedding-badge] { background: var(--invitation-subtle) !important; color: var(--invitation-ink) !important; border-color: var(--invitation-border) !important; border-radius: var(--invitation-button-radius) !important; }
+.theme.theme [data-wedding-divider] { background: var(--invitation-border) !important; border-color: var(--invitation-border) !important; }
+
+/* Explicit builder settings apply across native/composed templates without changing
+   the default template wireframe or photographic overlays. */
+.builder[data-builder-font] { font-family: var(--builder-body-font); }
+.builder[data-builder-font] :where(h1, h1 span, h1 em) { font-family: var(--builder-heading-font) !important; }
+.builder[data-builder-font] [data-wedding-section] { font-family: var(--builder-body-font); }
+.builder[data-builder-title-font]:not([data-builder-title-font='default']) h2 { font-family: var(--builder-title-font) !important; }
+.builder[data-builder-background]:not([data-builder-background='gradient']) [data-wedding-section],
+.builder[data-builder-background]:not([data-builder-background='gradient']) [data-wedding-footer] {
+    --wedding-heading: var(--builder-ink) !important;
+    --wedding-ink: var(--builder-ink) !important;
+    color: var(--builder-ink) !important;
+    background: var(--builder-paper) !important;
+}
+.builder[data-builder-background]:not([data-builder-background='gradient']) [data-wedding-section] > [class*='absolute'][class*='inset-0'] { background: none !important; }
+.builder[data-builder-background]:not([data-builder-background='gradient']) :where([data-wedding-section], [data-wedding-footer]) :where(p, span, h3, h4, label, legend, li):not([data-wedding-control] *, [data-wedding-overlay] *, [data-wedding-status], [data-wedding-status] *) { color: var(--builder-ink) !important; }
+.builder[data-builder-background]:not([data-builder-background='gradient']) [data-wedding-section] h2:not([class~='text-transparent']) { color: var(--builder-ink) !important; }
+.builder[data-builder-card]:not([data-builder-card='default']) [data-wedding-card] {
+    background: var(--builder-card-surface) !important;
+    color: var(--builder-ink) !important;
+    border-radius: var(--builder-card-radius) !important;
+    border-color: var(--builder-card-border) !important;
+    border-width: var(--builder-card-border-width) !important;
+    box-shadow: var(--builder-card-shadow) !important;
+    backdrop-filter: var(--builder-card-filter);
+}
+.builder [data-wedding-control='primary'] {
+    background: var(--builder-action) !important;
+    color: var(--builder-on-action) !important;
+    border-color: var(--builder-action) !important;
+}
+.builder [data-wedding-control='secondary'] {
+    background: var(--builder-paper) !important;
+    color: var(--builder-link) !important;
+    border-color: var(--builder-link) !important;
+}
+.builder [data-wedding-control] :where(span, svg) { color: inherit !important; }
+.builder [data-wedding-field] { accent-color: var(--builder-action); font-family: var(--builder-body-font); }
+.builder :where([data-wedding-control], [data-wedding-field]):focus-visible { outline: 2px solid var(--builder-link); outline-offset: 3px; }
+
+.builder [data-wedding-field] {
+    background: var(--builder-paper) !important;
+    color: var(--builder-ink) !important;
+    border-color: var(--builder-border) !important;
+}
+.builder [data-wedding-field]::placeholder { color: var(--builder-muted) !important; opacity: 1; }
+
+/* Match planner-section typography to the scale of the surrounding stationery. */
+.theme.theme [data-wedding-section] h2 {
+    font-size: clamp(28px, 6vw, 38px);
+    line-height: 1.22;
+    font-weight: 400;
+    text-wrap: balance;
+    letter-spacing: .015em;
+}
+.theme.theme [data-wedding-card] h3 { font-size: clamp(19px, 4.5vw, 24px); line-height: 1.35; }
+.theme.theme [data-wedding-field] { min-height: 44px; }
+.theme.theme textarea[data-wedding-field] { min-height: 112px; }
+
+/* Shared RSVP, venue, story and FAQ sections inherit the invitation's stationery.
+   These are section separators, independent of the couple's chosen card treatment. */
+.theme.theme { --section-rule-style: solid; --section-rule-width: 1px; --section-ornament-radius: 50%; }
+.theme[data-invitation-decoration='bow'] { --section-rule-style: double; --section-rule-width: 3px; }
+.theme[data-invitation-theme='ticket'], .theme[data-invitation-theme='doodle'] { --section-rule-style: dashed; }
+.theme[data-invitation-theme='coastal'], .theme[data-invitation-theme='coastal-silver'], .theme[data-invitation-theme='pearl-ballroom'] { --section-rule-style: dotted; --section-rule-width: 3px; }
+.theme.theme { --section-top-radius: 0; --section-ornament-width: 44px; }
+.theme:is([data-invitation-theme='envelope'], [data-invitation-theme='calla-envelope'], [data-invitation-theme='magnolia'], [data-invitation-theme='sage-wreath']) { --section-top-radius: 32px; --section-rule-style: double; --section-rule-width: 3px; }
+.theme:is([data-invitation-theme='coastal'], [data-invitation-theme='hydrangea-coast'], [data-invitation-theme='ocean-coral'], [data-invitation-theme='sea-glass']) { --section-top-radius: 42px; --section-rule-style: dotted; --section-rule-width: 2px; }
+.theme:is([data-invitation-theme='torn'], [data-invitation-theme='winter-blue'], [data-invitation-theme='olive-lights']) { --section-rule-style: dashed; --section-top-radius: 8px; }
+.theme:is([data-invitation-theme='baroque'], [data-invitation-theme='blue-floral'], [data-invitation-theme='blue-chinoiserie'], [data-invitation-theme='toile'], [data-invitation-theme='gold-leaf-frame']) { --section-rule-style: double; --section-rule-width: 3px; --section-top-radius: 18px; }
+.theme:is([data-invitation-theme='botanical'], [data-invitation-theme='blush-botanical'], [data-invitation-theme='rose-monogram'], [data-invitation-theme='split-monogram']) { --section-top-radius: 24px; }
+.theme:is([data-invitation-theme='western'], [data-invitation-theme='estate'], [data-invitation-theme='winter-castle'], [data-invitation-theme='pearl-ballroom']) { --section-rule-style: double; --section-rule-width: 3px; --section-top-radius: 12px; }
+.theme:is([data-invitation-theme='silk'], [data-invitation-theme='cocoa-capsule'], [data-invitation-theme='olive-wave']) { --section-top-radius: 40px; }
+.theme:is([data-invitation-theme='ticket'], [data-invitation-theme='doodle'], [data-invitation-theme='blue-scallop']) { --section-rule-style: dashed; --section-top-radius: 6px; }
+.theme:is([data-invitation-theme='meadow'], [data-invitation-theme='forest'], [data-invitation-theme='monochrome-collage'], [data-invitation-theme='navy-celebration']) { --section-top-radius: 2px; }
+.theme:is([data-invitation-theme='gold'], [data-invitation-theme='coastal-silver']) { --section-rule-style: double; --section-rule-width: 3px; --section-top-radius: 24px; }
+.theme:is([data-invitation-theme='classic'], [data-invitation-theme='editorial']) { --section-top-radius: 0; --section-ornament-width: 28px; }
+.theme[data-invitation-style='reference-12'] { --section-rule-style: dashed; --section-rule-width: 1px; --section-top-radius: 0; }
+.theme[data-invitation-style='reference-07'] { --section-top-radius: 18px; }
+.theme[data-invitation-style='reference-15'] { --section-top-radius: 32px; }
+.theme[data-invitation-style='reference-16'] { --section-top-radius: 0; }
+.theme[data-invitation-style='reference-17'] { --section-top-radius: 24px; }
+.theme[data-invitation-style='reference-18'] { --section-top-radius: 30px; --section-rule-width: 1px; --section-rule-style: solid; }
+.theme[data-invitation-style='reference-20'] { --section-top-radius: 0; }
+.theme[data-invitation-style='reference-21'] { --section-top-radius: 44px; --section-rule-style: double; --section-rule-width: 3px; }
+.theme[data-invitation-style='reference-22'] { --section-top-radius: 0; }
+.theme[data-invitation-style='reference-23'] { --section-top-radius: 16px; }
+.theme[data-invitation-style='reference-24'] { --section-rule-style: solid; --section-rule-width: 1px; --section-top-radius: 42px; }
+.theme[data-invitation-style='reference-30'] { --section-rule-style: double; --section-rule-width: 3px; }
+.theme.theme [data-wedding-section] {
+    border-block-start: var(--section-rule-width) var(--section-rule-style) var(--invitation-border);
+    border-start-start-radius: var(--section-top-radius);
+    border-start-end-radius: var(--section-top-radius);
+}
+.theme.theme [data-wedding-section] h2::after {
+    content: '';
+    display: block;
+    width: var(--section-ornament-width);
+    height: 7px;
+    margin: 18px auto 0;
+    border-block: 1px solid var(--invitation-border);
+    border-radius: var(--section-ornament-radius);
+    pointer-events: none;
+}
+.theme[data-invitation-decoration='leaves'] [data-wedding-section] h2::after {
+    width: 34px;
+    height: 12px;
+    border-radius: 100% 0 100% 0;
+    background: color-mix(in srgb, var(--invitation-motif) 10%, transparent);
+}
+.theme[data-invitation-decoration='flowers'] [data-wedding-section] h2::after {
+    width: 52px;
+    height: 10px;
+    border: 0;
+    background: radial-gradient(circle at 50% 50%, var(--invitation-motif) 0 2px, transparent 2.5px), linear-gradient(var(--invitation-border), var(--invitation-border)) left center / 18px 1px no-repeat, linear-gradient(var(--invitation-border), var(--invitation-border)) right center / 18px 1px no-repeat;
+}
+.theme[data-invitation-decoration='none'] [data-wedding-section] h2::after,
+.theme[data-invitation-theme='editorial'] [data-wedding-section] h2::after,
+.theme[data-invitation-theme='monochrome-collage'] [data-wedding-section] h2::after {
+    height: 1px;
+    width: 32px;
+    border: 0;
+    border-radius: 0;
+    background: var(--invitation-border);
+}
+
+/* Progressive enhancement: visible content remains usable without scroll timelines.
+   Only headings move, so form focus, maps and photo dialogs retain stable geometry. */
+@supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+        .theme.theme [data-wedding-section] h2 {
+            animation: stationeryHeading ease-out both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 100%;
+        }
+    }
+}
+@keyframes stationeryHeading {
+    from { opacity: .82; translate: 0 10px; }
+    to { opacity: 1; translate: 0 0; }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .theme.theme [data-wedding-control='primary'], .theme.theme [data-wedding-control='secondary'] {
+        transition: box-shadow 180ms ease, translate 180ms ease;
+    }
+    .theme.theme [data-wedding-control='primary']:not(:disabled):hover,
+    .theme.theme [data-wedding-control='secondary']:not(:disabled):hover {
+        translate: 0 -2px;
+        box-shadow: 0 4px 0 color-mix(in srgb, var(--invitation-motif) 16%, transparent);
+    }
+}
+@media print {
+    .theme.theme [data-wedding-section] h2 { animation: none; opacity: 1; translate: none; }
+}
+
+/* FAQ/footer siblings outside native template roots carry the same stationery edge. */
+.builder:not(.theme):is([data-builder-template='editorial-romance'], [data-builder-template='envelope-wax-seal'], [data-builder-template='pearl-coastal'], [data-builder-template='watercolor-meadow'], [data-builder-template='velure-editorial'], [data-builder-template='torn-paper-terracotta'], [data-builder-template='love-letter'], [data-builder-template='butter-blue'], [data-builder-template='ribbon-romance']) {
+    --native-sibling-rule: solid;
+    --native-sibling-width: 1px;
+}
+.builder:not(.theme):is([data-builder-template='envelope-wax-seal'], [data-builder-template='velure-editorial'], [data-builder-template='love-letter']) { --native-sibling-rule: double; --native-sibling-width: 3px; }
+.builder:not(.theme)[data-builder-template='pearl-coastal'] { --native-sibling-rule: dotted; --native-sibling-width: 2px; }
+.builder:not(.theme):is([data-builder-template='torn-paper-terracotta'], [data-builder-template='butter-blue']) { --native-sibling-rule: dashed; }
+.builder:not(.theme):is([data-builder-template='editorial-romance'], [data-builder-template='envelope-wax-seal'], [data-builder-template='pearl-coastal'], [data-builder-template='watercolor-meadow'], [data-builder-template='velure-editorial'], [data-builder-template='torn-paper-terracotta'], [data-builder-template='love-letter'], [data-builder-template='butter-blue'], [data-builder-template='ribbon-romance']):is(:not([data-builder-card]), [data-builder-card='default']) > [data-wedding-section] {
+    border-block-start: var(--native-sibling-width, 0) var(--native-sibling-rule, solid) var(--builder-border);
+}

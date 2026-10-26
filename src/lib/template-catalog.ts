@@ -1,3 +1,6 @@
+import { REFERENCE_INVITATIONS } from './reference-invitations';
+import { resolveTemplateFamily } from './theme-engine';
+
 export type TemplateCatalogItem = {
     id: string;
     name: string;
@@ -18,29 +21,29 @@ export type TemplateRecommendationInput = {
 };
 
 const TEMPLATE_FILTERS: Record<Exclude<TemplateFilter, 'all'>, readonly string[]> = {
-    classic: ['classic', 'traditional', 'elegance', 'vintage', 'royal', 'artdeco'],
-    modern: ['minimal', 'timeline', 'rsvpfocus', 'vogue', 'editorial', 'editorial-luxe', 'monochrome'],
-    romantic: ['romantic', 'whimsical', 'sakura', 'garden', 'rustic', 'boho', 'botanical-arch'],
-    destination: ['elopement', 'tropical', 'cinematic', 'film', 'cinematic-vow'],
-    bold: ['luxury', 'midnight', 'urban', 'glitch', 'vogue', 'editorial', 'monochrome', 'cinematic-vow'],
+    classic: ['classic', 'traditional', 'elegance', 'vintage', 'royal', 'artdeco', 'editorial-romance', 'envelope-wax-seal', 'velure-editorial'],
+    modern: ['minimal', 'nordic', 'timeline', 'rsvpfocus', 'vogue', 'editorial', 'editorial-luxe', 'monochrome', 'velure-editorial'],
+    romantic: ['romantic', 'whimsical', 'sakura', 'garden', 'rustic', 'boho', 'botanical-arch', 'editorial-romance', 'pearl-coastal', 'torn-paper-terracotta'],
+    destination: ['elopement', 'tropical', 'cinematic', 'film', 'cinematic-vow', 'riviera', 'pearl-coastal', 'watercolor-meadow'],
+    bold: ['luxury', 'midnight', 'celestial', 'urban', 'glitch', 'vogue', 'editorial', 'monochrome', 'cinematic-vow', 'torn-paper-terracotta'],
 };
 
 export function templateMatchesFilter(templateId: string, filter: TemplateFilter) {
-    return filter === 'all' || TEMPLATE_FILTERS[filter].includes(templateId);
+    return filter === 'all' || TEMPLATE_FILTERS[filter].includes(templateId) || TEMPLATE_FILTERS[filter].includes(resolveTemplateFamily(templateId));
 }
 
 export function recommendTemplateIds(input: TemplateRecommendationInput) {
     const signals: Record<string, readonly string[]> = {
         'mood:timeless': ['classic', 'traditional', 'elegance', 'royal'],
-        'mood:soft': ['romantic', 'sakura', 'garden', 'whimsical'],
+        'mood:soft': ['ribbon-romance', 'romantic', 'sakura', 'garden'],
         'mood:clean': ['minimal', 'editorial', 'timeline', 'rsvpfocus'],
         'mood:dramatic': ['luxury', 'midnight', 'cinematic', 'artdeco'],
-        'mood:playful': ['boho', 'tropical', 'whimsical', 'glitch'],
+        'mood:playful': ['butter-blue', 'boho', 'tropical', 'whimsical'],
         'venue:ballroom': ['classic', 'luxury', 'royal', 'artdeco'],
         'venue:garden': ['garden', 'romantic', 'sakura', 'boho'],
         'venue:beach': ['tropical', 'elopement', 'boho', 'cinematic'],
         'venue:city': ['urban', 'editorial', 'vogue', 'minimal'],
-        'venue:intimate': ['elopement', 'minimal', 'romantic', 'vintage'],
+        'venue:intimate': ['love-letter', 'elopement', 'minimal', 'vintage'],
         'priority:photos': ['editorial', 'cinematic', 'film', 'vogue'],
         'priority:schedule': ['timeline', 'minimal', 'classic', 'elegance'],
         'priority:rsvp': ['rsvpfocus', 'minimal', 'timeline', 'classic'],
@@ -50,6 +53,13 @@ export function recommendTemplateIds(input: TemplateRecommendationInput) {
     for (const [key, value] of Object.entries(input)) {
         if (!value) continue;
         signals[`${key}:${value}`]?.forEach((id, rank) => scores.set(id, (scores.get(id) || 0) + 5 - rank));
+    }
+    // Related premium designs receive a lower family score, keeping the direct matches first.
+    for (const template of TEMPLATES) {
+        const family = resolveTemplateFamily(template.id);
+        if (family !== template.id && !scores.has(template.id) && scores.has(family)) {
+            scores.set(template.id, Math.max(0.5, scores.get(family)! - 1));
+        }
     }
     return [...scores.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id).slice(0, 4);
 }
@@ -223,12 +233,26 @@ export const TEMPLATE_STYLE_VARIANTS: TemplateStyleVariant[] = [
  * For templates with bespoke variation definitions (like `classic`), returns those.
  * Generates 5 structured variations for other template IDs.
  */
+const REFERENCE_STYLE_VARIANTS: TemplateStyleVariant[] = REFERENCE_INVITATIONS.map(reference => ({
+    id: reference.id, templateId: reference.templateId, variationKey: 'v1',
+    name: `${String(reference.reference).padStart(2, '0')} · ${reference.name}`,
+    desc: `Reference ${reference.reference}: ${reference.name}. Editable names, photos, date, venues and guest details.`,
+    accent: reference.accent, heroLayout: reference.layout,
+    typography: reference.layout === 'doodle' ? 'Handwritten stationery' : 'Serif and calligraphy stationery',
+    sectionArrangement: 'Continuous invitation with venue, timeline and guest reply',
+    galleryStyle: 'Portrait keepsakes', buttonStyle: 'Stationery reply button',
+    backgroundDesign: reference.decoration, rsvpStyle: 'Existing guest reply form',
+    mobileLayout: 'Single scrolling invitation',
+    previewGradient: `linear-gradient(145deg, ${reference.paper} 25%, ${reference.accent})`,
+}));
+
 export function getTemplateStyleVariants(templateId?: string): TemplateStyleVariant[] {
     const targetId = (templateId || 'classic').toLowerCase();
     const explicit = TEMPLATE_STYLE_VARIANTS.filter((variant) => variant.templateId === targetId);
+    const references = REFERENCE_STYLE_VARIANTS.filter(variant => variant.templateId === targetId);
 
     if (explicit.length >= 5) {
-        return explicit;
+        return [...explicit, ...references];
     }
 
     // Default template accent map fallback
@@ -325,7 +349,7 @@ export function getTemplateStyleVariants(templateId?: string): TemplateStyleVari
         if (!map.has(v.id)) map.set(v.id, v);
     });
 
-    return Array.from(map.values()).slice(0, 5);
+    return [...Array.from(map.values()).slice(0, 5), ...references];
 }
 
 export function isTemplateStyleAvailable(templateId?: string, styleId?: string) {
@@ -336,7 +360,7 @@ export function isTemplateStyleAvailable(templateId?: string, styleId?: string) 
 
 export function getTemplateStyleLabel(styleId?: string) {
     if (!styleId || styleId === DEFAULT_TEMPLATE_STYLE) return 'Original (V1)';
-    const found = TEMPLATE_STYLE_VARIANTS.find((variant) => variant.id === styleId);
+    const found = [...TEMPLATE_STYLE_VARIANTS, ...REFERENCE_STYLE_VARIANTS].find((variant) => variant.id === styleId);
     if (found) return found.name;
     if (styleId.includes('_v2') || styleId === 'v2') return 'Split-Screen Modern (V2)';
     if (styleId.includes('_v3') || styleId === 'v3') return 'Framed Invitation (V3)';
@@ -346,6 +370,9 @@ export function getTemplateStyleLabel(styleId?: string) {
 }
 
 export const FREE_TEMPLATE_IDS = [
+    'love-letter',
+    'butter-blue',
+    'ribbon-romance',
     'classic',
     'minimal',
     'romantic',
@@ -376,6 +403,28 @@ export const LANDING_TEMPLATE_IDS = ['classic', 'minimal', 'boho', 'royal', 'mid
 export const SHOWCASE_TEMPLATE_IDS = ['classic', 'minimal', 'royal', 'boho', 'urban', 'tropical'] as const;
 
 export const TEMPLATES: TemplateCatalogItem[] = [
+    {
+        id: 'love-letter', name: 'Love Letter',
+        desc: 'A folded-paper invitation, handwritten note, keepsake portrait, and personal monogram seal.',
+        accent: '#87563e', eyebrow: 'Modern Stationery', mood: 'Warm paper, cocoa ink, and a note from the heart',
+        image: '/templates/love-letter.png', tier: 'free',
+        previewGradient: 'linear-gradient(135deg, #eee7da, #fffaf0)',
+    },
+    {
+        id: 'butter-blue', name: 'Butter & Blue',
+        desc: 'A striped destination postcard with butter-yellow paper, cobalt ink, and room for the good times.',
+        accent: '#254caa', eyebrow: 'Destination Postcard', mood: 'Butter yellow, cobalt stripes, and sunny celebration',
+        image: '/templates/butter-blue.png', tier: 'free',
+        previewGradient: 'repeating-linear-gradient(90deg, #fff4bd 0, #fff4bd 24px, #dce5ef 24px, #dce5ef 48px)',
+    },
+    {
+        id: 'ribbon-romance', name: 'Ribbon Romance',
+        desc: 'A bow-tied invitation with a curved double frame, rich burgundy type, and soft blush paper.',
+        accent: '#82334b', eyebrow: 'Tied With Love', mood: 'Burgundy ribbon, blush stationery, and graceful curves',
+        image: '/templates/ribbon-romance.png', tier: 'free',
+        previewGradient: 'linear-gradient(135deg, #efdbdf, #fff1f2)',
+    },
+
     {
         id: 'classic',
         name: 'Classic Elegance',
@@ -871,6 +920,66 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         mood: 'Warm amber, anamorphic letterbox, and love on film',
         tier: 'premium',
         previewGradient: 'linear-gradient(135deg, #12100E 0%, #292019 50%, #C89666 100%)',
+    },
+    {
+        id: 'editorial-romance',
+        name: 'Editorial Romance',
+        desc: 'Handcrafted luxury stationery, vintage Mediterranean romance, deckle paper edges, and overlapping photo keepsakes.',
+        accent: '#B85C7A',
+        eyebrow: 'Stationery & Romance',
+        mood: 'Deckle paper, botanical sprigs, and handcrafted vows',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #FAF7F2 0%, #F5ECE8 50%, #B85C7A 100%)',
+    },
+    {
+        id: 'envelope-wax-seal',
+        name: 'Wax Seal & Envelope',
+        desc: 'Luxury stationery with 3D wax seal, envelope flap, interactive calendar, and QR registry.',
+        accent: '#3D5239',
+        eyebrow: 'Stationery & Wax Seal',
+        mood: 'Deep olive, gold seal, and boxed calendar',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #2C3B29 0%, #445E3E 50%, #F5F4EE 100%)',
+    },
+    {
+        id: 'pearl-coastal',
+        name: 'Pearl & Coastal Shell',
+        desc: 'Organic undulating paper curves, freshwater pearls, scallop seashells, and soft blush roses.',
+        accent: '#B98B82',
+        eyebrow: 'Coastal & Freshwater Pearls',
+        mood: 'Linen paper, pearls, and coastal sea breeze',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #F8F4EE 0%, #E8DDD4 50%, #B98B82 100%)',
+    },
+    {
+        id: 'watercolor-meadow',
+        name: 'Watercolor Meadow',
+        desc: 'Hand-painted watercolor meadow, flying swallows, pine silhouettes, and guest guide manual.',
+        accent: '#3B5938',
+        eyebrow: 'Meadow & Eucalyptus',
+        mood: 'Watercolor pine, swallows, and guest manual',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #F5F7F2 0%, #C9D9C7 50%, #3B5938 100%)',
+    },
+    {
+        id: 'velure-editorial',
+        name: 'Velure Editorial',
+        desc: 'Sage & gold foil leaves, arch monogram plaque, floating music player, and milestone timeline.',
+        accent: '#4E5D4C',
+        eyebrow: 'Gold Leaf & Sage',
+        mood: 'Didone serif, gold leaf, and floating audio',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #F8F6F0 0%, #C5A059 50%, #4E5D4C 100%)',
+    },
+    {
+        id: 'torn-paper-terracotta',
+        name: 'Torn Paper Terracotta',
+        desc: 'Realistic ripped deckle paper edges, parents honoring block, itinerary icons, and terracotta floral bouquets.',
+        accent: '#B65A3C',
+        eyebrow: 'Deckle Tear & Terracotta',
+        mood: 'Ripped deckle, rust roses, and espresso bark',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #38251E 0%, #7C594D 50%, #B65A3C 100%)',
     },
 ];
 

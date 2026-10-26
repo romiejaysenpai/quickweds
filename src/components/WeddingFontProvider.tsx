@@ -201,6 +201,23 @@ export const FONT_STYLE_OVERRIDES: Record<string, FontVariableMap> = {
 
 export function logoFontVariable(font?: string): FontVariableMap {
     if (!font) return {};
+    const variable = `--font-${font.toLowerCase()}`;
+    // Loaded font variables belong to the page. Logo selection must not redefine them.
+    if (variable in BASE_FONT_VARIABLES || ['serif', 'sans', 'playfair', 'inter', 'montserrat', 'great-vibes'].includes(font.toLowerCase())) return {};
+    const styleFonts: Record<string, string> = {
+        elegant: 'playfair', classic: 'cinzel', modern: 'montserrat', romantic: 'script',
+        traditional: 'cormorant', renaissance: 'eb', luxe: 'bodoni', poetic: 'prata',
+        storyteller: 'lora', academic: 'cardo', editorial: 'libre', deco: 'marcellus', ancient: 'forum',
+        fairytale: 'alice', artistic: 'spectral', nature: 'fauna', chic: 'tenor', clean: 'questrial', bold: 'syne',
+        calligraphy: 'alex', softscript: 'allura', whimsy: 'arizonia', handwritten: 'dancing', italian: 'italianno',
+        premiumscript: 'pinyon', minimalscript: 'sacramento', ornate: 'tangerine', paris: 'parisienne',
+        abril: 'abril', upright: 'cormorant-upright', vintage: 'old-standard', josefin: 'josefin',
+        caslon: 'caslon', quattro: 'quattrocento', saint: 'mrs-saint', monsieur: 'monsieur',
+        handmade: 'homemade', mueller: 'herr', lavish: 'lavishly', royalsc: 'cormorant-sc',
+        moderngrotesk: 'fraunces', vogueedit: 'bodoni', estate: 'fraunces',
+    };
+    const family = styleFonts[font.toLowerCase()];
+    if (family) return { [variable]: `var(--font-${family})` };
     return {
         [`--font-${font.toLowerCase()}`]: /script|brush|calligraphy|allura|alex|pinyon|sacramento|tangerine|paris|lavish/i.test(font)
             ? SCRIPT_STACK

@@ -130,3 +130,40 @@ test.describe('complete wedding design catalogue', () => {
   });
 
 });
+
+for (const template of ['love-letter', 'butter-blue', 'ribbon-romance']) {
+  test(`${template}: stationery stays distinctive without photos and supports long names`, async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await mockWeddingPage(page, template, { hero_image: '', couple_photo: '', bride_name: 'Alexandria Isabella Rose', groom_name: 'Christopher Alexander James' });
+    await expect(page.locator('[data-stationery]')).toHaveAttribute('data-stationery', template);
+    await expect(page.locator('.wedding-template h1')).toContainText('Alexandria Isabella Rose');
+    expect(await page.locator('.wedding-template').evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(2);
+    const reply = page.getByRole('link', { name: 'Kindly RSVP', exact: true });
+    await reply.click();
+    await expect(page.locator('#rsvp')).toBeInViewport();
+  });
+
+  test(`${template}: thank-you invitation removes active RSVP links`, async ({ page }) => {
+    await mockWeddingPage(page, template, { is_thank_you_mode: true });
+    await expect(page.locator('[data-stationery] a[href="#rsvp"]')).toHaveCount(0);
+    await expect(page.locator('#rsvp')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'The details', exact: true })).toHaveAttribute('href', '#details');
+  });
+}
+
+test('premium invitation keeps the selected calendar day in a western timezone', async ({ browser }) => {
+  const context = await browser.newContext({ timezoneId: 'America/Los_Angeles', locale: 'en-US' });
+  const page = await context.newPage();
+  try {
+    await mockWeddingPage(page, 'heirloom', { wedding_date: '2027-06-20' });
+    await expect(page.locator('.wedding-template section').first()).toContainText('June 20, 2027');
+  } finally {
+    await context.close();
+  }
+});
+
+test('elopement story link targets the actual story', async ({ page }) => {
+  await mockWeddingPage(page, 'elopement');
+  await expect(page.getByRole('link', { name: 'See Our Story', exact: true })).toHaveAttribute('href', '#our-story');
+  await expect(page.locator('#our-story')).toContainText('We met on a rainy afternoon');
+});

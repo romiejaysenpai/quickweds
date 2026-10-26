@@ -52,7 +52,7 @@ export default function VenueDetailsSection({ wedding, id = 'reception-venue' }:
     const directionsUrl = getDirectionsUrl(wedding.reception_venue_name, wedding.reception_venue_address, wedding.reception_maps_link);
 
     return (
-        <section id={id} className={`relative z-10 overflow-hidden py-16 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section data-wedding-section="reception-venue" id={id} className={`relative z-10 overflow-hidden py-16 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <div className={visual.containerClass}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -62,7 +62,7 @@ export default function VenueDetailsSection({ wedding, id = 'reception-venue' }:
                     className="mx-auto mb-12 max-w-3xl text-center"
                 >
                     <div className="mb-4 flex items-center justify-center">
-                        <span className={visual.badgeStyleClass || `text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
+                        <span data-wedding-badge="true" className={visual.badgeStyleClass || `text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
                             {visual.badgePrefix ? `${visual.badgePrefix}RECEPTION` : 'Reception Details'}
                         </span>
                     </div>
@@ -94,7 +94,7 @@ export default function VenueDetailsSection({ wedding, id = 'reception-venue' }:
                         </div>
                     )}
 
-                    <div className={`overflow-hidden ${visual.cardClass}`}>
+                    <div data-wedding-card="true" className={`overflow-hidden ${visual.cardClass}`}>
                         <div className={`overflow-hidden border border-primary/10 bg-neutral ${visual.isSharp ? 'rounded-none' : 'rounded-[1.5rem]'}`}>
                             {embedUrl ? (
                                 <iframe
@@ -117,7 +117,7 @@ export default function VenueDetailsSection({ wedding, id = 'reception-venue' }:
 
                         {directionsUrl && (
                             <div className="px-4 pb-4 pt-6 text-center">
-                                <a
+                                <a data-wedding-control="secondary"
                                     href={directionsUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"

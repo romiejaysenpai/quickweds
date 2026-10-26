@@ -1,0 +1,169 @@
+/* Native compositions retain their frames; the page's builder tokens supply the palette. */
+.native {
+  --native-paper: var(--builder-paper, var(--color-background, #fff8f4));
+  --native-ink: var(--builder-ink, var(--wedding-ink, #352c2c));
+  --native-accent: var(--builder-link, var(--primary));
+  --native-action: var(--builder-action, var(--primary));
+  --native-on-action: var(--builder-on-action, #fff);
+  --native-border: var(--builder-border, var(--color-border));
+  --native-subtle: var(--builder-subtle, var(--color-secondary));
+  font-family: var(--builder-body-font, var(--font-sans));
+}
+.native [data-native-title] { font-family: var(--builder-title-font, var(--font-serif)); }
+.native h1[data-native-title] { font-family: var(--builder-heading-font, var(--font-serif)); }
+.native [data-native-title] > span { font-family: inherit; color: inherit; }
+.native [data-native-title][class~='text-transparent'],
+.native [data-native-title][class~='text-transparent'] > span { color: transparent; }
+.native [data-native-accent-panel] {
+  background-color: var(--native-action);
+  color: var(--native-on-action);
+  --wedding-heading: var(--native-on-action);
+}
+.native [data-native-accent-panel] :is(p, span, h2, h3) { color: inherit; }
+.native [data-native-accent-panel] [data-native-card] { color: var(--native-on-action); }
+.native[data-native-card-custom='true'] [data-native-card] {
+  border-radius: var(--builder-card-radius) !important;
+  border-style: solid;
+  border-width: var(--builder-card-border-width) !important;
+  border-color: var(--builder-card-border) !important;
+  background: var(--builder-card-surface) !important;
+  box-shadow: var(--builder-card-shadow) !important;
+  backdrop-filter: var(--builder-card-filter) !important;
+  color: var(--native-ink);
+}
+.native audio { width: 100%; max-width: 100%; min-height: 40px; }
+
+/* Composition polish stays local to the invitation; guest forms keep their own layout. */
+.native [data-native-hero] { isolation: isolate; }
+.native [data-native-hero] h1 { line-height: 1.12; text-wrap: balance; }
+.native [data-native-hero] p { text-wrap: pretty; }
+.native [data-native-composition] { scroll-margin-top: 5rem; }
+.native [data-native-composition] > [data-native-title] { text-wrap: balance; }
+.native [data-native-portrait] { isolation: isolate; }
+.native [data-native-portrait] img { object-position: center 42%; }
+.native a[data-wedding-control] { min-height: 44px; }
+.native a[data-wedding-control]:focus-visible { outline: 2px solid var(--native-accent); outline-offset: 5px; }
+.native[data-native-template='EditorialRomance'] [data-native-hero] { min-height: min(960px, 94svh); }
+.native[data-native-template='EditorialRomance'] [data-native-portrait] { background: var(--native-paper); }
+.native[data-native-template='EditorialRomance'] [data-native-hero] h1 { letter-spacing: -.035em; }
+.native[data-native-template='EditorialRomance'] [data-native-hero] h1 > span:nth-child(2) { margin-block: .3em; }
+.native[data-native-template='EnvelopeWaxSeal'] [data-native-envelope] { max-width: 820px; margin-inline: auto; border-radius: 0 0 2px 2px; }
+.native[data-native-template='EnvelopeWaxSeal'] [data-native-hero] { padding-top: 5rem; }
+.native[data-native-template='EnvelopeWaxSeal'] [data-native-portrait] { border-radius: 50% 50% 3px 3px / 22% 22% 3px 3px; border-color: var(--native-paper); outline: 1px solid var(--native-border); outline-offset: 7px; }
+.native[data-native-template='EnvelopeWaxSeal'] [data-native-hero] h1 { margin: 1.75rem auto 2rem; max-width: 36rem; font-size: clamp(2.5rem, 6vw, 4.25rem); letter-spacing: -.035em; }
+.native[data-native-template='PearlCoastal'] [data-native-portrait]::before { content: ''; position: absolute; inset: -10px; border: 1px solid var(--native-border); border-radius: 50% 50% 20px 20px / 40% 40% 20px 20px; pointer-events: none; }
+.native[data-native-template='PearlCoastal'] [data-native-hero] { padding-top: clamp(3rem, 6vw, 5rem); }
+.native[data-native-template='PearlCoastal'] [data-native-hero] h1 { letter-spacing: .035em; font-size: clamp(2rem, 4.2vw, 3.4rem); margin-top: 2.75rem; }
+.native[data-native-template='PearlCoastal'] [data-native-hero] > p:last-child { margin-top: 1.5rem; }
+.native[data-native-template='WatercolorMeadow'] [data-native-hero] { min-height: 0; padding-top: clamp(3rem, 7vw, 6rem); background: radial-gradient(ellipse at 10% 40%, color-mix(in srgb, var(--native-accent) 8%, transparent), transparent 55%), radial-gradient(ellipse at 90% 70%, color-mix(in srgb, var(--native-accent) 12%, transparent), transparent 50%); }
+.native[data-native-template='WatercolorMeadow'] [data-native-hero] > div:first-of-type { opacity: .13; }
+.native[data-native-template='WatercolorMeadow'] [data-native-portrait] { margin-top: 2.5rem; max-width: 640px; }
+.native[data-native-template='WatercolorMeadow'] [data-native-portrait] > div { border-radius: 48% 48% 4px 4px / 30% 30% 4px 4px; }
+.native[data-native-template='VelureEditorial'] [data-native-hero] { padding-top: clamp(3rem, 6vw, 5rem); }
+.native[data-native-template='VelureEditorial'] [data-native-hero] h1 { letter-spacing: -.025em; margin-block: 1rem; }
+.native[data-native-template='VelureEditorial'] [data-native-portrait] > div:first-child { border-radius: 1px 1px 45% 45% / 1px 1px 13% 13%; border-color: var(--native-paper); outline: 1px solid var(--native-border); outline-offset: 7px; }
+.native[data-native-template='VelureEditorial'] > [data-native-accent-panel] { max-width: 608px; margin-inline: auto; border-radius: 48% 48% 4px 4px / 14% 14% 4px 4px; padding-top: 5rem; }
+.native[data-native-template='TornPaperTerracotta'] [data-native-hero] { padding-top: clamp(2rem, 5vw, 3.5rem); }
+.native[data-native-template='TornPaperTerracotta']:not([data-native-card-custom='true']) > div > [data-native-card] { box-shadow: 0 10px 36px #00000014, 0 1px 2px #0000000a; }
+.native[data-native-template='TornPaperTerracotta'] [data-native-portrait] { margin-top: 1rem; }
+.native[data-native-template='TornPaperTerracotta'] [data-native-itinerary] > div { align-items: start; gap: 1rem; padding-block: .5rem 1rem; }
+.native[data-native-template='TornPaperTerracotta'] [data-native-itinerary] > div > span:last-child { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.native[data-native-template='TornPaperTerracotta'] [data-native-itinerary] svg { color: var(--native-accent); flex-shrink: 0; }
+.native [data-native-countdown] { gap: clamp(.25rem, 1.2vw, 1rem); font-variant-numeric: tabular-nums; }
+.native [data-native-countdown] [data-native-card] { min-width: 0; padding-inline: clamp(.35rem, 1.6vw, .75rem); }
+@media (max-width: 639px) {
+  .native[data-native-template='EditorialRomance'] [data-native-hero] { min-height: 0; padding-block: 3.5rem 4rem; }
+  .native[data-native-template='EditorialRomance'] [data-native-hero] h1 { font-size: clamp(2.4rem, 10vw, 3.75rem); }
+  .native[data-native-template='VelureEditorial'] > [data-native-accent-panel] { margin-inline: 1rem; }
+  .native[data-native-template='VelureEditorial'] [data-native-hero] h1 { font-size: clamp(2.25rem, 9vw, 3rem); }
+  .native[data-native-template='TornPaperTerracotta'] [data-native-hero] h1 { font-size: clamp(2.25rem, 9vw, 3rem); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .native [data-native-portrait] img { transition: none; }
+  .native [data-native-portrait] img:hover { transform: none; }
+}
+.native [data-native-guide] p { font-size: .75rem; line-height: 1.65; }
+.native [data-native-guide] p:first-child { margin-bottom: .25rem; }
+
+/* Section stationery is chosen by the composition; its ink always comes from the builder. */
+.native[data-native-template] {
+  --native-rule-style: solid;
+  --native-rule-width: 1px;
+  --native-rule-radius: 0;
+}
+.native[data-native-template='EnvelopeWaxSeal'] { --native-rule-style: double; --native-rule-width: 3px; }
+.native[data-native-template='PearlCoastal'] { --native-rule-style: dotted; --native-rule-width: 2px; --native-rule-radius: 28px; }
+.native[data-native-template='WatercolorMeadow'] { --native-rule-radius: 9px; }
+.native[data-native-template='VelureEditorial'] { --native-rule-style: double; --native-rule-width: 3px; }
+.native[data-native-template='TornPaperTerracotta'] { --native-rule-style: dashed; --native-rule-radius: 2px; }
+.native[data-native-template]:not([data-native-card-custom='true']) :is([data-native-composition]:not([data-native-hero]), [data-wedding-section]) {
+  border-block-start: var(--native-rule-width) var(--native-rule-style) var(--native-border);
+  border-start-start-radius: var(--native-rule-radius);
+  border-start-end-radius: var(--native-rule-radius);
+}
+.native[data-native-template]:not([data-native-card-custom='true']) :is([data-native-composition]:not([data-native-hero]), [data-wedding-section])::after {
+  content: '';
+  display: block;
+  width: 3rem;
+  height: .4rem;
+  margin: 2rem auto 0;
+  border-block: 1px solid var(--native-border);
+  pointer-events: none;
+}
+.native[data-native-template='PearlCoastal']:not([data-native-card-custom='true']) :is([data-native-composition]:not([data-native-hero]), [data-wedding-section])::after {
+  width: 3.5rem;
+  height: .5rem;
+  border: 0;
+  background: radial-gradient(circle, var(--native-accent) 2px, transparent 3px) center / .7rem .5rem repeat-x;
+  opacity: .5;
+}
+.native[data-native-template='WatercolorMeadow']:not([data-native-card-custom='true']) :is([data-native-composition]:not([data-native-hero]), [data-wedding-section])::after {
+  width: 2.5rem;
+  height: .75rem;
+  border-radius: 100% 0 100% 0;
+  background: color-mix(in srgb, var(--native-accent) 12%, transparent);
+  border: 1px solid var(--native-border);
+  transform: rotate(-12deg);
+}
+.native[data-native-template='EnvelopeWaxSeal']:not([data-native-card-custom='true']) > section[data-native-accent-panel],
+.native[data-native-template='VelureEditorial']:not([data-native-card-custom='true']) > section[data-native-accent-panel] {
+  outline: 1px solid color-mix(in srgb, var(--native-on-action) 40%, transparent);
+  outline-offset: -12px;
+}
+.native[data-native-template='EditorialRomance']:not([data-native-card-custom='true']) [data-native-portrait] {
+  outline: 1px solid var(--native-border);
+  outline-offset: 6px;
+}
+.native[data-native-template='TornPaperTerracotta']:not([data-native-card-custom='true']) [data-native-itinerary] {
+  border-block: 1px dashed var(--native-border);
+  padding-block: 1.5rem;
+}
+.native[data-native-template='VelureEditorial']:not([data-native-card-custom='true']) :is([data-native-composition]:not([data-native-hero]), [data-wedding-section]) {
+  background-image: linear-gradient(var(--native-border), var(--native-border)), linear-gradient(var(--native-border), var(--native-border));
+  background-size: 1px 20px;
+  background-position: left top, right top;
+  background-repeat: no-repeat;
+}
+/* Shared countdown markup is dressed by the native invitation, not by one
+   universal clock. The numbers and save-date action remain builder-driven. */
+.native[data-native-template='EditorialRomance'] [data-wedding-section='CountdownTimer'] [role='timer'] {
+  border-width: 1px 0; border-style: solid; border-color: var(--native-border); border-radius: 0;
+  background: transparent; letter-spacing: -.03em;
+}
+.native[data-native-template='EditorialRomance'] [data-wedding-section='CountdownTimer'] [role='timer'] > div + div { border-left-color: var(--native-border); }
+.native[data-native-template='EnvelopeWaxSeal']:not([data-native-card-custom='true']) [data-native-countdown] [data-native-card] { border-radius: 50% 50% 3px 3px / 24px 24px 3px 3px; border: 3px double var(--native-border); }
+.native[data-native-template='PearlCoastal']:not([data-native-card-custom='true']) [data-native-countdown] [data-native-card] { border-radius: 50% 50% 16px 16px / 22px 22px 16px 16px; border: 2px dotted var(--native-border); }
+.native[data-native-template='WatercolorMeadow']:not([data-native-card-custom='true']) [data-native-countdown] [data-native-card] { border-radius: 32px 2px; border: 1px solid var(--native-border); }
+.native[data-native-template='VelureEditorial']:not([data-native-card-custom='true']) [data-native-countdown] [data-native-card] { border-radius: 2px; border: 3px double var(--native-border); }
+.native[data-native-template='TornPaperTerracotta']:not([data-native-card-custom='true']) [data-native-countdown] [data-native-card] { border-radius: 2% 4% 3% 5%; border: 1px dashed var(--native-border); }
+@keyframes nativePaperArrival {
+  from { opacity: .65; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .native[data-native-template] [data-native-hero] h1 { animation: nativePaperArrival .65s ease-out both; }
+  .native [data-native-portrait] img { transition: transform .5s ease; }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .native [data-native-portrait]:hover img { transform: scale(1.025); }
+}

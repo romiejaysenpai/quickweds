@@ -588,7 +588,7 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
     const isVintage = ['vintage', 'rustic', 'boho', 'artdeco'].includes(template);
 
     return (
-        <section id={id} className={`py-16 sm:py-24 md:py-32 relative z-10 overflow-hidden ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section data-wedding-section="TimelineSection" id={id} className={`py-16 sm:py-24 md:py-32 relative z-10 overflow-hidden ${visual.sectionClass}`} style={visual.sectionStyle}>
             {visual.ornament === 'film' && <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.12)_0_12px,transparent_12px_26px)]" />}
             <div className={`${design.maxWidth} mx-auto px-4 sm:px-6 md:px-8 relative`}>
                 {/* Section header */}
@@ -619,7 +619,7 @@ export default function TimelineSection({ timeline, wedding, id }: TimelineSecti
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true, amount: 0.2 }}
                     transition={{ duration: 0.7, type: 'spring' }}
-                    className={`relative overflow-hidden ${design.frameClass}`}
+                    data-wedding-card="timeline" className={`relative overflow-hidden ${design.frameClass}`}
                 >
                     <TimelineOrnament type={design.ornament} color={motifColor} />
                     <div className="relative">

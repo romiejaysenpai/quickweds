@@ -40,12 +40,12 @@ export default function ElopementTemplate({ wedding, gallery, isExpired }: any) 
                     </h1>
                     <p className="text-xl sm:text-2xl italic opacity-60 mb-12">A quiet union, a loud devotion. We chose forever, just us two.</p>
                     <div className="flex gap-4 sm:gap-6 justify-center">
-                        <a href="#rsvp" aria-label="See Our Story - RSVP" className="px-8 sm:px-10 py-3 min-h-[44px] flex items-center justify-center bg-stone-900 text-white rounded-full font-bold uppercase tracking-widest text-[10px] hover:bg-stone-700 transition-colors">See Our Story</a>
+                        <a href="#our-story" aria-label="See Our Story" className="px-8 sm:px-10 py-3 min-h-[44px] flex items-center justify-center bg-stone-900 text-white rounded-full font-bold uppercase tracking-widest text-[10px] hover:bg-stone-700 transition-colors">See Our Story</a>
                     </div>
                 </motion.div>
             </section>
 
-            <section className="py-24 max-w-4xl mx-auto px-4 sm:px-6">
+            <section id="our-story" className="py-24 max-w-4xl mx-auto px-4 sm:px-6">
                 <div className="space-y-12 sm:space-y-16 md:space-y-20 border-l border-stone-200 pl-8 sm:pl-10 md:pl-12 lg:pl-12">
                     <div className="space-y-4">
                         <h2 className="text-3xl sm:text-4xl font-serif text-stone-900">The Escape</h2>

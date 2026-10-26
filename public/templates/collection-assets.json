@@ -1,0 +1,26 @@
+{
+  "generator": "Built-in image_gen tool",
+  "transparent_background": true,
+  "assets": [
+    {
+      "file": "collection-castle.png",
+      "prompt": "Create one decorative handpainted watercolor winter castle illustration for wedding stationery. Single romantic European stone castle with one tall slender fairytale tower, soft pale gold stone, small snow covered evergreen forest at its base, delicate white frosty fir branches framing upper corners, sparse warm brown berries and pale ivory flowers. Pale lilac silver winter atmosphere. Transparent background, no text, no people, no page mockup, no logo. Wide landscape composition with much transparent space around silhouette. Sophisticated gentle watercolor pigment, finely detailed architecture, soft snow fading to transparent at bottom.",
+      "deliveryFile": "collection-castle.webp"
+    },
+    {
+      "file": "collection-winter.png",
+      "prompt": "Create one transparent wedding stationery botanical header ornament. Wide horizontal cascading arrangement of pale ice-blue roses, white ranunculus, blue thistle, tiny navy berries, snowy sage eucalyptus and frosted fir sprigs, a few miniature brown pinecones. Handpainted realistic watercolor detail, restrained icy blue and white palette, airy trailing foliage, asymmetrical natural arrangement. No text, no people, no page/frame/mockup, no watermark. Entire background genuinely transparent, ornament only.",
+      "deliveryFile": "collection-winter.webp"
+    },
+    {
+      "file": "collection-hydrangea.png",
+      "prompt": "Create one transparent decorative floral corner ornament for elegant pale blue wedding stationery. Large dreamy powder blue hydrangea clusters with white magnolia flowers and ivory roses, muted sage gray leaves, very delicate pale blue buds. Airy L-shaped upper left corner composition with trailing branches to right and down, transparent large negative space bottom right. Fine realistic soft watercolor floral illustration, blue porcelain and sky blue shades, refined gentle light. No text, no people, no wedding page, no frame/mockup, no watermark. Transparent background.",
+      "deliveryFile": "collection-hydrangea.webp"
+    },
+    {
+      "file": "collection-marine.png",
+      "prompt": "Create a single decorative coastal wedding stationery vignette on transparent background, wide horizontal composition. Fine handpainted watercolor in powder blue and porcelain navy: delicate branching sea coral at lower left and right, pearly scallop shell, small spiral seashells, graceful starfish, tiny transparent bubbles and two pearls. Elegant airy ocean botanical illustration, subtle watercolor pigment, sparse balanced composition, center mostly empty transparent area for live page content. No text, no people, no page mockup, no border, no watermark. Transparent background.",
+      "deliveryFile": "collection-marine.webp"
+    }
+  ]
+}

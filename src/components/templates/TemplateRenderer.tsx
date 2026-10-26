@@ -4,10 +4,19 @@ import dynamic from 'next/dynamic';
 import type { CSSProperties, ComponentType } from 'react';
 
 import type { TemplateProps, Wedding } from '@/types/wedding';
+import { getBuilderTheme, getInvitationTheme } from '@/lib/invitation-theme';
+import invitationStyles from './InvitationTheme.module.css';
+import { getReferenceInvitation } from '@/lib/reference-invitations';
 import { getTemplateVisualProfile } from '@/lib/theme-engine';
 import { FONT_STYLE_OVERRIDES, getWeddingFontStyleVariables } from '@/components/WeddingFontProvider';
 
 const ComposedTemplate = dynamic(() => import('./ComposedTemplate'));
+
+const CollectionInvitationTemplate = dynamic(() => import('./CollectionInvitationTemplate'));
+
+const ReferenceInvitationTemplate = dynamic(() => import('./ReferenceInvitationTemplate'));
+
+const StationeryTemplate = dynamic(() => import('./StationeryTemplate'));
 
 const PremiumTemplate = dynamic(() => import('./PremiumTemplate'));
 
@@ -16,6 +25,9 @@ export type ThemeFontVars = Record<'--font-serif' | '--font-sans', string>;
 export type WeddingPageStyle = CSSProperties & Record<`--${string}`, string> & ThemeFontVars;
 
 export const TEMPLATE_COMPONENTS = {
+    'love-letter': StationeryTemplate,
+    'butter-blue': StationeryTemplate,
+    'ribbon-romance': StationeryTemplate,
     classic: dynamic(() => import('./ClassicTemplate')),
     minimal: dynamic(() => import('./MinimalTemplate')),
     vintage: dynamic(() => import('./VintageTemplate')),
@@ -45,6 +57,12 @@ export const TEMPLATE_COMPONENTS = {
     celestial: dynamic(() => import('./CelestialTemplate')),
     riviera: dynamic(() => import('./RivieraTemplate')),
     'editorial-luxe': dynamic(() => import('./EditorialLuxeTemplate')),
+    'editorial-romance': dynamic(() => import('./EditorialRomanceTemplate')),
+    'envelope-wax-seal': dynamic(() => import('./EnvelopeWaxSealTemplate')),
+    'pearl-coastal': dynamic(() => import('./PearlCoastalTemplate')),
+    'watercolor-meadow': dynamic(() => import('./WatercolorMeadowTemplate')),
+    'velure-editorial': dynamic(() => import('./VelureEditorialTemplate')),
+    'torn-paper-terracotta': dynamic(() => import('./TornPaperTerracottaTemplate')),
     monochrome: dynamic(() => import('./MonochromeTemplate')),
     'botanical-arch': dynamic(() => import('./BotanicalArchTemplate')),
     'cinematic-vow': dynamic(() => import('./CinematicVowTemplate')),
@@ -158,15 +176,29 @@ export function getWeddingFontVariables(style?: string): ThemeFontVars {
     };
 }
 
+export function getWeddingThemeAttributes(wedding: Wedding) {
+    const theme = getInvitationTheme(wedding);
+    return { className: `${invitationStyles.builder} ${theme ? invitationStyles.theme : ''}`,
+        'data-invitation-theme': theme?.reference.layout,
+        'data-invitation-style': theme?.reference.id,
+        'data-invitation-decoration': theme?.reference.decoration,
+        'data-builder-template': normalizeTemplateId(wedding.template),
+        'data-builder-background': wedding.background_style,
+        'data-builder-card': wedding.card_style,
+        'data-builder-font': wedding.font_style,
+        'data-builder-title-font': wedding.section_title_font_style };
+}
+
 export function getWeddingPageStyle(wedding: Wedding, options?: { includeGradient?: boolean }): WeddingPageStyle {
     const fontVars = getWeddingFontVariables(wedding.font_style);
     const fontStyleVars = getWeddingFontStyleVariables(wedding.font_style, wedding.logo_font);
     const backgroundKey = String((wedding as Wedding & { background_style?: string }).background_style || 'cream');
     const profileTemplate = wedding.template_style === 'luxury-planner' ? 'luxury-planner' : wedding.template;
     const visual = getTemplateVisualProfile(profileTemplate, wedding.motif_color);
-    const backgroundColor = visual.isDark ? '#151315' : BACKGROUND_COLOR_MAP[backgroundKey] || '#FFF8F4';
+    const backgroundColor = BACKGROUND_COLOR_MAP[wedding.background_style || ''] || (visual.isDark ? '#151315' : BACKGROUND_COLOR_MAP[backgroundKey] || '#FFF8F4');
 
     return {
+        ...getBuilderTheme(wedding),
         ...fontVars,
         ...fontStyleVars,
         '--primary': wedding.motif_color || '#D16C78',
@@ -192,21 +224,28 @@ export function getWeddingPageStyle(wedding: Wedding, options?: { includeGradien
         color: visual.isDark ? '#F1EAE2' : '#463D3B',
         colorScheme: visual.isDark ? 'dark' : 'light',
         backgroundColor,
-        ...(options?.includeGradient && !visual.isDark
+        ...(options?.includeGradient && !visual.isDark && (!wedding.background_style || wedding.background_style === 'gradient')
             ? {
                 backgroundImage: 'radial-gradient(circle at top, rgba(255,255,255,0.65), transparent 32%), linear-gradient(180deg, #fffaf6 0%, #fff5ef 52%, #f8ece7 100%)',
             }
             : {}),
+        ...getInvitationTheme(wedding)?.vars,
     };
 }
 
 export function renderWeddingTemplate(props: TemplateProps) {
+    // Apply visibility once so every native and composed gallery obeys the builder.
+    if (props.wedding.is_thank_you_mode && props.wedding.show_photos_in_thank_you_mode === false) props = { ...props, gallery: [] };
     const template = normalizeTemplateId(props.wedding.template);
     const Component = TEMPLATE_COMPONENTS[template];
+    const reference = getReferenceInvitation(props.wedding.template_style);
+    const isReference = reference?.templateId === template;
+    const ReferenceComponent = reference && reference.reference >= 31 ? CollectionInvitationTemplate : ReferenceInvitationTemplate;
     const hasPortrait = Boolean(props.wedding.hero_image?.trim() || props.wedding.couple_photo?.trim());
-    const composition = props.wedding.template_style?.match(/(?:^|_)v([2-5])$/)?.[1] || (!hasPortrait ? '5' : undefined);
+    const hasStationeryFallback = ['love-letter', 'butter-blue', 'ribbon-romance'].includes(template);
+    const composition = props.wedding.template_style?.match(/(?:^|_)v([2-5])$/)?.[1] || (!hasPortrait && !hasStationeryFallback ? '5' : undefined);
     const composed = Boolean(composition && (template !== 'classic' || !hasPortrait));
     return <div className="wedding-template" data-template={template} data-template-style={props.wedding.template_style || 'default'}>
-        {composed ? <ComposedTemplate {...props} composition={`v${composition}` as 'v2' | 'v3' | 'v4' | 'v5'} /> : <Component {...props} />}
+        {isReference ? <ReferenceComponent {...props} /> : composed ? <ComposedTemplate {...props} composition={`v${composition}` as 'v2' | 'v3' | 'v4' | 'v5'} /> : <Component {...props} />}
     </div>;
 }

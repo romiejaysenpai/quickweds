@@ -250,23 +250,23 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
 
     if (isSubmitted) {
         return (
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className={`p-6 sm:p-10 border text-center ${visual.cardClass}`}>
+            <motion.div data-wedding-card="true" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className={`p-6 sm:p-10 border text-center ${visual.cardClass}`}>
                 <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                    <CheckCircle2 data-wedding-status="success" className="w-10 h-10 text-emerald-500" />
                 </div>
                 <h3 className="text-3xl font-serif mb-2 text-foreground">Thank You!</h3>
                 <p className="text-text-secondary italic">Your response has been received. Thank you for letting us know!</p>
-                {manageUrl && <a href={manageUrl} className="mt-5 inline-block underline">Update your response (link expires in 30 minutes)</a>}
+                {manageUrl && <a data-wedding-control="secondary" href={manageUrl} className="mt-5 inline-block underline">Update your response (link expires in 30 minutes)</a>}
             </motion.div>
         );
     }
 
     if (selectedGuest && !verifiedGuest) return (
-        <div className={`space-y-4 p-6 ${visual.cardClass}`} role="status">
+        <div data-wedding-card="true" className={`space-y-4 p-6 ${visual.cardClass}`} role="status">
             <h3 className="text-xl font-bold">Verify your invitation</h3>
             <p>{isRequestingAccess ? 'Requesting your secure link…' : accessMessage}</p>
             <p>If you cannot access the email on your invitation, contact the couple to update it.</p>
-            <button type="button" onClick={handleClearSelectedGuest} className="underline">Back to guest search</button>
+            <button data-wedding-control="quiet" type="button" onClick={handleClearSelectedGuest} className="underline">Back to guest search</button>
         </div>
     );
 
@@ -280,14 +280,14 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
             <h3 className="sr-only">RSVP for our Special Day</h3>
 
             {duplicateError && (
-                <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3">
+                <div data-wedding-status="error" className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3">
                     <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                     <p className="text-sm text-red-600">You have already submitted an RSVP for this name. Please select your name from the search to update your response.</p>
                 </div>
             )}
 
             {submitError && (
-                <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3 text-left">
+                <div data-wedding-status="error" className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3 text-left">
                     <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                     <div>
                         <p className="font-bold text-red-600 text-sm">Submission Error</p>
@@ -299,9 +299,9 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
             <form onSubmit={handleSubmit} className="space-y-5 text-left sm:space-y-6">
                 {/* Searchable guest list / Selected Guest Header */}
                 {verifiedGuest ? (
-                    <div className={`flex items-center justify-between rounded-2xl border p-4 shadow-xs ${isDark ? 'border-primary/30 bg-primary/10' : 'border-primary/20 bg-primary/5'}`}>
+                    <div data-wedding-card="true" className={`flex items-center justify-between rounded-2xl border p-4 shadow-xs ${isDark ? 'border-primary/30 bg-primary/10' : 'border-primary/20 bg-primary/5'}`}>
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-sm">
+                            <div data-wedding-overlay="true" className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-sm">
                                 <UserCheck className="h-5 w-5" />
                             </div>
                             <div>
@@ -312,7 +312,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                                 )}
                             </div>
                         </div>
-                        <button
+                        <button data-wedding-control="quiet"
                             hidden={Boolean(verifiedGuest)}
                             type="button"
                             onClick={handleClearSelectedGuest}
@@ -329,7 +329,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                             <Search className="h-3.5 w-3.5 text-primary" /> Search Guest List or Enter Name *
                         </label>
                         <div className="relative">
-                            <input
+                            <input data-wedding-field="true"
                                 required
                                 placeholder="Type your name to find your invitation..."
                                 value={formData.guestName}
@@ -356,7 +356,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                         {/* Search dropdown results */}
                         <AnimatePresence>
                             {isDropdownOpen && searchResults.length > 0 && (
-                                <motion.div
+                                <motion.div data-wedding-card="true"
                                     initial={{ opacity: 0, y: -8 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -8 }}
@@ -369,7 +369,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                                     </p>
                                     <div className="divide-y divide-border/40">
                                         {searchResults.map((guest) => (
-                                            <button
+                                            <button data-wedding-control="quiet"
                                                 key={guest.id}
                                                 type="button"
                                                 onClick={() => handleSelectGuest(guest)}
@@ -393,7 +393,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                                                    <span data-wedding-status="true" className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
                                                         guest.rsvpStatus === 'confirmed' ? 'bg-emerald-100 text-emerald-800' :
                                                         guest.rsvpStatus === 'declined' ? 'bg-red-100 text-red-800' :
                                                         'bg-amber-100 text-amber-800'
@@ -405,7 +405,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                                         ))}
                                     </div>
                                     <div className="border-t border-border/50 pt-2 px-2">
-                                        <button
+                                        <button data-wedding-control="quiet"
                                             type="button"
                                             onClick={() => setIsDropdownOpen(false)}
                                             className={`w-full rounded-xl py-1.5 text-center text-xs font-semibold text-text-secondary hover:text-foreground`}
@@ -420,7 +420,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                 ) : (
                     <div className="space-y-2">
                         <label className={labelClass}>Guest Full Name *</label>
-                        <input
+                        <input data-wedding-field="true"
                             required
                             placeholder="Enter your full name"
                             value={formData.guestName}
@@ -440,7 +440,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                             </span>
                         )}
                     </div>
-                    <input
+                    <input data-wedding-field="true"
                         readOnly={Boolean(verifiedGuest)}
                         type="email"
                         placeholder="For your RSVP confirmation"
@@ -454,7 +454,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                 <div className={`grid grid-cols-1 ${isAttending && allowPlusOnes ? 'md:grid-cols-2' : ''} gap-4`}>
                     <div className="space-y-2">
                         <label className={labelClass}>Will you attend?</label>
-                        <select
+                        <select data-wedding-field="true"
                             value={formData.attendance}
                             onChange={(e) => {
                                 const nextAttendance = e.target.value;
@@ -474,7 +474,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                     {isAttending && allowPlusOnes && (
                         <div className="space-y-2">
                             <label className={labelClass}>Number of Guests</label>
-                            <input
+                            <input data-wedding-field="true"
                                 type="number"
                                 min="1"
                                 max={verifiedGuest?.invitedGuestCount || 50}
@@ -494,7 +494,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                         <label className={`${labelClass} flex items-center gap-2`}>
                             <Users className="w-4 h-4 text-primary" /> Names of Additional Guests (+1 Party)
                         </label>
-                        <input
+                        <input data-wedding-field="true"
                             placeholder="e.g. Jane Doe, John Smith"
                             value={formData.plusOneNames}
                             onChange={(e) => setFormData((prev) => ({ ...prev, plusOneNames: e.target.value }))}
@@ -511,7 +511,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                     <label className={`${labelClass} flex items-center gap-2`}>
                         <Users className="h-4 w-4 text-primary" /> Household or Family Name
                     </label>
-                    <input
+                    <input data-wedding-field="true"
                         placeholder="e.g. The Santos Family"
                         value={formData.householdName}
                         onChange={(e) => setFormData((prev) => ({ ...prev, householdName: e.target.value }))}
@@ -525,7 +525,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                 {isAttending && (formData.householdName || (allowPlusOnes && formData.numGuests > 1)) && (
                     <div className="space-y-2">
                         <label className={labelClass}>Household / Party Member Names</label>
-                        <textarea
+                        <textarea data-wedding-field="true"
                             placeholder={'One name per line\nJamie Santos\nAvery Santos'}
                             value={formData.householdMembers}
                             onChange={(e) => setFormData((prev) => ({ ...prev, householdMembers: e.target.value }))}
@@ -539,7 +539,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
 
                 {/* Event Responses */}
                 {isAttending && events.length > 0 && (
-                    <fieldset className={`space-y-3 rounded-2xl border p-4 sm:p-5 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-border bg-neutral/50'}`}>
+                    <fieldset data-wedding-card="true" className={`space-y-3 rounded-2xl border p-4 sm:p-5 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-border bg-neutral/50'}`}>
                         <legend className={`px-2 text-sm font-bold ${isDark ? 'text-white' : 'text-foreground'}`}>Choose events</legend>
                         {events.map((event) => {
                             const response = formData.eventResponses.find((item) => item.eventId === event.id)?.attendance || 'Yes';
@@ -554,7 +554,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                                         </p>
                                         {event.description && <p className={`mt-1 text-xs ${isDark ? 'text-white/55' : 'text-text-secondary'}`}>{event.description}</p>}
                                     </div>
-                                    <select
+                                    <select data-wedding-field="true"
                                         aria-label={`Attendance for ${event.name}`}
                                         value={response}
                                         onChange={(e) => setFormData((prev) => ({
@@ -581,7 +581,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                         {allowChildren && (
                             <div className="space-y-2">
                                 <label className={labelClass}>Children Attending</label>
-                                <input
+                                <input data-wedding-field="true"
                                     type="number"
                                     min="0"
                                     max="100"
@@ -595,7 +595,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                         )}
                         <div className="space-y-2">
                             <label className={labelClass}>Dietary Preference</label>
-                            <select
+                            <select data-wedding-field="true"
                                 value={formData.mealPreference}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, mealPreference: e.target.value }))}
                                 className={fieldClass}
@@ -614,7 +614,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                 {formData.mealPreference === 'Other (see message)' && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
                         <label className={labelClass}>Dietary Details / Allergies</label>
-                        <input
+                        <input data-wedding-field="true"
                             placeholder="Please describe your dietary requirements"
                             value={formData.dietaryDetails}
                             onChange={(e) => setFormData((prev) => ({ ...prev, dietaryDetails: e.target.value }))}
@@ -628,7 +628,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                     <label className={`${labelClass} flex items-center gap-2`}>
                         <Music className="w-4 h-4 text-primary" /> Song Request
                     </label>
-                    <input
+                    <input data-wedding-field="true"
                         placeholder="e.g. 'Dancing Queen' by ABBA"
                         value={formData.songRequest}
                         onChange={(e) => setFormData((prev) => ({ ...prev, songRequest: e.target.value }))}
@@ -639,7 +639,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                 {/* Message for the Couple */}
                 <div className="space-y-2">
                     <label className={labelClass}>Message for the Couple</label>
-                    <textarea
+                    <textarea data-wedding-field="true"
                         placeholder="Write a sweet note..."
                         value={formData.message}
                         onChange={(e) => setFormData((prev) => ({ ...prev, message: e.target.value }))}
@@ -647,7 +647,7 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
                     />
                 </div>
 
-                <button
+                <button data-wedding-control="primary"
                     disabled={isSubmitting}
                     className="w-full py-5 rounded-2xl bg-primary text-white font-bold text-lg hover:bg-primary-hover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
                 >

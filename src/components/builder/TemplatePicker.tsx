@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+import { getTemplateVisualProfile } from '@/lib/theme-engine';
 import { useMemo, useState } from 'react';
 import { CheckCircle2, Eye, Search, Sparkles } from 'lucide-react';
 import {
@@ -63,10 +65,10 @@ export default function TemplatePicker({ selectedId, isPremium, onSelect, onOpen
             <div className="flex flex-col gap-3">
                 <div className="relative">
                     <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary/50" />
-                    <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search templates" className="min-h-[44px] w-full rounded-xl border border-border bg-white pl-10 pr-4 text-sm outline-none focus:border-primary" />
+                    <input value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search templates" placeholder="Search templates" className="min-h-[44px] w-full rounded-xl border border-border bg-white pl-10 pr-4 text-sm outline-none focus:border-primary" />
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Template filters">
-                    {FILTERS.map((item) => <button key={item.id} type="button" onClick={() => setFilter(item.id)} className={`min-h-[40px] shrink-0 rounded-full border px-4 text-xs font-bold transition ${filter === item.id ? 'border-primary bg-primary text-white' : 'border-border bg-white text-text-secondary hover:border-primary/30'}`}>{item.label}</button>)}
+                    {FILTERS.map((item) => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)} className={`min-h-[40px] shrink-0 rounded-full border px-4 text-xs font-bold transition ${filter === item.id ? 'border-primary bg-primary text-white' : 'border-border bg-white text-text-secondary hover:border-primary/30'}`}>{item.label}</button>)}
                 </div>
             </div>
 
@@ -76,7 +78,7 @@ export default function TemplatePicker({ selectedId, isPremium, onSelect, onOpen
                         const locked = !isPremium && !FREE_TEMPLATE_IDS.includes(template.id as typeof FREE_TEMPLATE_IDS[number]);
                         const selected = selectedId === template.id;
                         const recommended = hasAnswers && recommendations.includes(template.id);
-                        const dark = ['luxury', 'midnight', 'royal', 'artdeco', 'cinematic', 'urban', 'glitch', 'film'].includes(template.id);
+                        const dark = getTemplateVisualProfile(template.id).isDark;
                         return (
                             <article key={template.id} className={`group overflow-hidden rounded-[1.5rem] border bg-white transition ${selected ? 'border-primary shadow-[0_20px_60px_rgba(192,128,129,.2)]' : 'border-border hover:border-primary/30'}`}>
                                 <button type="button" disabled={locked} onClick={() => onSelect(template.id)} className="block w-full text-left disabled:cursor-not-allowed disabled:opacity-60">
@@ -87,6 +89,7 @@ export default function TemplatePicker({ selectedId, isPremium, onSelect, onOpen
                                             <span className={`mt-3 text-2xl leading-none ${['modern','minimal','timeline','urban','glitch'].includes(template.id) ? 'font-sans font-black uppercase' : 'font-serif italic'}`}>Isabella & Julian</span>
                                             <span className="mt-3 text-[9px] uppercase tracking-[.25em] opacity-70">24 · 10 · 2026</span>
                                         </div>
+                                        {template.image && ['love-letter', 'butter-blue', 'ribbon-romance'].includes(template.id) && <Image src={template.image} alt={`${template.name} invitation preview`} fill sizes="(max-width: 640px) 100vw, 360px" className="object-cover object-top" />}
                                         {recommended && <span className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-[8px] font-black uppercase tracking-widest text-primary shadow">Recommended</span>}
                                         {selected && <CheckCircle2 className="absolute right-3 top-3 h-5 w-5" />}
                                     </div>

@@ -24,8 +24,8 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     // ── DARK templates: Royal / Midnight / Cinematic ──────────────────────────
     if (isDark) {
         return (
-            <section id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
-                <motion.div
+            <section data-wedding-section="rsvp" id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+                <motion.div data-wedding-card="true"
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -39,7 +39,7 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
 
                     <div className="text-center mb-10 sm:mb-14">
                         <div className="mb-4 flex items-center justify-center">
-                            <span className={visual.badgeStyleClass || "text-xs uppercase tracking-[0.2em] font-black block text-primary"}>
+                            <span data-wedding-badge="true" className={visual.badgeStyleClass || "text-xs uppercase tracking-[0.2em] font-black block text-primary"}>
                                 {visual.badgePrefix ? `${visual.badgePrefix}RSVP` : 'Guest Confirmation'}
                             </span>
                         </div>
@@ -66,8 +66,8 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     // ── SHARP / EDITORIAL templates ───────────────────────────────────────────
     if (isSharp) {
         return (
-            <section id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
-                <motion.div
+            <section data-wedding-section="rsvp" id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+                <motion.div data-wedding-card="true"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -76,7 +76,7 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                     {/* Header bar */}
                     <div className="border-b border-black/10 px-5 sm:px-10 py-8 sm:py-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                         <div>
-                            <span className={visual.badgeStyleClass || "text-xs uppercase tracking-[0.2em] font-black text-black/65 block mb-2"}>
+                            <span data-wedding-badge="true" className={visual.badgeStyleClass || "text-xs uppercase tracking-[0.2em] font-black text-black/65 block mb-2"}>
                                 {visual.badgePrefix ? `${visual.badgePrefix}RSVP` : 'ISSUE N°02'}
                             </span>
                             <h2 className={`text-3xl sm:text-5xl leading-none ${titleStyle.className}`} style={titleStyle.style}>
@@ -107,8 +107,8 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     // ── VINTAGE / BOHO / RUSTIC templates ─────────────────────────────────────
     if (isVintage) {
         return (
-            <section id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
-                <motion.div
+            <section data-wedding-section="rsvp" id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+                <motion.div data-wedding-card="true"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -159,8 +159,8 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
 
     // ── DEFAULT: Classic / Romantic / Luxury / Everything else ────────────────
     return (
-        <section id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
-            <motion.div
+        <section data-wedding-section="rsvp" id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+            <motion.div data-wedding-card="true"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}

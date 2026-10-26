@@ -118,22 +118,22 @@ export default function TemplateNavigation({ wedding }: TemplateNavigationProps)
                     }}
                 >
                     {moreOpen && overflowItems.length > 0 && (
-                        <div onKeyDown={event => { if (event.key === 'Escape') { setMoreOpen(false); document.getElementById('wedding-navigation-toggle')?.focus(); } }} id="wedding-navigation-more" className={`mb-2 grid w-full max-w-md grid-cols-2 gap-1 rounded-2xl border p-2 shadow-lg ${isDark ? 'border-white/15 bg-[#18181b] text-white' : 'border-black/10 bg-white text-[#292524]'}`}>
+                        <div data-wedding-navigation="true" onKeyDown={event => { if (event.key === 'Escape') { setMoreOpen(false); document.getElementById('wedding-navigation-toggle')?.focus(); } }} id="wedding-navigation-more" className={`mb-2 grid w-full max-w-md grid-cols-2 gap-1 rounded-2xl border p-2 shadow-lg ${isDark ? 'border-white/15 bg-[#18181b] text-white' : 'border-black/10 bg-white text-[#292524]'}`}>
                             {overflowItems.map(item => (
-                                <button key={item.id} type="button" onClick={() => scrollTo(item.id)} className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2" aria-current={currentSection === item.id ? 'location' : undefined}>
+                                <button data-wedding-control="navigation" key={item.id} type="button" onClick={() => scrollTo(item.id)} className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2" aria-current={currentSection === item.id ? 'location' : undefined}>
                                     <item.icon className="h-4 w-4" aria-hidden="true" />{item.label}
                                 </button>
                             ))}
                         </div>
                     )}
-                    <nav aria-label="Wedding page sections" className={`flex w-full max-w-md items-center justify-evenly rounded-2xl border p-1 shadow-lg backdrop-blur-xl ${isDark ? 'border-white/15 bg-[#18181b]/95 text-white' : 'border-black/10 bg-white/95 text-[#292524]'}`}>
+                    <nav data-wedding-navigation="true" aria-label="Wedding page sections" className={`flex w-full max-w-md items-center justify-evenly rounded-2xl border p-1 shadow-lg backdrop-blur-xl ${isDark ? 'border-white/15 bg-[#18181b]/95 text-white' : 'border-black/10 bg-white/95 text-[#292524]'}`}>
                         {primaryItems.map(id => itemsToShow.find(item => item.id === id)).filter((item): item is typeof NAV_ITEMS[number] => Boolean(item)).map(item => (
-                            <button key={item.id} type="button" onClick={() => scrollTo(item.id)} aria-current={currentSection === item.id ? 'location' : undefined} className={`flex min-h-14 min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${currentSection === item.id ? (isDark ? 'bg-white/15' : 'bg-black/5') : ''}`}>
+                            <button data-wedding-control="navigation" key={item.id} type="button" onClick={() => scrollTo(item.id)} aria-current={currentSection === item.id ? 'location' : undefined} className={`flex min-h-14 min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${currentSection === item.id ? (isDark ? 'bg-white/15' : 'bg-black/5') : ''}`}>
                                 <item.icon className="h-4 w-4" aria-hidden="true" />{item.label}
                             </button>
                         ))}
                         {overflowItems.length > 0 && (
-                            <button id="wedding-navigation-toggle" type="button" aria-expanded={moreOpen} aria-controls="wedding-navigation-more" onClick={() => setMoreOpen(open => !open)} onKeyDown={event => { if (event.key === 'Escape') setMoreOpen(false); }} className="flex min-h-14 min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2">
+                            <button data-wedding-control="navigation" id="wedding-navigation-toggle" type="button" aria-expanded={moreOpen} aria-controls="wedding-navigation-more" onClick={() => setMoreOpen(open => !open)} onKeyDown={event => { if (event.key === 'Escape') setMoreOpen(false); }} className="flex min-h-14 min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2">
                                 {moreOpen ? <X className="h-4 w-4" aria-hidden="true" /> : <MoreHorizontal className="h-4 w-4" aria-hidden="true" />}More
                             </button>
                         )}

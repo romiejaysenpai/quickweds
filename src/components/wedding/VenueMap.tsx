@@ -31,11 +31,11 @@ export default function VenueMap({ venueName, venueAddress, mapsLink, id = 'venu
         : { className: 'font-serif text-[#4A4444]', style: undefined };
 
     return (
-        <section id={id} className={`relative overflow-hidden px-4 py-20 sm:px-6 sm:py-24 ${visual?.sectionClass || ''}`} style={visual?.sectionStyle}>
+        <section data-wedding-section="venue" id={id} className={`relative overflow-hidden px-4 py-20 sm:px-6 sm:py-24 ${visual?.sectionClass || ''}`} style={visual?.sectionStyle}>
             <div className="relative mx-auto max-w-6xl">
                 <div className="mb-10 text-center sm:mb-12">
                     <div className="mb-3 flex items-center justify-center">
-                        <span className={visual?.badgeStyleClass || "text-[10px] font-black uppercase tracking-[0.34em] text-primary"}>
+                        <span data-wedding-badge="true" className={visual?.badgeStyleClass || "text-[10px] font-black uppercase tracking-[0.34em] text-primary"}>
                             {visual?.badgePrefix ? `${visual.badgePrefix}MAP` : 'LOCATION'}
                         </span>
                     </div>
@@ -45,7 +45,7 @@ export default function VenueMap({ venueName, venueAddress, mapsLink, id = 'venu
                     {venueAddress && <p className={`mx-auto mt-2 max-w-2xl text-sm leading-6 ${visual?.bodyClass || 'text-[#4A4444]/68'}`}>{venueAddress}</p>}
                 </div>
 
-                <div className={`overflow-hidden ${visual?.cardClass || 'rounded-[2rem] border border-white/65 bg-white/72 shadow-[0_28px_90px_rgba(58,42,45,0.12)]'}`}>
+                <div data-wedding-card="true" className={`overflow-hidden ${visual?.cardClass || 'rounded-[2rem] border border-white/65 bg-white/72 shadow-[0_28px_90px_rgba(58,42,45,0.12)]'}`}>
                     <div className={`relative overflow-hidden bg-neutral ${visual?.isSharp ? 'rounded-none' : 'rounded-xl'}`}>
                         {embedUrl ? (
                             <iframe
@@ -66,7 +66,7 @@ export default function VenueMap({ venueName, venueAddress, mapsLink, id = 'venu
 
                     <div className="px-4 pb-5 pt-6 text-center sm:px-8 sm:pb-7">
                         {directionsUrl && (
-                            <a
+                            <a data-wedding-control="secondary"
                                 href={directionsUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"

@@ -55,7 +55,7 @@ const PREMIUM_THEMES: Record<string, PremiumTheme> = {
 };
 
 function formatDate(date: string) {
-    const value = new Date(date);
+    const value = new Date(`${date.slice(0, 10)}T12:00:00`);
     return Number.isNaN(value.getTime()) ? date : value.toLocaleDateString(undefined, { dateStyle: 'long' });
 }
 
@@ -134,7 +134,7 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
                         <span>{formatDate(wedding.wedding_date)}</span>
                         <span className="opacity-60">{wedding.venue_name}</span>
                     </div>
-                    <a href="#rsvp" className="mx-auto mt-8 inline-flex min-h-12 items-center justify-center self-center border border-current px-8 py-3 text-sm tracking-wide">Join our celebration</a>
+                    <a href={wedding.is_thank_you_mode ? "#details" : "#rsvp"} className="mx-auto mt-8 inline-flex min-h-12 items-center justify-center self-center border border-current px-8 py-3 text-sm tracking-wide">{wedding.is_thank_you_mode ? "Our wedding day" : "Join our celebration"}</a>
                     {theme.layout === 'split' && <div className="mt-10 overflow-hidden rounded-[1.5rem] md:hidden"><div className="aspect-[4/3]">{imagePanel}</div></div>}
                 </motion.div>
             </div>
@@ -143,7 +143,9 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
 }
 
 export default function PremiumTemplate({ wedding, gallery, isExpired }: TemplateProps) {
-    const theme = PREMIUM_THEMES[wedding.template] || PREMIUM_THEMES.heirloom;
+    const baseTheme = PREMIUM_THEMES[wedding.template] || PREMIUM_THEMES.heirloom;
+    const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
+    const theme = { ...baseTheme, primary: wedding.motif_color || baseTheme.primary, ...(hasBackgroundChoice ? { surface: 'var(--builder-paper)', ink: 'var(--builder-ink)' } : {}) };
     const themedWedding = { ...wedding, template: theme.baseTemplate };
 
     return (
@@ -169,7 +171,7 @@ export default function PremiumTemplate({ wedding, gallery, isExpired }: Templat
                         />
                     )}
                     <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={themedWedding} />
-                    <GallerySection id="gallery" gallery={gallery} template={theme.baseTemplate} motifColor={theme.primary} />
+                    <GallerySection id="gallery" gallery={gallery} template={theme.baseTemplate} motifColor={theme.primary} galleryLayout={wedding.gallery_layout} cardStyle={wedding.card_style} />
                     <AttireSection wedding={themedWedding} />
                     <GiftSection id="gift" wedding={themedWedding} />
                     <SharedNewSections id="additional" wedding={themedWedding} isExpired={isExpired} />

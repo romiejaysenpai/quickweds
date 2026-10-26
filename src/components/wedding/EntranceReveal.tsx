@@ -38,14 +38,14 @@ export default function EntranceReveal({ weddingId, initials, motifColor, couple
         window.dispatchEvent(new Event('quickweds:start-background-music'));
     };
     const date = weddingDate ? new Date(`${weddingDate.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : '';
-    return <AnimatePresence>{isVisible && <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .35 }} className={`fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto px-6 py-10 ${visual.isDark ? 'bg-[#151315] text-[#FFF8F0]' : 'bg-[#FBF8F2] text-[#352C2C]'}`}>
-        <div className="my-auto w-full max-w-lg border-y border-current/20 py-10 text-center">
+    return <AnimatePresence>{isVisible && <motion.div data-wedding-entrance="true" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .35 }} className={`fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto px-6 py-10 ${visual.isDark ? 'bg-[#151315] text-[#FFF8F0]' : 'bg-[#FBF8F2] text-[#352C2C]'}`}>
+        <div className="my-auto w-full max-w-lg md:max-w-2xl border-y border-current/20 py-10 md:py-16 text-center">
             <p className="text-xs uppercase tracking-[.22em]">You are warmly invited</p>
             <p className="my-6 font-serif text-3xl tracking-[.15em]" style={{ color: motifColor }}>{initials}</p>
             <p className="break-words font-serif text-4xl leading-tight sm:text-5xl">{coupleNames}</p>
             <p className="mt-6 text-base">{date}</p>
             {venueName && <p className="mt-2 text-sm opacity-80">{venueName}</p>}
-            <button type="button" onClick={dismiss} className="mt-8 min-h-11 border border-current/30 px-6 py-2 text-sm">Open invitation</button>
+            <button data-wedding-control="primary" type="button" onClick={dismiss} className="mt-8 min-h-11 border border-current/30 px-6 py-2 text-sm">Open invitation</button>
         </div>
     </motion.div>}</AnimatePresence>;
 }

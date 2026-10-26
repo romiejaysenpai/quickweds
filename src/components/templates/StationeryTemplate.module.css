@@ -1,0 +1,153 @@
+.page { color: var(--stationery-ink); background: var(--stationery-paper); padding-bottom: 7rem; }
+.hero { padding: clamp(1.25rem, 5vw, 5rem); min-height: 85svh; display: grid; align-items: center; }
+.names { font-family: var(--font-serif); font-size: clamp(2.5rem, 5.5vw, 5.5rem); line-height: 1.05; font-weight: 400; letter-spacing: -.04em; overflow-wrap: anywhere; margin: 1.5rem 0; }
+.names > span { display: block; }
+.names .ampersand { font-size: .55em; font-style: italic; padding: .2em 0; }
+.eyebrow { font-family: var(--font-sans); font-size: .65rem; letter-spacing: .2em; text-transform: uppercase; line-height: 1.8; }
+.when { margin: 1.5rem auto; max-width: 30rem; line-height: 1.8; overflow-wrap: anywhere; font-family: var(--font-sans); font-size: .9rem; }
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin: 1.75rem 0; }
+.actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: .75rem 1.5rem; border: 1px solid currentColor; font-family: var(--font-sans); font-size: .8rem; border-radius: 2px; }
+.actions a:first-child { background: var(--builder-action, var(--stationery-accent)); color: var(--builder-on-action, var(--stationery-paper)); }
+.actions a:focus-visible { outline: 3px solid var(--stationery-accent); outline-offset: 4px; }
+.actions a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.photo { width: 100%; height: 100%; object-fit: cover; }
+.monogram { display: grid; place-items: center; min-height: 18rem; height: 100%; font-family: var(--font-serif); font-size: clamp(3rem, 8vw, 6rem); overflow-wrap: anywhere; background: var(--stationery-paper); }
+.letterSpread { max-width: 1120px; margin: auto; display: grid; grid-template-columns: 1.2fr .8fr; align-items: center; gap: 3rem; width: 100%; }
+.love-letter .hero { background: repeating-linear-gradient(0deg, var(--builder-border, #e8dfd0) 0, var(--builder-border, #e8dfd0) 1px, var(--builder-subtle, #eee7da) 1px, var(--builder-subtle, #eee7da) 5px); }
+.letter { background: var(--stationery-paper); padding: clamp(1.5rem, 4vw, 3.5rem); text-align: center; box-shadow: 0 12px 40px #563b2e15; border: 1px solid var(--builder-border, #d9cbbb); position: relative; }
+.handwritten { font-family: var(--builder-heading-font, var(--font-dancing)), cursive; font-size: 1.5rem; line-height: 1.5; }
+.note { max-width: 25rem; margin: auto; font-family: var(--font-serif); font-style: italic; line-height: 1.7; }
+.keepsake { padding: .8rem .8rem 1.25rem; background: var(--stationery-paper); transform: rotate(3deg); box-shadow: 0 12px 30px #563b2e20; text-align: center; }
+.keepsake > .photo, .keepsake > .monogram { aspect-ratio: 4/5; height: auto; min-height: 0; }
+.keepsake > .monogram { min-height: 20rem; }
+.keepsake p { padding-top: 1rem; }
+.seal { display: grid; place-items: center; margin: 2rem auto 0; width: 3.75rem; height: 3.75rem; border: 3px double var(--builder-border, #b58367); border-radius: 50%; font-family: var(--font-serif); font-style: italic; background: var(--builder-subtle, #ead3bf); }
+.butter-blue .hero { background: repeating-linear-gradient(90deg, var(--stationery-paper) 0, var(--stationery-paper) 32px, var(--builder-subtle, #dce5ef) 32px, var(--builder-subtle, #dce5ef) 64px); }
+.postcard { display: grid; grid-template-columns: 1fr 1fr; width: 100%; max-width: 1200px; margin: auto; background: var(--stationery-paper); padding: clamp(1rem, 2.5vw, 2rem); border: 1px solid var(--builder-border, #193a8840); box-shadow: 0 16px 40px #193a8815; }
+.postcardPhoto { min-height: 35rem; position: relative; }
+.photoCaption { position: absolute; bottom: 1rem; left: 1rem; right: 1rem; text-align: center; background: var(--stationery-paper); padding: .75rem; font-family: var(--builder-heading-font, var(--font-dancing)), cursive; font-size: 1.4rem; }
+.postcardCopy { padding: 2rem; text-align: center; position: relative; border-left: 1px dashed var(--builder-border, #193a8850); margin-left: 1.5rem; }
+.stamp { display: inline-grid; place-items: center; border: 3px double currentColor; width: 3rem; height: 3.5rem; margin-top: 1rem; font-family: var(--font-serif); }
+.ribbon-romance .hero { background: var(--builder-subtle, #efdbdf); }
+.ribbonCard { background: var(--stationery-paper); text-align: center; padding: clamp(1.5rem, 4vw, 4rem); max-width: 900px; width: 100%; margin: auto; border: 1px solid var(--stationery-accent); outline: 1px solid var(--builder-border, #82334b55); outline-offset: -10px; border-radius: 45% 45% 2px 2px / 9% 9% 2px 2px; }
+.bow { width: 180px; max-width: 70%; height: 85px; margin: 0 auto 1rem; color: var(--stationery-accent); }
+.ribbonPortrait { max-width: 560px; aspect-ratio: 16/9; overflow: hidden; margin: 2rem auto 0; border-radius: 50% 50% 2px 2px / 20% 20% 2px 2px; }
+@media (max-width: 700px) {
+ .letterSpread, .postcard { grid-template-columns: minmax(0, 1fr); gap: 1.75rem; }
+ .keepsake { max-width: 360px; width: 90%; margin: auto; transform: rotate(2deg); }
+ .postcardCopy { margin-left: 0; border-left: 0; border-top: 1px dashed var(--builder-border, #193a8850); padding: 1.5rem .5rem .5rem; }
+ .postcardPhoto { min-height: 0; aspect-ratio: 4/3; }
+ .postcardPhoto > .monogram { min-height: 0; }
+ .names { font-size: clamp(2.2rem, 10vw, 4rem); }
+ .ribbonCard { border-radius: 42% 42% 2px 2px / 5% 5% 2px 2px; }
+}
+
+.seal > svg, .stamp > svg { max-width: 100%; max-height: 100%; flex-shrink: 0; }
+
+/* Small print, generous margins and tactile edges distinguish the three stationery sets. */
+.page { overflow-wrap: anywhere; }
+.hero > *, .letterSpread > *, .postcard > * { min-width: 0; }
+.names { text-wrap: balance; line-height: 1.12; }
+.eyebrow { font-family: var(--builder-body-font, var(--font-sans)); letter-spacing: .22em; }
+.when { font-family: var(--builder-body-font, var(--font-sans)); font-size: .85rem; }
+.when > p + p { margin-top: .5rem; }
+.actions a { font-family: var(--builder-body-font, var(--font-sans)); letter-spacing: .04em; transition: background-color .2s, box-shadow .2s; }
+.actions a:hover { box-shadow: 0 3px 12px color-mix(in srgb, var(--stationery-accent) 15%, transparent); }
+.love-letter .hero { padding-block: clamp(3rem, 6vw, 6rem); }
+.letter { box-shadow: 0 2px 4px #563b2e0a, 0 20px 50px #563b2e14; }
+.letter::before { content: ''; position: absolute; inset: 12px; border: 1px solid var(--builder-border, #d9cbbb); pointer-events: none; opacity: .65; }
+.letter .names { margin-block: 2rem; }
+.letter .note { font-family: var(--builder-body-font, var(--font-serif)); font-size: .9rem; line-height: 1.8; text-wrap: pretty; }
+.keepsake { padding: .85rem .85rem 1.75rem; }
+.keepsake .photo { object-position: center 40%; }
+.keepsake .handwritten { font-size: clamp(1.1rem, 2.2vw, 1.5rem); }
+.seal { width: 4.25rem; height: 4.25rem; box-shadow: inset 0 0 0 3px var(--stationery-paper), 0 4px 10px #563b2e12; }
+.butter-blue .hero { padding-block: clamp(2rem, 5vw, 5rem); }
+.postcard { padding: clamp(1rem, 2.8vw, 2.5rem); }
+.postcardPhoto { min-height: 34rem; overflow: hidden; }
+.postcardPhoto .photo { object-position: center 40%; }
+.photoCaption { bottom: 1.25rem; left: 1.25rem; right: 1.25rem; padding: .9rem .5rem; border: 1px solid var(--builder-border, #193a8840); }
+.postcardCopy { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.25rem 1.5rem; }
+.postcardCopy .names { font-size: clamp(2.3rem, 4.5vw, 4rem); letter-spacing: -.045em; margin-block: 1.25rem; }
+.postcardCopy .stamp { align-self: flex-end; border-style: dotted; transform: rotate(8deg); margin-block: .75rem 0; }
+.postcardCopy .when { border-block: 1px solid var(--builder-border, #193a8840); padding-block: 1rem; margin-block: .5rem 1.25rem; width: 100%; }
+.postcardCopy .actions { margin-block: .5rem 0; }
+.ribbon-romance .hero { padding-block: clamp(2.5rem, 6vw, 5rem); background-image: radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--stationery-paper) 65%, transparent), transparent 70%); }
+.ribbonCard { box-shadow: 0 14px 50px #602b3c0d; padding-top: clamp(2.75rem, 5vw, 4.5rem); }
+.ribbonCard .names { font-size: clamp(2.6rem, 5.2vw, 4.75rem); margin-block: 1.5rem; }
+.ribbonCard .when { font-size: .8rem; letter-spacing: .06em; }
+.ribbonPortrait { aspect-ratio: 16/10; outline: 1px solid var(--builder-border, #82334b55); outline-offset: 7px; margin-top: 2.5rem; }
+.bow { stroke-width: 1.35; width: 170px; height: 80px; }
+@media (max-width: 700px) {
+  .hero { padding-inline: 1rem; }
+  .letter { padding: 2rem 1.5rem; }
+  .letterSpread { gap: 2.5rem; }
+  .letter .names { margin-block: 1.5rem; }
+  .keepsake { width: 88%; }
+  .postcardPhoto { min-height: 0; aspect-ratio: 4/5; }
+  .postcardCopy { padding: 1.5rem .5rem .5rem; }
+  .postcardCopy .stamp { width: 2.5rem; height: 3rem; }
+  .postcardCopy .names { font-size: clamp(2.25rem, 10vw, 3.5rem); }
+  .ribbonCard { padding-inline: 1.5rem; }
+  .ribbonCard .names { font-size: clamp(2.3rem, 9vw, 3.75rem); }
+  .ribbonPortrait { aspect-ratio: 4/3; }
+  .actions { gap: .6rem; }
+  .actions a { padding-inline: 1.1rem; }
+}
+@media (prefers-reduced-motion: reduce) { .actions a { transition: none; } }
+.love-letter .hero { background-image: repeating-linear-gradient(0deg, var(--stationery-paper) 0, var(--stationery-paper) 4px, color-mix(in srgb, var(--builder-border, #d9cbbb) 18%, var(--stationery-paper)) 4px, color-mix(in srgb, var(--builder-border, #d9cbbb) 18%, var(--stationery-paper)) 5px); }
+
+/* Carry each stationery edge through the lower page without replacing custom cards. */
+.page {
+  --stationery-rule-style: solid;
+  --stationery-rule-width: 1px;
+}
+.love-letter { --stationery-rule-style: double; --stationery-rule-width: 3px; }
+.butter-blue { --stationery-rule-style: dashed; }
+.ribbon-romance { --stationery-rule-style: solid; }
+.page:not([data-native-card-custom='true']) [data-wedding-section] {
+  border-block-start: var(--stationery-rule-width) var(--stationery-rule-style) var(--builder-border);
+}
+.page:not([data-native-card-custom='true']) [data-wedding-section]::after {
+  content: '';
+  display: block;
+  width: 3.5rem;
+  height: .5rem;
+  margin: 2rem auto 0;
+  border-block: 1px solid var(--builder-border);
+  pointer-events: none;
+}
+.butter-blue:not([data-native-card-custom='true']) [data-wedding-section]::after {
+  height: .7rem;
+  border: 0;
+  background: radial-gradient(circle, var(--stationery-accent) 1px, transparent 2px) center / .6rem .6rem repeat-x;
+  opacity: .55;
+}
+.ribbon-romance:not([data-native-card-custom='true']) [data-wedding-section]::after {
+  width: 2.5rem;
+  height: 1rem;
+  border: 1px solid var(--builder-border);
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent 46%, var(--builder-border) 46%, var(--builder-border) 54%, transparent 54%);
+  clip-path: polygon(0 0, 50% 30%, 100% 0, 100% 100%, 50% 70%, 0 100%);
+}
+.love-letter [data-wedding-section='CountdownTimer'] [role='timer'] { border: 3px double var(--builder-border); border-radius: 2px; background: color-mix(in srgb, var(--stationery-accent) 4%, var(--stationery-paper)); }
+.butter-blue [data-wedding-section='CountdownTimer'] [role='timer'] { border: 1px dashed var(--builder-border); border-radius: 18px; background: repeating-linear-gradient(90deg, transparent 0 24px, color-mix(in srgb, var(--stationery-accent) 5%, transparent) 24px 48px); }
+.ribbon-romance [data-wedding-section='CountdownTimer'] [role='timer'] { border: 1px solid var(--builder-border); border-radius: 50% 50% 4px 4px / 18px 18px 4px 4px; background: color-mix(in srgb, var(--stationery-accent) 6%, var(--stationery-paper)); }
+.page [data-wedding-section='CountdownTimer'] [role='timer'] > div + div { border-left-color: var(--builder-border); }
+.page:not([data-native-card-custom='true']) .keepsake { border: 1px solid var(--builder-border); }
+.page:not([data-native-card-custom='true']) .postcardPhoto { outline: 1px solid var(--builder-border); outline-offset: -7px; }
+.page:not([data-native-card-custom='true']) .ribbonPortrait { box-shadow: 0 0 0 12px color-mix(in srgb, var(--stationery-accent) 5%, transparent); }
+@keyframes stationeryPaperArrival {
+  from { opacity: .65; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero .names { animation: stationeryPaperArrival .65s ease-out both; }
+  .keepsake { transition: transform .35s ease; }
+  .postcardPhoto .photo, .ribbonPortrait .photo { transition: transform .5s ease; }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .keepsake:hover { transform: rotate(0); }
+  .postcardPhoto:hover .photo, .ribbonPortrait:hover .photo { transform: scale(1.025); }
+}

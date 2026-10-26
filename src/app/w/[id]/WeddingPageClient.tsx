@@ -10,7 +10,7 @@ import {
     TemplateNavigation,
     FAQSection,
 } from '@/components/wedding';
-import { getWeddingPageStyle, renderWeddingTemplate } from '@/components/templates/TemplateRenderer';
+import { getWeddingPageStyle, getWeddingThemeAttributes, renderWeddingTemplate } from '@/components/templates/TemplateRenderer';
 import WeddingFontProvider from '@/components/WeddingFontProvider';
 import type { Wedding } from '@/types/wedding';
 import { trackWeddingEvent } from '@/lib/wedding-features';
@@ -57,13 +57,15 @@ export default function WeddingPageClient({
     const isExpired = initialIsExpired;
     const gallery = safeParseArray<string>(wedding.gallery_images);
     const template = wedding.template || 'classic';
+    const { className: invitationThemeClass, ...invitationThemeAttributes } = getWeddingThemeAttributes(wedding);
     const pageStyle = getWeddingPageStyle(wedding, { includeGradient: true });
 
     return (
         <WeddingFontProvider fontStyle={wedding.font_style} logoFont={wedding.logo_font}>
             <div
-                className={`wedding-page min-h-screen relative selection-dynamic template-${template} overflow-x-hidden`}
+                className={`wedding-page min-h-screen relative selection-dynamic ${invitationThemeClass} template-${template} overflow-x-hidden`}
                 style={pageStyle}
+                {...invitationThemeAttributes}
             >
 
                 <EntranceReveal

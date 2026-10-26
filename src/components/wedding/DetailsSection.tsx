@@ -69,7 +69,7 @@ function DetailCard({
     const textColorSub = isDark ? "text-white/74" : "text-[#4A4444]/68";
 
     return (
-        <motion.div 
+        <motion.div data-wedding-card="true"
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
@@ -106,7 +106,7 @@ function DetailCard({
                 </div>
 
                 {link && (
-                    <motion.button 
+                    <motion.button data-wedding-control="primary"
                         onClick={() => {
                             const address = value + ' ' + (subtitle || '');
                             const encodedAddress = encodeURIComponent(address);
@@ -145,7 +145,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
     const inviteImages = parseInvitationImages(wedding.invitation_image);
 
     return (
-        <section id={id} className={`py-16 sm:py-24 relative z-10 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section data-wedding-section="details" id={id} className={`py-16 sm:py-24 relative z-10 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <div className={visual.containerClass}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -154,12 +154,12 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                     className="mb-12 text-center"
                 >
                     <div className="mb-6 flex items-center justify-center">
-                        <span className={visual.badgeStyleClass || `mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
+                        <span data-wedding-badge="true" className={visual.badgeStyleClass || `mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
                             {visual.badgePrefix ? `${visual.badgePrefix}ESSENTIALS` : 'The Essentials'}
                         </span>
                     </div>
                     <h2 className={`text-4xl md:text-6xl ${titleStyle.className}`} style={titleStyle.style}>{visual.detailTitle}</h2>
-                    <div className={`mx-auto mt-6 ${visual.dividerClass}`} />
+                    <div data-wedding-divider="true" className={`mx-auto mt-6 ${visual.dividerClass}`} />
                 </motion.div>
             </div>
             <div className={`${visual.containerClass} max-w-5xl`}>
@@ -238,11 +238,11 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                         <div className="flex w-full flex-col items-center gap-10 md:gap-16">
                             {inviteImages.map((src, index) => (
                                 <figure key={`${src}-${index}`} className="w-full max-w-[800px]">
-                                    <a href={src} target="_blank" rel="noopener noreferrer" aria-label={`View invitation page ${index + 1} in full size`} className="block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current">
+                                    <a data-wedding-control="secondary" href={src} target="_blank" rel="noopener noreferrer" aria-label={`View invitation page ${index + 1} in full size`} className="block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current">
                                         <img src={src} alt={`Invitation page ${index + 1}`} loading="lazy" decoding="async" className="h-auto w-full object-contain shadow-sm" />
                                     </a>
                                     <figcaption className={`mt-4 text-center text-sm ${isDark ? 'text-white/75' : 'text-[#4A4444]/75'}`}>
-                                        <a href={src} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center border-b border-current/30">
+                                        <a data-wedding-control="secondary" href={src} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center border-b border-current/30">
                                             {inviteImages.length > 1 ? `View invitation · Page ${index + 1}` : 'View invitation'}
                                         </a>
                                     </figcaption>

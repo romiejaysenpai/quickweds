@@ -11,6 +11,8 @@ import GenerationLoading from './GenerationLoading';
 import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
 import LivePreview from './LivePreview';
+import { REFERENCE_INVITATIONS } from '@/lib/reference-invitations';
+import { UNCUSTOMIZED_DESIGN, PRESERVED_DESIGN, selectBuilderReference, getBuilderRecapSettings, readBuilderDesignCustomization } from '@/lib/builder-design-selection';
 import { BUILDER_DRAFT_STORAGE_KEY } from '@/lib/builder-storage';
 import { builderDraftKey, readLegacyBuilderDraft, loadBuilderDraft, saveBuilderDraft, deleteBuilderDraft, type BuilderDraftSnapshot } from '@/lib/builder-drafts';
 import MarketplacePanel from './builder/MarketplacePanel';
@@ -372,6 +374,7 @@ const INITIAL_FORM_DATA = {
     receptionVenueName: '',
     receptionVenueAddress: '',
     receptionMapsLink: '',
+    designCustomization: { ...UNCUSTOMIZED_DESIGN },
     motifColor: '#C08081',
     fontStyle: 'Elegant',
     sectionTitleFontStyle: 'default',
@@ -509,12 +512,26 @@ function isMissingOptionalWeddingColumnError(error: unknown, column: string) {
     );
 }
 
+function getMissingWeddingColumnName(error: unknown): string | null {
+    if (!error || typeof error !== 'object') return null;
+    const record = error as Record<string, unknown>;
+    const text = `${record.code || ''} ${record.message || ''} ${record.details || ''} ${record.hint || ''}`;
+    const pgrstMatch = text.match(/could not find the '([^']+)' column of '(?:public\.)?weddings' in the schema cache/i);
+    if (pgrstMatch?.[1]) return pgrstMatch[1];
+    const quotedMatch = text.match(/'([^']+)'\s+column/i);
+    if (quotedMatch?.[1]) return quotedMatch[1];
+    const colMatch = text.match(/column\s+(?:public\.)?(?:weddings\.)?["']?([a-zA-Z0-9_]+)["']?\s+does not exist/i);
+    if (colMatch?.[1]) return colMatch[1];
+    return null;
+}
+
 const MAX_IMAGE_FILE_BYTES = 12 * 1024 * 1024;
 const MAX_FREE_VIDEO_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_PREMIUM_VIDEO_FILE_BYTES = 100 * 1024 * 1024;
 const MAX_CONCURRENT_UPLOADS = 3;
 
 export { BUILDER_DRAFT_STORAGE_KEY } from '@/lib/builder-storage';
+export { isMissingOptionalWeddingColumnError, getMissingWeddingColumnName };
 
 export default function BuilderForm() {
     const router = useRouter();
@@ -660,7 +677,7 @@ export default function BuilderForm() {
     const draftFingerprint = JSON.stringify({ formData, previews, files: Object.entries(mediaFiles).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => [key, (Array.isArray(value) ? value : value ? [value] : []).map(file => [file.name, file.size, file.lastModified])]) });
     const restoreDraft = useCallback((draft: BuilderDraftSnapshot) => {
         importedLegacyRef.current = Boolean(draft.legacyImport);
-        initializeFormData({ ...INITIAL_FORM_DATA, ...draft.formData });
+        initializeFormData({ ...INITIAL_FORM_DATA, ...draft.formData, designCustomization: readBuilderDesignCustomization(draft.formData.designCustomization) });
         setCurrentStep(draft.currentStep);
         setMediaFiles(draft.mediaFiles as typeof mediaFiles);
         const restored = { ...draft.previews };
@@ -754,7 +771,7 @@ export default function BuilderForm() {
         setFormData((prev: any) => ({
             ...prev,
             motifColor: color,
-            sectionTitleColorStyle: 'motif',
+            designCustomization: { ...(prev.designCustomization || PRESERVED_DESIGN), motifColor: true },
         }));
     }, [setFormData]);
 
@@ -811,7 +828,7 @@ export default function BuilderForm() {
             if (pendingData) {
                 try {
                     const restored = JSON.parse(pendingData);
-                    initializeFormData({ ...INITIAL_FORM_DATA, ...restored });
+                    initializeFormData({ ...INITIAL_FORM_DATA, ...restored, designCustomization: readBuilderDesignCustomization(restored.designCustomization) });
                     window.sessionStorage.removeItem('pending_wedding_data');
                     console.log('✅ Restored pending wedding form data from session');
                 } catch (e) {
@@ -860,6 +877,7 @@ export default function BuilderForm() {
                         const dressCodeSettings = parseDressCodeValue(data.dress_code, data.motif_color);
 
                         initializeFormData({
+                        designCustomization: { ...PRESERVED_DESIGN },
                         brideName: data.bride_name || '',
                         groomName: data.groom_name || '',
                         weddingDate: data.wedding_date || '',
@@ -1104,6 +1122,7 @@ export default function BuilderForm() {
         setFormData((prev: any) => ({
             ...prev,
             ...preset,
+            designCustomization: { ...PRESERVED_DESIGN },
         }));
     };
 
@@ -1511,9 +1530,7 @@ export default function BuilderForm() {
                 is_thank_you_mode: formData.isThankYouMode,
                 thank_you_message: formData.thankYouMessage,
                 photo_album_link: formData.photoAlbumLink,
-                show_photos_in_thank_you_mode: formData.showPhotosInThankYouMode !== false,
-                show_guestbook_in_thank_you_mode: formData.showGuestbookInThankYouMode !== false,
-                photo_recap_style: formData.photoRecapStyle || 'polaroid',
+                ...getBuilderRecapSettings(formData),
                 accent_style: formData.accentStyle,
             };
 
@@ -1588,6 +1605,7 @@ export default function BuilderForm() {
                 }
 
                 [
+                    'planner_only',
                     'reception_venue_name',
                     'reception_venue_address',
                     'reception_maps_link',
@@ -1611,6 +1629,17 @@ export default function BuilderForm() {
                         canRetry = true;
                     }
                 });
+
+                const dynamicMissingColumn = getMissingWeddingColumnName(error);
+                if (
+                    dynamicMissingColumn &&
+                    dynamicMissingColumn !== 'id' &&
+                    dynamicMissingColumn !== 'user_id' &&
+                    dynamicMissingColumn in fallbackPayload
+                ) {
+                    delete fallbackPayload[dynamicMissingColumn];
+                    canRetry = true;
+                }
 
                 if (!canRetry || JSON.stringify(fallbackPayload) === JSON.stringify(submitPayload)) {
                     break;
@@ -1934,6 +1963,23 @@ export default function BuilderForm() {
                                 </span>
                             )}
                         </div>
+                        <div className="rounded-2xl border border-border bg-white p-4">
+                            <label htmlFor="reference-invitation" className="block text-sm font-bold text-foreground">Wedding invitation collection</label>
+                            <p className="mt-1 text-xs leading-5 text-text-secondary">Choose a numbered design, then personalise it with your names, photos and wedding details.</p>
+                            <select id="reference-invitation" value={formData.templateStyle?.startsWith('reference-') ? formData.templateStyle : ''}
+                                onChange={(event) => {
+                                    const reference = REFERENCE_INVITATIONS.find(item => item.id === event.target.value);
+                                    if (!reference || (!isPremium && !FREE_TEMPLATE_IDS.includes(reference.templateId as typeof FREE_TEMPLATE_IDS[number]))) return;
+                                    setFormData((previous: typeof formData) => selectBuilderReference(previous, reference));
+                                }}
+                                className="mt-3 min-h-[48px] w-full rounded-xl border border-border bg-neutral px-3 text-sm">
+                                <option value="">Browse {REFERENCE_INVITATIONS.length} invitation designs</option>
+                                {REFERENCE_INVITATIONS.map(reference => {
+                                    const locked = !isPremium && !FREE_TEMPLATE_IDS.includes(reference.templateId as typeof FREE_TEMPLATE_IDS[number]);
+                                    return <option key={reference.id} value={reference.id} disabled={locked}>{String(reference.reference).padStart(2, '0')} · {reference.name}{locked ? ' · Premium' : ''}</option>;
+                                })}
+                            </select>
+                        </div>
                         {/* ── Mobile: Collapsible Template List ── */}
                         <div className="sm:hidden space-y-1">
                             {TEMPLATES.map((tmpl) => {
@@ -2148,10 +2194,10 @@ export default function BuilderForm() {
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="text-xs font-bold uppercase tracking-widest text-primary">
-                                        5 Design Variations
+                                        {styleVariants.length} Design Variations
                                     </p>
                                     <p className="mt-1 text-sm text-text-secondary">
-                                        Select from 5 distinct variations for <strong className="text-foreground">{activeTemplateMeta?.name || 'this template'}</strong>. Switching variations changes layout, typography, section flow, gallery, buttons, RSVP, and mobile layout without losing your saved content.
+                                        Select from {styleVariants.length} designs for <strong className="text-foreground">{activeTemplateMeta?.name || 'this template'}</strong>. Switching variations changes layout, typography, section flow, gallery, buttons, RSVP, and mobile layout without losing your saved content.
                                     </p>
                                 </div>
                                 {activeTemplateMeta && (
@@ -2168,7 +2214,10 @@ export default function BuilderForm() {
                                         <button
                                             key={variant.id}
                                             type="button"
-                                            onClick={() => setFormData((prev: any) => ({ ...prev, templateStyle: variant.id }))}
+                                            onClick={() => {
+                                                const reference = REFERENCE_INVITATIONS.find(item => item.id === variant.id);
+                                                setFormData((prev: any) => reference ? selectBuilderReference(prev, reference) : { ...prev, templateStyle: variant.id });
+                                            }}
                                             className={`group relative rounded-2xl border p-4 text-left transition-all ${
                                                 isSelected
                                                     ? 'border-primary/60 bg-primary/5 shadow-xl shadow-primary/10 ring-2 ring-primary/20'
@@ -2177,7 +2226,7 @@ export default function BuilderForm() {
                                         >
                                             <div className="flex items-center justify-between gap-2 mb-1.5">
                                                 <span className="text-[9px] font-black uppercase tracking-[0.22em] text-primary">
-                                                    Variation {variant.variationKey?.toUpperCase() || 'V1'}
+                                                    {variant.id.startsWith('reference-') ? `Reference ${variant.id.slice(-2)}` : `Variation ${variant.variationKey?.toUpperCase() || 'V1'}`}
                                                 </span>
                                                 {isSelected && (
                                                     <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-bold text-white">
@@ -2261,7 +2310,7 @@ export default function BuilderForm() {
                                      <button
                                          key={style.id}
                                          type="button"
-                                         onClick={() => setFormData((prev: any) => ({ ...prev, sectionTitleFontStyle: style.id }))}
+                                         onClick={() => setFormData((prev: any) => ({ ...prev, sectionTitleFontStyle: style.id, designCustomization: { ...(prev.designCustomization || PRESERVED_DESIGN), sectionTitleFontStyle: true } }))}
                                          className={`rounded-2xl border p-4 text-left transition-all ${
                                              formData.sectionTitleFontStyle === style.id
                                                  ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10'
@@ -2347,7 +2396,7 @@ export default function BuilderForm() {
                                         <button
                                             key={font.id}
                                             type="button"
-                                            onClick={() => !isLocked && setFormData((prev: any) => ({ ...prev, fontStyle: font.id }))}
+                                            onClick={() => !isLocked && setFormData((prev: any) => ({ ...prev, fontStyle: font.id, designCustomization: { ...(prev.designCustomization || PRESERVED_DESIGN), fontStyle: true } }))}
                                             className={`p-3 sm:p-4 rounded-lg sm:rounded-2xl border-2 transition-all text-left flex flex-col gap-1 relative min-h-[100px] ${isLocked ? 'border-border bg-neutral/50 opacity-60 cursor-not-allowed' :
                                                 formData.fontStyle === font.id ? 'border-primary bg-primary/5' :
                                                     'border-border bg-white hover:border-primary/30'

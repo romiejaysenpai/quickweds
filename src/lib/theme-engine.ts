@@ -189,12 +189,14 @@ export function derivePalette(motifColor: string, isDark: boolean = false): Them
 }
 
 export const TEMPLATE_FAMILIES: Record<string, string> = {
+    'love-letter': 'vintage', 'butter-blue': 'tropical', 'ribbon-romance': 'romantic',
     heirloom: 'garden', estate: 'elegance', moonlit: 'midnight', saffron: 'traditional',
     'cinema-noir': 'cinematic', 'modern-vow': 'minimal', atelier: 'editorial', wildflower: 'boho',
     regency: 'royal', lovescript: 'romantic', 'coastal-vow': 'tropical', 'orchid-noir': 'midnight',
     papercut: 'minimal', 'marigold-house': 'traditional', 'the-weekend': 'elegance',
     'winter-rose': 'royal', gallery: 'editorial', 'petal-note': 'romantic', 'sunset-ceremony': 'boho',
-    'editorial-luxe': 'editorial', monochrome: 'minimal', 'botanical-arch': 'garden', 'cinematic-vow': 'cinematic',
+    'editorial-luxe': 'editorial', 'editorial-romance': 'romantic', monochrome: 'minimal', 'botanical-arch': 'garden', 'cinematic-vow': 'cinematic',
+    'envelope-wax-seal': 'garden', 'pearl-coastal': 'romantic', 'watercolor-meadow': 'garden', 'velure-editorial': 'editorial', 'torn-paper-terracotta': 'rustic',
 };
 
 export function resolveTemplateFamily(template?: string) {
@@ -215,11 +217,11 @@ export function getTemplateMood(template?: string): TemplateMood {
 
     if (['royal', 'midnight', 'artdeco', 'luxury', 'cinematic-vow'].includes(t)) return 'dark';
     if (['cinematic', 'film', 'cinematic-vow'].includes(t)) return 'cinematic';
-    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus', 'editorial-luxe', 'monochrome'].includes(t)) return 'editorial';
-    if (['boho', 'garden', 'rustic', 'sakura', 'botanical-arch'].includes(t)) return 'organic';
+    if (['editorial', 'minimal', 'vogue', 'urban', 'glitch', 'timeline', 'rsvpfocus', 'editorial-luxe', 'monochrome', 'velure-editorial'].includes(t)) return 'editorial';
+    if (['boho', 'garden', 'rustic', 'sakura', 'botanical-arch', 'envelope-wax-seal', 'watercolor-meadow'].includes(t)) return 'organic';
     if (['tropical', 'elopement'].includes(t)) return 'destination';
-    if (['vintage', 'traditional'].includes(t)) return 'vintage';
-    if (['whimsical', 'romantic'].includes(t)) return 'playful';
+    if (['vintage', 'traditional', 'torn-paper-terracotta'].includes(t)) return 'vintage';
+    if (['whimsical', 'romantic', 'editorial-romance', 'pearl-coastal'].includes(t)) return 'playful';
 
     return 'classic';
 }

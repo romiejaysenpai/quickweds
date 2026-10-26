@@ -11,7 +11,7 @@ import {
     TemplateNavigation,
     FAQSection,
 } from '@/components/wedding';
-import { getWeddingPageStyle, renderWeddingTemplate } from '@/components/templates/TemplateRenderer';
+import { getWeddingPageStyle, getWeddingThemeAttributes, renderWeddingTemplate } from '@/components/templates/TemplateRenderer';
 import type { Wedding } from '@/types/wedding';
 
 const PREVIEW_STORAGE_KEY = 'quickweds-builder-preview';
@@ -20,6 +20,13 @@ export default function PreviewPage() {
     const [wedding, setWedding] = useState<Wedding | null>(null);
     const [gallery, setGallery] = useState<string[]>([]);
     const latestPreviewRevisionRef = useRef(-1);
+
+    useEffect(() => {
+        if (!wedding) return;
+        const bride = wedding.bride_name || 'Wedding';
+        const groom = wedding.groom_name || 'Preview';
+        document.title = `${bride} & ${groom} · Wedding Preview`;
+    }, [wedding]);
 
     useEffect(() => {
         const previewInstanceId = new URLSearchParams(window.location.search).get('preview') || 'default';
@@ -37,7 +44,8 @@ export default function PreviewPage() {
         };
 
         const handleMessage = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin || event.source !== window.parent) return;
+            if (event.origin !== window.location.origin) return;
+            if (event.source !== window.parent && event.source !== window.opener) return;
             applyPreview(event.data);
         };
 
@@ -50,23 +58,53 @@ export default function PreviewPage() {
             }
         };
 
+        let channel: BroadcastChannel | null = null;
+        if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+            channel = new BroadcastChannel('quickweds-preview-sync');
+            channel.onmessage = (event: MessageEvent) => {
+                if (event.data?.type === 'UPDATE_PREVIEW' && event.data?.previewInstanceId === previewInstanceId) {
+                    applyPreview(event.data.payload);
+                }
+            };
+        }
+
         window.addEventListener('message', handleMessage);
         window.addEventListener('storage', handleStorage);
 
-        const storedPreview = window.sessionStorage.getItem(previewStorageKey);
+        const storedPreview =
+            window.sessionStorage.getItem(previewStorageKey) ||
+            window.localStorage.getItem(previewStorageKey);
+
         if (storedPreview) {
             try {
                 applyPreview(JSON.parse(storedPreview));
             } catch {
-                window.sessionStorage.removeItem(previewStorageKey);
+                try {
+                    window.sessionStorage.removeItem(previewStorageKey);
+                    window.localStorage.removeItem(previewStorageKey);
+                } catch {
+                    // Ignore storage clean up errors
+                }
             }
         }
 
-        window.parent.postMessage({ type: 'PREVIEW_READY' }, window.location.origin);
+        const readyMsg = { type: 'PREVIEW_READY', previewInstanceId };
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage(readyMsg, window.location.origin);
+        }
+        if (window.opener && window.opener !== window) {
+            window.opener.postMessage(readyMsg, window.location.origin);
+        }
+        try {
+            channel?.postMessage(readyMsg);
+        } catch {
+            // Ignore channel post message errors
+        }
 
         return () => {
             window.removeEventListener('message', handleMessage);
             window.removeEventListener('storage', handleStorage);
+            channel?.close();
         };
     }, []);
 
@@ -80,10 +118,11 @@ export default function PreviewPage() {
 
     const isExpired = false;
     const template = wedding.template || 'classic';
+    const { className: invitationThemeClass, ...invitationThemeAttributes } = getWeddingThemeAttributes(wedding);
     const pageStyle = getWeddingPageStyle(wedding);
 
     return (
-        <div className={`wedding-page min-h-screen relative selection-dynamic template-${template} overflow-x-hidden`} style={pageStyle}>
+        <div className={`wedding-page min-h-screen relative selection-dynamic ${invitationThemeClass} template-${template} overflow-x-hidden`} style={pageStyle} {...invitationThemeAttributes}>
 
             <EntranceReveal
                 weddingId={wedding.id}

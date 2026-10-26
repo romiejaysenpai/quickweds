@@ -1,0 +1,18 @@
+{
+  "generator": "Built-in image_gen tool",
+  "transparent_background": true,
+  "assets": [
+    {
+      "file": "reference-floral-corner.png",
+      "prompt": "Create one premium wedding stationery floral corner ornament asset on a genuinely transparent background. No page, no text, no frame, no people, no watermark. Composition: graceful L-shaped cascading corner bouquet concentrated at upper-left with airy trailing branches extending to right and downward. Fine hand-painted watercolor realism with ivory white magnolia blossoms, white garden roses, a few very pale blush petals, muted sage eucalyptus and olive leaves, delicate champagne-gold botanical fine stems. Luxurious soft wedding invitation botanical clipart, organic natural petals, restrained elegant palette, detailed flowers. Large transparent empty area at bottom right. Deliver single PNG ornament suitable to overlay live editable wedding invitation."
+    },
+    {
+      "file": "reference-meadow.png",
+      "prompt": "Wedding stationery decorative watercolor landscape asset only, no text no people no border. Wide 3:2 composition of a soft sage green meadow fading to transparent at top and bottom, painterly eucalyptus and olive trees, small dark green blue pines in foreground at far left and right, rolling hills, luminous ivory sky transparent upper half. Subtle pale ivory and white wildflowers at bottom. Fine watercolor wedding invitation illustration, delicate wash and pigment edges, mostly muted sage greens and moss greens, atmospheric Tuscan meadow, high quality hand painted on transparent background. Image to sit underneath live editable text, not a full website."
+    },
+    {
+      "file": "reference-gold-ribbon.png",
+      "prompt": "Create a single opulent sculptural gold satin ribbon wedding stationery corner ornament on transparent background. No text, no monogram, no page, no frame or borders. Composition graceful long folded fluid metallic champagne gold ribbon sweeping from top right downward to bottom left, with a cluster of ivory peony blossoms and taupe leaves at bottom left and subtle ornate antique gold acanthus flourish. Realistic soft studio light, folded liquid metallic fabric, polished editorial baroque wedding invitation artwork. Dark chocolate wedding stationery will sit behind this transparent asset. Empty transparent negative space, elegant restrained high end."
+    }
+  ]
+}

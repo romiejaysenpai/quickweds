@@ -76,7 +76,7 @@ export default function GuestBook({ weddingId, wedding }: GuestBookProps) {
     };
 
     return (
-        <section id="guestbook" className={`py-16 md:py-24 px-4 sm:px-6 ${visual.sectionClass}`} style={visual.sectionStyle}>
+        <section data-wedding-section="guestbook" id="guestbook" className={`py-16 md:py-24 px-4 sm:px-6 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-10">
                     <h2 className={`text-4xl md:text-5xl mb-4 ${titleStyle.className}`} style={titleStyle.style}>Guest Book</h2>
@@ -84,15 +84,15 @@ export default function GuestBook({ weddingId, wedding }: GuestBookProps) {
                 </div>
 
                 {/* Submit Form */}
-                <div className={`p-5 sm:p-8 mb-10 ${visual.cardClass}`}>
+                <div data-wedding-card="true" className={`p-5 sm:p-8 mb-10 ${visual.cardClass}`}>
                     {submitted ? (
                         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
-                            <CheckCircle2 className="w-12 h-12 text-accent mx-auto mb-4" />
+                            <CheckCircle2 data-wedding-status="success" className="w-12 h-12 text-accent mx-auto mb-4" />
                             <p className="text-xl font-serif text-primary">Thank you for your lovely message! 💕</p>
                         </motion.div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <input
+                            <input data-wedding-field="true"
                                 required
                                 aria-label="Your name"
                                 placeholder="Your name"
@@ -100,7 +100,7 @@ export default function GuestBook({ weddingId, wedding }: GuestBookProps) {
                                 onChange={(e) => setName(e.target.value)}
                                 className={inputClass}
                             />
-                            <textarea
+                            <textarea data-wedding-field="true"
                                 required
                                 aria-label="Your message to the couple"
                                 placeholder="Write your wishes for the couple..."
@@ -108,7 +108,7 @@ export default function GuestBook({ weddingId, wedding }: GuestBookProps) {
                                 onChange={(e) => setMessage(e.target.value)}
                                 className={`${inputClass} min-h-32 resize-y`}
                             />
-                            <button
+                            <button data-wedding-control="primary"
                                 type="submit"
                                 disabled={submitting}
                                 className="w-full py-4 rounded-2xl bg-primary text-white font-bold hover:bg-primary-hover transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
@@ -126,7 +126,7 @@ export default function GuestBook({ weddingId, wedding }: GuestBookProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <AnimatePresence>
                             {entries.map((entry, i) => (
-                                <motion.div
+                                <motion.div data-wedding-card="true"
                                     key={entry.id}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}

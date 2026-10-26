@@ -1,5 +1,6 @@
+import { MonogramMark } from '@/components/MonogramMark';
 import { Music } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { type CSSProperties, useEffect, useState } from 'react';
 
 import {
     GuestBook,
@@ -82,7 +83,7 @@ export function SharedNewSections({ wedding, isExpired, id }: SharedNewSectionsP
             />
             <VenueDetailsSection wedding={wedding} />
             {/* If thank you mode is on and guestbook is already rendered in PostWeddingMemories, avoid duplicate */}
-            {(!wedding.is_thank_you_mode || wedding.show_guestbook_in_thank_you_mode === false) && (
+            {!wedding.is_thank_you_mode && (
                 <GuestBook weddingId={wedding.id} wedding={wedding} />
             )}
             {wedding.spotify_playlist_url && (
@@ -103,4 +104,97 @@ export function SharedNewSections({ wedding, isExpired, id }: SharedNewSectionsP
             )}
         </div>
     );
+}
+
+/**
+ * Live dynamic countdown calculation hook for wedding templates
+ */
+export function useCountdown(weddingDate?: string, weddingTime?: string) {
+    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    const [isPast, setIsPast] = useState(false);
+
+    useEffect(() => {
+        if (!weddingDate) return;
+
+        const cleanDateStr = String(weddingDate).trim();
+        const dateMatch = cleanDateStr.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+        let target: Date;
+
+        if (dateMatch) {
+            const year = parseInt(dateMatch[1], 10);
+            const month = parseInt(dateMatch[2], 10) - 1;
+            const day = parseInt(dateMatch[3], 10);
+            target = new Date(year, month, day);
+        } else {
+            target = new Date(weddingDate);
+        }
+
+        if (weddingTime && typeof weddingTime === 'string' && weddingTime.trim().length > 0) {
+            const timeMatch = weddingTime.trim().match(/^(\d{1,2})(?::(\d{1,2}))?\s*(am|pm)?$/i);
+            if (timeMatch) {
+                let hour = Number(timeMatch[1]);
+                const minute = Number(timeMatch[2] || 0);
+                if (hour <= 23 && minute <= 59 && (!timeMatch[3] || hour <= 12)) {
+                    if (timeMatch[3]) hour = (hour % 12) + (timeMatch[3].toLowerCase() === 'pm' ? 12 : 0);
+                    target.setHours(hour, minute, 0, 0);
+                }
+            }
+        } else {
+            target.setHours(12, 0, 0, 0);
+        }
+
+        const update = () => {
+            const now = new Date();
+            const diff = target.getTime() - now.getTime();
+
+            if (diff <= 0) {
+                setIsPast(true);
+                setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+                return;
+            }
+
+            setIsPast(false);
+            setTimeLeft({
+                days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+                seconds: Math.floor((diff % (1000 * 60)) / 1000),
+            });
+        };
+
+        update();
+        const interval = setInterval(update, 1000);
+        return () => clearInterval(interval);
+    }, [weddingDate, weddingTime]);
+
+    return { timeLeft, isPast };
+}
+
+export interface ParsedTimelineItem {
+    time: string;
+    event: string;
+}
+
+/**
+ * Parse raw multi-line timeline string into structured items with fallback
+ */
+export function parseTimelineItems(raw?: string, fallbackItems: ParsedTimelineItem[] = []): ParsedTimelineItem[] {
+    if (!raw || !raw.trim()) return fallbackItems;
+    const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+    const parsed = lines.map((line) => {
+        const match = line.match(/^(\d{1,2}(?::\d{2})?(?:\s?[apAP][mM])?)\s*[-–|:•]\s*(.+)$/);
+        if (match) {
+            return { time: match[1].trim(), event: match[2].trim() };
+        }
+        return { time: '', event: line };
+    });
+    return parsed.length > 0 ? parsed : fallbackItems;
+}
+
+/** Keep the selected logo appearance when a template has a native monogram slot. */
+export function WeddingMonogram({ wedding, className = '' }: { wedding: Wedding; className?: string }) {
+    return <MonogramMark initials={wedding.logo_initials} brideName={wedding.bride_name} groomName={wedding.groom_name}
+        shape={wedding.logo_shape} color={wedding.logo_color} motifColor={wedding.motif_color}
+        animation={wedding.logo_animation} size="lg" className={className}
+        fontFamily={wedding.logo_font ? `var(--font-${wedding.logo_font.toLowerCase()}, var(--font-serif))` : 'var(--font-serif)'} />;
 }
