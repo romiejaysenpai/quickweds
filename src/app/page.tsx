@@ -867,7 +867,7 @@ function CoreFeaturesSection() {
 
         <div className="relative z-20 mx-auto mt-6 mb-16 w-full max-w-4xl px-2 sm:mt-10 sm:mb-24 sm:px-4 lg:max-w-5xl">
           <div className="relative overflow-hidden rounded-[1.6rem] border border-[#d9c9bf] bg-white p-2 sm:rounded-[2.25rem] sm:p-3.5 shadow-[0_20px_50px_rgba(82,40,50,0.12)]">
-            <AppDemoVideo className="w-full" />
+            <AppDemoVideo className="w-full" autoPlay />
           </div>
         </div>
 
