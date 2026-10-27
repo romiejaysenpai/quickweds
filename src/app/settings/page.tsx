@@ -1,15 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, User, Shield, Loader2, Save, CheckCircle2, AlertCircle, Trash2, AlertTriangle, FileText, LifeBuoy, LockKeyhole } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ArrowLeft, User, Shield, Loader2, Save, CheckCircle2, AlertCircle, Trash2, AlertTriangle, FileText, LifeBuoy, LockKeyhole, Sparkles, Crown } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { getCachedSession } from '@/lib/session-cache';
+import { getClientAccountSummary, type AccountProfile, type AccountUsageSummary } from '@/lib/account';
+import AccountPlanCredits from '@/components/profile/AccountPlanCredits';
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -20,13 +22,30 @@ export default function SettingsPage() {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState('');
   const [updateError, setUpdateError] = useState('');
+  const [profileData, setProfileData] = useState<AccountProfile | null>(null);
+  const [usageSummary, setUsageSummary] = useState<AccountUsageSummary | null>(null);
+
+  const loadUsage = useCallback(async () => {
+    try {
+      const { data: sessionData } = await getCachedSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        const summary = await getClientAccountSummary(token);
+        setProfileData(summary.profile);
+        setUsageSummary(summary.usageSummary);
+      }
+    } catch (err) {
+      console.warn('Unable to load usage summary in settings:', err);
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
       setFullName(user.user_metadata?.full_name || '');
       setEmail(user.email || '');
+      void loadUsage();
     }
-  }, [user]);
+  }, [user, loadUsage]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,8 +146,9 @@ export default function SettingsPage() {
           />
         </div>
 
-        <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <div className="mb-6 grid gap-3 grid-cols-2 sm:grid-cols-4">
           {[
+            { href: '/profile', label: 'My Profile & Plan', icon: Sparkles },
             { href: '/privacy', label: 'Privacy Policy', icon: LockKeyhole },
             { href: '/terms', label: 'Terms', icon: FileText },
             { href: '/support', label: 'Support', icon: LifeBuoy },
@@ -136,12 +156,22 @@ export default function SettingsPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex min-h-[56px] items-center gap-3 rounded-2xl border border-border bg-white px-4 py-3 text-sm font-bold text-text-secondary shadow-sm transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+              className="flex min-h-[56px] items-center gap-2.5 rounded-2xl border border-border bg-white px-3.5 py-3 text-xs sm:text-sm font-bold text-text-secondary shadow-sm transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
             >
-              <item.icon className="h-4 w-4 text-primary" />
-              {item.label}
+              <item.icon className="h-4 w-4 text-primary shrink-0" />
+              <span className="truncate">{item.label}</span>
             </Link>
           ))}
+        </div>
+
+        {/* Plan Status & Credits Dashboard */}
+        <div className="mb-6">
+          <AccountPlanCredits
+            profile={profileData}
+            usageSummary={usageSummary}
+            isAdmin={isAdmin}
+            onRefresh={loadUsage}
+          />
         </div>
 
         <div className="bg-white rounded-2xl border border-border p-6 sm:p-8 shadow-sm">

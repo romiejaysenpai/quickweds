@@ -23,8 +23,8 @@ const parsePrice = (value: string | undefined, fallback: number) => {
 };
 
 export const PRICING = {
-    PLANNER_PRO_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 15),
-    PREMIUM_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 15),
-    ELITE_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 15),
-    CURRENCY: 'usd',
+    PLANNER_PRO_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 850),
+    PREMIUM_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 850),
+    ELITE_PRICE: parsePrice(process.env.STRIPE_PLANNER_PRO_PRICE, 850),
+    CURRENCY: 'php',
 } as const;

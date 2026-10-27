@@ -7,7 +7,7 @@ export default function AppDemoVideo({ className = '' }: { className?: string })
                 className="aspect-video h-full w-full object-contain"
                 controls
                 playsInline
-                preload="metadata"
+                preload="none"
                 aria-label="QuickWeds app walkthrough"
             >
                 <source src={APP_DEMO_VIDEO_URL} type="video/mp4" />

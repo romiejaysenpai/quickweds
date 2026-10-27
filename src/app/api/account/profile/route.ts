@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import { isAccountType, type AccountProfile } from '@/lib/account';
+import { isAccountType, hasAccountPro, type AccountProfile } from '@/lib/account';
+import { getPlannerUsage, hasPlannerProAccess, FREE_PLAN_LIMITS } from '@/lib/planner-limits';
 
 function getAccountAdminClientOrNull() {
     try {
@@ -98,7 +99,50 @@ export async function GET(req: NextRequest) {
         const db = getAccountAdminClientOrNull() || getAccountUserClient(req);
         const profile = await addWeddingRouting(db, await ensureAccountProfile(db, user.id), user.id, user.email);
 
-        return NextResponse.json({ profile });
+        const { data: ownedWeddings, error: ownedListError } = await db
+            .from('weddings')
+            .select('id, wedding_name, is_premium, payment_status, created_at')
+            .eq('user_id', user.id)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: true });
+
+        if (ownedListError) throw ownedListError;
+
+        const isAccPro = hasAccountPro(profile);
+        const weddingsList = ownedWeddings || [];
+
+        const weddingSummaries = await Promise.all(
+            weddingsList.map(async (w: any) => {
+                const usage = await getPlannerUsage(db, w.id);
+                const hasPro = isAccPro || hasPlannerProAccess({ wedding: w, accountProfile: profile });
+                const emailLimit = hasPro ? 'unlimited' : FREE_PLAN_LIMITS.userTriggeredEmails;
+                const emailsRemaining = hasPro
+                    ? 'unlimited'
+                    : Math.max(0, FREE_PLAN_LIMITS.userTriggeredEmails - usage.userTriggeredEmailsUsed);
+
+                return {
+                    id: w.id,
+                    wedding_name: w.wedding_name || 'My Wedding',
+                    is_premium: Boolean(w.is_premium),
+                    payment_status: w.payment_status || null,
+                    has_pro: hasPro,
+                    guest_email_count: usage.guestEmailCount,
+                    user_triggered_emails_used: usage.userTriggeredEmailsUsed,
+                    user_triggered_emails_remaining: emailsRemaining,
+                    user_triggered_emails_limit: emailLimit,
+                    planner_usage: usage,
+                };
+            })
+        );
+
+        const usageSummary = {
+            is_account_pro: isAccPro,
+            active_weddings_count: weddingsList.length,
+            active_weddings_limit: isAccPro ? 'unlimited' : 3,
+            weddings: weddingSummaries,
+        };
+
+        return NextResponse.json({ profile, usageSummary });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to load account profile';
         return NextResponse.json({ error: message }, { status: 500 });

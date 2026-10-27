@@ -1,18 +1,34 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { landingTemplatePreviews } from '@/lib/landing-templates';
+import { templateMatchesFilter, type TemplateFilter } from '@/lib/template-catalog';
 import { useAuth } from '@/context/AuthContext';
+
+const CATALOG_FILTERS: { id: TemplateFilter; label: string }[] = [
+  { id: 'all', label: 'All Designs' },
+  { id: 'classic', label: 'Classic' },
+  { id: 'modern', label: 'Modern' },
+  { id: 'romantic', label: 'Romantic' },
+  { id: 'destination', label: 'Destination' },
+  { id: 'bold', label: 'Bold' },
+];
 
 export default function TemplatesPage() {
   const { user } = useAuth();
-  
+  const [selectedFilter, setSelectedFilter] = useState<TemplateFilter>('all');
+
+  const filteredTemplates = landingTemplatePreviews.filter((t) =>
+    templateMatchesFilter(t.id, selectedFilter)
+  );
+
   return (
     <div className="min-h-screen bg-neutral text-foreground">
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-24 lg:px-8">
-        <div className="mb-10 text-center sm:mb-16">
+        <div className="mb-10 text-center sm:mb-14">
           <div className="mx-auto mb-4 inline-flex items-center justify-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Design Catalog</span>
@@ -21,12 +37,47 @@ export default function TemplatesPage() {
             Find the design that feels <span className="text-primary">like your day.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base text-text-secondary sm:text-lg">
-            Start with a polished layout, then make it entirely your own with your story, photos, schedule, and RSVP details. Every design shown here is free to use. Find additional premium designs in the builder.
+            Start with a polished layout, then make it entirely your own with your story, photos, schedule, and RSVP details. Browse our collection of {landingTemplatePreviews.length} handcrafted designs.
           </p>
+
+          {/* Category Filter Tabs */}
+          <div className="mt-8 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar pb-2 sm:pb-0">
+            {CATALOG_FILTERS.map((filter) => {
+              const isActive = selectedFilter === filter.id;
+              const count =
+                filter.id === 'all'
+                  ? landingTemplatePreviews.length
+                  : landingTemplatePreviews.filter((t) =>
+                      templateMatchesFilter(t.id, filter.id)
+                    ).length;
+
+              return (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => setSelectedFilter(filter.id)}
+                  className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition duration-200 ${
+                    isActive
+                      ? 'bg-primary text-white shadow-md shadow-primary/25'
+                      : 'border border-border/80 bg-white text-text-secondary hover:border-primary/40 hover:text-primary'
+                  }`}
+                >
+                  <span>{filter.label}</span>
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-          {landingTemplatePreviews.map((template) => (
+          {filteredTemplates.map((template) => (
             <article
               key={template.id}
               className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl sm:rounded-[1.75rem]"
@@ -63,7 +114,7 @@ export default function TemplatesPage() {
 
         <div className="mt-12 text-center sm:mt-20">
           <Link href={user ? '/builder' : '/login'} className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3 text-sm font-bold text-white shadow-xl shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover sm:text-base">
-            Explore more templates
+            Create your wedding website
             <ArrowRight className="h-5 w-5" />
           </Link>
         </div>

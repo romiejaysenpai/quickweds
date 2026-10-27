@@ -130,8 +130,9 @@ function LivePreview({
     const sendUpdate = useCallback(() => {
         const payload = latestPayloadRef.current;
         try {
-            window.sessionStorage.setItem(previewStorageKey, JSON.stringify(payload));
-            window.localStorage.setItem(previewStorageKey, JSON.stringify(payload));
+            const serializedPayload = JSON.stringify(payload);
+            window.sessionStorage.setItem(previewStorageKey, serializedPayload);
+            window.localStorage.setItem(previewStorageKey, serializedPayload);
         } catch {
             // postMessage remains available if storage is unavailable.
         }

@@ -40,6 +40,7 @@ import {
     type GuestGroup,
 } from '@/lib/guest-list';
 import UpgradeButton from '@/components/UpgradeButton';
+import UpgradeModal from '@/components/UpgradeModal';
 import { FREE_PLAN_LIMITS } from '@/lib/planner-limits';
 import { getCachedSession } from '@/lib/session-cache';
 import QrCodeActions from '@/components/dashboard/QrCodeActions';
@@ -262,6 +263,21 @@ export default function SeatingChartBuilder({
         shape: 'round',
         capacity: 8,
     });
+    const [upgradeModal, setUpgradeModal] = useState<{
+        isOpen: boolean;
+        title?: string;
+        description?: string;
+        featureHighlight?: string;
+    }>({ isOpen: false });
+
+    const openProUpgrade = (options?: { title?: string; description?: string; featureHighlight?: string }) => {
+        setUpgradeModal({
+            isOpen: true,
+            title: options?.title,
+            description: options?.description,
+            featureHighlight: options?.featureHighlight,
+        });
+    };
 
     useEffect(() => {
         tablesRef.current = tables;
@@ -526,7 +542,11 @@ export default function SeatingChartBuilder({
 
     const openAddTableModal = () => {
         if (!hasPlannerPro && tables.length >= FREE_PLAN_LIMITS.seatingTables) {
-            alert(`Free seating includes ${FREE_PLAN_LIMITS.seatingTables} tables. Upgrade to Planner Pro for the full seating chart, guest check-in, and seat-link sending.`);
+            openProUpgrade({
+                title: 'Unlock Full Seating Chart',
+                description: `Free seating includes ${FREE_PLAN_LIMITS.seatingTables} sample tables. Upgrade to Planner Pro for unlimited tables, floor plans, and seating assignments.`,
+                featureHighlight: 'Unlimited tables, customizable layout shapes, and guest assignments',
+            });
             return;
         }
         setEditingTableId(null);
@@ -799,7 +819,11 @@ export default function SeatingChartBuilder({
 
     const generateSeatLinks = async () => {
         if (!hasPlannerPro) {
-            alert('Guest seat links and check-in are part of Planner Pro.');
+            openProUpgrade({
+                title: 'Unlock Guest Seat Links & Check-In',
+                description: 'Guest seat links, digital seat passes, and day-of check-in are part of Planner Pro.',
+                featureHighlight: 'Generate personalized digital seat passes with QR codes for each party',
+            });
             return;
         }
         setSeatFinderLoading('generate');
@@ -827,7 +851,11 @@ export default function SeatingChartBuilder({
 
     const sendSeatLinks = async (resendAll = false) => {
         if (!hasPlannerPro) {
-            alert('Seat-link email sending is part of Planner Pro.');
+            openProUpgrade({
+                title: 'Unlock Seat Link Email Sends',
+                description: 'Sending digital seat tickets directly to guest emails is part of Planner Pro.',
+                featureHighlight: 'Send seat assignments and table details straight to guest inboxes',
+            });
             return;
         }
         setSeatFinderLoading(resendAll ? 'resend' : 'send');
@@ -1867,6 +1895,15 @@ export default function SeatingChartBuilder({
                     </>
                 )}
             </AnimatePresence>
+
+            <UpgradeModal
+                isOpen={upgradeModal.isOpen}
+                onClose={() => setUpgradeModal({ isOpen: false })}
+                weddingId={weddingId}
+                title={upgradeModal.title}
+                description={upgradeModal.description}
+                featureHighlight={upgradeModal.featureHighlight}
+            />
         </div>
     );
 }

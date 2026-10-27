@@ -34,6 +34,7 @@ import {
 import { motion, useInView, useReducedMotion, useScroll, useTransform, type MotionStyle, type MotionValue } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import DemoSection from '@/components/DemoSection';
+import AppDemoVideo from '@/components/AppDemoVideo';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import UpgradeButton from '@/components/UpgradeButton';
@@ -55,11 +56,12 @@ const landingSectionTitleClass = '[font-family:var(--font-montserrat)] text-[cla
 const landingHeroTitleClass = '[font-family:var(--font-montserrat)] text-[clamp(3rem,7vw,5.5rem)] font-black leading-[0.94] tracking-[-0.055em]';
 const landingLightTitleClass = '[font-family:var(--font-montserrat)] text-[clamp(2.25rem,5vw,4.25rem)] font-black leading-[0.98] tracking-[-0.045em] text-white';
 const landingTitleStyle = { fontFamily: 'var(--font-montserrat), Arial, sans-serif' };
-const plannerProDisplayPrice = '$15';
+const plannerProDisplayPrice = '₱850';
 const defaultCoreFeatureImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/scrool%20images/IMG_4415.JPG';
 const newFeaturesImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/079f3b98-6106-45fe-8d55-407f65fe4d9f.png';
 
 import { landingTemplatePreviews } from '@/lib/landing-templates';
+import { templateMatchesFilter, type TemplateFilter } from '@/lib/template-catalog';
 
 const featureCards = [
   {
@@ -354,15 +356,15 @@ const landingStructuredData = {
           '@type': 'Offer',
           name: 'Free Wedding Website',
           price: '0',
-          priceCurrency: 'USD',
+          priceCurrency: 'PHP',
           url: `${siteUrl}/builder`,
           availability: 'https://schema.org/InStock',
         },
         {
           '@type': 'Offer',
           name: 'Planner Pro',
-          price: '15',
-          priceCurrency: 'USD',
+          price: '850',
+          priceCurrency: 'PHP',
           url: `${siteUrl}/signup`,
           availability: 'https://schema.org/InStock',
         },
@@ -617,10 +619,14 @@ function FallingFeaturePill({
       return;
     }
 
+    let previousProgress = -1;
     const updateFallbackTransform = () => {
       const animationStart = 984 - window.innerHeight * 0.52 + pill.delay * 180;
       const fallDistance = 240 + ((index * 47) % 5) * 16;
       const progress = Math.max(0, Math.min(1, (window.scrollY - animationStart) / fallDistance));
+      // Avoid rewriting every capsule's inline style throughout the rest of the page.
+      if (progress === previousProgress) return;
+      previousProgress = progress;
       const easedProgress = 1 - Math.pow(1 - progress, 2.7);
       const x = pill.mobileStartX
         + (pill.mobileEndX - pill.mobileStartX) * progress
@@ -858,6 +864,12 @@ function CoreFeaturesSection() {
         </div>
 
         <div className="h-[140px] min-[390px]:h-[170px] sm:h-[450px] lg:h-[420px]" aria-hidden="true" />
+
+        <div className="relative z-20 mx-auto mt-6 mb-16 w-full max-w-4xl px-2 sm:mt-10 sm:mb-24 sm:px-4 lg:max-w-5xl">
+          <div className="relative overflow-hidden rounded-[1.6rem] border border-[#d9c9bf] bg-white p-2 sm:rounded-[2.25rem] sm:p-3.5 shadow-[0_20px_50px_rgba(82,40,50,0.12)]">
+            <AppDemoVideo className="w-full" />
+          </div>
+        </div>
 
         <div className="sticky-feature-stack mx-auto w-full max-w-full pb-20 sm:max-w-[860px] sm:pb-32 lg:max-w-[1260px] lg:pb-24">
           {featureCards.map((feature, index) => (
@@ -1357,6 +1369,8 @@ export default function Home() {
   const [hasWeddingSite, setHasWeddingSite] = useState(false);
   const [coupleReviews, setCoupleReviews] = useState<AppReview[]>(DEFAULT_TESTIMONIALS);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedCatalogFilter, setSelectedCatalogFilter] = useState<TemplateFilter>('all');
+  const [catalogVisibleCount, setCatalogVisibleCount] = useState<number>(12);
   const { user, isAdmin, logout } = useAuth();
   const router = useRouter();
   const showDashboardLink = Boolean(user && hasWeddingSite);
@@ -1462,6 +1476,9 @@ export default function Home() {
                     Dashboard
                   </Link>
                 )}
+                <Link href="/profile" className="hidden min-h-[40px] items-center rounded-xl border border-border bg-white px-3.5 text-sm font-bold leading-none text-text-secondary transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary sm:inline-flex">
+                  My Profile
+                </Link>
                 <button type="button" onClick={logout} className="hidden h-10 items-center text-sm font-bold leading-none text-text-secondary transition hover:text-primary sm:inline-flex">
                   Logout
                 </button>
@@ -1570,6 +1587,14 @@ export default function Home() {
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   )}
+                  <Link
+                    href="/profile"
+                    onClick={closeMobileMenu}
+                    className="flex min-h-[48px] items-center justify-between rounded-2xl border border-primary/20 bg-white px-4 text-sm font-bold text-foreground transition hover:bg-primary/5 hover:text-primary"
+                  >
+                    My Profile
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
                   <button
                     type="button"
                     onClick={() => {
@@ -1583,14 +1608,24 @@ export default function Home() {
                   </button>
                 </>
               ) : (
-                <Link
-                  href="/login"
-                  onClick={closeMobileMenu}
-                  className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
-                >
-                  Login
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
+                <>
+                  <Link
+                    href="/login"
+                    onClick={closeMobileMenu}
+                    className="flex min-h-[48px] items-center justify-between rounded-2xl bg-neutral px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary"
+                  >
+                    Login
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    href="/login?next=/profile"
+                    onClick={closeMobileMenu}
+                    className="flex min-h-[48px] items-center justify-between rounded-2xl border border-border bg-white px-4 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                  >
+                    My Profile
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </>
               )}
               <Link
                 href="/builder"
@@ -1616,56 +1651,130 @@ export default function Home() {
           <div className="pointer-events-none absolute -left-24 top-16 h-72 w-72 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
           <div className="pointer-events-none absolute -right-24 bottom-8 h-80 w-80 rounded-full bg-secondary/15 blur-3xl" aria-hidden="true" />
           <div className="relative mx-auto max-w-7xl">
-            <SectionHeading
-              eyebrow="Wedding website templates"
-              title="Find the design that feels"
-              accent="like your day."
-              body="Start with a polished layout, then make it entirely your own with your story, photos, schedule, and RSVP details."
-            />
+            <div className="mb-8 text-center sm:mb-12">
+              <div className="mx-auto mb-4 inline-flex items-center justify-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Design Catalog</span>
+              </div>
+              <h2 className={landingSectionTitleClass} style={landingTitleStyle}>
+                Find the design that feels <Accent>like your day.</Accent>
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-text-secondary sm:mt-5 sm:text-lg sm:leading-8">
+                Start with a polished layout, then make it entirely your own with your story, photos, schedule, and RSVP details. Browse our collection of {landingTemplatePreviews.length} handcrafted designs.
+              </p>
 
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:mt-14 sm:gap-5 lg:grid-cols-4">
-              {landingTemplatePreviews.slice(0, 4).map((template, index) => (
-                <motion.article
-                  key={template.id}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.18 }}
-                  transition={{ duration: 0.5, delay: Math.min(index * 0.04, 0.24), ease: [0.16, 1, 0.3, 1] }}
-                  className="h-full"
-                >
-                  <Link
-                    href={`/templates`}
-                    className="group flex flex-col h-full overflow-hidden rounded-2xl border border-white/80 bg-white shadow-[0_16px_42px_rgba(87,55,62,0.10)] transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_24px_58px_rgba(87,55,62,0.16)] sm:rounded-[1.75rem]"
-                    aria-label={`View the ${template.name} template`}
-                  >
-                    <div className="relative shrink-0 aspect-[4/5] overflow-hidden bg-neutral">
-                      <Image
-                        src={template.image}
-                        alt={`${template.name} wedding website template preview`}
-                        fill
-                        sizes="(max-width: 639px) calc(50vw - 1rem), (max-width: 1023px) calc(50vw - 2rem), 300px"
-                        className="object-cover object-top transition duration-500 group-hover:scale-[1.035]"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true" />
-                      <span className="absolute bottom-2 left-2 hidden items-center gap-1.5 rounded-full bg-white px-2 py-1.5 text-[8px] font-black uppercase tracking-[0.16em] text-primary opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:bottom-4 sm:left-4 sm:inline-flex sm:px-3 sm:py-2 sm:text-[10px]">
-                        Use this template <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              {/* Category Filter Pills */}
+              <div className="mt-8 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar pb-2 sm:pb-0">
+                {[
+                  { id: 'all', label: 'All Designs' },
+                  { id: 'classic', label: 'Classic' },
+                  { id: 'modern', label: 'Modern' },
+                  { id: 'romantic', label: 'Romantic' },
+                  { id: 'destination', label: 'Destination' },
+                  { id: 'bold', label: 'Bold' },
+                ].map((filter) => {
+                  const isActive = selectedCatalogFilter === filter.id;
+                  const count =
+                    filter.id === 'all'
+                      ? landingTemplatePreviews.length
+                      : landingTemplatePreviews.filter((t) =>
+                          templateMatchesFilter(t.id, filter.id as TemplateFilter)
+                        ).length;
+
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCatalogFilter(filter.id as TemplateFilter);
+                        setCatalogVisibleCount(12);
+                      }}
+                      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition duration-200 ${
+                        isActive
+                          ? 'bg-primary text-white shadow-md shadow-primary/25'
+                          : 'border border-border/80 bg-white text-text-secondary hover:border-primary/40 hover:text-primary'
+                      }`}
+                    >
+                      <span>{filter.label}</span>
+                      <span
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                        }`}
+                      >
+                        {count}
                       </span>
-                    </div>
-                    <div className="flex flex-1 flex-col justify-between p-3 sm:flex-row sm:items-start sm:gap-3 sm:p-5">
-                      <div className="min-w-0">
-                        <p className="truncate text-[8px] font-black uppercase tracking-[0.15em] text-primary/65 sm:text-[10px] sm:tracking-[0.18em]">{template.mood}</p>
-                        <h3 className="mt-0.5 font-serif text-[11px] font-bold leading-tight text-foreground sm:mt-1 sm:text-xl">{template.name}</h3>
-                      </div>
-                      <ArrowRight className="mt-1 hidden h-4 w-4 shrink-0 text-primary transition-transform duration-300 group-hover:translate-x-1 sm:block sm:h-5 sm:w-5" />
-                    </div>
-                  </Link>
-                </motion.article>
-              ))}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="mt-10 text-center sm:mt-12">
-              <Link href="/templates" className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover sm:px-7 sm:text-base">
-                Explore all templates
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+              {landingTemplatePreviews
+                .filter((t) => templateMatchesFilter(t.id, selectedCatalogFilter))
+                .slice(0, catalogVisibleCount)
+                .map((template, index) => (
+                  <motion.article
+                    key={template.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.05 }}
+                    transition={{ duration: 0.35, delay: Math.min((index % 8) * 0.03, 0.2), ease: [0.16, 1, 0.3, 1] }}
+                    className="h-full"
+                  >
+                    <Link
+                      href={user ? `/builder?template=${template.id}` : '/login'}
+                      className="group flex flex-col h-full overflow-hidden rounded-2xl border border-white/80 bg-white shadow-[0_16px_42px_rgba(87,55,62,0.10)] transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_24px_58px_rgba(87,55,62,0.16)] sm:rounded-[1.75rem]"
+                      aria-label={`Start building with the ${template.name} template`}
+                    >
+                      <div className="relative shrink-0 aspect-[4/5] overflow-hidden bg-neutral">
+                        <Image
+                          src={template.image}
+                          alt={`${template.name} wedding website template preview`}
+                          fill
+                          sizes="(max-width: 639px) calc(50vw - 1rem), (max-width: 1023px) calc(50vw - 2rem), 300px"
+                          className="object-cover object-top transition duration-500 group-hover:scale-[1.035]"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true" />
+                        <span className="absolute bottom-2 left-2 hidden items-center gap-1.5 rounded-full bg-white px-2 py-1.5 text-[8px] font-black uppercase tracking-[0.16em] text-primary opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:bottom-4 sm:left-4 sm:inline-flex sm:px-3 sm:py-2 sm:text-[10px]">
+                          Use this template <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        </span>
+                      </div>
+                      <div className="flex flex-1 flex-col justify-between p-3 sm:flex-row sm:items-start sm:gap-3 sm:p-5">
+                        <div className="min-w-0">
+                          <p className="truncate text-[8px] font-black uppercase tracking-[0.15em] text-primary/65 sm:text-[10px] sm:tracking-[0.18em]">{template.mood}</p>
+                          <h3 className="mt-0.5 font-serif text-[11px] font-bold leading-tight text-foreground sm:mt-1 sm:text-xl">{template.name}</h3>
+                        </div>
+                        <ArrowRight className="mt-1 hidden h-4 w-4 shrink-0 text-primary transition-transform duration-300 group-hover:translate-x-1 sm:block sm:h-5 sm:w-5" />
+                      </div>
+                    </Link>
+                  </motion.article>
+                ))}
+            </div>
+
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 text-center sm:mt-14">
+              {(() => {
+                const totalFiltered = landingTemplatePreviews.filter((t) =>
+                  templateMatchesFilter(t.id, selectedCatalogFilter)
+                ).length;
+                return (
+                  catalogVisibleCount < totalFiltered && (
+                    <button
+                      type="button"
+                      onClick={() => setCatalogVisibleCount((prev) => prev + 12)}
+                      className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-primary/25 bg-white px-6 py-3 text-sm font-bold text-primary shadow-md transition hover:-translate-y-0.5 hover:bg-primary/5 active:scale-95 sm:px-7 sm:text-base"
+                    >
+                      Show more designs ({totalFiltered - catalogVisibleCount} remaining)
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                  )
+                );
+              })()}
+              <Link
+                href="/templates"
+                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary-hover active:scale-95 sm:px-7 sm:text-base"
+              >
+                Explore all {landingTemplatePreviews.length} templates
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

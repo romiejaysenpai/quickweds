@@ -1,9 +1,13 @@
 export const templatePreviewBaseUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/templates%20imges/templets%20screenshots';
 
-export const landingTemplatePreviews = [
-  { id: 'love-letter', name: 'Love Letter', mood: 'Modern stationery', image: '/templates/love-letter.png' },
-  { id: 'butter-blue', name: 'Butter & Blue', mood: 'Destination postcard', image: '/templates/butter-blue.png' },
-  { id: 'ribbon-romance', name: 'Ribbon Romance', mood: 'Tied with love', image: '/templates/ribbon-romance.png' },
+export interface LandingTemplatePreview {
+  id: string;
+  name: string;
+  mood: string;
+  image: string;
+}
+
+export const landingTemplatePreviews: LandingTemplatePreview[] = [
   { id: 'classic', name: 'Classic Elegance', mood: 'Timeless romance', image: `${templatePreviewBaseUrl}/t1.jpg` },
   { id: 'minimal', name: 'Modern Minimal', mood: 'Clean editorial', image: `${templatePreviewBaseUrl}/t2.jpg` },
   { id: 'romantic', name: 'Romantic', mood: 'Soft love story', image: `${templatePreviewBaseUrl}/t3.jpg` },
@@ -18,4 +22,48 @@ export const landingTemplatePreviews = [
   { id: 'boho', name: 'Boho Dream', mood: 'Earthy poetry', image: `${templatePreviewBaseUrl}/t12.jpg` },
   { id: 'whimsical', name: 'Whimsical', mood: 'Playful romance', image: `${templatePreviewBaseUrl}/t13.jpg` },
   { id: 'urban', name: 'Urban', mood: 'City celebration', image: `${templatePreviewBaseUrl}/t14.jpg` },
+  { id: 'tropical', name: 'Tropical Paradise', mood: 'Destination Glow', image: '/templates/previews/tropical.jpg' },
+  { id: 'midnight', name: 'Midnight Luxury', mood: 'After-Hours Luxe', image: '/templates/previews/midnight.jpg' },
+  { id: 'sakura', name: 'Sakura Blossom', mood: 'Bloom Season', image: '/templates/previews/sakura.jpg' },
+  { id: 'vogue', name: 'High Fashion', mood: 'Runway Edit', image: '/templates/previews/vogue.jpg' },
+  { id: 'rustic', name: 'Rustic Charm', mood: 'Barn Glow', image: '/templates/previews/rustic.jpg' },
+  { id: 'film', name: 'Retro Film', mood: 'Analog Memory', image: '/templates/previews/film.jpg' },
+  { id: 'glitch', name: 'Cyber Glitch', mood: 'Neo Signal', image: '/templates/previews/glitch.jpg' },
+  { id: 'vintage', name: 'Vintage Postcard', mood: 'Keepsake Paper', image: '/templates/previews/vintage.jpg' },
+  { id: 'editorial', name: 'Editorial Chic', mood: 'Magazine Cover', image: '/templates/previews/editorial.jpg' },
+  { id: 'royal', name: 'Royal Proclamation', mood: 'Regal Drama', image: '/templates/previews/royal.jpg' },
+  { id: 'garden', name: 'Secret Garden', mood: 'Botanical Estate', image: '/templates/previews/garden.jpg' },
+  { id: 'heirloom', name: 'Heirloom Watercolor', mood: 'Painted Invitation', image: '/templates/previews/heirloom.jpg' },
+  { id: 'estate', name: 'The Estate', mood: 'Country House', image: '/templates/previews/estate.jpg' },
+  { id: 'moonlit', name: 'Moonlit Romance', mood: 'After Dark', image: '/templates/previews/moonlit.jpg' },
+  { id: 'saffron', name: 'Saffron Ceremony', mood: 'Heritage Celebration', image: '/templates/previews/saffron.jpg' },
+  { id: 'cinema-noir', name: 'Cinema Noir', mood: 'Love on Film', image: '/templates/previews/cinema-noir.jpg' },
+  { id: 'modern-vow', name: 'Modern Vow', mood: 'Contemporary Union', image: '/templates/previews/modern-vow.jpg' },
+  { id: 'atelier', name: 'Atelier Editorial', mood: 'The Fashion Edit', image: '/templates/previews/atelier.jpg' },
+  { id: 'wildflower', name: 'Wildflower Weekend', mood: 'Free-Spirited Love', image: '/templates/previews/wildflower.jpg' },
+  { id: 'regency', name: 'Regency Ball', mood: 'Black Tie Affair', image: '/templates/previews/regency.jpg' },
+  { id: 'lovescript', name: 'Love Script', mood: 'Written With Love', image: '/templates/previews/lovescript.jpg' },
+  { id: 'coastal-vow', name: 'Coastal Vow', mood: 'By The Sea', image: '/templates/previews/coastal-vow.jpg' },
+  { id: 'orchid-noir', name: 'Orchid Noir', mood: 'Evening In Bloom', image: '/templates/previews/orchid-noir.jpg' },
+  { id: 'papercut', name: 'Paper Cut', mood: 'Modern Invitation', image: '/templates/previews/papercut.jpg' },
+  { id: 'celestial', name: 'Celestial', mood: 'Written In The Stars', image: '/templates/previews/celestial.jpg' },
+  { id: 'marigold-house', name: 'Marigold House', mood: 'Joyful Gathering', image: '/templates/previews/marigold-house.jpg' },
+  { id: 'the-weekend', name: 'The Weekend', mood: 'Wedding Weekend', image: '/templates/previews/the-weekend.jpg' },
+  { id: 'winter-rose', name: 'Winter Rose', mood: 'Winter Celebration', image: '/templates/previews/winter-rose.jpg' },
+  { id: 'gallery', name: 'The Gallery', mood: 'Gallery Of Us', image: '/templates/previews/gallery.jpg' },
+  { id: 'petal-note', name: 'Petal Note', mood: 'A Note For You', image: '/templates/previews/petal-note.jpg' },
+  { id: 'sunset-ceremony', name: 'Sunset Ceremony', mood: 'Golden Hour', image: '/templates/previews/sunset-ceremony.jpg' },
+  { id: 'editorial-luxe', name: 'Editorial Luxe', mood: 'Vogue & Harper Edition', image: '/templates/previews/editorial-luxe.jpg' },
+  { id: 'monochrome', name: 'Monochrome Runway', mood: 'High Fashion Runway', image: '/templates/previews/monochrome.jpg' },
+  { id: 'botanical-arch', name: 'Botanical Arch', mood: 'Architectural Botanicals', image: '/templates/previews/botanical-arch.jpg' },
+  { id: 'cinematic-vow', name: 'Cinematic Vow', mood: 'Cinema 2.39:1', image: '/templates/previews/cinematic-vow.jpg' },
+  { id: 'editorial-romance', name: 'Editorial Romance', mood: 'Stationery & Romance', image: '/templates/previews/editorial-romance.jpg' },
+  { id: 'envelope-wax-seal', name: 'Wax Seal & Envelope', mood: 'Stationery & Wax Seal', image: '/templates/previews/envelope-wax-seal.jpg' },
+  { id: 'pearl-coastal', name: 'Pearl & Coastal Shell', mood: 'Coastal & Freshwater Pearls', image: '/templates/previews/pearl-coastal.jpg' },
+  { id: 'watercolor-meadow', name: 'Watercolor Meadow', mood: 'Meadow & Eucalyptus', image: '/templates/previews/watercolor-meadow.jpg' },
+  { id: 'velure-editorial', name: 'Velure Editorial', mood: 'Gold Leaf & Sage', image: '/templates/previews/velure-editorial.jpg' },
+  { id: 'torn-paper-terracotta', name: 'Torn Paper Terracotta', mood: 'Deckle Tear & Terracotta', image: '/templates/previews/torn-paper-terracotta.jpg' },
+  { id: 'love-letter', name: 'Love Letter', mood: 'Modern stationery', image: '/templates/previews/love-letter.jpg' },
+  { id: 'butter-blue', name: 'Butter & Blue', mood: 'Destination postcard', image: '/templates/previews/butter-blue.jpg' },
+  { id: 'ribbon-romance', name: 'Ribbon Romance', mood: 'Tied with love', image: '/templates/previews/ribbon-romance.jpg' },
 ];

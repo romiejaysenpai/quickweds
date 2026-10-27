@@ -37,7 +37,9 @@ export default function PreviewPage() {
             if (data?.type !== 'UPDATE_PREVIEW' || !data.wedding) return;
 
             const revision = typeof data.previewRevision === 'number' ? data.previewRevision : 0;
-            if (revision < latestPreviewRevisionRef.current) return;
+            // Storage, BroadcastChannel and postMessage can deliver the same update.
+            // Keep legacy senders without revisions working, but render numbered updates once.
+            if (typeof data.previewRevision === 'number' && revision <= latestPreviewRevisionRef.current) return;
             latestPreviewRevisionRef.current = revision;
             setWedding(data.wedding);
             setGallery(Array.isArray(data.gallery) ? data.gallery : []);

@@ -13,6 +13,7 @@ import ConfettiCelebration from '@/components/ConfettiCelebration';
 import CopyButton from '@/components/CopyButton';
 import DarkModeToggle from '@/components/DarkModeToggle';
 import UpgradeButton from '@/components/UpgradeButton';
+import UpgradeModal from '@/components/UpgradeModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getClientAccountProfile, hasAccountPro } from '@/lib/account';
 import { copyToClipboard } from '@/lib/client-clipboard';
@@ -392,11 +393,30 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
     const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [activeTab, setActiveTab] = useState<'home' | 'guests' | 'analytics' | 'team' | 'settings'>(() => searchParams?.get('tab') === 'guests' ? 'guests' : 'home');
+    const [upgradeModal, setUpgradeModal] = useState<{
+        isOpen: boolean;
+        title?: string;
+        description?: string;
+        featureHighlight?: string;
+    }>({ isOpen: false });
+
+    const openProUpgrade = (options?: { title?: string; description?: string; featureHighlight?: string }) => {
+        setUpgradeModal({
+            isOpen: true,
+            title: options?.title,
+            description: options?.description,
+            featureHighlight: options?.featureHighlight,
+        });
+    };
 
     // CSV Export
     const exportCSV = () => {
         if (!hasPlannerPro) {
-            alert('CSV export is part of Planner Pro. Upgrade when you need downloadable guest lists for final planning.');
+            openProUpgrade({
+                title: 'Unlock CSV Guest Export',
+                description: 'Downloadable guest lists and RSVP spreadsheets are part of Planner Pro.',
+                featureHighlight: 'Instant CSV export of guest names, plus-ones, meal preferences, and dietary notes',
+            });
             return;
         }
 
@@ -548,7 +568,11 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         const isAddingGuestEmail = Boolean(newGuest.guest_email.trim());
         const currentGuestEmailCount = rsvps.filter((guest) => Boolean(guest.guest_email)).length;
         if (!hasPlannerPro && isAddingGuestEmail && currentGuestEmailCount >= FREE_PLAN_LIMITS.guestEmails) {
-            alert('Your guest list is ready for Pro. Free weddings include 50 guests with email addresses; extra guests can still be tracked manually without email.');
+            openProUpgrade({
+                title: 'Guest Email Limit Reached',
+                description: `Free weddings include ${FREE_PLAN_LIMITS.guestEmails} guests with email addresses. Upgrade to Planner Pro for unlimited guest emails, reminders, and RSVP tracking.`,
+                featureHighlight: 'Send online invitations, updates, and reminders to all guests',
+            });
             return;
         }
 
@@ -1719,6 +1743,15 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                 open={isImportGuestModalOpen}
                 onClose={() => setIsImportGuestModalOpen(false)}
                 onImport={handleImportGuests}
+            />
+
+            <UpgradeModal
+                isOpen={upgradeModal.isOpen}
+                onClose={() => setUpgradeModal({ isOpen: false })}
+                weddingId={wedding?.id || id}
+                title={upgradeModal.title}
+                description={upgradeModal.description}
+                featureHighlight={upgradeModal.featureHighlight}
             />
         </div>
     );

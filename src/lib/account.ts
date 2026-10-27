@@ -1,3 +1,5 @@
+import type { PlannerUsage } from '@/lib/planner-limits';
+
 export type AccountType = 'couple' | 'supplier';
 
 export type AccountProfile = {
@@ -15,6 +17,26 @@ export type AccountProfile = {
     updated_at?: string;
     has_weddings?: boolean;
     dashboard_path?: string | null;
+};
+
+export type WeddingUsageSummary = {
+    id: string;
+    wedding_name: string;
+    is_premium: boolean;
+    payment_status: string | null;
+    has_pro: boolean;
+    guest_email_count: number;
+    user_triggered_emails_used: number;
+    user_triggered_emails_remaining: number | 'unlimited';
+    user_triggered_emails_limit: number | 'unlimited';
+    planner_usage: PlannerUsage;
+};
+
+export type AccountUsageSummary = {
+    is_account_pro: boolean;
+    active_weddings_count: number;
+    active_weddings_limit: number | 'unlimited';
+    weddings: WeddingUsageSummary[];
 };
 
 export const ACCOUNT_ONBOARDING_PATH = '/onboarding/account-type';
@@ -137,6 +159,26 @@ export async function getClientAccountProfileForIntent(token: string, requestedP
     }
 
     return profile;
+}
+
+export async function getClientAccountSummary(token: string) {
+    const response = await fetch('/api/account/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+        const message = data.error || 'Unable to load account profile and credits';
+        if (response.status === 401 || String(message).toLowerCase().includes('auth session missing')) {
+            throw new Error('Please sign in again to continue.');
+        }
+        throw new Error(message);
+    }
+
+    return {
+        profile: data.profile as AccountProfile | null,
+        usageSummary: (data.usageSummary || null) as AccountUsageSummary | null,
+    };
 }
 
 export async function getClientAdminStatus(token: string) {

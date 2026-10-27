@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from '@/components/UpgradeButton';
+import UpgradeModal from '@/components/UpgradeModal';
 import { getClientAccountProfile, getRoleAwareRedirect, hasAccountPro } from '@/lib/account';
 import { EMPTY_PLANNER_USAGE, FREE_PLAN_LIMITS, type PlannerUsage } from '@/lib/planner-limits';
 import { getCachedSession } from '@/lib/session-cache';
@@ -43,7 +44,7 @@ const LazyBudgetPieChart = dynamic(() => import('@/components/dashboard/LazyBudg
     loading: () => <div className="h-full w-full animate-pulse rounded-full bg-neutral/50" />,
 });
 
-const PLANNER_TABS = ['overview', 'checklist', 'entourage', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'thanks', 'honeymoon'] as const;
+const PLANNER_TABS = ['overview', 'checklist', 'entourage', 'calendar', 'budget', 'food', 'vendors', 'seating', 'photos', 'honeymoon'] as const;
 type PlannerTab = typeof PLANNER_TABS[number];
 type VendorPaymentStatus = 'not paid' | 'pending' | 'paid';
 
@@ -110,13 +111,6 @@ const PLANNER_TAB_DETAILS: {
         icon: Camera,
         headline: 'Photos is part of Planner Pro',
         body: 'Collect and review guest photos from your wedding photo sharing portal.',
-    },
-    {
-        tab: 'thanks',
-        label: 'Post-Wedding',
-        icon: Sparkles,
-        headline: 'Post-Wedding is part of Planner Pro',
-        body: 'Switch to post-wedding recap mode, feature approved photos, share guestbook wishes, and send thank-you notes.',
     },
     {
         tab: 'honeymoon',
@@ -319,6 +313,24 @@ function getPlannerErrorMessage(err: unknown, fallback: string) {
     return fallback;
 }
 
+function handlePlannerActionError(
+    err: unknown,
+    fallback: string,
+    onRequirePro?: (options?: { title?: string; description?: string; featureHighlight?: string }) => void
+) {
+    const message = getPlannerErrorMessage(err, fallback);
+    const lower = message.toLowerCase();
+    if (lower.includes('planner pro') || lower.includes('planner lite')) {
+        onRequirePro?.({
+            title: 'Planner Limit Reached',
+            description: message,
+            featureHighlight: 'Unlimited checklist tasks, budgets, suppliers, and timeline events',
+        });
+        return;
+    }
+    alert(message);
+}
+
 async function plannerItemRequest(method: 'POST' | 'PATCH', payload: Record<string, unknown>) {
     const { data: sessionData } = await getCachedSession();
     const token = sessionData.session?.access_token;
@@ -374,6 +386,22 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     const [accountIsPro, setAccountIsPro] = useState(false);
     const [confirmedGuests, setConfirmedGuests] = useState<number>(0);
     const [planUsage, setPlanUsage] = useState<PlannerUsage>(EMPTY_PLANNER_USAGE);
+    const [upgradeModal, setUpgradeModal] = useState<{
+        isOpen: boolean;
+        title?: string;
+        description?: string;
+        featureHighlight?: string;
+    }>({ isOpen: false });
+
+    const openProUpgrade = (options?: { title?: string; description?: string; featureHighlight?: string }) => {
+        setUpgradeModal({
+            isOpen: true,
+            title: options?.title,
+            description: options?.description,
+            featureHighlight: options?.featureHighlight,
+        });
+    };
+
     const lastGuardKeyRef = useRef('');
     const plannerLoadRef = useRef<{ key: string; promise: Promise<void> } | null>(null);
 
@@ -617,22 +645,8 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                                 : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'
                                         }`}
                                     >
-                                        {!hasPlannerPro && tab.tab === 'thanks' && (
-                                            <span className={`absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full md:static md:h-auto md:w-auto md:rounded-none md:bg-transparent ${
-                                                isActive ? 'bg-white/20 md:text-white' : 'bg-primary/10 text-primary'
-                                            }`}>
-                                                <LockKeyhole className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
-                                            </span>
-                                        )}
                                         <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                         <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">{tab.label}</span>
-                                        {!hasPlannerPro && tab.tab === 'thanks' && (
-                                            <span className={`hidden md:inline-flex ml-auto rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
-                                                isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                                            }`}>
-                                                Pro
-                                            </span>
-                                        )}
                                     </button>
                                 );
                             })}
@@ -650,62 +664,36 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
 
                 {/* Main Content Area */}
                 <div className="flex-1 min-w-0 overflow-x-hidden">
-                    {!hasPlannerPro && activeTab === 'thanks' ? (
-                        <LockedPlannerFeature
-                            activeTab={activeTab}
-                            accessRole={accessRole}
+                    <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
+                    {activeTab === 'overview' && <PlannerOverview weddingId={weddingId} />}
+                    {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={refreshPlannerData} onRequirePro={openProUpgrade} />}
+                    {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={refreshPlannerData} />}
+                    {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={refreshPlannerData} hasPlannerPro={hasPlannerPro} onRequirePro={openProUpgrade} />}
+                    {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} setWedding={setWedding} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={refreshPlannerData} updateVendorStatus={updateVendorStatus} onRequirePro={openProUpgrade} />}
+                    {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={refreshPlannerData} onRequirePro={openProUpgrade} />}
+                    {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={refreshPlannerData} updateVendorStatus={updateVendorStatus} onRequirePro={openProUpgrade} />}
+                    {activeTab === 'seating' && (
+                        <SeatingChartBuilder
                             weddingId={weddingId}
-                            onSelectTab={setActiveTab}
+                            hasPlannerPro={hasPlannerPro}
+                            initialPublicSeatFinderToken={wedding?.public_seat_finder_token || ''}
+                            initialSeatFinderEnabled={wedding?.seat_finder_enabled !== false && Boolean(wedding?.public_seat_finder_token)}
                         />
-                    ) : (
-                        <>
-                            <PlannerLiteUsageBanner activeTab={activeTab} hasPlannerPro={hasPlannerPro} usage={planUsage} weddingId={weddingId} />
-                            {activeTab === 'overview' && <PlannerOverview weddingId={weddingId} />}
-                            {activeTab === 'checklist' && <PlannerChecklists weddingId={weddingId} initialTasks={tasks} setTasks={setTasks} vendors={vendors} wedding={wedding} reload={refreshPlannerData} />}
-                            {activeTab === 'entourage' && <EntourageProposalPlanner weddingId={weddingId} wedding={wedding} invitations={entourageInvitations} setInvitations={setEntourageInvitations} reload={refreshPlannerData} />}
-                            {activeTab === 'calendar' && <PlannerCalendar weddingId={weddingId} events={events} setEvents={setEvents} tasks={tasks} wedding={wedding} googleCalendar={googleCalendar} reload={refreshPlannerData} hasPlannerPro={hasPlannerPro} />}
-                            {activeTab === 'budget' && <PlannerBudgets weddingId={weddingId} initialBudgets={budgets} setBudgets={setBudgets} setWedding={setWedding} wedding={wedding} vendors={vendors} foodDrinks={foodDrinks} reload={refreshPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'food' && <FoodDrinksPlanner weddingId={weddingId} foodDrinks={foodDrinks} setFoodDrinks={setFoodDrinks} vendors={vendors} currency={wedding?.currency || 'USD'} reload={refreshPlannerData} />}
-                            {activeTab === 'vendors' && <PlannerVendors weddingId={weddingId} initialVendors={vendors} setVendors={setVendors} currency={wedding?.currency || 'USD'} reload={refreshPlannerData} updateVendorStatus={updateVendorStatus} />}
-                            {activeTab === 'seating' && (
-                                <SeatingChartBuilder
-                                    weddingId={weddingId}
-                                    hasPlannerPro={hasPlannerPro}
-                                    initialPublicSeatFinderToken={wedding?.public_seat_finder_token || ''}
-                                    initialSeatFinderEnabled={wedding?.seat_finder_enabled !== false && Boolean(wedding?.public_seat_finder_token)}
-                                />
-                            )}
-                            {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
-                            {activeTab === 'thanks' && <ThankYouPlannerLauncher weddingId={weddingId} confirmedGuests={confirmedGuests} />}
-                            {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={refreshPlannerData} />}
-                        </>
                     )}
+                    {activeTab === 'photos' && <PhotoSharingManager weddingId={weddingId} hasPlannerPro={hasPlannerPro} />}
+                    {activeTab === 'honeymoon' && <HoneymoonPlanner weddingId={weddingId} items={honeymoonItems} setHoneymoonItems={setHoneymoonItems} currency={wedding?.currency || 'USD'} reload={refreshPlannerData} onRequirePro={openProUpgrade} />}
                 </div>
             </div>
-        </div>
-    );
-}
 
-function ThankYouPlannerLauncher({ weddingId, confirmedGuests }: { weddingId: string; confirmedGuests: number }) {
-    return (
-        <section className="rounded-3xl border border-primary/15 bg-white p-5 shadow-xl shadow-primary/10 sm:p-8">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                <div className="min-w-0">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                        <Sparkles className="h-6 w-6" />
-                    </div>
-                    <p className="mt-5 text-[10px] font-black uppercase tracking-[0.18em] text-primary">Post-wedding</p>
-                    <h2 className="mt-1 font-serif text-2xl font-bold text-foreground sm:text-3xl">Post-Wedding Mode</h2>
-                    <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-                        Switch your site to recap mode, showcase approved disposable camera photos, share the guestbook Wall of Love, and send thank you emails to confirmed guests.
-                    </p>
-                </div>
-                <Link href={`/dashboard/${weddingId}/post-wedding?from=planner`} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover">
-                    <Sparkles className="h-4 w-4" />
-                    Open Post-Wedding
-                </Link>
-            </div>
-        </section>
+            <UpgradeModal
+                isOpen={upgradeModal.isOpen}
+                onClose={() => setUpgradeModal({ isOpen: false })}
+                weddingId={weddingId}
+                title={upgradeModal.title}
+                description={upgradeModal.description}
+                featureHighlight={upgradeModal.featureHighlight}
+            />
+        </div>
     );
 }
 
@@ -1094,7 +1082,7 @@ function getChecklistDueDate(weddingDateValue: string | null | undefined, months
     return due.toISOString().slice(0, 10);
 }
 
-function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], wedding, reload }: any) {
+function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], wedding, reload, onRequirePro }: any) {
     const [publishing, setPublishing] = useState(false);
     const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -1139,9 +1127,8 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
             setNewTask((current) => ({ ...current, title: '', assigned_to: '', custom_supplier_name: '', notes: '' }));
             void reload();
         } catch (err) {
-            const message = getPlannerErrorMessage(err, 'Failed to add checklist item.');
-            console.warn('Error adding checklist item:', message);
-            alert(`Failed to add checklist item: ${message}`);
+            console.warn('Error adding checklist item:', err);
+            handlePlannerActionError(err, 'Failed to add checklist item.', onRequirePro);
         } finally {
             setPublishing(false);
         }
@@ -1429,7 +1416,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
     );
 }
 
-function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], wedding, googleCalendar, reload, hasPlannerPro = false }: any) {
+function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], wedding, googleCalendar, reload, hasPlannerPro = false, onRequirePro }: any) {
     const [publishing, setPublishing] = useState(false);
     const [syncingGoogle, setSyncingGoogle] = useState(false);
     const [newEvent, setNewEvent] = useState({
@@ -1452,7 +1439,14 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
     }
 
     async function connectGoogleCalendar() {
-        if (!hasPlannerPro) return alert('Google Calendar sync is part of Planner Pro.');
+        if (!hasPlannerPro) {
+            onRequirePro?.({
+                title: 'Unlock Google Calendar Sync',
+                description: 'Sync your wedding schedule and checklist tasks straight to Google Calendar.',
+                featureHighlight: 'Real-time 2-way Google Calendar synchronization for couple and coordinators',
+            });
+            return;
+        }
         const token = await getAuthToken();
         if (!token) return alert('Please sign in again before connecting Google Calendar.');
         const response = await fetch(`/api/planner/google-calendar/connect?weddingId=${encodeURIComponent(weddingId)}`, {
@@ -1469,7 +1463,13 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
 
     async function syncGoogleCalendar(silent = false) {
         if (!hasPlannerPro) {
-            if (!silent) alert('Google Calendar sync is part of Planner Pro.');
+            if (!silent) {
+                onRequirePro?.({
+                    title: 'Unlock Google Calendar Sync',
+                    description: 'Sync your wedding schedule and checklist tasks straight to Google Calendar.',
+                    featureHighlight: 'Real-time 2-way Google Calendar synchronization for couple and coordinators',
+                });
+            }
             return;
         }
         if (!googleCalendar?.connected) return;
@@ -1554,9 +1554,8 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
             void reload();
             void syncGoogleCalendar(true);
         } catch (err) {
-            const message = getPlannerErrorMessage(err, 'Failed to add schedule.');
-            console.error('Error adding planner event:', message);
-            alert(`Failed to add schedule: ${message}`);
+            console.error('Error adding planner event:', err);
+            handlePlannerActionError(err, 'Failed to add schedule.', onRequirePro);
         } finally {
             setPublishing(false);
         }
@@ -1698,7 +1697,7 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
     );
 }
 
-function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wedding, vendors = [], foodDrinks = [], reload, updateVendorStatus }: any) {
+function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wedding, vendors = [], foodDrinks = [], reload, updateVendorStatus, onRequirePro }: any) {
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({ category: 'Venue', item_name: '', estimated_cost: '', due_date: '' });
     const [savingBudgetItemId, setSavingBudgetItemId] = useState<string | null>(null);
@@ -1830,9 +1829,8 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
             setNewItem({ category: newItem.category, item_name: '', estimated_cost: '', due_date: '' });
             void reload();
         } catch (err) {
-            const message = getPlannerErrorMessage(err, 'Failed to add budget item.');
-            console.error("Error adding budget item:", message);
-            alert(`Failed to add budget item: ${message}`);
+            console.error("Error adding budget item:", err);
+            handlePlannerActionError(err, 'Failed to add budget item.', onRequirePro);
         } finally {
             setPublishing(false);
         }
@@ -3245,7 +3243,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
     );
 }
 
-function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors = [], currency, reload }: any) {
+function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors = [], currency, reload, onRequirePro }: any) {
     const [publishing, setPublishing] = useState(false);
     const [uploadingReference, setUploadingReference] = useState(false);
     const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
@@ -3312,9 +3310,8 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
             setNewItem({ item_type: 'food', item_name: '', serving_category: '', reference_image_url: '', estimated_cost: '', planner_vendor_id: '', custom_supplier_name: '', notes: '' });
             void reload();
         } catch (err) {
-            const message = getPlannerErrorMessage(err, 'Failed to add food or drink.');
-            console.warn('Error adding food/drink item:', message);
-            alert(`Failed to add food or drink: ${message}`);
+            console.warn('Error adding food/drink item:', err);
+            handlePlannerActionError(err, 'Failed to add food or drink.', onRequirePro);
         } finally {
             setPublishing(false);
         }
@@ -3418,7 +3415,7 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
     );
 }
 
-function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, reload }: any) {
+function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, reload, onRequirePro }: any) {
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({
         category: 'destination',
@@ -3462,9 +3459,8 @@ function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, 
             setNewItem({ category: newItem.category, title: '', destination: '', start_date: '', end_date: '', estimated_cost: '', status: 'idea', supplier_name: '', booking_link: '', notes: '' });
             void reload();
         } catch (err) {
-            const message = getPlannerErrorMessage(err, 'Failed to add honeymoon item.');
-            console.error('Error adding honeymoon item:', message);
-            alert(`Failed to add honeymoon item: ${message}`);
+            console.error('Error adding honeymoon item:', err);
+            handlePlannerActionError(err, 'Failed to add honeymoon item.', onRequirePro);
         } finally {
             setPublishing(false);
         }
@@ -3598,7 +3594,7 @@ function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, 
     );
 }
 
-function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reload, updateVendorStatus }: any) {
+function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reload, updateVendorStatus, onRequirePro }: any) {
     const [publishing, setPublishing] = useState(false);
     const [newItem, setNewItem] = useState({ 
         role: 'Photographer', 
@@ -3646,9 +3642,8 @@ function PlannerVendors({ weddingId, initialVendors, setVendors, currency, reloa
             });
             void reload();
         } catch (err) {
-            const message = getPlannerErrorMessage(err, 'Failed to add supplier/vendor.');
-            console.error("Error adding vendor:", message);
-            alert(`Failed to add supplier/vendor: ${message}`);
+            console.error("Error adding vendor:", err);
+            handlePlannerActionError(err, 'Failed to add supplier/vendor.', onRequirePro);
         } finally {
             setPublishing(false);
         }

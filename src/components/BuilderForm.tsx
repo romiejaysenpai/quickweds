@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import GenerationLoading from './GenerationLoading';
 import { useAuth } from '@/context/AuthContext';
 import UpgradeButton from './UpgradeButton';
+import UpgradeModal from './UpgradeModal';
 import LivePreview from './LivePreview';
 import { REFERENCE_INVITATIONS } from '@/lib/reference-invitations';
 import { UNCUSTOMIZED_DESIGN, PRESERVED_DESIGN, selectBuilderReference, getBuilderRecapSettings, readBuilderDesignCustomization } from '@/lib/builder-design-selection';
@@ -758,6 +759,23 @@ export default function BuilderForm() {
     const [customizingMemberIndex, setCustomizingMemberIndex] = useState<number | null>(null);
     const hasMonogramPro = isAdmin || accountIsPro || weddingIsPro;
     const freeWebsiteLimitReached = !editId && !isAdmin && !accountIsPro && activeWeddingCount >= 3;
+    const [upgradeModal, setUpgradeModal] = useState<{
+        isOpen: boolean;
+        title?: string;
+        description?: string;
+        scope?: 'wedding' | 'account';
+        featureHighlight?: string;
+    }>({ isOpen: false });
+
+    const openProUpgrade = (options?: { title?: string; description?: string; scope?: 'wedding' | 'account'; featureHighlight?: string }) => {
+        setUpgradeModal({
+            isOpen: true,
+            title: options?.title,
+            description: options?.description,
+            scope: options?.scope || 'wedding',
+            featureHighlight: options?.featureHighlight,
+        });
+    };
     const publishHealth = useMemo(() => evaluateWeddingPublishHealth(formData, {
         heroImage: Boolean(mediaFiles.heroImage || previews.heroImage),
         couplePhoto: Boolean(mediaFiles.couplePhoto || previews.couplePhoto),
@@ -1211,7 +1229,11 @@ export default function BuilderForm() {
             const newFiles = Array.from(files);
             if (!validateImageFiles(newFiles)) return;
             if (!isPremium && (mediaFiles.galleryImages.length + newFiles.length) > 12) {
-                alert("Free plan is limited to 12 photos. Please upgrade to Premium for unlimited gallery uploads.");
+                openProUpgrade({
+                    title: 'Unlock Unlimited Photo Gallery',
+                    description: 'Free weddings include up to 12 gallery photos. Upgrade to Planner Pro for unlimited gallery uploads and high-res photos.',
+                    featureHighlight: 'Unlimited photo gallery uploads and guest photo sharing',
+                });
                 return;
             }
             setMediaFiles(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...newFiles] }));
@@ -1383,7 +1405,12 @@ export default function BuilderForm() {
             try {
                 const limitState = await loadAccountLimitState();
                 if (!limitState.isPro && limitState.activeCount >= 3) {
-                    alert('Free accounts can create up to 3 active wedding websites. Unlock Account Pro to create more.');
+                    openProUpgrade({
+                        scope: 'account',
+                        title: 'Unlock QuickWeds Account Pro',
+                        description: 'Free accounts can create up to 3 active wedding websites. Unlock Account Pro to create unlimited wedding websites.',
+                        featureHighlight: 'Create more than 3 active wedding websites with full Pro access for each',
+                    });
                     return;
                 }
             } catch (limitError) {
@@ -3822,7 +3849,12 @@ export default function BuilderForm() {
 
     const handleMonogramExport = async (format: 'png' | 'jpg' | 'mp4') => {
         if (!hasMonogramPro) {
-            alert('PNG, JPG, and MP4 monogram downloads are available with Account Pro.');
+            openProUpgrade({
+                scope: 'account',
+                title: 'Unlock High-Res Monogram Exports',
+                description: 'PNG, JPG, and MP4 video monogram downloads are available with Account Pro.',
+                featureHighlight: 'Export HD crest animations and print-ready transparent monograms',
+            });
             return;
         }
         if (!monogramExportRef.current) {
@@ -4103,6 +4135,16 @@ return (
                     )}
                 </AnimatePresence>
             </div>
+
+            <UpgradeModal
+                isOpen={upgradeModal.isOpen}
+                onClose={() => setUpgradeModal((prev) => ({ ...prev, isOpen: false }))}
+                weddingId={editId || undefined}
+                scope={upgradeModal.scope}
+                title={upgradeModal.title}
+                description={upgradeModal.description}
+                featureHighlight={upgradeModal.featureHighlight}
+            />
         </div>
     </>
 );

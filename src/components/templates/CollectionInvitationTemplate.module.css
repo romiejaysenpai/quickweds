@@ -8,6 +8,19 @@
     font-family: var(--invitation-body-font, var(--font-sans));
     overflow-wrap: anywhere;
 }
+
+/* Keep finishing details driven by the selected wireframe and builder tokens. */
+.names, .title { text-wrap: balance; }
+.panel > p, .panel blockquote, .timeline p { text-wrap: pretty; }
+.contact > p { white-space: pre-line; }
+.galleryButton { border-radius: var(--calendar-radius, 2px); }
+.galleryZoom { min-width: 44px; min-height: 44px; }
+.invitation :is(button, a, input, select, textarea):focus-visible {
+    outline: 2px solid var(--invitation-link, var(--ref-accent));
+    outline-offset: 3px;
+}
+.invitation :is(input, select, textarea) { scroll-margin-block: 100px; }
+.timeline time, .date { font-variant-numeric: tabular-nums; }
 .invitation {
     width: 100%;
     max-width: 520px;
