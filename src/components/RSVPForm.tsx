@@ -355,65 +355,80 @@ export default function RSVPForm({ weddingId, wedding, verifiedGuest, accessToke
 
                         {/* Search dropdown results */}
                         <AnimatePresence>
-                            {isDropdownOpen && searchResults.length > 0 && (
-                                <motion.div data-wedding-card="true"
-                                    initial={{ opacity: 0, y: -8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -8 }}
-                                    className={`absolute left-0 right-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-2xl border p-2 shadow-2xl backdrop-blur-xl ${
-                                        isDark ? 'border-white/15 bg-neutral-900/95 text-white' : 'border-border bg-white/95 text-foreground'
-                                    }`}
-                                >
-                                    <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-primary">
-                                        Select your name from the guest list
-                                    </p>
-                                    <div className="divide-y divide-border/40">
-                                        {searchResults.map((guest) => (
-                                            <button data-wedding-control="quiet"
-                                                key={guest.id}
-                                                type="button"
-                                                onClick={() => handleSelectGuest(guest)}
-                                                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-colors ${
-                                                    isDark ? 'hover:bg-white/10' : 'hover:bg-primary/5'
-                                                }`}
-                                            >
-                                                <div>
-                                                    <p className="font-semibold">{guest.guestName}</p>
-                                                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                                                        {guest.householdName && (
-                                                            <span className="text-xs text-text-secondary flex items-center gap-1">
-                                                                <Users className="h-3 w-3" /> {guest.householdName}
-                                                            </span>
-                                                        )}
-                                                        {guest.plusOneAllowed && (
-                                                            <span className="text-[10px] font-bold text-primary bg-primary/10 rounded px-1.5 py-0.5">
-                                                                +1 Allowed
-                                                            </span>
-                                                        )}
+                            {isDropdownOpen && (
+                                searchResults.length > 0 ? (
+                                    <motion.div data-wedding-card="true"
+                                        initial={{ opacity: 0, y: -8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        className={`absolute left-0 right-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-2xl border p-2 shadow-2xl backdrop-blur-xl ${
+                                            isDark ? 'border-white/15 bg-neutral-900/95 text-white' : 'border-border bg-white/95 text-foreground'
+                                        }`}
+                                    >
+                                        <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-primary">
+                                            Select your name from the guest list
+                                        </p>
+                                        <div className="divide-y divide-border/40">
+                                            {searchResults.map((guest) => (
+                                                <button data-wedding-control="quiet"
+                                                    key={guest.id}
+                                                    type="button"
+                                                    onClick={() => handleSelectGuest(guest)}
+                                                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-colors ${
+                                                        isDark ? 'hover:bg-white/10' : 'hover:bg-primary/5'
+                                                    }`}
+                                                >
+                                                    <div>
+                                                        <p className="font-semibold">{guest.guestName}</p>
+                                                        <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                                                            {guest.householdName && (
+                                                                <span className="text-xs text-text-secondary flex items-center gap-1">
+                                                                    <Users className="h-3 w-3" /> {guest.householdName}
+                                                                </span>
+                                                            )}
+                                                            {guest.plusOneAllowed && (
+                                                                <span className="text-[10px] font-bold text-primary bg-primary/10 rounded px-1.5 py-0.5">
+                                                                    +1 Allowed
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span data-wedding-status="true" className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                                                        guest.rsvpStatus === 'confirmed' ? 'bg-emerald-100 text-emerald-800' :
-                                                        guest.rsvpStatus === 'declined' ? 'bg-red-100 text-red-800' :
-                                                        'bg-amber-100 text-amber-800'
-                                                    }`}>
-                                                        {guest.rsvpStatus || 'Invited'}
-                                                    </span>
-                                                </div>
+                                                    <div className="text-right">
+                                                        <span data-wedding-status="true" className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                                                            guest.rsvpStatus === 'confirmed' ? 'bg-emerald-100 text-emerald-800' :
+                                                            guest.rsvpStatus === 'declined' ? 'bg-red-100 text-red-800' :
+                                                            'bg-amber-100 text-amber-800'
+                                                        }`}>
+                                                            {guest.rsvpStatus || 'Invited'}
+                                                        </span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="border-t border-border/50 pt-2 px-2">
+                                            <button data-wedding-control="quiet"
+                                                type="button"
+                                                onClick={() => setIsDropdownOpen(false)}
+                                                className={`w-full rounded-xl py-1.5 text-center text-xs font-semibold text-text-secondary hover:text-foreground`}
+                                            >
+                                                Not listed above? Continue with &quot;{formData.guestName}&quot;
                                             </button>
-                                        ))}
-                                    </div>
-                                    <div className="border-t border-border/50 pt-2 px-2">
-                                        <button data-wedding-control="quiet"
-                                            type="button"
-                                            onClick={() => setIsDropdownOpen(false)}
-                                            className={`w-full rounded-xl py-1.5 text-center text-xs font-semibold text-text-secondary hover:text-foreground`}
-                                        >
-                                            Not listed above? Continue with &quot;{formData.guestName}&quot;
-                                        </button>
-                                    </div>
-                                </motion.div>
+                                        </div>
+                                    </motion.div>
+                                ) : !isSearching && searchQuery.trim().length >= 2 ? (
+                                    <motion.div data-wedding-card="true"
+                                        initial={{ opacity: 0, y: -8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        className={`absolute left-0 right-0 z-50 mt-1 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl ${
+                                            isDark ? 'border-white/15 bg-neutral-900/95 text-white' : 'border-border bg-white/95 text-foreground'
+                                        }`}
+                                    >
+                                        <p className="text-xs text-text-secondary">
+                                            Not on the pre-loaded guest list? You can still submit your RSVP with &quot;<span className="font-semibold text-foreground">{formData.guestName}</span>&quot;!
+                                        </p>
+                                    </motion.div>
+                                ) : null
                             )}
                         </AnimatePresence>
                     </div>

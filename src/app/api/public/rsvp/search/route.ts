@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
 import { escapeLikePattern } from '@/lib/sql-like';
+import { resolvePublicWeddingById } from '@/lib/public-wedding-lookup';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,17 +25,13 @@ export async function GET(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const { data: wedding, error: weddingError } = await db
-            .from('weddings')
-            .select('id, rsvp_search_guest_list')
-            .eq('id', weddingId)
-            .is('deleted_at', null).eq('planner_only', false)
-            .maybeSingle();
+        const { wedding, error: weddingError } = await resolvePublicWeddingById(
+            db,
+            weddingId,
+            'id, rsvp_search_guest_list'
+        );
 
-        if (weddingError && !String(weddingError.message || '').includes('rsvp_search_guest_list')) {
-            throw weddingError;
-        }
-
+        if (weddingError) throw weddingError;
         if (!wedding) {
             return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
         }
@@ -47,11 +44,13 @@ export async function GET(req: NextRequest) {
         const likeFilter = `%${cleanQuery}%`;
 
         // Search by guest_name, household_name, or plus_one_name
+        const safeQuery = cleanQuery.replace(/"/g, '');
+        const orFilter = `guest_name.ilike."%${safeQuery}%",household_name.ilike."%${safeQuery}%",plus_one_name.ilike."%${safeQuery}%"`;
         const { data: rows, error: searchError } = await db
             .from('rsvps')
             .select('id, guest_name, guest_email, household_name')
             .eq('wedding_id', weddingId)
-            .or(`guest_name.ilike.${likeFilter},household_name.ilike.${likeFilter},plus_one_name.ilike.${likeFilter}`)
+            .or(orFilter)
             .limit(10);
 
         if (searchError) {

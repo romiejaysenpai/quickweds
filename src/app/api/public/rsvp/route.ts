@@ -3,7 +3,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { rsvpSubmissionSchema } from '@/lib/validations';
 import { createRateLimitMiddleware, getClientIP, sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
 import { sendRsvpNotifications } from '@/lib/rsvp-notifications';
-import { isMissingPublicSlugColumnError } from '@/lib/wedding-slugs';
+import { resolvePublicWeddingById } from '@/lib/public-wedding-lookup';
 import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 import { makeGuestCode, makeSeatLookupToken } from '@/lib/seat-finder';
 import { isRsvpDeadlineExpired } from '@/lib/rsvp-deadline';
@@ -59,33 +59,7 @@ export async function POST(req: NextRequest) {
     try {
         const db = getSupabaseAdminClient() as any;
         const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, rsvp_allow_plus_ones, rsvp_allow_children, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
-        let weddingResult = await db
-            .from('weddings')
-            .select(weddingSelect)
-            .eq('id', weddingId)
-            .is('deleted_at', null).eq('planner_only', false)
-            .maybeSingle();
-
-        if (weddingResult.error && isMissingPublicSlugColumnError(weddingResult.error)) {
-            weddingResult = await db
-                .from('weddings')
-                .select(weddingSelect.replace('public_slug, ', ''))
-                .eq('id', weddingId)
-                .is('deleted_at', null).eq('planner_only', false)
-                .maybeSingle();
-        }
-
-        // Older databases may not have the rsvp_events column yet.
-        if (weddingResult.error && String(weddingResult.error.message || '').includes('rsvp_events')) {
-            weddingResult = await db
-                .from('weddings')
-                .select(weddingSelect.replace('public_slug, ', '').replace('rsvp_events, ', ''))
-                .eq('id', weddingId)
-                .is('deleted_at', null).eq('planner_only', false)
-                .maybeSingle();
-        }
-
-        const { data: wedding, error: weddingError } = weddingResult;
+        const { wedding, error: weddingError } = await resolvePublicWeddingById(db, weddingId, weddingSelect);
 
         if (weddingError) throw weddingError;
         if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
@@ -138,11 +112,15 @@ export async function POST(req: NextRequest) {
         createRsvpAccessToken(weddingId, existingRsvp?.id || 'new', resolvedGuestEmail);
         const insertData: Record<string, unknown> = {
             wedding_id: weddingId,
-            ...(!existingRsvp ? { guest_name: resolvedGuestName, guest_email: resolvedGuestEmail || null } : {}),
+            ...(!existingRsvp ? {
+                guest_name: resolvedGuestName,
+                guest_email: resolvedGuestEmail || null,
+                plus_one_allowed: !isDeclined && resolvedNumGuests > 1,
+                invited_guest_count: Math.min(50, Math.max(1, resolvedNumGuests, (!isDeclined && resolvedNumGuests > 1) ? 2 : 1)),
+            } : {}),
             attendance: parsed.data.attendance,
             num_guests: resolvedNumGuests,
             rsvp_status: parsed.data.attendance === 'Yes' ? 'confirmed' : 'declined',
-            ...(!existingRsvp ? { plus_one_allowed: !isDeclined && resolvedNumGuests > 1 } : {}),
         };
 
         if (canUpdateExisting) {
@@ -190,17 +168,36 @@ export async function POST(req: NextRequest) {
                 .single();
         };
 
-        let { data: rsvp, error: insertError } = await persistRsvp(insertData);
+        const OPTIONAL_RSVP_COLUMNS = [
+            'household_name',
+            'household_members',
+            'event_responses',
+            'manual_entry',
+            'invited_guest_count',
+            'seat_lookup_token',
+            'guest_code',
+            'plus_one_names',
+            'plus_one_name',
+            'plus_one_rsvp_status',
+            'children_count',
+            'song_request',
+            'dietary_details',
+            'meal_preference',
+        ] as const;
 
-        if (insertError && ['household_name', 'household_members', 'event_responses', 'manual_entry'].some((column) => String(insertError.message || '').includes(column))) {
-            const compatibleInsert = { ...insertData };
-            delete compatibleInsert.household_name;
-            delete compatibleInsert.household_members;
-            delete compatibleInsert.event_responses;
-            delete compatibleInsert.manual_entry;
-            const fallbackInsert = await persistRsvp(compatibleInsert);
-            rsvp = fallbackInsert.data;
-            insertError = fallbackInsert.error;
+        const activePayload = { ...insertData };
+        let { data: rsvp, error: insertError } = await persistRsvp(activePayload);
+
+        while (insertError) {
+            const errorText = String(insertError.message || '').toLowerCase();
+            const missing = OPTIONAL_RSVP_COLUMNS.filter((col) => col in activePayload && errorText.includes(col.toLowerCase()));
+            if (missing.length === 0) break;
+            for (const col of missing) {
+                delete activePayload[col];
+            }
+            const retry = await persistRsvp(activePayload);
+            rsvp = retry.data;
+            insertError = retry.error;
         }
 
         if (insertError) throw insertError;

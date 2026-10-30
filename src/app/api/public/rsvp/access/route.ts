@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
 import { createRsvpAccessToken, getRsvpManageUrl, verifyRsvpAccessToken } from '@/lib/rsvp-access';
+import { resolvePublicWeddingById } from '@/lib/public-wedding-lookup';
 import { createElement } from 'react';
 import { sendEmail } from '@/lib/email';
 
@@ -23,7 +24,11 @@ export async function POST(req: NextRequest) {
     }
     try {
         const db = getSupabaseAdminClient() as any;
-        const { data: wedding, error: weddingError } = await db.from('weddings').select('id, template, motif_color, rsvp_events, rsvp_allow_plus_ones, rsvp_allow_children, bride_name, groom_name').eq('id', weddingId).is('deleted_at', null).eq('planner_only', false).maybeSingle();
+        const { wedding, error: weddingError } = await resolvePublicWeddingById(
+            db,
+            weddingId,
+            'id, template, motif_color, rsvp_events, rsvp_allow_plus_ones, rsvp_allow_children, bride_name, groom_name'
+        );
         if (weddingError) throw weddingError;
         if (!wedding) return verifying ? NextResponse.json({ error: 'This link is invalid or expired.' }, { status: 403, headers }) : accepted();
         const { data: guest, error } = await db.from('rsvps').select('*').eq('id', rsvpId).eq('wedding_id', weddingId).maybeSingle();

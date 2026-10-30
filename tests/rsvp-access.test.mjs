@@ -101,3 +101,92 @@ test('stale verified invitation update rejects concurrent organizer changes with
  assert.ok(!('guest_email' in db.writes[0].payload));
 });
 test('attending children cannot exceed party size',async()=>{const db=database(wedding,guest);const res=await route(db).POST(request({...base,accessToken:token(),numGuests:1,childrenCount:2}));assert.equal(res.status,400);assert.equal(db.writes.length,0);});
+test('RSVP submission and search succeed on legacy schema missing planner_only column', async () => {
+ const legacyWedding = { id: 'legacy-wedding', bride_name: 'Jane', groom_name: 'John', rsvp_events: [], rsvp_allow_plus_ones: true };
+ const writes = [];
+ const db = {
+  writes,
+  from(table) {
+   let mode = 'read';
+   let payload;
+   const filters = [];
+   const q = {
+    select: () => q, eq(k, v) { filters.push([k, v]); return q; }, is(k, v) { filters.push([k, v]); return q; },
+    ilike: () => q, or(v) { filters.push(['or', v]); return q; }, limit: () => q,
+    update(v) { mode = 'update'; payload = v; return q; },
+    insert(v) { mode = 'insert'; payload = v; return q; },
+    maybeSingle: async () => {
+     if (table === 'weddings') {
+      if (filters.some(([k]) => k === 'planner_only')) {
+       return { data: null, error: { code: '42703', message: 'column weddings.planner_only does not exist' } };
+      }
+      return { data: legacyWedding, error: null };
+     }
+     return { data: null, error: null };
+    },
+    single: async () => {
+     writes.push({ table, mode, payload, filters });
+     return { data: { id: 'registered-guest' }, error: null };
+    },
+    then(resolve) {
+     const isSearch = filters.length > 0 && filters.some(([k]) => k === 'or');
+     return Promise.resolve({ data: isSearch ? [{ id: 'guest-1', guest_name: 'Carlo Cervantes', guest_email: 'carlo@example.test' }] : [], error: null }).then(resolve);
+    },
+   };
+   return q;
+  },
+ };
+ const rsvpRes = await route(db).POST(request({ weddingId: 'legacy-wedding', guestName: 'Carlo Cervantes', attendance: 'Yes', numGuests: 1 }));
+ assert.equal(rsvpRes.status, 200);
+ assert.equal(writes.length, 1);
+ assert.equal(writes[0].payload.guest_name, 'Carlo Cervantes');
+ assert.equal(writes[0].payload.invited_guest_count, 1);
+
+ const { GET } = load('src/app/api/public/rsvp/search/route.ts', {
+  'next/server': next, '@/lib/rate-limit': rate,
+  '@/lib/supabase-admin': { getSupabaseAdminClient: () => db },
+  '@/lib/public-wedding-lookup': load('src/lib/public-wedding-lookup.ts'),
+ });
+ const searchRes = await GET({ url: 'https://example.test/?weddingId=legacy-wedding&q=Carlo%20Cervantes' });
+ assert.equal(searchRes.status, 200);
+ const searchData = await searchRes.json();
+ assert.equal(searchData.guests.length, 1);
+ assert.equal(searchData.guests[0].guestName, 'Carlo Cervantes');
+});
+test('RSVP submission strips absent optional columns on older rsvps table schema and completes insert', async () => {
+ const writes = [];
+ let attempt = 0;
+ const db = {
+  writes,
+  from(table) {
+   let mode = 'read';
+   let payload;
+   const filters = [];
+   const q = {
+    select: () => q, eq(k, v) { filters.push([k, v]); return q; }, is(k, v) { filters.push([k, v]); return q; },
+    ilike: () => q, or: () => q, limit: () => q,
+    insert(v) { mode = 'insert'; payload = v; return q; },
+    maybeSingle: async () => ({ data: table === 'weddings' ? wedding : null, error: null }),
+    single: async () => {
+     attempt++;
+     if (attempt === 1 && payload.invited_guest_count !== undefined) {
+      return { data: null, error: { message: 'column "invited_guest_count" of relation "rsvps" does not exist' } };
+     }
+     if (attempt === 2 && payload.seat_lookup_token !== undefined) {
+      return { data: null, error: { message: 'column "seat_lookup_token" of relation "rsvps" does not exist' } };
+     }
+     writes.push({ table, mode, payload, filters });
+     return { data: { id: 'recovered-guest' }, error: null };
+    },
+    then(resolve) { return Promise.resolve({ data: [], error: null }).then(resolve); },
+   };
+   return q;
+  },
+ };
+ const res = await route(db).POST(request({ weddingId: wedding.id, guestName: 'Resilient Guest', attendance: 'Yes', numGuests: 1 }));
+ assert.equal(res.status, 200);
+ assert.equal(writes.length, 1);
+ assert.ok(!('invited_guest_count' in writes[0].payload));
+ assert.ok(!('seat_lookup_token' in writes[0].payload));
+ assert.equal(writes[0].payload.guest_name, 'Resilient Guest');
+});
