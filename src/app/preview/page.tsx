@@ -124,7 +124,7 @@ export default function PreviewPage() {
     const pageStyle = getWeddingPageStyle(wedding);
 
     return (
-        <div className={`wedding-page min-h-screen relative selection-dynamic ${invitationThemeClass} template-${template} overflow-x-hidden`} style={pageStyle} {...invitationThemeAttributes}>
+        <div className={`wedding-page min-h-screen relative selection-dynamic ${invitationThemeClass} template-${template} overflow-x-clip`} style={pageStyle} {...invitationThemeAttributes}>
 
             <EntranceReveal
                 weddingId={wedding.id}

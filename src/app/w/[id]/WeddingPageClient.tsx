@@ -63,7 +63,7 @@ export default function WeddingPageClient({
     return (
         <WeddingFontProvider fontStyle={wedding.font_style} logoFont={wedding.logo_font}>
             <div
-                className={`wedding-page min-h-screen relative selection-dynamic ${invitationThemeClass} template-${template} overflow-x-hidden`}
+                className={`wedding-page min-h-screen relative selection-dynamic ${invitationThemeClass} template-${template} overflow-x-clip`}
                 style={pageStyle}
                 {...invitationThemeAttributes}
             >

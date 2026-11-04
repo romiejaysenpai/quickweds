@@ -58,12 +58,12 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                     </p>
                     <div className="mt-8">
                         <a
-                            href="#rsvp"
-                            aria-label="RSVP Here"
+                            href={wedding.is_thank_you_mode ? '#details' : '#rsvp'}
+                            aria-label={wedding.is_thank_you_mode ? 'Wedding Details' : 'RSVP Here'}
                             className="inline-flex items-center justify-center px-12 sm:px-16 py-5 sm:py-6 font-bold uppercase tracking-widest text-sm sm:text-base hover:scale-105 transition-all shadow-xl min-h-[56px]"
                             style={{ backgroundColor: motifColor, color: 'white' }}
                         >
-                            RSVP Here
+                            {wedding.is_thank_you_mode ? 'Wedding Details' : 'RSVP Here'}
                         </a>
                     </div>
                     <p className="text-sm font-light text-neutral-400 mt-8 sm:mt-10">

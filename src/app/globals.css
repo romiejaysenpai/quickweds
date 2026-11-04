@@ -894,8 +894,8 @@ textarea,
   will-change: backdrop-filter;
 }
 
-/* Defer rendering of off-screen sections to reduce initial paint cost */
-section:not(:first-child) {
+/* Defer off-screen rendering except invitations, whose anchors need stable positions. */
+section:not(:first-child):not(.wedding-page section) {
   content-visibility: auto;
   contain-intrinsic-size: auto 600px;
 }
