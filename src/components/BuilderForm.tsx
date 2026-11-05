@@ -38,9 +38,13 @@ import {
     type WeddingTemplatePreset,
 } from '@/lib/wedding-features';
 import {
+    buildWeddingSlugCandidates,
+    createCollisionSafeWeddingSlug,
     createWeddingSlugBase,
     isMissingPublicSlugColumnError,
+    isPublicSlugConflictError,
     sanitizeWeddingSlug,
+    withWeddingSlugSuffix,
 } from '@/lib/wedding-slugs';
 import { getCachedSession } from '@/lib/session-cache';
 import { hasStoredSupabaseSession } from '@/lib/supabase-auth';
@@ -1109,31 +1113,38 @@ export default function BuilderForm() {
         if (currentSlug) return currentSlug;
 
         const base = createWeddingSlugBase(formData.brideName, formData.groomName);
-        const candidates = [
-            base,
-            ...Array.from({ length: 7 }, (_, index) => `${base}-${index + 2}`),
-            `${base}-${weddingId.slice(0, 4).toLowerCase()}`,
-        ];
+        const candidates = buildWeddingSlugCandidates(base, weddingId);
+        // Never fall back to the bare name slug: if availability cannot be confirmed,
+        // use an id-suffixed slug that is practically unique.
+        const safeFallback = withWeddingSlugSuffix(base, weddingId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toLowerCase());
 
-        for (const candidate of candidates) {
-            const { data, error } = await supabase
-                .from('weddings')
-                .select('id')
-                .eq('public_slug', candidate)
-                .maybeSingle();
+        // Availability must be checked server-side: RLS only lets a user read their own
+        // weddings, so a browser query cannot see slugs that belong to other couples.
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData.session?.access_token;
+            if (!token) return safeFallback;
 
-            if (error) {
-                if (isMissingPublicSlugColumnError(error)) return '';
-                console.warn('Public slug availability check skipped:', error);
-                return candidate;
+            const response = await fetch('/api/weddings/slug-availability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ weddingId, candidates }),
+            });
+            if (!response.ok) {
+                console.warn('Public slug availability check failed with status', response.status);
+                return safeFallback;
             }
-
-            if (!data || data.id === weddingId) {
-                return candidate;
-            }
+            const result = await response.json().catch(() => ({}));
+            if (result?.supported === false) return '';
+            const available = typeof result?.slug === 'string' ? sanitizeWeddingSlug(result.slug) : '';
+            return available || safeFallback;
+        } catch (error) {
+            console.warn('Public slug availability check skipped:', error);
+            return safeFallback;
         }
-
-        return `${base}-${weddingId.slice(0, 8).toLowerCase()}`;
     }, [existingPublicSlug, formData.brideName, formData.groomName]);
 
     const applyPreset = (preset: Record<string, any>) => {
@@ -1597,6 +1608,7 @@ export default function BuilderForm() {
 
             let submitPayload = { ...baseSubmitPayload };
             let submitError: unknown = null;
+            let slugConflictRetries = 0;
             for (let attempt = 0; attempt < 10; attempt += 1) {
                 const { error } = await supabase
                     .from('weddings')
@@ -1610,6 +1622,19 @@ export default function BuilderForm() {
                 submitError = error;
                 const fallbackPayload = { ...submitPayload };
                 let canRetry = false;
+
+                // Another wedding claimed this slug (e.g. same couple names, or a race
+                // between the availability check and the write). Pick a collision-safe
+                // slug and retry instead of failing the whole save.
+                if (isPublicSlugConflictError(error) && fallbackPayload.public_slug && slugConflictRetries < 3) {
+                    slugConflictRetries += 1;
+                    fallbackPayload.public_slug = createCollisionSafeWeddingSlug(
+                        createWeddingSlugBase(formData.brideName, formData.groomName),
+                        weddingId,
+                        slugConflictRetries,
+                    );
+                    canRetry = true;
+                }
 
                 if (isMissingFaqColumnError(error) || isMissingOptionalWeddingColumnError(error, 'faq_items')) {
                     delete fallbackPayload.faq_items;
@@ -1751,6 +1776,8 @@ export default function BuilderForm() {
             setIsGenerating(false);
             if (errorMessage.includes('exceeded the maximum allowed size')) {
                 alert('Storage Limit Error: Your Supabase bucket has a 50MB default limit. Please compress your files or go to your Supabase Dashboard to check your storage settings.');
+            } else if (isPublicSlugConflictError(err)) {
+                alert('We could not reserve a unique link for your invitation. Your changes are kept — please try saving again.');
             } else {
                 alert('Error saving invitation: ' + errorMessage);
             }

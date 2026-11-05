@@ -91,6 +91,57 @@ export function getWeddingPublicUrl(
     return path ? `${base}${path}` : base;
 }
 
+/**
+ * Append a suffix while respecting the database slug length/format constraint
+ * (`^[a-z0-9][a-z0-9-]{2,79}$`, no `--`).
+ */
+export function withWeddingSlugSuffix(base: string, suffix: string) {
+    const cleanSuffix = slugifyWeddingValue(suffix);
+    const safeBase = sanitizeWeddingSlug(base) || 'wedding';
+    if (!cleanSuffix) return safeBase;
+    const room = MAX_SLUG_LENGTH - cleanSuffix.length - 1;
+    const trimmedBase = safeBase.slice(0, Math.max(1, room)).replace(/-+$/g, '') || 'wedding';
+    return `${trimmedBase}-${cleanSuffix}`.slice(0, MAX_SLUG_LENGTH).replace(/-+$/g, '');
+}
+
+/**
+ * Ordered list of slug candidates for a wedding. The final candidates include
+ * the wedding id so there is always a practically unique option.
+ */
+export function buildWeddingSlugCandidates(base: string, weddingId: string) {
+    const safeBase = sanitizeWeddingSlug(base) || 'wedding';
+    const idPart = slugifyWeddingValue(String(weddingId || '')).replace(/-/g, '');
+    const candidates = [
+        safeBase,
+        ...Array.from({ length: 7 }, (_, index) => withWeddingSlugSuffix(safeBase, String(index + 2))),
+    ];
+    if (idPart) {
+        candidates.push(withWeddingSlugSuffix(safeBase, idPart.slice(0, 4)));
+        candidates.push(withWeddingSlugSuffix(safeBase, idPart.slice(0, 8)));
+    }
+    return Array.from(new Set(candidates.filter((slug) => sanitizeWeddingSlug(slug) === slug)));
+}
+
+/**
+ * Slug used when a chosen slug turned out to be taken at write time.
+ * Combines the wedding id with a random component so repeated retries differ.
+ */
+export function createCollisionSafeWeddingSlug(base: string, weddingId: string, attempt = 0) {
+    const idPart = slugifyWeddingValue(String(weddingId || '')).replace(/-/g, '').slice(0, 8);
+    const random = Math.random().toString(36).slice(2, 2 + Math.min(6, 3 + attempt));
+    const suffix = [idPart, random].filter(Boolean).join('-');
+    return withWeddingSlugSuffix(base, suffix);
+}
+
+/** True when a write failed because another wedding already uses the public slug. */
+export function isPublicSlugConflictError(error: unknown) {
+    if (!error || typeof error !== 'object') return false;
+    const record = error as Record<string, unknown>;
+    const text = `${record.message || ''} ${record.details || ''} ${record.hint || ''}`.toLowerCase();
+    const isUniqueViolation = String(record.code || '') === '23505' || text.includes('duplicate key');
+    return isUniqueViolation && (text.includes('public_slug') || text.includes('weddings_public_slug_unique_idx'));
+}
+
 export function isMissingPublicSlugColumnError(error: unknown) {
     if (!error || typeof error !== 'object') return false;
     const record = error as Record<string, unknown>;
