@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useRef, useState, type DragEvent } from 'react';
+import { useRef, useState, type DragEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { rsvpWordingPath, serializeJsonLd, siteOrigin } from '@/lib/seo';
 import {
   Armchair, ArrowRight, CalendarClock, Check, ChevronDown, CircleDollarSign, HeartHandshake,
   LayoutDashboard, ListTodo, MailCheck, PanelsTopLeft, PieChart, QrCode,
@@ -12,7 +13,6 @@ import {
 import { featureContent, featureKeys, type FeatureKey } from './content';
 import { SUPPORTED_CURRENCIES, formatCurrencyAmount, type SupportedCurrencyCode } from '@/lib/currency';
 
-const siteUrl = 'https://quickweds.site';
 const screenshotUrls: Record<FeatureKey, string> = {
   budget: 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/BUDGET%20TARCKER.png',
   checklist: 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/TASK%20AND%20CHECK%20LIST%20PALNNER.png',
@@ -294,23 +294,43 @@ function FeatureGrid({ feature }: { feature: FeatureKey }) {
 export default function FeatureLandingPage({ feature }: { feature: FeatureKey }) {
   const content = featureContent[feature];
   const related = featureKeys.filter((key) => key !== feature).map((key) => featureContent[key]);
-  const schema = useMemo(() => ({
+  const url = `${siteOrigin}${content.path}`;
+  const schema = {
     '@context': 'https://schema.org',
     '@graph': [
-      { '@type': 'WebPage', '@id': `${siteUrl}${content.path}#webpage`, url: `${siteUrl}${content.path}`, name: content.title, description: content.description, inLanguage: 'en' },
-      { '@type': 'SoftwareApplication', name: `QuickWeds ${content.shortName}`, applicationCategory: 'LifestyleApplication', operatingSystem: 'Web, iOS, Android', url: `${siteUrl}${content.path}`, description: content.description, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', availability: 'https://schema.org/InStock' } },
-      { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'QuickWeds', item: siteUrl }, { '@type': 'ListItem', position: 2, name: content.shortName, item: `${siteUrl}${content.path}` }] },
-      { '@type': 'FAQPage', mainEntity: content.faq.map((item) => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: item.answer } })) },
+      {
+        '@type': 'WebPage',
+        '@id': `${url}#webpage`,
+        url,
+        name: content.title,
+        description: content.description,
+        inLanguage: 'en',
+        isPartOf: { '@id': `${siteOrigin}/#website` },
+        about: { '@id': `${siteOrigin}/#webapp` },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'QuickWeds', item: `${siteOrigin}/` },
+          { '@type': 'ListItem', position: 2, name: content.shortName, item: url },
+        ],
+      },
     ],
-  }), [content]);
+  };
 
-  return <div className="min-h-screen overflow-x-clip bg-neutral text-foreground"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }} />
+  return <div className="min-h-screen overflow-x-clip bg-neutral text-foreground"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }} />
     <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-5"><div className="mx-auto flex h-14 max-w-7xl items-center justify-between rounded-full border border-white/75 bg-[#fffaf7]/90 px-4 shadow-[0_10px_35px_rgba(87,55,62,.1)] backdrop-blur-xl sm:h-16 sm:px-6"><Link href="/" aria-label="QuickWeds home"><Image src="/logo.png" alt="QuickWeds" width={180} height={64} className="h-8 w-auto sm:h-9" priority /></Link><nav aria-label="Feature page" className="hidden items-center gap-5 lg:flex"><a href="#features" className="text-sm font-bold text-text-secondary transition hover:text-primary">Features</a><a href="#demo" className="text-sm font-bold text-text-secondary transition hover:text-primary">Try it</a><a href="#faq" className="text-sm font-bold text-text-secondary transition hover:text-primary">FAQ</a></nav><Cta>Start free</Cta></div></header>
     <main>
       <section className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_85%_14%,rgba(255,255,255,.9),transparent_24%),linear-gradient(145deg,#f7a9ba_0%,#f8c8d2_45%,#fde9ed_100%)] px-4 pb-20 pt-32 sm:px-6 sm:pb-28 sm:pt-40"><div className="pointer-events-none absolute -left-20 top-28 h-72 w-72 rounded-full bg-white/35 blur-3xl" /><div className="pointer-events-none absolute right-0 top-20 h-64 w-64 rounded-full bg-accent/20 blur-3xl" /><div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[.92fr_1.08fr]"><div className="max-w-2xl text-center lg:text-left"><p className="inline-flex rounded-full border border-white/70 bg-white/55 px-4 py-2 text-[10px] font-black uppercase tracking-[.22em] text-primary shadow-sm backdrop-blur-sm">{content.eyebrow}</p><h1 className="mt-6 [font-family:var(--font-montserrat)] text-[clamp(3rem,6.5vw,5.25rem)] font-black leading-[.93] tracking-[-.06em] text-white drop-shadow-[0_3px_14px_rgba(122,90,97,.2)]">{content.headline} <span className="text-primary">{content.highlight}</span></h1><p className="mx-auto mt-6 max-w-xl text-[15px] font-semibold leading-7 text-white/90 sm:text-lg sm:leading-8 lg:mx-0">{content.subheadline}</p><div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start"><Cta /><a href="#demo" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/75 bg-white/30 px-5 py-3 text-sm font-black text-white backdrop-blur-sm transition hover:bg-white/45">Watch demo <ArrowRight className="h-4 w-4" /></a></div><p className="mt-5 text-xs font-bold text-white/70">Free to start · No credit card required</p></div><FeatureHeroVisual feature={feature} title={content.shortName} /></div></section>
       <section aria-label="QuickWeds social proof" className="border-y border-primary/10 bg-white px-4 py-6 sm:px-6"><div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-3 text-center"><p className="text-xs font-black uppercase tracking-[.18em] text-text-secondary">One calm place for every wedding detail</p>{['Websites', 'RSVPs', 'Guests', 'Planning'].map((item) => <span key={item} className="flex items-center gap-1.5 text-sm font-black text-primary"><Sparkles className="h-4 w-4" />{item}</span>)}</div></section>
       <FeatureGrid feature={feature} />
       <section id="demo" className="bg-white px-4 py-20 sm:px-6 sm:py-28"><div className="mx-auto max-w-6xl"><SectionHeading eyebrow={content.demoLabel} title={content.demoTitle} body={content.demoDescription} /><div className="mt-12"><ProductDemo feature={feature} /></div></div></section>
+      {(feature === 'rsvp' || feature === 'website') && (
+        <nav aria-label="Wedding website resources" className="mx-auto flex max-w-7xl flex-wrap gap-x-6 gap-y-3 px-4 py-6 text-sm font-bold text-primary sm:px-6">
+          <Link href="/templates" className="underline">Browse wedding website templates</Link>
+          <Link href={rsvpWordingPath} className="underline">Wedding RSVP wording and deadline guide</Link>
+        </nav>
+      )}
       <ScreenshotGallery feature={feature} />
       <section className="bg-[#fff8f4] px-4 py-20 sm:px-6 sm:py-28"><div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-center"><div><p className="text-xs font-black uppercase tracking-[.2em] text-primary">Built into the full plan</p><h2 className="mt-4 [font-family:var(--font-montserrat)] text-[clamp(2.25rem,4.5vw,3.8rem)] font-black leading-[.98] tracking-[-.05em] text-foreground">One beautiful tool should not live on an island.</h2><p className="mt-5 text-[15px] leading-7 text-text-secondary sm:text-lg sm:leading-8">Your {content.shortName.toLowerCase()} works alongside the details that make a wedding feel seamless—from your first save-the-date to the final thank-you.</p><ul className="mt-7 space-y-3">{content.benefits.map((benefit) => <li key={benefit} className="flex gap-3 text-sm font-bold leading-6 text-foreground"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary text-white"><Check className="h-3.5 w-3.5" /></span>{benefit}</li>)}</ul></div><ProductSnapshot feature={feature} compact /></div></section>
       <section className="bg-neutral px-4 py-20 sm:px-6 sm:py-28"><div className="mx-auto max-w-6xl"><SectionHeading eyebrow="How it works" title={<>A simpler path from <span className="text-primary">idea to “I do.”</span></>} body="Start in a few minutes, then let the details come together at your pace." /><ol className="mt-12 grid gap-5 md:grid-cols-3">{content.steps.map((step, index) => <li key={step.title} className="rounded-[1.75rem] border border-border bg-white p-6"><span className="grid h-10 w-10 place-items-center rounded-full bg-primary text-sm font-black text-white">0{index + 1}</span><h3 className="mt-5 text-xl font-black tracking-[-.035em] text-foreground">{step.title}</h3><p className="mt-3 text-sm font-semibold leading-6 text-text-secondary">{step.body}</p></li>)}</ol></div></section>

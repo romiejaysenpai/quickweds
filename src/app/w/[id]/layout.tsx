@@ -1,6 +1,8 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { getCachedPublicWedding } from '@/lib/public-wedding';
 import type { Wedding } from '@/types/wedding';
+
+const guestRobots: Metadata['robots'] = { index: false, follow: false };
 
 export async function generateMetadata(
     { params }: { params: Promise<{ id: string }> }
@@ -13,6 +15,7 @@ export async function generateMetadata(
         if (!wedding) {
             return {
                 title: 'QuickWeds Invitation',
+                robots: guestRobots,
             };
         }
 
@@ -27,6 +30,7 @@ export async function generateMetadata(
         return {
             title: `${wedding.bride_name} & ${wedding.groom_name} | You're Invited`,
             description: `Join us for our wedding celebration on ${formattedDate}. RSVP and find all the details you need.`,
+            robots: guestRobots,
             openGraph: {
                 title: `${wedding.bride_name} & ${wedding.groom_name}'s Wedding`,
                 description: `Join us on ${formattedDate}. We can't wait to celebrate with you!`,
@@ -39,9 +43,10 @@ export async function generateMetadata(
                 images: image ? [image] : [],
             }
         };
-    } catch (e) {
+    } catch {
         return {
             title: 'QuickWeds Invitation',
+            robots: guestRobots,
         };
     }
 }

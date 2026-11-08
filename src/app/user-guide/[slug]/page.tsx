@@ -561,7 +561,7 @@ export async function generateMetadata({
   const guide = guides[slug as GuideSlug];
   if (!guide) return {};
   return {
-    title: `${guide.title} | QuickWeds`,
+    title: guide.title,
     description: guide.description,
     alternates: {
       canonical: `/user-guide/${slug}`,

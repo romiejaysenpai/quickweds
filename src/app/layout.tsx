@@ -4,73 +4,28 @@ import {
 } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { homeDescription, homeTitle, siteName, siteOrigin, sitePreviewImage } from "@/lib/seo";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
 const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"], display: "swap" });
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap" });
 
-const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "");
-const appUrl =
-  configuredAppUrl &&
-  !configuredAppUrl.includes("localhost") &&
-  !configuredAppUrl.includes("127.0.0.1")
-    ? configuredAppUrl
-    : "https://quickweds.site";
-const siteName = "QuickWeds";
-const defaultTitle = "Free Wedding Website Builder & RSVP Planner | QuickWeds";
-const defaultDescription =
-  "Create a free wedding website, send digital invitations, manage RSVPs, organize guests, seating, budgets, suppliers, photos, and wedding-day plans in QuickWeds.";
-const landingPreviewImageUrl =
-  "https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/Minimalist%20Neutral%20Multi%20Device%20Computer%20Mockup%20Website%20Launch%20Instagram%20Post.png";
 const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.NEXT_PUBLIC_GA_ID;
 
 export const metadata: Metadata = {
-  metadataBase: new URL(appUrl),
+  metadataBase: new URL(siteOrigin),
   title: {
-    default: defaultTitle,
+    default: homeTitle,
     template: "%s | QuickWeds",
   },
-  description: defaultDescription,
+  description: homeDescription,
   applicationName: siteName,
   manifest: "/manifest.webmanifest",
-  keywords: [
-    "free wedding website builder",
-    "wedding website",
-    "wedding website builder",
-    "online wedding planner",
-    "digital wedding invitation",
-    "digital wedding invitations",
-    "online wedding invitation",
-    "wedding planner",
-    "wedding planning app",
-    "wedding planning website",
-    "wedding RSVP website",
-    "RSVP tracker",
-    "online RSVP",
-    "guest list manager",
-    "seating chart planner",
-    "wedding budget tracker",
-    "wedding vendor planner",
-    "wedding supplier directory",
-    "Philippines wedding suppliers",
-    "wedding day coordinator tools",
-    "QR seat finder",
-    "guest photo sharing",
-    "thank you note builder",
-    "QuickWeds",
-  ],
   authors: [{ name: siteName }],
   creator: siteName,
   publisher: siteName,
-  alternates: {
-    canonical: "/",
-  },
   robots: {
-    index: true,
-    follow: true,
     googleBot: {
-      index: true,
-      follow: true,
       "max-image-preview": "large",
       "max-snippet": -1,
       "max-video-preview": -1,
@@ -94,12 +49,11 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     siteName,
-    title: defaultTitle,
-    description: defaultDescription,
-    url: "/",
+    title: homeTitle,
+    description: homeDescription,
     images: [
       {
-        url: landingPreviewImageUrl,
+        url: sitePreviewImage,
         width: 1080,
         height: 1080,
         alt: "QuickWeds wedding website builder and digital planner",
@@ -108,11 +62,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: defaultTitle,
-    description: defaultDescription,
+    title: homeTitle,
+    description: homeDescription,
     images: [
       {
-        url: landingPreviewImageUrl,
+        url: sitePreviewImage,
         alt: "QuickWeds wedding website builder and digital planner",
       },
     ],

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -14,10 +14,12 @@ import {
   Users,
 } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'Seating Planner Guide | QuickWeds',
-  description: 'Learn how the QuickWeds Seating Planner, guest assignment, QR Seat Finder, guest codes, and venue check-in work.',
-};
+export const metadata = publicPageMetadata(
+  '/user-guide/seating-planner',
+  'Seating Planner Guide',
+  'Learn how the QuickWeds Seating Planner, guest assignment, QR Seat Finder, guest codes, and venue check-in work.',
+  'article',
+);
 
 const setupSteps = [
   'Open the wedding dashboard and choose the wedding website you want to manage.',

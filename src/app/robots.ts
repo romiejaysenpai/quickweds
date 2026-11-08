@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { siteOrigin } from '@/lib/seo';
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -23,6 +24,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://quickweds.site/sitemap.xml',
+    sitemap: `${siteOrigin}/sitemap.xml`,
   };
 }

@@ -1,21 +1,13 @@
-import { Metadata } from 'next';
+import { publicPageMetadata, rsvpWordingPath } from '@/lib/seo';
 import Link from 'next/link';
 import { ArrowLeft, Lightbulb, CheckCircle2, ArrowRight } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: "Wedding Planning Tips That Actually Work (2026 Guide) | QuickWeds",
-  description: "Use these practical wedding planning tips to save money, reduce stress, manage RSVPs, organize guests, and plan your wedding with more confidence.",
-  alternates: {
-    canonical: '/tips',
-  },
-  openGraph: {
-    title: "Wedding Planning Tips That Actually Work (2026 Guide)",
-    description: "Practical wedding planning tips for budgets, guests, RSVPs, suppliers, timelines, and stress-free organization.",
-    url: '/tips',
-    siteName: 'QuickWeds',
-    type: 'article',
-  },
-};
+export const metadata = publicPageMetadata(
+  '/tips',
+  '10 Practical Wedding Planning Tips',
+  'Plan your wedding budget, guest list, RSVPs, and timeline with 10 practical tips from QuickWeds.',
+  'article',
+);
 
 export default function TipsPage() {
   return (
@@ -23,14 +15,14 @@ export default function TipsPage() {
       {/* Header */}
       <div className="bg-white border-b border-border">
         <div className="max-w-3xl mx-auto px-6 py-8">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-text-secondary hover:text-primary mb-6 transition-colors text-sm font-semibold">
-            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+          <Link href="/" className="inline-flex items-center gap-2 text-text-secondary hover:text-primary mb-6 transition-colors text-sm font-semibold">
+            <ArrowLeft className="w-4 h-4" /> Back to QuickWeds
           </Link>
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-primary/10 p-2 rounded-xl text-primary">
               <Lightbulb className="w-6 h-6" />
             </div>
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-primary/80">2026 Guide</p>
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-primary/80">Planning guide</p>
           </div>
           <h1 className="text-4xl sm:text-5xl font-serif font-bold text-foreground leading-[1.1]">
             10 Wedding Planning Tips That Actually Work
@@ -52,6 +44,10 @@ export default function TipsPage() {
           </div>
           <p>
             In this guide, you will learn practical wedding planning tips that actually work, used by real couples to stay organized, save money, and enjoy their big day.
+          </p>
+
+          <p className="mt-6">
+            Already preparing your invitations? Use these <Link href={rsvpWordingPath} className="font-bold text-primary underline">wedding RSVP wording examples</Link> to share your deadline, reserved seats, and reply link.
           </p>
 
           <hr className="my-12 border-border" />

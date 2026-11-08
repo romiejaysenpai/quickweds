@@ -9,7 +9,7 @@ export const revalidate = 300;
 const SUPPLIERS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export const metadata: Metadata = {
-  title: 'Wedding Supplier Directory | QuickWeds',
+  title: 'Wedding Supplier Directory',
   description: 'Browse trusted Philippines wedding suppliers for venues, catering, photography, coordination, styling, and more.',
   alternates: {
     canonical: '/suppliers',

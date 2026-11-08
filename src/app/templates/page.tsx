@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { landingTemplatePreviews } from '@/lib/landing-templates';
 import { templateMatchesFilter, type TemplateFilter } from '@/lib/template-catalog';
+import { rsvpWordingPath } from '@/lib/seo';
 import { useAuth } from '@/context/AuthContext';
 
 const CATALOG_FILTERS: { id: TemplateFilter; label: string }[] = [
@@ -34,7 +35,7 @@ export default function TemplatesPage() {
             <span>Design Catalog</span>
           </div>
           <h1 className="font-serif text-3xl font-black leading-tight text-foreground sm:text-5xl lg:text-6xl">
-            Find the design that feels <span className="text-primary">like your day.</span>
+            Wedding website <span className="text-primary">templates</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base text-text-secondary sm:text-lg">
             Start with a polished layout, then make it entirely your own with your story, photos, schedule, and RSVP details. Browse our collection of {landingTemplatePreviews.length} handcrafted designs.
@@ -55,6 +56,7 @@ export default function TemplatesPage() {
                 <button
                   key={filter.id}
                   type="button"
+                  aria-pressed={isActive}
                   onClick={() => setSelectedFilter(filter.id)}
                   className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition duration-200 ${
                     isActive
@@ -117,6 +119,10 @@ export default function TemplatesPage() {
             Create your wedding website
             <ArrowRight className="h-5 w-5" />
           </Link>
+          <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm font-semibold">
+            <Link href="/wedding-website-builder" className="text-primary underline">Explore the wedding website builder</Link>
+            <Link href={rsvpWordingPath} className="text-primary underline">Wedding RSVP wording examples</Link>
+          </div>
         </div>
       </main>
     </div>

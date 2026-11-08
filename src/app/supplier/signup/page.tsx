@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'List Your Wedding Business | QuickWeds',
+  title: 'List Your Wedding Business',
   description: 'Create a free wedding supplier profile in the QuickWeds Philippines supplier directory.',
   alternates: {
     canonical: '/supplier/signup',

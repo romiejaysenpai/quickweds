@@ -23,6 +23,20 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      ...[
+        '/seat/:token',
+        '/entourage/respond/:token',
+        '/builder',
+        '/forgot-password',
+        '/reset-password',
+        '/planner',
+        '/profile',
+        '/supplier/dashboard',
+        '/reviews',
+      ].map((source) => ({
+        source,
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      })),
       {
         source: '/:path*.(png|jpg|jpeg|webp|avif|gif|svg|ico|woff|woff2)',
         headers: [
@@ -42,7 +56,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/templates/:path*',
+        source: '/templates/:path+',
         headers: [
           {
             key: 'Cache-Control',
