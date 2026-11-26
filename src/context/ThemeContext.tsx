@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'light';
 
 interface ThemeContextType {
   theme: Theme;
@@ -10,86 +10,35 @@ interface ThemeContextType {
   setTheme: (theme: Theme) => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-const THEME_STORAGE_KEY = 'theme';
-const THEME_CHANGE_EVENT = 'quickweds-theme-change';
+const noop = () => {};
 
-function getServerThemeSnapshot(): Theme {
-  return 'light';
-}
+const LIGHT_THEME_CONTEXT: ThemeContextType = {
+  theme: 'light',
+  toggleTheme: noop,
+  setTheme: noop,
+};
 
-function getStoredTheme(): Theme {
-  if (typeof window === 'undefined') return 'light';
-
-  try {
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
-  } catch {
-    return 'light';
-  }
-
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-function subscribeToThemeChanges(onStoreChange: () => void) {
-  if (typeof window === 'undefined') return () => {};
-
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-  window.addEventListener('storage', onStoreChange);
-  window.addEventListener(THEME_CHANGE_EVENT, onStoreChange);
-  mediaQuery.addEventListener('change', onStoreChange);
-
-  return () => {
-    window.removeEventListener('storage', onStoreChange);
-    window.removeEventListener(THEME_CHANGE_EVENT, onStoreChange);
-    mediaQuery.removeEventListener('change', onStoreChange);
-  };
-}
-
-function applyTheme(theme: Theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-}
+const ThemeContext = createContext<ThemeContextType>(LIGHT_THEME_CONTEXT);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const theme = useSyncExternalStore(subscribeToThemeChanges, getStoredTheme, getServerThemeSnapshot);
-
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
-
-  const setTheme = useCallback((newTheme: Theme) => {
-    localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-    applyTheme(newTheme);
-    window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
+    document.documentElement.classList.remove('dark');
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.style.colorScheme = 'light';
+    try {
+      localStorage.removeItem('theme');
+    } catch {
+      // Ignore storage access errors in restricted browsing contexts.
+    }
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-  }, [setTheme, theme]);
-
-  const value = useMemo(
-    () => ({ theme, toggleTheme, setTheme }),
-    [theme, toggleTheme, setTheme],
-  );
-
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext.Provider value={LIGHT_THEME_CONTEXT}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  return useContext(ThemeContext);
 }

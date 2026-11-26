@@ -1,41 +1,79 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import type { Wedding, WeddingPartyMember } from '@/types/wedding';
+import { useSectionActions } from '@/context/SectionContext';
 import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
 import { motion } from 'framer-motion';
+import SafeWeddingImage from './SafeWeddingImage';
+import { SectionTemplateElement } from './SectionTemplateElement';
 
 interface WeddingPartySectionProps {
     members: WeddingPartyMember[];
     wedding: Wedding;
 }
 
+function getMemberInitials(name: string) {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '♥';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
 export default function WeddingPartySection({ members, wedding }: WeddingPartySectionProps) {
+    const { registerSection, unregisterSection } = useSectionActions();
     const visibleMembers = (members || []).filter((member) => member?.name?.trim());
-    if (!wedding || wedding.include_entourage_section === false || visibleMembers.length === 0) return null;
+    const shouldRender = Boolean(wedding && wedding.include_entourage_section !== false && visibleMembers.length > 0);
+
+    useEffect(() => {
+        if (shouldRender) registerSection('entourage', 'Wedding Party');
+        return () => unregisterSection('entourage');
+    }, [shouldRender, registerSection, unregisterSection]);
+
+    if (!shouldRender) return null;
 
     const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || '#D16C78', false, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const motifColor = wedding.motif_color || '#D16C78';
     const invitationStyle = getEntourageInvitationStyle(visual, motifColor, wedding.template || 'classic');
-    const portraitLayout = (visual.isOrganic || visual.mood === 'romantic' || visual.mood === 'cinematic') && visibleMembers.some(member => member.photo);
-    const roleGroups = Array.from(new Set(visibleMembers.map(member => member.role || 'Wedding party')));
+    const hasPhotos = visibleMembers.some((member) => Boolean(member.photo));
+    const roleGroups = Array.from(new Set(visibleMembers.map((member) => member.role || 'Wedding Party')));
 
-    if (portraitLayout) {
+    if (hasPhotos) {
         return (
-            <section data-wedding-section="entourage" id="entourage" className={`relative px-5 py-16 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
-                <div className="mx-auto max-w-5xl">
-                    <h2 className={`mb-12 text-center text-4xl md:text-5xl ${titleStyle.className}`} style={titleStyle.style}>Our Wedding Party</h2>
+            <section data-wedding-section="entourage" id="entourage" className={`relative overflow-x-clip px-5 py-16 md:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
+                <SectionTemplateElement wedding={wedding} isDark={visual.isDark} placement="corner-top-right" />
+                <div className="relative z-10 mx-auto max-w-5xl">
+                    <div className="mb-12 text-center">
+                        <div className="mb-4 flex items-center justify-center">
+                            <span data-wedding-badge="true" className={visual.badgeStyleClass || `text-[11px] font-medium uppercase ${visual.eyebrowClass}`}>
+                                The Wedding Party
+                            </span>
+                        </div>
+                        <h2 className={`text-4xl md:text-5xl ${titleStyle.className}`} style={titleStyle.style}>Our Entourage</h2>
+                        <SectionTemplateElement wedding={wedding} isDark={visual.isDark} placement="divider" className="mt-6" />
+                    </div>
                     <div className="space-y-12">
-                        {roleGroups.map(role => (
+                        {roleGroups.map((role) => (
                             <div key={role}>
-                                <h3 className={`mb-6 text-center text-sm uppercase tracking-[0.16em] ${visual.bodyClass}`}>{role}</h3>
+                                <h3 className={`mb-7 text-center text-xs font-medium uppercase tracking-[0.26em] text-primary`}>{role}</h3>
                                 <div className="flex flex-wrap justify-center gap-x-8 gap-y-10">
-                                    {visibleMembers.filter(member => (member.role || 'Wedding party') === role).map((member, index) => (
-                                        <div data-wedding-card="true" key={member.id || `${member.name}-${index}`} className="w-[min(100%,15rem)] text-center">
-                                            {member.photo && <img src={member.photo} alt={member.name} loading="lazy" decoding="async" className={`mb-5 aspect-[4/5] w-full object-cover ${visual.isOrganic ? 'rounded-t-[7rem]' : 'rounded-sm'}`} />}
-                                            <p className={`font-serif text-2xl ${visual.bodyClass}`}>{member.name}</p>
-                                            {member.bio && <p className={`mt-2 text-base leading-relaxed ${visual.bodyClass}`}>{member.bio}</p>}
+                                    {visibleMembers.filter((member) => (member.role || 'Wedding Party') === role).map((member, index) => (
+                                        <div data-wedding-card="true" key={member.id || `${member.name}-${index}`} className={`w-[min(100%,15rem)] overflow-hidden p-4 text-center ${visual.cardClass}`}>
+                                            {member.photo && (
+                                                <SafeWeddingImage
+                                                    src={member.photo}
+                                                    alt={member.name}
+                                                    fallbackText={getMemberInitials(member.name)}
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    className={`mb-4 aspect-[4/5] w-full object-cover object-[50%_20%] ${
+                                                        visual.isSharp ? 'rounded-none' : visual.isOrganic ? 'rounded-t-[6rem] rounded-b-lg' : 'rounded-xl'
+                                                    }`}
+                                                />
+                                            )}
+                                            <p className={`font-serif text-xl sm:text-2xl ${visual.isDark ? 'text-white' : 'text-[#352C2C]'}`}>{member.name}</p>
+                                            {member.bio && <p className={`mt-2 text-sm leading-relaxed ${visual.bodyClass}`}>{member.bio}</p>}
                                         </div>
                                     ))}
                                 </div>
@@ -52,8 +90,8 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
             <div className={`pointer-events-none absolute inset-0 overflow-hidden ${invitationStyle.overlayClass}`}>
                 <div className={invitationStyle.cornerTopClass} style={{ borderColor: `${motifColor}55` }} />
                 <div className={invitationStyle.cornerBottomClass} style={{ borderColor: `${motifColor}55` }} />
-                <div className={invitationStyle.ornamentOneClass} style={{ color: motifColor }}>✦</div>
-                <div className={invitationStyle.ornamentTwoClass} style={{ color: motifColor }}>{invitationStyle.ornamentGlyph}</div>
+                <SectionTemplateElement wedding={wedding} isDark={visual.isDark} placement="corner-top-right" />
+                <SectionTemplateElement wedding={wedding} isDark={visual.isDark} placement="corner-bottom-left" />
             </div>
 
             <div className="relative mx-auto max-w-5xl">
@@ -64,34 +102,52 @@ export default function WeddingPartySection({ members, wedding }: WeddingPartySe
                     <div className="relative mx-auto mb-11 max-w-3xl">
                         <div className="mb-5 flex items-center justify-center gap-4">
                             <span className="h-px w-10 opacity-70" style={{ backgroundColor: motifColor }} />
-                            <span data-wedding-badge="true" className={visual.badgeStyleClass || `text-xs font-black uppercase tracking-[0.34em] ${visual.eyebrowClass}`}>
-                                {visual.badgePrefix ? `${visual.badgePrefix}ENTOURAGE` : 'The Wedding Party'}
+                            <span data-wedding-badge="true" className={visual.badgeStyleClass || `text-[11px] font-medium uppercase tracking-[0.28em] ${visual.eyebrowClass}`}>
+                                {visual.badgePrefix ? `${visual.badgePrefix}Entourage` : 'The Wedding Party'}
                             </span>
                             <span className="h-px w-10 opacity-70" style={{ backgroundColor: motifColor }} />
                         </div>
                         <h2 className={`text-4xl leading-tight md:text-6xl ${titleStyle.className}`} style={titleStyle.style}>Our Entourage</h2>
                         <p className={`mx-auto mt-5 max-w-xl text-sm leading-7 md:text-base ${invitationStyle.introClass}`}>
-                            With grateful hearts, we honor the family and friends standing with us on this day.
+                            With grateful hearts, we honor the family and friends standing beside us on this day.
                         </p>
-                        <div className="mx-auto mt-7 flex max-w-xs items-center justify-center gap-3">
-                            <span className="h-px flex-1 opacity-55" style={{ backgroundColor: motifColor }} />
-                            <span className={invitationStyle.centerMarkClass} style={{ color: motifColor }}>
-                                {invitationStyle.centerGlyph}
-                            </span>
-                            <span className="h-px flex-1 opacity-55" style={{ backgroundColor: motifColor }} />
-                        </div>
+                        <SectionTemplateElement wedding={wedding} isDark={visual.isDark} motifColor={motifColor} placement="divider" className="mt-7" />
                     </div>
 
-                    <div className={`relative mx-auto grid max-w-4xl gap-x-12 text-left md:grid-cols-2 ${invitationStyle.listFrameClass}`}>
-                        {visibleMembers.map((member, index) => (
-                            <EntourageLine key={member.id || `${member.name}-${index}`} member={member} index={index} visual={visual} style={invitationStyle} motifColor={motifColor} />
-                        ))}
+                    <div className={`relative mx-auto max-w-4xl space-y-10 ${invitationStyle.listFrameClass}`}>
+                        {roleGroups.map((role) => {
+                            const groupMembers = visibleMembers.filter((m) => (m.role || 'Wedding Party') === role);
+                            return (
+                                <div key={role} className="space-y-4">
+                                    <h3 className={`text-center text-xs font-medium uppercase tracking-[0.26em] ${invitationStyle.roleClass}`}>
+                                        {role}
+                                    </h3>
+                                    <div className={`grid gap-x-10 gap-y-3 ${groupMembers.length > 1 ? 'sm:grid-cols-2' : 'grid-cols-1'}`}>
+                                        {groupMembers.map((member, idx) => (
+                                            <motion.div
+                                                key={member.id || `${member.name}-${idx}`}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                whileInView={{ opacity: 1, y: 0 }}
+                                                viewport={{ once: true }}
+                                                transition={{ delay: Math.min(idx * 0.03, 0.24) }}
+                                                className={`border-b py-3 text-center last:border-b-0 ${invitationStyle.dividerClass}`}
+                                            >
+                                                <p className={`font-serif text-xl sm:text-2xl ${invitationStyle.nameClass}`}>{member.name}</p>
+                                                {member.bio && (
+                                                    <p className={`mt-1 font-serif text-sm italic ${invitationStyle.bioClass}`}>{member.bio}</p>
+                                                )}
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <div className={`mx-auto mt-12 max-w-2xl text-center ${invitationStyle.footerClass}`}>
-                        <span className="inline-block h-px w-16 align-middle opacity-60" style={{ backgroundColor: motifColor }} />
-                        <span className="mx-4 align-middle text-xs font-black uppercase tracking-[0.28em]">Thank you for being part of our story</span>
-                        <span className="inline-block h-px w-16 align-middle opacity-60" style={{ backgroundColor: motifColor }} />
+                        <span className="inline-block h-px w-12 align-middle opacity-50" style={{ backgroundColor: motifColor }} />
+                        <span className="mx-4 align-middle text-[11px] font-medium uppercase tracking-[0.26em]">Thank you for being part of our story</span>
+                        <span className="inline-block h-px w-12 align-middle opacity-50" style={{ backgroundColor: motifColor }} />
                     </div>
                 </div>
             </div>
@@ -273,54 +329,4 @@ function getEntourageInvitationStyle(visual: ReturnType<typeof getTemplateVisual
         cornerBottomClass: `${baseCorner} bottom-6 right-6 rounded-br-[1.5rem] border-b border-r`,
         ruleGradient: `linear-gradient(90deg, transparent, ${motifColor}66, transparent)`,
     };
-}
-
-function EntourageLine({
-    member,
-    index,
-    visual,
-    style,
-    motifColor,
-}: {
-    member: WeddingPartyMember;
-    index: number;
-    visual: ReturnType<typeof getTemplateVisualProfile>;
-    style: EntourageInvitationStyle;
-    motifColor: string;
-}) {
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ delay: Math.min(index * 0.04, 0.36) }}
-            className={`group border-b last:border-b-0 ${style.dividerClass} ${style.lineClass}`}
-        >
-            <div className="grid grid-cols-[minmax(0,0.8fr)_auto_minmax(0,1fr)] items-baseline gap-3">
-                <p className={`min-w-0 break-words text-xs font-black uppercase leading-5 tracking-[0.18em] sm:text-xs ${style.roleClass}`}>
-                    {member.role || 'Entourage'}
-                </p>
-                <span className="h-px min-w-6 opacity-40 transition-all duration-300 group-hover:min-w-10" style={{ backgroundColor: motifColor }} />
-                <h3 className={`min-w-0 break-words text-right font-serif text-xl leading-snug sm:text-2xl ${style.nameClass}`}>
-                    {member.name}
-                </h3>
-            </div>
-            {member.bio && (
-                <p className={`mt-2 text-right font-serif text-sm italic leading-6 ${style.bioClass}`}>
-                    {member.bio}
-                </p>
-            )}
-            {member.photo && (
-                <div className="mt-3 flex justify-end">
-                    <img
-                        src={member.photo}
-                        alt={member.name}
-                        loading="lazy"
-                        decoding="async"
-                        className={`h-14 w-14 object-cover ${visual.isSharp ? 'rounded-none' : 'rounded-full'} border border-current/15 opacity-90`}
-                    />
-                </div>
-            )}
-        </motion.div>
-    );
 }

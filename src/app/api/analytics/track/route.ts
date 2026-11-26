@@ -1,12 +1,13 @@
+import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getRequestUser } from '@/lib/api-auth';
 import { createRateLimitMiddleware, getClientIP, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
 import { z } from 'zod';
 
-// Validation schema for analytics events
+// Validation schema for analytics events (supports both 8-char and 36-char UUID wedding IDs)
 const analyticsEventSchema = z.object({
-    weddingId: z.string().min(4).max(32),
+    weddingId: z.string().min(4).max(64),
     eventType: z.enum(['visit', 'qr_scan', 'rsvp_submitted', 'share_copy', 'share_whatsapp', 'share_email', 'share_sms', 'gallery_view', 'video_play']),
     source: z.string().max(50).optional(),
     metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
@@ -74,7 +75,9 @@ export async function POST(req: NextRequest) {
             wedding_id: sanitizedWeddingId,
             event_type: eventType,
             source: source ? sanitizeInput(source, { maxLength: 50 }) : 'direct',
-            session_id: sessionId ? sanitizeInput(sessionId, { maxLength: 100 }) : `ip-${Buffer.from(clientIP).toString('base64').slice(0, 16)}`,
+            session_id: sessionId
+                ? sanitizeInput(sessionId, { maxLength: 100 })
+                : `anon-${createHash('sha256').update(`${sanitizedWeddingId}:${clientIP}`).digest('hex').slice(0, 16)}`,
             referrer: sanitizedReferrer,
             metadata: sanitizedMetadata,
         });

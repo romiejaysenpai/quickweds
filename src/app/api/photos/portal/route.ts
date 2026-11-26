@@ -83,13 +83,20 @@ export async function PATCH(req: NextRequest) {
     try {
         const context = await getContext(req, weddingId);
         if ('response' in context) return context.response;
-        if (!context.hasPro) {
+
+        const existingSettings = await getPhotoPortalSettings(context.db, weddingId);
+        const requestedDisposable = typeof body.settings?.disposable_camera_enabled === 'boolean'
+            ? body.settings.disposable_camera_enabled
+            : existingSettings.disposable_camera_enabled;
+
+        if (requestedDisposable && !context.hasPro) {
             return NextResponse.json({ error: 'Planner Pro is required to enable Disposable Camera Mode.' }, { status: 403 });
         }
 
         const settings = normalizePhotoPortalSettings({
-            ...DEFAULT_PHOTO_PORTAL_SETTINGS,
+            ...existingSettings,
             ...body.settings,
+            disposable_camera_enabled: context.hasPro ? requestedDisposable : false,
         });
 
         const { data, error } = await context.db

@@ -576,8 +576,9 @@ export function getThankYouNoteHtml(input: ThankYouEmailInput) {
     const safeCoupleSignature = esc(coupleSignature);
     const safeEyebrow = esc(template.eyebrow);
     const safeAccent = style.accentColor;
-    const safeFont = style.fontFamily;
-    const accentTextColor = getReadableTextColor(safeAccent);
+    const safeFont = style.fontFamily || FONT_HEADING;
+    const headerBg = template.id === 'modern-minimal' ? C.card : safeAccent;
+    const headerTextColor = template.id === 'modern-minimal' ? C.text : getReadableTextColor(headerBg);
     const messageHtml = textToEmailParagraphs(message, C.text);
     const heroUrl = IMG.heroThankYou;
 
@@ -586,21 +587,20 @@ export function getThankYouNoteHtml(input: ThankYouEmailInput) {
         : `<tr><td style="padding:0;line-height:0;font-size:0;"><img src="${heroUrl}" alt="Thank you" width="640" style="display:block;width:100%;max-width:640px;height:auto;border:0;" /></td></tr>`;
 
     const floralRule = template.id === 'romantic-floral'
-        ? `<p style="margin:16px 0 0;color:${safeAccent};font-size:18px;letter-spacing:6px;">&#10045; &#10045; &#10045;</p>`
+        ? `<p style="margin:16px 0 0;color:${headerTextColor};font-size:18px;letter-spacing:6px;">&#10045; &#10045; &#10045;</p>`
         : '';
 
     const cardBg = template.id === 'modern-minimal' ? C.card : template.id === 'simple-warm' ? '#FBFFF9' : C.bg;
     const borderSt = template.id === 'modern-minimal' ? `1px solid ${C.border}` : `1px solid ${safeAccent}33`;
-    const headerBg = template.id === 'modern-minimal' ? C.card : safeAccent;
 
     const content = `<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:640px;margin:0 auto;background-color:${C.card};overflow:hidden;">
         ${logoBar(110)}
         ${photoHtml}
         <tr>
-            <td align="center" style="padding:44px 40px 32px;background-color:${headerBg};color:${accentTextColor};">
-                <p style="margin:0 0 14px;font-size:10px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:${accentTextColor};font-family:${FONT_BODY};">${safeEyebrow}</p>
-                <h1 style="margin:0;font-size:36px;line-height:1.15;font-weight:400;color:${accentTextColor};font-family:${FONT_HEADING};">Thank You</h1>
-                <p style="margin:14px 0 0;font-size:18px;color:${accentTextColor};opacity:0.9;font-family:${FONT_HEADING};">${safeBrideName} & ${safeGroomName}</p>
+            <td align="center" style="padding:44px 40px 32px;background-color:${headerBg};color:${headerTextColor};">
+                <p style="margin:0 0 14px;font-size:10px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:${headerTextColor};font-family:${FONT_BODY};">${safeEyebrow}</p>
+                <h1 style="margin:0;font-size:36px;line-height:1.15;font-weight:400;color:${headerTextColor};font-family:${safeFont};">Thank You</h1>
+                <p style="margin:14px 0 0;font-size:18px;color:${headerTextColor};opacity:0.9;font-family:${safeFont};">${safeBrideName} & ${safeGroomName}</p>
                 ${floralRule}
             </td>
         </tr>
@@ -612,12 +612,12 @@ export function getThankYouNoteHtml(input: ThankYouEmailInput) {
                     ${safeWeddingDate ? `<p style="font-size:13px;line-height:1.6;margin:4px 0 24px;color:${C.textMuted};font-family:${FONT_BODY};">A note from our wedding on <strong>${safeWeddingDate}</strong>.</p>` : ''}
                     <p style="margin:28px 0 0;font-size:16px;line-height:1.7;color:${C.text};font-family:${FONT_BODY};">
                         <span style="display:block;color:${C.textSecondary};margin-bottom:4px;font-size:14px;">With love,</span>
-                        <strong style="font-size:22px;color:${safeAccent};font-family:${FONT_HEADING};">${safeCoupleSignature}</strong>
+                        <strong style="font-size:22px;color:${safeAccent};font-family:${safeFont};">${safeCoupleSignature}</strong>
                     </p>
                 `, { bg: cardBg, border: borderSt.replace('1px solid ', ''), padding: '32px' })}
             </td>
         </tr>
-        ${footer(`<p style="margin:0;font-size:12px;color:${C.textMuted};font-family:${FONT_BODY};">Sent with love through <strong style="color:${safeAccent};">QuickWeds</strong></p>`).replace('<tr>', '').replace('</tr>', '')}
+        ${footer(`<p style="margin:0;font-size:12px;color:${C.textMuted};font-family:${FONT_BODY};">Sent with love through <strong style="color:${safeAccent};">QuickWeds</strong></p>`)}
     </table>`;
 
     return emailShell('Thank You', content);
@@ -661,8 +661,8 @@ export function getCollaboratorInviteHtml(input: {
                 ${safeVenueName ? `<p style="margin:4px 0 0;font-size:14px;color:${C.textSecondary};font-family:${FONT_BODY};"><strong>Venue:</strong> ${safeVenueName}</p>` : ''}
             `, { bg: C.bgSoft, border: C.border })}
         </td></tr>
-        ${ctaButton(safeDashboardUrl, 'Open QuickWeds Workspace')}
-        ${ctaButtonSecondary(safeDashboardUrl, 'Sign in to accept invitation')}
+        ${ctaButton(input.dashboardUrl, 'Open QuickWeds Workspace')}
+        ${ctaButtonSecondary(input.dashboardUrl, 'Sign in to accept invitation')}
         ${footer(`<p style="margin:0;font-size:12px;color:${C.textMuted};font-family:${FONT_BODY};">Sent automatically by <strong style="color:${C.primary};">QuickWeds</strong></p>`)}`);
 
     return emailShell('QuickWeds Collaboration Invite', content);
@@ -833,7 +833,7 @@ export function getMarketingNurtureEmail(input: MarketingNurtureEmailInput) {
         </td></tr>
         ${featureHtml}
         ${offerHtml}
-        ${ctaButton(safeCtaUrl, step.cta)}
+        ${ctaButton(ctaUrl, step.cta)}
         ${footer(`
             <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:${C.textMuted};font-family:${FONT_BODY};">You are receiving this because you created a QuickWeds account.</p>
             <p style="margin:0;font-size:12px;line-height:1.6;color:${C.textMuted};font-family:${FONT_BODY};"><a href="${safeUnsubscribeUrl}" style="color:${C.primary};text-decoration:underline;">Unsubscribe from QuickWeds marketing emails</a></p>

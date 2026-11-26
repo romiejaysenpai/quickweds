@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS thank_you_templates (
 
 -- Generated thank-you notes
 CREATE TABLE IF NOT EXISTS thank_you_notes (
-    id UUID DEFAULT uuid GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     wedding_id TEXT REFERENCES weddings(id) ON DELETE CASCADE,
     rsvp_id UUID REFERENCES rsvps(id) ON DELETE SET NULL,
     recipient_name TEXT NOT NULL,

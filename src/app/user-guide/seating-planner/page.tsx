@@ -1,4 +1,10 @@
-import { publicPageMetadata } from '@/lib/seo';
+import {
+  buildArticleJsonLd,
+  buildBreadcrumbJsonLd,
+  buildHowToJsonLd,
+  publicPageMetadata,
+  serializeJsonLd,
+} from '@/lib/seo';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -89,9 +95,34 @@ export default async function SeatingPlannerGuidePage({
 }) {
   const resolvedSearchParams = await searchParams;
   const backHref = getSafeReturnTo(resolvedSearchParams?.returnTo);
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      buildArticleJsonLd({
+        path: '/user-guide/seating-planner',
+        headline: 'Seating Planner & QR Seat Finder Guide',
+        description:
+          'Learn how the QuickWeds Seating Planner, guest assignment, QR Seat Finder, guest codes, and venue check-in work.',
+        datePublished: '2026-10-31',
+        dateModified: '2026-11-26',
+      }),
+      buildHowToJsonLd({
+        name: 'How to set up a wedding seating chart and QR Seat Finder',
+        description:
+          'Arrange reception tables, assign RSVP guests, generate seat lookup codes, and check guests in at your venue.',
+        steps: setupSteps,
+      }),
+      buildBreadcrumbJsonLd([
+        { name: 'QuickWeds', path: '/' },
+        { name: 'User Guide', path: '/user-guide' },
+        { name: 'Seating Planner Guide', path: '/user-guide/seating-planner' },
+      ]),
+    ],
+  };
 
   return (
     <main className="min-h-screen bg-neutral px-4 py-8 text-foreground sm:px-6 sm:py-12">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }} />
       <div className="mx-auto max-w-5xl">
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Link href={backHref} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary sm:w-fit">

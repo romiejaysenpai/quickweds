@@ -109,7 +109,6 @@ export async function POST(req: NextRequest) {
         const resolvedNumGuests = isDeclined ? 0 : (parsed.data.numGuests || 1);
         const resolvedChildrenCount = isDeclined ? 0 : (parsed.data.childrenCount || 0);
 
-        createRsvpAccessToken(weddingId, existingRsvp?.id || 'new', resolvedGuestEmail);
         const insertData: Record<string, unknown> = {
             wedding_id: weddingId,
             ...(!existingRsvp ? {
@@ -133,8 +132,9 @@ export async function POST(req: NextRequest) {
         }
 
         // Explicit values clear stale details when guests decline or remove an answer.
+        // Always preserve dietary/allergy notes for attending guests regardless of meal choice.
         insertData.meal_preference = !isDeclined && mealPreference !== 'No Preference' ? mealPreference || null : null;
-        insertData.dietary_details = !isDeclined && mealPreference === 'Other (see message)' ? dietaryDetails || null : null;
+        insertData.dietary_details = !isDeclined ? dietaryDetails || null : null;
         insertData.message = message || null;
         insertData.plus_one_names = !isDeclined && resolvedNumGuests > 1 ? plusOneNames || null : null;
         insertData.plus_one_name = !isDeclined && resolvedNumGuests > 1 ? getPrimaryPlusOneName(plusOneNames) || null : null;

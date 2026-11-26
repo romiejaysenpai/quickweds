@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+
+export const maxDuration = 60;
 import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { sendEmail } from '@/lib/email';
@@ -175,7 +177,7 @@ export async function POST(req: NextRequest) {
                 emailErrors.push(`${guest.guest_email}: ${result.error || 'Email failed'}`);
             }
 
-            await sleep(275);
+            await sleep(100);
         }
 
         await logPlannerEmailEvent(db, {

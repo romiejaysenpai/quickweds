@@ -3,7 +3,7 @@
 import { useRef, useState, type DragEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { rsvpWordingPath, serializeJsonLd, siteOrigin } from '@/lib/seo';
+import { buildFaqJsonLd, rsvpWordingPath, serializeJsonLd, siteOrigin } from '@/lib/seo';
 import {
   Armchair, ArrowRight, CalendarClock, Check, ChevronDown, CircleDollarSign, HeartHandshake,
   LayoutDashboard, ListTodo, MailCheck, PanelsTopLeft, PieChart, QrCode,
@@ -315,6 +315,7 @@ export default function FeatureLandingPage({ feature }: { feature: FeatureKey })
           { '@type': 'ListItem', position: 2, name: content.shortName, item: url },
         ],
       },
+      buildFaqJsonLd(content.faq),
     ],
   };
 
@@ -325,12 +326,25 @@ export default function FeatureLandingPage({ feature }: { feature: FeatureKey })
       <section aria-label="QuickWeds social proof" className="border-y border-primary/10 bg-white px-4 py-6 sm:px-6"><div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-3 text-center"><p className="text-xs font-black uppercase tracking-[.18em] text-text-secondary">One calm place for every wedding detail</p>{['Websites', 'RSVPs', 'Guests', 'Planning'].map((item) => <span key={item} className="flex items-center gap-1.5 text-sm font-black text-primary"><Sparkles className="h-4 w-4" />{item}</span>)}</div></section>
       <FeatureGrid feature={feature} />
       <section id="demo" className="bg-white px-4 py-20 sm:px-6 sm:py-28"><div className="mx-auto max-w-6xl"><SectionHeading eyebrow={content.demoLabel} title={content.demoTitle} body={content.demoDescription} /><div className="mt-12"><ProductDemo feature={feature} /></div></div></section>
-      {(feature === 'rsvp' || feature === 'website') && (
-        <nav aria-label="Wedding website resources" className="mx-auto flex max-w-7xl flex-wrap gap-x-6 gap-y-3 px-4 py-6 text-sm font-bold text-primary sm:px-6">
-          <Link href="/templates" className="underline">Browse wedding website templates</Link>
+      <nav aria-label="Wedding planning resources" className="mx-auto flex max-w-7xl flex-wrap gap-x-6 gap-y-3 px-4 py-6 text-sm font-bold text-primary sm:px-6">
+        <Link href="/templates" className="underline">Browse wedding website templates</Link>
+        {(feature === 'rsvp' || feature === 'website') && (
           <Link href={rsvpWordingPath} className="underline">Wedding RSVP wording and deadline guide</Link>
-        </nav>
-      )}
+        )}
+        {feature === 'budget' && (
+          <Link href="/tips/philippines-wedding-budget-breakdown" className="underline">Philippines wedding budget breakdown (₱150k to ₱1M)</Link>
+        )}
+        {feature === 'checklist' && (
+          <Link href="/tips/12-month-wedding-checklist-philippines" className="underline">12-month Philippines wedding checklist &amp; requirements</Link>
+        )}
+        {feature === 'seating' && (
+          <Link href="/tips/wedding-seating-chart-guide" className="underline">Wedding reception seating chart &amp; QR seat finder guide</Link>
+        )}
+        {feature === 'website' && (
+          <Link href="/tips/wedding-dress-code-guide-philippines" className="underline">Wedding dress code &amp; attire guide</Link>
+        )}
+        <Link href="/wedding-planner-philippines" className="underline">Philippines Wedding Planner</Link>
+      </nav>
       <ScreenshotGallery feature={feature} />
       <section className="bg-[#fff8f4] px-4 py-20 sm:px-6 sm:py-28"><div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-center"><div><p className="text-xs font-black uppercase tracking-[.2em] text-primary">Built into the full plan</p><h2 className="mt-4 [font-family:var(--font-montserrat)] text-[clamp(2.25rem,4.5vw,3.8rem)] font-black leading-[.98] tracking-[-.05em] text-foreground">One beautiful tool should not live on an island.</h2><p className="mt-5 text-[15px] leading-7 text-text-secondary sm:text-lg sm:leading-8">Your {content.shortName.toLowerCase()} works alongside the details that make a wedding feel seamless—from your first save-the-date to the final thank-you.</p><ul className="mt-7 space-y-3">{content.benefits.map((benefit) => <li key={benefit} className="flex gap-3 text-sm font-bold leading-6 text-foreground"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary text-white"><Check className="h-3.5 w-3.5" /></span>{benefit}</li>)}</ul></div><ProductSnapshot feature={feature} compact /></div></section>
       <section className="bg-neutral px-4 py-20 sm:px-6 sm:py-28"><div className="mx-auto max-w-6xl"><SectionHeading eyebrow="How it works" title={<>A simpler path from <span className="text-primary">idea to “I do.”</span></>} body="Start in a few minutes, then let the details come together at your pace." /><ol className="mt-12 grid gap-5 md:grid-cols-3">{content.steps.map((step, index) => <li key={step.title} className="rounded-[1.75rem] border border-border bg-white p-6"><span className="grid h-10 w-10 place-items-center rounded-full bg-primary text-sm font-black text-white">0{index + 1}</span><h3 className="mt-5 text-xl font-black tracking-[-.035em] text-foreground">{step.title}</h3><p className="mt-3 text-sm font-semibold leading-6 text-text-secondary">{step.body}</p></li>)}</ol></div></section>

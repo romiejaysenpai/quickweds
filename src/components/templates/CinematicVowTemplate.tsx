@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import {
   BioSection,
   CountdownTimer,
@@ -12,40 +11,65 @@ import {
   VideoSection,
   AttireSection,
 } from '../wedding';
-import { SharedNewSections } from './shared';
+import { getSectionTitleStyle } from '@/lib/theme-engine';
+import {
+  formatWeddingDate,
+  resolveTemplateCopy,
+  resolveWeddingMedia,
+  SharedNewSections,
+  TEMPLATE_ELEMENT_ASSETS,
+  TemplateHeroActions,
+  WeddingHeroVisual,
+  WeddingMonogram,
+} from './shared';
 import type { TemplateProps } from '@/types/wedding';
 
 export default function CinematicVowTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+  const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
+  const titleStyle = getSectionTitleStyle(wedding);
   const motifColor = wedding.motif_color || '#C89666'; // Golden Amber Warm Tone
-  const heroImage = wedding.hero_image || wedding.couple_photo || '/logo.png';
-  const weddingYear = wedding.wedding_date
-    ? new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).getFullYear()
-    : new Date().getFullYear();
+  const heroImage = resolveWeddingMedia(wedding, gallery);
+  const copy = resolveTemplateCopy(wedding);
+  const weddingYear = copy.year;
   const formattedDate = wedding.wedding_date
-    ? new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', {
+    ? formatWeddingDate(wedding.wedding_date, {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
         year: 'numeric',
       })
     : '';
+  const hasCustomMonogram = Boolean(
+    wedding.logo_initials || (wedding.logo_shape && wedding.logo_shape !== 'minimal')
+  );
 
   return (
-    <div className="bg-[#12100E] text-[#EDE4DC] font-serif relative pb-28 selection:bg-[#C89666] selection:text-black">
-      {/* 2.39:1 Anamorphic Widescreen Hero Section */}
-      <section className="relative min-h-[92vh] flex flex-col justify-between overflow-hidden border-b border-white/10">
-        {/* Top Cinematic Letterbox Bar */}
-        <div className="relative z-20 w-full px-6 py-4 flex items-center justify-between text-[11px] font-sans uppercase tracking-[0.35em] text-white/60 bg-[#0A0908]/90 backdrop-blur-md border-b border-white/5">
+    <div
+      className="font-serif relative pb-28 selection:bg-[#C89666] selection:text-black"
+      style={{
+        backgroundColor: hasBackgroundChoice ? 'var(--builder-paper)' : '#12100E',
+        color: hasBackgroundChoice ? 'var(--builder-ink)' : '#EDE4DC',
+      }}
+    >
+      {/* Widescreen Hero Section */}
+      <section className="relative min-h-[92vh] flex flex-col justify-between overflow-hidden border-b border-current/10">
+        {/* Top Letterbox Bar */}
+        <div className="relative z-20 w-full px-6 py-4 flex items-center justify-between gap-3 text-[11px] font-sans uppercase tracking-[0.3em] text-white/75 bg-[#0A0908]/90 backdrop-blur-md border-b border-white/5">
           <div className="flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span>Scene {weddingYear}</span>
-            <span>•</span>
-            <span>Take 01</span>
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: motifColor }} />
+            <span>{copy.eyebrow}</span>
+            {weddingYear ? (
+              <>
+                <span>•</span>
+                <span>{weddingYear}</span>
+              </>
+            ) : null}
           </div>
-          <span className="hidden sm:inline-block font-mono tracking-widest text-white/40">
-            2.39:1 ANAMORPHIC WIDESCREEN
-          </span>
-          <span style={{ color: motifColor }}>PRESENTED IN SOUND &amp; VISION</span>
+          {wedding.venue_name && (
+            <span className="hidden sm:inline-block tracking-widest truncate max-w-[260px]" style={{ color: motifColor }}>
+              {wedding.venue_name}
+            </span>
+          )}
         </div>
 
         {/* Hero Visual Frame */}
@@ -56,35 +80,41 @@ export default function CinematicVowTemplate({ wedding, gallery, isExpired }: Te
             transition={{ duration: 1.6, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0 z-0"
           >
-            <Image
+            <WeddingHeroVisual
+              wedding={wedding}
+              gallery={gallery}
               src={heroImage}
-              alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-              priority
-              fill
-              sizes="100vw"
-              className="object-cover brightness-[0.55] contrast-[1.08] saturate-[0.9]"
+              dark
+              ornamentSrc={TEMPLATE_ELEMENT_ASSETS.celestialAstrolabe}
+              className="h-full w-full"
+              imgClassName="brightness-[0.55] contrast-[1.08] saturate-[0.9]"
             />
             {/* Cinematic Gradients */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#12100E] via-black/40 to-[#0A0908]/80 pointer-events-none" />
-            <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/70 pointer-events-none" />
           </motion.div>
 
-          {/* Subtitle-Style Romantic Overlay */}
-          <div className="relative z-10 max-w-5xl mx-auto w-full text-center">
+          {/* Romantic Title Overlay */}
+          <div className="relative z-10 max-w-5xl mx-auto w-full text-center text-white">
+            {hasCustomMonogram && (
+              <div className="mb-5 flex justify-center">
+                <WeddingMonogram wedding={{ ...wedding, logo_color: wedding.logo_color || '#FFFFFF' }} />
+              </div>
+            )}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.9, delay: 0.2 }}
-              className="text-xs sm:text-sm font-sans uppercase tracking-[0.4em] text-white/70 mb-4"
+              className="text-xs sm:text-sm font-sans uppercase tracking-[0.4em] text-white/75 mb-4"
             >
-              A Love Story Directed By Destiny
+              {copy.eyebrow}
             </motion.p>
 
             <motion.h1
               initial={{ opacity: 0, y: 25 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="text-4xl sm:text-6xl lg:text-[clamp(3.5rem,7vw,6.5rem)] font-light leading-[0.95] tracking-tight text-white"
+              className={`text-4xl sm:text-6xl lg:text-[clamp(3.5rem,7vw,6.5rem)] font-serif font-light leading-[0.95] tracking-tight text-white ${titleStyle.className}`}
+              style={titleStyle.style}
             >
               <span className="font-serif block sm:inline">{wedding.bride_name}</span>
               <span className="mx-4 text-[0.6em] italic font-serif" style={{ color: motifColor }}>
@@ -97,23 +127,25 @@ export default function CinematicVowTemplate({ wedding, gallery, isExpired }: Te
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 1, delay: 0.5 }}
-              className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm font-sans tracking-[0.25em] text-white/80"
+              className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm font-sans tracking-[0.25em] text-white/85"
             >
-              <span className="font-semibold uppercase">{formattedDate}</span>
-              <span className="text-white/40">•</span>
-              <span className="font-serif italic text-base sm:text-lg text-[#F0E6DD]">
-                {wedding.venue_name}
-              </span>
+              {formattedDate && <span className="font-semibold uppercase">{formattedDate}</span>}
+              {formattedDate && wedding.venue_name && <span className="text-white/40">•</span>}
+              {wedding.venue_name && (
+                <span className="font-serif italic text-base sm:text-lg text-[#F0E6DD]">
+                  {wedding.venue_name}
+                </span>
+              )}
             </motion.div>
 
             {wedding.venue_address && (
-              <p className="mt-1 text-xs text-white/50 font-sans tracking-wider max-w-md mx-auto">
+              <p className="mt-1 text-xs text-white/60 font-sans tracking-wider max-w-md mx-auto">
                 {wedding.venue_address}
               </p>
             )}
 
-            <p className="mt-6 text-sm sm:text-base italic text-white/80 max-w-xl mx-auto font-serif leading-relaxed">
-              &ldquo;{wedding.quote || wedding.story || 'Every great love story feels like a masterpiece in motion.'}&rdquo;
+            <p className="mt-6 text-sm sm:text-base italic text-white/85 max-w-xl mx-auto font-serif leading-relaxed">
+              {copy.subtitle}
             </p>
 
             <motion.div
@@ -123,26 +155,24 @@ export default function CinematicVowTemplate({ wedding, gallery, isExpired }: Te
               className="mt-8 flex flex-wrap justify-center items-center gap-4"
             >
               <a
-                href="#rsvp"
-                aria-label="RSVP to the premiere"
+                href={copy.ctaHref}
+                data-wedding-control="primary"
+                aria-label={copy.ctaLabel}
                 className="inline-flex min-h-[48px] items-center justify-center px-8 py-3 rounded-full text-xs font-sans font-bold uppercase tracking-[0.25em] text-black shadow-xl transition-all hover:scale-105"
                 style={{ backgroundColor: motifColor }}
               >
-                RSVP For The Premiere
+                {copy.ctaLabel}
               </a>
               <a
-                href="#details"
-                className="inline-flex min-h-[48px] items-center justify-center px-7 py-3 rounded-full text-xs font-sans font-semibold uppercase tracking-[0.2em] border border-white/20 text-white transition-colors hover:border-white hover:bg-white/10"
+                href={copy.detailsHref}
+                data-wedding-control="secondary"
+                className="inline-flex min-h-[48px] items-center justify-center px-7 py-3 rounded-full text-xs font-sans font-semibold uppercase tracking-[0.2em] border border-white/25 text-white transition-colors hover:border-white hover:bg-white/10"
               >
-                Program Schedule
+                {copy.detailsLabel}
               </a>
             </motion.div>
+            <TemplateHeroActions wedding={wedding} variant="noir" motifColor={motifColor} className="justify-center mt-5 text-white" />
           </div>
-        </div>
-
-        {/* Bottom Cinematic Letterbox Bar */}
-        <div className="relative z-20 w-full px-6 py-3 flex items-center justify-center text-[10px] font-sans uppercase tracking-[0.4em] text-white/40 bg-[#0A0908]/90 backdrop-blur-md border-t border-white/5">
-          <span>ORIGINAL CELEBRATION • PRODUCTION NO. {weddingYear}</span>
         </div>
       </section>
 

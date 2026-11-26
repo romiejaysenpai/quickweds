@@ -41,7 +41,7 @@ export function FloatingVideoGuide() {
           href="https://www.youtube.com/watch?v=example-quickweds-guide"
           target="_blank"
           rel="noopener noreferrer"
-          className="relative flex items-center gap-3 bg-white dark:bg-neutral px-4 py-3 rounded-xl shadow-xl border border-border hover:border-primary transition-all"
+          className="relative flex items-center gap-3 bg-white px-4 py-3 rounded-xl shadow-xl border border-border hover:border-primary transition-all"
         >
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
             <Play className="w-5 h-5 text-primary" />

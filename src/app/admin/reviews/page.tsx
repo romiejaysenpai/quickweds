@@ -13,20 +13,39 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import type { AppReview } from '@/types/review';
-import { adminGetAllReviews, adminUpdateReview, adminDeleteReview } from '@/app/actions/reviews';
+import { getSafeSupabaseSession } from '@/lib/supabase-auth';
+
+async function getAdminAuthHeaders(): Promise<Record<string, string>> {
+  const { session } = await getSafeSupabaseSession();
+  if (!session?.access_token) {
+    throw new Error('Your admin session has expired. Please sign in again.');
+  }
+  return {
+    Authorization: `Bearer ${session.access_token}`,
+    'Content-Type': 'application/json',
+  };
+}
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<AppReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const loadReviews = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
-      const data = await adminGetAllReviews();
-      setReviews(data);
+      const headers = await getAdminAuthHeaders();
+      const response = await fetch('/api/admin/reviews', { headers });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load reviews.');
+      }
+      setReviews(Array.isArray(data.reviews) ? data.reviews : []);
     } catch (err) {
       console.error('Failed to load reviews for admin:', err);
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to load reviews.');
     } finally {
       setLoading(false);
     }
@@ -34,39 +53,78 @@ export default function AdminReviewsPage() {
 
   useEffect(() => {
     document.title = 'Reviews Moderation | QuickWeds Admin';
-    loadReviews();
+    void loadReviews();
   }, []);
 
   const handleStatusChange = async (id: string, status: 'approved' | 'pending' | 'rejected') => {
     setUpdatingId(id);
-    const res = await adminUpdateReview(id, { status });
-    if (res.success) {
+    setErrorMsg(null);
+    try {
+      const headers = await getAdminAuthHeaders();
+      const response = await fetch('/api/admin/reviews', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ id, status }),
+      });
+      const res = await response.json().catch(() => ({}));
+      if (!response.ok || !res.success) {
+        throw new Error(res.error || 'Failed to update review status.');
+      }
       setReviews((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status } : r))
       );
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to update review.');
+    } finally {
+      setUpdatingId(null);
     }
-    setUpdatingId(null);
   };
 
   const handleToggleFeatured = async (id: string, currentFeatured: boolean) => {
     setUpdatingId(id);
-    const res = await adminUpdateReview(id, { is_featured: !currentFeatured });
-    if (res.success) {
+    setErrorMsg(null);
+    try {
+      const headers = await getAdminAuthHeaders();
+      const response = await fetch('/api/admin/reviews', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ id, is_featured: !currentFeatured }),
+      });
+      const res = await response.json().catch(() => ({}));
+      if (!response.ok || !res.success) {
+        throw new Error(res.error || 'Failed to update featured flag.');
+      }
       setReviews((prev) =>
         prev.map((r) => (r.id === id ? { ...r, is_featured: !currentFeatured } : r))
       );
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to update review.');
+    } finally {
+      setUpdatingId(null);
     }
-    setUpdatingId(null);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to permanently delete this review?')) return;
     setUpdatingId(id);
-    const res = await adminDeleteReview(id);
-    if (res.success) {
+    setErrorMsg(null);
+    try {
+      const headers = await getAdminAuthHeaders();
+      const response = await fetch('/api/admin/reviews', {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ id }),
+      });
+      const res = await response.json().catch(() => ({}));
+      if (!response.ok || !res.success) {
+        throw new Error(res.error || 'Failed to delete review.');
+      }
       setReviews((prev) => prev.filter((r) => r.id !== id));
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to delete review.');
+    } finally {
+      setUpdatingId(null);
     }
-    setUpdatingId(null);
   };
 
   return (
@@ -111,6 +169,11 @@ export default function AdminReviewsPage() {
         </div>
 
         {/* Content */}
+        {errorMsg && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
+            {errorMsg}
+          </div>
+        )}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -1,12 +1,24 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Calendar, MapPin } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUpRight, Calendar, Check, Copy, MapPin } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
 import { derivePalette, getSectionTitleStyle, getTypography, getTemplateVisualProfile, type TemplateVisualProfile } from '@/lib/theme-engine';
-import { useSectionContext } from '@/context/SectionContext';
-import { useEffect } from 'react';
+import { useSectionActions } from '@/context/SectionContext';
+import { copyToClipboard } from '@/lib/client-clipboard';
+import { useCallback, useEffect, useState } from 'react';
+import { Lightbox } from './GallerySection';
+import SafeWeddingImage from './SafeWeddingImage';
+
+function formatDetailDate(dateValue?: string | null) {
+    if (!dateValue) return 'Setting Date';
+    const trimmed = dateValue.trim();
+    const normalized = /^\d{4}-\d{2}-\d{2}/.test(trimmed) ? `${trimmed.slice(0, 10)}T12:00:00` : trimmed;
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) return trimmed;
+    return parsed.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
 
 interface DetailsSectionProps {
     wedding: Wedding;
@@ -30,27 +42,27 @@ function parseInvitationImages(value: Wedding['invitation_image']): string[] {
     return [value];
 }
 
-function DetailCard({ 
-    icon: Icon, 
-    title, 
-    value, 
-    subtitle, 
-    link, 
-    children, 
-    delay = 0, 
-    isSharp, 
-    isDark, 
-    isVintage, 
-    className = "",
-    palette,
+function DetailCard({
+    icon: Icon,
+    title,
+    value,
+    subtitle,
+    link,
+    copyText,
+    children,
+    delay = 0,
+    isSharp,
+    isDark,
+    className = '',
     typography,
-    visual
+    visual,
 }: {
     icon: LucideIcon;
     title: string;
     value: string;
     subtitle?: string;
     link?: string;
+    copyText?: string;
     children?: React.ReactNode;
     delay?: number;
     isSharp?: boolean;
@@ -61,62 +73,112 @@ function DetailCard({
     typography: any;
     visual: TemplateVisualProfile;
 }) {
-    // Dynamic styling based on template category
+    const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        if (!copied) return;
+        const timer = window.setTimeout(() => setCopied(false), 2000);
+        return () => window.clearTimeout(timer);
+    }, [copied]);
+
+    const handleCopy = async () => {
+        if (!copyText) return;
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(copyText);
+            } else {
+                await copyToClipboard(copyText);
+            }
+            setCopied(true);
+        } catch {
+            try {
+                await copyToClipboard(copyText);
+                setCopied(true);
+            } catch {
+                setCopied(false);
+            }
+        }
+    };
+
     const cardClass = visual.cardClass;
-        
-    const textColorHeading = isDark ? "text-white/72" : "text-[#4A4444]/68";
-    const textColorValue = isDark ? "text-white" : "text-[#4A4444]";
-    const textColorSub = isDark ? "text-white/74" : "text-[#4A4444]/68";
+    const textColorHeading = isDark ? 'text-white/70' : 'text-[#4A4444]/68';
+    const textColorValue = isDark ? 'text-white' : 'text-[#352C2C]';
+    const textColorSub = isDark ? 'text-white/72' : 'text-[#4A4444]/70';
 
     return (
-        <motion.div data-wedding-card="true"
-            initial={{ opacity: 0, y: 40 }}
+        <motion.div
+            data-wedding-card="true"
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
-            transition={{ duration: 1, delay, ease: [0.16, 1, 0.3, 1] }}
-            className={`flex flex-col items-center text-center p-7 md:p-10 transition-all duration-700 h-full relative overflow-hidden group ${cardClass} hover:-translate-y-1 ${className}`}
+            transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
+            className={`relative flex h-full flex-col items-center overflow-hidden p-7 text-center transition-all duration-500 md:p-10 ${cardClass} ${className}`}
         >
-            {/* Template-specific background decorations */}
-            {!isSharp && !isVintage && (
-                <div 
-                    className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-125 transition-transform duration-700" 
-                    style={{ backgroundColor: `${palette.primary}11` }}
-                />
-            )}
-            
-            <div className="relative z-10 w-full flex flex-col items-center h-full justify-center">
-                {/* Icon Container with category-specific treatment */}
-                <div className="mb-5 relative">
+            <div className="relative z-10 flex h-full w-full flex-col items-center justify-center">
+                <div className="mb-4">
                     {children || (
                         <div className="flex h-9 w-9 items-center justify-center text-primary">
-                            <Icon className="h-5 w-5 stroke-[1.5]" aria-hidden="true" />
+                            <Icon className="h-5 w-5 stroke-[1.4]" aria-hidden="true" />
                         </div>
                     )}
                 </div>
 
-                <h3 className={`text-xs font-black mb-4 uppercase tracking-[0.3em] ${textColorHeading}`}>{title}</h3>
-                
-                <div className="flex-1 flex flex-col items-center w-full justify-center">
-                    <p className={`text-2xl md:text-3xl ${typography.heading} mb-3 leading-tight tracking-tight break-words w-full ${textColorValue}`}>
+                <h3 className={`mb-3 text-[11px] font-medium uppercase tracking-[0.28em] ${textColorHeading}`}>{title}</h3>
+
+                <div className="flex w-full flex-1 flex-col items-center justify-center">
+                    <p className={`mb-2.5 w-full break-words text-2xl leading-tight tracking-tight md:text-3xl ${typography.heading} ${textColorValue}`}>
                         {value}
                     </p>
-                    <p className={`text-sm md:text-base mb-6 max-w-[280px] mx-auto font-medium leading-relaxed break-words ${textColorSub}`}>
-                        {subtitle}
-                    </p>
+                    {subtitle && (
+                        <p className={`mx-auto mb-6 max-w-[300px] break-words text-sm leading-relaxed md:text-base ${textColorSub}`}>
+                            {subtitle}
+                        </p>
+                    )}
                 </div>
 
-                {link && (
-                    <motion.button data-wedding-control="primary"
-                        onClick={() => {
-                            const address = value + ' ' + (subtitle || '');
-                            const encodedAddress = encodeURIComponent(address);
-                            const webUrl = link || `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-                            window.open(webUrl, '_blank');
-                        }}
-                        className="text-primary font-bold border-b-2 border-primary/10 min-h-11 pb-2 hover:border-primary transition-all text-xs uppercase tracking-[0.3em] mt-auto font-black flex items-center gap-2"
-                    >
-                        Get Directions <span className="text-lg">→</span>
-                    </motion.button>
+                {(link || copyText) && (
+                    <div className="mt-auto flex flex-wrap items-center justify-center gap-3 pt-2">
+                        {link && (
+                            <button
+                                data-wedding-control="primary"
+                                type="button"
+                                onClick={() => {
+                                    const address = value + ' ' + (subtitle || '');
+                                    const encodedAddress = encodeURIComponent(address);
+                                    const webUrl = link || `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+                                    window.open(webUrl, '_blank', 'noopener,noreferrer');
+                                }}
+                                className={`inline-flex min-h-11 items-center gap-1.5 border border-current/25 px-5 py-2 text-[11px] font-medium uppercase tracking-[0.22em] transition-colors hover:bg-current/5 ${
+                                    isSharp ? 'rounded-none' : 'rounded-full'
+                                }`}
+                            >
+                                Directions
+                                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                            </button>
+                        )}
+                        {copyText && (
+                            <button
+                                data-wedding-control="quiet"
+                                type="button"
+                                onClick={() => void handleCopy()}
+                                className={`inline-flex min-h-11 items-center gap-1.5 px-3 py-2 text-[11px] font-medium uppercase tracking-[0.2em] opacity-75 transition-opacity hover:opacity-100 ${
+                                    isSharp ? 'rounded-none' : 'rounded-full'
+                                }`}
+                            >
+                                {copied ? (
+                                    <>
+                                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                        Copied
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                                        Copy Address
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
                 )}
             </div>
         </motion.div>
@@ -124,8 +186,10 @@ function DetailCard({
 }
 
 export default function DetailsSection({ wedding, invert = false, id }: DetailsSectionProps) {
-    const { registerSection, unregisterSection } = useSectionContext();
-    
+    const { registerSection, unregisterSection } = useSectionActions();
+    const [inviteLightboxIndex, setInviteLightboxIndex] = useState<number | null>(null);
+    const handleCloseInviteLightbox = useCallback(() => setInviteLightboxIndex(null), []);
+
     useEffect(() => {
         registerSection(id, 'Details');
         return () => unregisterSection(id);
@@ -133,13 +197,13 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
 
     const template = wedding.template || 'classic';
     const motifColor = wedding.motif_color || '#D16C78';
-    
+
     const palette = derivePalette(motifColor, invert);
     const typography = getTypography(template);
     const visual = getTemplateVisualProfile(template, motifColor, invert, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
-    
-    const isSharp = ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
+
+    const isSharp = visual.isSharp || ['editorial', 'vogue', 'urban', 'glitch', 'minimal', 'artdeco', 'luxury', 'timeline'].includes(template);
     const isDark = visual.isDark;
     const isVintage = ['vintage', 'rustic', 'boho', 'film'].includes(template);
     const inviteImages = parseInvitationImages(wedding.invitation_image);
@@ -148,14 +212,14 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
         <section data-wedding-section="details" id={id} className={`py-16 sm:py-24 relative z-10 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <div className={visual.containerClass}>
                 <motion.div
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
                     className="mb-12 text-center"
                 >
-                    <div className="mb-6 flex items-center justify-center">
-                        <span data-wedding-badge="true" className={visual.badgeStyleClass || `mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>
-                            {visual.badgePrefix ? `${visual.badgePrefix}ESSENTIALS` : 'The Essentials'}
+                    <div className="mb-5 flex items-center justify-center">
+                        <span data-wedding-badge="true" className={visual.badgeStyleClass || `mb-2 text-[11px] font-medium uppercase ${visual.eyebrowClass}`}>
+                            {visual.badgePrefix ? `${visual.badgePrefix}Essentials` : 'When & Where'}
                         </span>
                     </div>
                     <h2 className={`text-4xl md:text-6xl ${titleStyle.className}`} style={titleStyle.style}>{visual.detailTitle}</h2>
@@ -168,7 +232,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                         delay={0}
                         icon={Calendar}
                         title="The Date"
-                        value={wedding.wedding_date ? new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Setting Date'}
+                        value={formatDetailDate(wedding.wedding_date)}
                         subtitle={wedding.wedding_time || 'Check back soon for exact schedule'}
                         isSharp={isSharp} isDark={isDark} isVintage={isVintage}
                         className="sm:col-span-2"
@@ -178,13 +242,14 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                     />
 
                     <DetailCard
-                        delay={0.1}
+                        delay={0.08}
                         icon={MapPin}
                         title="The Ceremony"
-                        className={wedding.reception_venue_name ? undefined : "sm:col-span-2"}
+                        className={wedding.reception_venue_name ? undefined : 'sm:col-span-2'}
                         value={wedding.venue_name || 'Destination TBD'}
                         subtitle={wedding.venue_address || 'Coming soon to your inbox'}
-                        link={wedding.maps_link}
+                        link={wedding.maps_link || (wedding.venue_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([wedding.venue_name, wedding.venue_address].filter(Boolean).join(', '))}` : undefined)}
+                        copyText={wedding.venue_address || wedding.venue_name}
                         isSharp={isSharp} isDark={isDark} isVintage={isVintage}
                         palette={palette}
                         typography={typography}
@@ -193,12 +258,13 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
 
                     {wedding.reception_venue_name && (
                         <DetailCard
-                            delay={0.2}
+                            delay={0.16}
                             icon={MapPin}
                             title="The Reception"
                             value={wedding.reception_venue_name}
                             subtitle={wedding.reception_venue_address}
-                            link={wedding.reception_maps_link}
+                            link={wedding.reception_maps_link || (wedding.reception_venue_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([wedding.reception_venue_name, wedding.reception_venue_address].filter(Boolean).join(', '))}` : undefined)}
+                            copyText={wedding.reception_venue_address || wedding.reception_venue_name}
                             isSharp={isSharp} isDark={isDark} isVintage={isVintage}
                             palette={palette}
                             typography={typography}
@@ -208,7 +274,7 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                 </div>
                 {(wedding.hashtag || wedding.contact_person) && (
                     <p className={`mt-8 text-center text-sm leading-7 ${isDark ? 'text-white/75' : 'text-[#4A4444]/75'}`}>
-                        {wedding.hashtag && <span className="block">#{wedding.hashtag.replace(/^#/, '')}</span>}
+                        {wedding.hashtag && <span className="block font-serif italic text-base">#{wedding.hashtag.replace(/^#/, '')}</span>}
                         {wedding.contact_person && <span className="block">RSVP contact: {wedding.contact_person}</span>}
                     </p>
                 )}
@@ -216,34 +282,33 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
 
             {/* Invitation Card Spotlight Section */}
             {inviteImages.length > 0 && (
-                <div className="max-w-5xl mx-auto px-4 md:px-6 mt-24 md:mt-32">
+                <div className="max-w-5xl mx-auto px-4 md:px-6 mt-20 md:mt-28">
                     <motion.div
-                        initial={{ opacity: 0, y: 50 }}
+                        initial={{ opacity: 0, y: 36 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, amount: 0.1 }}
-                        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
                         className="relative flex flex-col items-center"
                     >
-                        {/* Title for the invitation section */}
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3, duration: 0.8 }}
-                            className="mb-16 text-center"
-                        >
-                            <span className={`text-[10px] uppercase tracking-[0.4em] font-bold block mb-3 ${isDark ? 'text-white/70' : 'text-[#4A4444]/68'}`}>Official Invitation</span>
+                        <div className="mb-12 text-center">
+                            <span className={`text-[11px] uppercase tracking-[0.3em] font-medium block mb-3 ${isDark ? 'text-white/70' : 'text-[#4A4444]/68'}`}>Official Suite</span>
                             <h2 className={`text-4xl md:text-5xl ${typography.heading} ${titleStyle.className}`} style={titleStyle.style}>The Invitation</h2>
-                        </motion.div>
+                        </div>
 
-                        <div className="flex w-full flex-col items-center gap-10 md:gap-16">
+                        <div className="flex w-full flex-col items-center gap-10 md:gap-14">
                             {inviteImages.map((src, index) => (
-                                <figure key={`${src}-${index}`} className="w-full max-w-[800px]">
-                                    <a data-wedding-control="secondary" href={src} target="_blank" rel="noopener noreferrer" aria-label={`View invitation page ${index + 1} in full size`} className="block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current">
-                                        <img src={src} alt={`Invitation page ${index + 1}`} loading="lazy" decoding="async" className="h-auto w-full object-contain shadow-sm" />
-                                    </a>
-                                    <figcaption className={`mt-4 text-center text-sm ${isDark ? 'text-white/75' : 'text-[#4A4444]/75'}`}>
+                                <figure key={`${src}-${index}`} className="w-full max-w-[760px]">
+                                    <button
+                                        type="button"
+                                        onClick={() => setInviteLightboxIndex(index)}
+                                        aria-label={`View invitation page ${index + 1} in full size`}
+                                        className="block w-full cursor-zoom-in overflow-hidden border border-current/10 bg-white/80 p-2 shadow-[0_24px_65px_rgba(30,24,22,0.12)] transition-transform duration-500 hover:scale-[1.01] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"
+                                    >
+                                        <SafeWeddingImage src={src} alt={`Invitation page ${index + 1}`} loading="lazy" decoding="async" className="h-auto w-full object-contain" />
+                                    </button>
+                                    <figcaption className={`mt-4 text-center text-xs uppercase tracking-[0.2em] ${isDark ? 'text-white/70' : 'text-[#4A4444]/70'}`}>
                                         <a data-wedding-control="secondary" href={src} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center border-b border-current/30">
-                                            {inviteImages.length > 1 ? `View invitation · Page ${index + 1}` : 'View invitation'}
+                                            {inviteImages.length > 1 ? `Open full size · Page ${index + 1}` : 'Open full size'}
                                         </a>
                                     </figcaption>
                                 </figure>
@@ -252,6 +317,12 @@ export default function DetailsSection({ wedding, invert = false, id }: DetailsS
                     </motion.div>
                 </div>
             )}
+
+            <AnimatePresence>
+                {inviteLightboxIndex !== null && (
+                    <Lightbox key="invite-lightbox" images={inviteImages} index={inviteLightboxIndex} onClose={handleCloseInviteLightbox} />
+                )}
+            </AnimatePresence>
         </section>
     );
 }

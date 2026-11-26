@@ -10,7 +10,7 @@ import {
     TemplateNavigation,
     FAQSection,
 } from '@/components/wedding';
-import { getWeddingPageStyle, getWeddingThemeAttributes, renderWeddingTemplate } from '@/components/templates/TemplateRenderer';
+import { getWeddingPageStyle, getWeddingThemeAttributes, hasInlineMusicPlayer, renderWeddingTemplate } from '@/components/templates/TemplateRenderer';
 import WeddingFontProvider from '@/components/WeddingFontProvider';
 import type { Wedding } from '@/types/wedding';
 import { trackWeddingEvent } from '@/lib/wedding-features';
@@ -40,9 +40,12 @@ export default function WeddingPageClient({
         if (!publicIdentifier || !wedding?.id || typeof window === 'undefined') return;
 
         const visitKey = `quickweds_visit_${publicIdentifier}`;
-        if (window.sessionStorage.getItem(visitKey)) return;
-
-        window.sessionStorage.setItem(visitKey, '1');
+        try {
+            if (window.sessionStorage.getItem(visitKey)) return;
+            window.sessionStorage.setItem(visitKey, '1');
+        } catch {
+            // Private browsing or sandboxed iframe can throw SecurityError on sessionStorage.
+        }
 
         const params = new URLSearchParams(window.location.search);
         const source = params.get('src') || 'direct';
@@ -55,7 +58,9 @@ export default function WeddingPageClient({
     }, [publicIdentifier, wedding?.id]);
 
     const isExpired = initialIsExpired;
-    const gallery = safeParseArray<string>(wedding.gallery_images);
+    const gallery = safeParseArray<unknown>(wedding.gallery_images).filter(
+        (item): item is string => typeof item === 'string' && item.trim().length > 0
+    );
     const template = wedding.template || 'classic';
     const { className: invitationThemeClass, ...invitationThemeAttributes } = getWeddingThemeAttributes(wedding);
     const pageStyle = getWeddingPageStyle(wedding, { includeGradient: true });
@@ -70,20 +75,26 @@ export default function WeddingPageClient({
 
                 <EntranceReveal
                     weddingId={wedding.id}
-                    initials={wedding.logo_initials || (`${wedding.bride_name[0]}${wedding.groom_name[0]}`)}
+                    initials={wedding.logo_initials || (`${wedding.bride_name?.trim()?.[0] || ''}${wedding.groom_name?.trim()?.[0] || ''}` || 'QW')}
                     motifColor={wedding.motif_color}
                     coupleNames={`${wedding.bride_name} & ${wedding.groom_name}`}
                     weddingDate={wedding.wedding_date}
                     venueName={wedding.venue_name}
                     heroImage={wedding.hero_image || wedding.couple_photo}
                     template={template}
+                    wedding={wedding}
                 />
 
                 {wedding.voice_greeting_url && (
-                    <VoiceGreeting audioUrl={wedding.voice_greeting_url} motifColor={wedding.motif_color} />
+                    <VoiceGreeting
+                        audioUrl={wedding.voice_greeting_url}
+                        motifColor={wedding.motif_color}
+                        coupleNames={`${wedding.bride_name} & ${wedding.groom_name}`}
+                        template={template}
+                    />
                 )}
 
-                {wedding.background_music_enabled && wedding.background_music_url && (
+                {wedding.background_music_enabled && wedding.background_music_url && !hasInlineMusicPlayer(wedding) && (
                     <BackgroundMusicPlayer
                         template={template}
                         audioUrl={wedding.background_music_url}

@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Camera, Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const PhotoSharingManager = dynamic(() => import('@/components/dashboard/PhotoSharingManager'), {
     loading: () => (
@@ -16,7 +18,27 @@ const PhotoSharingManager = dynamic(() => import('@/components/dashboard/PhotoSh
 
 export default function PhotoUploadsPage() {
     const params = useParams<{ id: string }>();
+    const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
     const weddingId = params?.id || '';
+
+    useEffect(() => {
+        if (!authLoading && !user) {
+            const next = weddingId ? `/dashboard/${weddingId}/photo-uploads` : '/dashboard';
+            router.replace(`/login?next=${encodeURIComponent(next)}`);
+        }
+    }, [authLoading, router, user, weddingId]);
+
+    if (authLoading || !user) {
+        return (
+            <main className="flex min-h-screen items-center justify-center bg-[#FFF8F9] px-4 py-6 text-foreground">
+                <div className="flex flex-col items-center gap-3 text-center">
+                    <Loader2 className="h-9 w-9 animate-spin text-primary" />
+                    <p className="text-sm font-bold text-text-secondary">Checking your session...</p>
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main className="min-h-screen bg-[#FFF8F9] px-4 py-6 text-foreground">
@@ -38,7 +60,7 @@ export default function PhotoUploadsPage() {
                     <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">Review pending photos, approve gallery-ready uploads, reject unsuitable submissions, and manage sharing codes.</p>
                 </section>
 
-                <PhotoSharingManager weddingId={weddingId} hasPlannerPro />
+                <PhotoSharingManager weddingId={weddingId} hasPlannerPro={false} />
             </div>
         </main>
     );

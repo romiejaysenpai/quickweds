@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { WifiOff, RefreshCw, Heart } from 'lucide-react';
 
 export const metadata = {
-  title: 'Offline | QuickWeds',
+  title: 'Offline',
   robots: {
     index: false,
     follow: false,

@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import {
     VideoSection,
     BioSection,
@@ -11,47 +10,103 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-
 } from '../wedding';
-import { SharedNewSections } from './shared';
+import { getSectionTitleStyle } from '@/lib/theme-engine';
+import type { TemplateProps } from '@/types/wedding';
+import {
+    resolveTemplateCopy,
+    resolveWeddingMedia,
+    SharedNewSections,
+    TEMPLATE_ELEMENT_ASSETS,
+    TemplateHeroActions,
+    WeddingHeroVisual,
+    WeddingMonogram,
+} from './shared';
 
-export default function MidnightTemplate({ wedding, gallery, isExpired }: any) {
+export default function MidnightTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+    const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
+    const motifColor = wedding.motif_color || '#cfb53b';
+    const titleStyle = getSectionTitleStyle(wedding);
+    const hasTitleChoice = Boolean(
+        wedding.section_title_color_style && !['default', 'motif'].includes(wedding.section_title_color_style)
+    );
+    const heroImage = resolveWeddingMedia(wedding, gallery);
+    const copy = resolveTemplateCopy(wedding);
+    const hasCustomMonogram = Boolean(
+        wedding.logo_initials || (wedding.logo_shape && wedding.logo_shape !== 'minimal')
+    );
+
     return (
-        <div className="bg-[#0f0f0f] text-[#cfb53b] relative overflow-hidden pb-24 font-serif">
-            <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,rgba(207,181,59,0.05)_0%,transparent_70%)] pointer-events-none z-0" />
-            <div className="fixed inset-0 pointer-events-none z-0" style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg width="120" height="120" xmlns="http://www.w3.org/2000/svg"><path d="M60 30 L62 58 L90 60 L62 62 L60 90 L58 62 L30 60 L58 58 Z" fill="%23cfb53b" fill-opacity="0.04"/></svg>')`, backgroundSize: '120px 120px' }} />
+        <div
+            className="relative overflow-x-clip pb-24 font-serif"
+            style={{
+                backgroundColor: hasBackgroundChoice ? 'var(--builder-paper)' : '#0f0f0f',
+                color: hasBackgroundChoice ? 'var(--builder-ink)' : motifColor,
+            }}
+        >
+            <div
+                className="absolute inset-0 pointer-events-none z-0"
+                style={{ background: `radial-gradient(circle at center, ${motifColor}0D 0%, transparent 70%)` }}
+            />
 
             <section className="min-h-screen grid grid-cols-1 lg:grid-cols-2 relative">
-                <div className="flex flex-col justify-center px-4 sm:px-6 md:px-12 lg:px-24 py-12 sm:py-16 md:py-20 lg:py-24 border-r border-[#cfb53b]/10 bg-gradient-to-b from-[#0f0f0f] to-[#151515]">
-                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
-                        <span className="text-xs font-black tracking-[0.5em] uppercase text-[#cfb53b]/60 mb-8 block">The Celebration</span>
-                        <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-8xl font-serif text-white mb-8 leading-tight">
+                <div className="flex flex-col justify-center px-4 sm:px-6 md:px-12 lg:px-24 py-12 sm:py-16 md:py-20 lg:py-24 border-r border-current/15 bg-gradient-to-b from-[#0f0f0f] to-[#151515] text-white">
+                    <motion.div initial={false} animate={{ opacity: 1, y: 0 }}>
+                        {hasCustomMonogram && (
+                            <div className="mb-6">
+                                <WeddingMonogram wedding={{ ...wedding, logo_color: wedding.logo_color || motifColor }} />
+                            </div>
+                        )}
+                        <span className="text-xs font-black tracking-[0.5em] uppercase opacity-75 mb-8 block" style={{ color: motifColor }}>{copy.eyebrow}</span>
+                        <h1
+                            className={`text-3xl sm:text-4xl md:text-6xl lg:text-8xl font-serif text-white mb-8 leading-tight ${titleStyle.className}`}
+                            style={hasTitleChoice ? titleStyle.style : undefined}
+                        >
                             {wedding.bride_name} <br />
-                            <span className="text-2xl sm:text-3xl md:text-4xl italic text-[#cfb53b] font-light">&</span><br />
+                            <span className="text-2xl sm:text-3xl md:text-4xl italic font-light" style={{ color: motifColor }}>&amp;</span><br />
                             {wedding.groom_name}
                         </h1>
-                        <p className="text-lg sm:text-xl md:text-xl lg:text-xl font-serif italic text-white/60 mb-8 sm:mb-10 md:mb-12 lg:mb-12 max-w-md">
-                            Join us for an evening of elegance, love, and starlight.
+                        <p className="text-lg sm:text-xl font-serif italic text-white/75 mb-8 sm:mb-10 max-w-md">
+                            {copy.subtitle}
                         </p>
-                        <a href="#rsvp" aria-label="RSVP Now" className="px-6 sm:px-8 md:px-10 lg:px-10 py-3 sm:py-4 md:py-4 lg:py-4 min-h-[44px] flex w-max items-center border border-[#cfb53b] text-[#cfb53b] hover:bg-[#cfb53b] hover:text-black transition-all uppercase text-xs font-black tracking-[0.2em]">RSVP Now</a>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <a
+                                href={copy.ctaHref}
+                                data-wedding-control="primary"
+                                aria-label={copy.ctaLabel}
+                                className="px-8 sm:px-10 py-3.5 min-h-[44px] inline-flex items-center border transition-all uppercase text-xs font-black tracking-[0.2em] hover:opacity-90"
+                                style={{ borderColor: motifColor, color: motifColor }}
+                            >
+                                {copy.ctaLabel}
+                            </a>
+                            <a
+                                href={copy.detailsHref}
+                                data-wedding-control="secondary"
+                                className="px-6 py-3.5 min-h-[44px] inline-flex items-center border border-white/25 text-white/90 uppercase text-xs font-semibold tracking-[0.2em] hover:bg-white/10 transition-colors"
+                            >
+                                {copy.detailsLabel}
+                            </a>
+                        </div>
+                        <TemplateHeroActions wedding={wedding} variant="noir" motifColor={motifColor} className="mt-5 text-white" />
                     </motion.div>
                 </div>
                 <div className="relative h-[50vh] lg:h-auto">
-                    <Image
-                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
-                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                        priority
-                        fill
-                        sizes="(max-width: 1024px) 100vw, 50vw"
-                        className="object-cover grayscale brightness-75 hover:grayscale-0 transition-all duration-1000 z-0"
+                    <WeddingHeroVisual
+                        wedding={wedding}
+                        gallery={gallery}
+                        src={heroImage}
+                        dark
+                        ornamentSrc={TEMPLATE_ELEMENT_ASSETS.celestialAstrolabe}
+                        className="h-full w-full"
+                        imgClassName="grayscale brightness-75 hover:grayscale-0 transition-all duration-1000 z-0"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-transparent to-transparent lg:bg-gradient-to-r lg:from-[#0f0f0f]" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-transparent to-transparent lg:bg-gradient-to-r lg:from-[#0f0f0f] pointer-events-none" />
                 </div>
             </section>
 
-            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} wedding={wedding} />
             <BioSection id="bio" wedding={wedding} />
-            <DetailsSection id="details" wedding={wedding} invert />
+            <DetailsSection id="details" wedding={wedding} invert={!hasBackgroundChoice} />
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer id="countdown"
                     weddingDate={wedding.wedding_date}
@@ -62,12 +117,14 @@ export default function MidnightTemplate({ wedding, gallery, isExpired }: any) {
                     venueAddress={wedding.venue_address}
                     template={wedding.template}
                     motifColor={wedding.motif_color}
+                    cardStyle={wedding.card_style}
+                    wedding={wedding}
                 />
             )}
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} cardStyle={wedding.card_style} wedding={wedding} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <GiftSection id="gift" wedding={wedding} invert />
+            <GiftSection id="gift" wedding={wedding} invert={!hasBackgroundChoice} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );

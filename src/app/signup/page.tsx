@@ -78,13 +78,17 @@ export default function SignUpPage() {
             });
             if (error) throw error;
 
-            // Trigger admin notification & welcome email manually
-            // We pass the record object to match the expected Supabase webhook format
+            // Trigger admin notification & welcome email with verified user id / token
+            const token = data.session?.access_token;
             void fetch('/api/admin/notify-signup', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
                 body: JSON.stringify({
                     record: {
+                        id: data.user?.id,
                         email: normalizedEmail,
                         full_name: trimmedName,
                         source: 'email_signup',
@@ -92,11 +96,12 @@ export default function SignUpPage() {
                 })
             }).catch(err => console.error('Notification Error:', err));
 
-            const token = data.session?.access_token;
-            const redirectPath = token
-                ? await resolvePostAuthPath(token, getSafeNextPath(), data.user?.email)
-                : getRoleAwareRedirect(null, getSafeNextPath());
+            if (!token) {
+                setError('Account created! Please check your email inbox to confirm your email address, then sign in.');
+                return;
+            }
 
+            const redirectPath = await resolvePostAuthPath(token, getSafeNextPath(), data.user?.email);
             router.replace(redirectPath);
         } catch (err: any) {
             setError(err.message || 'Failed to create account');
@@ -114,10 +119,14 @@ export default function SignUpPage() {
                 provider,
                 options: {
                     redirectTo: getPublicRedirectUrl('/auth/callback'),
-                    queryParams: {
-                        access_type: 'offline',
-                        prompt: 'select_account',
-                    },
+                    ...(provider === 'google'
+                        ? {
+                              queryParams: {
+                                  access_type: 'offline',
+                                  prompt: 'select_account',
+                              },
+                          }
+                        : {}),
                 }
             });
             if (error) throw error;

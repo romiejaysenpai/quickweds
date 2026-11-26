@@ -5,7 +5,8 @@ interface RateLimitEntry {
     resetTime: number;
 }
 
-// In-memory store (note: not shared across Vercel edge functions, but still provides basic protection)
+// In-memory store (note: not shared across serverless instances, but still provides bounded fallback protection)
+const MAX_RATE_LIMIT_ENTRIES = 10_000;
 const rateLimitMap = new Map<string, RateLimitEntry>();
 
 interface RateLimitConfig {
@@ -28,8 +29,9 @@ export const RATE_LIMITS = {
     ENTOURAGE_RESPONSE: { maxRequests: 30, windowMs: 15 * 60 * 1000 }, // 30 per 15 minutes
     GUEST_BOOK: { maxRequests: 12, windowMs: 60 * 60 * 1000 },       // 12 per hour
     PHOTO_UPLOAD: { maxRequests: 20, windowMs: 60 * 60 * 1000 },     // 20 per hour
-    SEAT_LOOKUP: { maxRequests: 30, windowMs: 15 * 60 * 1000 },      // 30 per 15 minutes
-    SEAT_MUTATION: { maxRequests: 20, windowMs: 60 * 60 * 1000 },    // 20 per hour
+    SEAT_LOOKUP: { maxRequests: 300, windowMs: 15 * 60 * 1000 },     // 300 per 15 minutes (venue Wi-Fi NAT safe)
+    SEAT_CHECKIN: { maxRequests: 500, windowMs: 60 * 60 * 1000 },    // 500 per hour per staff/wedding
+    SEAT_MUTATION: { maxRequests: 60, windowMs: 60 * 60 * 1000 },    // 60 per hour (bulk link generation)
     CHECKOUT: { maxRequests: 10, windowMs: 60 * 60 * 1000 },         // 10 per hour
     SUPPLIER_REVIEW: { maxRequests: 20, windowMs: 60 * 60 * 1000 },  // 20 per hour
     SIGNUP_NOTIFY: { maxRequests: 20, windowMs: 60 * 60 * 1000 },    // 20 per hour
@@ -83,6 +85,13 @@ export function checkRateLimit(
     
     // If no entry or window expired, create new entry
     if (!entry || now > entry.resetTime) {
+        if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+            cleanupRateLimits();
+            if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+                const oldestKey = rateLimitMap.keys().next().value;
+                if (oldestKey) rateLimitMap.delete(oldestKey);
+            }
+        }
         rateLimitMap.set(key, {
             count: 1,
             resetTime: now + config.windowMs,
@@ -165,42 +174,62 @@ export function createRateLimitMiddleware(limitKey: RateLimitKey) {
     };
 }
 
+function hashFallbackKey(raw: string): string {
+    // Deterministic 64-bit FNV-1a pair (Edge/browser-safe, avoids colliding on shared UA prefixes)
+    let h1 = 0x811c9dc5;
+    let h2 = 0x9e3779b9;
+    for (let i = 0; i < raw.length; i += 1) {
+        const ch = raw.charCodeAt(i);
+        h1 ^= ch;
+        h1 = Math.imul(h1, 0x01000193);
+        h2 ^= ch + i;
+        h2 = Math.imul(h2, 0x85ebca6b);
+    }
+    return `${(h1 >>> 0).toString(16).padStart(8, '0')}${(h2 >>> 0).toString(16).padStart(8, '0')}`;
+}
+
 /**
- * Get client IP from request headers
- * Works with Vercel, AWS, Cloudflare, and standard proxies
+ * Get client IP from trusted proxy headers.
+ * Prefers platform-injected single-hop headers over client-spoofable leftmost X-Forwarded-For values.
  */
 export function getClientIP(req: Request): string {
-    // Vercel specific headers
-    const forwarded = req.headers.get('x-forwarded-for');
-    if (forwarded) {
-        // Get the first IP in the chain (original client)
-        return forwarded.split(',')[0].trim();
+    // Vercel trusted header
+    const vercelForwarded = req.headers.get('x-vercel-forwarded-for');
+    if (vercelForwarded) {
+        const parts = vercelForwarded.split(',').map((part) => part.trim()).filter(Boolean);
+        if (parts.length > 0) return parts[parts.length - 1];
     }
-    
-    // Cloudflare
-    const cfConnectingIP = req.headers.get('cf-connecting-ip');
+
+    // Cloudflare trusted header
+    const cfConnectingIP = req.headers.get('cf-connecting-ip')?.trim();
     if (cfConnectingIP) {
         return cfConnectingIP;
     }
-    
-    // AWS ALB/ELB
-    const awsIP = req.headers.get('x-amzn-trace-id');
-    if (awsIP) {
-        // Extract IP from trace ID if present
-        const match = awsIP.match(/Root=.*-([\d\.]+)/);
-        if (match) return match[1];
+
+    // Reverse proxy single-hop header
+    const realIP = req.headers.get('x-real-ip')?.trim();
+    if (realIP) {
+        return realIP;
     }
-    
+
+    // Fallback to rightmost X-Forwarded-For hop (added by the nearest trusted proxy)
+    const forwarded = req.headers.get('x-forwarded-for');
+    if (forwarded) {
+        const parts = forwarded.split(',').map((part) => part.trim()).filter(Boolean);
+        if (parts.length > 0) return parts[parts.length - 1];
+    }
+
     // Standard remote address (may not work in serverless)
     // @ts-expect-error - some environments have this
     if (req.socket?.remoteAddress) {
         // @ts-expect-error - some environments have this
         return req.socket.remoteAddress;
     }
-    
-    // Fallback to a hash of user agent + timestamp for anonymous tracking
+
+    // Fallback hash over full user-agent + accept-language
     const userAgent = req.headers.get('user-agent') || 'unknown';
-    return `anon-${Buffer.from(userAgent).toString('base64').slice(0, 16)}`;
+    const acceptLang = req.headers.get('accept-language') || '';
+    return `anon-${hashFallbackKey(`${userAgent}|${acceptLang}`)}`;
 }
 
 /**

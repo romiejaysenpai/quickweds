@@ -68,6 +68,7 @@ test('public page gradient cannot paint over an explicit builder background', ()
   const presentation = load('src/lib/invitation-theme.ts', { './reference-invitations': references, './theme-engine': engine });
   const { getWeddingPageStyle } = load('src/components/templates/TemplateRenderer.tsx', {
     'next/dynamic': { default: () => null }, 'react/jsx-runtime': {},
+    '@/components/wedding/SectionTemplateElement': { WeddingAccentProvider: ({ children }) => children },
     '@/lib/invitation-theme': presentation, './InvitationTheme.module.css': { default: {} },
     '@/lib/reference-invitations': references, '@/lib/theme-engine': engine,
     '@/components/WeddingFontProvider': { FONT_STYLE_OVERRIDES: {}, getWeddingFontStyleVariables: () => ({}) },

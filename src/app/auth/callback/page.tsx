@@ -5,8 +5,25 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
-import { getClientAccountProfileForIntent, getClientAdminStatus, getPostLoginRedirect, getSafeAppPath } from '@/lib/account';
+import { getClientAccountProfileForIntent, getClientAdminStatus, getPostLoginRedirect, getRoleAwareRedirect, getSafeAppPath } from '@/lib/account';
 import { clearLocalSupabaseSession, getSafeSupabaseSession, isInvalidRefreshTokenError } from '@/lib/supabase-auth';
+import { invalidateSessionCache } from '@/lib/session-cache';
+
+const inFlightCodeExchanges = new Map<string, ReturnType<typeof supabase.auth.exchangeCodeForSession>>();
+
+function exchangeAuthCodeOnce(code: string) {
+    const existing = inFlightCodeExchanges.get(code);
+    if (existing) return existing;
+
+    const promise = supabase.auth.exchangeCodeForSession(code).finally(() => {
+        invalidateSessionCache();
+        window.setTimeout(() => {
+            inFlightCodeExchanges.delete(code);
+        }, 15_000);
+    });
+    inFlightCodeExchanges.set(code, promise);
+    return promise;
+}
 
 export default function AuthCallbackPage() {
     const router = useRouter();
@@ -16,7 +33,16 @@ export default function AuthCallbackPage() {
     const getSafeNextPath = (value: string | null) => getSafeAppPath(value, '/dashboard');
 
     useEffect(() => {
+        let active = true;
         let cleanupListener: (() => void) | null = null;
+        const redirectTimers: number[] = [];
+
+        const scheduleRedirect = (target: string, delayMs = 2000) => {
+            const timerId = window.setTimeout(() => {
+                if (active) router.replace(target);
+            }, delayMs);
+            redirectTimers.push(timerId);
+        };
 
         const getNextPath = (url: URL) => {
             const queryNext = getSafeNextPath(url.searchParams.get('next'));
@@ -26,16 +52,20 @@ export default function AuthCallbackPage() {
             return getSafeNextPath(storedNext);
         };
 
-        const notifyNewOAuthUser = (user: User) => {
+        const notifyNewOAuthUser = (user: User, accessToken?: string) => {
             const isNewUser = new Date(user.created_at).getTime() > Date.now() - 30000;
 
             if (!isNewUser) return;
 
             void fetch('/api/admin/notify-signup', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                },
                 body: JSON.stringify({
                     record: {
+                        id: user.id,
                         email: user.email,
                         full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'OAuth User',
                         source: 'oauth_signup',
@@ -45,42 +75,57 @@ export default function AuthCallbackPage() {
         };
 
         const resolvePostAuthPath = async (token: string, nextPath: string) => {
-            // Always send users to the welcome dashboard after login.
-            // The dashboard page handles showing the correct view based on user state.
-            // Only honor onboarding paths for new users.
-            if (nextPath.startsWith('/onboarding/account-type')) {
-                return nextPath;
+            const safeNext = getSafeAppPath(nextPath, '/dashboard');
+            try {
+                if (await getClientAdminStatus(token)) {
+                    return safeNext.startsWith('/onboarding/account-type') ? '/dashboard' : safeNext;
+                }
+
+                const profile = await getClientAccountProfileForIntent(token, safeNext);
+                if (safeNext !== '/dashboard' && profile?.account_type) {
+                    return getRoleAwareRedirect(profile.account_type, safeNext);
+                }
+                return getPostLoginRedirect(profile, safeNext);
+            } catch {
+                return safeNext;
             }
-            return '/dashboard';
         };
 
         const finishSignIn = async (user: User, token: string, nextPath: string) => {
-            notifyNewOAuthUser(user);
+            notifyNewOAuthUser(user, token);
             window.localStorage.removeItem('quickweds_auth_next');
-            router.replace(await resolvePostAuthPath(token, nextPath));
+            const destination = await resolvePostAuthPath(token, nextPath);
+            if (!active) return;
+            router.replace(destination);
         };
 
         const waitForSession = (nextPath: string) => {
-            console.log('Waiting for Supabase auth state from OAuth callback...');
             setDebug('No authorization code found. Waiting for Supabase to finish the OAuth session.');
 
+            let settled = false;
             let subscription: { unsubscribe: () => void } | null = null;
             const timeout = window.setTimeout(() => {
+                if (!active || settled) return;
+                settled = true;
                 subscription?.unsubscribe();
                 window.localStorage.removeItem('quickweds_auth_next');
-                setError('Could not complete Google sign in. Please try again.');
+                setError('Could not complete sign in. Please try again.');
                 setDebug('No code or active session was found after waiting for auth state.');
-                setTimeout(() => router.replace('/login?error=oauth-session-missing'), 2000);
+                scheduleRedirect('/login?error=oauth-session-missing', 2000);
             }, 6000);
 
             const authListener = supabase.auth.onAuthStateChange((_event, session) => {
-                if (!session?.user || !session.access_token) return;
+                if (!active || settled || !session?.user || !session.access_token) return;
+                settled = true;
                 window.clearTimeout(timeout);
                 subscription?.unsubscribe();
                 void finishSignIn(session.user, session.access_token, nextPath);
             });
 
             subscription = authListener.data.subscription;
+            if (settled) {
+                subscription.unsubscribe();
+            }
             cleanupListener = () => {
                 window.clearTimeout(timeout);
                 subscription?.unsubscribe();
@@ -95,18 +140,21 @@ export default function AuthCallbackPage() {
                 const errorDescription = url.searchParams.get('error_description');
                 const nextPath = getNextPath(url);
 
-                setDebug('Completing sign in.');
+                if (active) setDebug('Completing sign in.');
 
                 if (errorParam) {
                     console.error('OAuth provider returned an error.');
-                    setError(`${errorParam}: ${errorDescription || 'No description'}`);
-                    setTimeout(() => router.push('/login?error=oauth-failed'), 2000);
+                    if (active) {
+                        setError(`${errorParam}: ${errorDescription || 'No description'}`);
+                        scheduleRedirect('/login?error=oauth-failed', 2000);
+                    }
                     return;
                 }
 
                 if (code) {
-                    // Exchange the authorization code for a session when Supabase uses PKCE/code flow.
-                    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+                    // Deduplicate single-use PKCE exchange across React Strict Mode remounts.
+                    const { error: exchangeError } = await exchangeAuthCodeOnce(code);
+                    if (!active) return;
 
                     if (exchangeError) {
                         console.error('OAuth code exchange failed.');
@@ -118,25 +166,25 @@ export default function AuthCallbackPage() {
                         const errorCode = /code verifier|pkce|auth code/i.test(exchangeError.message)
                             ? 'oauth-session-missing'
                             : 'exchange-failed';
-                        setTimeout(() => router.replace(`/login?error=${errorCode}`), 2000);
+                        scheduleRedirect(`/login?error=${errorCode}`, 2000);
                         return;
                     }
-
                 }
 
                 // Double-check session. This also handles implicit/hash OAuth callbacks where no code is present.
                 const { session, error: sessionError } = await getSafeSupabaseSession();
+                if (!active) return;
 
                 if (sessionError) {
                     if (isInvalidRefreshTokenError(sessionError)) {
                         await clearLocalSupabaseSession();
                         window.localStorage.removeItem('quickweds_auth_next');
-                        router.replace('/login?error=session-expired');
+                        if (active) router.replace('/login?error=session-expired');
                         return;
                     }
                     console.error('OAuth session lookup failed.');
                     setError(`Session error: ${sessionError.message}`);
-                    setTimeout(() => router.replace('/login?error=session-failed'), 2000);
+                    scheduleRedirect('/login?error=session-failed', 2000);
                     return;
                 }
 
@@ -147,23 +195,26 @@ export default function AuthCallbackPage() {
 
                 waitForSession(nextPath);
             } catch (err: any) {
+                if (!active) return;
                 if (isInvalidRefreshTokenError(err)) {
                     await clearLocalSupabaseSession();
                     window.localStorage.removeItem('quickweds_auth_next');
-                    router.replace('/login?error=session-expired');
+                    if (active) router.replace('/login?error=session-expired');
                     return;
                 }
                 console.error('OAuth callback failed unexpectedly.');
-                setError(`Unexpected error: ${err.message}`);
+                setError(`Unexpected error: ${err?.message || 'Unknown error'}`);
                 setDebug('Please try signing in again.');
-                setTimeout(() => router.replace('/login?error=unexpected'), 2000);
+                scheduleRedirect('/login?error=unexpected', 2000);
             }
         };
 
         void handleCallback();
 
         return () => {
+            active = false;
             cleanupListener?.();
+            redirectTimers.forEach((timerId) => window.clearTimeout(timerId));
         };
     }, [router]);
 

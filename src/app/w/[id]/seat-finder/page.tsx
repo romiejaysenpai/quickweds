@@ -1,7 +1,7 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Camera, Clock, Loader2, MapPin, QrCode, Search, Users } from 'lucide-react';
@@ -13,7 +13,7 @@ type LookupResponse = {
     seat: { assigned: boolean; tableName?: string | null; seatLabel?: string | null };
 };
 
-export default function PublicSeatFinderPage() {
+function PublicSeatFinderContent() {
     const params = useParams<{ id: string }>();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -156,5 +156,19 @@ export default function PublicSeatFinderPage() {
                 <Link href="/" className="text-xs font-bold text-primary">Powered by QuickWeds</Link>
             </div>
         </main>
+    );
+}
+
+export default function PublicSeatFinderPage() {
+    return (
+        <Suspense
+            fallback={
+                <main className="flex min-h-screen items-center justify-center bg-[#FFF8F9]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </main>
+            }
+        >
+            <PublicSeatFinderContent />
+        </Suspense>
     );
 }

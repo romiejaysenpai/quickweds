@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import { getSectionTitleStyle } from '@/lib/theme-engine';
 import {
     VideoSection,
     BioSection,
@@ -11,55 +11,89 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-
 } from '../wedding';
-import { SharedNewSections } from './shared';
+import {
+    formatWeddingDate,
+    resolveTemplateCopy,
+    resolveWeddingMedia,
+    SharedNewSections,
+    TEMPLATE_ELEMENT_ASSETS,
+    TemplateHeroActions,
+    WeddingHeroVisual,
+    WeddingMonogram,
+} from './shared';
 import type { TemplateProps } from '@/types/wedding';
 
 export default function NordicTemplate({ wedding, gallery, isExpired }: TemplateProps) {
-    const formattedDate = new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', {
+    const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
+    const titleStyle = getSectionTitleStyle(wedding);
+    const motifColor = wedding.motif_color || '#065F46';
+    const heroImage = resolveWeddingMedia(wedding, gallery);
+    const copy = resolveTemplateCopy(wedding);
+    const formattedDate = formatWeddingDate(wedding.wedding_date, {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
     });
+    const hasCustomMonogram = Boolean(
+        wedding.logo_initials || (wedding.logo_shape && wedding.logo_shape !== 'minimal')
+    );
 
     return (
-        <div className="bg-[#f4f6f5] text-slate-800 font-sans relative pb-24 selection:bg-slate-700 selection:text-white">
-            {/* Ambient Background Grid & Timber Accent */}
-            <div className="fixed inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+        <div
+            className="font-sans relative pb-24 selection:bg-slate-700 selection:text-white"
+            style={{
+                backgroundColor: hasBackgroundChoice ? 'var(--builder-paper)' : '#f4f6f5',
+                color: hasBackgroundChoice ? 'var(--builder-ink)' : '#1e293b',
+            }}
+        >
+            <div className="qw-paper-grain fixed inset-0 pointer-events-none opacity-[0.14] z-0" />
 
             {/* Hero Section */}
-            <section className="min-h-screen relative flex items-center justify-center px-6 py-20 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-slate-200/50 via-transparent to-transparent pointer-events-none" />
+            <section className="min-h-screen relative flex items-center justify-center px-6 py-20 overflow-hidden z-10">
+                <div className="max-w-5xl w-full mx-auto text-center z-10 space-y-6">
+                    {/* Bespoke Scandinavian Pine & Birch Ornament */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={TEMPLATE_ELEMENT_ASSETS.nordicPine}
+                        alt=""
+                        aria-hidden="true"
+                        className="mx-auto w-28 sm:w-32 opacity-90 drop-shadow-sm"
+                    />
+                    {hasCustomMonogram && (
+                        <div className="flex justify-center">
+                            <WeddingMonogram wedding={wedding} />
+                        </div>
+                    )}
 
-                <div className="max-w-5xl mx-auto text-center z-10 space-y-8">
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-                        className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/80 border border-slate-200 shadow-sm backdrop-blur-md"
+                        className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/85 border border-slate-200 shadow-sm backdrop-blur-md text-slate-700"
                     >
-                        <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-                        <span className="text-xs font-medium uppercase tracking-[0.35em] text-slate-600">The Nordic Union</span>
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: motifColor }} />
+                        <span className="text-xs font-medium uppercase tracking-[0.35em]">{copy.eyebrow}</span>
                     </motion.div>
 
                     <motion.h1
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 1, delay: 0.2 }}
-                        className="text-4xl sm:text-6xl md:text-8xl font-light tracking-tight text-slate-900 leading-none"
+                        className={`text-4xl sm:text-6xl md:text-8xl font-serif font-light tracking-tight leading-none ${titleStyle.className}`}
+                        style={titleStyle.style}
                     >
-                        {wedding.bride_name} <span className="font-serif italic text-emerald-800/70 font-normal">&</span> {wedding.groom_name}
+                        {wedding.bride_name} <span className="font-serif italic font-normal" style={{ color: motifColor }}>&amp;</span> {wedding.groom_name}
                     </motion.h1>
 
                     <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 1, delay: 0.4 }}
-                        className="text-sm sm:text-base font-light text-slate-600 max-w-xl mx-auto tracking-wide"
+                        className="text-sm sm:text-base font-light opacity-75 max-w-xl mx-auto tracking-wide"
                     >
-                        {wedding.story || 'A celebration bound by calm waters, quiet pine forests, and everlasting warmth.'}
+                        {copy.subtitle}
                     </motion.p>
 
                     <motion.div
@@ -68,28 +102,39 @@ export default function NordicTemplate({ wedding, gallery, isExpired }: Template
                         transition={{ duration: 0.9, delay: 0.5 }}
                         className="relative max-w-2xl mx-auto aspect-[16/9] rounded-3xl overflow-hidden shadow-2xl border-4 border-white"
                     >
-                        <Image
-                            src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
-                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                            fill
-                            priority
-                            sizes="(max-width: 1024px) 100vw, 800px"
-                            className="object-cover contrast-[0.95] brightness-[1.02]"
+                        <WeddingHeroVisual
+                            wedding={wedding}
+                            gallery={gallery}
+                            src={heroImage}
+                            ornamentSrc={TEMPLATE_ELEMENT_ASSETS.nordicPine}
+                            className="h-full w-full"
+                            imgClassName="contrast-[0.95] brightness-[1.02]"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent flex items-end justify-between p-6 text-white">
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex flex-col sm:flex-row sm:items-end justify-end sm:justify-between gap-3 p-6 text-white text-left">
                             <div>
-                                <p className="text-xs uppercase tracking-widest opacity-80">{wedding.venue_name}</p>
-                                <p className="text-sm font-medium">{formattedDate}</p>
+                                {wedding.venue_name && <p className="text-xs uppercase tracking-widest opacity-85">{wedding.venue_name}</p>}
+                                {formattedDate && <p className="text-sm font-medium">{formattedDate}</p>}
                             </div>
-                            <a
-                                href="#rsvp"
-                                aria-label="RSVP"
-                                className="px-6 py-2.5 bg-white text-slate-900 rounded-full font-medium text-xs uppercase tracking-widest hover:bg-slate-100 transition-all shadow-md"
-                            >
-                                Confirm Attendance
-                            </a>
+                            <div className="flex flex-wrap gap-2">
+                                <a
+                                    href={copy.ctaHref}
+                                    data-wedding-control="primary"
+                                    aria-label={copy.ctaLabel}
+                                    className="px-6 py-2.5 bg-white text-slate-900 rounded-full font-medium text-xs uppercase tracking-widest hover:bg-slate-100 transition-all shadow-md"
+                                >
+                                    {copy.ctaLabel}
+                                </a>
+                                <a
+                                    href={copy.detailsHref}
+                                    data-wedding-control="secondary"
+                                    className="px-5 py-2.5 border border-white/40 text-white rounded-full font-medium text-xs uppercase tracking-widest hover:bg-white/15 transition-colors"
+                                >
+                                    {copy.detailsLabel}
+                                </a>
+                            </div>
                         </div>
                     </motion.div>
+                    <TemplateHeroActions wedding={wedding} variant="pill" motifColor={motifColor} className="justify-center" />
                 </div>
             </section>
 

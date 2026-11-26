@@ -6,3 +6,12 @@
 export function escapeLikePattern(value: string): string {
     return value.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
+
+/**
+ * Escape a string for safe embedding inside a double-quoted PostgREST `.or()` filter value
+ * (e.g. `col.ilike."%...%"`), stripping control characters and double quotes and doubling
+ * backslashes so LIKE escape sequences survive PostgREST string parsing.
+ */
+export function escapePostgrestQuotedValue(value: string): string {
+    return value.replace(/[\u0000-\u001f"]/g, '').replace(/\\/g, '\\\\');
+}

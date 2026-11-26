@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
-import { escapeLikePattern } from '@/lib/sql-like';
+import { escapeLikePattern, escapePostgrestQuotedValue } from '@/lib/sql-like';
 import { resolvePublicWeddingById } from '@/lib/public-wedding-lookup';
 
 export const dynamic = 'force-dynamic';
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         const likeFilter = `%${cleanQuery}%`;
 
         // Search by guest_name, household_name, or plus_one_name
-        const safeQuery = cleanQuery.replace(/"/g, '');
+        const safeQuery = escapePostgrestQuotedValue(cleanQuery);
         const orFilter = `guest_name.ilike."%${safeQuery}%",household_name.ilike."%${safeQuery}%",plus_one_name.ilike."%${safeQuery}%"`;
         const { data: rows, error: searchError } = await db
             .from('rsvps')

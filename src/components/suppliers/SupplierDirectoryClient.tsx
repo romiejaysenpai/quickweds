@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Search, SlidersHorizontal, Sparkles } from 'lucide-react';
 import SupplierCard from '@/components/suppliers/SupplierCard';
@@ -11,6 +12,7 @@ import { getCachedSession } from '@/lib/session-cache';
 import {
     PHILIPPINE_SUPPLIER_LOCATIONS,
     SUPPLIER_CATEGORIES,
+    slugifySupplier,
     type SupplierProfile,
 } from '@/lib/suppliers';
 
@@ -130,7 +132,7 @@ export default function SupplierDirectoryClient({ suppliers }: { suppliers: Supp
             <header className="border-b border-border/70 bg-white/90 px-4 py-4 backdrop-blur-xl sm:px-6">
                 <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
                     <Link href="/" className="inline-flex items-center">
-                        <img src="/logo.png" alt="QuickWeds" className="h-10 w-auto object-contain" />
+                        <Image src="/logo.png" alt="QuickWeds" width={140} height={40} className="h-10 w-auto object-contain" priority />
                     </Link>
                     <div className="flex items-center gap-2">
                         <Link href="/supplier/signup" className="hidden rounded-xl border border-primary/20 px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary/5 sm:inline-flex">
@@ -172,10 +174,14 @@ export default function SupplierDirectoryClient({ suppliers }: { suppliers: Supp
                         <div className="rounded-[2rem] border border-white/70 bg-white/65 p-5 shadow-2xl shadow-primary/10 backdrop-blur">
                             <div className="grid grid-cols-2 gap-3">
                                 {SUPPLIER_CATEGORIES.slice(0, 6).map((item) => (
-                                    <div key={item} className="rounded-2xl bg-neutral p-4 text-center">
+                                    <Link
+                                        key={item}
+                                        href={`/suppliers/category/${slugifySupplier(item)}`}
+                                        className="rounded-2xl bg-neutral p-4 text-center transition hover:bg-primary/5 hover:text-primary"
+                                    >
                                         <p className="font-serif text-lg font-bold text-foreground">{item}</p>
                                         <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-primary">Directory</p>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         </div>
@@ -252,6 +258,37 @@ export default function SupplierDirectoryClient({ suppliers }: { suppliers: Supp
                                 ))}
                             </div>
                         )}
+
+                        <section aria-label="Browse wedding suppliers by category and location" className="mt-16 grid gap-6 rounded-[2rem] border border-border bg-white p-6 shadow-sm sm:p-8 lg:grid-cols-2">
+                            <div>
+                                <h2 className="font-serif text-2xl font-bold text-foreground">Browse by Category</h2>
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {SUPPLIER_CATEGORIES.map((item) => (
+                                        <Link
+                                            key={item}
+                                            href={`/suppliers/category/${slugifySupplier(item)}`}
+                                            className="rounded-full border border-border bg-neutral px-3.5 py-1.5 text-xs font-bold text-text-secondary transition hover:border-primary/40 hover:text-primary"
+                                        >
+                                            {item}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <h2 className="font-serif text-2xl font-bold text-foreground">Browse by Location</h2>
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {PHILIPPINE_SUPPLIER_LOCATIONS.map((loc) => (
+                                        <Link
+                                            key={loc}
+                                            href={`/suppliers/location/${slugifySupplier(loc)}`}
+                                            className="rounded-full border border-border bg-neutral px-3.5 py-1.5 text-xs font-bold text-text-secondary transition hover:border-primary/40 hover:text-primary"
+                                        >
+                                            {loc}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </section>
             </main>

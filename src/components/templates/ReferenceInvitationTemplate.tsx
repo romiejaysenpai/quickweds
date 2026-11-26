@@ -5,14 +5,14 @@ import { Church, Wine, Utensils, Music, Sparkles, Camera, Heart, Plane, Globe, M
 import type { TemplateProps } from '@/types/wedding';
 import { SafeWeddingImage, GiftSection, VideoSection, DetailsSection } from '@/components/wedding';
 import GallerySection, { Lightbox } from '@/components/wedding/GallerySection';
-import { useSectionContext } from '@/context/SectionContext';
+import { useSectionActions } from '@/context/SectionContext';
 import AttireIllustration from '@/components/AttireIllustration';
 import { getInvitationTheme } from '@/lib/invitation-theme';
 import { REFERENCE_INVITATIONS, getReferenceInvitation } from '@/lib/reference-invitations';
 import { getSectionTitleStyle } from '@/lib/theme-engine';
 import { timelineIconKind } from '@/lib/wedding-timeline';
 import { parseDressCodeValue } from '@/lib/dress-code';
-import { WeddingMonogram, SharedNewSections, parseTimelineItems, useCountdown } from './shared';
+import { WeddingMonogram, SharedNewSections, TemplateHeroActions, parseTimelineItems, resolveTemplateCopy, useCountdown } from './shared';
 import styles from './ReferenceInvitationTemplate.module.css';
 
 /** Drawn ornaments remain crisp at every width and never contain wedding content. */
@@ -42,19 +42,15 @@ function Calendar({ date }: { date: Date }) {
     </div>;
 }
 
-function validAudio(value?: string) {
-    if (!value) return undefined;
-    try { const url = new URL(value); return ['https:', 'http:', 'blob:'].includes(url.protocol) ? value : undefined; } catch { return value.startsWith('/') && !value.startsWith('//') ? value : undefined; }
-}
-
 export default function ReferenceInvitationTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     const reference = getReferenceInvitation(wedding.template_style) || REFERENCE_INVITATIONS[0];
     const theme = getInvitationTheme(wedding);
     const monogramColor = reference.layout === 'envelope' ? theme?.vars['--invitation-on-action'] : reference.layout === 'baroque' ? theme?.vars['--invitation-dark-accent'] : theme?.vars['--invitation-link'];
-    const { registerSection, unregisterSection } = useSectionContext();
+    const { registerSection, unregisterSection } = useSectionActions();
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const { timeLeft, isPast } = useCountdown(wedding.wedding_date, wedding.wedding_time);
     const timeline = parseTimelineItems(wedding.program_timeline);
+    const copy = resolveTemplateCopy(wedding);
     const date = wedding.wedding_date ? new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`) : null;
     const validDate = date && Number.isFinite(date.getTime()) ? date : null;
     const photo = wedding.hero_image?.trim() || wedding.couple_photo?.trim();
@@ -64,7 +60,6 @@ export default function ReferenceInvitationTemplate({ wedding, gallery, isExpire
     const titleStyle = getSectionTitleStyle(wedding);
     const nativeHeadingStyle = wedding.section_title_color_style && !['default', 'motif'].includes(wedding.section_title_color_style) ? titleStyle.style : undefined;
     const dress = parseDressCodeValue(wedding.dress_code, themedWedding.motif_color);
-    const audio = wedding.background_music_enabled ? validAudio(wedding.background_music_url) : undefined;
     const ticket = reference.layout === 'ticket';
     const photoFirst = ['torn', 'coastal', 'western', 'gold', 'forest', 'classic'].includes(reference.layout) || [17, 24].includes(reference.reference);
     const oval = ['magnolia', 'estate', 'editorial', 'classic'].includes(reference.layout);
@@ -77,7 +72,7 @@ export default function ReferenceInvitationTemplate({ wedding, gallery, isExpire
         ids.forEach(id => registerSection(id, labels[id]));
         return () => ids.forEach(unregisterSection);
     }, [sectionKey, registerSection, unregisterSection]);
-    const portrait = photo ? <div className={`${styles.portrait} ${oval ? styles.oval : ''}`}><SafeWeddingImage src={photo} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" className={styles.photo} fallbackText={initials} /></div> : null;
+    const portrait = photo ? <div className={`${styles.portrait} ${oval ? styles.oval : ''}`}><SafeWeddingImage src={photo} alt={`${wedding.bride_name} and ${wedding.groom_name}`} loading="eager" fetchPriority="high" className={styles.photo} fallbackText={initials} /></div> : null;
     const names = <h1 className={styles.names}><span>{wedding.bride_name}</span><em>&amp;</em><span>{wedding.groom_name}</span></h1>;
     const dateLine = <div className={styles.dateLine}>{validDate ? <><span>{validDate.toLocaleDateString('en-US', { month: 'short' })}</span><strong>{validDate.getDate()}</strong><span>{validDate.getFullYear()}</span></> : <span>Date to be announced</span>}</div>;
     return <div className={styles.page} data-reference={reference.id} data-reference-invitation={reference.id} data-layout={reference.layout} data-dark={reference.dark} data-card-style={wedding.card_style} data-decoration={reference.decoration} style={{ '--ref-paper': reference.paper, '--ref-ink': reference.ink, '--ref-accent': themedWedding.motif_color, '--ref-motif': themedWedding.motif_color, ...theme?.vars } as CSSProperties}>
@@ -95,12 +90,17 @@ export default function ReferenceInvitationTemplate({ wedding, gallery, isExpire
                     {dateLine}
                     {validDate && <p className={styles.weekdayLabel}>{validDate.toLocaleDateString('en-US', { weekday: 'long' })}</p>}
                     {ticket && <div className={styles.flightDetails}><span>Destination<strong>{wedding.venue_name || 'Our wedding'}</strong></span><span>Departure<strong>{wedding.wedding_time || 'Time to be announced'}</strong></span></div>}
+                    <div className="mt-5 flex flex-col items-center gap-2.5">
+                        <a href={copy.ctaHref} data-wedding-control="primary" className="inline-flex min-h-11 items-center justify-center rounded-full border border-current/45 px-7 py-2.5 text-xs font-semibold uppercase tracking-[0.22em] transition-colors hover:bg-current/10">
+                            {copy.ctaLabel}
+                        </a>
+                        <TemplateHeroActions wedding={themedWedding} variant={reference.dark ? 'noir' : 'stationery'} motifColor={themedWedding.motif_color} className="justify-center" />
+                    </div>
                 </div>
                 {!photoFirst && (reference.layout !== 'silk' || !wedding.story) && portrait}
                 {reference.layout === 'envelope' && <div className={styles.envelopeSeal} aria-hidden="true">{initials}</div>}
                 {reference.decoration !== 'none' && <Ornament kind={reference.decoration} className={styles.bottomOrnament} />}
             </header>
-            {audio && <div className={styles.music}><p>{wedding.background_music_title || 'Our wedding song'}</p><audio controls preload="none" src={audio} aria-label="Wedding music" /></div>}
             <section data-reference-panel="true" className={styles.welcome}>
                 <p className={styles.script}>{wedding.is_thank_you_mode ? 'Thank you' : 'Dear family & friends'}</p>
                 <p>{wedding.is_thank_you_mode ? wedding.thank_you_message || 'Thank you for being part of our celebration.' : 'We would love to share this special day with you.'}</p>
@@ -121,8 +121,8 @@ export default function ReferenceInvitationTemplate({ wedding, gallery, isExpire
             </section>}
             <div className={styles.shared}><DetailsSection id="details" wedding={themedWedding} /></div>
             {!wedding.is_thank_you_mode && wedding.dress_code && <section id="attire" data-reference-panel="true" className={styles.attire}><h2 className={titleStyle.className} style={nativeHeadingStyle}>Dress code</h2>{([{ label: 'For our guests', preference: dress.guests, variant: 'guests' }, { label: 'For our sponsors', preference: dress.sponsors, variant: 'sponsors' }, ...(dress.bridesmaids ? [{ label: 'For our bridesmaids', preference: dress.bridesmaids, variant: 'bridesmaids' }] : [])] as const).map(({ label, preference, variant }) => <div key={label} className={styles.attireGroup}><h3>{label}</h3><AttireIllustration color={preference.dressColor || preference.color} suitColor={preference.suitColor} variant={variant as 'guests' | 'sponsors' | 'bridesmaids'} className={styles.attireIllustration}/><p className={styles.script}>{preference.attire}</p><div className={styles.swatches}>{preference.colors?.map((color, index) => <span key={`${color}-${index}`} style={{ backgroundColor: color }} title={color} />)}</div>{preference.notes && <p>{preference.notes}</p>}</div>)}</section>}
-            {gallery.length > 0 && (!wedding.is_thank_you_mode || wedding.show_photos_in_thank_you_mode !== false) && wedding.gallery_layout && wedding.gallery_layout !== 'auto' ? <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} cardStyle={wedding.card_style} galleryLayout={wedding.gallery_layout} /> : <>{gallery.length > 0 && (!wedding.is_thank_you_mode || wedding.show_photos_in_thank_you_mode !== false) && <section id="gallery" className={styles.gallery}><Camera size={25} strokeWidth={1} className={styles.centerIcon}/><h2 className={titleStyle.className} style={nativeHeadingStyle}>Our moments</h2><div className={styles.galleryGrid}>{gallery.map((src, index) => <div key={`${src}-${index}`}><button type="button" onClick={() => setLightboxIndex(index)} aria-label={`View wedding photo ${index + 1}`}><SafeWeddingImage src={src} alt={`Wedding memory ${index + 1}`} className={styles.galleryPhoto} loading="lazy" /><span className={styles.galleryZoom} aria-hidden="true"><Expand size={17} strokeWidth={1.4} /></span></button></div>)}</div></section>}</>}
-            {wedding.teaser_video && <div className={styles.shared}><VideoSection id="video" video={wedding.teaser_video} poster={photo} template={wedding.template} motifColor={themedWedding.motif_color} templateStyle={wedding.template_style} /></div>}
+            {gallery.length > 0 && (!wedding.is_thank_you_mode || wedding.show_photos_in_thank_you_mode !== false) && wedding.gallery_layout && wedding.gallery_layout !== 'auto' ? <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} cardStyle={wedding.card_style} wedding={themedWedding} galleryLayout={wedding.gallery_layout} /> : <>{gallery.length > 0 && (!wedding.is_thank_you_mode || wedding.show_photos_in_thank_you_mode !== false) && <section id="gallery" className={styles.gallery}><Camera size={25} strokeWidth={1} className={styles.centerIcon}/><h2 className={titleStyle.className} style={nativeHeadingStyle}>Our moments</h2><div className={styles.galleryGrid}>{gallery.map((src, index) => <div key={`${src}-${index}`}><button type="button" onClick={() => setLightboxIndex(index)} aria-label={`View wedding photo ${index + 1}`}><SafeWeddingImage src={src} alt={`Wedding memory ${index + 1}`} className={styles.galleryPhoto} loading="lazy" /><span className={styles.galleryZoom} aria-hidden="true"><Expand size={17} strokeWidth={1.4} /></span></button></div>)}</div></section>}</>}
+            {wedding.teaser_video && <div className={styles.shared}><VideoSection id="video" video={wedding.teaser_video} poster={photo} template={wedding.template} motifColor={themedWedding.motif_color} templateStyle={wedding.template_style} wedding={themedWedding} /></div>}
             <div className={`${styles.shared} ${styles.gift}`}><GiftSection id="gift" wedding={themedWedding} /></div>
             {wedding.contact_person && <section data-reference-panel="true" className={styles.contact}><MapPin size={23} strokeWidth={1} className={styles.centerIcon} /><h2 className={titleStyle.className} style={nativeHeadingStyle}>Get in touch</h2><p>{wedding.contact_person}</p></section>}
             <div className={styles.shared}><SharedNewSections id="additional" wedding={themedWedding} isExpired={isExpired} /></div>

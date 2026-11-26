@@ -457,10 +457,10 @@ export default function ThankYouBuilderPage() {
                         <Panel title="Preview" icon={<Sparkles className="h-4 w-4" />}>
                             <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-neutral/30 p-1.5 sm:p-2">
                                 <iframe
-                                    key={previewHtml}
                                     ref={previewIframeRef}
                                     title="Thank-you email preview"
                                     srcDoc={previewHtml}
+                                    sandbox="allow-same-origin"
                                     scrolling="no"
                                     onLoad={resizePreviewIframe}
                                     className="w-full rounded-md border-0 bg-white"

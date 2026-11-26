@@ -1,312 +1,222 @@
 'use client';
 
-import { MonogramMark } from '@/components/MonogramMark';
 import nativeStyles from './NativeTemplate.module.css';
 import { getSectionTitleStyle } from '@/lib/theme-engine';
-import Image from 'next/image';
-import { Heart, Car, Hotel, Camera, Gift, QrCode, Church, Wine, UtensilsCrossed, Sparkles } from 'lucide-react';
+import { Heart, Hash } from 'lucide-react';
 import { BioSection, DetailsSection, GallerySection, GiftSection, TimelineSection, VideoSection, AttireSection } from '../wedding';
-import { SharedNewSections, parseTimelineItems, useCountdown } from './shared';
-import { parseDressCodeValue } from '@/lib/dress-code';
+import {
+  resolveCouplePhoto,
+  resolveTemplateCopy,
+  resolveWeddingMedia,
+  SharedNewSections,
+  TEMPLATE_ELEMENT_ASSETS,
+  TemplateHeroActions,
+  useCountdown,
+  WeddingHeroVisual,
+  WeddingMonogram,
+} from './shared';
 import type { TemplateProps } from '@/types/wedding';
 
 export default function VelureEditorialTemplate({ wedding, gallery, isExpired }: TemplateProps) {
   const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
   const titleStyle = getSectionTitleStyle(wedding);
-  const motifColor = wedding.motif_color || '#4E5D4C'; // Dark Sage Green default from Image 4
-  const heroImage = wedding.hero_image || wedding.couple_photo || '/logo.png';
-  const couplePhoto = wedding.couple_photo || heroImage;
-  const dressCodeSettings = parseDressCodeValue(wedding.dress_code, motifColor);
+  const motifColor = wedding.motif_color || '#4E5D4C';
+  const heroImage = resolveWeddingMedia(wedding, gallery);
+  const couplePhoto = resolveCouplePhoto(wedding, gallery);
+  const copy = resolveTemplateCopy(wedding);
   const { timeLeft, isPast } = useCountdown(wedding.wedding_date, wedding.wedding_time);
 
-  const weddingDate = wedding.wedding_date
+  const parsedDate = wedding.wedding_date
     ? new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`)
-    : new Date();
+    : null;
+  const hasValidDate = Boolean(parsedDate && !Number.isNaN(parsedDate.getTime()));
+  const formattedMonth = hasValidDate ? parsedDate!.toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : '';
+  const formattedDay = hasValidDate ? parsedDate!.getDate() : '';
+  const formattedYear = hasValidDate ? parsedDate!.getFullYear() : '';
+  const formattedWeekday = hasValidDate ? parsedDate!.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase() : '';
 
-  const formattedMonth = weddingDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-  const formattedDay = weddingDate.getDate();
-  const formattedYear = weddingDate.getFullYear();
-  const formattedWeekday = weddingDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-
-  const defaultMilestones = [
-    { time: wedding.wedding_time || '4:00 PM', event: 'Ceremony' },
-    { time: '5:00 PM', event: 'Cocktail Hour' },
-    { time: '6:30 PM', event: 'Dinner & Toasts' },
-    { time: '8:30 PM', event: 'Dancing & Celebration' },
-  ];
-  const timelineMilestones = parseTimelineItems(wedding.program_timeline, defaultMilestones);
-
-  const dressPalette = dressCodeSettings.guests.colors?.length
-    ? dressCodeSettings.guests.colors
-    : ['#3D4D3B', '#758673', '#D4C3B2', '#E8DDD0', '#C5A059'];
+  const showSecondPortrait = Boolean(couplePhoto && couplePhoto !== heroImage);
 
   return (
     <div
-      data-native-template="VelureEditorial" data-native-card-custom={wedding.card_style && wedding.card_style !== 'default' ? 'true' : undefined} className={`velure-editorial-template relative pb-28 font-serif selection:bg-[var(--native-action)] selection:text-white ${nativeStyles.native}`}
+      data-native-template="VelureEditorial"
+      data-native-card-custom={wedding.card_style && wedding.card_style !== 'default' ? 'true' : undefined}
+      className={`velure-editorial-template relative overflow-x-clip pb-28 font-serif selection:bg-[var(--native-action)] selection:text-white ${nativeStyles.native}`}
       style={{
         '--native-paper': hasBackgroundChoice ? 'var(--builder-paper)' : '#F8F6F0',
         '--native-ink': hasBackgroundChoice ? 'var(--builder-ink)' : '#2A3329',
-        backgroundColor: 'var(--native-paper)', // Warm Alabaster Ivory
+        backgroundColor: 'var(--native-paper)',
         color: 'var(--native-ink)',
       } as React.CSSProperties}
     >
-      {/* Marble / Gold Vein Ambiance */}
+      {/* Subtle cotton deckle finish */}
+      <div aria-hidden="true" data-native-grain className="pointer-events-none absolute inset-0 z-0 opacity-[0.12]" />
+
+      {/* Soft Ambient Gradient Wash (no expensive full-viewport blur filter) */}
       <div
-        className="fixed inset-0 pointer-events-none opacity-20"
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 opacity-30"
         style={{
           backgroundImage:
-            'radial-gradient(ellipse at 80% 20%, var(--native-accent) 0%, transparent 40%), radial-gradient(ellipse at 20% 80%, var(--native-accent) 0%, transparent 40%)',
-          filter: 'blur(60px)',
+            'radial-gradient(circle at 82% 14%, color-mix(in srgb, var(--native-accent) 28%, transparent) 0%, transparent 45%), radial-gradient(circle at 18% 82%, color-mix(in srgb, var(--native-accent) 22%, transparent) 0%, transparent 45%)',
         }}
       />
 
-      {/* ── PANEL 1: ARCH MONOGRAM, EDITORIAL TITLES, HERO & FLOATING MUSIC PLAYER ── */}
-      <section data-native-composition data-native-hero className="relative max-w-2xl mx-auto px-4 sm:px-8 pt-12 pb-16 text-center z-10">
-        <MonogramMark initials={wedding.logo_initials} brideName={wedding.bride_name} groomName={wedding.groom_name} shape={wedding.logo_shape} color={wedding.logo_color} motifColor={motifColor} animation={wedding.logo_animation} fontFamily={wedding.logo_font ? `var(--font-${wedding.logo_font.toLowerCase()}, var(--font-serif))` : undefined} size="lg" className="mx-auto" />
+      {/* ── PANEL 1: MONOGRAM, EDITORIAL TITLES, HERO & SILK RIBBON ACCENT ── */}
+      <section data-native-composition data-native-hero className="relative z-10 mx-auto max-w-2xl px-4 pt-12 pb-16 text-center sm:px-8">
+        {/* Bespoke silk chiffon & peony accent corner on desktop */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={TEMPLATE_ELEMENT_ASSETS.ribbonVelvet}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-4 -right-6 hidden w-44 rotate-6 object-contain opacity-65 sm:block md:w-52"
+        />
 
-        <p className="text-[10px] font-sans uppercase tracking-[0.35em] text-[var(--native-ink)] font-semibold mb-3">
-          Together With Their Families
+        <WeddingMonogram wedding={wedding} className="mx-auto mb-5" />
+
+        <p className="mb-3 text-[10px] font-sans font-semibold uppercase tracking-[0.35em] text-[var(--native-ink)] opacity-80">
+          {copy.eyebrow}
         </p>
 
-        {/* Couple Title: Didone Serif + Gold Script "and" */}
-        <h1 data-native-title className={`text-4xl sm:text-6xl font-serif text-[var(--native-ink)] tracking-tight leading-[0.95] break-words uppercase ${titleStyle.className}`} style={titleStyle.style}>
+        <h1
+          data-native-title
+          className={`break-words font-serif text-4xl uppercase leading-[0.95] tracking-tight text-[var(--native-ink)] sm:text-6xl ${titleStyle.className}`}
+          style={titleStyle.style}
+        >
           <span>{wedding.bride_name}</span>
-          <span className="block text-2xl sm:text-3xl font-light italic text-[var(--native-accent)] my-2 lowercase font-serif">
+          <span className="my-2 block font-serif text-2xl font-light lowercase italic text-[var(--native-accent)] sm:text-3xl">
             and
           </span>
           <span>{wedding.groom_name}</span>
         </h1>
 
-        <div className="flex justify-center my-4">
-          <Heart className="w-3.5 h-3.5 fill-current text-[var(--native-accent)]" />
+        <div className="my-4 flex justify-center">
+          <Heart className="h-3.5 w-3.5 fill-current text-[var(--native-accent)]" aria-hidden="true" />
         </div>
 
-        {/* Boxed Date Display (Image 4 replica) */}
-        <div className="inline-flex items-center gap-4 text-xs font-sans tracking-widest text-[var(--native-ink)] border-y border-[var(--native-border)]/40 py-2.5 px-8 my-2">
-          <span className="font-bold">{formattedMonth}</span>
-          <span className="text-2xl font-serif font-bold text-[var(--native-ink)]">{formattedDay}</span>
-          <span className="font-bold">{formattedYear}</span>
-        </div>
-        <p className="text-[10px] font-sans uppercase tracking-[0.3em] text-[var(--native-ink)] mt-1">
-          {formattedWeekday}
-        </p>
+        {hasValidDate && (
+          <>
+            <div className="my-2 inline-flex items-center gap-4 border-y border-[var(--native-border)]/45 px-8 py-2.5 text-xs font-sans tracking-widest text-[var(--native-ink)]">
+              <span className="font-bold">{formattedMonth}</span>
+              <span className="font-serif text-2xl font-bold text-[var(--native-ink)]">{formattedDay}</span>
+              <span className="font-bold">{formattedYear}</span>
+            </div>
+            <p className="mt-1 text-[10px] font-sans uppercase tracking-[0.3em] text-[var(--native-ink)] opacity-80">
+              {formattedWeekday}
+            </p>
+          </>
+        )}
 
-        {/* Full Vertical Photo Frame with Floating Spotify Player */}
-        <div data-native-portrait className="relative mt-8 max-w-lg mx-auto">
-          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl shadow-2xl border-4 border-white">
-            <Image
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <a
+            data-wedding-control="primary"
+            href={copy.ctaHref}
+            className="inline-flex min-h-[46px] items-center justify-center rounded-full bg-[var(--native-action)] px-9 py-3 text-xs font-sans font-bold uppercase tracking-[0.24em] text-[var(--native-on-action)] shadow-md transition-transform"
+          >
+            {copy.ctaLabel}
+          </a>
+          <TemplateHeroActions wedding={wedding} variant="editorial" />
+        </div>
+
+        {/* Full Portrait Frame */}
+        <div data-native-portrait className="relative mx-auto mt-10 max-w-lg">
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl border-4 border-white shadow-2xl">
+            <WeddingHeroVisual
+              wedding={wedding}
+              gallery={gallery}
               src={heroImage}
-              alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-              priority
-              fill
-              sizes="(max-width: 768px) 100vw, 512px"
-              className="object-cover"
+              ornamentSrc={TEMPLATE_ELEMENT_ASSETS.ribbonVelvet}
+              imgClassName="h-full w-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+            {heroImage ? (
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+            ) : null}
           </div>
 
-          {wedding.background_music_enabled && wedding.background_music_url && (
-            <div data-native-card className="absolute -bottom-8 left-4 right-4 sm:left-8 sm:right-8 rounded-2xl p-4 shadow-xl border border-[var(--native-border)] z-20 bg-[var(--native-paper)]">
-              <p className="text-base mb-2">{wedding.background_music_title || 'Our Wedding Song'}</p>
-              <audio controls preload="none" src={wedding.background_music_url} aria-label={wedding.background_music_title || 'Our wedding song'} />
+          {wedding.background_music_enabled && wedding.background_music_url ? (
+            <div data-native-card className="mx-auto mt-6 max-w-sm rounded-2xl border border-[var(--native-border)] bg-[var(--native-paper)] p-4 shadow-md">
+              <p className="mb-2 text-xs font-sans uppercase tracking-[0.2em] text-[var(--native-ink)] opacity-80">
+                {wedding.background_music_title || 'Our Wedding Song'}
+              </p>
+              <audio
+                controls
+                preload="none"
+                src={wedding.background_music_url}
+                aria-label={wedding.background_music_title || 'Our wedding song'}
+                className="w-full"
+              />
             </div>
-          )}
+          ) : null}
         </div>
       </section>
 
       {!wedding.is_thank_you_mode && wedding.wedding_date && (
-        <section id="countdown" data-native-composition data-native-countdown-section className="relative max-w-2xl mx-auto px-4 sm:px-8 py-12 text-center z-10">
-          <p className="text-[10px] font-sans uppercase tracking-[0.35em] text-[var(--native-ink)] mb-3">
+        <section id="countdown" data-native-composition data-native-countdown-section className="relative z-10 mx-auto max-w-2xl px-4 py-12 text-center sm:px-8">
+          <p className="mb-3 text-[10px] font-sans uppercase tracking-[0.35em] text-[var(--native-ink)] opacity-80">
             {isPast ? 'Our Wedding Day Has Arrived' : 'Until We Say I Do'}
           </p>
-          <h2 data-native-title className={`font-serif text-3xl sm:text-4xl text-[var(--native-ink)] mb-7 ${titleStyle.className}`} style={titleStyle.style}>
+          <h2
+            data-native-title
+            className={`mb-7 font-serif text-3xl text-[var(--native-ink)] sm:text-4xl ${titleStyle.className}`}
+            style={titleStyle.style}
+          >
             The Countdown
           </h2>
-          <div data-native-countdown className="grid grid-cols-4 border-y border-[var(--native-border)] py-6 max-w-md mx-auto">
+          <div data-native-countdown role="timer" aria-label="Time until the wedding" className="mx-auto grid max-w-md grid-cols-4 border-y border-[var(--native-border)] py-6">
             {Object.entries(timeLeft).map(([label, value]) => (
-              <div key={label} className="min-w-0 px-1 border-r last:border-r-0 border-[var(--native-border)]">
-                <span className="block font-serif text-2xl sm:text-4xl tabular-nums text-[var(--native-ink)]">{String(value).padStart(2, '0')}</span>
-                <span className="block mt-2 text-[9px] sm:text-[10px] uppercase tracking-wide font-sans text-[var(--native-ink)]">{label}</span>
+              <div key={label} className="min-w-0 border-r border-[var(--native-border)] px-1 last:border-r-0">
+                <span className="block font-serif text-2xl tabular-nums text-[var(--native-ink)] sm:text-4xl">{String(value).padStart(2, '0')}</span>
+                <span className="mt-2 block text-[9px] font-sans uppercase tracking-wide text-[var(--native-ink)] sm:text-[10px]">{label}</span>
               </div>
             ))}
           </div>
         </section>
       )}
 
-      {/* ── PANEL 2: THE BIG DAY TIMELINE & DRESS CODE PALETTE (From Image 4) ── */}
-      <section data-native-composition className="relative max-w-2xl mx-auto px-4 sm:px-8 pt-20 pb-12 text-center z-10">
-        <h2 data-native-title className={`text-sm sm:text-base font-sans font-bold uppercase tracking-[0.35em] text-[var(--native-ink)] mb-1 ${titleStyle.className}`} style={titleStyle.style}>
-          The Big Day
-        </h2>
-        <div className="flex justify-center mb-8">
-          <Heart className="w-3 h-3 fill-current text-[var(--native-accent)]" />
-        </div>
-
-        {/* Dynamic Milestone Timeline with Circular Icons (Image 4 replica) */}
-        <div className="relative max-w-md mx-auto space-y-6 text-left pl-6 sm:pl-10 border-l border-[var(--native-border)]/40 my-8">
-          {timelineMilestones.map((item, idx) => (
-            <div key={`milestone-${idx}`} className="relative">
-              <span className="absolute -left-[31px] sm:-left-[47px] top-0.5 w-6 h-6 rounded-full bg-[var(--native-action)] text-[var(--native-on-action)] flex items-center justify-center text-[10px] shadow-sm">
-                {idx === 0 ? <Church size={12} strokeWidth={1.5} aria-hidden="true" /> : idx === 1 ? <Wine size={12} strokeWidth={1.5} aria-hidden="true" /> : idx === 2 ? <UtensilsCrossed size={12} strokeWidth={1.5} aria-hidden="true" /> : <Sparkles size={12} strokeWidth={1.5} aria-hidden="true" />}
-              </span>
-              <p className="text-xs font-bold font-sans uppercase tracking-wider text-[var(--native-accent)]">
-                {item.time ? `${item.time} • ` : ''}{item.event}
+      {/* ── OPTIONAL COUPLE QUOTE, HASHTAG & SECONDARY PORTRAIT ARCH ── */}
+      {(wedding.quote?.trim() || wedding.hashtag?.trim() || showSecondPortrait) && (
+        <section data-native-composition className="relative z-10 mx-auto max-w-2xl px-4 py-10 text-center sm:px-8">
+          {wedding.quote?.trim() && (
+            <div data-native-card className="mx-auto my-4 max-w-md rounded-3xl border border-[var(--native-border)]/45 bg-white/60 p-6 text-center backdrop-blur-sm sm:p-8">
+              <p className="mb-2 font-serif text-2xl text-[var(--native-accent)]">&ldquo;</p>
+              <p className="font-serif text-sm italic leading-relaxed text-[var(--native-ink)] sm:text-base">
+                &ldquo;{wedding.quote.trim()}&rdquo;
               </p>
-              {idx === 0 && wedding.venue_name && (
-                <p className="text-xs text-[var(--native-ink)]">{wedding.venue_name}</p>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Dress Code: Semi Formal with dynamic circular swatches (From Image 4) */}
-        <div className="mt-12 pt-6 border-t border-[var(--native-border)]/30">
-          <p className="text-[10px] font-sans font-bold uppercase tracking-[0.3em] text-[var(--native-ink)] mb-1">
-            Dress Code
-          </p>
-          <p className="font-serif italic text-lg sm:text-xl text-[var(--native-ink)] mb-4">
-            {dressCodeSettings.guests.attire || 'Semi Formal'}
-          </p>
-          {dressCodeSettings.guests.notes && <p className="text-sm mb-4">{dressCodeSettings.guests.notes}</p>}
-          <div className="flex justify-center items-center gap-3 flex-wrap">
-            {dressPalette.map((color, idx) => (
-              <span
-                key={`${color}-${idx}`}
-                className="w-7 h-7 rounded-full border border-white shadow-sm transition-transform hover:scale-110"
-                style={{ backgroundColor: color }}
-                title={`Color: ${color}`}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SAGE GREEN WAVE SECTION: REGISTRY & QR CODE (From Image 4) ── */}
-      <section data-native-accent-panel className="relative bg-[var(--native-action)] text-[var(--native-on-action)] py-14 px-4 sm:px-8 text-center my-8 rounded-3xl mx-4 sm:mx-8 shadow-xl">
-        <div className="max-w-md mx-auto space-y-4">
-          <div data-native-card className="w-10 h-10 rounded-full bg-white/10 mx-auto flex items-center justify-center border border-white/20">
-            <Gift className="w-5 h-5 text-[var(--native-accent)]" />
-          </div>
-          <h3 data-native-title className={`font-serif text-lg sm:text-xl font-bold uppercase tracking-wider text-[var(--native-paper)] ${titleStyle.className}`} style={titleStyle.style}>
-            Your Presence Is The Best Gift
-          </h3>
-          <p className="text-xs font-serif italic text-[var(--native-ink)] leading-relaxed">
-            {wedding.gift_bank || wedding.gift_account_number
-              ? 'If you wish to honor us with a wedding gift, a contribution to our future means the world to us.'
-              : 'Having you with us to share this celebration is the greatest gift of all!'}
-          </p>
-
-          {/* Dynamic Bank / Registry details if present */}
-          {(wedding.gift_bank || wedding.gift_account_number) && (
-            <div data-native-card className="bg-white/10 rounded-2xl p-4 max-w-xs mx-auto border border-white/20 text-xs text-white/90 space-y-1">
-              {wedding.gift_bank && <p className="font-bold text-[var(--native-paper)]">{wedding.gift_bank}</p>}
-              {wedding.gift_account_number && (
-                <p className="font-mono tracking-wider">{wedding.gift_account_number}</p>
-              )}
-              {wedding.gift_account_name && (
-                <p className="text-[10px] text-white/70">{wedding.gift_account_name}</p>
-              )}
+              <div className="mt-4 flex justify-center">
+                <Heart className="h-3 w-3 fill-current text-[var(--native-accent)]" aria-hidden="true" />
+              </div>
             </div>
           )}
 
-          {/* QR Code Presentation Box */}
-          <div data-native-card className="mt-4 p-4 bg-white rounded-2xl inline-block shadow-lg">
-            <div className="w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center bg-neutral/20 text-[var(--native-ink)] overflow-hidden">
-              {wedding.gift_qr_image ? (
-                <div className="relative w-full h-full">
-                  <Image
-                    src={wedding.gift_qr_image}
-                    alt="Gift Registry QR"
-                    fill
-                    sizes="128px"
-                    className="object-contain"
+          {wedding.hashtag?.trim() && (
+            <div data-native-card className="mx-auto mt-6 max-w-xs rounded-2xl border border-[var(--native-border)]/35 bg-white/70 p-4 text-center shadow-sm">
+              <Hash className="mx-auto mb-1.5 h-5 w-5 text-[var(--native-accent)]" aria-hidden="true" />
+              <p className="text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-[var(--native-ink)]">Capture &amp; Tag</p>
+              <p className="mt-1 font-serif text-sm italic text-[var(--native-ink)]">
+                #{wedding.hashtag.replace(/^#/, '')}
+              </p>
+            </div>
+          )}
+
+          {showSecondPortrait && (
+            <div className="relative mx-auto mt-8 max-w-xs">
+              <div data-native-card className="relative aspect-[3/4] w-full overflow-hidden rounded-t-full border-2 border-[var(--native-border)]/60 bg-white p-1.5 shadow-lg">
+                <div className="relative h-full w-full overflow-hidden rounded-t-full">
+                  <WeddingHeroVisual
+                    wedding={wedding}
+                    gallery={gallery}
+                    src={couplePhoto}
+                    alt={`${wedding.bride_name} and ${wedding.groom_name}`}
+                    imgClassName="h-full w-full object-cover"
                   />
                 </div>
-              ) : (
-                <QrCode className="w-24 h-24 text-[var(--native-ink)]" />
-              )}
+              </div>
             </div>
-            <p className="text-[9px] font-sans font-bold uppercase tracking-widest text-[var(--native-ink)] mt-2">
-              Scan To Registry
-            </p>
-          </div>
-        </div>
-      </section>
+          )}
+        </section>
+      )}
 
-      {/* ── PANEL 3: GUEST INFORMATION & RSVP (From Image 4) ── */}
-      <section data-native-composition className="relative max-w-2xl mx-auto px-4 sm:px-8 py-12 text-center z-10">
-        <h2 data-native-title className={`text-xl sm:text-2xl font-serif text-[var(--native-ink)] tracking-wider mb-1 ${titleStyle.className}`} style={titleStyle.style}>
-          RSVP
-        </h2>
-        <div className="flex justify-center mb-3">
-          <Heart className="w-3 h-3 fill-current text-[var(--native-accent)]" />
-        </div>
-        <p className="text-xs font-sans uppercase tracking-[0.25em] text-[var(--native-ink)] mb-6">
-          Kindly reply by {wedding.rsvp_deadline || 'the designated date'}
-        </p>
-
-        <a data-wedding-control="primary"
-                href="#rsvp"
-          className="inline-flex min-h-[48px] items-center justify-center px-10 py-3.5 rounded-full bg-[var(--native-action)] text-[var(--native-on-action)] text-xs font-sans font-bold uppercase tracking-[0.25em] shadow-lg transition-transform hover:scale-105"
-        >
-          Yes, I&apos;ll Be There!
-        </a>
-
-        {/* Guest Information Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center mt-14 mb-10">
-          <div data-native-card className="p-4 rounded-2xl bg-white/70 border border-[var(--native-border)]/20 shadow-sm">
-            <Car className="w-6 h-6 text-[var(--native-accent)] mx-auto mb-2" />
-            <p className="text-xs font-sans font-bold uppercase tracking-wider text-[var(--native-ink)]">Transport</p>
-            <p className="text-[10px] text-[var(--native-ink)] mt-1">
-              Shuttle service available from designated venues.
-            </p>
-          </div>
-
-          <div data-native-card className="p-4 rounded-2xl bg-white/70 border border-[var(--native-border)]/20 shadow-sm">
-            <Hotel className="w-6 h-6 text-[var(--native-accent)] mx-auto mb-2" />
-            <p className="text-xs font-sans font-bold uppercase tracking-wider text-[var(--native-ink)]">Stay</p>
-            <p className="text-[10px] text-[var(--native-ink)] mt-1">
-              Accommodations and room blocks reserved for guests.
-            </p>
-          </div>
-
-          <div data-native-card className="p-4 rounded-2xl bg-white/70 border border-[var(--native-border)]/20 shadow-sm">
-            <Camera className="w-6 h-6 text-[var(--native-accent)] mx-auto mb-2" />
-            <p className="text-xs font-sans font-bold uppercase tracking-wider text-[var(--native-ink)]">Photos</p>
-            <p className="text-[10px] text-[var(--native-ink)] mt-1">
-              Tag our moments with #{wedding.hashtag || `${wedding.bride_name}${wedding.groom_name}`.replace(/\s+/g, '')}
-            </p>
-          </div>
-        </div>
-
-        {/* Romantic Love Quote in Bordered Box */}
-        <div data-native-card className="p-6 sm:p-8 rounded-3xl border border-[var(--native-border)]/40 bg-white/50 max-w-md mx-auto my-6 text-center">
-          <p className="text-2xl text-[var(--native-accent)] mb-2 font-serif">&ldquo;</p>
-          <p className="text-sm sm:text-base font-serif italic text-[var(--native-ink)] leading-relaxed">
-            &ldquo;{wedding.quote || 'In all the world, there is no heart for me like yours. In all the world, there is no love for you like mine.'}&rdquo;
-          </p>
-          <div className="flex justify-center mt-4">
-            <Heart className="w-3 h-3 fill-current text-[var(--native-accent)]" />
-          </div>
-        </div>
-
-        {/* Bottom Arch Photo Frame with Couple Photo */}
-        <div className="relative max-w-xs mx-auto mt-8">
-          <div data-native-card className="relative aspect-[3/4] w-full overflow-hidden rounded-t-full border-2 border-[var(--native-border)]/60 shadow-lg p-1.5 bg-white">
-            <div className="relative w-full h-full overflow-hidden rounded-t-full">
-              <Image
-                src={couplePhoto}
-                alt="Love on Film"
-                fill
-                sizes="320px"
-                className="object-cover"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── STANDARD QUICKWEDS STRUCTURED SECTIONS ── */}
       {wedding.story && <BioSection id="bio" wedding={wedding} />}
       <DetailsSection id="details" wedding={wedding} />
 
@@ -321,6 +231,8 @@ export default function VelureEditorialTemplate({ wedding, gallery, isExpired }:
         gallery={gallery}
         template={wedding.template}
         motifColor={motifColor}
+        cardStyle={wedding.card_style}
+        wedding={wedding}
         galleryLayout={wedding.gallery_layout || 'editorial'}
       />
 
@@ -334,12 +246,12 @@ export default function VelureEditorialTemplate({ wedding, gallery, isExpired }:
           template={wedding.template}
           motifColor={motifColor}
           templateStyle={wedding.template_style}
+          wedding={wedding}
         />
       )}
 
       <GiftSection id="gift" wedding={wedding} />
 
-      {/* Shared Lower Sections (Entourage, Venue, Guestbook, RSVP) */}
       <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
     </div>
   );

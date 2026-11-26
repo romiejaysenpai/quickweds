@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Download, Bell, X } from 'lucide-react';
 import { isNativeCapacitorApp } from '@/lib/capacitor';
+
+const GUEST_EXPERIENCE_PREFIXES = ['/w/', '/preview', '/seat/', '/entourage/'];
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -25,6 +28,8 @@ function wasRecentlyDismissed() {
 }
 
 export default function PWAInstaller() {
+  const pathname = usePathname() || '';
+  const isGuestInvitationRoute = GUEST_EXPERIENCE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -49,8 +54,10 @@ export default function PWAInstaller() {
       return;
     }
 
+    let promptTimer: number | undefined;
+
     void navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => undefined);
-    window.setTimeout(() => {
+    const statusTimer = window.setTimeout(() => {
       setIsStandalone(isStandaloneDisplay());
       setNotificationReady('Notification' in window && 'PushManager' in window);
     }, 0);
@@ -60,7 +67,8 @@ export default function PWAInstaller() {
       const promptEvent = event as BeforeInstallPromptEvent;
       setInstallPrompt(promptEvent);
       if (!isStandaloneDisplay() && !wasRecentlyDismissed()) {
-        window.setTimeout(() => setShowPrompt(true), 1800);
+        if (promptTimer !== undefined) window.clearTimeout(promptTimer);
+        promptTimer = window.setTimeout(() => setShowPrompt(true), 1800);
       }
     };
 
@@ -74,6 +82,8 @@ export default function PWAInstaller() {
     window.addEventListener('appinstalled', onAppInstalled);
 
     return () => {
+      window.clearTimeout(statusTimer);
+      if (promptTimer !== undefined) window.clearTimeout(promptTimer);
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
       window.removeEventListener('appinstalled', onAppInstalled);
     };
@@ -94,7 +104,7 @@ export default function PWAInstaller() {
     setShowPrompt(false);
   };
 
-  if (!supportsInstall || isStandalone || !showPrompt || !installPrompt) return null;
+  if (isGuestInvitationRoute || !supportsInstall || isStandalone || !showPrompt || !installPrompt) return null;
 
   return (
     <div className="fixed inset-x-3 bottom-3 z-[120] mx-auto max-w-md pb-[var(--safe-area-inset-bottom)] sm:bottom-5">

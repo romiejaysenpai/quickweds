@@ -1,0 +1,79 @@
+{
+  "generator": "image-generator + sharp RGBA extraction",
+  "transparent_background": true,
+  "assets": [
+    {
+      "id": "wax-seal",
+      "file": "public/templates/elements/element-wax-seal.webp",
+      "publicPath": "/templates/elements/element-wax-seal.webp",
+      "templates": ["envelope-wax-seal", "traditional", "love-letter", "estate", "romantic-estate"]
+    },
+    {
+      "id": "coastal-shells",
+      "file": "public/templates/elements/element-coastal-shells.webp",
+      "publicPath": "/templates/elements/element-coastal-shells.webp",
+      "templates": ["pearl-coastal", "riviera", "coastal-vow"]
+    },
+    {
+      "id": "meadow-wreath",
+      "file": "public/templates/elements/element-meadow-wreath.webp",
+      "publicPath": "/templates/elements/element-meadow-wreath.webp",
+      "templates": ["watercolor-meadow", "botanical-arch", "garden", "wildflower", "marigold-house"]
+    },
+    {
+      "id": "terracotta-florals",
+      "file": "public/templates/elements/element-terracotta-florals.webp",
+      "publicPath": "/templates/elements/element-terracotta-florals.webp",
+      "templates": ["torn-paper-terracotta", "boho", "saffron", "sunset-ceremony", "rustic"]
+    },
+    {
+      "id": "ribbon-velvet",
+      "file": "public/templates/elements/element-ribbon-velvet.webp",
+      "publicPath": "/templates/elements/element-ribbon-velvet.webp",
+      "templates": ["velure-editorial", "editorial-romance", "ribbon-romance", "romantic", "elegance"]
+    },
+    {
+      "id": "sakura-branch",
+      "file": "public/templates/elements/element-sakura-branch.webp",
+      "publicPath": "/templates/elements/element-sakura-branch.webp",
+      "templates": ["sakura", "petal-note", "whimsical"]
+    },
+    {
+      "id": "tropical-monstera",
+      "file": "public/templates/elements/element-tropical-monstera.webp",
+      "publicPath": "/templates/elements/element-tropical-monstera.webp",
+      "templates": ["tropical"]
+    },
+    {
+      "id": "celestial-astrolabe",
+      "file": "public/templates/elements/element-celestial-astrolabe.webp",
+      "publicPath": "/templates/elements/element-celestial-astrolabe.webp",
+      "templates": ["celestial", "midnight", "moonlit"]
+    },
+    {
+      "id": "deco-crest",
+      "file": "public/templates/elements/element-deco-crest.webp",
+      "publicPath": "/templates/elements/element-deco-crest.webp",
+      "templates": ["artdeco", "luxury", "royal", "regency", "luxury-planner"]
+    },
+    {
+      "id": "nordic-pine",
+      "file": "public/templates/elements/element-nordic-pine.webp",
+      "publicPath": "/templates/elements/element-nordic-pine.webp",
+      "templates": ["nordic", "elopement", "minimal"]
+    },
+    {
+      "id": "vintage-cameo",
+      "file": "public/templates/elements/element-vintage-cameo.webp",
+      "publicPath": "/templates/elements/element-vintage-cameo.webp",
+      "templates": ["vintage", "heirloom", "winter-rose"]
+    },
+    {
+      "id": "paper-deckle",
+      "file": "public/templates/elements/texture-paper-deckle.webp",
+      "publicPath": "/templates/elements/texture-paper-deckle.webp",
+      "templates": ["stationery", "native", "classic", "garden", "editorial"]
+    }
+  ]
+}
+

@@ -4,9 +4,7 @@ import { validateEnv } from "./src/lib/env";
 // Validate environment variables on build/startup
 if (process.env.NODE_ENV !== 'production' || process.env.VALIDATE_ENV === 'true') {
   try {
-    // Only validate in non-build contexts or when explicitly requested
     if (typeof window === 'undefined') {
-      // Don't throw during config load, just warn
       validateEnv();
     }
   } catch (e) {
@@ -16,6 +14,10 @@ if (process.env.NODE_ENV !== 'production' || process.env.VALIDATE_ENV === 'true'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  experimental: {
+    agentUpgrade: 'security',
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
+  },
   // A lockfile also exists in the parent directory. Pinning the project root
   // keeps Turbopack from scanning and resolving modules from the wrong tree.
   turbopack: {
@@ -23,6 +25,23 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=(self), payment=(self)' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'self';" },
+        ],
+      },
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        ],
+      },
       ...[
         '/seat/:token',
         '/entourage/respond/:token',
@@ -32,10 +51,13 @@ const nextConfig: NextConfig = {
         '/planner',
         '/profile',
         '/supplier/dashboard',
-        '/reviews',
+        '/rsvp/manage',
       ].map((source) => ({
         source,
-        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+        headers: [
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+          { key: 'Cache-Control', value: 'private, no-store' },
+        ],
       })),
       {
         source: '/:path*.(png|jpg|jpeg|webp|avif|gif|svg|ico|woff|woff2)',
@@ -56,7 +78,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/templates/:path+',
+        source: '/templates/:path+.(png|jpg|jpeg|webp|avif|gif|svg|json)',
         headers: [
           {
             key: 'Cache-Control',

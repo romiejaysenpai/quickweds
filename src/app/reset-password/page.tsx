@@ -5,9 +5,26 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { CheckCircle2, KeyRound, Loader2, TriangleAlert } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { invalidateSessionCache } from '@/lib/session-cache';
 import { getSafeSupabaseSession } from '@/lib/supabase-auth';
 
 type RecoveryState = 'checking' | 'ready' | 'invalid' | 'complete';
+
+const inFlightRecoveryExchanges = new Map<string, ReturnType<typeof supabase.auth.exchangeCodeForSession>>();
+
+function exchangeRecoveryCodeOnce(code: string) {
+    const existing = inFlightRecoveryExchanges.get(code);
+    if (existing) return existing;
+
+    const promise = supabase.auth.exchangeCodeForSession(code).finally(() => {
+        invalidateSessionCache();
+        window.setTimeout(() => {
+            inFlightRecoveryExchanges.delete(code);
+        }, 15_000);
+    });
+    inFlightRecoveryExchanges.set(code, promise);
+    return promise;
+}
 
 function hasRecoveryParameters() {
     if (typeof window === 'undefined') return false;
@@ -39,7 +56,24 @@ export default function ResetPasswordPage() {
             }
         });
 
-        void getSafeSupabaseSession().then(({ session, error: sessionError }) => {
+        void (async () => {
+            const code = typeof window !== 'undefined'
+                ? new URLSearchParams(window.location.search).get('code')
+                : null;
+
+            if (code) {
+                const { error: exchangeError } = await exchangeRecoveryCodeOnce(code);
+                if (!active) return;
+                if (exchangeError) {
+                    setError('We could not validate this recovery link. Please request a new one.');
+                    setRecoveryState('invalid');
+                    return;
+                }
+                setRecoveryState('ready');
+                return;
+            }
+
+            const { session, error: sessionError } = await getSafeSupabaseSession();
             if (!active) return;
 
             if (sessionError) {
@@ -52,7 +86,7 @@ export default function ResetPasswordPage() {
                 if (current === 'ready' || current === 'complete') return current;
                 return session && arrivedFromRecoveryLink ? 'ready' : 'invalid';
             });
-        });
+        })();
 
         return () => {
             active = false;
@@ -83,6 +117,7 @@ export default function ResetPasswordPage() {
             setPassword('');
             setConfirmation('');
             await supabase.auth.signOut({ scope: 'local' });
+            invalidateSessionCache();
         } catch (updateError) {
             setError(updateError instanceof Error ? updateError.message : 'Unable to update your password.');
         } finally {

@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState, useRef } from 'react';
+import { Suspense, use, useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -64,8 +64,7 @@ function getFilterCss(filterId: PhotoFilterId) {
     return PHOTO_FILTERS.find((filter) => filter.id === filterId)?.css || 'none';
 }
 
-export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id: weddingId } = use(params);
+function WeddingPhotoPortalContent({ weddingId }: { weddingId: string }) {
     const searchParams = useSearchParams();
     const [wedding, setWedding] = useState<WeddingLite | null>(null);
     const [photos, setPhotos] = useState<SharedPhoto[]>([]);
@@ -191,6 +190,12 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
         };
     }, [form.code, weddingId]);
 
+    useEffect(() => {
+        return () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        };
+    }, [previewUrl]);
+
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
@@ -208,14 +213,20 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
             setShowCaptureFlash(true);
             window.setTimeout(() => setShowCaptureFlash(false), 360);
             if (navigator.vibrate) navigator.vibrate(45);
-            // Create a local blob URL for live preview
-            setPreviewUrl(URL.createObjectURL(file));
+            // Create a local blob URL for live preview (previous URL is revoked in effect cleanup)
+            setPreviewUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev);
+                return URL.createObjectURL(file);
+            });
         }
     };
 
     const clearSelection = () => {
         setSelectedFile(null);
-        setPreviewUrl(null);
+        setPreviewUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+        });
         setSelectedFilter('none');
         setOverlayText('');
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -762,5 +773,20 @@ export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ i
                 )}
             </AnimatePresence>
         </div>
+    );
+}
+
+export default function WeddingPhotoPortalPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id: weddingId } = use(params);
+    return (
+        <Suspense
+            fallback={
+                <div className="flex min-h-screen items-center justify-center bg-[#fafafa]">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            }
+        >
+            <WeddingPhotoPortalContent weddingId={weddingId} />
+        </Suspense>
     );
 }

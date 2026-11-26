@@ -385,7 +385,7 @@ export default function PlannerOverview({ weddingId }: { weddingId: string }) {
         </ul>
         <Link
           className="inline-block underline min-h-[44px]"
-          href={`/dashboard/${weddingId}/planner?tab=thanks`}
+          href={`/dashboard/${weddingId}/thank-you`}
         >
           Compose thank-you notes
         </Link>

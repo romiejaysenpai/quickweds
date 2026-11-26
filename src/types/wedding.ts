@@ -90,7 +90,7 @@ export interface RSVP {
     guest_email?: string; // Email for confirmation
     attendance: 'Yes' | 'No';
     num_guests: number;
-    rsvp_status?: 'pending' | 'confirmed' | 'declined';
+    rsvp_status?: 'pending' | 'confirmed' | 'confirmed_manual' | 'declined';
     guest_group?:
         | 'bride_family'
         | 'groom_family'

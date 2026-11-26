@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { invalidateSessionCache } from '@/lib/session-cache';
 import type { Session } from '@supabase/supabase-js';
 
 export function isInvalidRefreshTokenError(error: unknown) {
@@ -68,7 +69,8 @@ export function hasStoredSupabaseSession() {
 }
 
 export async function clearLocalSupabaseSession() {
-    // Clear storage first so signOut does not try to refresh a stale token.
+    // Clear storage and session cache first so signOut does not try to refresh a stale token.
+    invalidateSessionCache();
     clearStoredSupabaseAuth();
 
     try {
@@ -76,6 +78,7 @@ export async function clearLocalSupabaseSession() {
     } catch {
         // The session is already invalid; local storage is the source of truth here.
     } finally {
+        invalidateSessionCache();
         clearStoredSupabaseAuth();
     }
 }

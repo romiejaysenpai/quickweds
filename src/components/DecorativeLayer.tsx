@@ -1,8 +1,8 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
-export type AccentType = 'none' | 'eucalyptus' | 'pampas' | 'ribbon' | 'monstera' | 'sakura' | 'gold-arch' | 'sparkles' | 'petals' | 'dots';
+export type AccentType = 'olive' | 'pearls' | 'coastal' | 'deco' | 'clean' | 'none' | 'eucalyptus' | 'pampas' | 'ribbon' | 'monstera' | 'sakura' | 'gold-arch' | 'sparkles' | 'petals' | 'dots';
 
 interface DecorativeLayerProps {
     type: AccentType | string;
@@ -10,13 +10,37 @@ interface DecorativeLayerProps {
     color: string;
     opacity?: number;
     className?: string;
+    static?: boolean;
 }
 
-export default function DecorativeLayer({ type, position, color, opacity = 1, className = '' }: DecorativeLayerProps) {
-    if (type === 'none' || !type) return null;
+export default function DecorativeLayer({ type, position, color, opacity = 1, className = '', static: isStatic = false }: DecorativeLayerProps) {
+    const reducedMotion = useReducedMotion();
+    if (['none', 'auto', 'clean'].includes(type) || !type) return null;
 
     const getSVG = () => {
         switch (type) {
+            case 'olive':
+                return <svg viewBox="0 0 200 200" className="h-full w-full" fill="none" stroke={color} strokeWidth="1.5">
+                    <path d="M44 172Q120 124 146 28" />
+                    {[0, 1, 2, 3].map(i => <g key={i} transform={`translate(${i * 22} ${-i * 31})`}>
+                        <path d="M52 160Q26 136 38 118Q60 130 52 160ZM55 157Q88 162 94 139Q69 137 55 157Z" fill={color} fillOpacity=".16" />
+                    </g>)}
+                </svg>;
+            case 'pearls':
+                return <svg viewBox="0 0 200 200" className="h-full w-full" fill="none" stroke={color}>
+                    <ellipse cx="100" cy="100" rx="65" ry="81" strokeOpacity=".3" />
+                    {Array.from({ length: 24 }, (_, i) => <circle key={i} cx={100 + 65 * Math.cos(i * Math.PI / 12)} cy={100 + 81 * Math.sin(i * Math.PI / 12)} r="3.5" fill={color} fillOpacity=".25" />)}
+                </svg>;
+            case 'coastal':
+                return <svg viewBox="0 0 200 200" className="h-full w-full" fill="none" stroke={color} strokeWidth="1.5">
+                    <path d="M100 158C18 137 18 69 52 58C68 27 88 35 100 45C112 35 132 27 148 58C182 69 182 137 100 158Z" fill={color} fillOpacity=".08" />
+                    <path d="M100 158V45M100 158L52 58M100 158L148 58M100 158L29 92M100 158L171 92M85 164H115" />
+                </svg>;
+            case 'deco':
+                return <svg viewBox="0 0 200 200" className="h-full w-full" fill="none" stroke={color} strokeWidth="1.5">
+                    <path d="M100 18L169 100L100 182L31 100ZM100 34L155 100L100 166L45 100ZM100 18V182M31 100H169M69 64L100 100L131 64M69 136L100 100L131 136" />
+                    <circle cx="100" cy="100" r="8" fill={color} fillOpacity=".2" />
+                </svg>;
             case 'eucalyptus': // Botanical / Eucalyptus Foliage
                 return (
                     <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl" stroke="currentColor" fill="none">
@@ -123,6 +147,8 @@ export default function DecorativeLayer({ type, position, color, opacity = 1, cl
         'bottom-edge': 'bottom-0 left-1/2 -translate-x-1/2 translate-y-[30%] -rotate-90',
         'center': 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
     };
+
+    if (isStatic || reducedMotion) return <div aria-hidden="true" style={{ opacity }} className={`absolute h-32 w-32 pointer-events-none z-0 ${positionClasses[position]} ${className}`}>{getSVG()}</div>;
 
     return (
         <motion.div

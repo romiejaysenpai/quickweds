@@ -249,45 +249,55 @@ function DashboardWelcomeHero({
 }
 
 function CoupleOnboardingSection({
+    weddings,
     onCompleted,
 }: {
+    weddings: any[];
     onCompleted: (profile: AccountProfile) => void;
 }) {
     const [selectedItem, setSelectedItem] = useState('site');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
+    const primaryWedding = weddings[0];
+    const primaryWebsite = weddings.find((w) => !w.planner_only) || primaryWedding;
+
     const onboardingItems = [
         {
             id: 'site',
             title: 'Create your wedding site',
             body: 'Choose a template and start shaping the guest experience.',
-            href: '/builder',
+            href: primaryWebsite && !primaryWebsite.planner_only ? `/builder?edit=${primaryWebsite.id}` : '/builder',
             icon: Heart,
+            done: weddings.some((w) => !w.planner_only),
         },
         {
             id: 'details',
             title: 'Add details and photos',
             body: 'Bring in the date, venue, story, gallery, and dress code.',
-            href: '/builder',
+            href: primaryWebsite && !primaryWebsite.planner_only ? `/builder?edit=${primaryWebsite.id}` : '/builder',
             icon: ImagePlus,
+            done: weddings.some((w) => Boolean(w.venue_name || w.wedding_date || (Array.isArray(w.gallery_images) && w.gallery_images.length > 0))),
         },
         {
             id: 'share',
             title: 'Share your RSVP link',
             body: 'Once your site is ready, send guests one simple place to reply.',
-            href: '/user-guide',
+            href: primaryWebsite ? `/dashboard/${primaryWebsite.id}` : '/builder',
             icon: Send,
+            done: weddings.some((w) => !w.planner_only && Array.isArray(w.rsvps) && w.rsvps.length > 0),
         },
         {
             id: 'planner',
             title: 'Open the planner',
             body: 'Track tasks, guests, vendors, and budget from the dashboard.',
-            href: '/planner',
+            href: primaryWedding ? `/dashboard/${primaryWedding.id}/planner` : '/planner',
             icon: ClipboardList,
+            done: weddings.length > 0,
         },
     ];
 
+    const doneCount = onboardingItems.filter((item) => item.done).length;
     const selected = onboardingItems.find((item) => item.id === selectedItem) || onboardingItems[0];
     const SelectedIcon = selected.icon;
 
@@ -352,7 +362,12 @@ function CoupleOnboardingSection({
                 <div className="p-5 sm:p-7 lg:p-8">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Setup checklist</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Setup checklist</p>
+                                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-primary">
+                                    {doneCount} of {onboardingItems.length} done
+                                </span>
+                            </div>
                             <h3 className="mt-2 font-serif text-2xl font-bold text-foreground sm:text-3xl">
                                 Pick what you want to do next.
                             </h3>
@@ -392,8 +407,14 @@ function CoupleOnboardingSection({
                                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
                                             <Icon className="h-4 w-4" />
                                         </span>
-                                        <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-black ${isSelected ? 'bg-primary text-white' : 'bg-white text-text-secondary/50 ring-1 ring-border'}`}>
-                                            {index + 1}
+                                        <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-black ${
+                                            item.done
+                                                ? 'bg-emerald-600 text-white'
+                                                : isSelected
+                                                    ? 'bg-primary text-white'
+                                                    : 'bg-white text-text-secondary/50 ring-1 ring-border'
+                                        }`}>
+                                            {item.done ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
                                         </span>
                                     </div>
                                     <p className="mt-4 font-serif text-lg font-bold leading-tight text-foreground">{item.title}</p>
@@ -454,13 +475,13 @@ function StatusBadge({ wedding }: { wedding: any }) {
         colorClass = 'bg-accent/20 text-accent border-accent/30';
     } else if (weddingIsPast) {
         label = 'Completed';
-        colorClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+        colorClass = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
     } else if (rsvpClosed) {
         label = 'RSVP Closed';
         colorClass = 'bg-neutral text-text-secondary border-border';
     } else {
         label = 'Live';
-        colorClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+        colorClass = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
     }
 
     return (
@@ -471,44 +492,64 @@ function StatusBadge({ wedding }: { wedding: any }) {
     );
 }
 
+function formatDashboardDate(dateStr?: string | null) {
+    if (!dateStr) return 'Date to be announced';
+    const normalized = /^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim()) ? `${dateStr.trim()}T12:00:00` : dateStr;
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) return dateStr;
+    return parsed.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
 function DeleteButton({ weddingId, coupleName, onDeleted }: { weddingId: string; coupleName: string; onDeleted: () => void }) {
     const [confirming, setConfirming] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState('');
 
     const handleDelete = async () => {
+        if (deleting) return;
         setDeleting(true);
+        setDeleteError('');
         try {
             const { error } = await supabase
                 .from('weddings')
                 .update({ deleted_at: new Date().toISOString() })
                 .eq('id', weddingId);
-            if (!error) onDeleted();
+            if (error) {
+                setDeleteError(error.message || 'Could not delete wedding.');
+                return;
+            }
+            onDeleted();
+            setConfirming(false);
         } catch (e) {
             console.error(e);
+            setDeleteError(getErrorMessage(e));
         } finally {
             setDeleting(false);
-            setConfirming(false);
         }
     };
 
     if (confirming) {
         return (
-            <div className="flex items-center gap-2 bg-error-bg border border-error-text/20 rounded-lg px-3 py-2">
-                <span className="text-xs text-error-text font-bold flex-1">Delete wedding?</span>
-                <button onClick={handleDelete} disabled={deleting} className="text-xs text-error-text font-black hover:underline disabled:opacity-50">
-                    {deleting ? '...' : 'Yes'}
-                </button>
-                <button onClick={() => setConfirming(false)} className="text-xs text-text-secondary hover:text-foreground font-bold">
-                    Cancel
-                </button>
+            <div className="flex flex-col gap-1 bg-error-bg border border-error-text/20 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-error-text font-bold flex-1" title={coupleName}>Delete wedding?</span>
+                    <button type="button" onClick={handleDelete} disabled={deleting} className="text-xs text-error-text font-black hover:underline disabled:opacity-50">
+                        {deleting ? '...' : 'Yes'}
+                    </button>
+                    <button type="button" onClick={() => { setConfirming(false); setDeleteError(''); }} disabled={deleting} className="text-xs text-text-secondary hover:text-foreground font-bold disabled:opacity-50">
+                        Cancel
+                    </button>
+                </div>
+                {deleteError ? <p className="text-[11px] font-medium text-error-text">{deleteError}</p> : null}
             </div>
         );
     }
 
     return (
         <button
+            type="button"
             onClick={() => setConfirming(true)}
-            title="Delete wedding"
+            title={`Delete ${coupleName}`}
             className="h-10 w-10 sm:h-11 sm:w-11 rounded-lg sm:rounded-xl border border-border flex items-center justify-center text-text-secondary hover:bg-error-bg hover:text-error-text hover:border-error-text/30 transition-all flex-shrink-0"
         >
             <Trash2 className="w-4 h-4" />
@@ -524,6 +565,7 @@ export default function DashboardRedirect() {
     const [fetching, setFetching] = useState(true);
     const [dashboardError, setDashboardError] = useState('');
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [acceptingInviteId, setAcceptingInviteId] = useState<string | null>(null);
     const [checkingRole, setCheckingRole] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isWorkspacePickerOpen, setIsWorkspacePickerOpen] = useState(false);
@@ -541,31 +583,36 @@ export default function DashboardRedirect() {
         setFetching(true);
         setDashboardError('');
         try {
-            let { data, error } = await supabase
-                .from('weddings')
-                .select('*, rsvps(id)')
-                .eq('user_id', user.id)
-                .is('deleted_at', null)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.warn('Dashboard wedding query failed; retrying without RSVP relation:', error);
-                const fallback = await supabase
+            const loadOwned = async () => {
+                let { data, error } = await supabase
                     .from('weddings')
-                    .select('*')
+                    .select('*, rsvps(id)')
                     .eq('user_id', user.id)
                     .is('deleted_at', null)
                     .order('created_at', { ascending: false });
 
-                data = fallback.data?.map((wedding) => ({ ...wedding, rsvps: [] })) || null;
-                error = fallback.error;
-            }
-            
-            if (error) throw error;
-            const owned = data || [];
-            setWeddings(owned);
+                if (error) {
+                    console.warn('Dashboard wedding query failed; retrying without RSVP relation:', error);
+                    const fallback = await supabase
+                        .from('weddings')
+                        .select('*')
+                        .eq('user_id', user.id)
+                        .is('deleted_at', null)
+                        .order('created_at', { ascending: false });
 
-            const shared = await listSharedWeddings(user.email);
+                    data = fallback.data?.map((wedding) => ({ ...wedding, rsvps: [] })) || null;
+                    error = fallback.error;
+                }
+
+                if (error) throw error;
+                return data || [];
+            };
+
+            const [owned, shared] = await Promise.all([
+                loadOwned(),
+                listSharedWeddings(user.email),
+            ]);
+            setWeddings(owned);
             setSharedWeddings(shared);
             return { owned, shared };
         } catch (err) {
@@ -581,9 +628,16 @@ export default function DashboardRedirect() {
 
 
     const handleLogout = async () => {
+        if (isLoggingOut) return;
         setIsLoggingOut(true);
-        await logout();
-        router.replace('/');
+        try {
+            await logout();
+            router.replace('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+            setDashboardError('Could not sign out right now. Please try again.');
+            setIsLoggingOut(false);
+        }
     };
 
     const handleOpenWorkspace = useCallback(() => {
@@ -618,9 +672,12 @@ export default function DashboardRedirect() {
         if (!user) return;
         if (!adminChecked) return;
 
+        let cancelled = false;
+
         const guardAndFetch = async () => {
             setCheckingRole(true);
             const { data } = await getCachedSession();
+            if (cancelled) return;
             const token = data.session?.access_token;
 
             if (!token) {
@@ -638,23 +695,29 @@ export default function DashboardRedirect() {
                     return;
                 }
 
-                let profile: AccountProfile | null = null;
-                try {
-                    profile = await getClientAccountProfile(token);
-                    setAccountProfile(profile);
-                } catch (profileErr) {
-                    // Gracefully degrade — if account profile table is missing or API fails,
-                    // treat user as a regular couple user and continue loading dashboard.
-                    setAccountProfile(null);
-                    console.warn('Account profile check skipped (table may not exist):', profileErr);
-                }
+                const [profile, result] = await Promise.all([
+                    getClientAccountProfile(token).catch((profileErr) => {
+                        // Gracefully degrade — if account profile table is missing or API fails,
+                        // treat user as a regular couple user and continue loading dashboard.
+                        console.warn('Account profile check skipped (table may not exist):', profileErr);
+                        return null;
+                    }),
+                    fetchWeddings(),
+                ]);
 
+                if (cancelled) return;
+                setAccountProfile(profile);
                 setCheckingRole(false);
-                const result = await fetchWeddings();
+
+                if (profile && !profile.account_type && result.owned.length === 0 && result.shared.length === 0) {
+                    router.replace(getRoleAwareRedirect(null, '/dashboard'));
+                    return;
+                }
                 if (profile?.account_type === 'supplier' && result.owned.length === 0 && result.shared.length === 0) {
                     router.replace(getRoleAwareRedirect(profile.account_type, '/dashboard'));
                 }
             } catch (err) {
+                if (cancelled) return;
                 console.error('Dashboard load failed:', err);
                 setCheckingRole(false);
                 setFetching(false);
@@ -662,6 +725,9 @@ export default function DashboardRedirect() {
         };
 
         void guardAndFetch();
+        return () => {
+            cancelled = true;
+        };
     }, [user, loading, adminChecked, isAdmin, router, fetchWeddings, isLoggingOut]);
 
 
@@ -679,7 +745,7 @@ export default function DashboardRedirect() {
     return (
         <div className="mobile-safe-screen bg-background pb-16 sm:pb-20 mobile-safe-bottom">
             {/* Top nav */}
-            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md dark:bg-white/90 sm:p-4">
+            <div className="sticky top-0 z-50 border-b border-border bg-white/85 px-3 py-3 backdrop-blur-md sm:p-4">
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-2 sm:px-4">
                     <div className="flex items-center gap-8">
                         <Link href="/" className="flex min-w-[88px] flex-shrink-0 items-center sm:min-w-[104px]" aria-label="QuickWeds">
@@ -835,7 +901,7 @@ export default function DashboardRedirect() {
                                                 {wedding.bride_name} & {wedding.groom_name}
                                             </p>
                                             <p className="mt-1 truncate text-xs text-text-secondary">
-                                                {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                {formatDashboardDate(wedding.wedding_date)}
                                                 {wedding.venue_name ? ` - ${wedding.venue_name}` : ''}
                                             </p>
                                         </div>
@@ -892,7 +958,7 @@ export default function DashboardRedirect() {
                                                 {wedding.bride_name} & {wedding.groom_name}
                                             </p>
                                             <p className="mt-1 truncate text-xs text-text-secondary">
-                                                {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                {formatDashboardDate(wedding.wedding_date)}
                                                 {wedding.venue_name ? ` - ${wedding.venue_name}` : ''}
                                             </p>
                                         </div>
@@ -915,7 +981,7 @@ export default function DashboardRedirect() {
                 />
 
                 {accountProfile?.account_type === 'couple' && !accountProfile.onboarding_completed && (
-                    <CoupleOnboardingSection onCompleted={setAccountProfile} />
+                    <CoupleOnboardingSection weddings={weddings} onCompleted={setAccountProfile} />
                 )}
 
                 {sharedWeddings.length > 0 && (
@@ -938,14 +1004,26 @@ export default function DashboardRedirect() {
                                     </div>
                                     {invite.status === 'pending' ? (
                                         <button
+                                            type="button"
+                                            disabled={acceptingInviteId === invite.id}
                                             onClick={async () => {
-                                                await acceptWeddingInvite(invite.id);
-                                                const refreshed = await listSharedWeddings(user?.email);
-                                                setSharedWeddings(refreshed);
+                                                if (acceptingInviteId) return;
+                                                setAcceptingInviteId(invite.id);
+                                                setDashboardError('');
+                                                try {
+                                                    await acceptWeddingInvite(invite.id);
+                                                    const refreshed = await listSharedWeddings(user?.email);
+                                                    setSharedWeddings(refreshed);
+                                                } catch (inviteErr) {
+                                                    console.error('Accept invite error:', inviteErr);
+                                                    setDashboardError(getErrorMessage(inviteErr));
+                                                } finally {
+                                                    setAcceptingInviteId(null);
+                                                }
                                             }}
-                                            className="w-full px-4 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-hover transition-all min-h-[44px]"
+                                            className="w-full px-4 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-hover transition-all min-h-[44px] disabled:opacity-60"
                                         >
-                                            Accept Invite
+                                            {acceptingInviteId === invite.id ? 'Accepting...' : 'Accept Invite'}
                                         </button>
                                     ) : (
                                         <Link
@@ -1026,7 +1104,7 @@ export default function DashboardRedirect() {
                                     className="group bg-white rounded-xl sm:rounded-[2rem] overflow-hidden border border-border soft-shadow hover:shadow-2xl hover:translate-y-[-4px] transition-all duration-300"
                                 >
                                     {/* Hero image */}
-                                    <div className="aspect-[16/10] bg-neutral dark:bg-neutral/50 relative overflow-hidden">
+                                    <div className="aspect-[16/10] bg-neutral relative overflow-hidden">
                                         {wedding.hero_image ? (
                                             <img
                                                 src={wedding.hero_image}
@@ -1035,7 +1113,7 @@ export default function DashboardRedirect() {
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center">
-                                                <Heart className="w-16 sm:w-20 h-16 sm:h-20 text-primary/20 dark:text-primary/10" />
+                                                <Heart className="w-16 sm:w-20 h-16 sm:h-20 text-primary/20" />
                                             </div>
                                         )}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-3 sm:p-5">
@@ -1059,7 +1137,7 @@ export default function DashboardRedirect() {
                                             <div className="flex items-center gap-2 text-xs sm:text-sm text-text-secondary font-medium">
                                                 <Calendar className="w-4 h-4 text-primary/40 flex-shrink-0" />
                                                 <span className="line-clamp-1">
-                                                    {new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                    {formatDashboardDate(wedding.wedding_date)}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2 text-xs sm:text-sm text-text-secondary font-medium">

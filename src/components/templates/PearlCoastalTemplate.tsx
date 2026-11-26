@@ -1,21 +1,29 @@
 'use client';
 
+import { useEffect } from 'react';
 import nativeStyles from './NativeTemplate.module.css';
 import { getSectionTitleStyle } from '@/lib/theme-engine';
-import Image from 'next/image';
-
+import { useSectionActions } from '@/context/SectionContext';
 
 import { DetailsSection, GallerySection, GiftSection, TimelineSection, VideoSection, AttireSection } from '../wedding';
-import { SharedNewSections, useCountdown } from './shared';
-import { parseDressCodeValue } from '@/lib/dress-code';
+import {
+  formatWeddingDate,
+  resolveTemplateCopy,
+  resolveWeddingMedia,
+  SharedNewSections,
+  TEMPLATE_ELEMENT_ASSETS,
+  TemplateHeroActions,
+  useCountdown,
+  WeddingHeroVisual,
+  WeddingMonogram,
+} from './shared';
 import type { TemplateProps } from '@/types/wedding';
 
-// Decorative 3D Freshwater Pearl Component
 function Pearl({ className = '', size = 'md' }: { className?: string; size?: 'sm' | 'md' | 'lg' }) {
   const sizeClass = size === 'sm' ? 'w-2.5 h-2.5' : size === 'lg' ? 'w-4 h-4' : 'w-3 h-3';
   return (
     <span
-      className={`inline-block rounded-full shadow-sm shrink-0 ${sizeClass} ${className}`}
+      className={`inline-block shrink-0 rounded-full shadow-sm ${sizeClass} ${className}`}
       style={{
         background: 'radial-gradient(circle at 35% 35%, #FFFFFF 0%, #F5EAE1 50%, #D4C3B7 100%)',
         boxShadow: '0 2px 5px rgba(0,0,0,0.12), inset 0 1px 2px rgba(255,255,255,0.9)',
@@ -25,7 +33,6 @@ function Pearl({ className = '', size = 'md' }: { className?: string; size?: 'sm
   );
 }
 
-// Decorative Scallop Seashell SVG
 function ScallopShell({ className = '' }: { className?: string }) {
   return (
     <svg
@@ -40,57 +47,50 @@ function ScallopShell({ className = '' }: { className?: string }) {
         fill="#FBF6F0"
         stroke="#D9C2B0"
         strokeWidth="1.2"
-        opacity="0.8"
+        opacity="0.85"
       />
-      <path d="M24 4V44M14 8C18 18 18 30 14 40M34 8C30 18 30 30 34 40M8 16C16 22 16 26 8 32M40 16C32 22 32 26 40 32" stroke="#C5AA94" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+      <path d="M24 4V44M14 8C18 18 18 30 14 40M34 8C30 18 30 30 34 40M8 16C16 22 16 26 8 32M40 16C32 22 32 26 40 32" stroke="#C5AA94" strokeWidth="1" strokeLinecap="round" opacity="0.65" />
     </svg>
-  );
-}
-
-// Blush Watercolor Floral Bouquet
-function FloralBouquet({ className = '' }: { className?: string }) {
-  return (
-    <div className={`pointer-events-none select-none flex items-center gap-1 ${className}`}>
-      <span className="text-xl sm:text-2xl opacity-75">🌸</span>
-      <Pearl size="sm" className="-ml-1 -mt-2" />
-    </div>
   );
 }
 
 export default function PearlCoastalTemplate({ wedding, gallery, isExpired }: TemplateProps) {
   const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
   const titleStyle = getSectionTitleStyle(wedding);
-  const motifColor = wedding.motif_color || '#B98B82'; // Rose Gold / Blush Peach default from Image 2
-  const heroImage = wedding.hero_image || wedding.couple_photo || '/logo.png';
+  const motifColor = wedding.motif_color || '#B98B82';
+  const heroImage = resolveWeddingMedia(wedding, gallery);
+  const copy = resolveTemplateCopy(wedding);
   const { timeLeft, isPast } = useCountdown(wedding.wedding_date, wedding.wedding_time);
-  const dressCodeSettings = parseDressCodeValue(wedding.dress_code, motifColor);
+  const { registerSection, unregisterSection } = useSectionActions();
+  const hasStory = Boolean(wedding.story?.trim());
 
-  const weddingDate = wedding.wedding_date
-    ? new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`)
-    : new Date();
+  useEffect(() => {
+    if (!hasStory) return;
+    registerSection('bio', 'Our Story');
+    return () => unregisterSection('bio');
+  }, [hasStory, registerSection, unregisterSection]);
 
-  const formattedDate = weddingDate.toLocaleDateString('en-US', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).toUpperCase();
-
-  const dressPalette = dressCodeSettings.guests.colors?.length
-    ? dressCodeSettings.guests.colors
-    : ['#E8DDD4', '#F3D7CD', '#E5BDB0', '#B2B5A5', '#827D79'];
+  const formattedDate = wedding.wedding_date
+    ? formatWeddingDate(wedding.wedding_date, { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
+    : '';
 
   return (
     <div
-      data-native-template="PearlCoastal" data-native-card-custom={wedding.card_style && wedding.card_style !== 'default' ? 'true' : undefined} className={`pearl-coastal-template relative pb-28 font-serif selection:bg-[var(--native-subtle)] selection:text-white ${nativeStyles.native}`}
+      data-native-template="PearlCoastal"
+      data-native-card-custom={wedding.card_style && wedding.card_style !== 'default' ? 'true' : undefined}
+      className={`pearl-coastal-template relative overflow-x-clip pb-28 font-serif selection:bg-[var(--native-subtle)] selection:text-white ${nativeStyles.native}`}
       style={{
         '--native-paper': hasBackgroundChoice ? 'var(--builder-paper)' : '#F8F4EE',
         '--native-ink': hasBackgroundChoice ? 'var(--builder-ink)' : '#382D2A',
-        backgroundColor: 'var(--native-paper)', // Warm linen paper texture
+        backgroundColor: 'var(--native-paper)',
         color: 'var(--native-ink)',
       } as React.CSSProperties}
     >
+      {/* Textured cotton paper finish */}
+      <div aria-hidden="true" data-native-grain className="pointer-events-none absolute inset-0 z-0 opacity-[0.12]" />
+
       {/* Scattered Organic Pearls in Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 opacity-40">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-45">
         <Pearl size="sm" className="absolute top-24 left-[10%]" />
         <Pearl size="md" className="absolute top-72 right-[12%]" />
         <Pearl size="sm" className="absolute top-[45%] left-[8%]" />
@@ -98,192 +98,204 @@ export default function PearlCoastalTemplate({ wedding, gallery, isExpired }: Te
         <Pearl size="sm" className="absolute top-[85%] left-[14%]" />
       </div>
 
-      {/* ── TOP HERO: ARCH PHOTO & BLUSH FLOWERS (From Image 2) ── */}
-      <section data-native-composition data-native-hero className="relative max-w-2xl mx-auto px-4 sm:px-8 pt-12 pb-10 text-center z-10">
-        {/* Eyebrow */}
-        <p className="text-[10px] sm:text-xs font-sans uppercase tracking-[0.35em] text-[var(--native-ink)] mb-6">
-          Wedding Invitation
+      {/* ── TOP HERO: ARCH PHOTO & COASTAL SHELL VIGNETTE ── */}
+      <section data-native-composition data-native-hero className="relative z-10 mx-auto max-w-2xl px-4 pt-12 pb-10 text-center sm:px-8">
+        <p className="mb-4 text-[10px] font-sans font-semibold uppercase tracking-[0.35em] text-[var(--native-ink)] opacity-75 sm:text-xs">
+          {copy.eyebrow}
         </p>
 
-        {/* Arch Photo Container with Coastal Vibe */}
-        <div data-native-portrait className="relative mx-auto max-w-[380px] mb-8">
-          {/* Top Left Floral Accent with Pearls */}
-          <div className="absolute -top-4 -left-4 z-20">
-            <FloralBouquet />
+        <div className="mb-6 flex justify-center">
+          <WeddingMonogram wedding={wedding} className="scale-75" />
+        </div>
+
+        {/* Arch Portrait Frame with Botanical Coastal Crest */}
+        <div data-native-portrait className="relative mx-auto mb-8 max-w-[380px]">
+          <div className="pointer-events-none absolute -top-3 -left-3 z-20 flex items-center gap-1.5">
+            <ScallopShell className="h-7 w-7" />
+            <Pearl size="sm" />
           </div>
 
-          <div data-native-card className="relative aspect-[3/3.8] w-full overflow-hidden rounded-t-[160px] rounded-b-2xl border-2 border-white shadow-xl bg-white p-2">
-            <div className="relative w-full h-full overflow-hidden rounded-t-[150px] rounded-b-xl">
-              <Image
+          <div
+            data-native-card
+            className="relative aspect-[3/3.8] w-full overflow-hidden rounded-t-[160px] rounded-b-2xl border-2 border-white bg-white p-2 shadow-xl"
+          >
+            <div className="relative h-full w-full overflow-hidden rounded-t-[150px] rounded-b-xl">
+              <WeddingHeroVisual
+                wedding={wedding}
+                gallery={gallery}
                 src={heroImage}
-                alt={`${wedding.bride_name} & ${wedding.groom_name}`}
-                priority
-                fill
-                sizes="(max-width: 768px) 100vw, 380px"
-                className="object-cover transition-transform duration-[10s] hover:scale-105"
+                ornamentSrc={TEMPLATE_ELEMENT_ASSETS.coastalShells}
+                imgClassName="h-full w-full object-cover"
               />
             </div>
           </div>
 
-          {/* Right Bottom Floral Accent */}
-          <div className="absolute -bottom-3 -right-3 z-20">
-            <FloralBouquet />
+          <div className="pointer-events-none absolute -bottom-3 -right-3 z-20 flex items-center gap-1.5">
+            <Pearl size="md" />
+            <ScallopShell className="h-7 w-7" />
           </div>
         </div>
 
-        {/* Couple Names in Roman Serif */}
-        <h1 data-native-title className={`text-3xl sm:text-5xl font-serif text-[var(--native-ink)] tracking-wide break-words uppercase ${titleStyle.className}`} style={titleStyle.style}>
+        {/* Bespoke Coastal Sea-Coral & Seashell Divider Crest */}
+        <div className="mx-auto mb-5 flex justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={TEMPLATE_ELEMENT_ASSETS.coastalShells}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none h-auto w-56 object-contain opacity-90 sm:w-64"
+          />
+        </div>
+
+        <h1
+          data-native-title
+          className={`break-words font-serif text-3xl uppercase tracking-wide text-[var(--native-ink)] sm:text-5xl ${titleStyle.className}`}
+          style={titleStyle.style}
+        >
           <span>{wedding.bride_name}</span>
-          <span className="block text-xl sm:text-2xl font-light italic text-[var(--native-accent)] my-1 font-sans">&amp;</span>
+          <span className="my-1 block font-sans text-xl font-light italic text-[var(--native-accent)] sm:text-2xl">&amp;</span>
           <span>{wedding.groom_name}</span>
         </h1>
 
-        {/* Date Display */}
-        <p className="mt-3 text-xs sm:text-sm font-sans tracking-[0.25em] text-[var(--native-ink)] font-semibold">
-          {formattedDate}
-        </p>
+        {formattedDate ? (
+          <p className="mt-3 text-xs font-sans font-semibold tracking-[0.25em] text-[var(--native-ink)] sm:text-sm">
+            {formattedDate}
+          </p>
+        ) : null}
+
+        {wedding.venue_name ? (
+          <p className="mt-1.5 text-xs font-sans uppercase tracking-[0.2em] opacity-70">
+            {wedding.venue_name}
+          </p>
+        ) : null}
+
+        <div className="mt-7 flex flex-col items-center gap-3">
+          <a
+            data-wedding-control="primary"
+            href={copy.ctaHref}
+            className="inline-flex min-h-[46px] items-center justify-center rounded-full bg-[var(--native-action)] px-8 py-3 text-xs font-sans font-semibold uppercase tracking-[0.24em] text-[var(--native-on-action)] shadow-sm transition-all"
+          >
+            {copy.ctaLabel}
+          </a>
+          <TemplateHeroActions wedding={wedding} variant="pill" />
+        </div>
       </section>
 
-      {/* ── WAVY LETTER TO GUESTS (From Image 2) ── */}
-      <section data-native-composition className="relative max-w-2xl mx-auto px-4 sm:px-6 my-8 z-10">
-        <div data-native-card
-          className="relative bg-white/70 backdrop-blur-sm rounded-3xl p-6 sm:p-10 text-center shadow-sm border border-[var(--native-border)]"
+      {/* ── SCALLOPED WELCOME NOTE ── */}
+      <section id={hasStory ? 'bio' : undefined} data-native-composition className="relative z-10 mx-auto my-8 max-w-2xl px-4 sm:px-6">
+        <div
+          data-native-card
+          className="relative border border-[var(--native-border)] bg-white/70 p-6 text-center shadow-sm backdrop-blur-sm sm:p-10"
           style={{
             borderRadius: '2.5rem 1.5rem 2.5rem 1.5rem',
           }}
         >
-          {/* Decorative Seashell icon */}
-          <div className="flex justify-center mb-4">
-            <ScallopShell className="w-8 h-8 text-[var(--native-ink)]" />
+          <div className="mb-4 flex justify-center">
+            <ScallopShell className="h-8 w-8 text-[var(--native-ink)]" />
           </div>
 
-          <h2 data-native-title className={`text-sm sm:text-base font-sans font-bold uppercase tracking-[0.25em] text-[var(--native-ink)] mb-4 ${titleStyle.className}`} style={titleStyle.style}>
-            Dear Family &amp; Friends
+          <h2
+            data-native-title
+            className={`mb-4 text-sm font-sans font-bold uppercase tracking-[0.25em] text-[var(--native-ink)] sm:text-base ${titleStyle.className}`}
+            style={titleStyle.style}
+          >
+            {wedding.is_thank_you_mode ? 'From Both of Us' : 'Dear Family & Friends'}
           </h2>
 
-          <p className="text-sm sm:text-base font-serif italic text-[var(--native-ink)] leading-relaxed max-w-md mx-auto">
-            {wedding.story ||
-              wedding.quote ||
-              'We are thrilled to share this special milestone with you! We warmly invite you to celebrate our wedding and look forward to spending this unforgettable day surrounded by our favorite people.'}
+          <p className="mx-auto max-w-md font-serif text-sm italic leading-relaxed text-[var(--native-ink)] sm:text-base">
+            {wedding.story?.trim() || copy.subtitle}
           </p>
 
-          {wedding.quote && wedding.story && <blockquote className="mt-5 text-sm italic">{wedding.quote}</blockquote>}
+          {wedding.quote?.trim() && wedding.quote.trim() !== wedding.story?.trim() ? (
+            <blockquote className="mx-auto mt-5 max-w-md text-sm italic opacity-85">
+              &ldquo;{wedding.quote.trim()}&rdquo;
+            </blockquote>
+          ) : null}
 
-          <div className="mt-6 flex justify-center items-center gap-2">
+          <div className="mt-6 flex items-center justify-center gap-2">
             <Pearl size="sm" />
-            <div data-native-card className="w-16 h-px bg-[var(--native-subtle)]" />
+            <div className="h-px w-16 bg-[var(--native-subtle)]" />
             <Pearl size="sm" />
           </div>
         </div>
       </section>
 
-      {/* ── DRESS CODE WITH COLOR SWATCHES (From Image 2) ── */}
-      <section data-native-composition className="relative max-w-2xl mx-auto px-4 sm:px-6 my-10 text-center z-10">
-        <div data-native-card className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-[var(--native-border)] shadow-sm">
-          <h2 data-native-title className={`text-xs sm:text-sm font-sans font-bold uppercase tracking-[0.3em] text-[var(--native-ink)] mb-2 ${titleStyle.className}`} style={titleStyle.style}>
-            Dress Code
-          </h2>
-          <p className="text-xs sm:text-sm text-[var(--native-ink)] mb-6">
-            {dressCodeSettings.guests.attire || 'Cocktail / Elegant Beach Chic'}
-          </p>
-          {dressCodeSettings.guests.notes && <p className="text-sm mb-4">{dressCodeSettings.guests.notes}</p>}
-          {/* Dynamic Circular Color Swatches */}
-          <div className="flex justify-center items-center gap-3 sm:gap-4 flex-wrap">
-            {dressPalette.map((color, idx) => (
-              <span
-                key={`${color}-${idx}`}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-inner border-2 border-white transition-transform hover:scale-110"
-                style={{ backgroundColor: color }}
-                title={`Color: ${color}`}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── OPTIONAL CELEBRATION NOTE & EVENT CONTACT (ONLY WHEN CONFIGURED) ── */}
+      {(wedding.rsvp_allow_children === false || wedding.contact_person) && (
+        <section data-native-composition className="relative z-10 mx-auto my-8 max-w-2xl px-4 sm:px-6">
+          <div className={`grid gap-4 ${wedding.rsvp_allow_children === false && wedding.contact_person ? 'grid-cols-1 sm:grid-cols-2' : 'mx-auto max-w-md grid-cols-1'}`}>
+            {wedding.rsvp_allow_children === false && (
+              <div data-native-card className="relative flex flex-col justify-center overflow-hidden rounded-3xl border border-[var(--native-border)] bg-white/70 p-6 text-center">
+                <div className="absolute top-3 right-3">
+                  <Pearl size="sm" />
+                </div>
+                <p className="mb-2 text-xs font-sans font-bold uppercase tracking-widest text-[var(--native-ink)]">
+                  Celebration Note
+                </p>
+                <p className="text-xs leading-relaxed text-[var(--native-ink)]">
+                  Our celebration is an adults-only event. We look forward to an unforgettable evening together!
+                </p>
+              </div>
+            )}
 
-      {/* ── ADULTS ONLY & GIFTS NOTE (From Image 2) ── */}
-      <section data-native-composition className="relative max-w-2xl mx-auto px-4 sm:px-6 my-8 z-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div data-native-card className="bg-white/70 rounded-3xl p-6 border border-[var(--native-border)] text-center flex flex-col justify-center">
-            <ScallopShell className="w-6 h-6 mx-auto mb-2 text-[var(--native-ink)]" />
-            <p className="text-xs font-sans uppercase tracking-widest text-[var(--native-ink)] font-bold mb-2">Wishes &amp; Gifts</p>
-            <p className="text-xs text-[var(--native-ink)] leading-relaxed">
-              {wedding.gift_bank || wedding.gift_account_number
-                ? 'Your love and presence on our wedding day is the best gift of all. For those wishing to honor us with a gift, a honeymoon contribution is warmly appreciated.'
-                : 'The greatest gift to us is having you celebrate our wedding day!'}
-            </p>
+            {wedding.contact_person && (
+              <div data-native-card className="flex flex-col justify-center rounded-3xl border border-[var(--native-border)] bg-white/70 p-6 text-center">
+                <p className="mb-1 text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-[var(--native-ink)]">
+                  Event Contact
+                </p>
+                <p className="font-serif text-sm font-semibold text-[var(--native-ink)]">
+                  {wedding.contact_person}
+                </p>
+              </div>
+            )}
           </div>
-          <div data-native-card className="bg-white/70 rounded-3xl p-6 border border-[var(--native-border)] text-center flex flex-col justify-center relative overflow-hidden">
-            <div className="absolute top-3 right-3">
-              <Pearl size="sm" />
-            </div>
-            <p className="text-xs font-sans uppercase tracking-widest text-[var(--native-ink)] font-bold mb-2">Celebration Note</p>
-            <p className="text-xs text-[var(--native-ink)] leading-relaxed">
-              {wedding.rsvp_allow_children === false
-                ? 'Our celebration is an adults-only event. We hope you understand and enjoy a relaxing evening with us!'
-                : 'We cannot wait to celebrate our love and make lasting memories together with all our loved ones.'}
-            </p>
-          </div>
-        </div>
+        </section>
+      )}
 
-        {/* Wedding Coordinator / Contact Info if configured */}
-        {wedding.contact_person && (
-          <div data-native-card className="mt-4 bg-white/70 rounded-3xl p-5 border border-[var(--native-border)] text-center max-w-sm mx-auto">
-            <p className="text-[10px] font-sans font-bold uppercase tracking-[0.25em] text-[var(--native-ink)] mb-1">
-              Event Contact
-            </p>
-            <p className="text-xs font-serif text-[var(--native-ink)] font-bold">
-              {wedding.contact_person}
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* ── LIVE COUNTDOWN CARD WITH PEARLS (From Image 2: "УВИДИМСЯ ЧЕРЕЗ...") ── */}
+      {/* ── LIVE COUNTDOWN CARD WITH PEARLS ── */}
       {!wedding.is_thank_you_mode && (
-        <section id="countdown" data-native-composition data-native-countdown-section className="relative max-w-md mx-auto px-4 py-8 z-10 text-center">
-          <div data-native-card className="bg-white/75 backdrop-blur-sm rounded-3xl p-6 border border-[var(--native-border)] shadow-sm relative overflow-hidden">
+        <section id="countdown" data-native-composition data-native-countdown-section className="relative z-10 mx-auto max-w-md px-4 py-8 text-center">
+          <div data-native-card className="relative overflow-hidden rounded-3xl border border-[var(--native-border)] bg-white/75 p-6 shadow-sm backdrop-blur-sm">
             <div className="absolute top-2 left-4">
               <Pearl size="sm" />
             </div>
-            <div className="absolute bottom-3 right-4">
+            <div className="absolute right-4 bottom-3">
               <Pearl size="sm" />
             </div>
 
-            <p className="text-xs font-sans uppercase tracking-[0.3em] text-[var(--native-ink)] font-bold mb-4">
+            <p className="mb-4 text-xs font-sans font-bold uppercase tracking-[0.3em] text-[var(--native-ink)]">
               {isPast ? 'Celebrating Together' : 'See You In...'}
             </p>
 
-            <div className="flex justify-center items-center gap-3 sm:gap-4 font-mono text-xl sm:text-2xl font-bold text-[var(--native-ink)] my-2">
-              <div data-native-card className="bg-[var(--native-paper)] rounded-2xl px-3 py-2 border border-[var(--native-border)]">
+            <div role="timer" aria-label="Time until the wedding" className="my-2 flex items-center justify-center gap-2 font-mono text-xl font-bold text-[var(--native-ink)] sm:gap-4 sm:text-2xl">
+              <div data-native-card className="rounded-2xl border border-[var(--native-border)] bg-[var(--native-paper)] px-3 py-2">
                 <span className="block font-bold">{String(timeLeft.days).padStart(2, '0')}</span>
                 <span className="text-[8px] font-sans uppercase tracking-widest text-[var(--native-ink)]">Days</span>
               </div>
-              <span className="text-[var(--native-ink)]">:</span>
-              <div data-native-card className="bg-[var(--native-paper)] rounded-2xl px-3 py-2 border border-[var(--native-border)]">
+              <span aria-hidden="true">:</span>
+              <div data-native-card className="rounded-2xl border border-[var(--native-border)] bg-[var(--native-paper)] px-3 py-2">
                 <span className="block font-bold">{String(timeLeft.hours).padStart(2, '0')}</span>
                 <span className="text-[8px] font-sans uppercase tracking-widest text-[var(--native-ink)]">Hours</span>
               </div>
-              <span className="text-[var(--native-ink)]">:</span>
-              <div data-native-card className="bg-[var(--native-paper)] rounded-2xl px-3 py-2 border border-[var(--native-border)]">
+              <span aria-hidden="true">:</span>
+              <div data-native-card className="rounded-2xl border border-[var(--native-border)] bg-[var(--native-paper)] px-3 py-2">
                 <span className="block font-bold">{String(timeLeft.minutes).padStart(2, '0')}</span>
                 <span className="text-[8px] font-sans uppercase tracking-widest text-[var(--native-ink)]">Mins</span>
               </div>
-              <span className="text-[var(--native-ink)]">:</span>
-              <div data-native-card className="bg-[var(--native-paper)] rounded-2xl px-3 py-2 border border-[var(--native-border)]">
+              <span aria-hidden="true">:</span>
+              <div data-native-card className="rounded-2xl border border-[var(--native-border)] bg-[var(--native-paper)] px-3 py-2">
                 <span className="block font-bold">{String(timeLeft.seconds).padStart(2, '0')}</span>
                 <span className="text-[8px] font-sans uppercase tracking-widest text-[var(--native-ink)]">Secs</span>
               </div>
             </div>
 
-            <p className="mt-4 text-xs font-serif italic text-[var(--native-ink)]">
+            <p className="mt-4 font-serif text-xs italic text-[var(--native-ink)]">
               With love, {wedding.bride_name} &amp; {wedding.groom_name}
             </p>
           </div>
         </section>
       )}
 
-      {/* ── STANDARD QUICKWEDS STRUCTURED SECTIONS ── */}
       <DetailsSection id="details" wedding={wedding} />
 
       <TimelineSection
@@ -297,6 +309,8 @@ export default function PearlCoastalTemplate({ wedding, gallery, isExpired }: Te
         gallery={gallery}
         template={wedding.template}
         motifColor={motifColor}
+        cardStyle={wedding.card_style}
+        wedding={wedding}
         galleryLayout={wedding.gallery_layout || 'masonry'}
       />
 
@@ -310,12 +324,12 @@ export default function PearlCoastalTemplate({ wedding, gallery, isExpired }: Te
           template={wedding.template}
           motifColor={motifColor}
           templateStyle={wedding.template_style}
+          wedding={wedding}
         />
       )}
 
       <GiftSection id="gift" wedding={wedding} />
 
-      {/* Shared Lower Sections (Entourage, Venue, Guestbook, RSVP) */}
       <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
     </div>
   );

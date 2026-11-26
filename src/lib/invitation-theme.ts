@@ -48,6 +48,18 @@ const COLLECTION_GEOMETRY: Record<string, { card: string; button: string }> = {
     'navy-celebration': { card: '0px', button: '999px' },
     'blue-chinoiserie': { card: '0px', button: '2px' },
     'olive-wave': { card: '14px', button: '3px' },
+    'memories-sage': { card: '0px', button: '999px' },
+    'mocha-letter': { card: '7px', button: '999px' },
+    'petal-crest': { card: '0px 20px', button: '2px' },
+    'powder-bouquet': { card: '2px', button: '4px' },
+    'sage-album': { card: '25px', button: '999px' },
+    'azure-shore': { card: '20px 20px 5px 5px', button: '999px' },
+    'memories-clay': { card: '4px', button: '999px' },
+    'olive-editorial': { card: '3px', button: '6px' },
+    'villa-postcard': { card: '42px 0px 0px 0px', button: '0px' },
+    'sage-paper': { card: '22px', button: '2px' },
+    'olive-medallion': { card: '38px 38px 8px 8px', button: '999px' },
+    'linen-lace': { card: '18px', button: '999px' },
 };
 
 const BACKGROUNDS: Record<string, string> = { white: '#ffffff', cream: '#fff8f4', satin: '#fdf5e6', paper: '#f4f1ea', minimal: '#f9f9f9', rose: '#fff5f5', linen: '#faf9f6' };
@@ -92,7 +104,7 @@ function resolvePresentation(wedding: Wedding, reference: { layout: string; acce
         '--neutral': paper, '--color-neutral': paper, '--foreground': ink, '--color-foreground': ink,
         '--border': border, '--color-border': border, '--text-secondary': muted, '--color-text-secondary': muted,
         '--wedding-heading': ink, '--wedding-ink': ink,
-        color: ink, backgroundColor: paper, backgroundImage: 'none', colorScheme: 'light',
+        color: ink, backgroundColor: paper, backgroundImage: 'none', colorScheme: colorLuminance(paper) < .18 ? 'dark' : 'light',
     } as CSSProperties & Record<`--${string}`, string>;
     return { reference, vars };
 }

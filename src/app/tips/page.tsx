@@ -1,17 +1,46 @@
-import { publicPageMetadata, rsvpWordingPath } from '@/lib/seo';
+import {
+  TIPS_GUIDES,
+  buildArticleJsonLd,
+  buildBreadcrumbJsonLd,
+  publicPageMetadata,
+  rsvpWordingPath,
+  serializeJsonLd,
+} from '@/lib/seo';
 import Link from 'next/link';
-import { ArrowLeft, Lightbulb, CheckCircle2, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Lightbulb, CheckCircle2, ArrowRight, BookOpen } from 'lucide-react';
 
 export const metadata = publicPageMetadata(
   '/tips',
-  '10 Practical Wedding Planning Tips',
-  'Plan your wedding budget, guest list, RSVPs, and timeline with 10 practical tips from QuickWeds.',
+  '10 Practical Wedding Planning Tips & Guides',
+  'Plan your wedding budget, guest list, RSVPs, seating chart, and timeline with practical tips and Philippines wedding planning guides from QuickWeds.',
   'article',
 );
 
 export default function TipsPage() {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      buildArticleJsonLd({
+        path: '/tips',
+        headline: '10 Wedding Planning Tips That Actually Work',
+        description:
+          'Plan your wedding budget, guest list, RSVPs, and timeline with 10 practical tips from QuickWeds.',
+        datePublished: '2026-10-31',
+        dateModified: '2026-11-26',
+      }),
+      buildBreadcrumbJsonLd([
+        { name: 'QuickWeds', path: '/' },
+        { name: 'Wedding Planning Tips', path: '/tips' },
+      ]),
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
+      />
       {/* Header */}
       <div className="bg-white border-b border-border">
         <div className="max-w-3xl mx-auto px-6 py-8">
@@ -239,6 +268,41 @@ export default function TipsPage() {
           </div>
 
           <hr className="my-16 border-border" />
+
+          {/* Topic Cluster Hub */}
+          <section aria-labelledby="more-guides-heading" className="mb-16">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="rounded-xl bg-primary/10 p-2 text-primary">
+                <BookOpen className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Deep-Dive Guides</p>
+                <h2 id="more-guides-heading" className="font-serif text-3xl font-bold text-foreground m-0">
+                  More Wedding Planning Guides
+                </h2>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {TIPS_GUIDES.map((guide) => (
+                <Link
+                  key={guide.slug}
+                  href={guide.path}
+                  className="group flex flex-col justify-between rounded-2xl border border-border bg-white p-5 no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                >
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary m-0">{guide.category}</p>
+                    <h3 className="mt-2 font-serif text-xl font-bold leading-snug text-foreground group-hover:text-primary m-0">
+                      {guide.shortTitle}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-text-secondary m-0">{guide.description}</p>
+                  </div>
+                  <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-black text-primary">
+                    Read guide <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
 
           {/* CTA Footer */}
           <div className="text-center pb-12">

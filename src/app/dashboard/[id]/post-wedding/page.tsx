@@ -213,7 +213,7 @@ export default function PostWeddingModePage() {
                         </a>
                         <button
                             type="button"
-                            onClick={() => saveSettings()}
+                            onClick={() => void saveSettings().catch(() => {})}
                             disabled={saving}
                             className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-1.5 text-xs font-bold text-white shadow-md shadow-primary/20 hover:bg-primary-hover disabled:opacity-50 transition"
                         >

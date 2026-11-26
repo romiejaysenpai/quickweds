@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import * as Sentry from '@sentry/nextjs';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 export default function RootError({
@@ -13,6 +14,7 @@ export default function RootError({
 }) {
     useEffect(() => {
         console.error('Root app error:', error);
+        Sentry.captureException(error);
     }, [error]);
 
     return (

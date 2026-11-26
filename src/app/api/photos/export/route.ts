@@ -5,6 +5,7 @@ import { getWeddingAccess } from "@/lib/wedding-access";
 import { createPhotoZip } from "@/lib/photo-zip";
 import { z } from "zod";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   const auth = await getAuthenticatedRequest(req, "AUTHENTICATED_DEFAULT");
   if (auth.response) return auth.response;

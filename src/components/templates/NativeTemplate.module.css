@@ -162,8 +162,18 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .native[data-native-template] [data-native-hero] h1 { animation: nativePaperArrival .65s ease-out both; }
-  .native [data-native-portrait] img { transition: transform .5s ease; }
+  .native [data-native-portrait] img { transition: transform .6s cubic-bezier(.22, 1, .36, 1); }
+  .native [data-native-card] { transition: transform .35s cubic-bezier(.22, 1, .36, 1), box-shadow .35s ease; }
+  .native a[data-wedding-control] { transition: transform .25s ease, box-shadow .25s ease, opacity .25s ease; }
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .native [data-native-portrait]:hover img { transform: scale(1.025); }
+  .native [data-native-portrait]:hover img { transform: scale(1.028); }
+  .native [data-native-card]:hover { transform: translateY(-2px); }
+  .native a[data-wedding-control]:hover { transform: translateY(-1px); }
+}
+.native [data-native-grain] {
+  background-image: url('/templates/elements/texture-paper-deckle.webp');
+  background-size: 360px 360px;
+  background-repeat: repeat;
+  mix-blend-mode: multiply;
 }

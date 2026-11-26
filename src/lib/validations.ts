@@ -33,9 +33,9 @@ export const reminderSchema = z.object({
     targetStatus: z.enum(['pending', 'confirmed', 'declined']).default('pending'),
 });
 
-// Domain Management Validation
+// Domain Management Validation (RFC-compliant hostnames including hyphens/digits in subdomains)
 export const domainSchema = z.object({
-    domain: z.string().min(1, 'Domain is required').regex(/^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/, 'Invalid domain format'),
+    domain: z.string().min(1, 'Domain is required').max(253).regex(/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/, 'Invalid domain format'),
 });
 
 // RSVP Notification Validation

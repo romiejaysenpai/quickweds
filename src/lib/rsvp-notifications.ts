@@ -3,7 +3,7 @@ import {createHash} from 'crypto';
 
 import { sendEmail } from '@/lib/email';
 import { getCoupleNotificationReact, getGuestConfirmationReact } from '@/emails/quickweds-transactional';
-import { getPrimaryAdminEmail } from '@/lib/admin';
+import { sanitizeEmail } from '@/lib/rate-limiter';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 
 type RsvpNotificationInput = {
@@ -99,29 +99,24 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
         manageRsvpUrl,
     } = input;
 
-    let recipientEmail =
-        typeof wedding.couple_email === 'string' && wedding.couple_email.includes('@')
-            ? wedding.couple_email
-            : '';
+    let recipientEmail = sanitizeEmail(typeof wedding.couple_email === 'string' ? wedding.couple_email : '');
 
-    if (!recipientEmail && typeof wedding.contact_person === 'string' && wedding.contact_person.includes('@')) {
-        recipientEmail = wedding.contact_person;
+    if (!recipientEmail && typeof wedding.contact_person === 'string') {
+        recipientEmail = sanitizeEmail(wedding.contact_person);
     }
 
     if (!recipientEmail && wedding.user_id) {
         try {
             const { data: ownerResult, error: ownerError } = await db.auth.admin.getUserById(wedding.user_id);
             if (!ownerError && ownerResult.user?.email) {
-                recipientEmail = ownerResult.user.email;
+                recipientEmail = sanitizeEmail(ownerResult.user.email);
             }
         } catch (ownerLookupError) {
             console.error('Failed to resolve wedding owner email from Supabase Auth:', ownerLookupError);
         }
     }
 
-    if (!recipientEmail) {
-        recipientEmail = getPrimaryAdminEmail();
-    }
+    // Never fall back to platform admin email — private guest RSVP PII belongs only to the couple.
 
     const rootDomain = getRootDomain();
     const publicWeddingUrl = wedding.custom_domain
@@ -133,7 +128,7 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
 
     if (wedding.user_id) {
         try {
-            await db.from('user_notifications').insert({
+            const { error: notifError } = await db.from('user_notifications').insert({
                 user_id: wedding.user_id,
                 wedding_id: weddingId,
                 title: attendance === 'Yes' ? 'New RSVP Confirmed' : 'RSVP Update',
@@ -141,6 +136,9 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
                 type: 'rsvp',
                 link: `/dashboard/${weddingId}?tab=guests`,
             });
+            if (notifError) {
+                console.error('In-app RSVP notification insert error:', notifError.message);
+            }
         } catch (inAppError) {
             console.error('In-app RSVP notification failed:', inAppError);
         }

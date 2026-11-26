@@ -1,14 +1,18 @@
-import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
+import {
+  buildBreadcrumbJsonLd,
+  publicPageMetadata,
+  serializeJsonLd,
+  siteOrigin,
+} from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'List Your Wedding Business',
-  description: 'Create a free wedding supplier profile in the QuickWeds Philippines supplier directory.',
-  alternates: {
-    canonical: '/supplier/signup',
-  },
-};
+export const metadata = publicPageMetadata(
+  '/supplier/signup',
+  'List Your Wedding Business — Free Supplier Directory',
+  'Create a free wedding supplier profile in the QuickWeds Philippines supplier directory. Showcase venues, photography, catering, coordination, and styling.',
+);
 
 const benefits = [
   'Create a free supplier profile with photos, service areas, and contact links',
@@ -18,12 +22,37 @@ const benefits = [
 ];
 
 export default function SupplierSignupPage() {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebPage',
+        '@id': `${siteOrigin}/supplier/signup#webpage`,
+        url: `${siteOrigin}/supplier/signup`,
+        name: 'List Your Wedding Business on QuickWeds',
+        description:
+          'Create a free wedding supplier profile in the QuickWeds Philippines supplier directory.',
+        isPartOf: { '@id': `${siteOrigin}/#website` },
+        inLanguage: 'en',
+      },
+      buildBreadcrumbJsonLd([
+        { name: 'QuickWeds', path: '/' },
+        { name: 'Wedding Suppliers', path: '/suppliers' },
+        { name: 'List Your Business', path: '/supplier/signup' },
+      ]),
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-neutral text-foreground">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
+      />
       <header className="border-b border-border/70 bg-white/90 px-4 py-4 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <Link href="/" className="inline-flex items-center">
-            <img src="/logo.png" alt="QuickWeds" className="h-10 w-auto object-contain" />
+            <Image src="/logo.png" alt="QuickWeds" width={140} height={40} className="h-10 w-auto object-contain" priority />
           </Link>
           <Link href="/suppliers" className="rounded-xl border border-primary/20 px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary/5">
             Browse Directory

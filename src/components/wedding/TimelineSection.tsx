@@ -1,10 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Clock } from 'lucide-react';
-import { useSectionContext } from '@/context/SectionContext';
+import { Camera, Church, Music, Sparkles, Utensils, Wine } from 'lucide-react';
+import { useSectionActions } from '@/context/SectionContext';
 import { useEffect } from 'react';
 import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import { timelineIconKind, type TimelineIconKind } from '@/lib/wedding-timeline';
+import { SectionTemplateElement } from './SectionTemplateElement';
 
 interface TimelineSectionProps {
     timeline: string;
@@ -15,631 +17,201 @@ interface TimelineSectionProps {
 interface TimelineItem {
     time: string;
     event: string;
+    isDayHeader?: boolean;
 }
 
-
-interface TimelineDesign {
-    eyebrow: string;
-    title: string;
-    maxWidth: string;
-    headerBadgeClass: string;
-    frameClass: string;
-    spineClass: string;
-    cardClass: string;
-    timeClass: string;
-    eventClass: string;
-    iconFrameClass: string;
-    connectorClass: string;
-    reminderCardClass: string;
-    reminderTextClass: string;
-    ornament?: 'rails' | 'dots' | 'corner' | 'film' | 'signal' | 'botanical';
-}
-
-const TIMELINE_DESIGNS: Record<string, TimelineDesign> = {
-    classic: {
-        eyebrow: 'Event flow',
-        title: 'The Wedding Program',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-2xl border border-white/60 bg-white/70 shadow-xl shadow-primary/10 rotate-3',
-        frameClass: 'rounded-[2rem] md:rounded-[3.5rem] border border-white/70 bg-white/65 shadow-[0_30px_100px_rgba(58,42,45,0.10)] backdrop-blur-xl p-5 sm:p-8 md:p-12',
-        spineClass: 'bg-gradient-to-b from-primary/0 via-primary/45 to-primary/0',
-        cardClass: 'rounded-[1.75rem] border border-primary/10 bg-white/78 shadow-sm backdrop-blur',
-        timeClass: 'text-primary/70',
-        eventClass: 'text-[#4A4444]',
-        iconFrameClass: 'rounded-full border bg-white shadow-lg',
-        connectorClass: 'bg-primary/20',
-        reminderCardClass: 'rounded-[1.75rem] border border-primary/10 bg-white/68',
-        reminderTextClass: 'text-[#4A4444]/70',
-        ornament: 'corner',
-    },
-    minimal: {
-        eyebrow: 'Schedule',
-        title: 'Order of Events',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-none border border-black bg-white',
-        frameClass: 'rounded-none border border-black bg-white p-5 sm:p-8 md:p-12 shadow-[16px_16px_0_rgba(0,0,0,0.06)]',
-        spineClass: 'bg-black/80',
-        cardClass: 'rounded-none border border-black bg-white shadow-none',
-        timeClass: 'text-black/68',
-        eventClass: 'text-black',
-        iconFrameClass: 'rounded-none border border-black bg-white shadow-none',
-        connectorClass: 'bg-black',
-        reminderCardClass: 'rounded-none border border-black bg-white',
-        reminderTextClass: 'text-black/62',
-        ornament: 'rails',
-    },
-    romantic: {
-        eyebrow: 'A soft sequence',
-        title: 'Our Celebration Timeline',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-full border border-pink-100 bg-white/80 shadow-xl shadow-pink-200/20',
-        frameClass: 'rounded-[2.5rem] border border-pink-100 bg-white/70 shadow-[0_30px_100px_rgba(184,92,122,0.12)] backdrop-blur-xl p-5 sm:p-8 md:p-12',
-        spineClass: 'bg-gradient-to-b from-primary/0 via-pink-300/70 to-primary/0',
-        cardClass: 'rounded-[2rem] border border-pink-100 bg-white/80 shadow-sm',
-        timeClass: 'text-primary/70',
-        eventClass: 'text-[#5A3F49]',
-        iconFrameClass: 'rounded-full border border-pink-100 bg-pink-50 shadow-lg shadow-pink-200/20',
-        connectorClass: 'bg-pink-200',
-        reminderCardClass: 'rounded-[2rem] border border-pink-100 bg-pink-50/45',
-        reminderTextClass: 'text-[#5A3F49]/70',
-        ornament: 'dots',
-    },
-    luxury: {
-        eyebrow: 'Black tie timing',
-        title: 'The Evening Program',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-none border border-primary/50 bg-black shadow-[0_20px_60px_rgba(0,0,0,0.45)]',
-        frameClass: 'rounded-none border border-primary/35 bg-black/70 p-5 sm:p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.55)]',
-        spineClass: 'bg-gradient-to-b from-primary/0 via-primary/70 to-primary/0',
-        cardClass: 'rounded-none border border-primary/30 bg-white/[0.06] shadow-none',
-        timeClass: 'text-primary/75',
-        eventClass: 'text-white/90',
-        iconFrameClass: 'rounded-none border border-primary/50 bg-black shadow-lg',
-        connectorClass: 'bg-primary/45',
-        reminderCardClass: 'rounded-none border border-primary/30 bg-white/[0.05]',
-        reminderTextClass: 'text-white/68',
-        ornament: 'rails',
-    },
-    elopement: {
-        eyebrow: 'The quiet path',
-        title: 'A Day in the Mountains',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-full border border-primary/15 bg-white/75 shadow-lg',
-        frameClass: 'rounded-[2.25rem] border border-primary/15 bg-white/72 p-5 sm:p-8 md:p-12 shadow-[0_28px_90px_rgba(74,91,62,0.12)]',
-        spineClass: 'bg-gradient-to-b from-primary/0 via-primary/40 to-primary/0',
-        cardClass: 'rounded-[1.5rem] border border-primary/15 bg-white/78',
-        timeClass: 'text-primary/70',
-        eventClass: 'text-[#3F4A38]',
-        iconFrameClass: 'rounded-full border border-primary/20 bg-[#f7f4ee] shadow-md',
-        connectorClass: 'bg-primary/20',
-        reminderCardClass: 'rounded-[1.5rem] border border-primary/15 bg-[#f7f4ee]/70',
-        reminderTextClass: 'text-[#3F4A38]/70',
-        ornament: 'botanical',
-    },
-    traditional: {
-        eyebrow: 'Ceremonial order',
-        title: 'The Formal Program',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-full border-4 border-double border-primary/25 bg-white shadow-lg',
-        frameClass: 'rounded-sm border-4 border-double border-primary/25 bg-[#fff8ed]/85 p-5 sm:p-8 md:p-12 shadow-[0_26px_80px_rgba(143,106,69,0.15)]',
-        spineClass: 'bg-gradient-to-b from-primary/0 via-primary/55 to-primary/0',
-        cardClass: 'rounded-sm border border-primary/25 bg-white/75 ring-4 ring-primary/5',
-        timeClass: 'text-primary/75',
-        eventClass: 'text-[#4A3A31]',
-        iconFrameClass: 'rounded-full border-4 border-double border-primary/25 bg-white shadow-md',
-        connectorClass: 'bg-primary/25',
-        reminderCardClass: 'rounded-sm border border-primary/25 bg-white/70 ring-4 ring-primary/5',
-        reminderTextClass: 'text-[#4A3A31]/70',
-        ornament: 'corner',
-    },
-    timeline: {
-        eyebrow: 'Structured flow',
-        title: 'The Day at a Glance',
-        maxWidth: 'max-w-6xl',
-        headerBadgeClass: 'rounded-xl border border-slate-200 bg-white shadow-lg',
-        frameClass: 'rounded-2xl border border-slate-200 bg-white/86 p-5 sm:p-8 md:p-12 shadow-[0_28px_90px_rgba(77,91,124,0.16)]',
-        spineClass: 'bg-gradient-to-b from-slate-200 via-primary/70 to-slate-200',
-        cardClass: 'rounded-xl border border-slate-200 bg-slate-50/85 shadow-sm',
-        timeClass: 'text-primary/75',
-        eventClass: 'text-slate-800',
-        iconFrameClass: 'rounded-xl border border-slate-200 bg-white shadow-md',
-        connectorClass: 'bg-slate-300',
-        reminderCardClass: 'rounded-xl border border-slate-200 bg-slate-50/80',
-        reminderTextClass: 'text-slate-600',
-        ornament: 'rails',
-    },
-    rsvpfocus: {
-        eyebrow: 'Guest guide',
-        title: 'Your RSVP Day Guide',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-2xl border border-primary/15 bg-white shadow-lg',
-        frameClass: 'rounded-[2rem] border border-primary/15 bg-white/82 p-5 sm:p-8 md:p-12 shadow-[0_26px_80px_rgba(160,97,106,0.12)]',
-        spineClass: 'bg-gradient-to-b from-primary/0 via-primary/45 to-primary/0',
-        cardClass: 'rounded-2xl border border-primary/12 bg-white shadow-sm',
-        timeClass: 'text-primary/70',
-        eventClass: 'text-[#4A4444]',
-        iconFrameClass: 'rounded-2xl border border-primary/20 bg-white shadow-md',
-        connectorClass: 'bg-primary/22',
-        reminderCardClass: 'rounded-2xl border border-primary/12 bg-white/75',
-        reminderTextClass: 'text-[#4A4444]/68',
-    },
-    cinematic: {
-        eyebrow: 'Scene list',
-        title: 'The Wedding Reel',
-        maxWidth: 'max-w-6xl',
-        headerBadgeClass: 'rounded-xl border border-white/15 bg-black/45 backdrop-blur',
-        frameClass: 'rounded-[1.5rem] border border-white/10 bg-black/35 p-5 sm:p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.5)] backdrop-blur',
-        spineClass: 'bg-gradient-to-b from-orange-200/0 via-primary/75 to-orange-200/0',
-        cardClass: 'rounded-xl border border-white/10 bg-white/[0.06]',
-        timeClass: 'text-primary/75',
-        eventClass: 'text-white/88',
-        iconFrameClass: 'rounded-xl border border-white/15 bg-black/60 shadow-lg',
-        connectorClass: 'bg-primary/40',
-        reminderCardClass: 'rounded-xl border border-white/10 bg-white/[0.06]',
-        reminderTextClass: 'text-white/68',
-        ornament: 'film',
-    },
-    elegance: {
-        eyebrow: 'Refined order',
-        title: 'A Refined Celebration',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-full border border-[#dcc9b6] bg-white shadow-lg',
-        frameClass: 'rounded-[2rem] border border-[#dcc9b6]/70 bg-white/80 p-5 sm:p-8 md:p-12 shadow-[0_28px_90px_rgba(155,122,94,0.12)]',
-        spineClass: 'bg-gradient-to-b from-transparent via-[#9B7A5E]/45 to-transparent',
-        cardClass: 'rounded-[1.25rem] border border-[#dcc9b6]/70 bg-[#fffcf8]/85',
-        timeClass: 'text-[#9B7A5E]/80',
-        eventClass: 'text-[#4A3A31]',
-        iconFrameClass: 'rounded-full border border-[#dcc9b6] bg-white shadow-md',
-        connectorClass: 'bg-[#dcc9b6]',
-        reminderCardClass: 'rounded-[1.25rem] border border-[#dcc9b6]/70 bg-[#fffcf8]/80',
-        reminderTextClass: 'text-[#4A3A31]/68',
-    },
-    artdeco: {
-        eyebrow: 'Gilded sequence',
-        title: 'The Grand Program',
-        maxWidth: 'max-w-6xl',
-        headerBadgeClass: 'rounded-none border-2 border-primary/55 bg-black',
-        frameClass: 'rounded-none border-2 border-primary/45 bg-black/60 p-5 sm:p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.55)]',
-        spineClass: 'bg-gradient-to-b from-transparent via-primary/80 to-transparent',
-        cardClass: 'rounded-none border border-primary/35 bg-white/[0.055]',
-        timeClass: 'text-primary/80',
-        eventClass: 'text-white/90',
-        iconFrameClass: 'rounded-none border-2 border-primary/55 bg-black shadow-lg rotate-45',
-        connectorClass: 'bg-primary/45',
-        reminderCardClass: 'rounded-none border border-primary/35 bg-white/[0.05]',
-        reminderTextClass: 'text-white/68',
-        ornament: 'rails',
-    },
-    boho: {
-        eyebrow: 'Earthy rhythm',
-        title: 'The Celebration Flow',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-[2rem] border border-orange-100 bg-white/78 shadow-lg rotate-2',
-        frameClass: 'rounded-[2.5rem] border border-orange-100 bg-white/70 p-5 sm:p-8 md:p-12 shadow-[0_28px_90px_rgba(165,109,82,0.14)]',
-        spineClass: 'bg-gradient-to-b from-transparent via-primary/40 to-transparent',
-        cardClass: 'rounded-[2rem] border border-orange-100 bg-[#fff7ef]/80',
-        timeClass: 'text-primary/75',
-        eventClass: 'text-[#5A4134]',
-        iconFrameClass: 'rounded-[1.5rem] border border-orange-100 bg-[#fff7ef] shadow-md rotate-3',
-        connectorClass: 'bg-orange-200',
-        reminderCardClass: 'rounded-[2rem] border border-orange-100 bg-[#fff7ef]/75',
-        reminderTextClass: 'text-[#5A4134]/70',
-        ornament: 'botanical',
-    },
-    whimsical: {
-        eyebrow: 'Storybook schedule',
-        title: 'A Little Wedding Adventure',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-[2rem] border border-purple-100 bg-white/80 shadow-lg -rotate-2',
-        frameClass: 'rounded-[2.5rem] border border-purple-100 bg-white/70 p-5 sm:p-8 md:p-12 shadow-[0_28px_90px_rgba(141,123,196,0.14)]',
-        spineClass: 'bg-gradient-to-b from-purple-100 via-primary/45 to-purple-100',
-        cardClass: 'rounded-[2rem] border border-purple-100 bg-white/80 shadow-sm',
-        timeClass: 'text-primary/70',
-        eventClass: 'text-[#4D4165]',
-        iconFrameClass: 'rounded-[1.5rem] border border-purple-100 bg-purple-50 shadow-md',
-        connectorClass: 'bg-purple-200',
-        reminderCardClass: 'rounded-[2rem] border border-purple-100 bg-purple-50/55',
-        reminderTextClass: 'text-[#4D4165]/70',
-        ornament: 'dots',
-    },
-    urban: {
-        eyebrow: 'City sequence',
-        title: 'The Night Moves',
-        maxWidth: 'max-w-6xl',
-        headerBadgeClass: 'rounded-none border border-primary/60 bg-black shadow-[0_0_30px_rgba(255,77,90,0.2)]',
-        frameClass: 'rounded-none border border-white/10 bg-black/75 p-5 sm:p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.55)]',
-        spineClass: 'bg-gradient-to-b from-transparent via-primary to-transparent',
-        cardClass: 'rounded-none border border-white/10 bg-white/[0.05]',
-        timeClass: 'text-primary',
-        eventClass: 'text-white/90',
-        iconFrameClass: 'rounded-none border border-primary/60 bg-black shadow-[0_0_24px_rgba(255,77,90,0.22)]',
-        connectorClass: 'bg-primary/70',
-        reminderCardClass: 'rounded-none border border-white/10 bg-white/[0.05]',
-        reminderTextClass: 'text-white/76',
-        ornament: 'rails',
-    },
-    tropical: {
-        eyebrow: 'Island flow',
-        title: 'Paradise Program',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-full border border-teal-100 bg-white/80 shadow-lg',
-        frameClass: 'rounded-[2.5rem] border border-teal-100 bg-white/72 p-5 sm:p-8 md:p-12 shadow-[0_28px_90px_rgba(11,143,123,0.14)]',
-        spineClass: 'bg-gradient-to-b from-teal-100 via-primary/55 to-teal-100',
-        cardClass: 'rounded-[1.75rem] border border-teal-100 bg-white/80',
-        timeClass: 'text-primary/75',
-        eventClass: 'text-[#124C45]',
-        iconFrameClass: 'rounded-full border border-teal-100 bg-[#effcf8] shadow-md',
-        connectorClass: 'bg-teal-200',
-        reminderCardClass: 'rounded-[1.75rem] border border-teal-100 bg-[#effcf8]/75',
-        reminderTextClass: 'text-[#124C45]/70',
-        ornament: 'botanical',
-    },
-    midnight: {
-        eyebrow: 'After-hours order',
-        title: 'Midnight Program',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-full border border-primary/45 bg-[#05060a] shadow-[0_20px_60px_rgba(0,0,0,0.5)]',
-        frameClass: 'rounded-[1.5rem] border border-primary/30 bg-[#05060a]/75 p-5 sm:p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.55)]',
-        spineClass: 'bg-gradient-to-b from-transparent via-primary/70 to-transparent',
-        cardClass: 'rounded-[1.25rem] border border-primary/25 bg-white/[0.055]',
-        timeClass: 'text-primary/80',
-        eventClass: 'text-white/90',
-        iconFrameClass: 'rounded-full border border-primary/45 bg-[#05060a] shadow-lg',
-        connectorClass: 'bg-primary/45',
-        reminderCardClass: 'rounded-[1.25rem] border border-primary/25 bg-white/[0.05]',
-        reminderTextClass: 'text-white/68',
-    },
-    sakura: {
-        eyebrow: 'Petal by petal',
-        title: 'The Blossom Program',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-[2rem] border border-pink-100 bg-white/82 shadow-lg',
-        frameClass: 'rounded-[2.75rem] border border-pink-100 bg-white/72 p-5 sm:p-8 md:p-12 shadow-[0_28px_90px_rgba(216,141,169,0.14)]',
-        spineClass: 'bg-gradient-to-b from-pink-100 via-primary/45 to-pink-100',
-        cardClass: 'rounded-[2rem] border border-pink-100 bg-white/82',
-        timeClass: 'text-primary/72',
-        eventClass: 'text-[#5C4650]',
-        iconFrameClass: 'rounded-[1.5rem] border border-pink-100 bg-pink-50 shadow-md',
-        connectorClass: 'bg-pink-200',
-        reminderCardClass: 'rounded-[2rem] border border-pink-100 bg-pink-50/50',
-        reminderTextClass: 'text-[#5C4650]/70',
-        ornament: 'dots',
-    },
-    vogue: {
-        eyebrow: 'Run of show',
-        title: 'The Edit',
-        maxWidth: 'max-w-6xl',
-        headerBadgeClass: 'rounded-full border border-black bg-white',
-        frameClass: 'rounded-none border border-black bg-white p-5 sm:p-8 md:p-12 shadow-[22px_22px_0_rgba(0,0,0,0.06)]',
-        spineClass: 'bg-black',
-        cardClass: 'rounded-none border border-black bg-white',
-        timeClass: 'text-black/68',
-        eventClass: 'text-black',
-        iconFrameClass: 'rounded-full border border-black bg-white shadow-none',
-        connectorClass: 'bg-black',
-        reminderCardClass: 'rounded-none border border-black bg-white',
-        reminderTextClass: 'text-black/62',
-        ornament: 'rails',
-    },
-    rustic: {
-        eyebrow: 'Barn glow timing',
-        title: 'The Gathered Day',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-sm border border-[#bb8e60]/40 bg-[#fff8ee] shadow-md',
-        frameClass: 'rounded-sm border border-[#bb8e60]/35 bg-[#fff8ee]/85 p-5 sm:p-8 md:p-12 shadow-[0_26px_80px_rgba(140,100,70,0.16)]',
-        spineClass: 'bg-gradient-to-b from-transparent via-[#8C6446]/55 to-transparent',
-        cardClass: 'rounded-sm border border-[#bb8e60]/30 bg-white/68',
-        timeClass: 'text-[#8C6446]/80',
-        eventClass: 'text-[#4A3324]',
-        iconFrameClass: 'rounded-sm border border-[#bb8e60]/40 bg-[#fff8ee] shadow-md',
-        connectorClass: 'bg-[#d8b58f]',
-        reminderCardClass: 'rounded-sm border border-[#bb8e60]/30 bg-white/62',
-        reminderTextClass: 'text-[#4A3324]/70',
-    },
-    film: {
-        eyebrow: 'Analog sequence',
-        title: 'The Film Roll',
-        maxWidth: 'max-w-6xl',
-        headerBadgeClass: 'rounded-sm border border-white/15 bg-black/45',
-        frameClass: 'rounded-sm border border-white/10 bg-black/35 p-5 sm:p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.52)] sepia-[0.12]',
-        spineClass: 'bg-gradient-to-b from-transparent via-primary/70 to-transparent',
-        cardClass: 'rounded-sm border border-white/10 bg-white/[0.06]',
-        timeClass: 'text-primary/80',
-        eventClass: 'text-white/86',
-        iconFrameClass: 'rounded-sm border border-white/15 bg-black/65 shadow-lg',
-        connectorClass: 'bg-primary/45',
-        reminderCardClass: 'rounded-sm border border-white/10 bg-white/[0.06]',
-        reminderTextClass: 'text-white/76',
-        ornament: 'film',
-    },
-    glitch: {
-        eyebrow: 'Signal path',
-        title: 'The Event Signal',
-        maxWidth: 'max-w-6xl',
-        headerBadgeClass: 'rounded-none border border-cyan-300/60 bg-black shadow-[0_0_28px_rgba(78,242,224,0.22)]',
-        frameClass: 'rounded-none border border-cyan-300/35 bg-black/78 p-5 sm:p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.58)]',
-        spineClass: 'bg-gradient-to-b from-fuchsia-400/0 via-cyan-300 to-fuchsia-400/0',
-        cardClass: 'rounded-none border border-cyan-300/25 bg-cyan-300/[0.04]',
-        timeClass: 'text-cyan-200',
-        eventClass: 'text-white/90',
-        iconFrameClass: 'rounded-none border border-cyan-300/55 bg-black shadow-[0_0_24px_rgba(78,242,224,0.24)]',
-        connectorClass: 'bg-cyan-300/70',
-        reminderCardClass: 'rounded-none border border-cyan-300/25 bg-cyan-300/[0.04]',
-        reminderTextClass: 'text-white/76',
-        ornament: 'signal',
-    },
-    vintage: {
-        eyebrow: 'Keepsake order',
-        title: 'The Postcard Program',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-sm border border-primary/35 bg-[#fcf7ef] shadow-md',
-        frameClass: 'rounded-sm border border-primary/30 bg-[#fcf7ef]/88 p-5 sm:p-8 md:p-12 shadow-[0_26px_80px_rgba(166,124,82,0.16)] ring-4 ring-primary/5',
-        spineClass: 'bg-gradient-to-b from-transparent via-primary/50 to-transparent',
-        cardClass: 'rounded-sm border border-primary/25 bg-[#fffaf0]/78 ring-4 ring-primary/5',
-        timeClass: 'text-primary/75',
-        eventClass: 'text-[#4A3A31]',
-        iconFrameClass: 'rounded-sm border border-primary/30 bg-[#fcf7ef] shadow-md',
-        connectorClass: 'bg-primary/25',
-        reminderCardClass: 'rounded-sm border border-primary/25 bg-[#fffaf0]/75 ring-4 ring-primary/5',
-        reminderTextClass: 'text-[#4A3A31]/70',
-        ornament: 'corner',
-    },
-    editorial: {
-        eyebrow: 'Magazine pacing',
-        title: 'The Event Edit',
-        maxWidth: 'max-w-6xl',
-        headerBadgeClass: 'rounded-none border border-black/20 bg-white',
-        frameClass: 'rounded-none border border-black/10 bg-white p-5 sm:p-8 md:p-12 shadow-[20px_20px_0_rgba(0,0,0,0.05)]',
-        spineClass: 'bg-black/85',
-        cardClass: 'rounded-none border border-black/10 bg-white',
-        timeClass: 'text-black/68',
-        eventClass: 'text-black',
-        iconFrameClass: 'rounded-none border border-black/15 bg-white shadow-none',
-        connectorClass: 'bg-black/70',
-        reminderCardClass: 'rounded-none border border-black/10 bg-white',
-        reminderTextClass: 'text-black/62',
-        ornament: 'rails',
-    },
-    royal: {
-        eyebrow: 'Royal order',
-        title: 'The Court Program',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-full border border-primary/45 bg-black shadow-[0_20px_60px_rgba(0,0,0,0.5)]',
-        frameClass: 'rounded-none border border-primary/35 bg-black/62 p-5 sm:p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.55)]',
-        spineClass: 'bg-gradient-to-b from-transparent via-primary/70 to-transparent',
-        cardClass: 'rounded-none border border-primary/30 bg-white/[0.055]',
-        timeClass: 'text-primary/80',
-        eventClass: 'text-white/90',
-        iconFrameClass: 'rounded-full border border-primary/45 bg-black shadow-lg',
-        connectorClass: 'bg-primary/45',
-        reminderCardClass: 'rounded-none border border-primary/30 bg-white/[0.05]',
-        reminderTextClass: 'text-white/68',
-        ornament: 'corner',
-    },
-    garden: {
-        eyebrow: 'Garden path',
-        title: 'The Conservatory Program',
-        maxWidth: 'max-w-5xl',
-        headerBadgeClass: 'rounded-full border border-green-100 bg-white/80 shadow-lg',
-        frameClass: 'rounded-[2.5rem] border border-green-100 bg-white/74 p-5 sm:p-8 md:p-12 shadow-[0_28px_90px_rgba(83,122,87,0.14)]',
-        spineClass: 'bg-gradient-to-b from-green-100 via-primary/50 to-green-100',
-        cardClass: 'rounded-[1.75rem] border border-green-100 bg-white/82',
-        timeClass: 'text-primary/75',
-        eventClass: 'text-[#27422A]',
-        iconFrameClass: 'rounded-full border border-green-100 bg-[#f8fbf5] shadow-md',
-        connectorClass: 'bg-green-200',
-        reminderCardClass: 'rounded-[1.75rem] border border-green-100 bg-[#f8fbf5]/80',
-        reminderTextClass: 'text-[#27422A]/70',
-        ornament: 'botanical',
-    },
+const TIMELINE_ICONS: Record<TimelineIconKind, typeof Church> = {
+    ceremony: Church,
+    drinks: Wine,
+    meal: Utensils,
+    photo: Camera,
+    music: Music,
+    celebration: Sparkles,
 };
 
-const STYLE_VARIANT_TIMELINE_DESIGNS: Record<string, Partial<TimelineDesign>> = {
-    'luxury-planner': {
-        eyebrow: 'Planner-led flow',
-        title: 'The Celebration Plan',
-        headerBadgeClass: 'rounded-none border border-[#b9975b]/35 bg-[#fbf7ef] shadow-[0_20px_60px_rgba(43,37,32,0.10)]',
-        frameClass: 'rounded-none border border-[#b9975b]/30 bg-[#fbf7ef]/86 p-5 shadow-[0_28px_90px_rgba(43,37,32,0.14)] sm:p-8 md:p-12',
-        spineClass: 'bg-gradient-to-b from-transparent via-[#b9975b]/70 to-transparent',
-        cardClass: 'rounded-none border border-[#b9975b]/25 bg-white/78 shadow-sm',
-        timeClass: 'text-[#b9975b]',
-        eventClass: 'text-[#2b2520]',
-        iconFrameClass: 'rounded-none border border-[#b9975b]/45 bg-white shadow-md',
-        connectorClass: 'bg-[#b9975b]/45',
-        reminderCardClass: 'rounded-none border border-[#b9975b]/25 bg-white/72',
-        reminderTextClass: 'text-[#6f645b]',
-        ornament: 'rails',
-    },
-    'editorial-photo': {
-        eyebrow: 'Photo-led pacing',
-        title: 'The Event Sequence',
-        headerBadgeClass: 'rounded-none border border-black/20 bg-white',
-        frameClass: 'rounded-none border border-black/10 bg-[#f7f3ee] p-5 shadow-[20px_20px_0_rgba(0,0,0,0.05)] sm:p-8 md:p-12',
-        cardClass: 'rounded-none border border-black/10 bg-white',
-        timeClass: 'text-black/68',
-        eventClass: 'text-black',
-        iconFrameClass: 'rounded-none border border-black/15 bg-white shadow-none',
-        ornament: 'rails',
-    },
-    'romantic-estate': {
-        eyebrow: 'Estate rhythm',
-        title: 'The Romantic Program',
-        headerBadgeClass: 'rounded-full border border-[#efd3d8] bg-white/82 shadow-lg shadow-[#b97983]/10',
-        frameClass: 'rounded-[2.75rem] border border-[#efd3d8] bg-white/72 p-5 shadow-[0_28px_90px_rgba(185,121,131,0.14)] sm:p-8 md:p-12',
-        spineClass: 'bg-gradient-to-b from-transparent via-[#b97983]/50 to-transparent',
-        cardClass: 'rounded-[2rem] border border-[#efd3d8] bg-white/82',
-        timeClass: 'text-[#b97983]',
-        eventClass: 'text-[#55373b]',
-        iconFrameClass: 'rounded-full border border-[#efd3d8] bg-[#fff8f5] shadow-md',
-        connectorClass: 'bg-[#efd3d8]',
-        reminderCardClass: 'rounded-[2rem] border border-[#efd3d8] bg-[#fff8f5]/75',
-        reminderTextClass: 'text-[#816066]',
-        ornament: 'dots',
-    },
+const TEMPLATE_TIMELINE_COPY: Record<string, { eyebrow: string; title: string }> = {
+    minimal: { eyebrow: 'Schedule', title: 'Order of Events' },
+    editorial: { eyebrow: 'The Itinerary', title: 'Order of the Day' },
+    'editorial-luxe': { eyebrow: 'The Itinerary', title: 'Order of the Day' },
+    'velure-editorial': { eyebrow: 'The Itinerary', title: 'Order of the Day' },
+    vogue: { eyebrow: 'Run of Show', title: 'The Schedule' },
+    monochrome: { eyebrow: 'Schedule', title: 'Order of Events' },
+    luxury: { eyebrow: 'Black-Tie Timing', title: 'The Evening Program' },
+    artdeco: { eyebrow: 'Evening Order', title: 'The Grand Program' },
+    royal: { eyebrow: 'Ceremonial Order', title: 'The Evening Program' },
+    midnight: { eyebrow: 'After-Hours Order', title: 'Midnight Program' },
+    cinematic: { eyebrow: 'Run of Show', title: 'The Wedding Reel' },
+    'cinematic-vow': { eyebrow: 'Run of Show', title: 'The Celebration' },
+    film: { eyebrow: 'Sequence', title: 'The Day in Frames' },
+    elopement: { eyebrow: 'The Quiet Path', title: 'Our Day Together' },
+    traditional: { eyebrow: 'Ceremonial Order', title: 'The Formal Program' },
+    garden: { eyebrow: 'Garden Schedule', title: 'Order of the Day' },
+    'botanical-arch': { eyebrow: 'Garden Schedule', title: 'Order of the Day' },
+    'watercolor-meadow': { eyebrow: 'Garden Schedule', title: 'Order of the Day' },
+    'envelope-wax-seal': { eyebrow: 'The Itinerary', title: 'Order of the Day' },
+    riviera: { eyebrow: 'Weekend Itinerary', title: 'The Celebration' },
+    'pearl-coastal': { eyebrow: 'By the Sea', title: 'Order of the Day' },
+    tropical: { eyebrow: 'Island Schedule', title: 'Order of the Day' },
+    nordic: { eyebrow: 'Schedule', title: 'Order of the Day' },
+    boho: { eyebrow: 'Celebration Flow', title: 'Order of the Day' },
+    rustic: { eyebrow: 'Gathered Day', title: 'Order of the Day' },
+    'torn-paper-terracotta': { eyebrow: 'The Itinerary', title: 'Order of the Day' },
+    vintage: { eyebrow: 'Keepsake Program', title: 'Order of the Day' },
+    romantic: { eyebrow: 'The Celebration', title: 'Order of the Day' },
+    'editorial-romance': { eyebrow: 'The Itinerary', title: 'Order of the Day' },
+    sakura: { eyebrow: 'Spring Schedule', title: 'Order of the Day' },
+    celestial: { eyebrow: 'Evening Program', title: 'Under the Stars' },
 };
 
-function getTimelineDesign(template: string, templateStyle?: string) {
-    const base = TIMELINE_DESIGNS[template] || TIMELINE_DESIGNS.classic;
-    const variant = templateStyle && templateStyle !== 'default' ? STYLE_VARIANT_TIMELINE_DESIGNS[templateStyle] : undefined;
-    return {
-        ...base,
-        ...(variant || {}),
-    };
+function isDayHeadingLine(line: string): boolean {
+    return /^(day\s*\d+|friday|saturday|sunday|monday|tuesday|wednesday|thursday|welcome|rehearsal|farewell|brunch)\b.*[:—–-]?$/i.test(line)
+        && (line.endsWith(':') || line.length <= 36)
+        && !/\d{1,2}:\d{2}/.test(line);
 }
 
-function TimelineOrnament({ type, color }: { type?: TimelineDesign['ornament']; color: string }) {
-    if (!type) return null;
-
-    if (type === 'film') {
-        return (
-            <>
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-7 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.14)_0_12px,transparent_12px_28px)]" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-7 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.10)_0_12px,transparent_12px_28px)]" />
-            </>
-        );
-    }
-
-    if (type === 'signal') {
-        return (
-            <>
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent" />
-                <div className="pointer-events-none absolute left-0 top-10 h-px w-full bg-gradient-to-r from-transparent via-fuchsia-400/50 to-transparent" />
-            </>
-        );
-    }
-
-    if (type === 'rails') {
-        return (
-            <>
-                <div className="pointer-events-none absolute left-4 top-4 bottom-4 hidden w-px bg-current opacity-10 md:block" />
-                <div className="pointer-events-none absolute right-4 top-4 bottom-4 hidden w-px bg-current opacity-10 md:block" />
-            </>
-        );
-    }
-
-    if (type === 'dots') {
-        return (
-            <div
-                className="pointer-events-none absolute inset-4 opacity-20"
-                style={{ backgroundImage: `radial-gradient(circle, ${color} 1px, transparent 1px)`, backgroundSize: '18px 18px' }}
-            />
-        );
-    }
-
-    if (type === 'botanical') {
-        return (
-            <svg viewBox="0 0 220 220" className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 opacity-20" fill="none" aria-hidden="true">
-                <path d="M42 174C68 109 111 62 174 35" stroke={color} strokeWidth="2" strokeLinecap="round" />
-                <path d="M80 118c-28-7-43 4-47 21 24 6 39-1 47-21ZM112 83c-23-18-42-14-53-1 20 16 36 17 53 1ZM145 55c-14-24-33-28-48-20 13 21 28 28 48 20Z" stroke={color} strokeWidth="2" strokeLinejoin="round" />
-            </svg>
-        );
-    }
-
-    return (
-        <>
-            <div className="pointer-events-none absolute left-4 top-4 h-12 w-12 border-l border-t opacity-25" style={{ borderColor: color }} />
-            <div className="pointer-events-none absolute bottom-4 right-4 h-12 w-12 border-b border-r opacity-25" style={{ borderColor: color }} />
-        </>
-    );
-}
-
-/**
- * Parses a free-text program timeline into structured {time, event} pairs.
- * Supports formats like:
- *   "2:00 PM - Guest Arrival"
- *   "14:00 Ceremony begins"
- *   "3pm | Reception"
- *   Plain lines with no time are rendered as-is in the event column.
- */
 function parseTimeline(raw: string): TimelineItem[] {
-    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-    return lines.map(line => {
-        // Pattern: optional time prefix + delimiter + event name
-        const match = line.match(
-            /^(\d{1,2}(?::\d{2})?(?:\s?[apAP][mM])?)\s*[-–|:•]\s*(.+)$/
-        );
+    const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+    return lines.map((line) => {
+        const match = line.match(/^(\d{1,2}(?::\d{2})?(?:\s?[apAP][mM])?)\s*[-–|:•]\s*(.+)$/);
         if (match) {
             return { time: match[1].trim(), event: match[2].trim() };
         }
-        // No time detected — treat full line as event with empty time
+        if (isDayHeadingLine(line)) {
+            return { time: '', event: line.replace(/:$/, '').trim(), isDayHeader: true };
+        }
         return { time: '', event: line };
     });
 }
 
 export default function TimelineSection({ timeline, wedding, id }: TimelineSectionProps) {
-    const { registerSection, unregisterSection } = useSectionContext();
-    
+    const { registerSection, unregisterSection } = useSectionActions();
+
     useEffect(() => {
+        if (!timeline) return;
         registerSection(id, 'Timeline');
         return () => unregisterSection(id);
-    }, [id, registerSection, unregisterSection]);
-    
+    }, [id, timeline, registerSection, unregisterSection]);
+
     if (!timeline) return null;
 
     const items = parseTimeline(timeline);
-
-    const template = wedding?.template || 'classic';
-    const templateStyle = wedding?.template_style;
+    const template = (wedding?.template || 'classic').toLowerCase();
     const motifColor = wedding?.motif_color || '#D16C78';
     const visual = getTemplateVisualProfile(template, motifColor, false, wedding?.card_style);
     const titleStyle = getSectionTitleStyle(wedding || {}, visual.headingClass);
-    const design = getTimelineDesign(template, templateStyle);
     const isDark = visual.isDark;
-    const isVintage = ['vintage', 'rustic', 'boho', 'artdeco'].includes(template);
+    const isSharp = visual.isSharp;
+    const copy = TEMPLATE_TIMELINE_COPY[template] || { eyebrow: 'The Itinerary', title: 'Order of the Day' };
 
     return (
-        <section data-wedding-section="TimelineSection" id={id} className={`py-16 sm:py-24 md:py-32 relative z-10 overflow-hidden ${visual.sectionClass}`} style={visual.sectionStyle}>
-            {visual.ornament === 'film' && <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.12)_0_12px,transparent_12px_26px)]" />}
-            <div className={`${design.maxWidth} mx-auto px-4 sm:px-6 md:px-8 relative`}>
+        <section
+            data-wedding-section="TimelineSection"
+            id={id}
+            className={`relative z-10 overflow-hidden py-16 sm:py-24 md:py-28 ${visual.sectionClass}`}
+            style={visual.sectionStyle}
+        >
+            {visual.ornament === 'film' && (
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-6 bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.1)_0_10px,transparent_10px_24px)]" />
+            )}
+
+            <div className="relative mx-auto max-w-4xl px-4 sm:px-6 md:px-8">
                 {/* Section header */}
                 <motion.div
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
-                    className="text-center mb-8 sm:mb-12 md:mb-16"
+                    className="mb-10 text-center sm:mb-14"
                 >
-                    <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto flex items-center justify-center mb-4 sm:mb-6 min-h-[44px] min-w-[44px] ${design.headerBadgeClass}`}>
-                        <Clock className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-primary' : 'text-primary'}`} />
+                    <div className="mb-4 flex items-center justify-center">
+                        <span data-wedding-badge="true" className={visual.badgeStyleClass || `text-[11px] font-medium uppercase ${visual.eyebrowClass}`}>
+                            {copy.eyebrow}
+                        </span>
                     </div>
-                    <p className={`mb-4 text-[10px] font-black uppercase ${visual.eyebrowClass}`}>{design.eyebrow}</p>
-                    <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-sm ${titleStyle.className}`} style={titleStyle.style}>
-                        {design.title}
+                    <h2
+                        className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl ${titleStyle.className}`}
+                        style={titleStyle.style}
+                    >
+                        {copy.title}
                     </h2>
-                    {isVintage && (
-                        <div className="flex items-center justify-center gap-3 mt-4 opacity-70">
-                            <div className="h-px w-16 bg-primary" />
-                            <span className="text-primary text-xs tracking-widest uppercase">✦</span>
-                            <div className="h-px w-16 bg-primary" />
-                        </div>
-                    )}
+                    <SectionTemplateElement wedding={wedding} isDark={isDark} placement="divider" className="mt-6" />
                 </motion.div>
 
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.97 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    transition={{ duration: 0.7, type: 'spring' }}
-                    data-wedding-card="timeline" className={`relative overflow-hidden ${design.frameClass}`}
+                    initial={{ opacity: 0, y: 18 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.15 }}
+                    transition={{ duration: 0.7 }}
+                    data-wedding-card="timeline"
+                    className={`relative overflow-hidden px-5 py-8 sm:px-10 sm:py-12 md:px-14 ${visual.cardClass}`}
                 >
-                    <TimelineOrnament type={design.ornament} color={motifColor} />
-                    <div className="relative">
-                        <ol className="mx-auto max-w-3xl">
-                            {items.map((item, idx) => (
+                    <SectionTemplateElement wedding={wedding} isDark={isDark} placement="corner-top-right" />
+
+                    <ol className="relative mx-auto max-w-2xl">
+                        {/* Delicate vertical timeline rail */}
+                        <span
+                            aria-hidden="true"
+                            className={`pointer-events-none absolute bottom-6 left-[1.15rem] top-6 w-px sm:left-[1.35rem] ${
+                                isDark ? 'bg-white/15' : 'bg-current opacity-15'
+                            }`}
+                        />
+
+                        {items.map((item, idx) => {
+                            if (item.isDayHeader) {
+                                return (
+                                    <li
+                                        key={`day-${item.event}-${idx}`}
+                                        className={`relative py-5 first:pt-0 ${idx > 0 ? 'mt-4 border-t border-current/10 pt-7' : ''}`}
+                                    >
+                                        <span className="inline-block bg-transparent pl-12 text-[11px] font-medium uppercase tracking-[0.28em] text-primary sm:pl-14">
+                                            {item.event}
+                                        </span>
+                                    </li>
+                                );
+                            }
+
+                            const iconKey = timelineIconKind(item.event, idx);
+                            const Icon = TIMELINE_ICONS[iconKey];
+
+                            return (
                                 <motion.li
                                     key={`${item.time}-${item.event}-${idx}`}
                                     initial={{ opacity: 0, y: 12 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: Math.min(idx * 0.04, 0.24) }}
-                                    className={`grid grid-cols-[5.5rem_minmax(0,1fr)] gap-5 border-b py-6 last:border-0 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-8 sm:py-8 ${isDark ? 'border-white/15' : 'border-black/15'}`}
+                                    className={`relative flex items-start gap-4 border-b py-5 last:border-b-0 sm:gap-6 sm:py-6 ${
+                                        isDark ? 'border-white/12' : 'border-black/10'
+                                    }`}
                                 >
-                                    <span className={`pt-1 text-sm font-semibold tabular-nums sm:text-base ${design.timeClass}`}>{item.time}</span>
-                                    <p className={`break-words font-serif text-xl leading-relaxed sm:text-2xl ${design.eventClass}`}>{item.event}</p>
-                                </motion.li>
-                            ))}
-                        </ol>
-                    </div>
+                                    <span
+                                        aria-hidden="true"
+                                        className={`relative z-10 mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center border sm:h-11 sm:w-11 ${
+                                            isSharp ? 'rounded-none' : 'rounded-full'
+                                        } ${
+                                            isDark
+                                                ? 'border-white/20 bg-[#151417] text-primary'
+                                                : 'border-primary/25 bg-[#fffdfb] text-primary'
+                                        }`}
+                                    >
+                                        <Icon className="h-4 w-4 stroke-[1.4] sm:h-[18px] sm:w-[18px]" />
+                                    </span>
 
+                                    <div className="min-w-0 flex-1 pt-0.5 sm:grid sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:items-baseline sm:gap-6">
+                                        {item.time ? (
+                                            <time className="block text-xs font-medium uppercase tracking-[0.18em] text-primary tabular-nums sm:text-sm">
+                                                {item.time}
+                                            </time>
+                                        ) : (
+                                            <span className="hidden sm:block" />
+                                        )}
+                                        <p className={`mt-1 break-words font-serif text-xl leading-snug sm:mt-0 sm:text-2xl ${isDark ? 'text-white/95' : ''}`}>
+                                            {item.event}
+                                        </p>
+                                    </div>
+                                </motion.li>
+                            );
+                        })}
+                    </ol>
                 </motion.div>
             </div>
         </section>

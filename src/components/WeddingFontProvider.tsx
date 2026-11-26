@@ -15,6 +15,7 @@ const cormorantGaramond = Cormorant_Garamond({
     weight: ['400', '500', '600', '700'],
     style: ['normal', 'italic'],
     display: 'swap',
+    preload: false,
 });
 
 const cinzel = Cinzel({
@@ -22,6 +23,7 @@ const cinzel = Cinzel({
     subsets: ['latin'],
     weight: ['400', '600', '700'],
     display: 'swap',
+    preload: false,
 });
 
 const greatVibes = Great_Vibes({
@@ -29,6 +31,7 @@ const greatVibes = Great_Vibes({
     subsets: ['latin'],
     weight: '400',
     display: 'swap',
+    preload: false,
 });
 
 const pinyonScript = Pinyon_Script({
@@ -36,6 +39,7 @@ const pinyonScript = Pinyon_Script({
     subsets: ['latin'],
     weight: '400',
     display: 'swap',
+    preload: false,
 });
 
 const bodoniModa = Bodoni_Moda({
@@ -44,6 +48,7 @@ const bodoniModa = Bodoni_Moda({
     weight: ['400', '600', '700'],
     style: ['normal', 'italic'],
     display: 'swap',
+    preload: false,
 });
 
 const libreBaskerville = Libre_Baskerville({
@@ -52,6 +57,7 @@ const libreBaskerville = Libre_Baskerville({
     weight: ['400', '700'],
     style: ['normal', 'italic'],
     display: 'swap',
+    preload: false,
 });
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -59,6 +65,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
     subsets: ['latin'],
     weight: ['400', '500', '600', '700'],
     display: 'swap',
+    preload: false,
 });
 
 const LOADED_FONT_CLASSNAMES = [

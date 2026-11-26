@@ -2,8 +2,10 @@
 
 import { motion } from 'framer-motion';
 import RSVPForm from '@/components/RSVPForm';
+import { MonogramMark } from '@/components/MonogramMark';
 import type { Wedding } from '@/types/wedding';
 import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import { SectionTemplateElement } from './SectionTemplateElement';
 
 interface RSVPSectionProps {
     wedding: Wedding;
@@ -15,45 +17,53 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
     const visual = getTemplateVisualProfile(template, wedding.motif_color || '#D16C78', false, wedding.card_style);
     const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const isSharp = visual.isSharp || ['editorial', 'urban', 'minimal', 'vogue', 'glitch', 'film'].includes(template);
-    const isDark = visual.isDark || ['royal', 'midnight', 'cinematic'].includes(template);
+    const hasExplicitLightBackground =
+        wedding.template_style === 'luxury-planner' ||
+        ['ivory', 'white', 'blush', 'sage', 'champagne', 'sand', 'lavender', 'linen', 'paper', 'cream', 'pearl'].includes(
+            (wedding.background_style || '').toLowerCase()
+        );
+    const isDark = !hasExplicitLightBackground && (visual.isDark || ['royal', 'midnight', 'cinematic'].includes(template));
     const isVintage = visual.isVintage || ['vintage', 'rustic', 'boho', 'artdeco', 'sakura', 'garden'].includes(template);
-    const deadline = new Date(`${wedding.rsvp_deadline?.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', {
-        month: 'long', day: 'numeric', year: 'numeric'
-    });
+    const rawDeadline = wedding.rsvp_deadline?.slice(0, 10);
+    const parsedDeadline = rawDeadline ? new Date(`${rawDeadline}T12:00:00`) : null;
+    const deadline = parsedDeadline && !Number.isNaN(parsedDeadline.getTime())
+        ? parsedDeadline.toLocaleDateString('en-US', {
+            month: 'long', day: 'numeric', year: 'numeric'
+        })
+        : 'your earliest convenience';
+    const hasMonogram = Boolean(wedding.logo_initials || (wedding.bride_name && wedding.groom_name));
 
     // ── DARK templates: Royal / Midnight / Cinematic ──────────────────────────
     if (isDark) {
         return (
             <section data-wedding-section="rsvp" id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
                 <motion.div data-wedding-card="true"
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className={`relative mx-auto max-w-4xl overflow-hidden p-5 sm:p-10 md:p-12 ${visual.cardClass}`}
+                    className={`relative mx-auto max-w-4xl overflow-hidden p-6 sm:p-10 md:p-14 ${visual.cardClass}`}
                 >
-                    {/* Corner accents */}
-                    <div className="absolute top-0 left-0 w-8 h-8 border-t border-l border-primary/40" />
-                    <div className="absolute top-0 right-0 w-8 h-8 border-t border-r border-primary/40" />
-                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b border-l border-primary/40" />
-                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-primary/40" />
+                    <div className="pointer-events-none absolute inset-3 border border-primary/20" aria-hidden="true" />
+                    <SectionTemplateElement wedding={wedding} isDark={true} placement="corner-top-right" />
 
-                    <div className="text-center mb-10 sm:mb-14">
+                    <div className="relative z-10 text-center mb-10 sm:mb-12">
                         <div className="mb-4 flex items-center justify-center">
-                            <span data-wedding-badge="true" className={visual.badgeStyleClass || "text-xs uppercase tracking-[0.2em] font-black block text-primary"}>
-                                {visual.badgePrefix ? `${visual.badgePrefix}RSVP` : 'Guest Confirmation'}
+                            <span data-wedding-badge="true" className={visual.badgeStyleClass || "text-[11px] uppercase tracking-[0.28em] font-medium block text-primary"}>
+                                {visual.badgePrefix ? `${visual.badgePrefix}RSVP` : 'Répondez S’il Vous Plaît'}
                             </span>
                         </div>
-                        <h2 className={`text-3xl sm:text-5xl md:text-6xl mb-6 ${titleStyle.className}`} style={titleStyle.style}>
+                        <h2 className={`text-3xl sm:text-5xl md:text-6xl mb-5 ${titleStyle.className}`} style={titleStyle.style}>
                             Will You Join Us?
                         </h2>
-                        <p className="text-white/78 italic text-sm sm:text-base max-w-lg mx-auto">
-                            Kindly RSVP by <span className="text-primary font-bold not-italic">{deadline}</span>
+                        <p className="text-white/78 font-serif italic text-base sm:text-lg max-w-lg mx-auto">
+                            Kindly reply by <span className="text-primary font-medium not-italic">{deadline}</span>
                         </p>
+                        <SectionTemplateElement wedding={wedding} isDark={true} placement="divider" className="mt-6" />
                     </div>
 
                     {isExpired ? (
                         <div className="p-8 border border-primary/20 text-center">
-                            <p className="text-xl font-serif text-white/80">RSVP has closed for this event.</p>
+                            <p className="text-xl font-serif text-white/80">RSVP has closed for this celebration.</p>
                         </div>
                     ) : (
                         <RSVPForm weddingId={wedding.id} wedding={wedding} />
@@ -71,24 +81,24 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className={`mx-auto max-w-5xl ${visual.cardClass}`}
+                    className={`relative mx-auto max-w-5xl overflow-hidden ${visual.cardClass}`}
                 >
-                    {/* Header bar */}
-                    <div className="border-b border-black/10 px-5 sm:px-10 py-8 sm:py-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                    <SectionTemplateElement wedding={wedding} isDark={visual.isDark} placement="corner-bottom-left" />
+                    <div className="relative z-10 border-b border-black/15 px-5 sm:px-10 py-8 sm:py-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                         <div>
-                            <span data-wedding-badge="true" className={visual.badgeStyleClass || "text-xs uppercase tracking-[0.2em] font-black text-black/65 block mb-2"}>
-                                {visual.badgePrefix ? `${visual.badgePrefix}RSVP` : 'ISSUE N°02'}
+                            <span data-wedding-badge="true" className={visual.badgeStyleClass || "text-[11px] uppercase tracking-[0.28em] font-medium text-black/65 block mb-3"}>
+                                {visual.badgePrefix ? `${visual.badgePrefix}RSVP` : 'Response Card'}
                             </span>
                             <h2 className={`text-3xl sm:text-5xl leading-none ${titleStyle.className}`} style={titleStyle.style}>
-                                RSVP
+                                Kindly Reply
                             </h2>
                         </div>
-                        <p className="text-sm text-black/70 uppercase tracking-widest font-bold border-l border-black/10 pl-6">
-                            Deadline: {deadline}
+                        <p className="text-xs text-black/70 uppercase tracking-[0.22em] font-medium sm:border-l sm:border-black/15 sm:pl-6">
+                            Respond by {deadline}
                         </p>
                     </div>
 
-                    <div className="px-5 sm:px-10 py-10 sm:py-14">
+                    <div className="relative z-10 px-5 sm:px-10 py-8 sm:py-12">
                         {isExpired ? (
                             <div className="py-12 border border-black/10 text-center">
                                 <p className="text-xl font-serif text-black/70 uppercase tracking-widest">
@@ -104,7 +114,7 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
         );
     }
 
-    // ── VINTAGE / BOHO / RUSTIC templates ─────────────────────────────────────
+    // ── VINTAGE / BOHO / RUSTIC / STATIONERY templates ───────────────────────
     if (isVintage) {
         return (
             <section data-wedding-section="rsvp" id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
@@ -112,39 +122,32 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className={`relative mx-auto max-w-4xl p-5 text-center sm:p-10 ${visual.cardClass}`}
+                    className={`relative mx-auto max-w-4xl overflow-hidden p-6 text-center sm:p-10 md:p-14 ${visual.cardClass}`}
                     style={{ borderRadius: '2px' }}
                 >
-                    {/* Vintage corner ornaments */}
-                    <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-primary/30" />
-                    <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-primary/30" />
-                    <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-primary/30" />
-                    <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-primary/30" />
+                    <SectionTemplateElement wedding={wedding} isDark={visual.isDark} placement="corner-top-right" />
+                    <div className="pointer-events-none absolute inset-3 border border-current/15" aria-hidden="true" />
 
-                    <div className="mb-10 sm:mb-14">
-                        <div className="flex items-center justify-center gap-3 mb-6">
-                            <div className="h-px w-12 bg-primary/40" />
-                        <span className="text-primary text-xs tracking-[0.4em] uppercase font-bold">~</span>
-                            <div className="h-px w-12 bg-primary/40" />
+                    <div className="relative z-10 mb-10 sm:mb-12">
+                        <div className="mb-4 flex items-center justify-center">
+                            <span data-wedding-badge="true" className={visual.badgeStyleClass || "text-[11px] uppercase tracking-[0.28em] font-medium text-primary"}>
+                                Response Card
+                            </span>
                         </div>
-                        <h2 className={`text-3xl sm:text-5xl md:text-6xl mb-6 ${titleStyle.className}`} style={titleStyle.style}>
+                        <h2 className={`text-3xl sm:text-5xl md:text-6xl mb-5 ${titleStyle.className}`} style={titleStyle.style}>
                             Will You Join Us?
                         </h2>
-                        <p className="text-[#4A4444]/72 italic text-sm sm:text-base max-w-md mx-auto">
-                            We would be honoured to have you with us. <br />
-                            Kindly reply by <span className="text-primary font-bold not-italic">{deadline}</span>
+                        <p className="text-[#4A4444]/75 font-serif italic text-base sm:text-lg max-w-md mx-auto leading-relaxed">
+                            The favor of a reply is kindly requested by{' '}
+                            <span className="text-primary font-medium not-italic">{deadline}</span>
                         </p>
-                        <div className="flex items-center justify-center gap-3 mt-6">
-                            <div className="h-px w-16 bg-primary/20" />
-                            <span className="text-primary/70 text-xs">✦</span>
-                            <div className="h-px w-16 bg-primary/20" />
-                        </div>
+                        <SectionTemplateElement wedding={wedding} isDark={visual.isDark} placement="divider" className="mt-6" />
                     </div>
 
                     {isExpired ? (
-                        <div className="py-12 border border-primary/10 text-center">
-                            <p className="text-xl font-serif text-[#4A4444]/70 italic">
-                                RSVP has closed for this event.
+                        <div className="py-12 border border-primary/15 text-center">
+                            <p className="text-xl font-serif text-[#4A4444]/72 italic">
+                                RSVP has closed for this celebration.
                             </p>
                         </div>
                     ) : (
@@ -157,44 +160,51 @@ export default function RSVPSection({ wedding, isExpired }: RSVPSectionProps) {
         );
     }
 
-    // ── DEFAULT: Classic / Romantic / Luxury / Everything else ────────────────
+    // ── DEFAULT: Classic / Romantic / Elegance / Everything else ─────────────
     return (
         <section data-wedding-section="rsvp" id="rsvp" className={`px-4 sm:px-6 py-16 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
             <motion.div data-wedding-card="true"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className={`relative mx-auto max-w-4xl overflow-hidden px-4 py-8 text-center sm:px-8 sm:py-12 md:px-12 md:py-14 ${visual.cardClass}`}
+                className={`relative mx-auto max-w-4xl overflow-hidden px-5 py-10 text-center sm:px-10 sm:py-14 md:px-14 ${visual.cardClass}`}
             >
-                {/* Background flourish */}
-                <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-br-full" />
-                <div className="absolute bottom-0 right-0 w-24 h-24 bg-accent/5 rounded-tl-full" />
+                <SectionTemplateElement wedding={wedding} isDark={visual.isDark} placement="card-seal" />
 
-                <div className="relative z-10 mb-10 sm:mb-14">
-                    <div
-                        className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-primary/10"
-                        style={{ backgroundColor: `${wedding.motif_color || '#D16C78'}15` }}
-                    >
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: wedding.motif_color || '#D16C78' }}>
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                        </svg>
+                <div className="relative z-10 mb-10 sm:mb-12">
+                    {hasMonogram ? (
+                        <div className="mb-5 flex justify-center">
+                            <MonogramMark
+                                initials={wedding.logo_initials}
+                                brideName={wedding.bride_name}
+                                groomName={wedding.groom_name}
+                                shape={wedding.logo_shape}
+                                color={wedding.logo_color}
+                                motifColor={wedding.motif_color}
+                                fontFamily={wedding.logo_font ? `var(--font-${wedding.logo_font.toLowerCase()}, var(--font-serif))` : undefined}
+                                size="sm"
+                            />
+                        </div>
+                    ) : null}
+                    <div className="mb-4 flex items-center justify-center">
+                        <span data-wedding-badge="true" className={visual.badgeStyleClass || "text-[11px] uppercase tracking-[0.28em] font-medium text-primary"}>
+                            Répondez S’il Vous Plaît
+                        </span>
                     </div>
-                    <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-5xl mb-6 sm:mb-8 ${titleStyle.className}`} style={titleStyle.style}>
+                    <h2 className={`text-3xl sm:text-4xl md:text-5xl mb-5 ${titleStyle.className}`} style={titleStyle.style}>
                         Will You Join Us?
                     </h2>
-                    <p className="text-[#4A4444]/72 italic mb-2 text-base sm:text-lg md:text-xl max-w-lg mx-auto leading-relaxed">
-                        We&apos;d love to have you with us.{' '}
+                    <p className="text-[#4A4444]/75 font-serif italic text-base sm:text-lg max-w-lg mx-auto leading-relaxed">
+                        We would be honored to celebrate with you. Kindly respond by{' '}
+                        <span className="text-primary font-medium not-italic">{deadline}</span>.
                     </p>
-                    <p className="text-[#4A4444]/68 text-sm sm:text-base">
-                        Please RSVP by{' '}
-                        <span className="text-primary font-bold not-italic">{deadline}</span>
-                    </p>
+                    <SectionTemplateElement wedding={wedding} isDark={visual.isDark} placement="divider" className="mt-6" />
                 </div>
 
                 {isExpired ? (
-                    <div className="p-6 sm:p-8 md:p-12 rounded-2xl sm:rounded-[3rem] bg-neutral/50 border border-primary/10 text-center">
+                    <div className="p-6 sm:p-8 md:p-12 rounded-2xl bg-neutral/50 border border-primary/10 text-center">
                         <p className="text-xl sm:text-2xl font-serif text-[#4A4444]/72">
-                            RSVP has closed for this event.
+                            RSVP has closed for this celebration.
                         </p>
                     </div>
                 ) : (

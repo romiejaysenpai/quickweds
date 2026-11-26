@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, ExternalLink, Heart, LayoutDashboard, Sparkles } from 'lucide-react';
+import { toSafeHttpUrl } from '@/lib/url-safety';
 
 export const metadata = {
   title: 'Shared to QuickWeds',
@@ -17,7 +18,7 @@ export default async function ShareTargetPage({
   const params = await searchParams;
   const sharedTitle = params.title || 'Shared item';
   const sharedText = params.text || '';
-  const sharedUrl = params.url || '';
+  const sharedUrl = toSafeHttpUrl(params.url);
 
   return (
     <main className="mobile-safe-screen flex min-h-screen items-center justify-center bg-background px-4 py-10 mobile-safe-px">
@@ -36,7 +37,7 @@ export default async function ShareTargetPage({
           <p className="truncate text-sm font-bold text-foreground">{sharedTitle}</p>
           {sharedText && <p className="mt-2 line-clamp-3 text-sm leading-6 text-text-secondary">{sharedText}</p>}
           {sharedUrl && (
-            <a href={sharedUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-primary">
+            <a href={sharedUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-primary">
               <ExternalLink className="h-4 w-4" />
               Open shared link
             </a>

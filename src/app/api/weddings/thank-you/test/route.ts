@@ -35,8 +35,20 @@ export async function POST(req: NextRequest) {
         }
 
         const payload = normalizeThankYouPayload(body, wedding);
-        const recipientEmail = sanitizeEmail(body.testEmail || user.email || '');
-        if (!recipientEmail) return NextResponse.json({ error: 'A valid test email is required.' }, { status: 400 });
+        const allowedRecipients = new Set(
+            [sanitizeEmail(user.email || ''), sanitizeEmail(wedding.couple_email || '')].filter(Boolean)
+        );
+        const requestedRecipient = sanitizeEmail(body.testEmail || user.email || '');
+        const recipientEmail = requestedRecipient && allowedRecipients.has(requestedRecipient)
+            ? requestedRecipient
+            : sanitizeEmail(user.email || '');
+        if (!recipientEmail) return NextResponse.json({ error: 'A valid account email is required for test delivery.' }, { status: 400 });
+        if (body.testEmail && requestedRecipient && !allowedRecipients.has(requestedRecipient)) {
+            return NextResponse.json(
+                { error: 'Test emails can only be sent to your signed-in account email or the couple email on file.' },
+                { status: 403 }
+            );
+        }
 
         const html = getThankYouNoteHtml({
             recipientName: 'Test Guest',

@@ -1,8 +1,19 @@
 'use server';
 
-import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import type { AppReview, SubmitReviewInput } from '@/types/review';
+import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import { checkRateLimitAsync } from '@/lib/rate-limit';
+import type { AppReview, SubmitReviewInput } from '@/types/review';
+
+async function getActionClientIp(): Promise<string> {
+  const hdrs = await headers();
+  const vercelIp = hdrs.get('x-vercel-forwarded-for')?.split(',').pop()?.trim();
+  const cfIp = hdrs.get('cf-connecting-ip')?.trim();
+  const realIp = hdrs.get('x-real-ip')?.trim();
+  const forwarded = hdrs.get('x-forwarded-for')?.split(',').pop()?.trim();
+  return vercelIp || cfIp || realIp || forwarded || 'unknown';
+}
 
 export async function submitAppReview(input: SubmitReviewInput): Promise<{
   success: boolean;
@@ -15,13 +26,20 @@ export async function submitAppReview(input: SubmitReviewInput): Promise<{
       return { success: false, error: 'Spam detected.' };
     }
 
-    // 2. Input validation
+    // 2. IP rate limit
+    const clientIp = await getActionClientIp();
+    const limit = await checkRateLimitAsync(`app-review:${clientIp}`, 'GUEST_BOOK');
+    if (!limit.allowed) {
+      return { success: false, error: 'Too many review submissions. Please try again later.' };
+    }
+
+    // 3. Input validation
     const coupleNames = (input.couple_names || '').trim().slice(0, 100);
     if (!coupleNames || coupleNames.length < 2) {
       return { success: false, error: 'Please enter your names (e.g., Mia & Carlo).' };
     }
 
-    const rating = Math.min(5, Math.max(1, Number(input.rating) || 5));
+    const rating = Math.min(5, Math.max(1, Math.round(Number(input.rating) || 5)));
 
     const quote = (input.quote || '').trim().slice(0, 300);
     if (!quote || quote.length < 5) {
@@ -32,10 +50,7 @@ export async function submitAppReview(input: SubmitReviewInput): Promise<{
     const weddingRole = (input.wedding_role || '').trim().slice(0, 50) || 'Couple';
     const story = (input.story || '').trim().slice(0, 2000) || null;
 
-    // 3. Status determination: 'pending' so admin approval is required before posting to landing page
-    const status: 'approved' | 'pending' = 'pending';
-    const verifiedCouple = true;
-
+    // Public anonymous submissions must remain unverified and pending moderation.
     const reviewPayload = {
       couple_names: coupleNames,
       wedding_role: weddingRole,
@@ -43,118 +58,31 @@ export async function submitAppReview(input: SubmitReviewInput): Promise<{
       rating,
       quote,
       story,
-      verified_couple: verifiedCouple,
-      status,
+      verified_couple: false,
+      status: 'pending' as const,
       is_featured: false,
     };
 
-    // 4. Insert into Supabase
-    try {
-      const db = getSupabaseAdminClient() as any;
-      const { data, error } = await db
-        .from('app_reviews')
-        .insert(reviewPayload)
-        .select()
-        .single();
-
-      if (error) {
-        console.warn('Error saving to app_reviews in Supabase, using optimistic fallback:', error.message);
-        // Graceful fallback for local/unmigrated databases: return optimistic review
-        const optimisticReview: AppReview = {
-          id: `review-${Date.now()}`,
-          ...reviewPayload,
-          created_at: new Date().toISOString(),
-        };
-
-        // Notify admin via email
-        try {
-          const { sendAdminNewReviewNotification } = await import('@/lib/app-review-auth');
-          await sendAdminNewReviewNotification(optimisticReview);
-        } catch (emailErr) {
-          console.warn('Could not dispatch admin review email:', emailErr);
-        }
-
-        return { success: true, review: optimisticReview };
-      }
-
-      const savedReview = data as AppReview;
-
-      // Dispatch 1-Click moderation email to admin
-      try {
-        const { sendAdminNewReviewNotification } = await import('@/lib/app-review-auth');
-        await sendAdminNewReviewNotification(savedReview);
-      } catch (emailErr) {
-        console.warn('Could not dispatch admin review email:', emailErr);
-      }
-
-      // Revalidate landing page and reviews page
-      try {
-        revalidatePath('/');
-        revalidatePath('/reviews');
-        revalidatePath('/admin/reviews');
-      } catch {
-        // Safe to ignore in non-request contexts
-      }
-
-      return { success: true, review: savedReview };
-    } catch (dbErr) {
-      console.warn('Database error when saving review:', dbErr);
-      const optimisticReview: AppReview = {
-        id: `review-${Date.now()}`,
-        ...reviewPayload,
-        created_at: new Date().toISOString(),
-      };
-
-      try {
-        const { sendAdminNewReviewNotification } = await import('@/lib/app-review-auth');
-        await sendAdminNewReviewNotification(optimisticReview);
-      } catch (emailErr) {
-        console.warn('Could not dispatch admin review email:', emailErr);
-      }
-
-      return { success: true, review: optimisticReview };
-    }
-  } catch (error: any) {
-    console.error('submitAppReview failed:', error);
-    return { success: false, error: error?.message || 'Failed to submit review. Please try again.' };
-  }
-}
-
-export async function adminGetAllReviews(): Promise<AppReview[]> {
-  try {
     const db = getSupabaseAdminClient() as any;
     const { data, error } = await db
       .from('app_reviews')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .insert(reviewPayload)
+      .select()
+      .single();
 
     if (error || !data) {
-      return [];
+      console.error('Error saving to app_reviews in Supabase:', error?.message || 'No row returned');
+      return { success: false, error: 'Unable to save your review right now. Please try again.' };
     }
 
-    return data as AppReview[];
-  } catch (err) {
-    console.error('adminGetAllReviews error:', err);
-    return [];
-  }
-}
+    const savedReview = data as AppReview;
 
-export async function adminUpdateReview(
-  id: string,
-  updates: {
-    status?: 'approved' | 'pending' | 'rejected';
-    is_featured?: boolean;
-  }
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const db = getSupabaseAdminClient() as any;
-    const { error } = await db
-      .from('app_reviews')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if (error) {
-      return { success: false, error: error.message };
+    // Dispatch moderation email to admin
+    try {
+      const { sendAdminNewReviewNotification } = await import('@/lib/app-review-auth');
+      await sendAdminNewReviewNotification(savedReview);
+    } catch (emailErr) {
+      console.warn('Could not dispatch admin review email:', emailErr);
     }
 
     try {
@@ -162,37 +90,12 @@ export async function adminUpdateReview(
       revalidatePath('/reviews');
       revalidatePath('/admin/reviews');
     } catch {
-      // Ignore
+      // Safe to ignore in non-request contexts
     }
 
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err?.message || 'Update failed' };
-  }
-}
-
-export async function adminDeleteReview(id: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const db = getSupabaseAdminClient() as any;
-    const { error } = await db
-      .from('app_reviews')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    try {
-      revalidatePath('/');
-      revalidatePath('/reviews');
-      revalidatePath('/admin/reviews');
-    } catch {
-      // Ignore
-    }
-
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err?.message || 'Delete failed' };
+    return { success: true, review: savedReview };
+  } catch (error: unknown) {
+    console.error('submitAppReview failed:', error);
+    return { success: false, error: 'Failed to submit review. Please try again.' };
   }
 }

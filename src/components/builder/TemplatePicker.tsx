@@ -89,9 +89,15 @@ export default function TemplatePicker({ selectedId, isPremium, onSelect, onOpen
                                             <span className={`mt-3 text-2xl leading-none ${['modern','minimal','timeline','urban','glitch'].includes(template.id) ? 'font-sans font-black uppercase' : 'font-serif italic'}`}>Isabella & Julian</span>
                                             <span className="mt-3 text-[9px] uppercase tracking-[.25em] opacity-70">24 · 10 · 2026</span>
                                         </div>
-                                        {template.image && ['love-letter', 'butter-blue', 'ribbon-romance'].includes(template.id) && <Image src={template.image} alt={`${template.name} invitation preview`} fill sizes="(max-width: 640px) 100vw, 360px" className="object-cover object-top" />}
-                                        {recommended && <span className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-[8px] font-black uppercase tracking-widest text-primary shadow">Recommended</span>}
-                                        {selected && <CheckCircle2 className="absolute right-3 top-3 h-5 w-5" />}
+                                        <Image
+                                            src={template.image && ['love-letter', 'butter-blue', 'ribbon-romance'].includes(template.id) ? template.image : `/templates/previews/${template.id}.jpg`}
+                                            alt={`${template.name} invitation preview`}
+                                            fill
+                                            sizes="(max-width: 640px) 100vw, 360px"
+                                            className="z-0 object-cover object-top transition duration-500 group-hover:scale-[1.03]"
+                                        />
+                                        {recommended && <span className="absolute left-3 top-3 z-10 rounded-full bg-white px-2.5 py-1 text-[8px] font-black uppercase tracking-widest text-primary shadow">Recommended</span>}
+                                        {selected && <span className="absolute right-3 top-3 z-10 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/95 text-primary shadow-sm"><CheckCircle2 className="h-4 w-4" /></span>}
                                     </div>
                                     <div className="p-4">
                                         <p className="font-serif text-lg text-foreground">{template.name}</p>

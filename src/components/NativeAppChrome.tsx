@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { App } from '@capacitor/app';
 import { BookOpen, Heart, LayoutDashboard, Plus, Settings, Store } from 'lucide-react';
 import { isIosAppShell, isNativeAppShell } from '@/lib/capacitor';
 import { getCachedSession } from '@/lib/session-cache';
@@ -21,9 +20,14 @@ function shouldShowNativeTabs(pathname: string) {
 export default function NativeAppChrome() {
   const pathname = usePathname();
   const router = useRouter();
-  const isNative = useMemo(() => isNativeAppShell(), []);
-  const isIos = useMemo(() => isIosAppShell(), []);
+  const [isNative, setIsNative] = useState(false);
+  const [isIos, setIsIos] = useState(false);
   const currentPath = pathname || '';
+
+  useEffect(() => {
+    setIsNative(isNativeAppShell());
+    setIsIos(isIosAppShell());
+  }, []);
 
   useEffect(() => {
     if (!isNative) return;
@@ -45,17 +49,30 @@ export default function NativeAppChrome() {
     if (!isNative) return;
 
     const root = document.documentElement;
+    let cancelled = false;
     let cleanup: (() => void) | undefined;
 
-    void App.addListener('appStateChange', ({ isActive }) => {
-      root.dataset.appState = isActive ? 'active' : 'background';
-    }).then((handle) => {
-      cleanup = () => {
-        void handle.remove();
-      };
-    });
+    void import('@capacitor/app')
+      .then(({ App }) =>
+        App.addListener('appStateChange', ({ isActive }) => {
+          root.dataset.appState = isActive ? 'active' : 'background';
+        })
+      )
+      .then((handle) => {
+        if (cancelled) {
+          void handle.remove();
+          return;
+        }
+        cleanup = () => {
+          void handle.remove();
+        };
+      })
+      .catch(() => undefined);
 
-    return () => cleanup?.();
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
   }, [isNative]);
 
   useEffect(() => {

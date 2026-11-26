@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
 import { getWelcomeEmailHtml } from '@/lib/email-templates';
@@ -5,13 +6,25 @@ import type { NextRequest } from 'next/server';
 
 // ─── Auth ────────────────────────────────────────────────────
 const getApiKey = () =>
-    process.env.AGENTOPS_API_KEY || process.env.CRON_SECRET || '';
+    process.env.AGENTOPS_API_KEY?.trim() || '';
 
 export function isAgentAuthorized(req: NextRequest): boolean {
     const key = getApiKey();
     if (!key) return false;
     const header = req.headers.get('authorization') || '';
-    return header === `Bearer ${key}`;
+    const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+    if (!token) return false;
+    const hashA = crypto.createHash('sha256').update(token).digest();
+    const hashB = crypto.createHash('sha256').update(key).digest();
+    return crypto.timingSafeEqual(hashA, hashB);
+}
+
+function chunkArray<T>(items: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < items.length; i += size) {
+        chunks.push(items.slice(i, i + size));
+    }
+    return chunks;
 }
 
 // ─── Types ───────────────────────────────────────────────────
@@ -69,47 +82,57 @@ export async function getEligibleLifecycleTasks(
 
     if (users.length === 0) return [];
 
-    // Fetch all weddings
-    const { data: weddings } = await adminDb
-        .from('weddings')
-        .select('id, user_id, bride_name, groom_name, wedding_date, venue_name, public_slug, created_at, deleted_at')
-        .is('deleted_at', null).in('user_id', users.map(user => user.id));
-
-    // Fetch all profiles
+    // Fetch all weddings, profiles, and subscriber opt-out statuses in 500-item chunks so no user is ever silently truncated
     const userIds = users.map((u) => u.id);
-    const { data: profiles } = await adminDb
-        .from('user_app_profiles')
-        .select('user_id, is_pro, payment_status, account_type')
-        .in('user_id', userIds.slice(0, 500));
+    const userChunks = chunkArray(userIds, 500);
 
-    // Fetch marketing nurture subscriber statuses
-    const { data: subscribers } = await adminDb
-        .from('marketing_nurture_subscribers')
-        .select('user_id, status')
-        .in('user_id', userIds.slice(0, 500));
+    const weddings: any[] = [];
+    const profiles: any[] = [];
+    const subscribers: any[] = [];
+
+    for (const chunk of userChunks) {
+        const [weddingsRes, profilesRes, subscribersRes] = await Promise.all([
+            adminDb
+                .from('weddings')
+                .select('id, user_id, bride_name, groom_name, wedding_date, venue_name, public_slug, created_at, deleted_at')
+                .is('deleted_at', null)
+                .in('user_id', chunk),
+            adminDb
+                .from('user_app_profiles')
+                .select('user_id, is_pro, payment_status, account_type')
+                .in('user_id', chunk),
+            adminDb
+                .from('marketing_nurture_subscribers')
+                .select('user_id, status')
+                .in('user_id', chunk),
+        ]);
+        weddings.push(...(weddingsRes.data || []));
+        profiles.push(...(profilesRes.data || []));
+        subscribers.push(...(subscribersRes.data || []));
+    }
 
     // Build lookup maps
     const weddingsByUser = new Map<string, any[]>();
-    for (const w of weddings || []) {
+    for (const w of weddings) {
         const arr = weddingsByUser.get(w.user_id) || [];
         arr.push(w);
         weddingsByUser.set(w.user_id, arr);
     }
 
     const profileMap = new Map<string, any>();
-    for (const p of profiles || []) profileMap.set(p.user_id, p);
+    for (const p of profiles) profileMap.set(p.user_id, p);
 
     const subscriberMap = new Map<string, any>();
-    for (const s of subscribers || []) subscriberMap.set(s.user_id, s);
+    for (const s of subscribers) subscriberMap.set(s.user_id, s);
 
-    // Fetch RSVP counts per wedding
-    const weddingIds = (weddings || []).map((w: any) => w.id);
+    // Fetch RSVP counts per wedding in chunks
+    const weddingIds = weddings.map((w: any) => w.id);
     const rsvpCounts = new Map<string, number>();
-    if (weddingIds.length > 0) {
+    for (const chunk of chunkArray(weddingIds, 500)) {
         const { data: rsvps } = await adminDb
             .from('rsvps')
             .select('wedding_id')
-            .in('wedding_id', weddingIds.slice(0, 500));
+            .in('wedding_id', chunk);
 
         for (const r of rsvps || []) {
             rsvpCounts.set(r.wedding_id, (rsvpCounts.get(r.wedding_id) || 0) + 1);
@@ -153,15 +176,14 @@ export async function getEligibleLifecycleTasks(
                 stage = 'onboarding_incomplete';
             } else if (!isPublished) {
                 stage = 'wedding_site_unpublished';
+            } else if (daysUntilWedding < 0 && daysUntilWedding >= -7) {
+                stage = 'post_wedding_followup';
+            } else if (daysUntilWedding > 0 && daysUntilWedding <= 30) {
+                stage = 'wedding_countdown';
             } else if (rsvpCount === 0 && ageDays > 2) {
                 stage = 'rsvp_not_configured';
             } else if (rsvpCount > 0 && ageDays > 14) {
-                // Check for idle — this is a simplified check
                 stage = 'guest_list_idle';
-            } else if (daysUntilWedding > 0 && daysUntilWedding <= 30) {
-                stage = 'wedding_countdown';
-            } else if (daysUntilWedding < 0 && daysUntilWedding >= -7) {
-                stage = 'post_wedding_followup';
             }
         }
 

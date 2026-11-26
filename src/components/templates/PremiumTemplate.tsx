@@ -1,5 +1,7 @@
 'use client';
 
+import { TemplateElementProvider } from '@/components/wedding/SectionTemplateElement';
+
 import { motion } from 'framer-motion';
 
 import {
@@ -9,13 +11,20 @@ import {
     DetailsSection,
     GallerySection,
     GiftSection,
-    SafeWeddingImage,
     TimelineSection,
     VideoSection,
 } from '@/components/wedding';
 import type { TemplateProps, Wedding } from '@/types/wedding';
+import { getSectionTitleStyle } from '@/lib/theme-engine';
 
-import { SharedNewSections } from './shared';
+import {
+    SharedNewSections,
+    TEMPLATE_ELEMENT_ASSETS,
+    TemplateHeroActions,
+    WeddingHeroVisual,
+    WeddingMonogram,
+    resolveTemplateCopy,
+} from './shared';
 
 type PremiumLayout = 'invitation' | 'split' | 'cinematic' | 'editorial' | 'poster';
 
@@ -54,57 +63,192 @@ const PREMIUM_THEMES: Record<string, PremiumTheme> = {
     'sunset-ceremony': { eyebrow: 'Meet us at golden hour', mood: 'A destination celebration at the edge of day', primary: '#D4774F', secondary: '#F5D3A5', surface: '#FFF6EC', ink: '#59301D', layout: 'split', baseTemplate: 'boho', ornament: 'sun' },
 };
 
-function formatDate(date: string) {
+function formatDate(date?: string | null) {
+    if (!date) return '';
     const value = new Date(`${date.slice(0, 10)}T12:00:00`);
-    return Number.isNaN(value.getTime()) ? date : value.toLocaleDateString(undefined, { dateStyle: 'long' });
+    return Number.isNaN(value.getTime())
+        ? date
+        : value.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 function Ornament({ theme }: { theme: PremiumTheme }) {
     const color = theme.primary;
 
     if (theme.ornament === 'star') {
-        return <div className="absolute inset-0 opacity-70" aria-hidden="true" style={{ backgroundImage: `radial-gradient(${color} 1px, transparent 1px)`, backgroundSize: '32px 32px', maskImage: 'linear-gradient(to bottom, black, transparent 70%)' }} />;
+        return (
+            <svg viewBox="0 0 400 260" className="pointer-events-none absolute inset-x-0 top-0 h-56 w-full opacity-45" fill="none" aria-hidden="true">
+                {[[65, 48, 1], [150, 26, 0.8], [240, 56, 1.2], [335, 34, 0.9], [110, 120, 0.7], [295, 110, 0.85]].map(([x, y, s], i) => (
+                    <path key={i} d={`M${x} ${y - 9 * s} L${x + 2 * s} ${y - 2 * s} L${x + 9 * s} ${y} L${x + 2 * s} ${y + 2 * s} L${x} ${y + 9 * s} L${x - 2 * s} ${y + 2 * s} L${x - 9 * s} ${y} L${x - 2 * s} ${y - 2 * s} Z`} fill={color} />
+                ))}
+                <circle cx="200" cy="40" r="18" stroke={color} strokeWidth="0.7" strokeDasharray="2 3" opacity="0.55" />
+            </svg>
+        );
     }
 
     if (theme.ornament === 'grid') {
-        return <div className="absolute inset-0 opacity-30" aria-hidden="true" style={{ backgroundImage: `linear-gradient(${color}22 1px, transparent 1px), linear-gradient(90deg, ${color}22 1px, transparent 1px)`, backgroundSize: '44px 44px', maskImage: 'linear-gradient(to bottom, black, transparent 78%)' }} />;
+        return (
+            <div
+                className="pointer-events-none absolute inset-0 opacity-25"
+                aria-hidden="true"
+                style={{
+                    backgroundImage: `linear-gradient(${color}22 1px, transparent 1px), linear-gradient(90deg, ${color}22 1px, transparent 1px)`,
+                    backgroundSize: '44px 44px',
+                    maskImage: 'linear-gradient(to bottom, black, transparent 78%)',
+                }}
+            />
+        );
     }
 
     if (theme.ornament === 'arch') {
-        return <div className="absolute -right-20 top-12 h-[26rem] w-[18rem] rounded-t-full border-[18px] opacity-35 sm:right-8" aria-hidden="true" style={{ borderColor: color }} />;
+        return (
+            <svg viewBox="0 0 320 420" className="pointer-events-none absolute -right-12 top-6 h-[24rem] w-auto opacity-30 sm:right-6" fill="none" stroke={color} aria-hidden="true">
+                <path d="M40 410V170A120 120 0 0 1 280 170V410" strokeWidth="1.5" />
+                <path d="M58 410V170A102 102 0 0 1 262 170V410" strokeWidth="0.8" strokeDasharray="3 4" />
+            </svg>
+        );
     }
 
     if (theme.ornament === 'sun') {
-        return <div className="absolute -right-20 -top-24 h-80 w-80 rounded-full opacity-30 blur-[1px]" aria-hidden="true" style={{ background: `radial-gradient(circle, ${color} 0 25%, transparent 26% 34%, ${color} 35% 36%, transparent 37% 43%, ${color} 44% 45%, transparent 46%)` }} />;
+        return (
+            <svg viewBox="0 0 240 240" className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 opacity-30" fill="none" stroke={color} aria-hidden="true">
+                <circle cx="120" cy="120" r="46" strokeWidth="1.2" />
+                <circle cx="120" cy="120" r="68" strokeWidth="0.8" strokeDasharray="2 5" />
+                {Array.from({ length: 12 }, (_, i) => (
+                    <line key={i} x1="120" y1="22" x2="120" y2="42" strokeWidth="1.1" transform={`rotate(${i * 30} 120 120)`} />
+                ))}
+            </svg>
+        );
     }
 
     if (theme.ornament === 'ribbon') {
-        return <div className="absolute -right-16 top-16 h-40 w-[34rem] -rotate-12 opacity-25" aria-hidden="true" style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />;
+        return (
+            <svg viewBox="0 0 360 180" className="pointer-events-none absolute -right-10 top-6 h-40 w-auto opacity-25" fill="none" stroke={color} aria-hidden="true">
+                <path d="M10 140C90 30 220 160 350 25" strokeWidth="1.4" />
+                <path d="M10 155C105 45 235 175 350 42" strokeWidth="0.7" strokeDasharray="3 3" />
+            </svg>
+        );
     }
 
-    return <>
-        <div className="absolute -left-20 top-16 h-72 w-72 rounded-full opacity-25 blur-3xl" aria-hidden="true" style={{ backgroundColor: color }} />
-        <div className="absolute -right-24 bottom-0 h-64 w-64 rounded-full opacity-20 blur-3xl" aria-hidden="true" style={{ backgroundColor: color }} />
-    </>;
+    return (
+        <svg viewBox="0 0 260 220" className="pointer-events-none absolute -left-8 -top-6 h-52 w-auto opacity-30" fill="none" stroke={color} strokeWidth="1.1" aria-hidden="true">
+            <path d="M20 200Q95 140 210 24M68 156Q88 106 100 62M130 108Q174 114 218 94" />
+            {[0, 1, 2, 3].map((i) => (
+                <ellipse key={i} cx={64 + i * 36} cy={146 - i * 28} rx="8" ry="18" transform={`rotate(${i % 2 ? 32 : -36} ${64 + i * 36} ${146 - i * 28})`} fill={color} fillOpacity="0.16" />
+            ))}
+        </svg>
+    );
 }
 
-function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme }) {
+const DARK_PREMIUM_TEMPLATES = new Set([
+    'moonlit',
+    'cinema-noir',
+    'regency',
+    'orchid-noir',
+    'celestial',
+    'winter-rose',
+]);
+
+function resolvePremiumAsset(templateId: string, ornament: PremiumTheme['ornament']) {
+    switch (templateId) {
+        case 'heirloom':
+            return TEMPLATE_ELEMENT_ASSETS.meadowWreath;
+        case 'petal-note':
+        case 'orchid-noir':
+            return TEMPLATE_ELEMENT_ASSETS.sakuraBranch;
+        case 'wildflower':
+        case 'saffron':
+        case 'marigold-house':
+        case 'sunset-ceremony':
+            return TEMPLATE_ELEMENT_ASSETS.terracottaFlorals;
+        case 'coastal-vow':
+            return TEMPLATE_ELEMENT_ASSETS.coastalShells;
+        case 'estate':
+        case 'the-weekend':
+            return TEMPLATE_ELEMENT_ASSETS.waxSeal;
+        case 'regency':
+            return TEMPLATE_ELEMENT_ASSETS.decoCrest;
+        case 'moonlit':
+        case 'celestial':
+        case 'cinema-noir':
+            return TEMPLATE_ELEMENT_ASSETS.celestialAstrolabe;
+        case 'modern-vow':
+            return TEMPLATE_ELEMENT_ASSETS.nordicPine;
+        case 'papercut':
+            return TEMPLATE_ELEMENT_ASSETS.vintageCameo;
+        case 'lovescript':
+        case 'winter-rose':
+        case 'atelier':
+        case 'gallery':
+            return TEMPLATE_ELEMENT_ASSETS.ribbonVelvet;
+        default:
+            return ornament === 'star'
+                ? TEMPLATE_ELEMENT_ASSETS.celestialAstrolabe
+                : ornament === 'sun'
+                  ? TEMPLATE_ELEMENT_ASSETS.terracottaFlorals
+                  : ornament === 'arch'
+                    ? TEMPLATE_ELEMENT_ASSETS.waxSeal
+                    : ornament === 'ribbon'
+                      ? TEMPLATE_ELEMENT_ASSETS.ribbonVelvet
+                      : TEMPLATE_ELEMENT_ASSETS.meadowWreath;
+    }
+}
+
+function PremiumHero({
+    wedding,
+    gallery,
+    theme,
+    isDarkSurface,
+}: {
+    wedding: Wedding;
+    gallery?: string[];
+    theme: PremiumTheme;
+    isDarkSurface: boolean;
+}) {
     const image = wedding.hero_image || wedding.couple_photo;
+    const titleStyle = getSectionTitleStyle(wedding);
+    const hasTitleChoice = Boolean(
+        wedding.section_title_color_style && !['default', 'motif'].includes(wedding.section_title_color_style)
+    );
+    const hasCustomMonogram = Boolean(
+        wedding.logo_initials || (wedding.logo_shape && wedding.logo_shape !== 'minimal')
+    );
+    const copy = resolveTemplateCopy(wedding);
+    const ornamentSrc = resolvePremiumAsset(wedding.template, theme.ornament);
+    const eyebrow = wedding.is_thank_you_mode || wedding.is_save_the_date ? copy.eyebrow : theme.eyebrow;
+
     const title = <><span className="block">{wedding.bride_name}</span><span className="my-1 block text-[0.42em] italic font-light" style={{ color: theme.primary }}>&amp;</span><span className="block">{wedding.groom_name}</span></>;
 
-    const imagePanel = image ? (
-        <SafeWeddingImage
+    const imagePanel = (
+        <WeddingHeroVisual
+            wedding={wedding}
+            gallery={gallery}
             src={image}
-            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-            fallbackText={wedding.logo_initials}
-            className="h-full w-full object-cover"
+            ornamentSrc={ornamentSrc}
+            dark={isDarkSurface}
+            className="h-full w-full"
+            imgClassName="h-full w-full object-cover"
         />
-    ) : <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${theme.secondary}, ${theme.primary}55)` }} />;
+    );
+
+    const hasPhotoOverlayHero = (theme.layout === 'cinematic' || theme.layout === 'poster') && Boolean(image);
 
     return (
         <section className="relative isolate overflow-hidden px-5 py-5 sm:px-8 sm:py-8" style={{ backgroundColor: theme.surface, color: theme.ink }}>
-            <div className="relative mx-auto min-h-[42rem] max-w-[1440px] overflow-hidden rounded-sm border border-current/15 sm:min-h-[46rem]" style={{ backgroundColor: theme.surface }}>
+            <div
+                className="relative mx-auto min-h-[42rem] max-w-[1440px] overflow-hidden rounded-sm border border-current/15 sm:min-h-[46rem]"
+                style={{ backgroundColor: theme.surface }}
+            >
+                {!isDarkSurface && <div aria-hidden="true" className="qw-paper-grain-overlay" />}
                 <Ornament theme={theme} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src={ornamentSrc}
+                    alt=""
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute -bottom-6 -right-6 z-0 h-36 w-36 object-contain sm:h-48 sm:w-48 ${
+                        isDarkSurface ? 'opacity-20' : 'opacity-25 mix-blend-multiply'
+                    }`}
+                />
 
                 {theme.layout === 'split' && (
                     <div className="absolute inset-y-0 right-0 hidden w-[52%] p-5 md:block">
@@ -112,30 +256,61 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
                     </div>
                 )}
                 {(theme.layout === 'cinematic' || theme.layout === 'poster') && (
-                    <div className="absolute inset-0">{imagePanel}<div className="absolute inset-0 bg-black/45" /></div>
+                    <div className={`absolute inset-0 ${image ? '' : 'opacity-15'}`}>
+                        {imagePanel}
+                        {image ? <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/45 to-black/65" /> : null}
+                    </div>
                 )}
                 {theme.layout === 'invitation' && image && (
                     <div className="absolute inset-0 opacity-20"><div className="h-full w-full scale-110 blur-sm">{imagePanel}</div></div>
                 )}
 
                 <motion.div
-                    initial={{ opacity: 0, y: 22 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className={`relative z-10 flex min-h-[42rem] flex-col justify-center px-7 py-16 text-center sm:px-16 sm:py-20 ${theme.layout === 'split' ? 'md:w-[54%] md:text-left' : ''} ${(theme.layout === 'cinematic' || theme.layout === 'poster') ? 'text-white' : ''}`}
+                    className={`relative z-10 flex min-h-[42rem] flex-col justify-center px-7 py-16 text-center sm:px-16 sm:py-20 ${theme.layout === 'split' ? 'md:w-[54%] md:text-left' : ''} ${hasPhotoOverlayHero ? 'text-white' : ''}`}
                 >
-                    <p className="text-[10px] font-bold uppercase tracking-[0.32em] opacity-75 sm:text-xs">{theme.eyebrow}</p>
-                    <div className="mx-auto my-7 h-px w-16 opacity-70 " style={{ backgroundColor: theme.primary }} />
-                    <h1 className={`font-serif leading-[1.05] tracking-[-0.055em] ${theme.layout === 'editorial' ? 'text-5xl sm:text-7xl lg:text-[8rem]' : 'text-5xl sm:text-7xl lg:text-8xl'}`}>
+                    {hasCustomMonogram && (
+                        <div className={`mb-5 ${theme.layout === 'split' ? 'md:self-start' : 'mx-auto'}`}>
+                            <WeddingMonogram wedding={wedding} />
+                        </div>
+                    )}
+                    <p className="text-[10px] font-bold uppercase tracking-[0.32em] opacity-75 sm:text-xs">{eyebrow}</p>
+                    <div className={`my-7 h-px w-16 opacity-70 ${theme.layout === 'split' ? 'md:mx-0 mx-auto' : 'mx-auto'}`} style={{ backgroundColor: theme.primary }} />
+                    <h1
+                        className={`font-serif leading-[1.05] tracking-[-0.055em] ${theme.layout === 'editorial' ? 'text-5xl sm:text-7xl lg:text-[8rem]' : 'text-5xl sm:text-7xl lg:text-8xl'} ${titleStyle.className}`}
+                        style={hasTitleChoice ? titleStyle.style : undefined}
+                    >
                         {title}
                     </h1>
-                    <p className="mt-8 max-w-md text-sm leading-7 opacity-80 sm:text-base ">{theme.mood}</p>
+                    <p className={`mt-8 max-w-md text-sm leading-7 opacity-80 sm:text-base ${theme.layout === 'split' ? 'md:mx-0 mx-auto' : 'mx-auto'}`}>
+                        {wedding.is_thank_you_mode || wedding.is_save_the_date ? copy.subtitle : theme.mood}
+                    </p>
                     <div className="mt-10 flex flex-col gap-2 text-[10px] font-bold uppercase tracking-[0.25em] opacity-80 sm:text-xs">
                         <span>{formatDate(wedding.wedding_date)}</span>
                         <span className="opacity-60">{wedding.venue_name}</span>
                     </div>
-                    <a href={wedding.is_thank_you_mode ? "#details" : "#rsvp"} className="mx-auto mt-8 inline-flex min-h-12 items-center justify-center self-center border border-current px-8 py-3 text-sm tracking-wide">{wedding.is_thank_you_mode ? "Our wedding day" : "Join our celebration"}</a>
-                    {theme.layout === 'split' && <div className="mt-10 overflow-hidden rounded-[1.5rem] md:hidden"><div className="aspect-[4/3]">{imagePanel}</div></div>}
+                    <div className={`mt-8 flex flex-col gap-3 ${theme.layout === 'split' ? 'md:items-start items-center' : 'items-center'}`}>
+                        <a
+                            href={copy.ctaHref}
+                            data-wedding-control="primary"
+                            className="inline-flex min-h-12 items-center justify-center border border-current px-8 py-3 text-sm tracking-wide transition hover:bg-current/10"
+                        >
+                            {copy.ctaLabel}
+                        </a>
+                        <TemplateHeroActions
+                            wedding={wedding}
+                            variant={isDarkSurface || hasPhotoOverlayHero ? 'noir' : 'editorial'}
+                            motifColor={theme.primary}
+                            className={theme.layout === 'split' ? 'justify-center md:justify-start' : 'justify-center'}
+                        />
+                    </div>
+                    {theme.layout === 'split' && <div className="mt-10 overflow-hidden rounded-[1.5rem] md:hidden"><div className="aspect-[4/5]">{imagePanel}</div></div>}
+                    {theme.layout === 'editorial' && image && (
+                        <div className="mx-auto mt-10 w-full max-w-3xl overflow-hidden border border-current/15 shadow-sm">
+                            <div className="aspect-[16/10]">{imagePanel}</div>
+                        </div>
+                    )}
                 </motion.div>
             </div>
         </section>
@@ -145,38 +320,47 @@ function PremiumHero({ wedding, theme }: { wedding: Wedding; theme: PremiumTheme
 export default function PremiumTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     const baseTheme = PREMIUM_THEMES[wedding.template] || PREMIUM_THEMES.heirloom;
     const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
+    const isDarkSurface = DARK_PREMIUM_TEMPLATES.has(wedding.template) && !hasBackgroundChoice;
     const theme = { ...baseTheme, primary: wedding.motif_color || baseTheme.primary, ...(hasBackgroundChoice ? { surface: 'var(--builder-paper)', ink: 'var(--builder-ink)' } : {}) };
     const themedWedding = { ...wedding, template: theme.baseTemplate };
 
     return (
-        <div style={{ backgroundColor: theme.surface, color: theme.ink }}>
-            <PremiumHero wedding={wedding} theme={theme} />
-            <div className="relative overflow-hidden" style={{ background: `linear-gradient(180deg, ${theme.surface} 0%, ${theme.secondary}55 45%, ${theme.surface} 100%)` }}>
-                <div className="pointer-events-none absolute left-1/2 top-0 h-96 w-[44rem] -translate-x-1/2 rounded-full blur-3xl" style={{ backgroundColor: `${theme.primary}12` }} />
-                <div className="relative z-10">
-                    <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} />
-                    <BioSection id="bio" wedding={themedWedding} />
-                    <DetailsSection id="details" wedding={themedWedding} />
-                    {!wedding.is_thank_you_mode && (
-                        <CountdownTimer
-                            id="countdown"
-                            weddingDate={wedding.wedding_date}
-                            weddingTime={wedding.wedding_time}
-                            brideName={wedding.bride_name}
-                            groomName={wedding.groom_name}
-                            venueName={wedding.venue_name}
-                            venueAddress={wedding.venue_address}
-                            template={theme.baseTemplate}
-                            motifColor={theme.primary}
-                        />
-                    )}
-                    <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={themedWedding} />
-                    <GallerySection id="gallery" gallery={gallery} template={theme.baseTemplate} motifColor={theme.primary} galleryLayout={wedding.gallery_layout} cardStyle={wedding.card_style} />
-                    <AttireSection wedding={themedWedding} />
-                    <GiftSection id="gift" wedding={themedWedding} />
-                    <SharedNewSections id="additional" wedding={themedWedding} isExpired={isExpired} />
+        <TemplateElementProvider template={wedding.template}>
+            <div
+                data-card-style={wedding.card_style}
+                className="relative"
+                style={{ backgroundColor: theme.surface, color: theme.ink }}
+            >
+                <PremiumHero wedding={wedding} gallery={gallery} theme={theme} isDarkSurface={isDarkSurface} />
+                <div className="relative overflow-x-clip" style={{ background: `linear-gradient(180deg, ${theme.surface} 0%, ${theme.secondary}55 45%, ${theme.surface} 100%)` }}>
+                    <div className="pointer-events-none absolute left-1/2 top-0 h-96 w-[44rem] -translate-x-1/2 rounded-full blur-3xl" style={{ backgroundColor: `${theme.primary}12` }} />
+                    <div className="relative z-10">
+                        <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={theme.baseTemplate} motifColor={theme.primary} templateStyle={wedding.template_style} wedding={themedWedding} />
+                        <BioSection id="bio" wedding={themedWedding} />
+                        <DetailsSection id="details" wedding={themedWedding} />
+                        {!wedding.is_thank_you_mode && (
+                            <CountdownTimer
+                                id="countdown"
+                                weddingDate={wedding.wedding_date}
+                                weddingTime={wedding.wedding_time}
+                                brideName={wedding.bride_name}
+                                groomName={wedding.groom_name}
+                                venueName={wedding.venue_name}
+                                venueAddress={wedding.venue_address}
+                                template={theme.baseTemplate}
+                                motifColor={theme.primary}
+                                cardStyle={wedding.card_style}
+                                wedding={themedWedding}
+                            />
+                        )}
+                        <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={themedWedding} />
+                        <GallerySection id="gallery" gallery={gallery} template={theme.baseTemplate} motifColor={theme.primary} galleryLayout={wedding.gallery_layout} cardStyle={wedding.card_style} wedding={themedWedding} />
+                        <AttireSection wedding={themedWedding} />
+                        <GiftSection id="gift" wedding={themedWedding} />
+                        <SharedNewSections id="additional" wedding={themedWedding} isExpired={isExpired} />
+                    </div>
                 </div>
             </div>
-        </div>
+        </TemplateElementProvider>
     );
 }

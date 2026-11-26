@@ -19,10 +19,8 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
-import { hasStoredSupabaseSession } from '@/lib/supabase-auth';
 import { getCachedSession } from '@/lib/session-cache';
 import {
-    completeClientOnboarding,
     getClientAccountProfileForIntent,
     getRoleAwareRedirect,
     getSafeAppPath,
@@ -102,18 +100,18 @@ function AccountTypeOnboardingContent() {
     const [saving, setSaving] = useState<AccountType | 'complete' | null>(null);
     const [error, setError] = useState('');
     const [step, setStep] = useState<OnboardingStep>('account');
-    const [selectedGoal, setSelectedGoal] = useState(coupleGoals[0].id);
     const nextPath = useMemo(() => getSafeAppPath(searchParams?.get('next'), ''), [searchParams]);
+    const initialGoal = useMemo(() => {
+        if (nextPath.includes('goal=guests')) return 'guests';
+        if (nextPath.startsWith('/planner')) return 'planner';
+        return 'site';
+    }, [nextPath]);
+    const [selectedGoal, setSelectedGoal] = useState(initialGoal);
     const selectedGoalDetail = coupleGoals.find((goal) => goal.id === selectedGoal) || coupleGoals[0];
 
     useEffect(() => {
-        if (user || hasStoredSupabaseSession()) return;
-
-        const loginNext = nextPath
-            ? `/onboarding/account-type?next=${encodeURIComponent(nextPath)}`
-            : '/onboarding/account-type';
-        window.location.replace(`/login?next=${encodeURIComponent(loginNext)}`);
-    }, [nextPath, user]);
+        setSelectedGoal(initialGoal);
+    }, [initialGoal]);
 
     useEffect(() => {
         if (authLoading || !adminChecked) return;
@@ -209,20 +207,10 @@ function AccountTypeOnboardingContent() {
         return '/builder';
     };
 
-    const finishOnboarding = async (destination: string) => {
+    const finishOnboarding = (destination: string) => {
         setSaving('complete');
         setError('');
-        try {
-            const token = await getAccessToken();
-            if (token) {
-                await completeClientOnboarding(token);
-            }
-        } catch (err) {
-            console.warn('Could not mark onboarding complete:', err);
-        } finally {
-            setSaving(null);
-            router.replace(destination);
-        }
+        router.replace(destination);
     };
 
     if (authLoading || loading) {

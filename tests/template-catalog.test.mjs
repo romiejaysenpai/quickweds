@@ -36,9 +36,9 @@ test('new stationery templates remain free, have preview assets and rank for rel
 });
 
 
-test('all 50 references are selectable under an existing template without displacing saved styles', () => {
-  assert.equal(references.REFERENCE_INVITATIONS.length, 50);
-  assert.equal(new Set(references.REFERENCE_INVITATIONS.map(item => item.id)).size, 50);
+test('all 62 references are selectable under an existing template without displacing saved styles', () => {
+  assert.equal(references.REFERENCE_INVITATIONS.length, 62);
+  assert.equal(new Set(references.REFERENCE_INVITATIONS.map(item => item.id)).size, 62);
   for (const reference of references.REFERENCE_INVITATIONS) {
     assert.ok(catalog.TEMPLATES.some(item => item.id === reference.templateId));
     assert.ok(catalog.getTemplateStyleVariants(reference.templateId).some(item => item.id === reference.id));
@@ -50,13 +50,26 @@ test('all 50 references are selectable under an existing template without displa
 });
 
 test('second collection contains all 20 source references with available artwork and editable defaults', () => {
-  const additions = references.REFERENCE_INVITATIONS.filter(item => item.reference >= 31);
+  const additions = references.REFERENCE_INVITATIONS.filter(item => item.reference >= 31 && item.reference <= 50);
   assert.equal(additions.length, 20);
   assert.equal(new Set(additions.map(item => item.sourceImage)).size, 20);
   for (const item of additions) {
     assert.ok(item.sourceImage.endsWith('.jpg'));
     assert.ok(item.fontStyle);
     assert.ok(['default', 'romantic-script'].includes(item.titleFontStyle));
+    if (item.artwork) assert.ok(fs.existsSync(`public${item.artwork}`), item.artwork);
+  }
+});
+
+test('third collection adds 12 distinct source designs and keeps the underwater reference', () => {
+  const additions = references.REFERENCE_INVITATIONS.filter(item => item.reference >= 51);
+  assert.equal(additions.length, 12);
+  assert.equal(new Set(additions.map(item => item.layout)).size, 12);
+  const sources = references.REFERENCE_INVITATIONS.flatMap(item => item.sourceImage ? [item.sourceImage] : []);
+  assert.equal(new Set(sources).size, sources.length);
+  assert.equal(references.getReferenceInvitation('reference-45').layout, 'ocean-coral');
+  for (const item of additions) {
+    assert.ok(item.fontStyle && item.titleFontStyle && item.sourceImage);
     if (item.artwork) assert.ok(fs.existsSync(`public${item.artwork}`), item.artwork);
   }
 });

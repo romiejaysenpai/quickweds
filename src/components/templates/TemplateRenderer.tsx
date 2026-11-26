@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { WeddingAccentProvider } from '@/components/wedding/SectionTemplateElement';
 import type { CSSProperties, ComponentType } from 'react';
 
 import type { TemplateProps, Wedding } from '@/types/wedding';
@@ -195,6 +196,8 @@ export function getWeddingPageStyle(wedding: Wedding, options?: { includeGradien
     const backgroundKey = String((wedding as Wedding & { background_style?: string }).background_style || 'cream');
     const profileTemplate = wedding.template_style === 'luxury-planner' ? 'luxury-planner' : wedding.template;
     const visual = getTemplateVisualProfile(profileTemplate, wedding.motif_color);
+    const hasLightBackgroundOverride = Boolean(wedding.background_style && BACKGROUND_COLOR_MAP[wedding.background_style]);
+    const effectiveIsDark = visual.isDark && !hasLightBackgroundOverride;
     const backgroundColor = BACKGROUND_COLOR_MAP[wedding.background_style || ''] || (visual.isDark ? '#151315' : BACKGROUND_COLOR_MAP[backgroundKey] || '#FFF8F4');
 
     return {
@@ -209,28 +212,38 @@ export function getWeddingPageStyle(wedding: Wedding, options?: { includeGradien
         '--color-secondary': '#F2C1CC',
         '--white': '#FFFFFF',
         '--color-white': '#FFFFFF',
-        '--foreground': visual.isDark ? '#FFF8F0' : '#3A2A2D',
-        '--color-foreground': visual.isDark ? '#FFF8F0' : '#3A2A2D',
+        '--foreground': effectiveIsDark ? '#FFF8F0' : '#3A2A2D',
+        '--color-foreground': effectiveIsDark ? '#FFF8F0' : '#3A2A2D',
         '--background': backgroundColor,
         '--color-background': backgroundColor,
         '--neutral': backgroundColor,
         '--color-neutral': backgroundColor,
-        '--text-secondary': visual.isDark ? '#D8CFC8' : '#6B5E58',
-        '--color-text-secondary': visual.isDark ? '#D8CFC8' : '#6B5E58',
-        '--border': visual.isDark ? '#514748' : '#DED4CD',
-        '--color-border': visual.isDark ? '#514748' : '#DED4CD',
-        '--wedding-heading': visual.isDark ? '#FFF8F0' : '#352C2C',
-        '--wedding-ink': visual.isDark ? '#F1EAE2' : '#463D3B',
-        color: visual.isDark ? '#F1EAE2' : '#463D3B',
-        colorScheme: visual.isDark ? 'dark' : 'light',
+        '--text-secondary': effectiveIsDark ? '#D8CFC8' : '#6B5E58',
+        '--color-text-secondary': effectiveIsDark ? '#D8CFC8' : '#6B5E58',
+        '--border': effectiveIsDark ? '#514748' : '#DED4CD',
+        '--color-border': effectiveIsDark ? '#514748' : '#DED4CD',
+        '--wedding-heading': effectiveIsDark ? '#FFF8F0' : '#352C2C',
+        '--wedding-ink': effectiveIsDark ? '#F1EAE2' : '#463D3B',
+        color: effectiveIsDark ? '#F1EAE2' : '#463D3B',
+        colorScheme: effectiveIsDark ? 'dark' : 'light',
         backgroundColor,
-        ...(options?.includeGradient && !visual.isDark && (!wedding.background_style || wedding.background_style === 'gradient')
+        ...(options?.includeGradient && !effectiveIsDark && (!wedding.background_style || wedding.background_style === 'gradient')
             ? {
                 backgroundImage: 'radial-gradient(circle at top, rgba(255,255,255,0.65), transparent 32%), linear-gradient(180deg, #fffaf6 0%, #fff5ef 52%, #f8ece7 100%)',
             }
             : {}),
         ...getInvitationTheme(wedding)?.vars,
     };
+}
+
+export function hasInlineMusicPlayer(wedding: Wedding): boolean {
+    const template = normalizeTemplateId(wedding.template);
+    if (template !== 'envelope-wax-seal' && template !== 'velure-editorial') return false;
+    const reference = getReferenceInvitation(wedding.template_style);
+    if (reference?.templateId === template) return false;
+    const hasPortrait = Boolean(wedding.hero_image?.trim() || wedding.couple_photo?.trim());
+    const composition = wedding.template_style?.match(/(?:^|_)v([2-5])$/)?.[1] || (!hasPortrait ? '5' : undefined);
+    return !composition;
 }
 
 export function renderWeddingTemplate(props: TemplateProps) {
@@ -245,7 +258,7 @@ export function renderWeddingTemplate(props: TemplateProps) {
     const hasStationeryFallback = ['love-letter', 'butter-blue', 'ribbon-romance'].includes(template);
     const composition = props.wedding.template_style?.match(/(?:^|_)v([2-5])$/)?.[1] || (!hasPortrait && !hasStationeryFallback ? '5' : undefined);
     const composed = Boolean(composition && (template !== 'classic' || !hasPortrait));
-    return <div className="wedding-template" data-template={template} data-template-style={props.wedding.template_style || 'default'}>
+    return <WeddingAccentProvider accent={props.wedding.accent_style}><div className="wedding-template" data-template={template} data-template-style={props.wedding.template_style || 'default'}>
         {isReference ? <ReferenceComponent {...props} /> : composed ? <ComposedTemplate {...props} composition={`v${composition}` as 'v2' | 'v3' | 'v4' | 'v5'} /> : <Component {...props} />}
-    </div>;
+    </div></WeddingAccentProvider>;
 }

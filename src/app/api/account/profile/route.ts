@@ -51,28 +51,44 @@ async function ensureAccountProfile(db: any, userId: string) {
 
     const { data, error } = await db
         .from('user_app_profiles')
-        .insert({
-            user_id: userId,
-            onboarding_completed: false,
-        })
+        .upsert(
+            {
+                user_id: userId,
+                onboarding_completed: false,
+            },
+            { onConflict: 'user_id', ignoreDuplicates: true }
+        )
         .select()
-        .single();
+        .maybeSingle();
 
-    if (error) throw error;
-    return data as AccountProfile;
+    if (error && error.code !== '23505') throw error;
+    if (data) return data as AccountProfile;
+
+    const refetched = await getExistingProfile(db, userId);
+    if (!refetched) throw new Error('Unable to initialize account profile');
+    return refetched;
 }
 
-async function addWeddingRouting(db: any, profile: AccountProfile, userId: string, email?: string | null) {
-    const { data: owned, error: ownedError } = await db
-        .from('weddings')
-        .select('id, created_at')
-        .eq('user_id', userId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: true })
-        .limit(1);
-    if (ownedError) throw ownedError;
+async function addWeddingRouting(
+    db: any,
+    profile: AccountProfile,
+    userId: string,
+    email?: string | null,
+    preloadedOwnedWeddingId?: string
+) {
+    let weddingId = preloadedOwnedWeddingId;
+    if (weddingId === undefined) {
+        const { data: owned, error: ownedError } = await db
+            .from('weddings')
+            .select('id, created_at')
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: true })
+            .limit(1);
+        if (ownedError) throw ownedError;
+        weddingId = owned?.[0]?.id as string | undefined;
+    }
 
-    let weddingId = owned?.[0]?.id as string | undefined;
     if (!weddingId && email) {
         const { data: shared, error: sharedError } = await db
             .from('wedding_collaborators')
@@ -96,20 +112,38 @@ export async function GET(req: NextRequest) {
     if (!user) return NextResponse.json({ error }, { status: 401 });
 
     try {
+        const includeUsage = req.nextUrl.searchParams.get('includeUsage') !== 'false';
         const db = getAccountAdminClientOrNull() || getAccountUserClient(req);
-        const profile = await addWeddingRouting(db, await ensureAccountProfile(db, user.id), user.id, user.email);
 
-        const { data: ownedWeddings, error: ownedListError } = await db
-            .from('weddings')
-            .select('id, wedding_name, is_premium, payment_status, created_at')
-            .eq('user_id', user.id)
-            .is('deleted_at', null)
-            .order('created_at', { ascending: true });
+        if (!includeUsage) {
+            const baseProfile = await ensureAccountProfile(db, user.id);
+            const profile = await addWeddingRouting(db, baseProfile, user.id, user.email);
+            return NextResponse.json({ profile });
+        }
 
-        if (ownedListError) throw ownedListError;
+        const [baseProfile, ownedWeddingsRes] = await Promise.all([
+            ensureAccountProfile(db, user.id),
+            db
+                .from('weddings')
+                .select('id, bride_name, groom_name, is_premium, payment_status, created_at')
+                .eq('user_id', user.id)
+                .is('deleted_at', null)
+                .order('created_at', { ascending: true }),
+        ]);
+
+        if (ownedWeddingsRes.error) throw ownedWeddingsRes.error;
+
+        const weddingsList = ownedWeddingsRes.data || [];
+        const firstOwnedId = weddingsList[0]?.id as string | undefined;
+        const profile = await addWeddingRouting(
+            db,
+            baseProfile,
+            user.id,
+            user.email,
+            firstOwnedId || ''
+        );
 
         const isAccPro = hasAccountPro(profile);
-        const weddingsList = ownedWeddings || [];
 
         const weddingSummaries = await Promise.all(
             weddingsList.map(async (w: any) => {
@@ -119,10 +153,14 @@ export async function GET(req: NextRequest) {
                 const emailsRemaining = hasPro
                     ? 'unlimited'
                     : Math.max(0, FREE_PLAN_LIMITS.userTriggeredEmails - usage.userTriggeredEmailsUsed);
+                const displayName =
+                    w.bride_name && w.groom_name
+                        ? `${w.bride_name} & ${w.groom_name}`
+                        : w.bride_name || w.groom_name || 'My Wedding';
 
                 return {
                     id: w.id,
-                    wedding_name: w.wedding_name || 'My Wedding',
+                    wedding_name: displayName,
                     is_premium: Boolean(w.is_premium),
                     payment_status: w.payment_status || null,
                     has_pro: hasPro,
@@ -175,10 +213,22 @@ export async function PATCH(req: NextRequest) {
         const existing = await getExistingProfile(db, user.id);
 
         if (hasAccountType && existing?.account_type && existing.account_type !== accountType) {
-            return NextResponse.json(
-                { error: 'This account already has an account type.' },
-                { status: 409 }
-            );
+            let hasWeddings = false;
+            if (!existing.onboarding_completed) {
+                const { count } = await db
+                    .from('weddings')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', user.id)
+                    .is('deleted_at', null);
+                hasWeddings = (count ?? 0) > 0;
+            }
+
+            if (existing.onboarding_completed || hasWeddings) {
+                return NextResponse.json(
+                    { error: 'This account already has an account type.' },
+                    { status: 409 }
+                );
+            }
         }
 
         if (hasOnboardingCompleted && body.onboarding_completed && (existing?.account_type === 'supplier' || accountType === 'supplier')) {

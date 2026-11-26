@@ -209,6 +209,11 @@ export async function POST(req: NextRequest) {
     const { user, error } = await getRequestUser(req);
     if (!user) return NextResponse.json({ error }, { status: 401 });
 
+    const { createRateLimitMiddleware } = await import('@/lib/rate-limit');
+    const rateLimit = createRateLimitMiddleware('SUPPLIER_REVIEW');
+    const limited = await rateLimit.check(`supplier-profile:${user.id}`);
+    if (limited.limited) return limited.response;
+
     try {
         const body = await req.json();
         const intent = body.intent === 'submit' ? 'submit' : 'draft';
@@ -255,13 +260,23 @@ export async function POST(req: NextRequest) {
         const slug = adminDb
             ? await getUniqueSupplierSlug(db, baseSlug, existing?.id)
             : `${baseSlug}-${user.id.slice(0, 8)}`;
+        const publicListingChanged = existing?.status === 'approved' && (
+            input.business_name !== existing.business_name ||
+            input.description !== existing.description ||
+            input.summary !== existing.summary ||
+            input.website_url !== existing.website_url ||
+            input.instagram_url !== existing.instagram_url ||
+            input.facebook_url !== existing.facebook_url ||
+            JSON.stringify(input.gallery_images || []) !== JSON.stringify(existing.gallery_images || [])
+        );
+
         const status: SupplierProfileStatus = intent === 'submit'
-            ? existing?.status === 'approved'
+            ? existing?.status === 'approved' && !publicListingChanged
                 ? 'approved'
                 : 'pending_review'
             : 'draft';
         const shouldNotifyAdmin = intent === 'submit'
-            && (!existing || REVIEW_EMAIL_SOURCE_STATUSES.includes(existing.status));
+            && (!existing || REVIEW_EMAIL_SOURCE_STATUSES.includes(existing.status) || publicListingChanged);
         const updatePayload = {
             ...input,
             owner_user_id: user.id,

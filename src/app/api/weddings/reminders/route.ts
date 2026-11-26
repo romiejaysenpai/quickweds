@@ -11,6 +11,20 @@ import {
     logPlannerEmailEvent,
 } from '@/lib/planner-limits';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
+import { getPublicAppUrl } from '@/lib/site-url';
+import { getWeddingAccess } from '@/lib/wedding-access';
+import { toSafeHttpUrl } from '@/lib/url-safety';
+
+export const maxDuration = 60;
+
+function escapeHtml(value: string) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 export async function POST(req: NextRequest) {
     // Rate limit reminder requests by IP
@@ -31,7 +45,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: authError || 'Please sign in to send reminders.' }, { status: 401 });
         }
 
-        const body = await req.json();
+        const body = await req.json().catch(() => ({}));
         
         // CRITICAL FIX #2: Sanitize inputs before validation
         if (body.weddingId) {
@@ -50,34 +64,21 @@ export async function POST(req: NextRequest) {
         const { weddingId, targetStatus } = validation.data;
         const db = getSupabaseAdminClient() as any;
 
-        const { data: wedding, error: weddingError } = await db
-            .from('weddings')
-            .select('*')
-            .eq('id', weddingId)
-            .is('deleted_at', null)
-            .maybeSingle();
+        const access = await getWeddingAccess(db, user, weddingId, {
+            select: '*',
+            collaboratorRoles: ['partner', 'coordinator'],
+        });
 
-        if (weddingError || !wedding) {
+        if (!access.wedding) {
             return NextResponse.json({ error: 'Wedding not found' }, { status: 404 });
         }
 
-        const isAdmin = isKnownAdminEmail(user.email);
-        let canManage = isAdmin || wedding.user_id === user.id;
-        if (!canManage && user.email) {
-            const { data: collaborator } = await db
-                .from('wedding_collaborators')
-                .select('id')
-                .eq('wedding_id', weddingId)
-                .eq('email', user.email.toLowerCase())
-                .eq('status', 'accepted')
-                .in('role', ['partner', 'coordinator'])
-                .maybeSingle();
-            canManage = Boolean(collaborator);
-        }
-
-        if (!canManage) {
+        if (!access.canManage) {
             return NextResponse.json({ error: 'You do not have permission to send reminders for this wedding.' }, { status: 403 });
         }
+
+        const wedding = access.wedding;
+        const isAdmin = isKnownAdminEmail(user.email);
 
         const guests: Array<any> = [];
         for(let offset=0;offset<=5000;offset+=1000){
@@ -97,15 +98,20 @@ export async function POST(req: NextRequest) {
 
         const uniqueRecipients = [...new Map(recipients.map(guest=>[guest.guest_email.toLowerCase(),guest])).values()];
 
-        // Sanitize wedding data for email
         const sanitizedBrideName = sanitizeInput(wedding.bride_name, { maxLength: 200 });
         const sanitizedGroomName = sanitizeInput(wedding.groom_name, { maxLength: 200 });
         const sanitizedWeddingDate = sanitizeInput(wedding.wedding_date, { maxLength: 50 });
         const sanitizedRsvpDeadline = sanitizeInput(wedding.rsvp_deadline, { maxLength: 50 });
 
-        const weddingUrl = wedding.custom_domain
-            ? `https://${sanitizeInput(wedding.custom_domain, { maxLength: 100 })}`
-            : getWeddingPublicUrl(process.env.NEXT_PUBLIC_BASE_URL || 'https://quickweds.vercel.app', wedding);
+        const rawCustomDomain = wedding.custom_domain ? sanitizeInput(wedding.custom_domain, { maxLength: 100 }).replace(/^https?:\/\//i, '') : '';
+        const weddingUrl = (rawCustomDomain ? toSafeHttpUrl(`https://${rawCustomDomain}`) : null)
+            || getWeddingPublicUrl(getPublicAppUrl(), wedding);
+
+        const safeBrideHtml = escapeHtml(sanitizedBrideName);
+        const safeGroomHtml = escapeHtml(sanitizedGroomName);
+        const safeDateHtml = escapeHtml(sanitizedWeddingDate);
+        const safeDeadlineHtml = escapeHtml(sanitizedRsvpDeadline);
+        const safeUrlHtml = escapeHtml(weddingUrl);
 
         const { data: ownerProfile } = await db
             .from('user_app_profiles')
@@ -121,16 +127,16 @@ export async function POST(req: NextRequest) {
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #2e2e2e;">
                     <h1 style="font-size: 24px; margin-bottom: 12px;">A quick RSVP reminder</h1>
-                    <p style="line-height: 1.6;">Hi ${guest.guest_name},</p>
+                    <p style="line-height: 1.6;">Hi ${escapeHtml(guest.guest_name || 'Guest')},</p>
                     <p style="line-height: 1.6;">
-                        ${sanitizedBrideName} and ${sanitizedGroomName} are finalizing plans for their wedding and would love your RSVP when you have a moment.
+                        ${safeBrideHtml} and ${safeGroomHtml} are finalizing plans for their wedding and would love your RSVP when you have a moment.
                     </p>
                     <p style="line-height: 1.6;">
-                        Event date: <strong>${sanitizedWeddingDate}</strong><br />
-                        RSVP deadline: <strong>${sanitizedRsvpDeadline}</strong>
+                        Event date: <strong>${safeDateHtml}</strong><br />
+                        RSVP deadline: <strong>${safeDeadlineHtml}</strong>
                     </p>
                     <p style="margin: 24px 0;">
-                        <a href="${weddingUrl}" style="display: inline-block; background: #D16C78; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: bold;">
+                        <a href="${safeUrlHtml}" style="display: inline-block; background: #D16C78; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: bold;">
                             Open invitation and RSVP
                         </a>
                     </p>
@@ -138,8 +144,21 @@ export async function POST(req: NextRequest) {
                 </div>
             `,
         })));
-        const results=[];
-        for(const job of jobs.filter(job=>['queued','retryable','processing'].includes(job.state)).slice(0,5)){try{results.push(await retryStoredEmail(job));}catch{results.push({success:false});}}
+        const pendingJobs = jobs.filter(job => ['queued', 'retryable'].includes(job.state));
+        const results: Array<{ success: boolean; alreadyAccepted?: boolean }> = [];
+        for (let i = 0; i < pendingJobs.length; i += 5) {
+            const batch = pendingJobs.slice(i, i + 5);
+            const batchResults = await Promise.all(
+                batch.map(async (job) => {
+                    try {
+                        return await retryStoredEmail(job);
+                    } catch {
+                        return { success: false };
+                    }
+                })
+            );
+            results.push(...batchResults);
+        }
         const successCount = jobs.filter(job=>job.state==='accepted').length + results.filter(result=>result.success).length;
         const newlyAccepted = results.filter(result => result.success && !('alreadyAccepted' in result && result.alreadyAccepted)).length;
 

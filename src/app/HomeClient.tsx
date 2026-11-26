@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { rsvpWordingPath } from '@/lib/seo';
+import { HOME_FAQS, rsvpWordingPath } from '@/lib/seo';
 import {
   ArrowRight,
   Camera,
@@ -26,8 +26,6 @@ import {
   UserCheck,
   UsersRound,
   X,
-  Instagram,
-  Twitter,
   Facebook,
   Loader2,
   Mouse,
@@ -48,7 +46,6 @@ import { PenLine } from 'lucide-react';
 
 const heroImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/lastfinal%20hero%20imagfe.png';
 const joySectionDesktopImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/253b06e1-93cf-446c-a0fe-b3397777c185.png';
-const joySectionMobileImageUrl = 'https://jioouyzzitvtlpzqqbkz.supabase.co/storage/v1/object/public/quickweds/landing_page_images/253b06e1-93cf-446c-a0fe-b3397777c185.png';
 const navItemClass = 'inline-flex h-10 items-center px-1 text-sm font-bold leading-none text-text-secondary transition hover:text-primary';
 const landingSectionTitleClass = '[font-family:var(--font-montserrat)] text-[clamp(2.25rem,5vw,4.25rem)] font-black leading-[0.98] tracking-[-0.045em] text-foreground';
 const landingHeroTitleClass = '[font-family:var(--font-montserrat)] text-[clamp(3rem,7vw,5.5rem)] font-black leading-[0.94] tracking-[-0.055em]';
@@ -66,6 +63,7 @@ const featureCards = [
     number: '01',
     icon: LayoutDashboard,
     title: 'Wedding Website Builder',
+    href: '/wedding-website-builder',
     body: 'Create a beautiful, personalized wedding site with your story, schedule, venue, gifts, FAQs, photos, and guest-facing details.',
     bullets: ['Elegant mobile invitation pages', 'Story, venue, FAQ, and gallery sections', 'Share-ready wedding link and QR flow'],
     tags: ['Website', 'QR Code', 'Gallery'],
@@ -77,6 +75,7 @@ const featureCards = [
     number: '02',
     icon: MailCheck,
     title: 'Smart RSVP Management',
+    href: '/wedding-rsvp',
     body: 'Track responses instantly, send automated RSVP emails, notify hosts, and remind pending guests without chasing every reply.',
     bullets: ['Live yes, no, and maybe counts', 'Host notifications and guest confirmations', 'Reminder-ready pending guest list'],
     tags: ['RSVP', 'Automation', 'Reminders'],
@@ -87,6 +86,7 @@ const featureCards = [
     number: '03',
     icon: UsersRound,
     title: 'Guest List & Seating',
+    href: '/wedding-seating-chart',
     body: 'Organize guests, plus-ones, groups, table assignments, QR seat lookup, and event check-in without spreadsheet chaos.',
     bullets: ['Guest groups and plus-one details', 'Visual table assignments', 'QR seat finder and check-in tools'],
     tags: ['Guest List', 'Seating', 'Check-in'],
@@ -97,6 +97,7 @@ const featureCards = [
     number: '04',
     icon: CircleDollarSign,
     title: 'Budget Tracker',
+    href: '/wedding-budget-planner',
     body: 'Stay in control of deposits, balances, and every wedding expense before surprises happen.',
     bullets: ['Track paid, due, and remaining costs', 'Supplier-linked budget items', 'Clear category totals'],
     tags: ['Budget', 'Payments', 'Totals'],
@@ -108,6 +109,7 @@ const featureCards = [
     number: '05',
     icon: Phone,
     title: 'Vendor Organizer',
+    href: '/suppliers',
     body: 'Keep vendor contacts, bookings, notes, and deadlines together in one calm dashboard.',
     bullets: ['Save suppliers into your planner', 'Keep notes and contact details together', 'Compare venues, teams, and services'],
     tags: ['Vendors', 'Bookings', 'Planner'],
@@ -118,6 +120,7 @@ const featureCards = [
     number: '06',
     icon: ClipboardCheck,
     title: 'Task & Checklist Planner',
+    href: '/wedding-checklist',
     body: 'Load a 12-month checklist, add custom tasks, connect supplier details, and know what needs attention before the big day.',
     bullets: ['12-month planning checklist', 'Custom tasks and due dates', 'Progress view for next steps'],
     tags: ['Checklist', 'Tasks', 'Progress'],
@@ -128,6 +131,7 @@ const featureCards = [
     number: '07',
     icon: Heart,
     title: 'Collaboration Tools',
+    href: '/user-guide/collaboration-access',
     body: 'Invite your partner, coordinator, or family helpers so everyone can help without losing context.',
     bullets: ['Partner and helper access', 'Shared planning context', 'Coordinator-friendly workspace'],
     tags: ['Collaborate', 'Shared Access', 'Planner'],
@@ -138,6 +142,7 @@ const featureCards = [
     number: '08',
     icon: Camera,
     title: 'Photo Sharing Portal',
+    href: '/user-guide/photo-sharing',
     body: 'Let guests upload memories through sharing codes, then review, approve, and reveal photos from your dashboard.',
     bullets: ['Guest upload codes', 'Moderation before publishing', 'Disposable-camera reveal settings'],
     tags: ['Photo Upload', 'Gallery', 'Sharing'],
@@ -148,6 +153,7 @@ const featureCards = [
     number: '09',
     icon: PartyPopper,
     title: 'Post-Wedding Tools',
+    href: '/user-guide/post-wedding-memories',
     body: 'Send thank-you messages, share albums, and stay connected after the celebration.',
     bullets: ['Thank-you email builder', 'Guest-aware follow-up', 'Post-wedding album sharing'],
     tags: ['Thank You', 'Albums', 'Follow-up'],
@@ -266,36 +272,7 @@ const solutionFeatureCards = [
 
 const testimonials = DEFAULT_TESTIMONIALS;
 
-const faqs = [
-  {
-    question: 'Is QuickWeds only a wedding website builder?',
-    answer: 'No. You can build and publish a free wedding website with RSVP tracking, QR sharing, a basic guest list, 50 guest emails, and Planner Lite. Planner Pro is the one-time upgrade for full planner tools, QR seating, Wedding Day Mode, collaborators, reminders, photo tools, exports, thank-you tools, and custom domains.',
-  },
-  {
-    question: 'Can guests RSVP from their phones?',
-    answer: 'Yes. Your wedding website and RSVP flow are mobile-friendly, so guests can view details and respond from iPhone, Android, tablets, or desktop.',
-  },
-  {
-    question: 'Will I get notifications when someone RSVPs?',
-    answer: 'Yes. Automatic RSVP confirmations and host notifications stay free and do not count toward your 50 guest email allowance. User-triggered sends like RSVP reminders, seat emails, and thank-you emails count toward that allowance.',
-  },
-  {
-    question: 'Can my partner or planner help manage the wedding?',
-    answer: 'Yes. Free workspaces include 1 partner collaborator. Planner Pro unlocks coordinators and more helpers for managing budgets, vendors, tasks, seating, reminders, guest photos, and post-wedding details.',
-  },
-  {
-    question: 'Do I need technical skills to launch my site?',
-    answer: 'No. Choose a design, add your details and photos, then share your wedding link. QuickWeds handles the polished layout and mobile experience for you.',
-  },
-  {
-    question: 'Can I start free?',
-    answer: 'Yes. All templates, the builder, your wedding website, RSVP tools, QR sharing, basic guest tracking, 50 guest emails, and Planner Lite are free. Planner Lite includes starter limits for checklist, budget, supplier, calendar, food, honeymoon, seating, and partner collaboration. Planner Pro unlocks unlimited planning, unlimited guest emails, QR seating, reminders, collaborators, exports, photo tools, and thank-you tools.',
-  },
-  {
-    question: 'Can wedding suppliers join QuickWeds?',
-    answer: 'Yes. Wedding businesses can create a supplier profile, submit it for review, and appear in the public supplier directory once approved. Couples can browse suppliers and save directory listings into their planner.',
-  },
-];
+const faqs = HOME_FAQS;
 
 function Accent({ children }: { children: React.ReactNode }) {
   return <span className="text-primary">{children}</span>;
@@ -342,31 +319,16 @@ function SectionHeading({
 }
 
 function FeatureMockup({ feature }: { feature: (typeof featureCards)[number] }) {
-  const visualImageUrl = 'imageUrl' in feature && feature.imageUrl ? feature.imageUrl : defaultCoreFeatureImageUrl;
   return (
     <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-secondary/70 via-[#fff8f4] to-primary/35">
-      <Image
-        src={feature.mobileImageUrl}
-        alt={`${feature.title} interface preview`}
-        fill
-        sizes="(max-width: 639px) 90vw, 1px"
-        className="object-cover sm:hidden"
-      />
-      <Image
-        src={visualImageUrl}
-        alt=""
-        fill
-        sizes="(max-width: 1023px) 680px, 1px"
-        className="hidden object-cover sm:block lg:hidden"
-      />
       <div className="absolute -right-10 -top-12 hidden h-40 w-40 rounded-full border-[28px] border-white/30 lg:block" />
       <div className="absolute -bottom-12 -left-8 hidden h-36 w-52 rotate-[-12deg] rounded-[50%] bg-primary/12 blur-[1px] lg:block" />
-      <div className="absolute inset-[7%] hidden overflow-hidden rounded-[1.55rem] border border-white/80 bg-white/35 shadow-[0_24px_55px_rgba(82,40,50,0.16)] backdrop-blur-sm lg:block">
+      <div className="absolute inset-0 overflow-hidden lg:inset-[7%] lg:rounded-[1.55rem] lg:border lg:border-white/80 lg:bg-white/35 lg:shadow-[0_24px_55px_rgba(82,40,50,0.16)] lg:backdrop-blur-sm">
         <Image
           src={feature.mobileImageUrl}
-          alt={`${feature.title} app preview`}
+          alt={`${feature.title} interface preview`}
           fill
-          sizes="520px"
+          sizes="(max-width: 639px) 92vw, (max-width: 1023px) 680px, 520px"
           className="object-cover object-center transition duration-500 group-hover:scale-[1.025]"
         />
       </div>
@@ -453,6 +415,15 @@ function AnimatedFeatureCard({
                 {tag}
               </span>
             ))}
+          </div>
+          <div className="mt-5">
+            <Link
+              href={feature.href}
+              className="inline-flex items-center gap-1.5 text-xs font-black text-primary transition hover:underline sm:text-sm"
+            >
+              Explore {feature.title}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </div>
@@ -1204,10 +1175,7 @@ function LandingHero({ onDemoClick }: { onDemoClick: () => void }) {
           </div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12, duration: 0.55 }}
+        <div
           className="relative z-20 mx-auto flex w-full min-w-0 max-w-[44rem] flex-col items-center lg:max-w-[46rem]"
         >
           <div className="mx-auto mb-4 flex w-full max-w-[21rem] flex-col items-center justify-center gap-2 sm:mb-5 sm:w-auto sm:max-w-none sm:flex-row lg:hidden">
@@ -1232,15 +1200,16 @@ function LandingHero({ onDemoClick }: { onDemoClick: () => void }) {
           >
             <Image
               src={heroImageUrl}
-              alt="QuickWeds cute 3D wedding planning hero illustration"
+              alt="QuickWeds wedding website builder, online RSVP, and wedding planning dashboard"
               width={1200}
               height={900}
               priority
+              fetchPriority="high"
               sizes="(max-width: 640px) 112vw, (max-width: 1024px) 820px, 860px"
               className="h-auto !w-[112vw] !max-w-none object-contain drop-shadow-[0_30px_55px_rgba(209,108,120,0.25)] transition-transform duration-500 ease-out group-hover:scale-[1.015] sm:!w-[112%] sm:max-h-[620px] lg:!w-[118%] lg:max-h-[680px]"
             />
           </motion.div>
-        </motion.div>
+        </div>
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-40 bg-neutral sm:h-44 lg:h-36" aria-hidden="true" />
       <HeroBottomClouds />
@@ -1248,11 +1217,13 @@ function LandingHero({ onDemoClick }: { onDemoClick: () => void }) {
   );
 }
 
-export default function Home() {
+export default function Home({ initialReviews }: { initialReviews?: AppReview[] } = {}) {
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasWeddingSite, setHasWeddingSite] = useState(false);
-  const [coupleReviews, setCoupleReviews] = useState<AppReview[]>(DEFAULT_TESTIMONIALS);
+  const [coupleReviews, setCoupleReviews] = useState<AppReview[]>(
+    initialReviews && initialReviews.length > 0 ? initialReviews : DEFAULT_TESTIMONIALS,
+  );
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedCatalogFilter, setSelectedCatalogFilter] = useState<TemplateFilter>('all');
   const [catalogVisibleCount, setCatalogVisibleCount] = useState<number>(12);
@@ -1261,6 +1232,7 @@ export default function Home() {
   const showDashboardLink = Boolean(user && hasWeddingSite);
 
   useEffect(() => {
+    if (initialReviews && initialReviews.length > 0) return;
     let isMounted = true;
     fetchApprovedReviews(6).then((data) => {
       if (isMounted && data && data.length > 0) {
@@ -1270,22 +1242,13 @@ export default function Home() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [initialReviews]);
 
   const handleReviewSubmitted = (newReview: AppReview) => {
     if (newReview.status === 'approved') {
       setCoupleReviews((prev) => [newReview, ...prev]);
     }
   };
-
-  useEffect(() => {
-    if (!user) return;
-
-    const phoneView = window.matchMedia('(max-width: 639px)');
-    if (phoneView.matches) {
-      router.replace('/dashboard');
-    }
-  }, [router, user]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1365,7 +1328,7 @@ export default function Home() {
                 </button>
               </>
             ) : (
-              <Link href="/login" className="hidden h-10 items-center text-sm font-bold leading-none text-text-secondary transition hover:text-primary sm:inline-flex lg:hidden">
+              <Link href="/login" className="hidden h-10 items-center text-sm font-bold leading-none text-text-secondary transition hover:text-primary sm:inline-flex">
                 Login
               </Link>
             )}
@@ -1604,9 +1567,9 @@ export default function Home() {
                     className="h-full"
                   >
                     <Link
-                      href={user ? `/builder?template=${template.id}` : '/login'}
+                      href={`/templates/${template.id}`}
                       className="group flex flex-col h-full overflow-hidden rounded-2xl border border-white/80 bg-white shadow-[0_16px_42px_rgba(87,55,62,0.10)] transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_24px_58px_rgba(87,55,62,0.16)] sm:rounded-[1.75rem]"
-                      aria-label={`Start building with the ${template.name} template`}
+                      aria-label={`Preview the ${template.name} wedding website template`}
                     >
                       <div className="relative shrink-0 aspect-[4/5] overflow-hidden bg-neutral">
                         <Image
@@ -1883,16 +1846,13 @@ export default function Home() {
 
         <section className="bg-white px-4 py-8 sm:px-6 sm:py-10">
           <div className="relative mx-auto min-h-[480px] max-w-7xl overflow-hidden rounded-[1.5rem] border border-border bg-foreground sm:min-h-[420px] sm:rounded-[2rem]">
-            <picture>
-              <source media="(min-width: 640px)" srcSet={joySectionDesktopImageUrl} />
-              <img
-                src={joySectionMobileImageUrl}
-                alt="QuickWeds planning experience preview"
-                className="absolute inset-0 h-full w-full object-cover object-center opacity-70 sm:opacity-65 sm:object-right-center"
-                loading="lazy"
-                decoding="async"
-              />
-            </picture>
+            <Image
+              src={joySectionDesktopImageUrl}
+              alt="QuickWeds planning experience preview"
+              fill
+              sizes="(max-width: 1280px) 100vw, 1280px"
+              className="object-cover object-center opacity-70 sm:opacity-65 sm:object-right"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/30 to-black/10 sm:bg-gradient-to-r sm:from-black/45 sm:via-black/25 sm:to-transparent" />
             <div className="relative flex min-h-[480px] max-w-2xl flex-col justify-end p-6 text-white sm:min-h-[420px] sm:justify-center sm:p-12 lg:p-16">
               <p className="mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-white/75 sm:mb-4 sm:text-xs sm:tracking-[0.28em]">More joy, less admin</p>
@@ -2041,13 +2001,13 @@ export default function Home() {
                 The all-in-one wedding planning system for websites, RSVPs, guests, budgets, vendors, and more. Simplifying your journey to &quot;I do&quot;.
               </p>
               <div className="flex justify-center md:justify-start gap-4">
-                <a href="#" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">
-                  <Instagram className="h-5 w-5" />
-                </a>
-                <a href="#" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">
-                  <Twitter className="h-5 w-5" />
-                </a>
-                <a href="https://www.facebook.com/profile.php?id=61587661715324" target="_blank" rel="noopener noreferrer" className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm">
+                <a
+                  href="https://www.facebook.com/profile.php?id=61587661715324"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="QuickWeds on Facebook"
+                  className="h-10 w-10 flex items-center justify-center rounded-xl bg-neutral text-text-secondary hover:bg-primary hover:text-white transition-all shadow-sm"
+                >
                   <Facebook className="h-5 w-5" />
                 </a>
               </div>
@@ -2055,34 +2015,37 @@ export default function Home() {
 
             {/* Product Column */}
             <div>
-              <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-foreground sm:mb-6 sm:text-sm">Product</h4>
+              <h3 className="mb-3 text-xs font-black uppercase tracking-widest text-foreground sm:mb-6 sm:text-sm">Product</h3>
               <ul className="space-y-0.5 sm:space-y-4">
-                <li><button type="button" onClick={openDemo} className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">View Live Demo</button></li>
-                <li><a href="#pricing" onClick={(event) => navigateToSection(event, 'pricing')} className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Pricing & Features</a></li>
+                <li><Link href="/demo" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">View Live Demo</Link></li>
+                <li><a href="#pricing" onClick={(event) => navigateToSection(event, 'pricing')} className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Pricing &amp; Features</a></li>
                 <li><Link href="/wedding-website-builder" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Wedding Website Builder</Link></li>
                 <li><Link href="/wedding-rsvp" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Online Wedding RSVP</Link></li>
+                <li><Link href="/wedding-seating-chart" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Wedding Seating Chart</Link></li>
+                <li><Link href="/wedding-budget-planner" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Wedding Budget Planner</Link></li>
+                <li><Link href="/wedding-checklist" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Wedding Checklist</Link></li>
                 <li><Link href="/templates" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Wedding Website Templates</Link></li>
-                <li><Link href="/reviews" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Couple Reviews</Link></li>
-                <li><Link href="/suppliers" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Vendor Directory</Link></li>
-                <li><Link href="/supplier/signup" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">List Your Business</Link></li>
+                <li><Link href="/wedding-planner-philippines" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Philippines Wedding Planner</Link></li>
               </ul>
             </div>
 
             {/* Resources Column */}
             <div>
-              <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-foreground sm:mb-6 sm:text-sm">Resources</h4>
+              <h3 className="mb-3 text-xs font-black uppercase tracking-widest text-foreground sm:mb-6 sm:text-sm">Resources</h3>
               <ul className="space-y-0.5 sm:space-y-4">
+                <li><Link href="/tips" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Wedding Planning Tips</Link></li>
                 <li><Link href={rsvpWordingPath} className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Wedding RSVP Wording</Link></li>
-                <li><Link href="/user-guide" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Planning Guide</Link></li>
-                <li><Link href="/user-guide/wedding-day-mode" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Wedding Day Guide</Link></li>
+                <li><Link href="/user-guide" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">User Guide</Link></li>
+                <li><Link href="/reviews" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Couple Reviews</Link></li>
+                <li><Link href="/suppliers" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Vendor Directory</Link></li>
+                <li><Link href="/supplier/signup" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">List Your Business</Link></li>
                 <li><a href="#faq" onClick={(event) => navigateToSection(event, 'faq')} className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">FAQ</a></li>
-                <li><Link href="/privacy" className="inline-flex min-h-9 items-center text-[13px] font-bold leading-tight text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Privacy Policy</Link></li>
               </ul>
             </div>
 
             {/* Contact Column */}
             <div className="col-span-2 text-center md:col-span-1 md:text-left">
-              <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-foreground sm:mb-6 sm:text-sm">Support</h4>
+              <h3 className="mb-3 text-xs font-black uppercase tracking-widest text-foreground sm:mb-6 sm:text-sm">Support</h3>
               <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 md:block md:space-y-4">
                 <li><a href="#contact" onClick={(event) => navigateToSection(event, 'contact')} className="inline-flex min-h-9 items-center text-[13px] font-bold text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">Contact Support</a></li>
                 <li><a href="mailto:support@quickweds.site" className="inline-flex min-h-9 items-center text-[13px] font-bold text-text-secondary transition-colors hover:text-primary sm:min-h-11 sm:text-sm">support@quickweds.site</a></li>

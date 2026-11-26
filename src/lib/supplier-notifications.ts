@@ -52,7 +52,9 @@ export async function getSupplierOwnerEmail(db: any, profile: Pick<SupplierProfi
 }
 
 export async function sendSupplierUnderReviewEmail(profile: SupplierProfile, ownerEmail?: string | null) {
-    const recipients = getRecipients(profile, ownerEmail);
+    // Only send unreviewed-submission notices to the authenticated owner's verified email (never unverified profile.email)
+    const verifiedOwner = (ownerEmail || '').trim().toLowerCase();
+    const recipients = verifiedOwner.includes('@') ? [verifiedOwner] : [];
     if (recipients.length === 0) return;
 
     const html = getEmailShell(

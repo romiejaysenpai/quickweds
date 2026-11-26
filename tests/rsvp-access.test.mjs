@@ -190,3 +190,62 @@ test('RSVP submission strips absent optional columns on older rsvps table schema
  assert.ok(!('seat_lookup_token' in writes[0].payload));
  assert.equal(writes[0].payload.guest_name, 'Resilient Guest');
 });
+test('RSVP guest search escapes LIKE wildcards, PostgREST quotes/delimiters, and falls back on legacy schemas', async () => {
+ const calls = [];
+ const makeDb = (orFails) => ({
+  from(table) {
+   const entry = { table, orFilter: null, ilikeFilter: null };
+   calls.push(entry);
+   const q = {
+    select: () => q,
+    eq: () => q,
+    is: () => q,
+    or(v) { entry.orFilter = v; return q; },
+    ilike(col, v) { entry.ilikeFilter = [col, v]; return q; },
+    limit: () => q,
+    maybeSingle: async () => ({ data: { id: 'wedding1', rsvp_search_guest_list: true }, error: null }),
+    then(resolve) {
+     if (entry.orFilter && orFails) {
+      return Promise.resolve({ data: null, error: { code: '42703', message: 'column household_name does not exist' } }).then(resolve);
+     }
+     return Promise.resolve({
+      data: [{ id: 'g1', guest_name: 'Ana', household_name: 'Family', guest_email: null }],
+      error: null,
+     }).then(resolve);
+    },
+   };
+   return q;
+  },
+ });
+ const searchRoute = (db) => load('src/app/api/public/rsvp/search/route.ts', {
+  'next/server': next,
+  '@/lib/rate-limit': rate,
+  '@/lib/supabase-admin': { getSupabaseAdminClient: () => db },
+  '@/lib/public-wedding-lookup': load('src/lib/public-wedding-lookup.ts'),
+ });
+
+ const resModern = await searchRoute(makeDb(false)).GET({
+  url: 'https://example.test/?weddingId=wedding1&q=' + encodeURIComponent('100%_test,"(name)\\'),
+ });
+ assert.equal(resModern.status, 200);
+ const orCall = calls.find(c => c.orFilter);
+ assert.ok(orCall);
+ const expectedPattern = String.raw`"%100\\%\\_testname\\\\%"`;
+ assert.equal(
+  orCall.orFilter,
+  `guest_name.ilike.${expectedPattern},household_name.ilike.${expectedPattern},plus_one_name.ilike.${expectedPattern}`
+ );
+ assert.ok(!orCall.orFilter.includes('('));
+ assert.ok(!orCall.orFilter.includes(')'));
+
+ calls.length = 0;
+ const resLegacy = await searchRoute(makeDb(true)).GET({
+  url: 'https://example.test/?weddingId=wedding1&q=' + encodeURIComponent('100%_test,"(name)'),
+ });
+ assert.equal(resLegacy.status, 200);
+ const fallbackBody = await resLegacy.json();
+ assert.equal(fallbackBody.guests.length, 1);
+ assert.equal(fallbackBody.guests[0].householdName, null);
+ const ilikeCall = calls.find(c => c.ilikeFilter);
+ assert.deepEqual(ilikeCall.ilikeFilter, ['guest_name', '%100\\%\\_test"name%']);
+});

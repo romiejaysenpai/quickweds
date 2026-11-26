@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { sendEmail } from '@/lib/email';
 import { getWelcomeEmailReact } from '@/emails/quickweds-transactional';
@@ -14,17 +15,25 @@ type SignupRecord = {
   source?: string;
 };
 
-const RECENT_SIGNUP_WINDOW_MS = 15 * 60 * 1000;
+type AuthResult =
+  | { authorized: true; userId?: string; verifiedName?: string }
+  | { authorized: false };
 
-async function isAuthorizedSignupNotification(
+function safeSecretEqual(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const hashA = crypto.createHash('sha256').update(a).digest();
+  const hashB = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
+
+async function authorizeSignupNotification(
   req: NextApiRequest,
   userEmail: string,
   recordId?: string
-): Promise<boolean> {
+): Promise<AuthResult> {
   const configuredSecret =
     process.env.SUPABASE_WEBHOOK_SECRET ||
     process.env.WEBHOOK_SECRET ||
-    process.env.CRON_SECRET ||
     '';
   const headerSecret =
     typeof req.headers['x-webhook-secret'] === 'string'
@@ -33,47 +42,51 @@ async function isAuthorizedSignupNotification(
   const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
   const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
 
-  if (configuredSecret && (headerSecret === configuredSecret || bearerToken === configuredSecret)) {
-    return true;
+  if (configuredSecret && (safeSecretEqual(headerSecret, configuredSecret) || safeSecretEqual(bearerToken, configuredSecret))) {
+    return { authorized: true, userId: recordId };
   }
 
   let db: any;
   try {
     db = getSupabaseAdminClient();
   } catch {
-    return false;
+    return { authorized: false };
   }
 
   const normalizedEmail = userEmail.trim().toLowerCase();
 
   if (bearerToken) {
     const { data: authData, error: authError } = await db.auth.getUser(bearerToken);
-    const authedEmail = authData?.user?.email?.trim().toLowerCase();
-    if (!authError && authedEmail && authedEmail === normalizedEmail) {
-      return true;
+    const authedUser = authData?.user;
+    const authedEmail = authedUser?.email?.trim().toLowerCase();
+    if (!authError && authedUser && authedEmail && authedEmail === normalizedEmail) {
+      const metaName = authedUser.user_metadata?.full_name || authedUser.user_metadata?.name;
+      return {
+        authorized: true,
+        userId: authedUser.id,
+        verifiedName: typeof metaName === 'string' ? metaName : undefined,
+      };
     }
   }
 
+  // Fallback for email-confirmation signups where no session JWT exists yet: require exact record.id matching a newly created user (<5 min).
   if (recordId) {
     const { data: byIdData } = await db.auth.admin.getUserById(recordId);
     const matchedUser = byIdData?.user;
     if (matchedUser && matchedUser.email?.trim().toLowerCase() === normalizedEmail && matchedUser.created_at) {
       const ageMs = Date.now() - new Date(matchedUser.created_at).getTime();
-      if (ageMs >= -60_000 && ageMs <= RECENT_SIGNUP_WINDOW_MS) {
-        return true;
+      if (ageMs >= -60_000 && ageMs <= 5 * 60 * 1000) {
+        const metaName = matchedUser.user_metadata?.full_name || matchedUser.user_metadata?.name;
+        return {
+          authorized: true,
+          userId: matchedUser.id,
+          verifiedName: typeof metaName === 'string' ? metaName : undefined,
+        };
       }
     }
   }
 
-  const { data: usersData } = await db.auth.admin.listUsers({ page: 1, perPage: 200 });
-  const users: Array<{ email?: string; created_at?: string }> = usersData?.users || [];
-  const recentMatch = users.find((u) => {
-    if (u.email?.trim().toLowerCase() !== normalizedEmail || !u.created_at) return false;
-    const ageMs = Date.now() - new Date(u.created_at).getTime();
-    return ageMs >= -60_000 && ageMs <= RECENT_SIGNUP_WINDOW_MS;
-  });
-
-  return Boolean(recentMatch);
+  return { authorized: false };
 }
 
 function escapeHtml(value: string) {
@@ -85,7 +98,7 @@ function escapeHtml(value: string) {
     .replace(/'/g, '&#39;');
 }
 
-async function sendSignupToGhl(record: SignupRecord, signupDate: string) {
+async function sendSignupToGhl(record: SignupRecord, fullName: string, signupDate: string) {
   const webhookUrl = process.env.GHL_SIGNUP_WEBHOOK_URL;
   if (!webhookUrl) {
     return { success: true, skipped: true };
@@ -96,7 +109,6 @@ async function sendSignupToGhl(record: SignupRecord, signupDate: string) {
     return { success: false, skipped: true, error: 'Missing signup email for GHL' };
   }
 
-  const fullName = sanitizeInput(record.full_name || record.display_name || '', { maxLength: 120 });
   const [firstName = '', ...lastNameParts] = fullName.split(/\s+/).filter(Boolean);
 
   try {
@@ -135,8 +147,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const rateLimit = createRateLimitMiddleware('SIGNUP_NOTIFY');
-  const clientIP = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
-    || (req.headers['x-real-ip'] as string)
+  const forwarded = req.headers['x-vercel-forwarded-for'] || req.headers['x-forwarded-for'];
+  const rawForwarded = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+  const clientIP = (req.headers['x-real-ip'] as string)
+    || rawForwarded?.split(',').pop()?.trim()
     || 'unknown';
   const limited = await rateLimit.check(clientIP);
   if (limited.limited) {
@@ -150,21 +164,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const adminEmail = getPrimaryAdminEmail();
   const userEmail = sanitizeEmail(record.email || '');
-  const userName = sanitizeInput(record.full_name || record.display_name || 'New User', { maxLength: 120 });
-  const signupDate = new Date().toISOString();
-
   if (!userEmail) {
     return res.status(400).json({ error: 'Valid user email is required' });
   }
 
-  const authorized = await isAuthorizedSignupNotification(req, userEmail, record.id);
-  if (!authorized) {
+  const auth = await authorizeSignupNotification(req, userEmail, record.id);
+  if (!auth.authorized) {
     return res.status(401).json({ error: 'Unauthorized signup notification request' });
   }
+
+  const userName = sanitizeInput(
+    auth.verifiedName || record.full_name || record.display_name || 'New User',
+    { maxLength: 120 }
+  );
+  const signupDate = new Date().toISOString();
+  const idempotencyScope = auth.userId || userEmail;
 
   try {
     const adminEmailPromise = adminEmail ? sendEmail({
       to: adminEmail,
+      tracking: { key: `signup-admin:${idempotencyScope}` },
       subject: `New Signup on QuickWeds (${userEmail})`,
       html: `
         <div style="font-family: Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #eee; border-radius: 20px;">
@@ -186,11 +205,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const userWelcomePromise = sendEmail({
       to: userEmail,
+      tracking: { key: `signup-welcome:${idempotencyScope}` },
       subject: `Welcome to QuickWeds, ${userName}!`,
       react: getWelcomeEmailReact(userName),
     });
 
-    const ghlPromise = sendSignupToGhl(record, signupDate);
+    const ghlPromise = sendSignupToGhl(record, userName, signupDate);
     const [adminResult, userResult, ghlResult] = await Promise.all([adminEmailPromise, userWelcomePromise, ghlPromise]);
 
     if (adminResult.success && userResult.success && ghlResult.success) {
@@ -204,8 +224,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ghl: ghlResult,
       error: 'One or more emails failed to send',
     });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown signup email error';
-    return res.status(500).json({ success: false, error: message });
+  } catch (err) {
+    console.error('Signup notification error:', err);
+    return res.status(500).json({ success: false, error: 'Unable to process signup notifications.' });
   }
 }

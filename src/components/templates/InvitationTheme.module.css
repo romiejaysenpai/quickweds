@@ -107,9 +107,6 @@
 .theme.theme [data-wedding-section] h3 { font-family: var(--invitation-heading-font) !important; }
 .theme.theme [data-wedding-section] :where(div, details)[class*='text-']:not([data-wedding-status], [data-wedding-status] *, [data-wedding-overlay], [data-wedding-overlay] *) { color: var(--invitation-ink) !important; }
 
-.theme.theme [data-wedding-entrance] { background: var(--invitation-paper) !important; color: var(--invitation-ink) !important; font-family: var(--invitation-body-font); }
-.theme.theme [data-wedding-entrance] [class~='font-serif'] { font-family: var(--invitation-heading-font) !important; }
-
 .theme.theme [data-wedding-media-control] :where(p, span):not([data-wedding-overlay] *) { color: var(--invitation-ink) !important; }
 .theme.theme [data-wedding-media-control] [data-wedding-overlay] { background: var(--invitation-action) !important; color: var(--invitation-on-action) !important; }
 

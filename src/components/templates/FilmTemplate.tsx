@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import { getSectionTitleStyle } from '@/lib/theme-engine';
+import type { TemplateProps } from '@/types/wedding';
 import {
     VideoSection,
     BioSection,
@@ -11,21 +12,42 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-
 } from '../wedding';
-import { SharedNewSections } from './shared';
+import {
+    formatWeddingDate,
+    resolveTemplateCopy,
+    resolveWeddingMedia,
+    SharedNewSections,
+    TEMPLATE_ELEMENT_ASSETS,
+    TemplateHeroActions,
+    WeddingHeroVisual,
+    WeddingMonogram,
+} from './shared';
 
-export default function FilmTemplate({ wedding, gallery, isExpired }: any) {
-    const formattedDate = new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-    });
+export default function FilmTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+    const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
+    const titleStyle = getSectionTitleStyle(wedding);
+    const hasTitleChoice = Boolean(
+        wedding.section_title_color_style && !['default', 'motif'].includes(wedding.section_title_color_style)
+    );
+    const motifColor = wedding.motif_color || '#DC2626';
+    const heroImage = resolveWeddingMedia(wedding, gallery);
+    const copy = resolveTemplateCopy(wedding);
+    const formattedDate = formatWeddingDate(wedding.wedding_date);
+    const hasCustomMonogram = Boolean(
+        wedding.logo_initials || (wedding.logo_shape && wedding.logo_shape !== 'minimal')
+    );
 
     return (
-        <div className="bg-[#121212] text-[#e0e0e0] font-mono relative pb-24 selection:bg-red-600 selection:text-white">
+        <div
+            className="font-mono relative pb-24 selection:bg-red-600 selection:text-white"
+            style={{
+                backgroundColor: hasBackgroundChoice ? 'var(--builder-paper)' : '#121212',
+                color: hasBackgroundChoice ? 'var(--builder-ink)' : '#e0e0e0',
+            }}
+        >
             {/* Vintage Film Grain Overlay */}
-            <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'var(--qw-film-texture)' }} />
+            <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'var(--qw-film-texture)' }} />
 
             <section className="min-h-screen py-20 flex flex-col items-center justify-center px-4 sm:px-6 relative">
                 {/* 35mm Film Sprocket Hole Header & Footer */}
@@ -39,56 +61,71 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: any) {
                 />
 
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95, rotate: -1 }}
+                    initial={false}
                     animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                    transition={{ duration: 1 }}
-                    className="bg-zinc-950 p-4 pb-14 pt-4 max-w-lg w-full shadow-[0_25px_80px_rgba(0,0,0,0.8)] border border-white/10 rounded-sm relative z-10"
+                    className="bg-zinc-950 p-4 pb-10 pt-4 max-w-lg w-full shadow-[0_25px_80px_rgba(0,0,0,0.8)] border border-white/10 rounded-sm relative z-10"
                 >
                     <div className="aspect-[4/5] bg-zinc-900 mb-4 relative overflow-hidden group rounded-sm border border-white/10">
-                        <Image
-                            src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
-                            alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                            priority
-                            fill
-                            sizes="(max-width: 768px) 100vw, 500px"
-                            className="object-cover sepia-[0.15] contrast-125 group-hover:scale-105 transition-transform duration-700"
+                        <WeddingHeroVisual
+                            wedding={wedding}
+                            gallery={gallery}
+                            src={heroImage}
+                            dark
+                            ornamentSrc={TEMPLATE_ELEMENT_ASSETS.celestialAstrolabe}
+                            className="h-full w-full"
+                            imgClassName="sepia-[0.15] contrast-125 group-hover:scale-105 transition-transform duration-700"
                         />
-                        <div className="absolute top-4 right-4 text-[10px] text-red-400 font-mono font-bold animate-pulse z-10 bg-black/70 px-3 py-1 rounded-full border border-red-500/30 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-red-500" />
-                            <span>REC • 4K 24FPS</span>
-                        </div>
                     </div>
-                    <div className="text-center font-serif text-zinc-900 bg-amber-50 p-6 sm:p-8 rounded-sm shadow-inner">
-                        <p className="text-[10px] font-mono tracking-[0.4em] uppercase text-zinc-500 mb-2">AN ANALOG LOVE STORY</p>
-                        <h1 className="text-3xl sm:text-5xl font-bold mb-2 tracking-tight text-zinc-900">
+                    <div data-wedding-card="true" className="text-center font-serif text-zinc-900 bg-amber-50 p-6 sm:p-8 rounded-sm shadow-inner">
+                        {hasCustomMonogram && (
+                            <div className="mb-3 flex justify-center">
+                                <WeddingMonogram wedding={wedding} />
+                            </div>
+                        )}
+                        <p className="text-[10px] font-mono tracking-[0.4em] uppercase text-zinc-500 mb-2">{copy.eyebrow}</p>
+                        <h1
+                            className={`text-3xl sm:text-5xl font-serif font-bold mb-2 tracking-tight text-zinc-900 ${titleStyle.className}`}
+                            style={hasTitleChoice ? titleStyle.style : undefined}
+                        >
                             {wedding.bride_name} &amp; {wedding.groom_name}
                         </h1>
                         <div className="w-12 h-px bg-zinc-400 mx-auto my-4" />
-                        <p className="text-xs uppercase tracking-widest font-mono text-zinc-600">
-                            {formattedDate} • {wedding.venue_name}
-                        </p>
+                        {(formattedDate || wedding.venue_name) && (
+                            <p className="text-xs uppercase tracking-widest font-mono text-zinc-600">
+                                {[formattedDate, wedding.venue_name].filter(Boolean).join(' • ')}
+                            </p>
+                        )}
                     </div>
                 </motion.div>
 
                 <motion.div
-                    initial={{ opacity: 0, y: 15 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="mt-8 z-10"
+                    className="mt-8 z-10 flex flex-wrap justify-center gap-3"
                 >
                     <a
-                        href="#rsvp"
-                        aria-label="RSVP"
-                        className="px-10 py-4 bg-red-600 text-white font-mono font-bold uppercase tracking-[0.3em] text-xs hover:bg-red-700 transition-all shadow-[0_0_30px_rgba(220,38,38,0.4)] inline-flex items-center justify-center rounded-sm"
+                        href={copy.ctaHref}
+                        data-wedding-control="primary"
+                        aria-label={copy.ctaLabel}
+                        className="px-10 py-4 text-white font-mono font-bold uppercase tracking-[0.3em] text-xs hover:opacity-90 transition-all shadow-[0_0_30px_rgba(220,38,38,0.35)] inline-flex items-center justify-center rounded-sm"
+                        style={{ backgroundColor: motifColor }}
                     >
-                        Action! (RSVP)
+                        {copy.ctaLabel}
+                    </a>
+                    <a
+                        href={copy.detailsHref}
+                        data-wedding-control="secondary"
+                        className="px-7 py-4 border border-current/25 font-mono font-semibold uppercase tracking-[0.2em] text-xs hover:bg-current/5 transition-colors inline-flex items-center justify-center rounded-sm"
+                    >
+                        {copy.detailsLabel}
                     </a>
                 </motion.div>
+                <TemplateHeroActions wedding={wedding} variant={hasBackgroundChoice ? 'editorial' : 'noir'} motifColor={motifColor} className="justify-center mt-5 z-10" />
             </section>
 
-            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} wedding={wedding} />
             <BioSection id="bio" wedding={wedding} />
-            <DetailsSection id="details" wedding={wedding} invert />
+            <DetailsSection id="details" wedding={wedding} invert={!hasBackgroundChoice} />
             
             {!wedding.is_thank_you_mode && (
                 <CountdownTimer
@@ -101,13 +138,15 @@ export default function FilmTemplate({ wedding, gallery, isExpired }: any) {
                     venueAddress={wedding.venue_address}
                     template={wedding.template}
                     motifColor={wedding.motif_color}
+                    cardStyle={wedding.card_style}
+                    wedding={wedding}
                 />
             )}
 
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} cardStyle={wedding.card_style} wedding={wedding} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
-            <GiftSection id="gift" wedding={wedding} invert />
+            <GiftSection id="gift" wedding={wedding} invert={!hasBackgroundChoice} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />
         </div>
     );

@@ -1,18 +1,26 @@
 import 'server-only';
 
-const KNOWN_ADMIN_EMAILS = [
-    process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    ...(process.env.ADMIN_EMAILS || '').split(','),
-]
-    .filter(Boolean)
-    .map((email) => email!.trim().toLowerCase());
+export function getAdminEmails(): string[] {
+    const raw = [
+        process.env.ADMIN_EMAIL,
+        ...(process.env.ADMIN_EMAILS || '').split(','),
+    ];
+
+    return Array.from(
+        new Set(
+            raw
+                .filter(Boolean)
+                .map((email) => email!.trim().toLowerCase())
+                .filter((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        )
+    );
+}
 
 export function isKnownAdminEmail(email?: string | null) {
     if (!email) return false;
-    return KNOWN_ADMIN_EMAILS.includes(email.trim().toLowerCase());
+    return getAdminEmails().includes(email.trim().toLowerCase());
 }
 
 export function getPrimaryAdminEmail() {
-    return KNOWN_ADMIN_EMAILS[0] || '';
+    return getAdminEmails()[0] || '';
 }

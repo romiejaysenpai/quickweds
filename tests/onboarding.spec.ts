@@ -117,6 +117,69 @@ test.describe('Couple onboarding', () => {
     await expect(page).toHaveURL(/\/supplier\/dashboard/);
   });
 
+  test('couple can go back from goal step without marking onboarding complete on ready CTA', async ({ page }) => {
+    await seedAuthSession(page);
+    await mockCommonAuthenticatedRoutes(page);
+
+    let onboardingCompletedPatches = 0;
+
+    await page.route('**/api/account/profile', async (route) => {
+      if (route.request().method() === 'PATCH') {
+        const body = route.request().postDataJSON() as { account_type?: string; onboarding_completed?: boolean };
+        if (typeof body.onboarding_completed === 'boolean') {
+          onboardingCompletedPatches += 1;
+        }
+        await route.fulfill({
+          json: {
+            profile: {
+              user_id: fakeUser.id,
+              account_type: body.account_type || 'couple',
+              onboarding_completed: false,
+            },
+          },
+        });
+        return;
+      }
+
+      await route.fulfill({ json: { profile: { user_id: fakeUser.id, account_type: null, onboarding_completed: false } } });
+    });
+
+    await page.goto('/onboarding/account-type');
+    await page.getByRole('button', { name: /I am a couple/i }).click();
+    await expect(page.getByRole('heading', { name: /What would feel best to set up first/i })).toBeVisible();
+
+    await page.getByRole('button', { name: /^Back$/i }).click();
+    await expect(page.getByRole('heading', { name: /How will you use QuickWeds/i })).toBeVisible();
+
+    await page.getByRole('button', { name: /I am a couple/i }).click();
+    await page.getByRole('button', { name: /Continue/i }).click();
+    await expect(page.getByRole('heading', { name: /Start with:/i })).toBeVisible();
+
+    await page.getByRole('button', { name: /Open Dashboard/i }).click();
+    await expect(page).toHaveURL(/\/dashboard/);
+    expect(onboardingCompletedPatches).toBe(0);
+  });
+
+  test('dashboard redirects users with no account type and no weddings to onboarding', async ({ page }) => {
+    await seedAuthSession(page);
+    await mockCommonAuthenticatedRoutes(page);
+
+    await page.route('**/api/account/profile', async (route) => {
+      await route.fulfill({
+        json: {
+          profile: {
+            user_id: fakeUser.id,
+            account_type: null,
+            onboarding_completed: false,
+          },
+        },
+      });
+    });
+
+    await page.goto('/dashboard');
+    await expect(page).toHaveURL(/\/onboarding\/account-type/);
+  });
+
   test('dashboard onboarding section can be completed and hidden', async ({ page }) => {
     await seedAuthSession(page);
     await mockCommonAuthenticatedRoutes(page);

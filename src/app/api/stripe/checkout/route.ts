@@ -46,19 +46,21 @@ export async function POST(req: NextRequest) {
         }
 
         const db = getSupabaseAdminClient() as any;
-        const { data: userProfile } = await db
-            .from('user_app_profiles')
-            .select('is_pro, payment_status')
-            .eq('user_id', user.id)
-            .maybeSingle();
 
-        const hasAccountPro = Boolean(userProfile?.is_pro || userProfile?.payment_status === 'paid');
+        if (plan === 'account_pro') {
+            const { data: userProfile } = await db
+                .from('user_app_profiles')
+                .select('is_pro, payment_status')
+                .eq('user_id', user.id)
+                .maybeSingle();
 
-        if (plan === 'account_pro' && hasAccountPro) {
-            return NextResponse.json(
-                { error: 'Account Pro is already unlocked for this account.' },
-                { status: 409 }
-            );
+            const hasAccountPro = Boolean(userProfile?.is_pro || userProfile?.payment_status === 'paid');
+            if (hasAccountPro) {
+                return NextResponse.json(
+                    { error: 'Account Pro is already unlocked for this account.' },
+                    { status: 409 }
+                );
+            }
         }
 
         if (scope === 'wedding') {
@@ -75,10 +77,18 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: 'You do not have permission to upgrade this wedding.' }, { status: 403 });
             }
 
+            const { data: ownerProfile } = await db
+                .from('user_app_profiles')
+                .select('is_pro, payment_status')
+                .eq('user_id', access.wedding.user_id)
+                .maybeSingle();
+
+            const ownerHasAccountPro = Boolean(ownerProfile?.is_pro || ownerProfile?.payment_status === 'paid');
+
             if (
                 access.wedding.is_premium ||
                 access.wedding.payment_status === 'paid' ||
-                hasAccountPro
+                ownerHasAccountPro
             ) {
                 return NextResponse.json(
                     { error: 'Planner Pro is already unlocked for this wedding.' },
@@ -116,7 +126,9 @@ export async function POST(req: NextRequest) {
                         product_data: {
                             name: productName,
                             description: productDescription,
-                            images: [`${appUrl}/logo.png`],
+                            ...(appUrl.startsWith('https://') && !appUrl.includes('localhost')
+                                ? { images: [`${appUrl}/logo.png`] }
+                                : {}),
                         },
                         unit_amount: amountCents,
                     },

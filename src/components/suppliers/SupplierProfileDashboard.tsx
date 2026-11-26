@@ -192,7 +192,7 @@ export default function SupplierProfileDashboard() {
         setUploadingLogo(true);
         try {
             const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
-            const filePath = `suppliers/${user.id}/business-logo-${Date.now()}.${extension}`;
+            const filePath = `${user.id}/suppliers/business-logo-${Date.now()}.${extension}`;
             const { error: uploadError } = await supabase.storage
                 .from('quickweds')
                 .upload(filePath, file, {
@@ -240,7 +240,7 @@ export default function SupplierProfileDashboard() {
         try {
             const uploadedUrls = await Promise.all(imageFiles.map(async (file, index) => {
                 const extension = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-                const filePath = `suppliers/${user.id}/gallery-${Date.now()}-${index}.${extension}`;
+                const filePath = `${user.id}/suppliers/gallery-${Date.now()}-${index}.${extension}`;
                 const { error: uploadError } = await supabase.storage
                     .from('quickweds')
                     .upload(filePath, file, {

@@ -4,13 +4,62 @@ import { getStripe, PRICING } from '@/lib/stripe';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 function isPaidCheckoutSession(session: Stripe.Checkout.Session) {
+    const minAmountCents = Math.round(PRICING.PLANNER_PRO_PRICE * 100);
     return (
         session.mode === 'payment' &&
         session.payment_status === 'paid' &&
         session.currency === PRICING.CURRENCY &&
         typeof session.amount_total === 'number' &&
-        session.amount_total > 0
+        session.amount_total >= minAmountCents
     );
+}
+
+async function claimWebhookEvent(supabase: any, eventId: string, eventType: string): Promise<'claimed' | 'duplicate' | 'unavailable'> {
+    try {
+        const { error } = await supabase
+            .from('stripe_webhook_events')
+            .insert({
+                event_id: eventId,
+                event_type: eventType,
+                processed_at: new Date().toISOString(),
+            });
+
+        if (!error) return 'claimed';
+        if (error.code === '23505') return 'duplicate';
+        if (error.code === '42P01' || error.code === 'PGRST205') return 'unavailable';
+        throw error;
+    } catch (err: any) {
+        if (err?.code === '42P01' || err?.code === 'PGRST205') return 'unavailable';
+        throw err;
+    }
+}
+
+async function revokeByPaymentIntent(supabase: any, paymentIntentId: string, status: 'refunded' | 'disputed') {
+    const now = new Date().toISOString();
+    const [weddingRes, profileRes] = await Promise.all([
+        supabase
+            .from('weddings')
+            .update({
+                is_premium: false,
+                payment_status: status,
+                plan_type: 'free',
+            })
+            .eq('stripe_payment_intent_id', paymentIntentId),
+        supabase
+            .from('user_app_profiles')
+            .update({
+                is_pro: false,
+                payment_status: status,
+                plan_type: 'free',
+                updated_at: now,
+            })
+            .eq('stripe_payment_intent_id', paymentIntentId),
+    ]);
+
+    if (weddingRes.error) throw weddingRes.error;
+    if (profileRes.error && profileRes.error.code !== '42P01' && profileRes.error.code !== 'PGRST205') {
+        throw profileRes.error;
+    }
 }
 
 export async function POST(req: NextRequest) {
@@ -21,9 +70,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'No signature' }, { status: 400 });
     }
 
+    let event: Stripe.Event;
     try {
         const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-        let event: Stripe.Event;
         const stripe = getStripe();
 
         if (webhookSecret) {
@@ -36,22 +85,39 @@ export async function POST(req: NextRequest) {
                 { status: 500 }
             );
         }
+    } catch (err) {
+        console.error('Stripe webhook signature verification failed:', err);
+        return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
+    }
 
-        if (event.type === 'checkout.session.completed') {
+    try {
+        const supabase: any = getSupabaseAdminClient();
+        const claimStatus = await claimWebhookEvent(supabase, event.id, event.type);
+        if (claimStatus === 'duplicate') {
+            return NextResponse.json({ received: true, duplicate: true });
+        }
+
+        if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
             const session = event.data.object as Stripe.Checkout.Session;
             const weddingId = session.metadata?.weddingId;
             const userId = session.metadata?.userId;
-            const scope = session.metadata?.scope || (userId ? 'account' : 'wedding');
-            const plan = session.metadata?.plan || 'planner_pro';
+            // Default safely to 'wedding' when weddingId is present so wedding checkouts never escalate to account_pro.
+            const scope = session.metadata?.scope || (weddingId ? 'wedding' : 'account');
+            const plan = scope === 'account' ? 'account_pro' : 'planner_pro';
             const expectedAmount = Number(session.metadata?.expectedAmount || 0);
-            const supabase: any = getSupabaseAdminClient();
+            const expectedCurrency = session.metadata?.expectedCurrency || PRICING.CURRENCY;
 
             if (!isPaidCheckoutSession(session)) {
-                console.warn('Ignoring unpaid or invalid Stripe checkout session:', session.id);
+                console.warn('Ignoring unpaid or underpaid Stripe checkout session:', session.id);
                 return NextResponse.json({ received: true });
             }
 
-            if (expectedAmount && session.amount_total !== expectedAmount) {
+            if (expectedCurrency !== PRICING.CURRENCY) {
+                console.warn('Ignoring Stripe checkout session with unexpected currency:', session.id);
+                return NextResponse.json({ received: true });
+            }
+
+            if (expectedAmount > 0 && session.amount_total !== expectedAmount) {
                 console.warn('Ignoring Stripe checkout session with unexpected amount:', session.id);
                 return NextResponse.json({ received: true });
             }
@@ -81,19 +147,17 @@ export async function POST(req: NextRequest) {
                         updated_at: new Date().toISOString(),
                     }, { onConflict: 'user_id' });
 
-                if (error) {
-                    throw error;
-                }
+                if (error) throw error;
             } else if (weddingId) {
                 const { data: wedding, error: lookupError } = await supabase
                     .from('weddings')
-                    .select('id, stripe_checkout_session_id, payment_status')
+                    .select('id, stripe_checkout_session_id, payment_status, deleted_at')
                     .eq('id', weddingId)
                     .maybeSingle();
 
                 if (lookupError) throw lookupError;
-                if (!wedding) {
-                    console.warn('Ignoring Stripe session for missing wedding:', session.id, weddingId);
+                if (!wedding || wedding.deleted_at) {
+                    console.warn('Ignoring Stripe session for missing or deleted wedding:', session.id, weddingId);
                     return NextResponse.json({ received: true });
                 }
                 if (wedding.stripe_checkout_session_id === session.id && wedding.payment_status === 'paid') {
@@ -112,9 +176,19 @@ export async function POST(req: NextRequest) {
                     })
                     .eq('id', weddingId);
 
-                if (error) {
-                    throw error;
-                }
+                if (error) throw error;
+            }
+        } else if (event.type === 'charge.refunded') {
+            const charge = event.data.object as Stripe.Charge;
+            const paymentIntentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : null;
+            if (paymentIntentId && charge.refunded) {
+                await revokeByPaymentIntent(supabase, paymentIntentId, 'refunded');
+            }
+        } else if (event.type === 'charge.dispute.created') {
+            const dispute = event.data.object as Stripe.Dispute;
+            const paymentIntentId = typeof dispute.payment_intent === 'string' ? dispute.payment_intent : null;
+            if (paymentIntentId) {
+                await revokeByPaymentIntent(supabase, paymentIntentId, 'disputed');
             }
         } else if (event.type === 'checkout.session.async_payment_failed' || event.type === 'checkout.session.expired') {
             return NextResponse.json({ received: true });
@@ -122,7 +196,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ received: true });
     } catch (error) {
-        const message = error instanceof Error ? error.message : 'Webhook handler failed';
-        return NextResponse.json({ error: message }, { status: 400 });
+        console.error('Stripe webhook processing failed:', error);
+        return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
     }
 }

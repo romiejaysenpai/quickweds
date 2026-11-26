@@ -6,13 +6,13 @@ import type { TemplateProps } from '@/types/wedding';
 import { DetailsSection, GiftSection, SafeWeddingImage, VideoSection } from '@/components/wedding';
 import GallerySection, { Lightbox } from '@/components/wedding/GallerySection';
 import AttireIllustration from '@/components/AttireIllustration';
-import { useSectionContext } from '@/context/SectionContext';
+import { useSectionActions } from '@/context/SectionContext';
 import { getReferenceInvitation } from '@/lib/reference-invitations';
 import { getInvitationTheme } from '@/lib/invitation-theme';
 import { getSectionTitleStyle } from '@/lib/theme-engine';
 import { parseDressCodeValue } from '@/lib/dress-code';
 import { timelineIconKind } from '@/lib/wedding-timeline';
-import { WeddingMonogram, SharedNewSections, parseTimelineItems, useCountdown } from './shared';
+import { WeddingMonogram, SharedNewSections, TemplateHeroActions, parseTimelineItems, resolveTemplateCopy, useCountdown } from './shared';
 import styles from './CollectionInvitationTemplate.module.css';
 
 /** Decoration is separate from the editable content. All paths are original vector ornaments. */
@@ -55,20 +55,26 @@ function Calendar({ date }: { date: Date }) {
     </div></div>;
 }
 
-function audioSource(value?: string) {
-    if (!value) return undefined;
-    try { return ['https:', 'http:', 'blob:'].includes(new URL(value).protocol) ? value : undefined; }
-    catch { return value.startsWith('/') && !value.startsWith('//') ? value : undefined; }
+function CollectionClock({ date, time, titleProps }: { date: string; time?: string; titleProps: { className: string; style?: CSSProperties } }) {
+    const { timeLeft, isPast } = useCountdown(date, time);
+    return <><h2 {...titleProps}>{isPast ? 'Our wedding day has arrived' : 'Until we say I do'}</h2><div role="timer" aria-label="Time until the wedding" className={styles.countdown}>{Object.entries(timeLeft).map(([label, value]) => <div key={label}><strong>{String(value).padStart(2, '0')}</strong><span>{label}</span></div>)}</div></>;
+}
+
+/** Original engraved details; colors inherit the selected invitation motif. */
+function Engraving({ variant }: { variant: 'villa' | 'bird' }) {
+    return <svg className={styles.engraving} viewBox="0 0 200 92" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
+        {variant === 'villa' ? <><path d="M12 80h176M53 80V43h94v37M47 43l53-25 53 25M62 41h76M91 80V62a9 9 0 0118 0v18M65 56h12v13H65zm58 0h12v13h-12zM22 80V52m156 28V46"/><path d="M14 61l8-33 8 33zm155 0 9-40 9 40zM4 83q29 10 58 0m78 0q30 10 57 0"/></> : <><path d="M12 80q76-41 176-28M66 61q-12-26-44-20 12 21 44 20Zm86-8q8-20 31-24-3 18-31 24ZM91 54q-23-3-27-20l28 4q13-21 34-19 10-15 23-4l13 7-14 5q-10 24-36 26l-21 1Zm20-1-3 10m18-12 1 10"/><circle cx="145" cy="19" r="1.5"/></>}
+    </svg>;
 }
 
 export default function CollectionInvitationTemplate({ wedding, gallery, isExpired }: TemplateProps) {
     const reference = getReferenceInvitation(wedding.template_style);
     const theme = getInvitationTheme(wedding);
-    const { registerSection, unregisterSection } = useSectionContext();
+    const { registerSection, unregisterSection } = useSectionActions();
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const timelineRef = useRef<HTMLOListElement>(null);
-    const { timeLeft, isPast } = useCountdown(wedding.wedding_date, wedding.wedding_time);
     const timeline = parseTimelineItems(wedding.program_timeline);
+    const copy = resolveTemplateCopy(wedding);
     const date = wedding.wedding_date ? new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`) : null;
     const validDate = date && Number.isFinite(date.getTime()) ? date : null;
     const photo = wedding.hero_image?.trim() || wedding.couple_photo?.trim();
@@ -80,7 +86,6 @@ export default function CollectionInvitationTemplate({ wedding, gallery, isExpir
     const motif = theme?.vars['--invitation-motif'] || reference?.accent || wedding.motif_color;
     const themedWedding = { ...wedding, motif_color: motif };
     const dress = parseDressCodeValue(wedding.dress_code, motif);
-    const audio = wedding.background_music_enabled ? audioSource(wedding.background_music_url) : undefined;
     const showGallery = gallery.length > 0 && (!wedding.is_thank_you_mode || wedding.show_photos_in_thank_you_mode !== false);
     const sectionKey = [!wedding.is_thank_you_mode && validDate && 'countdown', wedding.story && 'bio', !wedding.is_thank_you_mode && timeline.length > 0 && 'timeline', !wedding.is_thank_you_mode && wedding.dress_code && 'attire', showGallery && (!wedding.gallery_layout || wedding.gallery_layout === 'auto') && 'gallery'].filter(Boolean).join(',');
     useEffect(() => {
@@ -95,39 +100,74 @@ export default function CollectionInvitationTemplate({ wedding, gallery, isExpir
     const horizontalProgram = ['winter-castle', 'winter-blue'].includes(layout);
     const scrollProgram = (direction: number) => {
         const list = timelineRef.current;
-        if (list) list.scrollBy({ left: direction * list.clientWidth * .8, behavior: 'auto' });
+        if (!list) return;
+        const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        list.scrollBy({ left: direction * list.clientWidth * 0.8, behavior: prefersReduced ? 'auto' : 'smooth' });
     };
     const coastal = ['hydrangea-coast', 'sea-glass', 'ocean-coral', 'coastal-silver'].includes(layout);
     const wintry = ['winter-castle', 'winter-blue', 'pearl-ballroom'].includes(layout);
     const ornaments = !['monochrome-collage', 'cocoa-capsule', 'navy-celebration'].includes(layout);
+    const memories = layout.startsWith('memories-');
+    const overPhoto = memories || ['azure-shore', 'olive-editorial'].includes(layout);
+    const crest = layout === 'petal-crest';
+    const coverMonogram = ['powder-bouquet', 'villa-postcard'].includes(layout);
     const photoFirst = ['hydrangea-coast', 'monochrome-collage', 'sea-glass', 'navy-celebration', 'pearl-ballroom', 'coastal-silver'].includes(layout);
     const icons = { ceremony: Church, drinks: Wine, meal: Utensils, photo: Camera, music: Music, celebration: Sparkles };
     // Configured artwork supplies only ornamentation; it never replaces a section or editable text.
-    const artwork = (reference as typeof reference & { artwork?: string }).artwork;
-    const decoration = <>{artwork ? <div className={styles.artwork} aria-hidden="true" /> : layout === 'calla-envelope' ? <Calla /> : ornaments && <Branch flowers={reference.decoration === 'flowers'} className={styles.corner} />}{wintry && <Snow />}{coastal && <Seashell />}{layout === 'olive-lights' && <Lights />}{['pearl-ballroom', 'coastal-silver'].includes(layout) && <Pearls />}</>;
+    const artwork = reference.artwork;
+    const decoration = <>{artwork ? <div className={styles.artwork} aria-hidden="true" /> : layout === 'calla-envelope' ? <Calla /> : ornaments && (reference.reference <= 50 || reference.decoration !== 'none') && <Branch flowers={reference.decoration === 'flowers'} className={styles.corner} />}{wintry && <Snow />}{coastal && <Seashell />}{layout === 'olive-lights' && <Lights />}{['pearl-ballroom', 'coastal-silver'].includes(layout) && <Pearls />}</>;
     const panel = (children: ReactNode, className = '', id?: string) => <section id={id} className={`${styles.panel} ${className}`}>{children}</section>;
-    const portrait = photo && <div className={styles.portrait}><SafeWeddingImage src={photo} alt={`${wedding.bride_name} and ${wedding.groom_name}`} className={styles.photo} loading="eager" fallbackText={initials} /></div>;
+    const portrait = photo && <div className={styles.portrait}><SafeWeddingImage src={photo} alt={`${wedding.bride_name} and ${wedding.groom_name}`} className={styles.photo} loading="eager" fetchPriority="high" fallbackText={initials} /></div>;
     const heading = <div className={styles.heroCopy}><p className={styles.eyebrow}>{wedding.is_thank_you_mode ? 'With heartfelt thanks' : wedding.is_save_the_date ? 'Save the date' : 'Wedding invitation'}</p>
-        {customMonogram && <WeddingMonogram wedding={wedding} className="mx-auto" />}{split && !customMonogram && <div className={styles.splitMonogram} aria-hidden="true"><span>{initials.slice(0, 1)}</span><Branch /><span>{initials.slice(1)}</span></div>}
+        {customMonogram && <WeddingMonogram wedding={wedding} className="mx-auto" />}{(split || coverMonogram) && !customMonogram && <div className={styles.splitMonogram} aria-hidden="true"><span>{initials.slice(0, 1)}</span><Branch /><span>{initials.slice(1)}</span></div>}
         <h1 className={styles.names}><span>{wedding.bride_name}</span><em>&amp;</em><span>{wedding.groom_name}</span></h1>
         {validDate ? <time className={styles.date} dateTime={wedding.wedding_date}>{validDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replaceAll('/', ' · ')}</time> : <p className={styles.date}>Date to be announced</p>}
+        <div className="mt-5 flex flex-col items-center gap-2.5">
+            <a href={copy.ctaHref} data-wedding-control="primary" className="inline-flex min-h-11 items-center justify-center rounded-full border border-current/45 px-7 py-2.5 text-xs font-semibold uppercase tracking-[0.22em] transition-colors hover:bg-current/10">
+                {copy.ctaLabel}
+            </a>
+            <TemplateHeroActions wedding={themedWedding} variant={reference.dark || (photo && overPhoto) ? 'noir' : 'stationery'} motifColor={motif} className="justify-center" />
+        </div>
     </div>;
+    const datePanel = !wedding.is_thank_you_mode && validDate && panel(<>
+        {decoration}
+        <CollectionClock date={wedding.wedding_date} time={wedding.wedding_time} titleProps={titleProps} />
+        {memories ? <>
+            <time dateTime={wedding.wedding_date} className={styles.dateTicket}>
+                <span>{validDate.toLocaleDateString('en', { weekday: 'long' })}</span>
+                <strong>{validDate.getDate()}</strong>
+                <span>{validDate.toLocaleDateString('en', { month: 'long' })}</span>
+            </time>
+            <details className={styles.calendarDisclosure}>
+                <summary>View calendar</summary>
+                <Calendar date={validDate} />
+            </details>
+        </> : <Calendar date={validDate} />}
+    </>, styles.datePanel, 'countdown');
     return <div className={styles.page} data-reference={reference.id} data-reference-invitation={reference.id} data-layout={layout} data-dark={reference.dark} data-has-photo={Boolean(photo)} data-card-style={wedding.card_style} style={{ '--ref-paper': reference.paper, '--ref-ink': reference.ink, '--ref-accent': motif, '--collection-art': artwork ? `url("${artwork}")` : 'none', ...theme?.vars } as CSSProperties}>
         <article className={styles.invitation}>
-            <header className={styles.hero}>{decoration}{photoFirst && portrait}{heading}{!photoFirst && portrait}
+            <header className={styles.hero} data-photo-overlay={Boolean(photo && overPhoto)}>
+                {decoration}
+                {layout === 'linen-lace' && <Engraving variant="bird" />}
+                {layout === 'powder-bouquet' && portrait && <div className={styles.initialCover} aria-hidden="true">{initials}</div>}
+                {(photoFirst || overPhoto || layout === 'powder-bouquet') && portrait}
+                {crest ? <div className={styles.crest}><Branch flowers className={styles.crestLeft}/><Branch flowers className={styles.crestRight}/>{heading}</div> : heading}
+                {!photoFirst && !overPhoto && layout !== 'powder-bouquet' && portrait}
                 {['calla-envelope', 'coastal-silver'].includes(layout) && photo && <div className={styles.envelope} aria-hidden="true"><span className={styles.seal}>{initials}</span></div>}
             </header>
-            {audio && <div className={styles.music}><p>{wedding.background_music_title || 'Our wedding song'}</p><audio controls preload="none" src={audio} aria-label="Wedding music" /></div>}
+            {memories && datePanel}
             {panel(<>{decoration}<h2 {...titleProps}>{wedding.is_thank_you_mode ? 'Thank you' : 'Dear family & friends'}</h2><p>{wedding.is_thank_you_mode ? wedding.thank_you_message || 'Thank you for being part of our celebration.' : 'We would love to celebrate our wedding with you.'}</p>{wedding.quote && <blockquote>{wedding.quote}</blockquote>}<Heart className={styles.heart} size={20} strokeWidth={1} /></>, styles.welcome)}
-            {!wedding.is_thank_you_mode && validDate && panel(<>{decoration}<h2 {...titleProps}>{isPast ? 'Our wedding day has arrived' : 'Until we say I do'}</h2><div role="timer" aria-label="Time until the wedding" className={styles.countdown}>{Object.entries(timeLeft).map(([label, value]) => <div key={label}><strong>{String(value).padStart(2, '0')}</strong><span>{label}</span></div>)}</div><Calendar date={validDate}/></>, styles.datePanel, 'countdown')}
+            {!memories && layout !== 'olive-editorial' && datePanel}
             {wedding.story && panel(<><h2 {...titleProps}>Our love story</h2><p>{wedding.story}</p>{wedding.couple_photo && <div className={styles.storyPortrait}><SafeWeddingImage src={wedding.couple_photo} alt="Our love story" className={styles.photo} loading="lazy" /></div>}{decoration}</>, styles.story, 'bio')}
-            <div className={`${styles.shared} ${styles.details}`}><DetailsSection id="details" wedding={themedWedding}/></div>
+            <div className={`${styles.shared} ${styles.details}`}>{layout === 'villa-postcard' && <Engraving variant="villa" />}<DetailsSection id="details" wedding={themedWedding}/></div>
+            {(memories || layout === 'olive-editorial') && (wedding.couple_photo || gallery[0]) && (!wedding.is_thank_you_mode || wedding.show_photos_in_thank_you_mode !== false) && <div className={styles.interlude}><SafeWeddingImage src={wedding.couple_photo || gallery[0]} alt="" className={styles.photo} loading="lazy" /></div>}
             {!wedding.is_thank_you_mode && timeline.length > 0 && panel(<>{decoration}<h2 {...titleProps}>The wedding day</h2>{horizontalProgram && timeline.length > 1 && <div className={styles.programNavigation}><span>Explore the day</span><div><button type="button" aria-label="Scroll wedding schedule backward" onClick={() => scrollProgram(-1)}><ChevronLeft size={18} aria-hidden="true"/></button><button type="button" aria-label="Scroll wedding schedule forward" onClick={() => scrollProgram(1)}><ChevronRight size={18} aria-hidden="true"/></button></div></div>}<ol ref={timelineRef} className={styles.timeline} aria-label="Wedding schedule">{timeline.map((item, index) => { const Icon = icons[timelineIconKind(item.event, index)]; return <li key={`${index}-${item.event}`} data-step={String(index + 1).padStart(2, '0')}><span className={styles.timelineIcon}><Icon size={25} strokeWidth={1}/></span><div>{item.time && <time>{item.time}</time>}<p>{item.event}</p></div></li>; })}</ol></>, styles.program, 'timeline')}
             {!wedding.is_thank_you_mode && wedding.dress_code && panel(<>{decoration}<h2 {...titleProps}>Dress code</h2>{([{ label: 'For our guests', preference: dress.guests, variant: 'guests' }, { label: 'For our sponsors', preference: dress.sponsors, variant: 'sponsors' }, ...(dress.bridesmaids ? [{ label: 'For our bridesmaids', preference: dress.bridesmaids, variant: 'bridesmaids' }] : [])] as const).map(({ label, preference, variant }) => <div key={label} className={styles.attireGroup}><h3>{label}</h3><AttireIllustration color={preference.dressColor || preference.color} suitColor={preference.suitColor} variant={variant as 'guests' | 'sponsors' | 'bridesmaids'} className={styles.attireIllustration}/><p>{preference.attire}</p><div className={styles.swatches}>{preference.colors?.map((color, index) => <span key={`${color}-${index}`} style={{ backgroundColor: color }} title={color}/>)}</div>{preference.notes && <p>{preference.notes}</p>}</div>)}</>, styles.attire, 'attire')}
-            {showGallery && wedding.gallery_layout && wedding.gallery_layout !== 'auto' ? <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} cardStyle={wedding.card_style} galleryLayout={wedding.gallery_layout} /> : <>{showGallery && panel(<><h2 {...titleProps}>Our moments</h2><div className={styles.gallery}>{gallery.map((src, index) => <button type="button" key={`${index}-${src}`} onClick={() => setLightboxIndex(index)} aria-label={`View wedding photo ${index + 1}`} className={styles.galleryButton}><SafeWeddingImage src={src} alt={`Wedding memory ${index + 1}`} className={styles.photo} loading="lazy"/><span className={styles.galleryZoom} aria-hidden="true"><ZoomIn size={17}/></span></button>)}</div></>, styles.galleryPanel, 'gallery')}</>}
-            {wedding.teaser_video && <div className={styles.shared}><VideoSection id="video" video={wedding.teaser_video} poster={photo} template={wedding.template} motifColor={motif} templateStyle={wedding.template_style}/></div>}
+            {showGallery && wedding.gallery_layout && wedding.gallery_layout !== 'auto' ? <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} cardStyle={wedding.card_style} wedding={themedWedding} galleryLayout={wedding.gallery_layout} /> : <>{showGallery && panel(<><h2 {...titleProps}>Our moments</h2><div className={styles.gallery}>{gallery.map((src, index) => <button type="button" key={`${index}-${src}`} onClick={() => setLightboxIndex(index)} aria-label={`View wedding photo ${index + 1}`} className={styles.galleryButton}><SafeWeddingImage src={src} alt={`Wedding memory ${index + 1}`} className={styles.photo} loading="lazy"/><span className={styles.galleryZoom} aria-hidden="true"><ZoomIn size={17}/></span></button>)}</div></>, styles.galleryPanel, 'gallery')}</>}
+            {wedding.teaser_video && <div className={styles.shared}><VideoSection id="video" video={wedding.teaser_video} poster={photo} template={wedding.template} motifColor={motif} templateStyle={wedding.template_style} wedding={themedWedding}/></div>}
             <div className={`${styles.shared} ${styles.gifts}`}><GiftSection id="gift" wedding={themedWedding}/></div>
             {wedding.contact_person && panel(<><h2 {...titleProps}>Get in touch</h2><p>{wedding.contact_person}</p></>, styles.contact)}
+            {layout === 'olive-editorial' && datePanel}
             <div className={`${styles.shared} ${styles.additional}`}><SharedNewSections id="additional" wedding={themedWedding} isExpired={isExpired}/></div>
             {lightboxIndex !== null && <Lightbox images={gallery} index={lightboxIndex} onClose={() => setLightboxIndex(null)}/>}
         </article>

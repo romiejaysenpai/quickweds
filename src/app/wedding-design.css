@@ -13,13 +13,22 @@
   outline: 2px solid currentColor;
   outline-offset: 5px;
 }
-.wedding-page section[id] { scroll-margin-top: 2rem; }
+.wedding-page section[id] { scroll-margin-top: 6rem; }
 .wedding-template section:has(h1) { height: auto; min-height: 90svh; padding-block: clamp(4rem, 9vh, 7rem); }
 .wedding-template section:has(h1) h1 { overflow-wrap: anywhere; }
 .wedding-template section:has(h1) img { object-position: 50% 35%; }
 .wedding-template section:has(h1) a { position: relative; min-height: 48px; }
 .wedding-page .template-lower-sections > section::before { box-shadow: none; opacity: .2; }
-.wedding-page .template-lower-sections > section::after { display: none; }
+.wedding-page .template-lower-sections > section::after {
+  content: '';
+  display: block;
+  width: 3rem;
+  height: 1px;
+  margin: 2rem auto 0;
+  background: currentColor;
+  opacity: .16;
+  pointer-events: none;
+}
 .wedding-composed-hero {
   position: relative;
   margin-inline: auto;
@@ -62,12 +71,34 @@
   .wedding-template .template-variation-v1 > section:first-child { min-height: 90svh; }
   .wedding-composed-v2, .wedding-composed-v3 { grid-template-columns: 1fr; }
   .wedding-composed-v2 .wedding-composed-copy { order: -1; text-align: center; }
-  .wedding-composed-v2 .wedding-composed-image, .wedding-composed-v3 .wedding-composed-image { aspect-ratio: auto; max-width: 32rem; width: 100%; margin-inline: auto; border-radius: 2px; }
-  .wedding-composed-image .wedding-composed-photo { height: auto; object-fit: contain; }
+  .wedding-composed-v2 .wedding-composed-image, .wedding-composed-v3 .wedding-composed-image { aspect-ratio: 4 / 5; max-width: 28rem; width: 100%; margin-inline: auto; border-radius: 16px; }
+  .wedding-composed-image .wedding-composed-photo { height: 100%; object-fit: cover; }
   .wedding-composed-v4 .wedding-composed-names { flex-direction: column; }
   .wedding-composed-spread { grid-template-columns: 1fr 1fr; }
   .wedding-composed-spread img:first-child { grid-column: 1 / -1; aspect-ratio: 4 / 3; }
   .wedding-composed-spread img:nth-child(2) { aspect-ratio: 4 / 5; }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .wedding-composed-photo { transition: transform .7s cubic-bezier(.22, 1, .36, 1); }
+  .wedding-composed-image:hover .wedding-composed-photo { transform: scale(1.025); }
+  .wedding-template [data-wedding-card='true'] { transition: transform .35s cubic-bezier(.22, 1, .36, 1), box-shadow .35s ease; }
+  .wedding-template [data-wedding-card='true']:hover { transform: translateY(-2px); }
+}
+.qw-paper-grain {
+  background-image: url('/templates/elements/texture-paper-deckle.webp');
+  background-size: 360px 360px;
+  background-repeat: repeat;
+}
+.qw-paper-grain-overlay {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url('/templates/elements/texture-paper-deckle.webp');
+  background-size: 360px 360px;
+  background-repeat: repeat;
+  opacity: 0.22;
+  mix-blend-mode: multiply;
 }
 @media (prefers-reduced-motion: reduce) {
   .wedding-page *, .wedding-page *::before, .wedding-page *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }

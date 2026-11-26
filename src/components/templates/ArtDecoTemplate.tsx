@@ -1,6 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { getSectionTitleStyle } from '@/lib/theme-engine';
+import type { TemplateProps } from '@/types/wedding';
 import { 
     VideoSection, 
     BioSection, 
@@ -10,67 +12,115 @@ import {
     GallerySection, 
     GiftSection,
     AttireSection,
-
 } from '../wedding';
-import { SharedNewSections } from './shared';
+import {
+    formatWeddingDate,
+    getFirstName,
+    resolveTemplateCopy,
+    SharedNewSections,
+    TEMPLATE_ELEMENT_ASSETS,
+    TemplateHeroActions,
+    WeddingMonogram,
+} from './shared';
 
-export default function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
-    const formattedDate = new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-    });
+export default function ArtDecoTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+    const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
+    const titleStyle = getSectionTitleStyle(wedding);
+    const hasTitleChoice = Boolean(
+        wedding.section_title_color_style && !['default', 'motif'].includes(wedding.section_title_color_style)
+    );
+    const motifColor = wedding.motif_color || '#d4af37';
+    const copy = resolveTemplateCopy(wedding);
+    const formattedDate = formatWeddingDate(wedding.wedding_date);
+    const hasCustomMonogram = Boolean(
+        wedding.logo_initials || (wedding.logo_shape && wedding.logo_shape !== 'minimal')
+    );
 
     return (
-        <div className="bg-[#141414] text-[#d4af37] font-serif selection:bg-[#d4af37] selection:text-black pb-24 relative overflow-hidden">
-            {/* Geometric Patterns & Noise */}
-            <div className="fixed inset-0 opacity-15 pointer-events-none z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-950/40 via-transparent to-black" />
-            <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'var(--qw-deco-texture)' }} />
+        <div
+            className="font-serif selection:bg-[#d4af37] selection:text-black pb-24 relative overflow-hidden"
+            style={{
+                backgroundColor: hasBackgroundChoice ? 'var(--builder-paper)' : '#141414',
+                color: hasBackgroundChoice ? 'var(--builder-ink)' : '#d4af37',
+            }}
+        >
+            {!hasBackgroundChoice && (
+                <>
+                    <div className="fixed inset-0 opacity-15 pointer-events-none z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-950/40 via-transparent to-black" />
+                    <div className="fixed inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'var(--qw-deco-texture)' }} />
+                </>
+            )}
 
             <section className="min-h-screen py-16 sm:py-24 flex items-center justify-center px-4 sm:px-6 relative">
                 {/* 1920s Art Deco Double Border Frame */}
-                <div className="absolute inset-4 sm:inset-8 border-[3px] border-[#d4af37]/50 pointer-events-none" />
-                <div className="absolute inset-7 sm:inset-11 border border-[#d4af37]/25 pointer-events-none" />
-
-                {/* Decorative Art Deco Corner Accents */}
-                <div className="absolute top-4 left-4 sm:top-8 sm:left-8 w-8 h-8 border-t-4 border-l-4 border-[#d4af37]" />
-                <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-8 h-8 border-t-4 border-r-4 border-[#d4af37]" />
-                <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 w-8 h-8 border-b-4 border-l-4 border-[#d4af37]" />
-                <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-8 h-8 border-b-4 border-r-4 border-[#d4af37]" />
+                <div className="absolute inset-4 sm:inset-8 border-[3px] border-current/40 pointer-events-none" />
+                <div className="absolute inset-7 sm:inset-11 border border-current/25 pointer-events-none" />
 
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    initial={{ opacity: 0, scale: 0.94, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                    className="z-10 text-center bg-black/85 backdrop-blur-xl p-8 sm:p-14 md:p-20 border border-[#d4af37]/40 max-w-4xl shadow-[0_0_90px_rgba(212,175,55,0.18)]"
+                    className="z-10 text-center bg-black/85 text-[#f7e7be] backdrop-blur-xl p-8 sm:p-14 md:p-20 border border-[#d4af37]/40 max-w-4xl w-full shadow-[0_0_90px_rgba(212,175,55,0.18)]"
                 >
-                    <span className="text-xs uppercase tracking-[0.8em] font-sans font-bold opacity-70 mb-6 block text-amber-200">
-                        THE GREAT CELEBRATION
+                    {/* Bespoke Geometric Gold Crest */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={TEMPLATE_ELEMENT_ASSETS.decoCrest}
+                        alt=""
+                        aria-hidden="true"
+                        className="mx-auto mb-5 w-20 sm:w-24 opacity-90 drop-shadow-md"
+                    />
+                    {hasCustomMonogram && (
+                        <div className="mb-6 flex justify-center">
+                            <WeddingMonogram wedding={{ ...wedding, logo_color: wedding.logo_color || motifColor }} />
+                        </div>
+                    )}
+
+                    <span className="text-xs uppercase tracking-[0.65em] font-sans font-bold opacity-80 mb-6 block text-amber-200">
+                        {copy.eyebrow}
                     </span>
 
-                    <h1 className="text-4xl sm:text-6xl md:text-8xl mb-6 leading-none tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-b from-[#fceabb] to-[#f8b500]">
-                        {wedding.bride_name.split(' ')[0]}
-                        <span className="text-2xl sm:text-3xl italic normal-case block my-4 text-[#d4af37] font-serif">&amp;</span>
-                        {wedding.groom_name.split(' ')[0]}
+                    <h1
+                        className={`text-4xl sm:text-6xl md:text-8xl font-serif mb-6 leading-none tracking-widest uppercase ${hasTitleChoice ? titleStyle.className : 'text-transparent bg-clip-text bg-gradient-to-b from-[#fceabb] to-[#f8b500]'}`}
+                        style={hasTitleChoice ? titleStyle.style : undefined}
+                    >
+                        {getFirstName(wedding.bride_name, 'Bride')}
+                        <span className="text-2xl sm:text-3xl italic normal-case block my-4 font-serif" style={{ color: motifColor }}>&amp;</span>
+                        {getFirstName(wedding.groom_name, 'Groom')}
                     </h1>
 
-                    <div className="flex items-center justify-center gap-4 my-8">
-                        <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#d4af37]" />
-                        <span className="text-xs font-sans tracking-[0.4em] uppercase text-amber-300">{formattedDate} • {wedding.venue_name}</span>
-                        <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#d4af37]" />
-                    </div>
+                    {(formattedDate || wedding.venue_name) && (
+                        <div className="flex items-center justify-center gap-4 my-8">
+                            <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#d4af37]" />
+                            <span className="text-xs font-sans tracking-[0.35em] uppercase text-amber-300">
+                                {[formattedDate, wedding.venue_name].filter(Boolean).join(' • ')}
+                            </span>
+                            <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#d4af37]" />
+                        </div>
+                    )}
 
-                    <p className="text-sm sm:text-base tracking-[0.2em] font-light max-w-md mx-auto opacity-80 mb-10 leading-relaxed">
-                        {wedding.story || 'An evening of jazz, timeless elegance, and monumental romance.'}
+                    <p className="text-sm sm:text-base tracking-[0.15em] font-light max-w-md mx-auto opacity-85 mb-10 leading-relaxed">
+                        {copy.subtitle}
                     </p>
 
-                    <a
-                        href="#rsvp"
-                        aria-label="RSVP"
-                        className="px-10 py-4 bg-gradient-to-r from-[#d4af37] to-[#fceabb] text-black font-sans font-bold uppercase tracking-[0.3em] text-xs hover:brightness-110 transition-all shadow-[0_0_30px_rgba(212,175,55,0.4)] inline-flex items-center justify-center"
-                    >
-                        Request Presence
-                    </a>
+                    <div className="flex flex-wrap justify-center gap-3">
+                        <a
+                            href={copy.ctaHref}
+                            data-wedding-control="primary"
+                            aria-label={copy.ctaLabel}
+                            className="px-10 py-4 bg-gradient-to-r from-[#d4af37] to-[#fceabb] text-black font-sans font-bold uppercase tracking-[0.3em] text-xs hover:brightness-110 transition-all shadow-[0_0_30px_rgba(212,175,55,0.4)] inline-flex items-center justify-center"
+                        >
+                            {copy.ctaLabel}
+                        </a>
+                        <a
+                            href={copy.detailsHref}
+                            data-wedding-control="secondary"
+                            className="px-7 py-4 border border-[#d4af37]/40 text-amber-100 font-sans font-semibold uppercase tracking-[0.25em] text-xs hover:bg-white/10 transition-colors inline-flex items-center justify-center"
+                        >
+                            {copy.detailsLabel}
+                        </a>
+                    </div>
+                    <TemplateHeroActions wedding={wedding} variant="noir" motifColor={motifColor} className="justify-center mt-5 text-amber-100" />
                 </motion.div>
             </section>
 
@@ -92,7 +142,7 @@ export default function ArtDecoTemplate({ wedding, gallery, isExpired }: any) {
                 />
             )}
 
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
             <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
             <AttireSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} invert />

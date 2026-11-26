@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { X, Star, Heart, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { submitAppReview } from '@/app/actions/reviews';
 import type { AppReview } from '@/types/review';
 import { ReviewCard } from './ReviewCard';
@@ -86,16 +85,18 @@ export function ReviewModal({ isOpen, onClose, onReviewSubmitted }: ReviewModalP
       }
 
       setSubmitted(true);
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#D16C78', '#F3B5C0', '#F08080', '#F9E5E8'],
+      void import('canvas-confetti')
+        .then(({ default: confetti }) => {
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#D16C78', '#F3B5C0', '#F08080', '#F9E5E8'],
+          });
+        })
+        .catch(() => {
+          // Safe fallback
         });
-      } catch {
-        // Safe fallback
-      }
 
       if (onReviewSubmitted) {
         onReviewSubmitted(res.review);

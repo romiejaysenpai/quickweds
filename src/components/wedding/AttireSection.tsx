@@ -2,15 +2,58 @@
 
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shirt, Sparkles } from 'lucide-react';
 import type { Wedding } from '@/types/wedding';
-import { useSectionContext } from '@/context/SectionContext';
-import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { useSectionActions } from '@/context/SectionContext';
+import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import { SectionTemplateElement } from './SectionTemplateElement';
 import AttireIllustration from '@/components/AttireIllustration';
-import { parseDressCodeValue } from '@/lib/dress-code';
+import { describeWeddingColor, parseDressCodeValue } from '@/lib/dress-code';
+
+function ColorSwatchStrip({
+    colors,
+    isDark,
+    size = 'md',
+}: {
+    colors: string[];
+    isDark: boolean;
+    size?: 'sm' | 'md';
+}) {
+    const uniqueColors = Array.from(new Set(colors.filter(Boolean)));
+    if (uniqueColors.length === 0) return null;
+
+    const shadeNames = Array.from(new Set(uniqueColors.map((hex) => describeWeddingColor(hex))));
+    const swatchSize = size === 'sm' ? 'h-7 w-7' : 'h-11 w-11 sm:h-12 sm:w-12';
+
+    return (
+        <div className="flex flex-col items-center gap-3">
+            <div className="flex items-center justify-center -space-x-2">
+                {uniqueColors.map((swatch, idx) => {
+                    const shadeName = describeWeddingColor(swatch);
+                    return (
+                        <span
+                            key={`${swatch}-${idx}`}
+                            title={shadeName}
+                            aria-label={`Wedding color: ${shadeName}`}
+                            className={`${swatchSize} rounded-full ring-2 transition-transform duration-300 hover:z-10 hover:scale-110 ${
+                                isDark ? 'ring-[#151315] shadow-[0_8px_22px_rgba(0,0,0,0.45)]' : 'ring-white shadow-[0_8px_22px_rgba(58,42,45,0.14)]'
+                            }`}
+                            style={{
+                                backgroundColor: swatch,
+                                backgroundImage: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.28), transparent 62%)',
+                            }}
+                        />
+                    );
+                })}
+            </div>
+            <p className={`text-xs font-serif italic tracking-wide ${isDark ? 'text-white/70' : 'text-[#4A4444]/72'}`}>
+                {shadeNames.join(' · ')}
+            </p>
+        </div>
+    );
+}
 
 export default function AttireSection({ wedding, id = 'attire', embedded = false }: { wedding: Wedding; id?: string; embedded?: boolean }) {
-    const { registerSection, unregisterSection } = useSectionContext();
+    const { registerSection, unregisterSection } = useSectionActions();
 
     useEffect(() => {
         registerSection(id, 'Attire');
@@ -20,6 +63,7 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
     const dressCodes = parseDressCodeValue(wedding.dress_code, wedding.motif_color);
     const { sponsors, guests, bridesmaids } = dressCodes;
     const visual = getTemplateVisualProfile(wedding.template || 'classic', wedding.motif_color || guests.color, false, wedding.card_style);
+    const titleStyle = getSectionTitleStyle(wedding, visual.headingClass);
     const isDark = visual.isDark;
 
     // Collect all swatches across sponsors, guests, and bridesmaids
@@ -29,176 +73,150 @@ export default function AttireSection({ wedding, id = 'attire', embedded = false
         ...(bridesmaids ? (bridesmaids.colors || [bridesmaids.color]) : []),
     ])).filter(Boolean);
 
+    const cardGroups = [
+        {
+            key: 'sponsors',
+            eyebrow: 'Principal Sponsors',
+            variant: 'sponsors' as const,
+            data: sponsors,
+            fallbackNote: 'We invite our principal sponsors to wear elegant formal attire in shades that complement our palette.',
+            delay: 0,
+        },
+        {
+            key: 'guests',
+            eyebrow: 'For Guests',
+            variant: 'guests' as const,
+            data: guests,
+            fallbackNote: 'We warmly invite guests to dress in our celebration attire and complement our wedding colors.',
+            delay: 0.08,
+        },
+        ...(bridesmaids
+            ? [
+                  {
+                      key: 'bridesmaids',
+                      eyebrow: 'Bridesmaids',
+                      variant: 'bridesmaids' as const,
+                      data: bridesmaids,
+                      fallbackNote: '',
+                      delay: 0.16,
+                  },
+              ]
+            : []),
+    ];
+
     if (embedded) {
         return (
-            <motion.div id={id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} className={`h-full overflow-hidden p-5 sm:p-7 ${visual.cardClass}`}>
-                <div className="mb-6 flex items-start gap-4">
-                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${isDark ? 'border-white/15 bg-white/10' : 'border-primary/15 bg-white'} shadow-sm`}>
-                        <Shirt className="h-6 w-6 stroke-[1.6] text-primary" />
-                    </div>
-                    <div>
-                        <p className={`mb-2 text-xs font-black uppercase ${visual.eyebrowClass}`}>Dress code</p>
-                        <h3 className={`font-serif text-3xl leading-tight sm:text-4xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>Wedding Attire</h3>
-                        <p className={`mt-3 text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>We kindly invite you to celebrate with us by dressing in attire that reflects our wedding colors.</p>
-                    </div>
+            <motion.div
+                id={id}
+                data-wedding-card="true"
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                className={`h-full overflow-hidden p-5 sm:p-7 ${visual.cardClass}`}
+            >
+                <div className="mb-6 text-center">
+                    <p className={`mb-2 text-[11px] font-medium uppercase ${visual.eyebrowClass}`}>Dress Code</p>
+                    <h3 className={`font-serif text-3xl leading-tight sm:text-4xl ${isDark ? 'text-white/95' : 'text-[#4A4444]'}`}>Wedding Attire</h3>
+                    <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/65' : 'text-[#4A4444]/68'}`}>
+                        We kindly invite you to celebrate with us in attire that reflects our wedding palette.
+                    </p>
                 </div>
 
-                <div className="mb-7 flex flex-wrap gap-3">
-                    {allSwatches.slice(0, 8).map((swatch, index) => (
-                        <div key={`${swatch}-${index}`} className="flex flex-col items-center gap-1">
-                            <span className="h-9 w-9 rounded-full border-[3px] border-white shadow-md transition-transform hover:scale-110" style={{ backgroundColor: swatch }} aria-label={`Wedding color ${swatch}`} />
-                            <span className="font-mono text-[10px] uppercase text-text-secondary">{swatch}</span>
-                        </div>
-                    ))}
+                <div className="mb-7">
+                    <ColorSwatchStrip colors={allSwatches.slice(0, 8)} isDark={isDark} size="sm" />
                 </div>
 
                 <div className="grid gap-4">
-                    <div className={`border-t px-1 py-5 ${isDark ? 'border-white/15' : 'border-black/10'}`}>
-                        <AttireIllustration color={sponsors.dressColor || sponsors.color} suitColor={sponsors.suitColor} variant="sponsors" className="max-w-sm" />
-                        <p className="mt-2 text-xs font-black uppercase tracking-[0.24em] text-primary">Principal Sponsors</p>
-                        <h4 className={`mt-2 font-serif text-xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>{sponsors.attire}</h4>
-                        {sponsors.notes && <p className={`mt-1 text-xs italic ${isDark ? 'text-white/50' : 'text-[#4A4444]/60'}`}>{sponsors.notes}</p>}
-                        {sponsors.colors && sponsors.colors.length > 1 && (
-                            <div className="mt-3 flex items-center gap-2">
-                                {sponsors.colors.map((c, i) => (
-                                    <span key={i} className="h-5 w-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: c }} title={c} />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    <div className={`border-t px-1 py-5 ${isDark ? 'border-white/15' : 'border-black/10'}`}>
-                        <AttireIllustration color={guests.dressColor || guests.color} suitColor={guests.suitColor} variant="guests" className="max-w-sm" />
-                        <p className="mt-2 text-xs font-black uppercase tracking-[0.24em] text-primary">For Guests</p>
-                        <h4 className={`mt-2 font-serif text-xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>{guests.attire}</h4>
-                        {guests.notes && <p className={`mt-1 text-xs italic ${isDark ? 'text-white/50' : 'text-[#4A4444]/60'}`}>{guests.notes}</p>}
-                        {guests.colors && guests.colors.length > 1 && (
-                            <div className="mt-3 flex items-center gap-2">
-                                {guests.colors.map((c, i) => (
-                                    <span key={i} className="h-5 w-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: c }} title={c} />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    {bridesmaids && (
-                        <div className={`border-t px-1 py-5 ${isDark ? 'border-white/15' : 'border-black/10'}`}>
-                            <AttireIllustration color={bridesmaids.dressColor || bridesmaids.color} variant="bridesmaids" className="max-w-sm mb-2" />
-                            <div className="flex items-center gap-2">
-                                <Sparkles className="h-4 w-4 text-primary" />
-                                <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">Bridesmaids Attire</p>
-                            </div>
-                            <h4 className={`mt-2 font-serif text-xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>{bridesmaids.attire}</h4>
-                            {bridesmaids.notes && <p className={`mt-1 text-xs italic ${isDark ? 'text-white/50' : 'text-[#4A4444]/60'}`}>{bridesmaids.notes}</p>}
-                            <div className="mt-3 flex items-center gap-2">
-                                {(bridesmaids.colors || [bridesmaids.color]).map((c, i) => (
-                                    <div key={i} className="flex items-center gap-1.5 rounded-full border border-border/60 bg-white/50 px-2 py-0.5 shadow-sm">
-                                        <span className="h-4 w-4 rounded-full border border-white" style={{ backgroundColor: c }} />
-                                        <span className="font-mono text-[10px] uppercase text-text-secondary">{c}</span>
-                                    </div>
-                                ))}
-                            </div>
+                    {cardGroups.map((group) => (
+                        <div key={group.key} className={`border-t px-1 py-5 text-center ${isDark ? 'border-white/15' : 'border-black/10'}`}>
+                            <AttireIllustration
+                                color={group.data.dressColor || group.data.color}
+                                suitColor={group.data.suitColor}
+                                variant={group.variant}
+                                className="mx-auto max-w-sm"
+                            />
+                            <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.24em] text-primary">{group.eyebrow}</p>
+                            <h4 className={`mt-1.5 font-serif text-xl ${isDark ? 'text-white/95' : 'text-[#4A4444]'}`}>{group.data.attire}</h4>
+                            {group.data.notes && <p className={`mt-1.5 text-xs italic ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>{group.data.notes}</p>}
+                            {group.data.colors && group.data.colors.length > 0 && (
+                                <div className="mt-3">
+                                    <ColorSwatchStrip colors={group.data.colors} isDark={isDark} size="sm" />
+                                </div>
+                            )}
                         </div>
-                    )}
+                    ))}
                 </div>
             </motion.div>
         );
     }
 
     return (
-        <section data-wedding-section="AttireSection" id={id} className={`relative z-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 ${visual.sectionClass}`} style={visual.sectionStyle}>
-            <div className="mx-auto max-w-6xl">
-                <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.25 }} className="mx-auto mb-12 max-w-3xl text-center">
-                    <div className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border ${isDark ? 'border-white/15 bg-white/10' : 'border-primary/15 bg-white/75'} shadow-sm`}>
-                        <Shirt className="h-7 w-7 stroke-[1.6] text-primary" />
-                    </div>
-                    <div className="mb-3 flex items-center justify-center">
-                        <span className={visual.badgeStyleClass || `text-xs font-black uppercase ${visual.eyebrowClass}`}>
-                            {visual.badgePrefix ? `${visual.badgePrefix}ATTIRE` : 'DRESS CODE'}
+        <section
+            data-wedding-section="AttireSection"
+            id={id}
+            className={`relative z-10 overflow-hidden px-4 py-16 sm:px-6 sm:py-24 ${visual.sectionClass}`}
+            style={visual.sectionStyle}
+        >
+            <SectionTemplateElement wedding={wedding} isDark={isDark} placement="corner-top-right" />
+            <div className="relative z-10 mx-auto max-w-6xl">
+                <motion.div
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.25 }}
+                    className="mx-auto mb-10 max-w-3xl text-center sm:mb-12"
+                >
+                    <div className="mb-4 flex items-center justify-center">
+                        <span data-wedding-badge="true" className={visual.badgeStyleClass || `text-[11px] font-medium uppercase ${visual.eyebrowClass}`}>
+                            {visual.badgePrefix ? `${visual.badgePrefix}Attire` : 'Dress Code'}
                         </span>
                     </div>
-                    <h2 className={`text-4xl sm:text-5xl md:text-6xl ${visual.headingClass}`}>Wedding Attire</h2>
-                    <p className={`mx-auto mt-5 max-w-2xl text-sm leading-7 sm:text-base ${isDark ? 'text-white/65' : 'text-[#4A4444]/70'}`}>
-                        We kindly invite you to celebrate with us by dressing in attire that reflects our wedding colors.
+                    <h2 className={`text-4xl sm:text-5xl md:text-6xl ${titleStyle.className}`} style={titleStyle.style}>
+                        Wedding Attire
+                    </h2>
+                    <p className={`mx-auto mt-5 max-w-xl text-sm leading-7 sm:text-base ${isDark ? 'text-white/70' : 'text-[#4A4444]/72'}`}>
+                        We kindly invite you to celebrate with us in attire inspired by our wedding palette.
                     </p>
+                    <SectionTemplateElement wedding={wedding} isDark={isDark} placement="divider" className="mt-6" />
                 </motion.div>
 
-                {/* Unified color palette strip */}
-                <div className="mb-12 flex flex-wrap items-center justify-center gap-4">
-                    {allSwatches.map((swatch, index) => (
-                        <div key={`${swatch}-${index}`} className="flex flex-col items-center gap-2">
-                            <span
-                                className="h-12 w-12 rounded-full border-4 border-white shadow-lg transition-transform duration-200 hover:scale-110 sm:h-14 sm:w-14"
-                                style={{ backgroundColor: swatch }}
-                                aria-label={`Wedding color ${swatch}`}
-                            />
-                            <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-primary">{swatch}</span>
-                        </div>
-                    ))}
+                {/* Unified editorial color palette */}
+                <div className="mb-12">
+                    <ColorSwatchStrip colors={allSwatches} isDark={isDark} />
                 </div>
 
                 <div className={`grid gap-6 ${bridesmaids ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
-                    {/* Principal Sponsors Card */}
-                    <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className={`rounded-3xl border border-border/80 bg-white/60 p-6 text-center shadow-sm backdrop-blur-sm sm:p-8 ${isDark ? 'border-white/15 bg-white/10' : ''}`}>
-                        <AttireIllustration color={sponsors.dressColor || sponsors.color} suitColor={sponsors.suitColor} variant="sponsors" className="max-w-md" />
-                        <p className="mt-4 text-xs font-black uppercase tracking-[0.28em] text-primary">Principal Sponsors</p>
-                        <h3 className={`mt-3 font-serif text-2xl sm:text-3xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>{sponsors.attire}</h3>
-                        {sponsors.notes ? (
-                            <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>{sponsors.notes}</p>
-                        ) : (
-                            <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>
-                                We invite our principal sponsors to wear elegant formal attire in shades that complement the wedding palette.
+                    {cardGroups.map((group) => (
+                        <motion.div
+                            key={group.key}
+                            data-wedding-card="true"
+                            initial={{ opacity: 0, y: 18 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: group.delay }}
+                            className={`flex flex-col items-center p-6 text-center sm:p-8 md:p-10 ${visual.cardClass}`}
+                        >
+                            <AttireIllustration
+                                color={group.data.dressColor || group.data.color}
+                                suitColor={group.data.suitColor}
+                                variant={group.variant}
+                                className="max-w-md"
+                            />
+                            <p className="mt-5 text-[11px] font-medium uppercase tracking-[0.26em] text-primary">
+                                {group.eyebrow}
                             </p>
-                        )}
-                        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                            {(sponsors.colors || [sponsors.color]).map((swatch, idx) => (
-                                <div key={idx} className="flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-2.5 py-1 shadow-xs">
-                                    <span className="h-4 w-4 rounded-full border border-white" style={{ backgroundColor: swatch }} />
-                                    <span className="font-mono text-[10px] font-semibold uppercase text-text-secondary">{swatch}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </motion.div>
-
-                    {/* Wedding Guests Card */}
-                    <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08 }} className={`rounded-3xl border border-border/80 bg-white/60 p-6 text-center shadow-sm backdrop-blur-sm sm:p-8 ${isDark ? 'border-white/15 bg-white/10' : ''}`}>
-                        <AttireIllustration color={guests.dressColor || guests.color} suitColor={guests.suitColor} variant="guests" className="max-w-md" />
-                        <p className="mt-4 text-xs font-black uppercase tracking-[0.28em] text-primary">For Guests</p>
-                        <h3 className={`mt-3 font-serif text-2xl sm:text-3xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>{guests.attire}</h3>
-                        {guests.notes ? (
-                            <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>{guests.notes}</p>
-                        ) : (
-                            <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>
-                                We warmly invite guests to follow the selected dress code and complement our wedding colors.
-                            </p>
-                        )}
-                        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                            {(guests.colors || [guests.color]).map((swatch, idx) => (
-                                <div key={idx} className="flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-2.5 py-1 shadow-xs">
-                                    <span className="h-4 w-4 rounded-full border border-white" style={{ backgroundColor: swatch }} />
-                                    <span className="font-mono text-[10px] font-semibold uppercase text-text-secondary">{swatch}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </motion.div>
-
-                    {/* Bridesmaids Card (Optional) */}
-                    {bridesmaids && (
-                        <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.16 }} className={`rounded-3xl border border-border/80 bg-white/60 p-6 text-center shadow-sm backdrop-blur-sm sm:p-8 ${isDark ? 'border-white/15 bg-white/10' : ''}`}>
-                            <AttireIllustration color={bridesmaids.dressColor || bridesmaids.color} variant="bridesmaids" className="max-w-md" />
-                            <p className="mt-4 text-xs font-black uppercase tracking-[0.28em] text-primary">Bridesmaids Attire</p>
-                            <h3 className={`mt-3 font-serif text-2xl sm:text-3xl ${isDark ? 'text-white/90' : 'text-[#4A4444]'}`}>{bridesmaids.attire}</h3>
-                            {bridesmaids.notes && (
-                                <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/60' : 'text-[#4A4444]/65'}`}>{bridesmaids.notes}</p>
+                            <h3 className={`mt-2.5 font-serif text-2xl sm:text-3xl ${isDark ? 'text-white/95' : 'text-[#4A4444]'}`}>
+                                {group.data.attire}
+                            </h3>
+                            {(group.data.notes || group.fallbackNote) && (
+                                <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDark ? 'text-white/68' : 'text-[#4A4444]/70'}`}>
+                                    {group.data.notes || group.fallbackNote}
+                                </p>
                             )}
-                            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                                {(bridesmaids.colors || [bridesmaids.color]).map((swatch, idx) => (
-                                    <div key={idx} className="flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-2.5 py-1 shadow-xs">
-                                        <span className="h-4 w-4 rounded-full border border-white" style={{ backgroundColor: swatch }} />
-                                        <span className="font-mono text-[10px] font-semibold uppercase text-text-secondary">{swatch}</span>
-                                    </div>
-                                ))}
+                            <div className="mt-6 pt-4 border-t border-current/10 w-full flex justify-center">
+                                <ColorSwatchStrip colors={group.data.colors || [group.data.color]} isDark={isDark} size="sm" />
                             </div>
                         </motion.div>
-                    )}
+                    ))}
                 </div>
             </div>
         </section>

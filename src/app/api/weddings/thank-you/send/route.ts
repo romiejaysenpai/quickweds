@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+
+export const maxDuration = 60;
 import { sendEmail } from '@/lib/email';
 import { getThankYouNoteHtml } from '@/lib/email-templates';
 import {
@@ -135,7 +137,7 @@ export async function POST(req: NextRequest) {
                 emailErrors.push(`${guest.guest_email}: ${result.error || 'Email failed'}`);
             }
 
-            await sleep(250);
+            await sleep(100);
         }
 
         await logPlannerEmailEvent(db, {

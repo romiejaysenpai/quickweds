@@ -273,7 +273,12 @@ const ATTIRE_COLOR_OPTIONS = [
 ];
 
 const ACCENT_STYLES = [
-    { id: 'none', name: 'None', desc: 'Clean layout' },
+    { id: 'none', name: 'Template original', desc: 'Keep the original section artwork' },
+    { id: 'clean', name: 'Quiet luxury', desc: 'Remove shared section ornaments' },
+    { id: 'olive', name: 'Olive branch', desc: 'Fine botanical linework' },
+    { id: 'pearls', name: 'Pearl oval', desc: 'Delicate heirloom framing' },
+    { id: 'coastal', name: 'Coastal shell', desc: 'Airy seaside linework' },
+    { id: 'deco', name: 'Deco jewel', desc: 'Architectural geometric detail' },
     { id: 'eucalyptus', name: 'Eucalyptus', desc: 'Soft botanical leaves' },
     { id: 'pampas', name: 'Pampas', desc: 'Boho grass lines' },
     { id: 'ribbon', name: 'Ribbon', desc: 'Silk movement' },
@@ -547,6 +552,9 @@ export default function BuilderForm() {
     const userId = user?.id || null;
     const [currentStep, setCurrentStep] = useState(0);
     const [loadedEditId, setLoadedEditId] = useState<string | null>(null);
+    const [editLoadError, setEditLoadError] = useState<string | null>(null);
+    const [editLoadAttempt, setEditLoadAttempt] = useState(0);
+    const appliedTemplateRef = useRef<string | null>(null);
     const weddingLoadRef = useRef<{ id: string; requestId: number } | null>(null);
     const weddingLoadRequestIdRef = useRef(0);
 
@@ -597,6 +605,8 @@ export default function BuilderForm() {
 
     useEffect(() => {
         if (editId || !requestedTemplate || !TEMPLATES.some((template) => template.id === requestedTemplate)) return;
+        if (appliedTemplateRef.current === requestedTemplate) return;
+        appliedTemplateRef.current = requestedTemplate;
 
         setFormData((previous: any) => ({
             ...previous,
@@ -798,9 +808,12 @@ export default function BuilderForm() {
     }, [setFormData]);
 
     useEffect(() => {
-        if (user || hasStoredSupabaseSession()) return;
-        window.location.replace('/login?next=%2Fbuilder');
-    }, [user]);
+        if (authLoading || user || hasStoredSupabaseSession()) return;
+        const currentTarget = typeof window !== 'undefined'
+            ? `${window.location.pathname}${window.location.search}`
+            : '/builder';
+        window.location.replace(`/login?next=${encodeURIComponent(currentTarget)}`);
+    }, [authLoading, user]);
 
     const loadAccountLimitState = useCallback(async () => {
         if (!user) {
@@ -839,7 +852,10 @@ export default function BuilderForm() {
 
     useEffect(() => {
         if (!authLoading && !user) {
-            router.replace('/login?next=%2Fbuilder');
+            const currentTarget = typeof window !== 'undefined'
+                ? `${window.location.pathname}${window.location.search}`
+                : '/builder';
+            router.replace(`/login?next=${encodeURIComponent(currentTarget)}`);
         }
 
         setIsPremium(true);
@@ -863,19 +879,23 @@ export default function BuilderForm() {
         if (userId && editId && loadedEditId !== editId && weddingLoadRef.current?.id !== editId) {
             const requestId = ++weddingLoadRequestIdRef.current;
             weddingLoadRef.current = { id: editId, requestId };
+            setEditLoadError(null);
 
             const fetchWedding = async () => {
                 try {
                     const { data: sessionData } = await getCachedSession();
                     const token = sessionData.session?.access_token;
-                    if (!token) throw new Error('No active session while loading wedding');
+                    if (!token) throw new Error('Your session expired. Please sign in again to edit this wedding.');
 
                     const response = await fetch(`/api/planner/load?weddingId=${encodeURIComponent(editId)}`, {
                         headers: {
                             Authorization: `Bearer ${token}`,
                         },
                     });
-                    if (!response.ok) throw new Error(`Wedding load failed with status ${response.status}`);
+                    if (!response.ok) {
+                        const errBody = await response.json().catch(() => ({}));
+                        throw new Error(errBody?.error || `Could not load this wedding (status ${response.status}).`);
+                    }
 
                     const result = await response.json().catch(() => ({}));
                     const data = result.wedding;
@@ -885,20 +905,24 @@ export default function BuilderForm() {
                     // cannot launch another load that overwrites unsaved builder edits.
                     if (weddingLoadRef.current?.requestId !== requestId) return;
 
-                    if (data && (result.accessRole === 'owner' || result.accessRole === 'partner')) {
-                        // Builder features are included on the free plan. Paid status now unlocks Planner Pro.
-                        setIsPremium(true);
-                        if (result.accountProfile) {
-                            setAccountIsPro(hasAccountPro(result.accountProfile));
-                        }
-                        if (data.is_premium || data.payment_status === 'paid') {
-                            setWeddingIsPro(true);
-                        }
-                        setWeddingOwnerId(data.user_id || userId);
-                        setExistingPublicSlug(typeof data.public_slug === 'string' ? data.public_slug : '');
-                        const dressCodeSettings = parseDressCodeValue(data.dress_code, data.motif_color);
+                    if (!data || (result.accessRole !== 'owner' && result.accessRole !== 'partner')) {
+                        setEditLoadError('You do not have permission to edit this wedding, or it could not be found.');
+                        return;
+                    }
 
-                        initializeFormData({
+                    // Builder features are included on the free plan. Paid status now unlocks Planner Pro.
+                    setIsPremium(true);
+                    if (result.accountProfile) {
+                        setAccountIsPro(hasAccountPro(result.accountProfile));
+                    }
+                    if (data.is_premium || data.payment_status === 'paid') {
+                        setWeddingIsPro(true);
+                    }
+                    setWeddingOwnerId(data.user_id || userId);
+                    setExistingPublicSlug(typeof data.public_slug === 'string' ? data.public_slug : '');
+                    const dressCodeSettings = parseDressCodeValue(data.dress_code, data.motif_color);
+
+                    initializeFormData({
                         designCustomization: { ...PRESERVED_DESIGN },
                         brideName: data.bride_name || '',
                         groomName: data.groom_name || '',
@@ -967,35 +991,34 @@ export default function BuilderForm() {
                         showGuestbookInThankYouMode: data.show_guestbook_in_thank_you_mode !== false,
                         photoRecapStyle: (data.photo_recap_style === 'grid' ? 'grid' : 'polaroid') as 'polaroid' | 'grid',
                         accentStyle: data.accent_style || 'none',
-                        });
-                        let inviteImages: string[] = [];
-                        try {
-                            if (data.invitation_image && data.invitation_image.startsWith('[')) {
-                                inviteImages = JSON.parse(data.invitation_image);
-                            } else if (data.invitation_image) {
-                                inviteImages = [data.invitation_image];
-                            }
-                        } catch {
-                            if (data.invitation_image) inviteImages = [data.invitation_image];
+                    });
+                    let inviteImages: string[] = [];
+                    try {
+                        if (data.invitation_image && data.invitation_image.startsWith('[')) {
+                            inviteImages = JSON.parse(data.invitation_image);
+                        } else if (data.invitation_image) {
+                            inviteImages = [data.invitation_image];
                         }
-
-                        setPreviews({
-                            heroImage: data.hero_image || '',
-                            couplePhoto: data.couple_photo || '',
-                            teaserVideo: (data as any).teaser_video || '',
-                            backgroundMusic: (data as any).background_music_url || '',
-                            giftQr: data.gift_qr_image || '',
-                            invitationImages: inviteImages,
-                            galleryImages: readArrayField(data.gallery_images) as string[],
-                            receptionVenuePhotos: readArrayField(data.reception_venue_photos) as string[],
-                        });
+                    } catch {
+                        if (data.invitation_image) inviteImages = [data.invitation_image];
                     }
+
+                    setPreviews({
+                        heroImage: data.hero_image || '',
+                        couplePhoto: data.couple_photo || '',
+                        teaserVideo: (data as any).teaser_video || '',
+                        backgroundMusic: (data as any).background_music_url || '',
+                        giftQr: data.gift_qr_image || '',
+                        invitationImages: inviteImages,
+                        galleryImages: readArrayField(data.gallery_images) as string[],
+                        receptionVenuePhotos: readArrayField(data.reception_venue_photos) as string[],
+                    });
 
                     setLoadedEditId(editId);
                 } catch (error) {
                     console.error('[builder] Failed to load wedding for editing', { editId, error });
                     if (weddingLoadRef.current?.requestId === requestId) {
-                        setLoadedEditId(editId);
+                        setEditLoadError(error instanceof Error ? error.message : 'Unable to load your saved wedding right now.');
                     }
                 } finally {
                     if (weddingLoadRef.current?.requestId === requestId) {
@@ -1005,7 +1028,7 @@ export default function BuilderForm() {
             };
             void fetchWedding();
         }
-    }, [userId, authLoading, router, editId, loadedEditId, initializeFormData]);
+    }, [userId, authLoading, router, editId, loadedEditId, editLoadAttempt, initializeFormData]);
 
     useEffect(() => {
         if (!user) {
@@ -1014,17 +1037,27 @@ export default function BuilderForm() {
             return;
         }
 
-        void loadAccountLimitState();
+        void loadAccountLimitState().catch((err) => {
+            console.warn('[builder] Failed to load account limits:', err);
+        });
     }, [user, loadAccountLimitState]);
 
     useEffect(() => {
+        let active = true;
         const loadPresets = async () => {
             if (!user) return;
-            const presets = await listTemplatePresets(user.id);
-            setSavedPresets(presets);
+            try {
+                const presets = await listTemplatePresets(user.id);
+                if (active) setSavedPresets(presets);
+            } catch (err) {
+                console.warn('[builder] Failed to load saved presets:', err);
+            }
         };
 
         void loadPresets();
+        return () => {
+            active = false;
+        };
     }, [user]);
 
     const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
@@ -1311,69 +1344,59 @@ export default function BuilderForm() {
 
     const removeFile = (field: string, index?: number) => {
         if (field === 'galleryImages' && index !== undefined) {
-            setPreviews(prev => {
-                const targetPreview = prev.galleryImages[index];
-                releaseLocalPreview(targetPreview);
+            const targetPreview = previews.galleryImages[index];
+            releaseLocalPreview(targetPreview);
 
-                if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
-                    const localBlobsBefore = prev.galleryImages
-                        .slice(0, index)
-                        .filter((url) => !isPersistedMediaUrl(url)).length;
-                    setMediaFiles(mPrev => ({
-                        ...mPrev,
-                        galleryImages: mPrev.galleryImages.filter((_, i) => i !== localBlobsBefore),
-                    }));
-                }
+            if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
+                const localBlobsBefore = previews.galleryImages
+                    .slice(0, index)
+                    .filter((url) => !isPersistedMediaUrl(url)).length;
+                setMediaFiles(mPrev => ({
+                    ...mPrev,
+                    galleryImages: mPrev.galleryImages.filter((_, i) => i !== localBlobsBefore),
+                }));
+            }
 
-                return { ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) };
-            });
+            setPreviews(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }));
         } else if (field === 'invitationImages' && index !== undefined) {
-            setPreviews(prev => {
-                const targetPreview = prev.invitationImages[index];
-                releaseLocalPreview(targetPreview);
+            const targetPreview = previews.invitationImages[index];
+            releaseLocalPreview(targetPreview);
 
-                if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
-                    const localBlobsBefore = prev.invitationImages
-                        .slice(0, index)
-                        .filter((url) => !isPersistedMediaUrl(url)).length;
-                    setMediaFiles(mPrev => ({
-                        ...mPrev,
-                        invitationImages: mPrev.invitationImages.filter((_, i) => i !== localBlobsBefore),
-                    }));
-                }
+            if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
+                const localBlobsBefore = previews.invitationImages
+                    .slice(0, index)
+                    .filter((url) => !isPersistedMediaUrl(url)).length;
+                setMediaFiles(mPrev => ({
+                    ...mPrev,
+                    invitationImages: mPrev.invitationImages.filter((_, i) => i !== localBlobsBefore),
+                }));
+            }
 
-                return { ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) };
-            });
+            setPreviews(prev => ({ ...prev, invitationImages: prev.invitationImages.filter((_, i) => i !== index) }));
         } else if (field === 'receptionVenuePhotos' && index !== undefined) {
-            setPreviews(prev => {
-                const targetPreview = prev.receptionVenuePhotos[index];
-                releaseLocalPreview(targetPreview);
+            const targetPreview = previews.receptionVenuePhotos[index];
+            releaseLocalPreview(targetPreview);
 
-                if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
-                    const localBlobsBefore = prev.receptionVenuePhotos
-                        .slice(0, index)
-                        .filter((url) => !isPersistedMediaUrl(url)).length;
-                    setMediaFiles(mPrev => ({
-                        ...mPrev,
-                        receptionVenuePhotos: mPrev.receptionVenuePhotos.filter((_, i) => i !== localBlobsBefore),
-                    }));
-                }
+            if (targetPreview && !isPersistedMediaUrl(targetPreview)) {
+                const localBlobsBefore = previews.receptionVenuePhotos
+                    .slice(0, index)
+                    .filter((url) => !isPersistedMediaUrl(url)).length;
+                setMediaFiles(mPrev => ({
+                    ...mPrev,
+                    receptionVenuePhotos: mPrev.receptionVenuePhotos.filter((_, i) => i !== localBlobsBefore),
+                }));
+            }
 
-                return { ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) };
-            });
+            setPreviews(prev => ({ ...prev, receptionVenuePhotos: prev.receptionVenuePhotos.filter((_, i) => i !== index) }));
         } else if (field === 'backgroundMusic') {
+            releaseLocalPreview(previews.backgroundMusic);
             setMediaFiles(prev => ({ ...prev, backgroundMusic: null }));
-            setPreviews(prev => {
-                releaseLocalPreview(prev.backgroundMusic);
-                return { ...prev, backgroundMusic: '' };
-            });
+            setPreviews(prev => ({ ...prev, backgroundMusic: '' }));
             setFormData((prev: any) => ({ ...prev, backgroundMusicEnabled: false }));
         } else {
+            releaseLocalPreview((previews as any)[field]);
             setMediaFiles(prev => ({ ...prev, [field]: null }));
-            setPreviews((prev: any) => {
-                releaseLocalPreview(prev[field]);
-                return { ...prev, [field]: '' };
-            });
+            setPreviews((prev: any) => ({ ...prev, [field]: '' }));
         }
     };
 
@@ -2493,17 +2516,18 @@ export default function BuilderForm() {
                                 <Sparkles className="w-4 h-4" />
                                 <h3 className="text-sm font-black uppercase tracking-widest text-text-secondary">Decorative Accents</h3>
                             </div>
-                            <p className="text-xs text-text-secondary/60 ml-6 -mt-2 mb-4">Add elegant vector illustrations that automatically tuck into the edges on phone screens.</p>
+                            <p className="text-xs text-text-secondary/60 ml-6 -mt-2 mb-4">Choose one signature motif for shared section crests, dividers and page accents. Each follows your motif color. Original artwork built into a template stays part of its composition.</p>
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                                 {ACCENT_STYLES.map((style) => (
                                     <button
                                         key={style.id}
                                         type="button"
+                                        aria-pressed={formData.accentStyle === style.id}
                                         onClick={() => setFormData((prev: any) => ({ ...prev, accentStyle: style.id }))}
                                         className={`group rounded-2xl border-2 p-3 text-left transition-all ${formData.accentStyle === style.id ? 'scale-[1.02] border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10' : 'border-border bg-neutral hover:border-primary/50 hover:bg-white text-text-secondary'}`}
                                     >
                                         <div className="relative mb-3 h-16 overflow-hidden rounded-xl border border-white/70 bg-white shadow-inner">
-                                            {style.id === 'none' ? (
+                                            {['none', 'clean'].includes(style.id) ? (
                                                 <div className="flex h-full items-center justify-center">
                                                     <X className="h-5 w-5 opacity-50" />
                                                 </div>
@@ -2511,6 +2535,7 @@ export default function BuilderForm() {
                                                 <>
                                                     <DecorativeLayer
                                                         type={style.id}
+                                                        static
                                                         color={formData.motifColor}
                                                         position="center"
                                                         className="absolute left-1/2 top-1/2 h-16 w-16 opacity-70"
@@ -3660,7 +3685,7 @@ export default function BuilderForm() {
 
                 <div className="space-y-2">
                     <label className="text-xs uppercase tracking-widest font-bold text-text-secondary ml-1">RSVP Deadline</label>
-                    <input required type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
+                    <input type="date" name="rsvpDeadline" value={formData.rsvpDeadline} onChange={handleChange} className="icon-field-right w-full pl-4 pr-12 py-3 rounded-xl border border-border bg-neutral focus:border-primary outline-none" />
                 </div>
 
                 <div className="space-y-2">
@@ -3906,6 +3931,39 @@ export default function BuilderForm() {
             setMonogramExporting(null);
         }
     };
+
+if (editId && editLoadError) {
+    return (
+        <div className="mx-auto flex min-h-[520px] w-full max-w-2xl items-center justify-center px-6">
+            <div className="w-full rounded-3xl border border-border bg-white p-8 text-center shadow-lg">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-error-text">Unable to load wedding</p>
+                <h2 className="mt-2 font-serif text-2xl font-bold text-foreground">Your saved wedding could not be opened</h2>
+                <p className="mt-3 text-sm leading-relaxed text-text-secondary">
+                    {editLoadError} We blocked the blank editor so your existing wedding details stay safe.
+                </p>
+                <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setEditLoadError(null);
+                            setEditLoadAttempt((attempt) => attempt + 1);
+                        }}
+                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white transition hover:bg-primary-hover"
+                    >
+                        Retry Loading
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => router.push('/dashboard')}
+                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-border bg-neutral px-6 py-2.5 text-sm font-bold text-foreground transition hover:bg-neutral/70"
+                    >
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 if (editId && loadedEditId !== editId) {
     return (

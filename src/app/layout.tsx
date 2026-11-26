@@ -4,13 +4,22 @@ import {
 } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-import { homeDescription, homeTitle, siteName, siteOrigin, sitePreviewImage } from "@/lib/seo";
+import {
+  homeDescription,
+  homeTitle,
+  siteName,
+  siteOrigin,
+  sitePreviewImage,
+  sitePreviewImageHeight,
+  sitePreviewImageWidth,
+} from "@/lib/seo";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
 const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"], display: "swap" });
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap" });
 
 const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.NEXT_PUBLIC_GA_ID;
+const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
@@ -19,6 +28,7 @@ export const metadata: Metadata = {
     template: "%s | QuickWeds",
   },
   description: homeDescription,
+  ...(googleSiteVerification ? { verification: { google: googleSiteVerification } } : {}),
   applicationName: siteName,
   manifest: "/manifest.webmanifest",
   authors: [{ name: siteName }],
@@ -54,8 +64,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: sitePreviewImage,
-        width: 1080,
-        height: 1080,
+        width: sitePreviewImageWidth,
+        height: sitePreviewImageHeight,
         alt: "QuickWeds wedding website builder and digital planner",
       },
     ],
@@ -76,6 +86,9 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  other: {
+    "supported-color-schemes": "light",
+  },
 };
 
 export const viewport: Viewport = {
@@ -84,6 +97,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   viewportFit: "cover",
+  colorScheme: "light",
   themeColor: "#FFF8F4",
 };
 
@@ -102,7 +116,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="light" style={{ colorScheme: "light" }}>
       <body className={`
         ${inter.variable} ${montserrat.variable} ${playfair.variable}
         antialiased

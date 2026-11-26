@@ -15,50 +15,82 @@ function SuccessContent() {
     const [checking, setChecking] = useState(true);
 
     useEffect(() => {
+        let active = true;
+        let interval: ReturnType<typeof setInterval> | null = null;
+        let timeout: ReturnType<typeof setTimeout> | null = null;
+
+        const stopPolling = () => {
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+            }
+            if (timeout) {
+                clearTimeout(timeout);
+                timeout = null;
+            }
+        };
+
         const verifyPayment = async () => {
-            if (scope === 'account') {
-                const { data: userData } = await supabase.auth.getUser();
-                const userId = userData.user?.id;
-                if (!userId) {
+            try {
+                if (scope === 'account') {
+                    const { data: userData } = await supabase.auth.getUser();
+                    if (!active) return;
+                    const userId = userData.user?.id;
+                    if (!userId) {
+                        setChecking(false);
+                        stopPolling();
+                        return;
+                    }
+
+                    const { data } = await supabase
+                        .from('user_app_profiles')
+                        .select('is_pro, payment_status')
+                        .eq('user_id', userId)
+                        .single();
+                    if (!active) return;
+
+                    if (data?.is_pro || data?.payment_status === 'paid') {
+                        setVerified(true);
+                        stopPolling();
+                    }
                     setChecking(false);
                     return;
                 }
 
-                const { data } = await supabase
-                    .from('user_app_profiles')
-                    .select('is_pro, payment_status')
-                    .eq('user_id', userId)
-                    .single();
+                if (!weddingId) {
+                    if (active) setChecking(false);
+                    stopPolling();
+                    return;
+                }
 
-                if (data?.is_pro || data?.payment_status === 'paid') {
+                const { data } = await supabase
+                    .from('weddings')
+                    .select('is_premium, payment_status')
+                    .eq('id', weddingId)
+                    .single();
+                if (!active) return;
+
+                if (data?.is_premium || data?.payment_status === 'paid') {
                     setVerified(true);
+                    stopPolling();
                 }
                 setChecking(false);
-                return;
+            } catch (error) {
+                console.error('Error verifying payment status:', error);
+                if (active) setChecking(false);
             }
-
-            if (!weddingId) {
-                setChecking(false);
-                return;
-            }
-
-            const { data } = await supabase
-                .from('weddings')
-                .select('is_premium, payment_status')
-                .eq('id', weddingId)
-                .single();
-
-            if (data?.is_premium) {
-                setVerified(true);
-            }
-            setChecking(false);
         };
 
         void verifyPayment();
-        const interval = setInterval(verifyPayment, 2000);
-        setTimeout(() => clearInterval(interval), 15000);
+        interval = setInterval(() => {
+            void verifyPayment();
+        }, 2000);
+        timeout = setTimeout(stopPolling, 15000);
 
-        return () => clearInterval(interval);
+        return () => {
+            active = false;
+            stopPolling();
+        };
     }, [weddingId, scope]);
 
     return (

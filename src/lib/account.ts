@@ -106,7 +106,7 @@ export function getPostLoginRedirect(profile?: AccountProfile | null, requestedP
 }
 
 export async function getClientAccountProfile(token: string) {
-    const response = await fetch('/api/account/profile', {
+    const response = await fetch('/api/account/profile?includeUsage=false', {
         headers: { Authorization: `Bearer ${token}` },
     });
     const data = await response.json();

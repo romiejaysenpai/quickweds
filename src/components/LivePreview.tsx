@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
-import { ExternalLink, Monitor } from 'lucide-react';
+import { ExternalLink, MailOpen, Monitor } from 'lucide-react';
 import { getTemplateMeta, getTemplateStyleLabel } from '@/lib/template-catalog';
 import { serializeDressCodeValue } from '@/lib/dress-code';
 import { getSafeMonogramConfig } from '@/lib/monogram';
@@ -131,8 +131,8 @@ function LivePreview({
         const payload = latestPayloadRef.current;
         try {
             const serializedPayload = JSON.stringify(payload);
+            // Keep preview drafts scoped to sessionStorage (never persist bank/gift details to localStorage)
             window.sessionStorage.setItem(previewStorageKey, serializedPayload);
-            window.localStorage.setItem(previewStorageKey, serializedPayload);
         } catch {
             // postMessage remains available if storage is unavailable.
         }
@@ -218,6 +218,20 @@ function LivePreview({
                             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-text-secondary/50">{getTemplateStyleLabel(formData.templateStyle)}</p>
                         </div>
                         <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    iframeRef.current?.contentWindow?.postMessage(
+                                        { type: 'REPLAY_ENTRANCE' },
+                                        window.location.origin
+                                    );
+                                }}
+                                title="Replay the opening envelope / entrance door animation"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-white/90 px-3 py-1.5 text-[11px] font-bold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-white hover:text-primary active:scale-95"
+                            >
+                                <MailOpen className="h-3.5 w-3.5 text-primary" />
+                                <span>Opening Card</span>
+                            </button>
                             <a
                                 href={`/preview?preview=${encodeURIComponent(previewInstanceId)}`}
                                 target="_blank"
@@ -245,7 +259,7 @@ function LivePreview({
                     <iframe
                         ref={iframeRef}
                         src={`/preview?preview=${encodeURIComponent(previewInstanceId)}`}
-                        allow="clipboard-write; clipboard-read"
+                        allow="clipboard-write"
                         onLoad={syncAfterFrameLoad}
                         className="h-full w-full border-0 rounded-[2.1rem]"
                         title="Live Preview"

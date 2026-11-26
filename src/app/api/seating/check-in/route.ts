@@ -11,6 +11,8 @@ import { escapeLikePattern } from '@/lib/sql-like';
 
 export const dynamic = 'force-dynamic';
 
+const ALLOWED_CHECKIN_SOURCES = new Set(['personal_qr', 'public_lookup', 'staff_search']);
+
 async function getAuthorizedWedding(req: NextRequest, weddingId: string) {
     const { user, error } = await getRequestUser(req);
     if (!user) return { response: NextResponse.json({ error }, { status: 401 }) };
@@ -34,7 +36,7 @@ function normalize(value: unknown) {
 }
 
 async function resolveGuest(db: any, weddingId: string, body: Record<string, any>) {
-    const selectColumns = 'id, wedding_id, guest_name, guest_email, phone, num_guests, table_assignment, plus_one_allowed, plus_one_name, plus_one_rsvp_status, seat_lookup_token, guest_code, checked_in_at';
+    const selectColumns = 'id, wedding_id, guest_name, guest_email, phone, num_guests, table_assignment, plus_one_allowed, plus_one_name, plus_one_rsvp_status, seat_lookup_token, guest_code, checked_in_at, rsvp_status, attendance';
     const rsvpId = normalize(body.rsvpId);
     const lookup = normalize(body.lookup);
 
@@ -59,9 +61,14 @@ async function resolveGuest(db: any, weddingId: string, body: Record<string, any
     if (byCode.error) throw byCode.error;
     if (byCode.data) return byCode.data;
 
-    const byName = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_name', literalLookup).maybeSingle();
+    const byName = await db.from('rsvps').select(selectColumns).eq('wedding_id', weddingId).ilike('guest_name', literalLookup).limit(2);
     if (byName.error) throw byName.error;
-    return byName.data;
+    if (byName.data && byName.data.length > 1) {
+        const err = new Error('Multiple guests share this name. Please scan their QR code or enter their guest code.');
+        err.name = 'AmbiguousGuestError';
+        throw err;
+    }
+    return byName.data?.[0] || null;
 }
 
 export async function GET(req: NextRequest) {
@@ -80,9 +87,10 @@ export async function GET(req: NextRequest) {
 
         const { data: guests, error } = await db
             .from('rsvps')
-            .select('id, guest_name, guest_email, num_guests, table_assignment, guest_code, checked_in_at, rsvp_status, attendance')
+            .select('id, guest_name, guest_email, num_guests, table_assignment, guest_code, checked_in_at, rsvp_status, attendance, plus_one_allowed, plus_one_name, plus_one_rsvp_status')
             .eq('wedding_id', weddingId)
-            .order('guest_name', { ascending: true });
+            .order('guest_name', { ascending: true })
+            .limit(2000);
         if (error) throw error;
 
         const attendingGuests = (guests || []).filter((g: any) => g.rsvp_status !== 'declined' && g.attendance !== 'No');
@@ -107,14 +115,15 @@ export async function POST(req: NextRequest) {
     const weddingId = sanitizeWeddingId(normalize(body.weddingId));
     if (!weddingId) return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
 
-    const rateLimit = createRateLimitMiddleware('SEAT_MUTATION');
-    const limited = await rateLimit.check(`${getClientIP(req)}:${weddingId}:check-in`);
-    if (limited.limited) return limited.response;
-
     try {
         const context = await getAuthorizedWedding(req, weddingId);
         if (context.response) return context.response;
         const { db, user } = context;
+
+        // Key by authenticated staff user + wedding with a realistic wedding-day reception limit (500/hr).
+        const rateLimit = createRateLimitMiddleware('SEAT_CHECKIN');
+        const limited = await rateLimit.check(`${user.id}:${weddingId}:check-in`);
+        if (limited.limited) return limited.response;
 
         const { data: weddingDaySettings } = await db
             .from('wedding_day_settings')
@@ -126,8 +135,24 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Guest check-in is currently paused by the couple.' }, { status: 403 });
         }
 
-        const guest = await resolveGuest(db, weddingId, body);
+        let guest;
+        try {
+            guest = await resolveGuest(db, weddingId, body);
+        } catch (err) {
+            if (err instanceof Error && err.name === 'AmbiguousGuestError') {
+                return NextResponse.json({ error: err.message, state: 'ambiguous_guest' }, { status: 409 });
+            }
+            throw err;
+        }
         if (!guest) return NextResponse.json({ error: 'Guest not found.', state: 'invalid_guest' }, { status: 404 });
+
+        const isDeclined = guest.rsvp_status === 'declined' || guest.attendance === 'No';
+        if (body.undo !== true && isDeclined) {
+            return NextResponse.json({
+                error: `${guest.guest_name} is marked as declined and cannot be checked in.`,
+                state: 'guest_declined',
+            }, { status: 409, headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
+        }
 
         if (body.undo !== true && guest.checked_in_at) {
             return NextResponse.json({
@@ -148,7 +173,7 @@ export async function POST(req: NextRequest) {
         }
 
         const checkedInAt = body.undo === true ? null : new Date().toISOString();
-        const { data: updated, error: updateError } = await db
+        let updateQuery = db
             .from('rsvps')
             .update({
                 checked_in_at: checkedInAt,
@@ -156,19 +181,41 @@ export async function POST(req: NextRequest) {
                 check_in_notes: body.notes ? String(body.notes).slice(0, 500) : null,
             })
             .eq('id', guest.id)
-            .eq('wedding_id', weddingId)
+            .eq('wedding_id', weddingId);
+
+        // Conditional atomic guard so concurrent scans never double-check-in
+        if (checkedInAt) {
+            updateQuery = updateQuery.is('checked_in_at', null);
+        } else {
+            updateQuery = updateQuery.not('checked_in_at', 'is', null);
+        }
+
+        const { data: updated, error: updateError } = await updateQuery
             .select('id, guest_name, table_assignment, guest_code, checked_in_at')
-            .single();
+            .maybeSingle();
+
         if (updateError) throw updateError;
+        if (!updated) {
+            return NextResponse.json({
+                success: true,
+                state: checkedInAt ? 'already_checked_in' : 'check_in_undone',
+                guest,
+            }, { headers: { ...limited.headers, 'Cache-Control': 'no-store' } });
+        }
 
         if (checkedInAt) {
-            await db.from('guest_check_ins').insert({
+            const rawSource = normalize(body.source);
+            const safeSource = ALLOWED_CHECKIN_SOURCES.has(rawSource) ? rawSource : 'staff_search';
+            const { error: logError } = await db.from('guest_check_ins').insert({
                 wedding_id: weddingId,
                 rsvp_id: guest.id,
                 checked_in_by: user.id,
-                source: body.source || 'staff_search',
+                source: safeSource,
                 notes: body.notes ? String(body.notes).slice(0, 500) : null,
             });
+            if (logError) {
+                console.error('Failed to log guest check-in audit row:', logError.message);
+            }
         }
         await invalidateDashboardCounters(weddingId);
 

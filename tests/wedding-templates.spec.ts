@@ -2,7 +2,7 @@ import { expect, test, } from '@playwright/test';
 import { mockWeddingPage } from './fixtures/wedding-preview';
 import { TEMPLATES, getTemplateStyleVariants } from '../src/lib/template-catalog';
 
-const TEMPLATE_IDS = [...TEMPLATES.map(template => template.id), 'nordic', 'riviera'];
+const TEMPLATE_IDS = Array.from(new Set([...TEMPLATES.map(template => template.id), 'nordic', 'riviera']));
 const VIEWPORTS = [
   { name: 'mobile-dark', width: 360, height: 800, colorScheme: 'dark' as const },
   { name: 'desktop-light', width: 1440, height: 900, colorScheme: 'light' as const },

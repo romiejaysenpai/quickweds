@@ -5,20 +5,31 @@ import { Loader2, Send, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { getCachedSession } from '@/lib/session-cache';
 
-const DEFAULT_TITLE = 'New QuickWeds update: invitation background music';
-const DEFAULT_MESSAGE = 'You can now upload a wedding song for your invitation page. Guests can tap to open the invitation, hear the music, and keep listening while they scroll through your wedding details.\n\nPlease send app feedback, questions, or error reports through the QuickWeds support form so we can keep improving the experience.';
-
 export default function AdminBroadcastPage() {
-    const [title, setTitle] = useState(DEFAULT_TITLE);
-    const [message, setMessage] = useState(DEFAULT_MESSAGE);
-    const [link, setLink] = useState('/support');
-    const [sendEmail, setSendEmail] = useState(true);
+    const [title, setTitle] = useState('');
+    const [message, setMessage] = useState('');
+    const [link, setLink] = useState('/dashboard');
+    const [sendEmail, setSendEmail] = useState(false);
     const [skipInApp, setSkipInApp] = useState(false);
     const [recipients, setRecipients] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
 
     async function runBroadcast(dryRun: boolean) {
+        if (!title.trim() || !message.trim()) {
+            setResult({ error: 'Title and message are required before sending a broadcast.' });
+            return;
+        }
+        if (!dryRun) {
+            const parsedRecipients = recipients.split(/[\s,;]+/).map((value) => value.trim()).filter(Boolean);
+            const scopeLabel = parsedRecipients.length > 0
+                ? `${parsedRecipients.length} specified email address(es)`
+                : 'ALL QuickWeds users';
+            const confirmed = window.confirm(
+                `Confirm live broadcast to ${scopeLabel}?\n\nEmail delivery: ${sendEmail ? 'ENABLED' : 'OFF'}\nIn-app alerts: ${skipInApp ? 'SKIPPED' : 'ENABLED'}\nTitle: ${title.trim()}`
+            );
+            if (!confirmed) return;
+        }
         setLoading(true);
         setResult(null);
 
@@ -70,8 +81,8 @@ export default function AdminBroadcastPage() {
                             Send an in-app notification to all QuickWeds accounts. Email is optional and should be used carefully.
                         </p>
                     </div>
-                    <Link href="/dashboard" className="rounded-xl border border-border px-4 py-2 text-sm font-bold text-primary hover:bg-primary/5">
-                        Dashboard
+                    <Link href="/admin" className="rounded-xl border border-border px-4 py-2 text-sm font-bold text-primary hover:bg-primary/5">
+                        Admin Hub
                     </Link>
                 </div>
 

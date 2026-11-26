@@ -48,6 +48,9 @@ const WEDDING_OPTIONAL_COLUMNS = [
     'hashtag',
     'rsvp_deadline',
     'rsvp_events',
+    'rsvp_allow_plus_ones',
+    'rsvp_allow_children',
+    'rsvp_search_guest_list',
     'program_timeline',
     'faq_items',
     'invitation_image',
@@ -229,7 +232,6 @@ export async function GET(req: NextRequest) {
                 code: 'wedding_not_found',
                 accessRole: 'denied',
                 requestedWeddingId: weddingId,
-                supabaseProject: process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '').split('.')[0] || null,
             }, { status: 404 });
         }
 
@@ -244,7 +246,7 @@ export async function GET(req: NextRequest) {
                 .from('wedding_collaborators')
                 .select('status, role')
                 .eq('wedding_id', resolvedWeddingId)
-                .eq('email', user.email.toLowerCase())
+                .ilike('email', user.email.trim())
                 .maybeSingle();
 
             if (collaborator) {
@@ -252,41 +254,53 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        if (accessRole === 'pending' || accessRole === 'denied') {
+        if (accessRole !== 'owner' && accessRole !== 'partner' && accessRole !== 'coordinator') {
             return NextResponse.json({ accessRole }, { status: 403 });
         }
 
+        // Strip sensitive owner-only billing/token fields for non-owner collaborators
+        const safeWedding = accessRole === 'owner'
+            ? wedding
+            : (() => {
+                const copy = { ...wedding };
+                delete copy.stripe_payment_intent_id;
+                delete copy.stripe_checkout_session_id;
+                delete copy.payment_amount;
+                delete copy.planner_calendar_token;
+                return copy;
+            })();
+
+        const profileUserId = wedding.user_id || user.id;
         const accountProfile = await safePlannerMaybeSingle(
             db
                 .from('user_app_profiles')
                 .select('is_pro, plan_type, payment_status')
-                .eq('user_id', user.id)
+                .eq('user_id', profileUserId)
                 .maybeSingle(),
             'account profile'
         );
 
-        const entourageInvitationsForAccess = await safePlannerList(
-            db
-                .from('entourage_invitations')
-                .select('id, wedding_id, member_key, name, email, role, message, template_key, status, sent_at, responded_at, created_at, updated_at')
-                .eq('wedding_id', resolvedWeddingId)
-                .order('created_at', { ascending: false }),
-            'entourage invitations'
-        );
-
-        if (accessRole !== 'owner' && accessRole !== 'partner' && accessRole !== 'coordinator') {
-            return NextResponse.json({ accessRole, wedding, accountProfile, planUsage: EMPTY_PLANNER_USAGE, tasks: [], budgets: [], vendors: [], events: [], foodDrinks: [], googleCalendar: null, honeymoonItems: [], confirmedGuests: 0, entourageInvitations: entourageInvitationsForAccess });
-        }
+        const entourageInvitationsForAccess = accessRole === 'owner' || accessRole === 'partner'
+            ? await safePlannerList(
+                db
+                    .from('entourage_invitations')
+                    .select('id, wedding_id, member_key, name, email, role, message, template_key, status, sent_at, responded_at, created_at, updated_at')
+                    .eq('wedding_id', resolvedWeddingId)
+                    .order('created_at', { ascending: false })
+                    .limit(500),
+                'entourage invitations'
+            )
+            : [];
 
         const [tasks, budgets, vendors, events, foodDrinks, googleCalendarConnection, honeymoonItems, rsvps] = await Promise.all([
-            safePlannerList(db.from('planner_tasks').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }), 'checklist tasks'),
-            safePlannerList(db.from('planner_budgets').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }), 'budgets'),
-            safePlannerList(db.from('planner_vendors').select('*').eq('wedding_id', resolvedWeddingId), 'vendors'),
-            safePlannerList(db.from('planner_events').select('*').eq('wedding_id', resolvedWeddingId).order('starts_at', { ascending: true }), 'calendar events'),
-            safePlannerList(db.from('planner_food_drinks').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }), 'food and drinks'),
+            safePlannerList(db.from('planner_tasks').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }).limit(1000), 'checklist tasks'),
+            safePlannerList(db.from('planner_budgets').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }).limit(1000), 'budgets'),
+            safePlannerList(db.from('planner_vendors').select('*').eq('wedding_id', resolvedWeddingId).limit(1000), 'vendors'),
+            safePlannerList(db.from('planner_events').select('*').eq('wedding_id', resolvedWeddingId).order('starts_at', { ascending: true }).limit(1000), 'calendar events'),
+            safePlannerList(db.from('planner_food_drinks').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }).limit(1000), 'food and drinks'),
             safePlannerMaybeSingle(db.from('planner_google_calendar_connections').select('connected_at, last_synced_at, google_calendar_id, revoked_at').eq('wedding_id', resolvedWeddingId).eq('user_id', user.id).is('revoked_at', null).maybeSingle(), 'Google calendar connection'),
-            safePlannerList(db.from('planner_honeymoon_items').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }), 'honeymoon items'),
-            safePlannerList(db.from('rsvps').select('num_guests, rsvp_status, attendance').eq('wedding_id', resolvedWeddingId), 'RSVPs'),
+            safePlannerList(db.from('planner_honeymoon_items').select('*').eq('wedding_id', resolvedWeddingId).order('created_at', { ascending: false }).limit(1000), 'honeymoon items'),
+            safePlannerList(db.from('rsvps').select('num_guests, rsvp_status, attendance').eq('wedding_id', resolvedWeddingId).limit(5000), 'RSVPs'),
         ]);
 
         const confirmedGuests = rsvps
@@ -297,7 +311,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             accessRole,
-            wedding,
+            wedding: safeWedding,
             accountProfile,
             planUsage,
             requestedWeddingId: weddingId,

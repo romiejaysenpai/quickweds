@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo } from 'react';
 import { useHotkeys } from '@/hooks/useHotkeys';
 
 interface UndoRedoState<T> {
@@ -9,10 +9,12 @@ interface UndoRedoState<T> {
     future: T[];
 }
 
+type StateUpdater<T> = T | ((prev: T) => T);
+
 type Action<T> =
     | { type: 'UNDO' }
     | { type: 'REDO'; maxHistory?: number }
-    | { type: 'SET'; payload: T; maxHistory?: number }
+    | { type: 'SET'; payload: StateUpdater<T>; maxHistory?: number }
     | { type: 'CLEAR'; payload: T };
 
 function undoRedoReducer<T>(state: UndoRedoState<T>, action: Action<T>): UndoRedoState<T> {
@@ -43,14 +45,18 @@ function undoRedoReducer<T>(state: UndoRedoState<T>, action: Action<T>): UndoRed
         }
 
         case 'SET': {
+            const nextPresent = typeof action.payload === 'function'
+                ? (action.payload as (prev: T) => T)(present)
+                : action.payload;
+
             // Don't add if it's the same as present
-            if (JSON.stringify(action.payload) === JSON.stringify(present)) {
+            if (Object.is(nextPresent, present) || JSON.stringify(nextPresent) === JSON.stringify(present)) {
                 return state;
             }
             const limit = action.maxHistory ?? 50;
             return {
                 past: [...past, present].slice(-limit),
-                present: action.payload,
+                present: nextPresent,
                 future: [],
             };
         }
@@ -69,7 +75,7 @@ function undoRedoReducer<T>(state: UndoRedoState<T>, action: Action<T>): UndoRed
 
 interface UndoRedoContextType<T> {
     state: T;
-    setState: (newState: T) => void;
+    setState: (newState: StateUpdater<T>) => void;
     undo: () => void;
     redo: () => void;
     canUndo: boolean;
@@ -103,12 +109,9 @@ export function UndoRedoProvider<T>({
         onChange?.(state.present);
     }, [state.present, onChange]);
 
-    const setState = useCallback((newState: T | ((prev: T) => T)) => {
-        const resolvedState = typeof newState === 'function' 
-            ? (newState as (prev: T) => T)(state.present) 
-            : newState;
-        dispatch({ type: 'SET', payload: resolvedState, maxHistory });
-    }, [state.present, maxHistory]);
+    const setState = useCallback((newState: StateUpdater<T>) => {
+        dispatch({ type: 'SET', payload: newState, maxHistory });
+    }, [maxHistory]);
 
     const undo = useCallback(() => {
         dispatch({ type: 'UNDO' });
@@ -138,15 +141,18 @@ export function UndoRedoProvider<T>({
         },
     });
 
-    const value: UndoRedoContextType<T> = {
-        state: state.present,
-        setState,
-        undo,
-        redo,
-        canUndo: state.past.length > 0,
-        canRedo: state.future.length > 0,
-        clear,
-    };
+    const value = useMemo<UndoRedoContextType<T>>(
+        () => ({
+            state: state.present,
+            setState,
+            undo,
+            redo,
+            canUndo: state.past.length > 0,
+            canRedo: state.future.length > 0,
+            clear,
+        }),
+        [state.present, state.past.length, state.future.length, setState, undo, redo, clear]
+    );
 
     return (
         <UndoRedoContext.Provider value={value}>
@@ -171,12 +177,9 @@ export function useLocalUndoRedo<T>(initialState: T, maxHistory = 50) {
         future: [],
     });
 
-    const setState = useCallback((newState: T | ((prev: T) => T)) => {
-        const resolvedState = typeof newState === 'function' 
-            ? (newState as (prev: T) => T)(state.present) 
-            : newState;
-        dispatch({ type: 'SET', payload: resolvedState, maxHistory });
-    }, [state.present, maxHistory]);
+    const setState = useCallback((newState: StateUpdater<T>) => {
+        dispatch({ type: 'SET', payload: newState, maxHistory });
+    }, [maxHistory]);
 
     const undo = useCallback(() => {
         dispatch({ type: 'UNDO' });

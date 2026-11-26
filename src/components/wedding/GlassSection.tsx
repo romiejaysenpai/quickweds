@@ -17,12 +17,6 @@ export default function GlassSection({ children, className = "", delay = 0, inte
         strong: 'backdrop-blur-xl bg-white/70'
     };
 
-    const darkBlurMap = {
-        light: 'dark:bg-black/20 dark:backdrop-blur-sm',
-        medium: 'dark:bg-black/40 dark:backdrop-blur-md',
-        strong: 'dark:bg-black/60 dark:backdrop-blur-xl'
-    };
-
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -31,8 +25,7 @@ export default function GlassSection({ children, className = "", delay = 0, inte
             transition={{ duration: 0.8, delay, ease: "easeOut" }}
             className={`
                 ${blurMap[intensity]} 
-                ${darkBlurMap[intensity]} 
-                border border-white/40 dark:border-white/10 
+                border border-white/40 
                 rounded-[2rem] md:rounded-[3rem] 
                 shadow-xl shadow-primary/5
                 overflow-hidden

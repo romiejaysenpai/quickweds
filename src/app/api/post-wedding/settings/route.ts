@@ -41,10 +41,10 @@ async function getContext(req: NextRequest, weddingId: string) {
 
     let access;
     try {
-        access = await getWeddingAccess(db, user, weddingId, { select: extendedSelect });
+        access = await getWeddingAccess(db, user, weddingId, { select: extendedSelect, collaboratorRoles: ['partner'] });
     } catch (accessErr) {
         if (isMissingColumnError(accessErr)) {
-            access = await getWeddingAccess(db, user, weddingId, { select: baseSelect });
+            access = await getWeddingAccess(db, user, weddingId, { select: baseSelect, collaboratorRoles: ['partner'] });
         } else {
             throw accessErr;
         }
@@ -131,7 +131,20 @@ export async function PATCH(req: NextRequest) {
             updatePayload.thank_you_message = body.thank_you_message.slice(0, 2000);
         }
         if (typeof body.photo_album_link === 'string') {
-            updatePayload.photo_album_link = body.photo_album_link.slice(0, 500);
+            const rawLink = body.photo_album_link.trim().slice(0, 500);
+            if (!rawLink) {
+                updatePayload.photo_album_link = '';
+            } else {
+                try {
+                    const parsed = new URL(rawLink);
+                    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+                        return NextResponse.json({ error: 'Photo album link must start with https:// or http://.' }, { status: 400 });
+                    }
+                    updatePayload.photo_album_link = parsed.toString();
+                } catch {
+                    return NextResponse.json({ error: 'Photo album link must be a valid URL.' }, { status: 400 });
+                }
+            }
         }
         if (typeof body.show_photos_in_thank_you_mode === 'boolean') {
             updatePayload.show_photos_in_thank_you_mode = body.show_photos_in_thank_you_mode;
@@ -188,17 +201,17 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({
             success: true,
             settings: {
-                is_thank_you_mode: typeof updatePayload.is_thank_you_mode === 'boolean'
-                    ? updatePayload.is_thank_you_mode
+                is_thank_you_mode: typeof activePayload.is_thank_you_mode === 'boolean'
+                    ? activePayload.is_thank_you_mode
                     : access.wedding.is_thank_you_mode === true,
-                thank_you_message: typeof updatePayload.thank_you_message === 'string'
-                    ? updatePayload.thank_you_message
+                thank_you_message: typeof activePayload.thank_you_message === 'string'
+                    ? activePayload.thank_you_message
                     : access.wedding.thank_you_message || '',
-                photo_album_link: typeof updatePayload.photo_album_link === 'string'
-                    ? updatePayload.photo_album_link
+                photo_album_link: typeof activePayload.photo_album_link === 'string'
+                    ? activePayload.photo_album_link
                     : access.wedding.photo_album_link || '',
-                show_photos_in_thank_you_mode: typeof updatePayload.show_photos_in_thank_you_mode === 'boolean'
-                    ? updatePayload.show_photos_in_thank_you_mode
+                show_photos_in_thank_you_mode: typeof activePayload.show_photos_in_thank_you_mode === 'boolean'
+                    ? activePayload.show_photos_in_thank_you_mode
                     : access.wedding.show_photos_in_thank_you_mode !== false,
                 show_guestbook_in_thank_you_mode: typeof updatePayload.show_guestbook_in_thank_you_mode === 'boolean'
                     ? updatePayload.show_guestbook_in_thank_you_mode

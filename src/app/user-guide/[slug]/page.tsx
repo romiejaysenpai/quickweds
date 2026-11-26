@@ -2,6 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
+  buildArticleJsonLd,
+  buildBreadcrumbJsonLd,
+  buildHowToJsonLd,
+  publicPageMetadata,
+  serializeJsonLd,
+} from '@/lib/seo';
+import {
   ArrowLeft,
   ArrowRight,
   BarChart3,
@@ -560,20 +567,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const guide = guides[slug as GuideSlug];
   if (!guide) return {};
-  return {
-    title: guide.title,
-    description: guide.description,
-    alternates: {
-      canonical: `/user-guide/${slug}`,
-    },
-    openGraph: {
-      title: `${guide.title} | QuickWeds`,
-      description: guide.description,
-      url: `/user-guide/${slug}`,
-      siteName: 'QuickWeds',
-      type: 'article',
-    },
-  };
+  return publicPageMetadata(`/user-guide/${slug}`, guide.title, guide.description, 'article');
 }
 
 export default async function FeatureGuidePage({
@@ -585,9 +579,33 @@ export default async function FeatureGuidePage({
   const guide = guides[slug as GuideSlug];
   if (!guide) notFound();
   const Icon = guide.icon;
+  const path = `/user-guide/${slug}`;
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      buildArticleJsonLd({
+        path,
+        headline: guide.title,
+        description: guide.description,
+        datePublished: '2026-10-31',
+        dateModified: '2026-11-26',
+      }),
+      buildHowToJsonLd({
+        name: guide.title,
+        description: guide.overview,
+        steps: guide.steps,
+      }),
+      buildBreadcrumbJsonLd([
+        { name: 'QuickWeds', path: '/' },
+        { name: 'User Guide', path: '/user-guide' },
+        { name: guide.title, path },
+      ]),
+    ],
+  };
 
   return (
     <main className="min-h-screen bg-neutral px-4 py-8 text-foreground sm:px-6 sm:py-12">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }} />
       <div className="mx-auto max-w-5xl">
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Link href="/user-guide" className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm font-bold text-text-secondary transition hover:border-primary/30 hover:text-primary sm:w-fit">

@@ -1,8 +1,17 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Image from 'next/image';
-import { SharedNewSections } from './shared';
+import { getSectionTitleStyle } from '@/lib/theme-engine';
+import {
+    formatWeddingDate,
+    resolveTemplateCopy,
+    resolveWeddingMedia,
+    SharedNewSections,
+    TEMPLATE_ELEMENT_ASSETS,
+    TemplateHeroActions,
+    WeddingHeroVisual,
+    WeddingMonogram,
+} from './shared';
 import {
     VideoSection,
     BioSection,
@@ -12,63 +21,94 @@ import {
     GiftSection,
     CountdownTimer,
     AttireSection,
-
 } from '../wedding';
 import type { TemplateProps } from '@/types/wedding';
 
 export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+    const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
+    const titleStyle = getSectionTitleStyle(wedding);
     const motifColor = wedding.motif_color || '#C5A059';
+    const heroImage = resolveWeddingMedia(wedding, gallery);
+    const copy = resolveTemplateCopy(wedding);
+    const hasCustomMonogram = Boolean(
+        wedding.logo_initials || (wedding.logo_shape && wedding.logo_shape !== 'minimal')
+    );
 
     return (
-        <div className="bg-white pb-24">
+        <div
+            className="pb-24 relative"
+            style={{
+                backgroundColor: hasBackgroundChoice ? 'var(--builder-paper)' : '#ffffff',
+                color: hasBackgroundChoice ? 'var(--builder-ink)' : '#171717',
+            }}
+        >
             <section className="min-h-[85vh] flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-white via-primary/5 to-white" />
-                {wedding.hero_image && (
-                    <Image
-                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
-                        alt={`${wedding.bride_name} and ${wedding.groom_name} wedding`}
-                        priority
-                        fill
-                        sizes="100vw"
-                        className="object-cover opacity-10 z-0"
-                    />
+                <div className="qw-paper-grain absolute inset-0 opacity-[0.14] pointer-events-none" />
+                {heroImage && (
+                    <div className="absolute inset-0 opacity-12 pointer-events-none">
+                        <WeddingHeroVisual
+                            wedding={wedding}
+                            gallery={gallery}
+                            src={heroImage}
+                            ornamentSrc={TEMPLATE_ELEMENT_ASSETS.waxSeal}
+                            className="h-full w-full"
+                        />
+                    </div>
                 )}
 
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={false}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1 }}
+                    transition={{ duration: 0.4 }}
                     className="relative text-center z-10 px-4 sm:px-6 md:px-12 max-w-4xl"
                 >
-                    <p className="text-xs sm:text-sm uppercase tracking-[0.4em] font-bold mb-8 sm:mb-10" style={{ color: motifColor }}>
-                        You&apos;re Invited
+                    {hasCustomMonogram && (
+                        <div className="mb-8 flex justify-center">
+                            <WeddingMonogram wedding={wedding} />
+                        </div>
+                    )}
+                    <p className="text-xs sm:text-sm uppercase tracking-[0.4em] font-bold mb-8" style={{ color: motifColor }}>
+                        {copy.eyebrow}
                     </p>
-                    <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif text-neutral-900 mb-10 sm:mb-12 md:mb-16 leading-tight">
+                    <h1
+                        className={`text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif mb-10 sm:mb-12 leading-tight ${titleStyle.className}`}
+                        style={titleStyle.style}
+                    >
                         {wedding.bride_name} <br />
-                        <span className="text-xl sm:text-2xl md:text-3xl italic font-light" style={{ color: motifColor }}>&</span>{' '}
+                        <span className="text-xl sm:text-2xl md:text-3xl italic font-light" style={{ color: motifColor }}>&amp;</span>{' '}
                         <br />
                         {wedding.groom_name}
                     </h1>
-                    <div className="w-20 sm:w-24 h-[1px] mx-auto mb-10 sm:mb-12" style={{ backgroundColor: motifColor }} />
-                    <p className="text-lg sm:text-xl md:text-2xl font-serif italic text-neutral-600 mb-12 sm:mb-14">
-                        {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, { dateStyle: 'long' })}
-                    </p>
-                    <p className="text-base sm:text-lg font-light text-neutral-500 mb-16 sm:mb-20">
-                        at {wedding.venue_name}
-                    </p>
-                    <div className="mt-8">
+                    <div className="w-20 sm:w-24 h-[1px] mx-auto mb-10" style={{ backgroundColor: motifColor }} />
+                    {wedding.wedding_date && (
+                        <p className="text-lg sm:text-xl md:text-2xl font-serif italic opacity-80 mb-4">
+                            {formatWeddingDate(wedding.wedding_date, { dateStyle: 'long' }, undefined)}
+                        </p>
+                    )}
+                    {wedding.venue_name && (
+                        <p className="text-base sm:text-lg font-light opacity-75 mb-10">
+                            {wedding.venue_name}
+                        </p>
+                    )}
+                    <div className="mt-6 flex flex-wrap justify-center gap-3">
                         <a
-                            href={wedding.is_thank_you_mode ? '#details' : '#rsvp'}
-                            aria-label={wedding.is_thank_you_mode ? 'Wedding Details' : 'RSVP Here'}
-                            className="inline-flex items-center justify-center px-12 sm:px-16 py-5 sm:py-6 font-bold uppercase tracking-widest text-sm sm:text-base hover:scale-105 transition-all shadow-xl min-h-[56px]"
+                            href={copy.ctaHref}
+                            data-wedding-control="primary"
+                            aria-label={wedding.is_thank_you_mode ? copy.ctaLabel : 'RSVP Here'}
+                            className="inline-flex items-center justify-center px-12 sm:px-14 py-5 font-bold uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-xl min-h-[56px]"
                             style={{ backgroundColor: motifColor, color: 'white' }}
                         >
-                            {wedding.is_thank_you_mode ? 'Wedding Details' : 'RSVP Here'}
+                            {wedding.is_thank_you_mode ? copy.ctaLabel : 'RSVP Here'}
+                        </a>
+                        <a
+                            href={copy.detailsHref}
+                            data-wedding-control="secondary"
+                            className="inline-flex items-center justify-center px-7 py-5 border border-current/25 font-semibold uppercase tracking-widest text-xs hover:bg-current/5 transition-colors min-h-[56px]"
+                        >
+                            Wedding Details
                         </a>
                     </div>
-                    <p className="text-sm font-light text-neutral-400 mt-8 sm:mt-10">
-                        Your presence is our greatest gift
-                    </p>
+                    <TemplateHeroActions wedding={wedding} variant="minimal" motifColor={motifColor} className="justify-center mt-5" />
                 </motion.div>
 
                 <div className="absolute bottom-16 left-1/2 -translate-x-1/2 animate-bounce">
@@ -79,8 +119,8 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
             <DetailsSection id="details" wedding={wedding} />
             <BioSection id="bio" wedding={wedding} />
             <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
-            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} wedding={wedding} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} cardStyle={wedding.card_style} galleryLayout={wedding.gallery_layout} wedding={wedding} />
             <AttireSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
@@ -93,6 +133,8 @@ export default function RSVPFocusTemplate({ wedding, gallery, isExpired }: Templ
                     venueAddress={wedding.venue_address}
                     template={wedding.template}
                     motifColor={wedding.motif_color}
+                    cardStyle={wedding.card_style}
+                    wedding={wedding}
                 />
             )}
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />

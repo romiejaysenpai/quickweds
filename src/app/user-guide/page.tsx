@@ -1,5 +1,10 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
+import {
+  buildBreadcrumbJsonLd,
+  publicPageMetadata,
+  serializeJsonLd,
+  siteOrigin,
+} from '@/lib/seo';
 import {
   ArrowRight,
   Bell,
@@ -35,13 +40,11 @@ import {
   UsersRound,
 } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'QuickWeds User Guide | Wedding Website, RSVP, and Planner Tutorials',
-  description: 'Master QuickWeds with comprehensive guides for website building, smart RSVP search, deadline locks, visual attire guides, seating charts, multi-currency budgets, and post-wedding memories.',
-  alternates: {
-    canonical: '/user-guide',
-  },
-};
+export const metadata = publicPageMetadata(
+  '/user-guide',
+  'User Guide — Wedding Website, RSVP & Planner Tutorials',
+  'Master QuickWeds with comprehensive guides for website building, smart RSVP search, deadline locks, visual attire guides, seating charts, multi-currency budgets, and post-wedding memories.',
+);
 
 function Accent({ children }: { children: React.ReactNode }) {
   return <span className="text-primary">{children}</span>;
@@ -350,8 +353,29 @@ const featureGuides = [
 ];
 
 export default function UserGuidePage() {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': `${siteOrigin}/user-guide#webpage`,
+        url: `${siteOrigin}/user-guide`,
+        name: 'QuickWeds User Guide — Wedding Website, RSVP & Planner Tutorials',
+        description:
+          'Step-by-step guides for QuickWeds wedding websites, smart RSVPs, seating charts, budgets, and wedding day coordination.',
+        isPartOf: { '@id': `${siteOrigin}/#website` },
+        inLanguage: 'en',
+      },
+      buildBreadcrumbJsonLd([
+        { name: 'QuickWeds', path: '/' },
+        { name: 'User Guide', path: '/user-guide' },
+      ]),
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-neutral text-foreground">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }} />
       {/* Hero Header */}
       <section className="relative px-4 pb-12 pt-10 sm:px-6 sm:pb-16 sm:pt-16">
         <div className="mx-auto max-w-5xl text-center">

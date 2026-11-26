@@ -115,10 +115,14 @@ export default function LoginPage() {
                 provider,
                 options: {
                     redirectTo: getPublicRedirectUrl('/auth/callback'),
-                    queryParams: {
-                        access_type: 'offline',
-                        prompt: 'select_account',
-                    },
+                    ...(provider === 'google'
+                        ? {
+                              queryParams: {
+                                  access_type: 'offline',
+                                  prompt: 'select_account',
+                              },
+                          }
+                        : {}),
                 }
             });
             if (error) throw error;

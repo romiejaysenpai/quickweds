@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Bell,
     Check,
@@ -43,14 +44,47 @@ function formatNotificationDate(dateStr: string) {
     }
 }
 
+const subscribeNoop = () => () => {};
+
 export default function NotificationBell() {
     const { user } = useAuth();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isOpen, setIsOpen] = useState(false);
-    const [unreadCount, setUnreadCount] = useState(0);
     const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+    const portalReady = useSyncExternalStore(subscribeNoop, () => true, () => false);
+    const [desktopCoords, setDesktopCoords] = useState<{ top: number; right: number } | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    const unreadCount = useMemo(
+        () => notifications.filter((n) => !n.is_read).length,
+        [notifications]
+    );
+
+    const updateDropdownPosition = useCallback(() => {
+        if (!dropdownRef.current || typeof window === 'undefined') return;
+        const rect = dropdownRef.current.getBoundingClientRect();
+        if (window.innerWidth >= 640) {
+            setDesktopCoords({
+                top: Math.max(12, Math.round(rect.bottom + 12)),
+                right: Math.max(12, Math.round(window.innerWidth - rect.right)),
+            });
+        } else {
+            setDesktopCoords(null);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        updateDropdownPosition();
+        window.addEventListener('resize', updateDropdownPosition);
+        window.addEventListener('scroll', updateDropdownPosition, { passive: true });
+        return () => {
+            window.removeEventListener('resize', updateDropdownPosition);
+            window.removeEventListener('scroll', updateDropdownPosition);
+        };
+    }, [isOpen, updateDropdownPosition]);
 
     const fetchNotifications = useCallback(async () => {
         if (!user) return;
@@ -62,7 +96,6 @@ export default function NotificationBell() {
 
         if (!error && data) {
             setNotifications(data as Notification[]);
-            setUnreadCount((data as Notification[]).filter((n) => !n.is_read).length);
         }
     }, [user]);
 
@@ -70,12 +103,12 @@ export default function NotificationBell() {
         if (!user) return;
 
         const refreshTimer = window.setTimeout(() => {
-            fetchNotifications();
+            void fetchNotifications();
         }, 0);
 
         // Real-time subscription
         const channel = supabase
-            .channel('user_notifications')
+            .channel(`user_notifications_${user.id}`)
             .on(
                 'postgres_changes',
                 {
@@ -85,8 +118,10 @@ export default function NotificationBell() {
                     filter: `user_id=eq.${user.id}`,
                 },
                 (payload) => {
-                    setNotifications((prev) => [payload.new as Notification, ...prev]);
-                    setUnreadCount((prev) => prev + 1);
+                    const incoming = payload.new as Notification;
+                    setNotifications((prev) =>
+                        prev.some((item) => item.id === incoming.id) ? prev : [incoming, ...prev]
+                    );
                 }
             )
             .subscribe();
@@ -98,14 +133,34 @@ export default function NotificationBell() {
     }, [fetchNotifications, user]);
 
     useEffect(() => {
+        if (!isOpen && !selectedNotification) return;
+
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            if (selectedNotification) return;
+            const target = event.target as Node;
+            const insideTrigger = dropdownRef.current?.contains(target);
+            const insidePanel = panelRef.current?.contains(target);
+            if (!insideTrigger && !insidePanel) {
                 setIsOpen(false);
             }
         };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            if (selectedNotification) {
+                setSelectedNotification(null);
+            } else if (isOpen) {
+                setIsOpen(false);
+            }
+        };
+
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen, selectedNotification]);
 
     const markAsRead = async (id: string) => {
         const { error } = await (supabase as any)
@@ -115,7 +170,6 @@ export default function NotificationBell() {
 
         if (!error) {
             setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
-            setUnreadCount((prev) => Math.max(0, prev - 1));
             if (selectedNotification?.id === id) {
                 setSelectedNotification((prev) => (prev ? { ...prev, is_read: true } : null));
             }
@@ -132,7 +186,6 @@ export default function NotificationBell() {
 
         if (!error) {
             setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-            setUnreadCount(0);
         }
     };
 
@@ -144,8 +197,6 @@ export default function NotificationBell() {
 
         if (!error) {
             setNotifications((prev) => prev.filter((n) => n.id !== id));
-            const wasUnread = notifications.find((n) => n.id === id)?.is_read === false;
-            if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
             if (selectedNotification?.id === id) {
                 setSelectedNotification(null);
             }
@@ -222,23 +273,28 @@ export default function NotificationBell() {
                 )}
             </button>
 
-            {/* Mobile backdrop for dropdown */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 bg-black/40 backdrop-blur-xs z-[190] sm:hidden"
-                    onClick={() => setIsOpen(false)}
-                />
-            )}
+            {/* Portaled Notification Dropdown & Full-Screen Detail Modal (avoids clipping inside sticky backdrop-blur headers) */}
+            {portalReady && createPortal(
+                <>
+                    {/* Mobile backdrop for dropdown */}
+                    {isOpen && (
+                        <div
+                            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-[190] sm:hidden"
+                            onClick={() => setIsOpen(false)}
+                        />
+                    )}
 
-            {/* Notification Dropdown Panel */}
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.96 }}
-                        className="fixed sm:absolute inset-x-3 sm:inset-x-auto sm:right-0 top-[74px] sm:top-full sm:mt-3 sm:w-[420px] max-w-[500px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-border z-[200] overflow-hidden flex flex-col max-h-[82vh] sm:max-h-[540px]"
-                    >
+                    {/* Notification Dropdown Panel */}
+                    <AnimatePresence>
+                        {isOpen && (
+                            <motion.div
+                                ref={panelRef}
+                                initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                                style={desktopCoords ? { top: `${desktopCoords.top}px`, right: `${desktopCoords.right}px` } : undefined}
+                                className="fixed inset-x-3 sm:inset-x-auto top-[74px] sm:w-[420px] max-w-[500px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-border z-[200] overflow-hidden flex flex-col max-h-[82vh] sm:max-h-[540px]"
+                            >
                         {/* Header */}
                         <div className="p-4 border-b border-border bg-neutral/30 flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-2">
@@ -529,6 +585,9 @@ export default function NotificationBell() {
                     </div>
                 )}
             </AnimatePresence>
+                </>,
+                document.body
+            )}
 
             <style jsx global>{`
                 @keyframes ring {

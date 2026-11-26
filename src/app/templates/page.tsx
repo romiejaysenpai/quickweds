@@ -6,7 +6,12 @@ import Image from 'next/image';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { landingTemplatePreviews } from '@/lib/landing-templates';
 import { templateMatchesFilter, type TemplateFilter } from '@/lib/template-catalog';
-import { rsvpWordingPath } from '@/lib/seo';
+import {
+  buildBreadcrumbJsonLd,
+  rsvpWordingPath,
+  serializeJsonLd,
+  siteOrigin,
+} from '@/lib/seo';
 import { useAuth } from '@/context/AuthContext';
 
 const CATALOG_FILTERS: { id: TemplateFilter; label: string }[] = [
@@ -26,8 +31,43 @@ export default function TemplatesPage() {
     templateMatchesFilter(t.id, selectedFilter)
   );
 
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': `${siteOrigin}/templates#webpage`,
+        url: `${siteOrigin}/templates`,
+        name: 'Wedding Website Templates & Invitation Designs | QuickWeds',
+        description:
+          'Browse handcrafted wedding website templates across classic, modern, romantic, destination, and bold styles.',
+        isPartOf: { '@id': `${siteOrigin}/#website` },
+        inLanguage: 'en',
+      },
+      buildBreadcrumbJsonLd([
+        { name: 'QuickWeds', path: '/' },
+        { name: 'Templates', path: '/templates' },
+      ]),
+      {
+        '@type': 'ItemList',
+        name: 'QuickWeds Wedding Website Templates',
+        numberOfItems: landingTemplatePreviews.length,
+        itemListElement: landingTemplatePreviews.map((template, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: template.name,
+          url: `${siteOrigin}/templates/${template.id}`,
+        })),
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-neutral text-foreground">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
+      />
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-24 lg:px-8">
         <div className="mb-10 text-center sm:mb-14">
           <div className="mx-auto mb-4 inline-flex items-center justify-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
@@ -85,21 +125,21 @@ export default function TemplatesPage() {
               className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl sm:rounded-[1.75rem]"
             >
               <Link
-                href={user ? `/builder?template=${template.id}` : '/login'}
+                href={`/templates/${template.id}`}
                 className="flex flex-col h-full"
-                aria-label={`Start building with the ${template.name} template`}
+                aria-label={`Preview the ${template.name} wedding website template`}
               >
                 <div className="relative shrink-0 aspect-[4/5] overflow-hidden bg-[#fffaf7]">
                   <Image
                     src={template.image}
-                    alt={`${template.name} preview`}
+                    alt={`${template.name} wedding website template preview`}
                     fill
                     sizes="(max-width: 639px) calc(50vw - 1rem), (max-width: 1023px) calc(50vw - 2rem), 300px"
                     className="object-cover object-top transition duration-500 group-hover:scale-[1.035]"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                   <span className="absolute bottom-2 left-2 hidden items-center gap-1.5 rounded-full bg-white px-2 py-1.5 text-[8px] font-black uppercase tracking-[0.16em] text-primary opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:bottom-4 sm:left-4 sm:inline-flex sm:px-3 sm:py-2 sm:text-[10px]">
-                    Use this template <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    Preview template <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   </span>
                 </div>
                 <div className="flex flex-1 flex-col justify-between p-3 sm:flex-row sm:items-start sm:gap-3 sm:p-5">

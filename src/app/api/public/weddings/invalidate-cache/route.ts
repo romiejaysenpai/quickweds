@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { invalidateWeddingPublicCache } from '@/lib/public-wedding';
-import { sanitizeWeddingId } from '@/lib/rate-limiter';
+import { createRateLimitMiddleware, sanitizeWeddingId } from '@/lib/rate-limit';
 import { getWeddingAccess } from '@/lib/wedding-access';
 
 export const dynamic = 'force-dynamic';
@@ -11,9 +11,12 @@ export async function POST(req: NextRequest) {
     const { user, error } = await getRequestUser(req);
     if (!user) return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
 
+    const rateLimit = createRateLimitMiddleware('AUTHENTICATED_DEFAULT');
+    const limited = await rateLimit.check(`invalidate-cache:${user.id}`);
+    if (limited.limited) return limited.response;
+
     const body = await req.json().catch(() => ({}));
     const weddingId = sanitizeWeddingId(String(body.weddingId || ''));
-    const publicSlug = typeof body.publicSlug === 'string' ? body.publicSlug.trim() : '';
 
     if (!weddingId) return NextResponse.json({ error: 'Wedding ID is required.' }, { status: 400 });
 
@@ -27,8 +30,9 @@ export async function POST(req: NextRequest) {
         if (!access.wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
         if (!access.canManage) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-        await invalidateWeddingPublicCache(weddingId, publicSlug, access.wedding.public_slug);
-        return NextResponse.json({ success: true });
+        // Only invalidate keys belonging to this verified wedding (never trust arbitrary body.publicSlug).
+        await invalidateWeddingPublicCache(weddingId, access.wedding.public_slug);
+        return NextResponse.json({ success: true }, { headers: limited.headers });
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to invalidate wedding cache.';
         console.error('Wedding cache invalidation failed:', message);

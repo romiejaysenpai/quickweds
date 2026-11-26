@@ -56,8 +56,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { data: weddings, error: weddingError } = await supabase
         .from('weddings')
         .select('*')
-        .gte('wedding_date', trigger.start)
-        .lte('wedding_date', trigger.end);
+        .is('deleted_at', null)
+        .gte('wedding_date', trigger.start.slice(0, 10))
+        .lte('wedding_date', trigger.end.slice(0, 10));
 
       if (weddingError) throw weddingError;
 
@@ -83,7 +84,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             guestName: guest.guest_name,
             brideName: wedding.bride_name,
             groomName: wedding.groom_name,
-            weddingDate: new Date(wedding.wedding_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+            weddingDate: new Date(`${String(wedding.wedding_date).slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
             weddingTime: wedding.wedding_time,
             venueName: wedding.venue_name,
             venueAddress: wedding.venue_address,

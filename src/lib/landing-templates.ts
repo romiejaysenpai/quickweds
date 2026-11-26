@@ -66,4 +66,6 @@ export const landingTemplatePreviews: LandingTemplatePreview[] = [
   { id: 'love-letter', name: 'Love Letter', mood: 'Modern stationery', image: '/templates/previews/love-letter.jpg' },
   { id: 'butter-blue', name: 'Butter & Blue', mood: 'Destination postcard', image: '/templates/previews/butter-blue.jpg' },
   { id: 'ribbon-romance', name: 'Ribbon Romance', mood: 'Tied with love', image: '/templates/previews/ribbon-romance.jpg' },
+  { id: 'nordic', name: 'Nordic Minimal', mood: 'Scandinavian Editorial', image: '/templates/previews/nordic.jpg' },
+  { id: 'riviera', name: 'Riviera Sun', mood: 'Mediterranean Coast', image: '/templates/previews/riviera.jpg' },
 ];

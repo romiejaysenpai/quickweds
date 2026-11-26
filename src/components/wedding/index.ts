@@ -20,3 +20,4 @@ export { default as BackgroundMusicPlayer } from './BackgroundMusicPlayer';
 export { default as TemplateNavigation } from './TemplateNavigation';
 export { default as SafeWeddingImage } from './SafeWeddingImage';
 export { default as PostWeddingMemories } from './PostWeddingMemories';
+export { SectionTemplateElement, TemplateElementProvider } from './SectionTemplateElement';

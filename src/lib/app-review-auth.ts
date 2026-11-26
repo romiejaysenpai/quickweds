@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import { getPublicAppUrl } from '@/lib/site-url';
 import { sendEmail } from '@/lib/email';
+import { getAdminEmails } from '@/lib/admin';
+import { getAdminReviewNotificationHtml } from '@/lib/email-templates';
 import type { AppReview } from '@/types/review';
 
 export type ReviewModerationAction = 'approve' | 'approve_and_feature' | 'reject';
@@ -12,12 +14,11 @@ export function isReviewModerationAction(value: string | null | undefined): valu
 }
 
 function getReviewSecret(): string {
-  return (
-    process.env.APP_REVIEW_SECRET ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_SERVICE_KEY ||
-    'quickweds-app-review-secret-key-2026'
-  );
+  const configured = process.env.APP_REVIEW_SECRET?.trim();
+  if (!configured || configured.length < 32) {
+    throw new Error('APP_REVIEW_SECRET must be configured with at least 32 characters.');
+  }
+  return configured;
 }
 
 function getPayload(reviewId: string, action: ReviewModerationAction, expires: string): string {
@@ -42,20 +43,23 @@ export function verifyReviewAction(
     return false;
   }
 
-  // Check expiration
   const expiresTimestamp = parseInt(expires, 10);
   if (isNaN(expiresTimestamp) || Date.now() > expiresTimestamp) {
     return false;
   }
 
-  const expected = signReviewAction(reviewId, action, expires);
-  const expectedBuffer = Buffer.from(expected, 'hex');
-  const tokenBuffer = Buffer.from(token, 'hex');
+  try {
+    const expected = signReviewAction(reviewId, action, expires);
+    const expectedBuffer = Buffer.from(expected, 'hex');
+    const tokenBuffer = Buffer.from(token, 'hex');
 
-  return (
-    expectedBuffer.length === tokenBuffer.length &&
-    crypto.timingSafeEqual(expectedBuffer, tokenBuffer)
-  );
+    return (
+      expectedBuffer.length === tokenBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, tokenBuffer)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function getReviewModerationUrl(
@@ -75,31 +79,13 @@ export function getReviewModerationUrl(
   return `${getPublicAppUrl()}/api/reviews/moderate?${params.toString()}`;
 }
 
-import { getAdminReviewNotificationHtml } from '@/lib/email-templates';
-
 export async function sendAdminNewReviewNotification(review: AppReview): Promise<boolean> {
   try {
-    const rawEmails = [
-      process.env.ADMIN_EMAIL,
-      process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-      ...(process.env.ADMIN_EMAILS || '').split(','),
-    ];
-
-    const uniqueAdminEmails = Array.from(
-      new Set(
-        rawEmails
-          .filter(Boolean)
-          .map((e) => (e as string).trim())
-          .filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
-      )
-    );
-
-    if (uniqueAdminEmails.length === 0) {
-      uniqueAdminEmails.push('support@quickweds.site');
-    }
+    const adminEmails = getAdminEmails();
+    const uniqueAdminEmails = adminEmails.length > 0 ? adminEmails : ['support@quickweds.site'];
 
     const appUrl = getPublicAppUrl();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days valid
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days valid
 
     const approveUrl = getReviewModerationUrl(review.id, 'approve', expiresAt);
     const featureUrl = getReviewModerationUrl(review.id, 'approve_and_feature', expiresAt);

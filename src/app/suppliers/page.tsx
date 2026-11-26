@@ -1,50 +1,65 @@
-import type { Metadata } from 'next';
 import SupplierDirectoryClient from '@/components/suppliers/SupplierDirectoryClient';
-import { getCachedServerValue } from '@/lib/server-cache';
-import { getSupabaseAdminClient } from '@/lib/supabase-admin';
-import type { SupplierProfile } from '@/lib/suppliers';
+import {
+  buildBreadcrumbJsonLd,
+  publicPageMetadata,
+  serializeJsonLd,
+  siteOrigin,
+} from '@/lib/seo';
+import { getApprovedSuppliers } from '@/lib/suppliers-server';
 
 export const revalidate = 300;
 
-const SUPPLIERS_CACHE_TTL_MS = 5 * 60 * 1000;
-
-export const metadata: Metadata = {
-  title: 'Wedding Supplier Directory',
-  description: 'Browse trusted Philippines wedding suppliers for venues, catering, photography, coordination, styling, and more.',
-  alternates: {
-    canonical: '/suppliers',
-  },
-};
-
-async function getApprovedSuppliers() {
-  const { value } = await getCachedServerValue<SupplierProfile[]>(
-    'supplier_profiles:approved:active',
-    SUPPLIERS_CACHE_TTL_MS,
-    async () => {
-      const db = getSupabaseAdminClient() as any;
-      const { data, error } = await db
-        .from('supplier_profiles')
-        .select('*')
-        .eq('status', 'approved')
-        .eq('is_active', true)
-        .order('is_featured', { ascending: false })
-        .order('display_order', { ascending: true })
-        .order('business_name', { ascending: true });
-
-      if (error) {
-        console.warn('Unable to load suppliers:', error.message);
-        return [];
-      }
-
-      return (data || []) as SupplierProfile[];
-    }
-  );
-
-  return value;
-}
+export const metadata = publicPageMetadata(
+  '/suppliers',
+  'Philippines Wedding Supplier Directory — Venues, Photo & Catering',
+  'Browse trusted Philippines wedding suppliers for venues, catering, photography, coordination, florists, styling, and more. Save favorites straight to your QuickWeds planner.',
+);
 
 export default async function SuppliersPage() {
   const suppliers = await getApprovedSuppliers();
 
-  return <SupplierDirectoryClient suppliers={suppliers} />;
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': `${siteOrigin}/suppliers#webpage`,
+        url: `${siteOrigin}/suppliers`,
+        name: 'Philippines Wedding Supplier Directory | QuickWeds',
+        description:
+          'Browse trusted Philippines wedding suppliers for venues, catering, photography, coordination, styling, and more.',
+        isPartOf: { '@id': `${siteOrigin}/#website` },
+        inLanguage: 'en',
+      },
+      buildBreadcrumbJsonLd([
+        { name: 'QuickWeds', path: '/' },
+        { name: 'Wedding Suppliers', path: '/suppliers' },
+      ]),
+      ...(suppliers.length > 0
+        ? [
+            {
+              '@type': 'ItemList',
+              name: 'Approved Philippines Wedding Suppliers',
+              numberOfItems: suppliers.length,
+              itemListElement: suppliers.slice(0, 50).map((supplier, index) => ({
+                '@type': 'ListItem',
+                position: index + 1,
+                name: supplier.business_name,
+                url: `${siteOrigin}/suppliers/${supplier.slug}`,
+              })),
+            },
+          ]
+        : []),
+    ],
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
+      />
+      <SupplierDirectoryClient suppliers={suppliers} />
+    </>
+  );
 }

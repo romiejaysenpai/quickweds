@@ -59,47 +59,52 @@ export default function SupplierSaveButton({
         setState('saving');
         setMessage('');
 
-        const { data: sessionData } = await getCachedSession();
-        const token = sessionData.session?.access_token;
+        try {
+            const { data: sessionData } = await getCachedSession();
+            const token = sessionData.session?.access_token;
 
-        if (!token) {
+            if (!token) {
+                setState('error');
+                setMessage('Please sign in again to save this supplier.');
+                return;
+            }
+
+            const response = await fetch('/api/suppliers/save-to-planner', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ supplierId, weddingId }),
+            });
+            const data = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                setPlannerWeddingId(data.weddingId || weddingId || null);
+                setState('saved');
+                setMessage(data.alreadySaved ? 'This supplier is already in your Suppliers/Vendors list.' : 'Supplier added to your Suppliers/Vendors list.');
+                return;
+            }
+
+            if (data.code === 'needs_wedding') {
+                setState('needs_wedding');
+                setMessage(data.error);
+                return;
+            }
+
+            if (data.code === 'planner_pro_required' || data.code === 'planner_lite_limit_reached') {
+                setUpgradeWeddingId(data.weddingId);
+                setState('needs_pro');
+                setMessage(data.error);
+                return;
+            }
+
             setState('error');
-            setMessage('Please sign in again to save this supplier.');
-            return;
+            setMessage(data.error || 'Unable to save supplier.');
+        } catch (err) {
+            setState('error');
+            setMessage(err instanceof Error ? err.message : 'Network error. Please try again.');
         }
-
-        const response = await fetch('/api/suppliers/save-to-planner', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ supplierId, weddingId }),
-        });
-        const data = await response.json();
-
-        if (response.ok) {
-            setPlannerWeddingId(data.weddingId || weddingId || null);
-            setState('saved');
-            setMessage(data.alreadySaved ? 'This supplier is already in your Suppliers/Vendors list.' : 'Supplier added to your Suppliers/Vendors list.');
-            return;
-        }
-
-        if (data.code === 'needs_wedding') {
-            setState('needs_wedding');
-            setMessage(data.error);
-            return;
-        }
-
-        if (data.code === 'planner_pro_required' || data.code === 'planner_lite_limit_reached') {
-            setUpgradeWeddingId(data.weddingId);
-            setState('needs_pro');
-            setMessage(data.error);
-            return;
-        }
-
-        setState('error');
-        setMessage(data.error || 'Unable to save supplier.');
     };
 
     return (

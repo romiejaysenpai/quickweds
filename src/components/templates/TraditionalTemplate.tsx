@@ -12,42 +12,78 @@ import {
     AttireSection,
 
 } from '../wedding';
-import { SharedNewSections } from './shared';
+import {
+    formatWeddingDate,
+    resolveTemplateCopy,
+    SharedNewSections,
+    TEMPLATE_ELEMENT_ASSETS,
+    TemplateHeroActions,
+    WeddingMonogram,
+} from './shared';
 import type { TemplateProps } from '@/types/wedding';
+import { getSectionTitleStyle } from '@/lib/theme-engine';
 
 export default function TraditionalTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+    const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
+    const titleStyle = getSectionTitleStyle(wedding);
     const motifColor = wedding.motif_color || '#C5A059';
+    const copy = resolveTemplateCopy(wedding);
+    const hasCustomMonogram = Boolean(
+        wedding.logo_initials || (wedding.logo_shape && wedding.logo_shape !== 'minimal')
+    );
     
     return (
-        <div className="bg-neutral-50 text-neutral-700 font-serif relative pb-24">
-            <section className="min-h-screen py-16 sm:py-20 md:py-24 lg:py-24 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative">
-                <div className="absolute inset-8 sm:inset-12 md:inset-16 border border-neutral-200 pointer-events-none" />
+        <div
+            className="font-serif relative pb-24"
+            style={{
+                backgroundColor: hasBackgroundChoice ? 'var(--builder-paper)' : '#fafafa',
+                color: hasBackgroundChoice ? 'var(--builder-ink)' : '#404040',
+            }}
+        >
+            <div className="qw-paper-grain fixed inset-0 pointer-events-none opacity-[0.14] z-0" />
+            <section className="min-h-screen py-16 sm:py-20 md:py-24 flex flex-col items-center justify-center text-center px-4 sm:px-6 relative z-10">
+                <div className="absolute inset-8 sm:inset-12 md:inset-16 border border-current/15 pointer-events-none" />
 
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     transition={{ duration: 1 }} 
-                    className="z-10 bg-white p-8 sm:p-12 md:p-16 lg:p-24 shadow-sm border border-neutral-100"
+                    data-wedding-card="true"
+                    className="z-10 bg-white/95 text-[#362E2B] p-8 sm:p-12 md:p-16 lg:p-20 shadow-sm border border-neutral-200 max-w-3xl w-full"
                 >
+                    {/* Bespoke Wax Seal Crest */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={TEMPLATE_ELEMENT_ASSETS.waxSeal}
+                        alt=""
+                        aria-hidden="true"
+                        className="mx-auto mb-6 w-20 sm:w-24 opacity-90 drop-shadow-sm"
+                    />
+                    {hasCustomMonogram && (
+                        <div className="mb-6 flex justify-center">
+                            <WeddingMonogram wedding={wedding} />
+                        </div>
+                    )}
                     <motion.p 
-                        className="text-xs sm:text-sm uppercase tracking-[0.4em] font-bold mb-8 sm:mb-10 md:mb-12"
+                        className="text-xs sm:text-sm uppercase tracking-[0.4em] font-bold mb-8"
                         style={{ color: motifColor }}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3, duration: 0.8 }}
                     >
-                        The Marriage of
+                        {copy.eyebrow}
                     </motion.p>
                     
                     <motion.h1 
-                        className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-serif text-neutral-800 mb-8 sm:mb-10 md:mb-12 border-y border-neutral-200 py-12 leading-tight"
+                        className={`text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-serif mb-8 border-y border-neutral-200 py-10 leading-tight ${titleStyle.className}`}
+                        style={titleStyle.style}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5, duration: 0.8 }}
                     >
                         {wedding.bride_name} <br />
                         <span 
-                            className="text-2xl sm:text-2xl md:text-3xl italic font-light my-6 sm:my-8 md:my-10 block"
+                            className="text-2xl sm:text-3xl italic font-light my-5 block"
                             style={{ color: motifColor }}
                         >
                             &amp;
@@ -55,35 +91,50 @@ export default function TraditionalTemplate({ wedding, gallery, isExpired }: Tem
                         {wedding.groom_name}
                     </motion.h1>
                     
-                    <motion.div 
-                        className="space-y-4 sm:space-y-6"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.8, duration: 0.8 }}
-                    >
-                        <p className="text-xl sm:text-2xl tracking-[0.2em] font-light">
-                            {new Date(`${wedding.wedding_date.slice(0, 10)}T12:00:00`).toLocaleDateString()}
-                        </p>
-                        <p className="text-lg sm:text-xl italic text-neutral-400">
-                            {wedding.venue_name}
-                        </p>
-                    </motion.div>
+                    {(wedding.wedding_date || wedding.venue_name) && (
+                        <motion.div 
+                            className="space-y-3"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.8, duration: 0.8 }}
+                        >
+                            {wedding.wedding_date && (
+                                <p className="text-xl sm:text-2xl tracking-[0.2em] font-light">
+                                    {formatWeddingDate(wedding.wedding_date, {}, undefined)}
+                                </p>
+                            )}
+                            {wedding.venue_name && (
+                                <p className="text-lg sm:text-xl italic opacity-65">
+                                    {wedding.venue_name}
+                                </p>
+                            )}
+                        </motion.div>
+                    )}
                     
                     <motion.div 
-                        className="mt-12 sm:mt-16"
+                        className="mt-10 flex flex-wrap justify-center gap-3"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 1, duration: 0.6 }}
                     >
                         <a 
-                            href="#rsvp" 
-                            aria-label="Request RSVP"
+                            href={copy.ctaHref}
+                            data-wedding-control="primary"
+                            aria-label={copy.ctaLabel}
                             className="inline-flex items-center justify-center px-10 py-4 border-2 font-bold uppercase tracking-widest text-xs min-h-[44px] hover:!bg-neutral-800 hover:!text-white transition-all"
                             style={{ borderColor: motifColor, color: motifColor }}
                         >
-                            Request RSVP
+                            {copy.ctaLabel}
+                        </a>
+                        <a 
+                            href={copy.detailsHref}
+                            data-wedding-control="secondary"
+                            className="inline-flex items-center justify-center px-7 py-4 border border-current/25 font-semibold uppercase tracking-widest text-xs min-h-[44px] hover:bg-neutral-100 transition-colors"
+                        >
+                            {copy.detailsLabel}
                         </a>
                     </motion.div>
+                    <TemplateHeroActions wedding={wedding} variant="minimal" motifColor={motifColor} className="justify-center mt-5" />
                 </motion.div>
             </section>
 

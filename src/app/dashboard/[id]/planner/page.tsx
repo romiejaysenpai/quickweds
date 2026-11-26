@@ -22,6 +22,7 @@ import PlannerOverview from '@/components/dashboard/PlannerOverview';
 import BudgetStarterModal from '@/components/dashboard/BudgetStarterModal';
 import CustomCategoryModal from '@/components/dashboard/CustomCategoryModal';
 import BudgetDeleteConfirmModal from '@/components/dashboard/BudgetDeleteConfirmModal';
+import { toSafeHttpUrl } from '@/lib/url-safety';
 
 const SeatingChartBuilder = dynamic(() => import('@/components/dashboard/SeatingChartBuilder'), {
     loading: () => (
@@ -212,14 +213,14 @@ function getVendorPaymentStatusClasses(status?: string | null) {
     const normalized = normalizeVendorPaymentStatus(status);
 
     if (normalized === 'paid') {
-        return 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-emerald-900/5 focus:ring-emerald-500/20 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300';
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-emerald-900/5 focus:ring-emerald-500/20';
     }
 
     if (normalized === 'pending') {
-        return 'border-amber-200 bg-amber-50 text-amber-700 shadow-amber-900/5 focus:ring-amber-500/20 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-300';
+        return 'border-amber-200 bg-amber-50 text-amber-700 shadow-amber-900/5 focus:ring-amber-500/20';
     }
 
-    return 'border-border bg-neutral text-text-secondary shadow-primary/5 focus:ring-primary/20 dark:bg-white/5';
+    return 'border-border bg-neutral text-text-secondary shadow-primary/5 focus:ring-primary/20';
 }
 
 function VendorPaymentStatusSelect({
@@ -604,10 +605,10 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
     return (
         <div className="min-h-screen bg-background">
             {/* Top Navigation Bar */}
-            <div className="bg-white/80 dark:bg-white/90 backdrop-blur-md border-b border-border sticky top-0 z-40 overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-md border-b border-border sticky top-0 z-40 overflow-hidden">
                 <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
                     <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-                        <button onClick={() => router.push(`/dashboard/${weddingId}`)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]">
+                        <button onClick={() => router.push(`/dashboard/${weddingId}`)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-neutral flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]">
                             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
                         </button>
                         <div className="min-w-0">
@@ -620,7 +621,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                         <span>Home</span>
                     </Link>
                     {/* Mobile home icon */}
-                    <Link href="/" className="sm:hidden w-9 h-9 rounded-full hover:bg-neutral dark:hover:bg-neutral/50 flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]" aria-label="Home">
+                    <Link href="/" className="sm:hidden w-9 h-9 rounded-full hover:bg-neutral flex items-center justify-center transition-colors flex-shrink-0 min-h-[44px] min-w-[44px]" aria-label="Home">
                         <Home className="w-5 h-5 text-text-secondary" />
                     </Link>
                 </div>
@@ -642,7 +643,7 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                         className={`relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] ${
                                             isActive
                                                 ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
-                                                : 'text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground'
+                                                : 'text-text-secondary hover:bg-neutral hover:text-foreground'
                                         }`}
                                     >
                                         <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
@@ -650,11 +651,11 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                     </button>
                                 );
                             })}
-                            <Link href={`/dashboard/${weddingId}/wedding-day?from=planner`} title="Open Wedding Day Mode" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground">
+                            <Link href={`/dashboard/${weddingId}/wedding-day?from=planner`} title="Open Wedding Day Mode" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral hover:text-foreground">
                                 <ClipboardCheck className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                 <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Wedding Day</span>
                             </Link>
-                            <Link href={`/dashboard/${weddingId}/qr-kit?from=planner`} title="Open QR Kit" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral dark:hover:bg-neutral/50 hover:text-foreground">
+                            <Link href={`/dashboard/${weddingId}/qr-kit?from=planner`} title="Open QR Kit" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral hover:text-foreground">
                                 <QrCode className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                 <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">QR Kit</span>
                             </Link>
@@ -1287,7 +1288,7 @@ function PlannerChecklists({ weddingId, initialTasks, setTasks, vendors = [], we
     const progress = initialTasks.length > 0 ? Math.round((preparedCount / initialTasks.length) * 100) : 0;
 
     return (
-        <div className="bg-white dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] p-5 md:p-10 soft-shadow border border-border">
+        <div className="bg-white rounded-2xl sm:rounded-[2.5rem] p-5 md:p-10 soft-shadow border border-border">
             <div className="flex flex-col gap-4 border-b border-border/50 pb-6 mb-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <h2 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">Planner Checklist</h2>
@@ -1536,12 +1537,18 @@ function PlannerCalendar({ weddingId, events = [], setEvents, tasks = [], weddin
     async function addEvent(e: any) {
         e.preventDefault();
         if (!newEvent.title || !newEvent.starts_at || publishing) return;
+        const parsedStart = new Date(newEvent.starts_at);
+        const parsedEnd = newEvent.ends_at ? new Date(newEvent.ends_at) : null;
+        if (Number.isNaN(parsedStart.getTime()) || (parsedEnd && Number.isNaN(parsedEnd.getTime()))) {
+            handlePlannerActionError(new Error('Please enter a valid start and end date/time.'), 'Please enter a valid start and end date/time.', onRequirePro);
+            return;
+        }
         setPublishing(true);
         try {
             const createdEvent = await createPlannerItem(weddingId, 'event', {
                 title: newEvent.title.trim(),
-                starts_at: new Date(newEvent.starts_at).toISOString(),
-                ends_at: newEvent.ends_at ? new Date(newEvent.ends_at).toISOString() : null,
+                starts_at: parsedStart.toISOString(),
+                ends_at: parsedEnd ? parsedEnd.toISOString() : null,
                 location: newEvent.location.trim() || null,
                 notes: newEvent.notes.trim() || null,
                 planner_task_id: newEvent.planner_task_id || null,
@@ -3275,8 +3282,14 @@ function FoodDrinksPlanner({ weddingId, foodDrinks = [], setFoodDrinks, vendors 
         }
         setUploadingReference(true);
         try {
+            const { data: sessionData } = await getCachedSession();
+            const userId = sessionData.session?.user?.id;
+            if (!userId) {
+                alert('Please sign in again to upload a photo.');
+                return;
+            }
             const safeName = file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
-            const path = `planner-food/${weddingId}/${Date.now()}-${safeName}`;
+            const path = `${userId}/planner-food/${weddingId}/${Date.now()}-${safeName}`;
             const { error } = await supabase.storage.from('quickweds').upload(path, file, { contentType: file.type, upsert: true });
             if (error) throw error;
             const { data } = supabase.storage.from('quickweds').getPublicUrl(path);
@@ -3583,7 +3596,7 @@ function HoneymoonPlanner({ weddingId, items = [], setHoneymoonItems, currency, 
                         {(item.supplier_name || item.booking_link || item.notes) && (
                             <div className="mt-4 border-t border-border pt-3 text-xs text-text-secondary">
                                 {item.supplier_name && <p><span className="font-bold text-foreground">Supplier:</span> {item.supplier_name}</p>}
-                                {item.booking_link && <a href={item.booking_link} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 font-bold text-primary"><LinkIcon className="h-3.5 w-3.5" /> Booking link</a>}
+                                {toSafeHttpUrl(item.booking_link) && <a href={toSafeHttpUrl(item.booking_link)!} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 font-bold text-primary"><LinkIcon className="h-3.5 w-3.5" /> Booking link</a>}
                                 {item.notes && <p className="mt-1 italic">{item.notes}</p>}
                             </div>
                         )}

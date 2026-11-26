@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { redisDel, redisJsonGet, redisJsonSet } from '@/lib/redis';
+import { guestPartySize, isGuestAttending } from '@/lib/guest-counts';
 
 export type DashboardCounters = {
     confirmed: number;
@@ -35,7 +36,7 @@ export async function getDashboardCounters(db: any, weddingId: string): Promise<
     const [rsvpsRes, photosRes, tablesRes] = await Promise.all([
         db
             .from('rsvps')
-            .select('num_guests, rsvp_status, attendance, checked_in_at, meal_preference, guest_group, table_assignment')
+            .select('num_guests, rsvp_status, attendance, checked_in_at, meal_preference, guest_group, table_assignment, plus_one_allowed, plus_one_name, plus_one_rsvp_status')
             .eq('wedding_id', weddingId),
         db
             .from('wedding_photos')
@@ -68,27 +69,34 @@ export async function getDashboardCounters(db: any, weddingId: string): Promise<
 
     for (const rsvp of rsvps) {
         const status = rsvp.rsvp_status || (rsvp.attendance === 'Yes' ? 'confirmed' : rsvp.attendance === 'No' ? 'declined' : 'pending');
-        const partySize = Number(rsvp.num_guests || 1);
-        if (status === 'confirmed' || rsvp.attendance === 'Yes') {
+        const isDeclined = status === 'declined' || rsvp.attendance === 'No';
+        const attending = isGuestAttending(rsvp);
+        const partySize = isDeclined ? 0 : guestPartySize(rsvp);
+
+        if (attending) {
             confirmed += 1;
             totalGuests += partySize;
-        } else if (status === 'declined' || rsvp.attendance === 'No') {
+        } else if (isDeclined) {
             declined += 1;
         } else {
             pending += 1;
         }
 
-        if (rsvp.checked_in_at) checkedInGuests += 1;
+        if (rsvp.checked_in_at && !isDeclined) checkedInGuests += 1;
         if (String(rsvp.guest_group || '').toLowerCase() === 'vip') vipCount += 1;
 
-        const tableName = String(rsvp.table_assignment || '').trim();
-        if (tableName) {
-            assignedByTable.set(tableName, (assignedByTable.get(tableName) || 0) + partySize);
-            if (!tableCapacities.has(tableName)) tableCapacities.set(tableName, null);
-        }
+        if (!isDeclined) {
+            const tableName = String(rsvp.table_assignment || '').trim();
+            if (tableName && partySize > 0) {
+                assignedByTable.set(tableName, (assignedByTable.get(tableName) || 0) + partySize);
+                if (!tableCapacities.has(tableName)) tableCapacities.set(tableName, null);
+            }
 
-        const meal = rsvp.meal_preference || 'No Preference';
-        mealChoices[meal] = (mealChoices[meal] || 0) + 1;
+            if (attending) {
+                const meal = rsvp.meal_preference || 'No Preference';
+                mealChoices[meal] = (mealChoices[meal] || 0) + Math.max(1, partySize);
+            }
+        }
     }
 
     const tableFill = Array.from(tableCapacities.entries())

@@ -4,6 +4,8 @@ import { getRequestUser } from '@/lib/api-auth';
 import { isKnownAdminEmail } from '@/lib/admin';
 import { getWeddingAccess } from '@/lib/wedding-access';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import { createRateLimitMiddleware } from '@/lib/rate-limit';
+import { toSafeHttpUrl } from '@/lib/url-safety';
 import {
     getPlannerLimitMessage,
     getPlannerUsage,
@@ -31,8 +33,7 @@ function isSchemaMissingError(error: any) {
     return (
         text.includes('schema cache') ||
         text.includes('does not exist') ||
-        text.includes('could not find') ||
-        text.includes('column') ||
+        text.includes('could not find the ') ||
         error?.code === 'PGRST204' ||
         error?.code === 'PGRST205' ||
         error?.code === '42P01' ||
@@ -66,6 +67,28 @@ function getNonNegativeNumber(value: unknown) {
     if (!Number.isFinite(amount) || amount < 0) return 0;
     return amount;
 }
+
+function parseReminderMinutes(value: unknown): number {
+    if (value === undefined || value === null || value === '') return 1440;
+    const num = Number(value);
+    if (!Number.isFinite(num) || num < 0) return 1440;
+    return Math.min(43200, Math.round(num));
+}
+
+function cleanSafeUrl(value: unknown): string | null {
+    const raw = cleanString(value);
+    if (!raw) return null;
+    return toSafeHttpUrl(raw);
+}
+
+const PLANNER_UPDATE_ALLOWLIST: Record<string, readonly string[]> = {
+    task: ['title', 'status', 'category', 'section', 'due_date', 'assigned_to', 'planner_vendor_id', 'custom_supplier_name', 'notes', 'template_key'],
+    budget: ['category', 'item_name', 'estimated_cost', 'actual_cost', 'is_paid', 'due_date'],
+    vendor: ['role', 'name', 'email', 'phone', 'notes', 'amount', 'payment_status', 'payment_method', 'directory_supplier_id'],
+    event: ['title', 'starts_at', 'ends_at', 'location', 'notes', 'planner_task_id', 'reminder_minutes'],
+    foodDrink: ['item_type', 'item_name', 'serving_category', 'reference_image_url', 'estimated_cost', 'planner_vendor_id', 'custom_supplier_name', 'notes'],
+    honeymoon: ['category', 'title', 'destination', 'start_date', 'end_date', 'estimated_cost', 'status', 'supplier_name', 'booking_link', 'notes'],
+};
 
 function getTaskFallbackCategory(values: Record<string, any>) {
     const section = cleanString(values.section || values.category) || 'General';
@@ -142,7 +165,7 @@ function getCreatePayload(type: string, weddingId: string, values: Record<string
             email: cleanString(values.email),
             phone: cleanString(values.phone),
             notes: cleanString(values.notes),
-            amount: Number(values.amount || 0),
+            amount: getNonNegativeNumber(values.amount),
             payment_status: cleanString(values.payment_status) || 'not paid',
             payment_method: cleanString(values.payment_method) || 'other',
             directory_supplier_id: values.directory_supplier_id || null,
@@ -157,7 +180,7 @@ function getCreatePayload(type: string, weddingId: string, values: Record<string
             location: cleanString(values.location),
             notes: cleanString(values.notes),
             planner_task_id: values.planner_task_id || null,
-            reminder_minutes: Number(values.reminder_minutes || 1440),
+            reminder_minutes: parseReminderMinutes(values.reminder_minutes),
             updated_at: new Date().toISOString(),
         };
     }
@@ -167,8 +190,8 @@ function getCreatePayload(type: string, weddingId: string, values: Record<string
             item_type: cleanString(values.item_type) || 'food',
             item_name: cleanString(values.item_name),
             serving_category: cleanString(values.serving_category),
-            reference_image_url: cleanString(values.reference_image_url),
-            estimated_cost: Number(values.estimated_cost || 0),
+            reference_image_url: cleanSafeUrl(values.reference_image_url),
+            estimated_cost: getNonNegativeNumber(values.estimated_cost),
             planner_vendor_id: values.planner_vendor_id || null,
             custom_supplier_name: cleanString(values.custom_supplier_name),
             notes: cleanString(values.notes),
@@ -183,10 +206,10 @@ function getCreatePayload(type: string, weddingId: string, values: Record<string
             destination: cleanString(values.destination),
             start_date: values.start_date || null,
             end_date: values.end_date || null,
-            estimated_cost: Number(values.estimated_cost || 0),
+            estimated_cost: getNonNegativeNumber(values.estimated_cost),
             status: cleanString(values.status) || 'idea',
             supplier_name: cleanString(values.supplier_name),
-            booking_link: cleanString(values.booking_link),
+            booking_link: cleanSafeUrl(values.booking_link),
             notes: cleanString(values.notes),
             updated_at: new Date().toISOString(),
         };
@@ -196,9 +219,7 @@ function getCreatePayload(type: string, weddingId: string, values: Record<string
 
 function getUpdatePayload(type: string, values: Record<string, any>) {
     const payload: Record<string, any> = {};
-    const allowed = type === 'task'
-        ? ['title', 'status', 'category', 'section', 'due_date', 'assigned_to', 'planner_vendor_id', 'custom_supplier_name', 'notes', 'template_key']
-        : Object.keys(values);
+    const allowed = PLANNER_UPDATE_ALLOWLIST[type] || [];
 
     for (const key of allowed) {
         if (Object.prototype.hasOwnProperty.call(values, key)) {
@@ -225,6 +246,32 @@ function getUpdatePayload(type: string, values: Record<string, any>) {
         }
     }
 
+    if (type === 'vendor' && Object.prototype.hasOwnProperty.call(payload, 'amount')) {
+        payload.amount = getNonNegativeNumber(payload.amount);
+    }
+
+    if (type === 'event' && Object.prototype.hasOwnProperty.call(payload, 'reminder_minutes')) {
+        payload.reminder_minutes = parseReminderMinutes(payload.reminder_minutes);
+    }
+
+    if (type === 'foodDrink') {
+        if (Object.prototype.hasOwnProperty.call(payload, 'estimated_cost')) {
+            payload.estimated_cost = getNonNegativeNumber(payload.estimated_cost);
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'reference_image_url')) {
+            payload.reference_image_url = cleanSafeUrl(payload.reference_image_url);
+        }
+    }
+
+    if (type === 'honeymoon') {
+        if (Object.prototype.hasOwnProperty.call(payload, 'estimated_cost')) {
+            payload.estimated_cost = getNonNegativeNumber(payload.estimated_cost);
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'booking_link')) {
+            payload.booking_link = cleanSafeUrl(payload.booking_link);
+        }
+    }
+
     if (type !== 'budget' && type !== 'vendor') {
         payload.updated_at = new Date().toISOString();
     }
@@ -232,6 +279,28 @@ function getUpdatePayload(type: string, values: Record<string, any>) {
     delete payload.id;
     delete payload.wedding_id;
     return payload;
+}
+
+async function verifyScopedForeignKeys(db: any, weddingId: string, payload: Record<string, any>): Promise<string | null> {
+    if (payload.planner_vendor_id) {
+        const { data } = await db
+            .from('planner_vendors')
+            .select('id')
+            .eq('id', payload.planner_vendor_id)
+            .eq('wedding_id', weddingId)
+            .maybeSingle();
+        if (!data) return 'Referenced vendor does not belong to this wedding.';
+    }
+    if (payload.planner_task_id) {
+        const { data } = await db
+            .from('planner_tasks')
+            .select('id')
+            .eq('id', payload.planner_task_id)
+            .eq('wedding_id', weddingId)
+            .maybeSingle();
+        if (!data) return 'Referenced task does not belong to this wedding.';
+    }
+    return null;
 }
 
 function getTaskUpdateFallbackPayload(values: Record<string, any>) {
@@ -249,6 +318,12 @@ async function getAuthorizedPlannerContext(req: NextRequest, weddingId: string) 
     const { user, error } = await getRequestUser(req);
     if (!user) {
         return { response: NextResponse.json({ error }, { status: 401 }) };
+    }
+
+    const rateLimit = createRateLimitMiddleware('AUTHENTICATED_DEFAULT');
+    const limited = await rateLimit.check(`planner-items:${user.id}`);
+    if (limited.limited) {
+        return { response: limited.response };
     }
 
     const db = getSupabaseAdminClient() as any;
@@ -351,8 +426,20 @@ async function handleCreatePlannerItem(req: NextRequest, parsedBody?: Record<str
         const { db, hasPlannerPro } = context;
         const payload = getCreatePayload(type, weddingId, values);
 
-        if (!cleanString((payload as any).title || (payload as any).item_name || (payload as any).name || (payload as any).category)) {
+        const requiredLabel =
+            type === 'budget' || type === 'foodDrink'
+                ? cleanString((payload as any).item_name)
+                : type === 'vendor'
+                    ? cleanString((payload as any).name)
+                    : cleanString((payload as any).title);
+
+        if (!requiredLabel) {
             return NextResponse.json({ error: 'Planner item title/name is required.' }, { status: 400 });
+        }
+
+        const fkError = await verifyScopedForeignKeys(db, weddingId, payload);
+        if (fkError) {
+            return NextResponse.json({ error: fkError }, { status: 400 });
         }
 
         if (!hasPlannerPro && Object.prototype.hasOwnProperty.call(PLANNER_ITEM_LIMITS, type)) {
@@ -447,6 +534,10 @@ export async function PATCH(req: NextRequest) {
         }
 
         const payload = getUpdatePayload(type, values);
+        const fkError = await verifyScopedForeignKeys(db, weddingId, payload);
+        if (fkError) {
+            return NextResponse.json({ error: fkError }, { status: 400 });
+        }
         const currentPayload = { ...payload };
         let result = await db.from(table).update(currentPayload).eq('id', itemId).eq('wedding_id', weddingId).select('*').single();
 

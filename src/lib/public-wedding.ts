@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { cache } from 'react';
 import { revalidateTag, unstable_cache } from 'next/cache';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { resolvePublicWeddingByIdentifier } from '@/lib/public-wedding-lookup';
@@ -164,7 +165,7 @@ export function getSupabaseErrorMessage(error: unknown) {
 }
 
 function publicWeddingCacheKey(rawIdentifier: string) {
-    return `quickweds:wedding:public:${rawIdentifier}`;
+    return `quickweds:wedding:public:${rawIdentifier.trim().toLowerCase()}`;
 }
 
 function isMissingOptionalColumnError(error: unknown, columns: readonly string[]) {
@@ -311,8 +312,12 @@ async function loadPublicWedding(rawIdentifier: string) {
     return publicWedding;
 }
 
+function canonicalCacheIdentifier(identifier: string) {
+    return identifier.trim().toLowerCase();
+}
+
 function publicWeddingCacheTag(identifier: string) {
-    return `public-wedding-${identifier.trim()}`;
+    return `public-wedding-${canonicalCacheIdentifier(identifier)}`;
 }
 
 export async function invalidateWeddingPublicCache(...identifiers: Array<string | null | undefined>) {
@@ -320,7 +325,7 @@ export async function invalidateWeddingPublicCache(...identifiers: Array<string 
         new Set(
             identifiers
                 .filter((identifier): identifier is string => typeof identifier === 'string' && identifier.trim().length > 0)
-                .map((identifier) => identifier.trim())
+                .map((identifier) => canonicalCacheIdentifier(identifier))
         )
     );
     const keys = cleanIdentifiers.map((identifier) => publicWeddingCacheKey(identifier));
@@ -335,8 +340,7 @@ export async function invalidateWeddingPublicCache(...identifiers: Array<string 
     }
 }
 
-export async function getCachedPublicWedding(rawIdentifier: string) {
-    const normalizedIdentifier = rawIdentifier.trim();
+const getCachedPublicWeddingByNormalizedId = cache(async (normalizedIdentifier: string) => {
     const templateTestWedding = getTemplateTestWedding(normalizedIdentifier);
     if (templateTestWedding) return templateTestWedding;
 
@@ -348,15 +352,20 @@ export async function getCachedPublicWedding(rawIdentifier: string) {
     if (active.error) throw active.error;
     if (!active.wedding) return null;
 
+    const canonicalKey = canonicalCacheIdentifier(normalizedIdentifier);
     const cachedLoader = unstable_cache(
-        async () => loadPublicWedding(rawIdentifier),
-        ['public-wedding', normalizedIdentifier],
+        async () => loadPublicWedding(normalizedIdentifier),
+        ['public-wedding', canonicalKey],
         {
             revalidate: 60,
-            tags: ['public-wedding', publicWeddingCacheTag(normalizedIdentifier)],
+            tags: ['public-wedding', publicWeddingCacheTag(canonicalKey)],
         }
     );
     return cachedLoader();
+});
+
+export async function getCachedPublicWedding(rawIdentifier: string) {
+    return getCachedPublicWeddingByNormalizedId(rawIdentifier.trim());
 }
 
 export const getCachedPublicWeddingPayload = getCachedPublicWedding;

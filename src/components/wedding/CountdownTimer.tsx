@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
-import { CalendarHeart } from 'lucide-react';
-import { useSectionContext } from '@/context/SectionContext';
-import { getTemplateVisualProfile } from '@/lib/theme-engine';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { CalendarHeart, ChevronDown } from 'lucide-react';
+import { useSectionActions } from '@/context/SectionContext';
+import { getSectionTitleStyle, getTemplateVisualProfile } from '@/lib/theme-engine';
+import type { Wedding } from '@/types/wedding';
+import { buildSmartCalendarLinks } from './SmartCalendar';
 
 const subscribeToClient = () => () => {};
 const getClientSnapshot = () => true;
@@ -22,34 +24,11 @@ interface CountdownTimerProps {
     motifColor?: string;
     cardStyle?: string;
     invert?: boolean;
+    wedding?: Wedding;
 }
 
-function generateICS(props: CountdownTimerProps): string {
-    const date = parseWeddingTargetDate(props.weddingDate, props.weddingTime);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const formatDate = (d: Date) =>
-        `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-
-    const endDate = new Date(date);
-    endDate.setHours(endDate.getHours() + 4); 
-
-    return [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//QuickWeds//EN',
-        'BEGIN:VEVENT',
-        `DTSTART:${formatDate(date)}`,
-        `DTEND:${formatDate(endDate)}`,
-        `SUMMARY:${props.brideName} & ${props.groomName}'s Wedding`,
-        `LOCATION:${props.venueName || ''}${props.venueAddress ? ', ' + props.venueAddress : ''}`,
-        `DESCRIPTION:We can't wait to celebrate our special day with you!\\n\\n${props.brideName} & ${props.groomName}`,
-        'END:VEVENT',
-        'END:VCALENDAR',
-    ].join('\\r\\n');
-}
-
-function parseWeddingTargetDate(weddingDate: string, weddingTime?: string): Date {
-    if (!weddingDate) return new Date();
+function parseWeddingTargetDate(weddingDate: string, weddingTime?: string): Date | null {
+    if (!weddingDate) return null;
 
     const cleanDateStr = String(weddingDate).trim();
     const dateMatch = cleanDateStr.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
@@ -64,21 +43,85 @@ function parseWeddingTargetDate(weddingDate: string, weddingTime?: string): Date
         target = new Date(weddingDate);
     }
 
+    if (Number.isNaN(target.getTime())) return null;
+
     if (weddingTime && typeof weddingTime === 'string' && weddingTime.trim().length > 0) {
-        const timeMatch = weddingTime.trim().match(/^(\d{1,2})(?::(\d{1,2}))?\s*(am|pm)?$/i);
+        // Support single times ("4:00 PM", "16:30:00") and ranges ("4:00 PM - 10:00 PM")
+        const startSegment = weddingTime.trim().split(/\s*(?:-|–|—|to)\s*/i)[0]?.trim() || '';
+        const timeMatch = startSegment.match(/^(\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?\s*(am|pm)?$/i);
         if (timeMatch) {
             let hour = Number(timeMatch[1]);
             const minute = Number(timeMatch[2] || 0);
-            if (hour <= 23 && minute <= 59 && (!timeMatch[3] || hour <= 12)) {
-                if (timeMatch[3]) hour = (hour % 12) + (timeMatch[3].toLowerCase() === 'pm' ? 12 : 0);
-                target.setHours(hour, minute, 0, 0);
+            const second = Number(timeMatch[3] || 0);
+            if (hour <= 23 && minute <= 59 && second <= 59 && (!timeMatch[4] || hour <= 12)) {
+                if (timeMatch[4]) hour = (hour % 12) + (timeMatch[4].toLowerCase() === 'pm' ? 12 : 0);
+                target.setHours(hour, minute, second, 0);
             }
         }
     } else {
-        target.setHours(12, 0, 0, 0); // Default to 12:00 PM local time
+        target.setHours(12, 0, 0, 0);
     }
 
     return target;
+}
+
+function MiniWeddingCalendar({
+    date,
+    motifColor,
+    isDark,
+}: {
+    date: Date;
+    motifColor: string;
+    isDark: boolean;
+}) {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const selectedDay = date.getDate();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthLabel = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    return (
+        <div
+            data-wedding-card="true"
+            className={`mx-auto mt-8 max-w-[17rem] border px-5 py-4 ${
+                isDark
+                    ? 'border-white/15 bg-white/[0.04] text-white'
+                    : 'border-current/15 bg-white/75 text-current'
+            } rounded-2xl`}
+            aria-label={`Wedding calendar: ${date.toLocaleDateString('en-US', { dateStyle: 'full' })}`}
+        >
+            <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.26em] opacity-80">
+                {monthLabel}
+            </p>
+            <div className="mb-1.5 grid grid-cols-7 gap-1 text-center text-[10px] font-medium uppercase opacity-55">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+                    <span key={idx}>{d}</span>
+                ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center text-xs tabular-nums">
+                {Array.from({ length: firstWeekday }).map((_, i) => (
+                    <span key={`empty-${i}`} aria-hidden="true" />
+                ))}
+                {Array.from({ length: daysInMonth }, (_, i) => {
+                    const day = i + 1;
+                    const isWeddingDay = day === selectedDay;
+                    return (
+                        <span
+                            key={day}
+                            aria-current={isWeddingDay ? 'date' : undefined}
+                            className={`mx-auto flex h-7 w-7 items-center justify-center rounded-full text-[11px] ${
+                                isWeddingDay ? 'font-semibold text-white shadow-sm' : 'opacity-75'
+                            }`}
+                            style={isWeddingDay ? { backgroundColor: motifColor } : undefined}
+                        >
+                            {day}
+                        </span>
+                    );
+                })}
+            </div>
+        </div>
+    );
 }
 
 export default function CountdownTimer({
@@ -94,12 +137,15 @@ export default function CountdownTimer({
     motifColor = '#D16C78',
     cardStyle,
     invert = false,
+    wedding,
 }: CountdownTimerProps) {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
     const [isPast, setIsPast] = useState(false);
+    const [calendarMenuOpen, setCalendarMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
     const isMounted = useSyncExternalStore(subscribeToClient, getClientSnapshot, getServerSnapshot);
-    const { registerSection, unregisterSection } = useSectionContext();
-    
+    const { registerSection, unregisterSection } = useSectionActions();
+
     useEffect(() => {
         registerSection(id, 'Countdown');
         return () => unregisterSection(id);
@@ -107,6 +153,7 @@ export default function CountdownTimer({
 
     useEffect(() => {
         const target = parseWeddingTargetDate(weddingDate, weddingTime);
+        if (!target) return;
 
         const update = () => {
             const now = new Date();
@@ -132,30 +179,40 @@ export default function CountdownTimer({
         return () => clearInterval(interval);
     }, [weddingDate, weddingTime]);
 
-    const handleAddToCalendar = () => {
-        const ics = generateICS({ weddingDate, weddingTime, brideName, groomName, venueName, venueAddress, id });
-        const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${brideName}-${groomName}-wedding.ics`;
-        a.click();
-        URL.revokeObjectURL(url);
-    };
-
-    // Suppress Hydration issue by displaying generic zeros/empty until mounted, allowing the DOM to match the server output
-    if (!isMounted) {
-        return (
-            <section data-wedding-section="CountdownTimer" id={id} className={`px-4 py-12 text-center min-h-[160px] flex items-center justify-center opacity-0 ${className}`}>
-                <div className="sr-only">Loading timer...</div>
-            </section>
-        );
-    }
+    useEffect(() => {
+        if (!calendarMenuOpen) return;
+        const onPointerDown = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setCalendarMenuOpen(false);
+            }
+        };
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setCalendarMenuOpen(false);
+        };
+        document.addEventListener('mousedown', onPointerDown);
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('mousedown', onPointerDown);
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [calendarMenuOpen]);
 
     const visual = getTemplateVisualProfile(template, motifColor, invert, cardStyle);
-    const isEditorial = visual.mood === 'editorial';
+    const titleStyle = wedding ? getSectionTitleStyle(wedding, visual.headingClass) : { className: visual.headingClass, style: undefined };
+    const isEditorial = visual.mood === 'editorial' || visual.mood === 'nordic';
+    const isStationeryMood = visual.isVintage || visual.isOrganic || visual.mood === 'classic' || visual.mood === 'romantic' || visual.mood === 'playful';
     const isDark = visual.isDark;
-    const sectionClasses = `${visual.sectionClass} ${className}`;
+    const isSharp = visual.isSharp;
+    const targetDate = parseWeddingTargetDate(weddingDate, weddingTime);
+    const calendarLinks = buildSmartCalendarLinks({
+        bride_name: brideName,
+        groom_name: groomName,
+        wedding_date: weddingDate,
+        wedding_time: weddingTime || '',
+        venue_name: venueName || '',
+        venue_address: venueAddress,
+    });
+
     const units = [
         { label: 'Days', value: timeLeft.days },
         { label: 'Hours', value: timeLeft.hours },
@@ -164,22 +221,111 @@ export default function CountdownTimer({
     ];
 
     return (
-        <section data-wedding-section="CountdownTimer" id={id} className={`px-4 py-12 sm:px-6 sm:py-16 ${sectionClasses}`} style={visual.sectionStyle}>
-            <div className="mx-auto max-w-3xl text-center">
-                <h2 className={`text-2xl sm:text-3xl ${visual.headingClass}`}>
-                    {isPast ? 'Our wedding day has arrived' : <>Counting down <span className={isEditorial ? '' : 'italic'}>to forever</span></>}
+        <section
+            data-wedding-section="CountdownTimer"
+            id={id}
+            className={`px-4 py-12 sm:px-6 sm:py-16 ${visual.sectionClass} ${className}`}
+            style={visual.sectionStyle}
+        >
+            <div className={`mx-auto text-center ${isEditorial ? 'max-w-4xl' : 'max-w-3xl'}`}>
+                <p className={`mb-2 text-[11px] font-medium uppercase tracking-[0.28em] opacity-75 ${visual.eyebrowClass}`}>
+                    {isMounted && isPast ? 'Celebrating Forever' : 'Save the Date'}
+                </p>
+                <h2 className={`text-2xl sm:text-3xl md:text-4xl ${titleStyle.className}`} style={titleStyle.style}>
+                    {isMounted && isPast ? 'Our wedding day has arrived' : <>Counting down <span className={isEditorial ? '' : 'italic'}>to forever</span></>}
                 </h2>
-                <div role="timer" aria-label="Time until the wedding" className={`my-7 grid grid-cols-4 divide-x border-y py-6 sm:py-8 ${isDark ? 'divide-white/15 border-white/15 text-white' : 'divide-black/15 border-black/15 text-[#4A4444]'}`}>
+
+                <div
+                    role="timer"
+                    aria-label="Time until the wedding"
+                    className={`my-7 grid grid-cols-4 divide-x border-y py-6 sm:py-8 ${
+                        isDark
+                            ? 'divide-white/15 border-white/15 text-white'
+                            : 'divide-black/12 border-black/12 text-[#352C2C]'
+                    }`}
+                >
                     {units.map((unit) => (
                         <div key={unit.label} className="min-w-0 px-1 sm:px-4">
-                            <span className="block font-serif text-3xl tabular-nums leading-none sm:text-5xl">{String(unit.value).padStart(2, '0')}</span>
-                            <span className="mt-3 block text-[11px] sm:text-xs uppercase tracking-wider">{unit.label}</span>
+                            <span
+                                className={`block font-serif tabular-nums leading-none ${
+                                    isEditorial ? 'text-3xl font-light sm:text-5xl' : 'text-3xl sm:text-5xl md:text-6xl'
+                                }`}
+                            >
+                                {isMounted ? String(unit.value).padStart(2, '0') : '--'}
+                            </span>
+                            <span className="mt-3 block text-[10px] font-medium uppercase tracking-[0.22em] opacity-70 sm:text-[11px]">
+                                {unit.label}
+                            </span>
                         </div>
                     ))}
                 </div>
-                {!isPast && <button type="button" onClick={handleAddToCalendar} className={`inline-flex min-h-11 items-center gap-2 border-b border-current/40 px-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current ${visual.bodyClass}`}>
-                    <CalendarHeart className="h-4 w-4" aria-hidden="true" /> Save the date
-                </button>}
+
+                {(!isMounted || !isPast) && isStationeryMood && targetDate && (
+                    <MiniWeddingCalendar date={targetDate} motifColor={motifColor} isDark={isDark} />
+                )}
+
+                {(!isMounted || !isPast) && calendarLinks && (
+                    <div ref={menuRef} className="relative mt-7 inline-block">
+                        <button
+                            data-wedding-control="secondary"
+                            type="button"
+                            aria-expanded={calendarMenuOpen}
+                            aria-haspopup="menu"
+                            onClick={() => setCalendarMenuOpen((prev) => !prev)}
+                            className={`inline-flex min-h-11 items-center gap-2 border border-current/25 px-5 py-2 text-[11px] font-medium uppercase tracking-[0.22em] transition-colors hover:bg-current/5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current ${
+                                isSharp ? 'rounded-none' : 'rounded-full'
+                            } ${visual.bodyClass}`}
+                        >
+                            <CalendarHeart className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>Save the date</span>
+                            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${calendarMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                        </button>
+
+                        {calendarMenuOpen && (
+                            <div
+                                role="menu"
+                                aria-label="Add wedding to calendar"
+                                className={`absolute left-1/2 top-full z-40 mt-2 w-52 -translate-x-1/2 overflow-hidden border p-1.5 text-left shadow-xl backdrop-blur-xl ${
+                                    isSharp ? 'rounded-none' : 'rounded-xl'
+                                } ${
+                                    isDark
+                                        ? 'border-white/15 bg-[#151418]/95 text-white'
+                                        : 'border-stone-200 bg-white/95 text-stone-800'
+                                }`}
+                            >
+                                <a
+                                    role="menuitem"
+                                    href={calendarLinks.google}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => setCalendarMenuOpen(false)}
+                                    className={`flex min-h-10 items-center px-3 py-2 text-xs font-medium ${isSharp ? 'rounded-none' : 'rounded-lg'} ${isDark ? 'hover:bg-white/10' : 'hover:bg-stone-100'}`}
+                                >
+                                    Google Calendar
+                                </a>
+                                <a
+                                    role="menuitem"
+                                    href={calendarLinks.apple}
+                                    download={`${brideName}-${groomName}-wedding.ics`}
+                                    onClick={() => setCalendarMenuOpen(false)}
+                                    className={`flex min-h-10 items-center px-3 py-2 text-xs font-medium ${isSharp ? 'rounded-none' : 'rounded-lg'} ${isDark ? 'hover:bg-white/10' : 'hover:bg-stone-100'}`}
+                                >
+                                    Apple Calendar (.ics)
+                                </a>
+                                <a
+                                    role="menuitem"
+                                    href={calendarLinks.outlook}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => setCalendarMenuOpen(false)}
+                                    className={`flex min-h-10 items-center px-3 py-2 text-xs font-medium ${isSharp ? 'rounded-none' : 'rounded-lg'} ${isDark ? 'hover:bg-white/10' : 'hover:bg-stone-100'}`}
+                                >
+                                    Outlook Calendar
+                                </a>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </section>
     );

@@ -383,7 +383,7 @@ export function GuideSections() {
                          <div className={itemIndex % 2 === 1 ? 'lg:order-1' : ''}>
                            {item.mediaType === 'video' && 'videoUrl' in item ? (
                              <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 border border-border">
-                               <div className="absolute inset-0 bg-gradient-to-tr from-neutral to-neutral/80 dark:from-neutral dark:to-neutral/80 flex items-center justify-center">
+                               <div className="absolute inset-0 bg-gradient-to-tr from-neutral to-neutral/80 flex items-center justify-center">
                                  <Link
                                    href={item.videoUrl || '#'}
                                    target="_blank"

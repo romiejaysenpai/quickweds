@@ -1,95 +1,90 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { domainSchema, validateRequest } from '@/lib/validations';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
+import { getRequestUser } from '@/lib/api-auth';
+import { getWeddingAccess } from '@/lib/wedding-access';
+import { isKnownAdminEmail } from '@/lib/admin';
+import { hasPlannerProAccess } from '@/lib/planner-limits';
 
 type AccessCheckResult =
-    | { ok: true; customDomain: string | null; isPremium: boolean }
+    | { ok: true; customDomain: string | null; isPremium: boolean; userId: string }
     | { ok: false; status: number; error: string };
 
-async function verifyWeddingAccess(req: Request, weddingId: string): Promise<AccessCheckResult> {
+async function verifyWeddingAccess(req: NextRequest, weddingId: string): Promise<AccessCheckResult> {
+    const { user, error: authError } = await getRequestUser(req);
+    if (!user) {
+        return { ok: false, status: 401, error: authError || 'Unauthorized' };
+    }
+
     let supabase: any;
     try {
         supabase = getSupabaseAdminClient();
     } catch {
         return { ok: false, status: 500, error: 'Server configuration error' };
     }
-    const authHeader = req.headers.get('authorization') || '';
-    const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
 
-    if (!accessToken) {
-        return { ok: false, status: 401, error: 'Missing bearer token' };
-    }
+    const access = await getWeddingAccess(supabase, user, weddingId, {
+        select: 'id, user_id, custom_domain, is_premium, payment_status',
+        collaboratorRoles: ['partner'],
+    });
 
-    const { data, error: authError } = await supabase.auth.getUser(accessToken);
-    const user = data?.user;
-    if (authError || !user) {
-        return { ok: false, status: 401, error: 'Unauthorized' };
-    }
-
-    const { data: wedding, error: weddingError } = await supabase
-        .from('weddings')
-        .select('id, user_id, custom_domain, is_premium')
-        .eq('id', weddingId)
-        .is('deleted_at', null)
-        .single();
-
-    if (weddingError || !wedding) {
+    if (!access.wedding) {
         return { ok: false, status: 404, error: 'Wedding not found' };
     }
-
-    if (wedding.user_id === user.id) {
-        return { ok: true, customDomain: wedding.custom_domain || null, isPremium: Boolean(wedding.is_premium) };
-    }
-
-    const userEmail = user.email?.toLowerCase();
-    if (!userEmail) {
+    if (!access.canManage) {
         return { ok: false, status: 403, error: 'Forbidden' };
     }
 
-    const { data: collaborator, error: collaboratorError } = await supabase
-        .from('wedding_collaborators')
-        .select('id')
-        .eq('wedding_id', weddingId)
-        .eq('email', userEmail)
-        .eq('status', 'accepted')
-        .eq('role', 'partner')
+    const { data: ownerProfile } = await supabase
+        .from('user_app_profiles')
+        .select('is_pro, payment_status')
+        .eq('user_id', access.wedding.user_id)
         .maybeSingle();
 
-    if (collaboratorError || !collaborator) {
-        return { ok: false, status: 403, error: 'Forbidden' };
-    }
+    const isPremium = hasPlannerProAccess({
+        isAdmin: isKnownAdminEmail(user.email),
+        wedding: access.wedding,
+        accountProfile: ownerProfile,
+    });
 
-    return { ok: true, customDomain: wedding.custom_domain || null, isPremium: Boolean(wedding.is_premium) };
+    return {
+        ok: true,
+        customDomain: access.wedding.custom_domain ? String(access.wedding.custom_domain).trim().toLowerCase() : null,
+        isPremium,
+        userId: user.id,
+    };
 }
 
 function parseWeddingId(value: string | null) {
     return sanitizeWeddingId(value || '') || null;
 }
 
-async function checkDomainRateLimit(req: Request, weddingId: string) {
+async function checkDomainRateLimit(req: NextRequest, weddingId: string) {
     const rateLimit = createRateLimitMiddleware('DOMAIN_MANAGEMENT');
     return rateLimit.check(`${getClientIP(req)}:${weddingId}`);
 }
 
-const RESERVED_DOMAINS = new Set([
-    'quickweds.site',
-    'www.quickweds.site',
-    'quickweds.vercel.app',
-]);
-
 function isReservedPlatformDomain(domain: string) {
     const normalized = domain.trim().toLowerCase();
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'quickweds.site').split(':')[0].toLowerCase();
     return (
-        RESERVED_DOMAINS.has(normalized) ||
+        normalized === rootDomain ||
+        normalized === `www.${rootDomain}` ||
+        normalized.endsWith(`.${rootDomain}`) ||
+        normalized === 'quickweds.site' ||
         normalized.endsWith('.quickweds.site') ||
-        normalized.endsWith('.quickweds.vercel.app')
+        normalized.endsWith('.vercel.app') ||
+        normalized.endsWith('.vercel.pub') ||
+        normalized === 'localhost' ||
+        normalized.endsWith('.localhost')
     );
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
+        const body = await req.json().catch(() => ({}));
         const validation = validateRequest(domainSchema, body);
         const weddingId = parseWeddingId(typeof body?.weddingId === 'string' ? body.weddingId : null);
 
@@ -149,6 +144,17 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Vercel API keys are not configured in environment.' }, { status: 500 });
         }
 
+        // Clean up any previous domain attached to this wedding so it isn't orphaned in Vercel
+        if (access.customDomain && access.customDomain !== domain) {
+            await fetch(
+                `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${encodeURIComponent(access.customDomain)}`,
+                {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${process.env.VERCEL_TOKEN}` },
+                }
+            ).catch(() => {});
+        }
+
         const response = await fetch(`https://api.vercel.com/v10/projects/${process.env.VERCEL_PROJECT_ID}/domains`, {
             method: 'POST',
             headers: {
@@ -164,19 +170,36 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: data.error.message }, { status: response.status });
         }
 
+        const { error: persistError } = await supabase
+            .from('weddings')
+            .update({ custom_domain: domain })
+            .eq('id', weddingId);
+
+        if (persistError) {
+            // Best-effort rollback on Vercel
+            await fetch(
+                `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${encodeURIComponent(domain)}`,
+                {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${process.env.VERCEL_TOKEN}` },
+                }
+            ).catch(() => {});
+            return NextResponse.json({ error: 'Failed to save custom domain to wedding record.' }, { status: 500 });
+        }
+
         return NextResponse.json(data, { headers: limited.headers });
     } catch {
         return NextResponse.json({ error: 'Failed to add domain to Vercel' }, { status: 500 });
     }
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
-        const domain = searchParams.get('domain');
+        const rawDomain = searchParams.get('domain');
         const weddingId = parseWeddingId(searchParams.get('weddingId'));
 
-        if (!domain) {
+        if (!rawDomain) {
             return NextResponse.json({ error: 'Domain is required' }, { status: 400 });
         }
 
@@ -199,6 +222,7 @@ export async function GET(req: Request) {
             );
         }
 
+        const domain = rawDomain.trim().toLowerCase();
         const validation = domainSchema.safeParse({ domain });
         if (!validation.success) {
             return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
@@ -212,12 +236,15 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Vercel API keys not configured.' }, { status: 500 });
         }
 
-        const response = await fetch(`https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${domain}/config`, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
-            },
-        });
+        const response = await fetch(
+            `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${encodeURIComponent(domain)}/config`,
+            {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+                },
+            }
+        );
 
         const data = await response.json();
         return NextResponse.json(data, { headers: limited.headers });
@@ -226,12 +253,12 @@ export async function GET(req: Request) {
     }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
-    const domain = searchParams.get('domain');
+    const rawDomain = searchParams.get('domain');
     const weddingId = parseWeddingId(searchParams.get('weddingId'));
 
-    if (!domain) {
+    if (!rawDomain) {
         return NextResponse.json({ error: 'Domain query param is required' }, { status: 400 });
     }
 
@@ -254,6 +281,7 @@ export async function DELETE(req: Request) {
         );
     }
 
+    const domain = rawDomain.trim().toLowerCase();
     const validation = domainSchema.safeParse({ domain });
     if (!validation.success) {
         return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
@@ -268,14 +296,37 @@ export async function DELETE(req: Request) {
     }
 
     try {
-        const response = await fetch(`https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${domain}`, {
-            method: 'DELETE',
-            headers: {
-                Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
-            },
-        });
+        const response = await fetch(
+            `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${encodeURIComponent(domain)}`,
+            {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+                },
+            }
+        );
 
         const data = await response.json();
+        if (data?.error && response.status !== 404) {
+            return NextResponse.json(
+                { error: data.error.message || 'Failed to delete custom domain from Vercel.' },
+                { status: response.status }
+            );
+        }
+
+        const supabase = getSupabaseAdminClient() as any;
+        const { error: clearError } = await supabase
+            .from('weddings')
+            .update({ custom_domain: null })
+            .eq('id', weddingId);
+
+        if (clearError) {
+            return NextResponse.json(
+                { error: 'Domain removed from host, but failed to clear wedding record.' },
+                { status: 500 }
+            );
+        }
+
         return NextResponse.json(data, { headers: limited.headers });
     } catch {
         return NextResponse.json({ error: 'Failed to delete custom domain from Vercel.' }, { status: 500 });

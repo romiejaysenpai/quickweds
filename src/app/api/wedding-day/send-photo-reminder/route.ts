@@ -6,11 +6,13 @@ import { getPhotoReminderEmailHtml } from '@/lib/photo-reminder-email';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getPublicAppUrl } from '@/lib/site-url';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
-import { sanitizeWeddingId } from '@/lib/rate-limit';
+import { createRateLimitMiddleware, sanitizeWeddingId } from '@/lib/rate-limit';
+import { isKnownAdminEmail } from '@/lib/admin';
 import { hasPlannerProAccess, FREE_PLAN_LIMITS } from '@/lib/planner-limits';
 import { getWeddingAccess } from '@/lib/wedding-access';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 const AUTOMATION_TYPE = 'photo_upload_reminder';
 
@@ -31,6 +33,10 @@ export async function POST(req: NextRequest) {
         const { user, error } = await getRequestUser(req);
         if (!user) return NextResponse.json({ error: error || 'Unauthorized' }, { status: 401 });
 
+        const rateLimit = createRateLimitMiddleware('EMAIL_RESEND');
+        const limited = await rateLimit.check(`photo-reminder:${user.id}:${weddingId}`);
+        if (limited.limited) return limited.response;
+
         const db = getSupabaseAdminClient() as any;
         const access = await getWeddingAccess(db, user, weddingId, {
             select: 'id, user_id, bride_name, groom_name, wedding_date, public_slug, custom_domain, is_premium, payment_status',
@@ -42,7 +48,7 @@ export async function POST(req: NextRequest) {
 
         const { data: ownerProfile, error: profileError } = await db.from('user_app_profiles').select('is_pro,payment_status').eq('user_id', access.wedding.user_id).maybeSingle();
         if (profileError) throw profileError;
-        const pro = hasPlannerProAccess({ wedding: access.wedding, accountProfile: ownerProfile });
+        const pro = hasPlannerProAccess({ isAdmin: isKnownAdminEmail(user.email), wedding: access.wedding, accountProfile: ownerProfile });
         const { data: rsvps, error: rsvpError } = await db
             .from('rsvps')
             .select('id, guest_name, guest_email, rsvp_status, attendance')

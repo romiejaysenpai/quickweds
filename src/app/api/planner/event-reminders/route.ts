@@ -1,9 +1,11 @@
+import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
 import { getPublicAppUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 function escapeHtml(value: string | null | undefined) {
     return String(value ?? '')
@@ -14,6 +16,14 @@ function escapeHtml(value: string | null | undefined) {
         .replace(/'/g, '&#39;');
 }
 
+function safeBearerMatch(authHeader: string | null, secret: string): boolean {
+    if (!authHeader || !secret) return false;
+    const expected = `Bearer ${secret}`;
+    const hashA = crypto.createHash('sha256').update(authHeader).digest();
+    const hashB = crypto.createHash('sha256').update(expected).digest();
+    return crypto.timingSafeEqual(hashA, hashB);
+}
+
 function reminderHtml(rawInput: {
     title: string;
     couple: string;
@@ -22,7 +32,6 @@ function reminderHtml(rawInput: {
     notes?: string | null;
     plannerUrl: string;
 }) {
-    // Event fields are user-entered (owner or collaborators) — never interpolate them raw.
     const input = {
         title: escapeHtml(rawInput.title),
         couple: escapeHtml(rawInput.couple),
@@ -50,9 +59,8 @@ function reminderHtml(rawInput: {
 
 export async function GET(req: Request) {
     const authHeader = req.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-    // Fail closed: without a configured secret only local development may call this.
-    if (cronSecret ? authHeader !== `Bearer ${cronSecret}` : process.env.NODE_ENV !== 'development') {
+    const cronSecret = process.env.CRON_SECRET?.trim() || '';
+    if (cronSecret ? !safeBearerMatch(authHeader, cronSecret) : process.env.NODE_ENV !== 'development') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -62,66 +70,90 @@ export async function GET(req: Request) {
 
     const { data: events, error } = await db
         .from('planner_events')
-        .select('*, weddings(id, user_id, bride_name, groom_name)')
+        .select('*, weddings(id, user_id, bride_name, groom_name, deleted_at)')
         .is('reminder_sent_at', null)
         .gte('starts_at', now.toISOString())
         .lte('starts_at', horizon.toISOString())
-        .order('starts_at', { ascending: true });
+        .order('starts_at', { ascending: true })
+        .limit(100);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+        console.error('Planner event reminders query failed:', error);
+        return NextResponse.json({ error: 'Unable to load planner reminders.' }, { status: 500 });
+    }
 
     const dueEvents = (events || []).filter((event: any) => {
+        if (!event.weddings || event.weddings.deleted_at) return false;
         const reminderMinutes = Number(event.reminder_minutes ?? 1440);
         const remindAt = new Date(new Date(event.starts_at).getTime() - reminderMinutes * 60 * 1000);
         return remindAt <= now;
     });
 
-    const results = [];
+    const ownerEmailCache = new Map<string, string | null>();
+    const results: Array<{ id: string; title: string; email: boolean }> = [];
+    const errors: Array<{ id: string; error: string }> = [];
+
     for (const event of dueEvents) {
-        const wedding = event.weddings;
-        if (!wedding?.user_id) continue;
+        try {
+            const wedding = event.weddings;
+            if (!wedding?.user_id || wedding.deleted_at) continue;
 
-        const { data: owner } = await db.auth.admin.getUserById(wedding.user_id);
-        const ownerEmail = owner?.user?.email;
-        const couple = `${wedding.bride_name || 'Your'} & ${wedding.groom_name || 'Wedding'}`;
-        const plannerUrl = `${getPublicAppUrl()}/dashboard/${wedding.id}/planner?tab=calendar`;
-        const startsAt = new Date(event.starts_at).toLocaleString('en-US', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-        });
+            let ownerEmail = ownerEmailCache.get(wedding.user_id);
+            if (ownerEmail === undefined) {
+                const { data: owner } = await db.auth.admin.getUserById(wedding.user_id);
+                const resolvedOwnerEmail: string | null = owner?.user?.email ?? null;
+                ownerEmailCache.set(wedding.user_id, resolvedOwnerEmail);
+                ownerEmail = resolvedOwnerEmail;
+            }
 
-        if (ownerEmail) {
-            const delivery = await sendEmail({
-                to: ownerEmail,
-                tracking: { key: `planner-reminder:${event.id}:${event.starts_at}`, weddingId: wedding.id },
-                subject: `QuickWeds reminder: ${event.title}`,
-                html: reminderHtml({
-                    title: event.title,
-                    couple,
-                    startsAt,
-                    location: event.location,
-                    notes: event.notes,
-                    plannerUrl,
-                }),
-            });
-            if (!delivery.success) continue;
+            const couple = `${wedding.bride_name || 'Your'} & ${wedding.groom_name || 'Wedding'}`;
+            const plannerUrl = `${getPublicAppUrl()}/dashboard/${wedding.id}/planner?tab=calendar`;
+            const startsAt = `${new Date(event.starts_at).toLocaleString('en-US', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone: 'UTC',
+            })} UTC`;
+
+            if (ownerEmail) {
+                const delivery = await sendEmail({
+                    to: ownerEmail,
+                    tracking: { key: `planner-reminder:${event.id}:${event.starts_at}`, weddingId: wedding.id },
+                    subject: `QuickWeds reminder: ${event.title}`,
+                    html: reminderHtml({
+                        title: event.title,
+                        couple,
+                        startsAt,
+                        location: event.location,
+                        notes: event.notes,
+                        plannerUrl,
+                    }),
+                });
+                if (!delivery.success) continue;
+            }
+
+            const { error: notificationError } = await db.from('user_notifications').upsert({
+                delivery_key: `planner-reminder:${event.id}:${event.starts_at}`,
+                user_id: wedding.user_id,
+                wedding_id: wedding.id,
+                title: `Upcoming schedule: ${event.title}`,
+                message: `${startsAt}${event.location ? ` at ${event.location}` : ''}`,
+                type: 'info',
+                link: `/dashboard/${wedding.id}/planner?tab=calendar`,
+            }, { onConflict: 'delivery_key' });
+            if (notificationError) throw notificationError;
+
+            const { error: markerError } = await db
+                .from('planner_events')
+                .update({ reminder_sent_at: new Date().toISOString() })
+                .eq('id', event.id);
+            if (markerError) throw markerError;
+
+            results.push({ id: event.id, title: event.title, email: Boolean(ownerEmail) });
+        } catch (eventErr) {
+            console.error('Planner event reminder failed for event:', event.id, eventErr);
+            errors.push({ id: String(event.id), error: 'Failed to process reminder' });
         }
-        const { error: notificationError } = await db.from('user_notifications').upsert({
-            delivery_key: `planner-reminder:${event.id}:${event.starts_at}`,
-            user_id: wedding.user_id,
-            wedding_id: wedding.id,
-            title: `Upcoming schedule: ${event.title}`,
-            message: `${startsAt}${event.location ? ` at ${event.location}` : ''}`,
-            type: 'info',
-            link: `/dashboard/${wedding.id}/planner?tab=calendar`,
-        }, { onConflict: 'delivery_key' });
-        if (notificationError) throw notificationError;
-
-
-        const { error: markerError } = await db.from('planner_events').update({ reminder_sent_at: new Date().toISOString() }).eq('id', event.id);
-        if (markerError) throw markerError;
-        results.push({ id: event.id, title: event.title, email: Boolean(ownerEmail) });
     }
 
-    return NextResponse.json({ success: true, sent: results.length, results });
+    return NextResponse.json({ success: errors.length === 0, sent: results.length, failed: errors.length, results });
 }

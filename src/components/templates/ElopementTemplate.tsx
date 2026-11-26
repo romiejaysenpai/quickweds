@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import { getSectionTitleStyle } from '@/lib/theme-engine';
+import type { TemplateProps } from '@/types/wedding';
 import {
     VideoSection,
     BioSection,
@@ -11,50 +12,90 @@ import {
     GallerySection,
     GiftSection,
     AttireSection,
-
 } from '../wedding';
-import { SharedNewSections } from './shared';
+import {
+    formatWeddingDate,
+    getFirstName,
+    resolveTemplateCopy,
+    resolveWeddingMedia,
+    SharedNewSections,
+    TEMPLATE_ELEMENT_ASSETS,
+    TemplateHeroActions,
+    WeddingHeroVisual,
+    WeddingMonogram,
+} from './shared';
 
-export default function ElopementTemplate({ wedding, gallery, isExpired }: any) {
+export default function ElopementTemplate({ wedding, gallery, isExpired }: TemplateProps) {
+    const hasBackgroundChoice = ['white', 'cream', 'satin', 'paper', 'minimal', 'rose', 'linen'].includes(wedding.background_style || '');
+    const titleStyle = getSectionTitleStyle(wedding);
+    const motifColor = wedding.motif_color || '#44403C';
+    const heroImage = resolveWeddingMedia(wedding, gallery);
+    const copy = resolveTemplateCopy(wedding);
+    const hasCustomMonogram = Boolean(
+        wedding.logo_initials || (wedding.logo_shape && wedding.logo_shape !== 'minimal')
+    );
+
     return (
-        <div className="bg-neutral text-stone-700 font-serif relative pb-24 selection:bg-stone-200">
-            <section className="min-h-screen py-20 flex items-center justify-center relative overflow-hidden bg-white">
-                <div className="absolute inset-0 opacity-50 mix-blend-multiply transition-opacity group-hover:opacity-70 z-0">
-                    <Image
-                        src={wedding.hero_image || wedding.couple_photo || '/logo.png'}
-                        alt={`${wedding.bride_name} and ${wedding.groom_name}`}
-                        priority
-                        fill
-                        sizes="100vw"
-                        className="object-cover"
+        <div
+            className="font-serif relative pb-24 selection:bg-stone-200"
+            style={{
+                backgroundColor: hasBackgroundChoice ? 'var(--builder-paper)' : '#fafaf9',
+                color: hasBackgroundChoice ? 'var(--builder-ink)' : '#44403c',
+            }}
+        >
+            <section className="min-h-screen py-20 flex items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 opacity-60 transition-opacity z-0">
+                    <WeddingHeroVisual
+                        wedding={wedding}
+                        gallery={gallery}
+                        src={heroImage}
+                        ornamentSrc={TEMPLATE_ELEMENT_ASSETS.nordicPine}
+                        className="h-full w-full"
                     />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-black/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/75 to-white/30" />
 
-                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.2 }} className="z-10 text-center max-w-2xl px-4 sm:px-6">
-                    <span className="text-xs uppercase tracking-[0.6em] font-bold opacity-40 mb-8 block">Just The Two Of Us</span>
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-serif mb-8 text-stone-900 drop-shadow-[0_4px_10px_rgba(255,255,255,0.8)] leading-[0.9]">
-                        {wedding.bride_name.split(' ')[0]} <br />
-                        <span className="italic opacity-30 font-light">&</span> <br />
-                        {wedding.groom_name.split(' ')[0]}
+                <motion.div initial={false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="z-10 text-center max-w-2xl px-4 sm:px-6 text-stone-900">
+                    {hasCustomMonogram && (
+                        <div className="mb-6 flex justify-center">
+                            <WeddingMonogram wedding={wedding} />
+                        </div>
+                    )}
+                    <span className="text-xs uppercase tracking-[0.5em] font-bold opacity-70 mb-6 block">{copy.eyebrow}</span>
+                    <h1
+                        className={`text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-serif mb-8 drop-shadow-[0_4px_10px_rgba(255,255,255,0.8)] leading-[0.9] ${titleStyle.className}`}
+                        style={titleStyle.style}
+                    >
+                        {getFirstName(wedding.bride_name, 'Bride')} <br />
+                        <span className="italic opacity-45 font-light">&amp;</span> <br />
+                        {getFirstName(wedding.groom_name, 'Groom')}
                     </h1>
-                    <p className="text-xl sm:text-2xl italic opacity-60 mb-12">A quiet union, a loud devotion. We chose forever, just us two.</p>
-                    <div className="flex gap-4 sm:gap-6 justify-center">
-                        <a href="#our-story" aria-label="See Our Story" className="px-8 sm:px-10 py-3 min-h-[44px] flex items-center justify-center bg-stone-900 text-white rounded-full font-bold uppercase tracking-widest text-[10px] hover:bg-stone-700 transition-colors">See Our Story</a>
+                    <p className="text-xl sm:text-2xl italic opacity-80 mb-6">{copy.subtitle}</p>
+                    {(wedding.wedding_date || wedding.venue_name) && (
+                        <p className="text-xs uppercase tracking-[0.28em] font-sans opacity-70 mb-8">
+                            {[wedding.wedding_date ? formatWeddingDate(wedding.wedding_date) : '', wedding.venue_name].filter(Boolean).join(' • ')}
+                        </p>
+                    )}
+                    <div className="flex flex-wrap gap-3 justify-center">
+                        <a href={copy.ctaHref} data-wedding-control="primary" aria-label={copy.ctaLabel} className="px-8 sm:px-10 py-3 min-h-[44px] inline-flex items-center justify-center bg-stone-900 text-white rounded-full font-bold uppercase tracking-widest text-[10px] hover:bg-stone-700 transition-colors">{copy.ctaLabel}</a>
+                        <a href={wedding.story ? '#our-story' : copy.detailsHref} data-wedding-control="secondary" className="px-7 py-3 min-h-[44px] inline-flex items-center justify-center border border-stone-900/25 rounded-full font-semibold uppercase tracking-widest text-[10px] hover:bg-stone-900/5 transition-colors">{wedding.story ? 'See Our Story' : copy.detailsLabel}</a>
                     </div>
+                    <TemplateHeroActions wedding={wedding} variant="pill" motifColor={motifColor} className="justify-center mt-5" />
                 </motion.div>
             </section>
 
-            <section id="our-story" className="py-24 max-w-4xl mx-auto px-4 sm:px-6">
-                <div className="space-y-12 sm:space-y-16 md:space-y-20 border-l border-stone-200 pl-8 sm:pl-10 md:pl-12 lg:pl-12">
-                    <div className="space-y-4">
-                        <h2 className="text-3xl sm:text-4xl font-serif text-stone-900">The Escape</h2>
-                        <p className="text-lg sm:text-xl leading-relaxed italic">{wedding.story}</p>
+            {wedding.story && (
+                <section id="our-story" className="py-24 max-w-4xl mx-auto px-4 sm:px-6">
+                    <div className="space-y-8 border-l border-current/20 pl-8 sm:pl-12">
+                        <div className="space-y-4">
+                            <h2 className="text-3xl sm:text-4xl font-serif">Our Story</h2>
+                            <p className="text-lg sm:text-xl leading-relaxed italic">{wedding.story}</p>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            )}
 
-            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} />
+            <VideoSection id="video" video={wedding.teaser_video} poster={wedding.hero_image} template={wedding.template} motifColor={wedding.motif_color} templateStyle={wedding.template_style} wedding={wedding} />
             <BioSection id="bio" wedding={wedding} hideStory />
             <DetailsSection id="details" wedding={wedding} />
             {!wedding.is_thank_you_mode && (
@@ -67,10 +108,12 @@ export default function ElopementTemplate({ wedding, gallery, isExpired }: any) 
                     venueAddress={wedding.venue_address}
                     template={wedding.template}
                     motifColor={wedding.motif_color}
+                    cardStyle={wedding.card_style}
+                    wedding={wedding}
                 />
             )}
-            <TimelineSection id="timeline" timeline={wedding.program_timeline} wedding={wedding} />
-            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} galleryLayout={wedding.gallery_layout} />
+            <TimelineSection id="timeline" timeline={wedding.program_timeline || ''} wedding={wedding} />
+            <GallerySection id="gallery" gallery={gallery} template={wedding.template} motifColor={wedding.motif_color} cardStyle={wedding.card_style} galleryLayout={wedding.gallery_layout} wedding={wedding} />
             <AttireSection wedding={wedding} />
             <GiftSection id="gift" wedding={wedding} />
             <SharedNewSections id="additional" wedding={wedding} isExpired={isExpired} />

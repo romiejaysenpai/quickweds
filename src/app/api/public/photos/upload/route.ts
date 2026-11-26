@@ -1,4 +1,4 @@
-import {recoverPhotoReservation} from '@/lib/photo-recovery';
+import { recoverPhotoReservation } from '@/lib/photo-recovery';
 import { randomBytes, createHash, randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
@@ -11,6 +11,7 @@ import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 export const dynamic = 'force-dynamic';
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+const MAX_MULTIPART_CONTENT_LENGTH = 12 * 1024 * 1024;
 const MAX_UPLOADS_PER_SHARING_CODE = 3;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const EXTENSIONS: Record<string, string> = {
@@ -19,6 +20,40 @@ const EXTENSIONS: Record<string, string> = {
     'image/webp': 'webp',
     'image/gif': 'gif',
 };
+
+function detectImageMimeType(buffer: Buffer): string | null {
+    if (buffer.length < 12) return null;
+    // JPEG: FF D8 FF
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+        return 'image/jpeg';
+    }
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4e &&
+        buffer[3] === 0x47 &&
+        buffer[4] === 0x0d &&
+        buffer[5] === 0x0a &&
+        buffer[6] === 0x1a &&
+        buffer[7] === 0x0a
+    ) {
+        return 'image/png';
+    }
+    // GIF: GIF87a / GIF89a
+    const gifHeader = buffer.subarray(0, 6).toString('ascii');
+    if (gifHeader === 'GIF87a' || gifHeader === 'GIF89a') {
+        return 'image/gif';
+    }
+    // WebP: RIFF....WEBP
+    if (
+        buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+        buffer.subarray(8, 12).toString('ascii') === 'WEBP'
+    ) {
+        return 'image/webp';
+    }
+    return null;
+}
 
 function isMissingWeddingDaySettingsError(error: unknown) {
     const details = error && typeof error === 'object' ? error as { code?: string; message?: string } : {};
@@ -33,6 +68,15 @@ export async function POST(req: NextRequest) {
     const rateLimit = createRateLimitMiddleware('PHOTO_UPLOAD');
     const clientIP = getClientIP(req);
 
+    // Reject oversized bodies and abusive IPs BEFORE buffering multipart formData in memory
+    const contentLength = Number(req.headers.get('content-length') || 0);
+    if (Number.isFinite(contentLength) && contentLength > MAX_MULTIPART_CONTENT_LENGTH) {
+        return NextResponse.json({ error: 'Photo must be 10 MB or smaller.' }, { status: 413 });
+    }
+
+    const preLimited = await rateLimit.check(`ip:${clientIP}`);
+    if (preLimited.limited) return preLimited.response;
+
     try {
         const form = await req.formData();
         const weddingIdentifier = String(form.get('weddingId') || '');
@@ -43,7 +87,7 @@ export async function POST(req: NextRequest) {
         const requestId = String(form.get('uploadRequestId') || randomUUID());
         if (!/^[0-9a-f-]{36}$/i.test(requestId)) return NextResponse.json({ error: 'Invalid upload request.' }, { status: 400 });
         const rawEditMetadata = String(form.get('editMetadata') || '');
-        if(rawEditMetadata.length>4096)return NextResponse.json({error:'Photo edit details are too large.'},{status:400});
+        if (rawEditMetadata.length > 4096) return NextResponse.json({ error: 'Photo edit details are too large.' }, { status: 400 });
         const file = form.get('file');
 
         if (!weddingIdentifier || !code || !(file instanceof File)) {
@@ -59,6 +103,16 @@ export async function POST(req: NextRequest) {
 
         if (file.size <= 0 || file.size > MAX_PHOTO_BYTES) {
             return NextResponse.json({ error: 'Photo must be 10 MB or smaller.' }, { status: 400 });
+        }
+
+        const buffer = Buffer.from(await file.arrayBuffer());
+        if (buffer.length <= 0 || buffer.length > MAX_PHOTO_BYTES) {
+            return NextResponse.json({ error: 'Photo must be 10 MB or smaller.' }, { status: 400 });
+        }
+
+        const sniffedMimeType = detectImageMimeType(buffer);
+        if (!sniffedMimeType || !ALLOWED_IMAGE_TYPES.has(sniffedMimeType)) {
+            return NextResponse.json({ error: 'Uploaded file is not a valid JPEG, PNG, WebP, or GIF image.' }, { status: 400 });
         }
 
         const db = getSupabaseAdminClient() as any;
@@ -120,37 +174,74 @@ export async function POST(req: NextRequest) {
             editMetadata = {};
         }
 
-        const extension = EXTENSIONS[file.type] || 'jpg';
+        const extension = EXTENSIONS[sniffedMimeType] || 'jpg';
         let objectPath = `guest-uploads/${weddingId}/${Date.now()}_${randomBytes(12).toString('hex')}.${extension}`;
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const { data: privateUrl } = db.storage.from('quickweds-guest-photos').getPublicUrl(objectPath);
-        const photoData={uploader_name:uploaderName,caption:caption||null,status,is_approved:autoApprove,cloudinary_url:privateUrl?.publicUrl,metadata:{disposable_camera_enabled:settings.disposable_camera_enabled,file_type:file.type,file_size:file.size,edits:editMetadata}};
-        const args={p_wedding:weddingId,p_code:sharingCode.id,p_principal:guestIdentifier,p_request:requestId,p_hash:createHash('sha256').update(buffer).digest('hex'),p_path:objectPath,p_guest_limit:perGuestLimit,p_data:photoData};
+        const photoData = {
+            uploader_name: uploaderName,
+            caption: caption || null,
+            status,
+            is_approved: autoApprove,
+            cloudinary_url: null as string | null,
+            metadata: {
+                disposable_camera_enabled: settings.disposable_camera_enabled,
+                file_type: sniffedMimeType,
+                file_size: buffer.length,
+                edits: editMetadata,
+            },
+        };
+        const args = {
+            p_wedding: weddingId,
+            p_code: sharingCode.id,
+            p_principal: guestIdentifier,
+            p_request: requestId,
+            p_hash: createHash('sha256').update(buffer).digest('hex'),
+            p_path: objectPath,
+            p_guest_limit: perGuestLimit,
+            p_data: photoData,
+        };
         const { data: initialReservation, error: reservationError } = await db.rpc('quickweds_reserve_photo', args);
         let reservation = initialReservation;
         if (reservationError) throw reservationError;
-        if(reservation.state==='busy' && reservation.id){
-            const recovered=await recoverPhotoReservation(db,weddingId,reservation.id);
-            if(recovered.state==='complete')return NextResponse.json({success:true,photoId:recovered.photoId},{headers:limited.headers});
-            if(recovered.state==='released'){const retried=await db.rpc('quickweds_reserve_photo',args);if(retried.error)throw retried.error;reservation=retried.data;}
+        if (reservation.state === 'busy' && reservation.id) {
+            const recovered = await recoverPhotoReservation(db, weddingId, reservation.id);
+            if (recovered.state === 'complete') return NextResponse.json({ success: true, photoId: recovered.photoId }, { headers: limited.headers });
+            if (recovered.state === 'released') {
+                const retried = await db.rpc('quickweds_reserve_photo', args);
+                if (retried.error) throw retried.error;
+                reservation = retried.data;
+            }
         }
         if (reservation.state === 'complete') return NextResponse.json({ success: true, photoId: reservation.photo_id }, { headers: limited.headers });
-        if (reservation.state !== 'reserved') return NextResponse.json({ error: reservation.state === 'limited' ? 'This roll or sharing code has reached its upload limit.' : 'This upload is already processing, or its request changed. Retry the same photo shortly.', code: reservation.state }, { status: reservation.state === 'limited' ? 403 : 409 });
+        if (reservation.state !== 'reserved') {
+            return NextResponse.json(
+                {
+                    error: reservation.state === 'limited'
+                        ? 'This roll or sharing code has reached its upload limit.'
+                        : 'This upload is already processing, or its request changed. Retry the same photo shortly.',
+                    code: reservation.state,
+                },
+                { status: reservation.state === 'limited' ? 403 : 409 }
+            );
+        }
+
         objectPath = reservation.object_path;
         const { error: uploadError } = await db.storage
             .from('quickweds-guest-photos')
             .upload(objectPath, buffer, {
-                contentType: file.type,
+                contentType: sniffedMimeType,
                 cacheControl: '3600',
                 upsert: false,
             });
 
         if (uploadError) {
-            // An uncertain storage result must be checked after its lease, never delete a possibly completed object.
-            return NextResponse.json({error:'Upload could not be confirmed. Retry the same photo after five minutes; your quota will be reconciled safely.'},{status:503});
+            return NextResponse.json({ error: 'Upload could not be confirmed. Retry the same photo after five minutes; your quota will be reconciled safely.' }, { status: 503 });
         }
 
-        const { data: photoId, error: insertError } = await db.rpc('quickweds_complete_photo',{p_id:reservation.id,p_data:photoData,p_claim:reservation.claim_token});
+        const { data: photoId, error: insertError } = await db.rpc('quickweds_complete_photo', {
+            p_id: reservation.id,
+            p_data: photoData,
+            p_claim: reservation.claim_token,
+        });
 
         if (insertError) {
             console.error('Photo completion needs reconciliation:', reservation.id);

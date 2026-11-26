@@ -981,6 +981,28 @@ export const TEMPLATES: TemplateCatalogItem[] = [
         tier: 'premium',
         previewGradient: 'linear-gradient(135deg, #38251E 0%, #7C594D 50%, #B65A3C 100%)',
     },
+    {
+        id: 'nordic',
+        name: 'Nordic Minimal',
+        desc: 'Scandinavian editorial restraint with tabular Swiss grids, pine botanical accents, and stone linen paper.',
+        accent: '#2D312E',
+        eyebrow: 'Scandinavian Editorial',
+        mood: 'Chalk paper, spruce accents, and quiet precision',
+        image: '/templates/previews/nordic.jpg',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #FBFBF9 0%, #EFEFEB 55%, #2D312E 100%)',
+    },
+    {
+        id: 'riviera',
+        name: 'Riviera Sun',
+        desc: 'Mediterranean coastal romance with sun-drenched cobalt typography, limewashed framing, and shell motifs.',
+        accent: '#1D4ED8',
+        eyebrow: 'Mediterranean Coast',
+        mood: 'Sun-washed linen, cobalt sea, and coastal vows',
+        image: '/templates/previews/riviera.jpg',
+        tier: 'premium',
+        previewGradient: 'linear-gradient(135deg, #FDFBF7 0%, #DBEAFE 55%, #1D4ED8 100%)',
+    },
 ];
 
 export const TEMPLATE_LOOKUP = Object.fromEntries(

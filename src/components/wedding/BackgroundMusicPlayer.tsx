@@ -103,7 +103,7 @@ export default function BackgroundMusicPlayer({ audioUrl, title, motifColor, tem
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 16, scale: 0.96 }}
                     transition={{ duration: 0.3, ease: 'easeOut' }}
-                    className="fixed right-3 top-[calc(1rem+var(--safe-area-inset-top))] z-[70] sm:right-6 sm:top-6"
+                    className="fixed right-3 top-[calc(1rem+var(--safe-area-inset-top))] z-[70] md:bottom-6 md:left-6 md:right-auto md:top-auto"
                 >
                     <button data-wedding-control="media"
                         type="button"
