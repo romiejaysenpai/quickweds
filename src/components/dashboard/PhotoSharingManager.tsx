@@ -456,9 +456,9 @@ export default function PhotoSharingManager({ weddingId, hasPlannerPro = true }:
                             previewSize={132}
                             canvasSize={720}
                             showUrl
-                            className="grid gap-4 md:grid-cols-[auto,1fr] md:items-center"
+                            className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)] md:items-center"
                             qrClassName="mx-auto rounded-2xl bg-white p-3 shadow-sm"
-                            actionsClassName="mt-3 flex flex-col gap-2 sm:flex-row md:col-start-2"
+                            actionsClassName="mt-3 flex min-w-0 flex-wrap gap-2 md:col-span-2"
                             onStatus={setQrStatus}
                         />
                         {qrStatus && <p className="mt-2 text-xs font-semibold text-text-secondary">{qrStatus}</p>}

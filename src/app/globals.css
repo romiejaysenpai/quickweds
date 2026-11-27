@@ -1357,6 +1357,19 @@ section:not(:first-child):not(.wedding-page section) {
     border-radius: 0.5rem !important;
   }
 
+  /* Keep prefixes clear of text after the compact input padding above. */
+  :is(.qw-dashboard, .qw-workspace) .icon-field-left {
+    padding-left: 3.5rem !important;
+  }
+
+  :is(.qw-dashboard, .qw-workspace) .icon-field-left-compact {
+    padding-left: 2.75rem !important;
+  }
+
+  :is(.qw-dashboard, .qw-workspace) .icon-field-right {
+    padding-right: 3rem !important;
+  }
+
   /* ── Compact Table / Guest List Rows ── */
   .qw-workspace table td,
   .qw-workspace table th {

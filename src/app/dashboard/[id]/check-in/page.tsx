@@ -181,7 +181,7 @@ export default function CheckInDashboardPage() {
                         </div>
                     </div>
 
-                    <form onSubmit={submitLookup} className="mt-6 grid gap-3 lg:grid-cols-[auto,1fr,auto]">
+                    <form onSubmit={submitLookup} className="mt-6 grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
                         <button
                             type="button"
                             onClick={() => {
@@ -197,7 +197,7 @@ export default function CheckInDashboardPage() {
                             value={lookup}
                             onChange={(event) => setLookup(event.target.value)}
                             placeholder="Paste QR link, guest code, or search name"
-                            className="min-h-[54px] flex-1 rounded-2xl border border-border bg-white px-4 text-base font-bold outline-none focus:border-primary"
+                            className="min-h-[54px] min-w-0 flex-1 rounded-2xl border border-border bg-white px-4 text-base font-bold outline-none focus:border-primary"
                         />
                         <button disabled={saving || !lookup.trim()} className="inline-flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 text-sm font-bold text-white disabled:opacity-50">
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}

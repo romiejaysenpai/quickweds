@@ -2,7 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/lib/email';
 import { getGuestReminderReact } from '@/emails/quickweds-transactional';
-import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
+import { getWeddingGuestUrl } from '@/lib/guest-links';
+import { normalizeExternalWebsiteUrl } from '@/lib/url-safety';
 
 let supabaseAdmin: any = null;
 
@@ -63,6 +64,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (weddingError) throw weddingError;
 
       for (const wedding of weddings) {
+        const guestRsvpUrl = getWeddingGuestUrl(process.env.NEXT_PUBLIC_APP_URL || 'https://quickweds.site', wedding);
+        if (!guestRsvpUrl) continue;
+        const externalUrl = typeof wedding.external_website_url === 'string'
+          ? normalizeExternalWebsiteUrl(wedding.external_website_url)
+          : null;
+        const weddingUrl = (wedding.planner_only && externalUrl) ? externalUrl : guestRsvpUrl;
         const { data: guests, error: guestError } = await supabase
           .from('rsvps')
           .select('*, rsvp_reminders(id, reminder_type)')
@@ -88,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             weddingTime: wedding.wedding_time,
             venueName: wedding.venue_name,
             venueAddress: wedding.venue_address,
-            weddingUrl: getWeddingPublicUrl(process.env.NEXT_PUBLIC_APP_URL || 'https://quickweds.site', wedding),
+            weddingUrl,
             attendance: 'Yes',
             numGuests: guest.num_guests,
           });

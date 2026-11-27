@@ -1,22 +1,24 @@
 BEGIN;
-CREATE TABLE public.planner_payment_milestones(
+-- Older installations can still have only estimated_cost on budget rows.
+ALTER TABLE public.planner_budgets ADD COLUMN IF NOT EXISTS actual_cost numeric DEFAULT 0;
+CREATE TABLE IF NOT EXISTS public.planner_payment_milestones(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),wedding_id text NOT NULL REFERENCES public.weddings(id) ON DELETE CASCADE,
  planner_vendor_id uuid REFERENCES public.planner_vendors(id) ON DELETE CASCADE,
  planner_budget_id uuid REFERENCES public.planner_budgets(id) ON DELETE CASCADE,
  title text NOT NULL CHECK(length(title) BETWEEN 1 AND 200),amount numeric(14,2) NOT NULL CHECK(amount>0 AND amount<=999999999),
  due_date date NOT NULL,paid_at timestamptz,created_at timestamptz NOT NULL DEFAULT now(),
  CHECK(num_nonnulls(planner_vendor_id,planner_budget_id)=1));
-CREATE INDEX planner_milestones_wedding_due ON public.planner_payment_milestones(wedding_id,due_date);
-CREATE TABLE public.planner_gifts(
+CREATE INDEX IF NOT EXISTS planner_milestones_wedding_due ON public.planner_payment_milestones(wedding_id,due_date);
+CREATE TABLE IF NOT EXISTS public.planner_gifts(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),wedding_id text NOT NULL REFERENCES public.weddings(id) ON DELETE CASCADE,
  rsvp_id uuid REFERENCES public.rsvps(id) ON DELETE SET NULL,from_name text NOT NULL CHECK(length(from_name) BETWEEN 1 AND 200),
  description text NOT NULL CHECK(length(description) BETWEEN 1 AND 1000),thank_you_completed_at timestamptz,created_at timestamptz NOT NULL DEFAULT now());
-CREATE INDEX planner_gifts_wedding ON public.planner_gifts(wedding_id,created_at);
-CREATE TABLE public.planner_activity(
+CREATE INDEX IF NOT EXISTS planner_gifts_wedding ON public.planner_gifts(wedding_id,created_at);
+CREATE TABLE IF NOT EXISTS public.planner_activity(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),wedding_id text NOT NULL REFERENCES public.weddings(id) ON DELETE CASCADE,
  entity_type text NOT NULL,entity_id text NOT NULL,action text NOT NULL CHECK(action IN ('INSERT','UPDATE','DELETE')),
  actor_id uuid,created_at timestamptz NOT NULL DEFAULT now());
-CREATE INDEX planner_activity_wedding_time ON public.planner_activity(wedding_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS planner_activity_wedding_time ON public.planner_activity(wedding_id,created_at DESC);
 ALTER TABLE public.planner_payment_milestones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.planner_gifts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.planner_activity ENABLE ROW LEVEL SECURITY;
@@ -44,8 +46,16 @@ BEGIN
  END IF;
  RETURN NEW;
 END; $$;
-CREATE TRIGGER validate_planner_milestone BEFORE INSERT OR UPDATE ON public.planner_payment_milestones FOR EACH ROW EXECUTE FUNCTION quickweds_private.validate_planner_progress();
-CREATE TRIGGER validate_planner_gift BEFORE INSERT OR UPDATE ON public.planner_gifts FOR EACH ROW EXECUTE FUNCTION quickweds_private.validate_planner_progress();
+DO $guard$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='validate_planner_milestone' AND tgrelid='public.planner_payment_milestones'::regclass AND NOT tgisinternal) THEN
+  CREATE TRIGGER validate_planner_milestone BEFORE INSERT OR UPDATE ON public.planner_payment_milestones FOR EACH ROW EXECUTE FUNCTION quickweds_private.validate_planner_progress();
+ END IF;
+END $guard$;
+DO $guard$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='validate_planner_gift' AND tgrelid='public.planner_gifts'::regclass AND NOT tgisinternal) THEN
+  CREATE TRIGGER validate_planner_gift BEFORE INSERT OR UPDATE ON public.planner_gifts FOR EACH ROW EXECUTE FUNCTION quickweds_private.validate_planner_progress();
+ END IF;
+END $guard$;
 
 CREATE OR REPLACE FUNCTION quickweds_private.validate_installment_source() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE commitment numeric; scheduled numeric;
@@ -64,8 +74,16 @@ BEGIN
  RETURN NEW;
 END; $$;
 REVOKE ALL ON FUNCTION quickweds_private.validate_installment_source() FROM PUBLIC;
-CREATE TRIGGER validate_vendor_installments BEFORE UPDATE OF amount ON public.planner_vendors FOR EACH ROW EXECUTE FUNCTION quickweds_private.validate_installment_source();
-CREATE TRIGGER validate_budget_installments BEFORE UPDATE OF actual_cost,estimated_cost ON public.planner_budgets FOR EACH ROW EXECUTE FUNCTION quickweds_private.validate_installment_source();
+DO $guard$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='validate_vendor_installments' AND tgrelid='public.planner_vendors'::regclass AND NOT tgisinternal) THEN
+  CREATE TRIGGER validate_vendor_installments BEFORE UPDATE OF amount ON public.planner_vendors FOR EACH ROW EXECUTE FUNCTION quickweds_private.validate_installment_source();
+ END IF;
+END $guard$;
+DO $guard$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='validate_budget_installments' AND tgrelid='public.planner_budgets'::regclass AND NOT tgisinternal) THEN
+  CREATE TRIGGER validate_budget_installments BEFORE UPDATE OF actual_cost,estimated_cost ON public.planner_budgets FOR EACH ROW EXECUTE FUNCTION quickweds_private.validate_installment_source();
+ END IF;
+END $guard$;
 
 -- No field contents are copied. Identity is the authenticated DB caller, or NULL for server jobs.
 CREATE OR REPLACE FUNCTION quickweds_private.log_planner_activity() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
@@ -81,7 +99,9 @@ END; $$;
 REVOKE ALL ON FUNCTION quickweds_private.validate_planner_progress(),quickweds_private.log_planner_activity() FROM PUBLIC,anon,authenticated;
 DO $$ DECLARE tbl text; BEGIN
  FOREACH tbl IN ARRAY ARRAY['planner_tasks','planner_budgets','planner_vendors','planner_events','seating_assignments','wedding_collaborators','planner_payment_milestones','planner_gifts'] LOOP
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.'||tbl) AND tgname='quickweds_activity' AND NOT tgisinternal) THEN
  EXECUTE format('CREATE TRIGGER quickweds_activity AFTER INSERT OR UPDATE OR DELETE ON public.%I FOR EACH ROW EXECUTE FUNCTION quickweds_private.log_planner_activity()',tbl);
+ END IF;
  END LOOP;
 END; $$;
 NOTIFY pgrst,'reload schema';

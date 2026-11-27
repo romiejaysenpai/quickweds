@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
 import { createRsvpAccessToken, getRsvpManageUrl, verifyRsvpAccessToken } from '@/lib/rsvp-access';
-import { resolvePublicWeddingById } from '@/lib/public-wedding-lookup';
+import { resolveRsvpWeddingById } from '@/lib/rsvp-wedding';
 import { createElement } from 'react';
 import { sendEmail } from '@/lib/email';
 
@@ -24,10 +24,10 @@ export async function POST(req: NextRequest) {
     }
     try {
         const db = getSupabaseAdminClient() as any;
-        const { wedding, error: weddingError } = await resolvePublicWeddingById(
+        const { wedding, error: weddingError } = await resolveRsvpWeddingById(
             db,
             weddingId,
-            'id, template, motif_color, rsvp_events, rsvp_allow_plus_ones, rsvp_allow_children, bride_name, groom_name'
+            'id, template, motif_color, rsvp_events, rsvp_allow_plus_ones, rsvp_allow_children, bride_name, groom_name, external_website_url'
         );
         if (weddingError) throw weddingError;
         if (!wedding) return verifying ? NextResponse.json({ error: 'This link is invalid or expired.' }, { status: 403, headers }) : accepted();

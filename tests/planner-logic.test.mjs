@@ -79,3 +79,69 @@ test('UUID planner wedding IDs resolve as IDs and malformed identifiers remain r
  assert.equal(isWeddingPhotoPath('guest-uploads/wedding1/photo.jpg','wedding1'),true);
  for(const path of ['guest-uploads/wedding2/photo.jpg','guest-uploads/wedding1/../photo.jpg','guest-uploads/wedding1/%2e%2e/photo.jpg'])assert.equal(isWeddingPhotoPath(path,'wedding1'),false);
 });
+
+test('checklist route falls back cleanly when quickweds_seed_checklist RPC and due_date column are absent',async()=>{
+ const inserted=[];
+ let existing=[{id:'t0',title:'Book venue',section:'12-Month Wedding Plan',category:'12-Month Wedding Plan',template_key:'venue'}];
+ const db={
+  rpc:async()=>({data:null,error:{code:'PGRST202',message:'Could not find the function public.quickweds_seed_checklist in the schema cache'}}),
+  from:(table)=>{
+   if(table==='user_app_profiles')return {select:()=>({eq:()=>({maybeSingle:async()=>({data:{is_pro:false,payment_status:'free'},error:null})})})};
+   if(table==='planner_tasks')return {
+    select:()=>({eq:async()=>({data:existing,error:null})}),
+    insert:(rows)=>({select:async()=>{
+     if(rows.some(r=>'due_date' in r))return {data:null,error:{code:'PGRST204',message:"Could not find the 'due_date' column of 'planner_tasks' in the schema cache"}};
+     inserted.push(...rows);
+     return {data:rows.map((r,i)=>({id:`new-${i}`,...r})),error:null};
+    }}),
+   };
+   throw new Error('Unexpected table '+table);
+  },
+ };
+ const route=load('src/app/api/planner/checklist/route.ts',{
+  'next/server':{NextResponse:{json:(body,init)=>({status:init?.status||200,body})}},
+  '@/lib/api-auth':{getRequestUser:async()=>({user:{id:'u1',email:'couple@example.com'}})},
+  '@/lib/supabase-admin':{getSupabaseAdminClient:()=>db},
+  '@/lib/wedding-access':{getWeddingAccess:async()=>({wedding:{id:'w1',user_id:'u1',is_premium:false,payment_status:'free'},canManage:true})},
+  '@/lib/planner-limits':{FREE_PLAN_LIMITS:{checklistTasks:2},hasPlannerProAccess:()=>false},
+  '@/lib/admin':{isKnownAdminEmail:()=>false},
+ });
+ const okRes=await route.POST({json:async()=>({weddingId:'w1',rows:[{title:'Book venue',template_key:'venue',section:'12-Month Wedding Plan',due_date:'2027-01-01'},{title:'Invite guests',template_key:'guests',section:'12-Month Wedding Plan',due_date:'2027-02-01'}]})});
+ assert.equal(okRes.status,200);
+ assert.equal(okRes.body.tasks.length,1);
+ assert.equal(inserted.length,1);
+ assert.equal('due_date' in inserted[0],false);
+ existing=[...existing,...okRes.body.tasks];
+ const limitRes=await route.POST({json:async()=>({weddingId:'w1',rows:[{title:'Order cake',template_key:'cake',section:'12-Month Wedding Plan'}]})});
+ assert.equal(limitRes.status,402);
+});
+
+test('planner progress GET tolerates missing planner_only column and optional progress tables',async()=>{
+ const optionalMissing=new Set(['planner_payment_milestones','planner_gifts','planner_activity']);
+ const db={
+  from:(table)=>({
+   select:()=>({
+    eq:()=>({
+     order:()=>({
+      limit:async()=>optionalMissing.has(table)?{data:null,error:{code:'PGRST205',message:`Could not find the table 'public.${table}' in the schema cache`}}:{data:[],error:null},
+     }),
+    }),
+   }),
+  }),
+ };
+ const route=load('src/app/api/planner/progress/route.ts',{
+  'next/server':{NextResponse:{json:(body,init)=>({status:init?.status||200,body})}},
+  '@/lib/api-rate-limit':{getAuthenticatedRequest:async()=>({user:{id:'u1',email:'couple@example.com'},response:null})},
+  '@/lib/supabase-admin':{getSupabaseAdminClient:()=>db},
+  '@/lib/wedding-access':{getWeddingAccess:async(_db,_u,_id,opts)=>{
+   if(String(opts?.select||'').includes('planner_only'))throw {code:'42703',message:'column weddings.planner_only does not exist'};
+   return {wedding:{id:'w1',user_id:'u1',currency:'USD',total_budget:1000},role:'owner',canManage:true};
+  }},
+ });
+ const res=await route.GET({method:'GET',nextUrl:new URL('http://localhost/api/planner/progress?weddingId=w1')});
+ assert.equal(res.status,200);
+ assert.equal(res.body.wedding.planner_only,false);
+ assert.deepEqual(Array.from(res.body.planner_payment_milestones),[]);
+ assert.deepEqual(Array.from(res.body.planner_gifts),[]);
+ assert.deepEqual(Array.from(res.body.planner_activity),[]);
+});

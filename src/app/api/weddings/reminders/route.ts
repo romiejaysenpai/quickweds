@@ -10,6 +10,7 @@ import {
     hasPlannerProAccess,
     logPlannerEmailEvent,
 } from '@/lib/planner-limits';
+import { getWeddingGuestUrl } from '@/lib/guest-links';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 import { getPublicAppUrl } from '@/lib/site-url';
 import { getWeddingAccess } from '@/lib/wedding-access';
@@ -104,8 +105,9 @@ export async function POST(req: NextRequest) {
         const sanitizedRsvpDeadline = sanitizeInput(wedding.rsvp_deadline, { maxLength: 50 });
 
         const rawCustomDomain = wedding.custom_domain ? sanitizeInput(wedding.custom_domain, { maxLength: 100 }).replace(/^https?:\/\//i, '') : '';
-        const weddingUrl = (rawCustomDomain ? toSafeHttpUrl(`https://${rawCustomDomain}`) : null)
+        const weddingUrl = wedding.planner_only ? getWeddingGuestUrl(getPublicAppUrl(), wedding) : (rawCustomDomain ? toSafeHttpUrl(`https://${rawCustomDomain}`) : null)
             || getWeddingPublicUrl(getPublicAppUrl(), wedding);
+        if (!weddingUrl) return NextResponse.json({ error: 'Enable your public RSVP page before sending guest reminders.' }, { status: 409 });
 
         const safeBrideHtml = escapeHtml(sanitizedBrideName);
         const safeGroomHtml = escapeHtml(sanitizedGroomName);

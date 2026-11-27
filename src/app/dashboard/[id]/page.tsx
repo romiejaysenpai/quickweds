@@ -644,7 +644,10 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
     // Copy & Share
     const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://quickweds.site';
-    const url = wedding ? getWeddingPublicUrl(appBaseUrl, wedding) : '';
+    const isPrivateWorkspace = Boolean(wedding?.planner_only);
+    const connectionPath = `/dashboard/${id}/connection`;
+    const externalWebsiteUrl = typeof wedding?.external_website_url === 'string' && wedding.external_website_url.startsWith('https://') ? wedding.external_website_url : '';
+    const url = isPrivateWorkspace ? externalWebsiteUrl : wedding ? getWeddingPublicUrl(appBaseUrl, wedding) : '';
     const qrTrackingUrl = url ? `${url}${url.includes('?') ? '&' : '?'}src=qr` : '';
     const canManageWorkspace = accessRole === 'owner' || accessRole === 'partner';
     const hasPlannerPro = isAdmin || accountIsPro || Boolean(wedding?.is_premium);
@@ -714,12 +717,12 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     <div className="flex min-w-0 flex-1 items-center justify-end gap-2 pl-1 sm:w-auto sm:flex-none sm:pl-0">
                         {canManageWorkspace && (
                             <Link
-                                href={`/builder?edit=${wedding.id}`}
+                                href={isPrivateWorkspace ? connectionPath : `/builder?edit=${wedding.id}`}
                                 className="flex min-h-[42px] min-w-[82px] flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover sm:min-h-[44px] sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-2.5 sm:text-sm"
                             >
                                 <Sparkles className="w-4 h-4 flex-shrink-0" />
-                                <span className="hidden sm:inline">Edit Design</span>
-                                <span className="sm:hidden">Edit</span>
+                                <span className="hidden sm:inline">{isPrivateWorkspace ? 'Website / RSVP' : 'Edit Design'}</span>
+                                <span className="sm:hidden">{isPrivateWorkspace ? 'RSVP' : 'Edit'}</span>
                             </Link>
                         )}
 
@@ -803,13 +806,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                             <ArrowRight className="h-4 w-4 opacity-20" />
                                         </Link>
                                         <Link
-                                            href={`/dashboard/${wedding.id}/qr-kit?from=dashboard`}
+                                            href={isPrivateWorkspace ? connectionPath : `/dashboard/${wedding.id}/qr-kit?from=dashboard`}
                                             onClick={closeMobileMenu}
                                             className="flex h-14 items-center justify-between rounded-xl bg-neutral/30 px-4 text-sm font-bold text-text-secondary transition hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20"
                                         >
                                             <span className="flex items-center gap-3">
                                                 <QrCode className="w-4 h-4" />
-                                                QR Kit
+                                                {isPrivateWorkspace ? 'Website / RSVP' : 'QR Kit'}
                                             </span>
                                             <ArrowRight className="h-4 w-4 opacity-20" />
                                         </Link>
@@ -952,7 +955,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
 
 
-                        {created && activeTab === 'home' && (
+                        {created && !isPrivateWorkspace && activeTab === 'home' && (
                             <div className="mb-8 p-4 rounded-xl bg-success-bg border border-border flex flex-row items-center gap-4 relative overflow-hidden sm:hidden">
                                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 pointer-events-none" />
                                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-accent shadow-sm flex-shrink-0 relative">
@@ -1019,8 +1022,8 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                                         <Link href={`/dashboard/${wedding.id}/post-wedding?from=dashboard`} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/20 bg-white px-4 py-2.5 text-xs font-bold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white sm:text-sm">
                                             <Sparkles className="w-4 h-4" /> Post-Wedding
                                         </Link>
-                                        <button type="button" onClick={() => openExternal(url)} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-bold text-text-secondary transition-all hover:-translate-y-0.5 hover:bg-neutral hover:text-foreground sm:text-sm">
-                                            <ExternalLink className="w-4 h-4" /> Guest View
+                                        <button type="button" onClick={() => url ? openExternal(url) : router.push(connectionPath)} className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-bold text-text-secondary transition-all hover:-translate-y-0.5 hover:bg-neutral hover:text-foreground sm:text-sm">
+                                            <ExternalLink className="w-4 h-4" /> {isPrivateWorkspace ? (externalWebsiteUrl ? 'Wedding Website' : 'Connect Website') : 'Guest View'}
                                         </button>
                                     </div>
                                 </div>
@@ -1031,13 +1034,13 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                         {activeTab === 'home' && (
                             <div className="grid grid-cols-2 sm:hidden gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2">
                                 <Link
-                                    href={`/builder?edit=${wedding.id}`}
+                                    href={isPrivateWorkspace ? connectionPath : `/builder?edit=${wedding.id}`}
                                     className="flex flex-col items-center justify-center p-3 bg-white rounded-3xl border border-border soft-shadow text-center relative overflow-hidden group active:scale-95 transition-transform"
                                 >
                                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1.5">
                                         <Sparkles className="w-4 h-4" />
                                     </div>
-                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">Edit Page</span>
+                                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-foreground">{isPrivateWorkspace ? 'Website / RSVP' : 'Edit Page'}</span>
                                     <div className="absolute inset-0 bg-primary/5 opacity-0 group-active:opacity-100 transition-opacity" />
                                 </Link>
                                 <Link
@@ -1417,8 +1420,15 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
                     </div>
 
                     <div className="space-y-6 sm:space-y-8">
+                        {isPrivateWorkspace && (activeTab === 'home' || activeTab === 'settings') && (
+                            <section className="rounded-2xl border border-primary/20 bg-white p-6">
+                                <h2 className="font-serif text-2xl font-bold text-foreground">Your website + QuickWeds RSVP</h2>
+                                <p className="mt-3 text-sm leading-6 text-text-secondary">{wedding.rsvp_page_enabled ? 'Your RSVP page is enabled. Open connection settings to preview it, copy its link, or download its QR code.' : 'Keep your existing wedding website and set up a guest RSVP page. Your planning workspace stays private.'}</p>
+                                <Link href={connectionPath} className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white">{wedding.rsvp_page_enabled ? 'Manage website / RSVP' : 'Connect website / RSVP'} <ArrowRight className="h-4 w-4" /></Link>
+                            </section>
+                        )}
                         {/* QR & Share Hub */}
-                        {(activeTab === 'home') && (
+                        {(activeTab === 'home') && !isPrivateWorkspace && (
                             <div className="p-6 sm:p-10 rounded-[2.5rem] bg-primary text-white shadow-2xl relative overflow-hidden group animate-in fade-in slide-in-from-right-4">
                                 <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-[80px] -mr-24 -mt-24" />
                                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-[60px] -ml-16 -mb-16" />

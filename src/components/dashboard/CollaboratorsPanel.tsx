@@ -127,7 +127,7 @@ export default function CollaboratorsPanel({
     };
 
     return (
-        <div className="overflow-hidden rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-3xl sm:p-6 md:p-8">
+        <div className="@container/collaborators min-w-0 rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-3xl sm:p-6 md:p-8">
             <div className="space-y-1">
                 <h3 className="flex items-center gap-2 text-lg font-serif font-bold text-foreground sm:text-xl">
                     <ShieldCheck className="h-5 w-5 flex-shrink-0 text-primary" /> Collaboration Access
@@ -145,18 +145,18 @@ export default function CollaboratorsPanel({
                             <UpgradeButton weddingId={weddingId} variant="outlined" className="justify-center text-sm" />
                         </div>
                     )}
-                    <form onSubmit={submitInvite} className="grid grid-cols-1 items-stretch gap-3 xl:grid-cols-[minmax(320px,1fr)_160px_124px] 2xl:grid-cols-1">
+                    <form onSubmit={submitInvite} className="grid grid-cols-1 items-stretch gap-3 @min-[38rem]/collaborators:grid-cols-[minmax(0,1fr)_10rem_auto]">
                         <input
                             type="email"
                             placeholder="partner@example.com"
                             value={inviteEmail}
                             onChange={(e) => setInviteEmail(e.target.value)}
-                            className="h-12 min-w-0 rounded-xl border border-border bg-neutral px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                            className="h-12 w-full min-w-0 rounded-xl border border-border bg-neutral px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
                         />
                         <select
                             value={inviteRole}
                             onChange={(e) => setInviteRole(e.target.value as CollaboratorRole)}
-                            className="h-12 min-w-0 rounded-xl border border-border bg-neutral px-4 text-sm font-bold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                            className="h-12 w-full min-w-0 rounded-xl border border-border bg-neutral px-4 text-sm font-bold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
                         >
                             <option value="partner">Partner</option>
                             <option value="coordinator">Coordinator</option>

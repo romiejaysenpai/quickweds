@@ -1335,27 +1335,27 @@ export default function SeatingChartBuilder({
                     ))}
                 </div>
 
-                <div className="mb-6 rounded-2xl border border-border bg-neutral/40 p-4">
-                    <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_auto_auto_auto]">
-                        <label className="space-y-1">
+                <div className="@container/seating-controls mb-6 min-w-0 rounded-2xl border border-border bg-neutral/40 p-4">
+                    <div className="grid min-w-0 grid-cols-1 items-end gap-3 @min-[28rem]/seating-controls:grid-cols-2 @min-[56rem]/seating-controls:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.8fr))_auto_auto_auto]">
+                        <label className="min-w-0 space-y-1">
                             <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">Layout Name</span>
-                            <input value={layout.layout_name} onChange={(event) => updateLayout({ layout_name: event.target.value })} className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-primary" />
+                            <input value={layout.layout_name} onChange={(event) => updateLayout({ layout_name: event.target.value })} className="w-full min-w-0 rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-primary" />
                         </label>
-                        <label className="space-y-1">
+                        <label className="min-w-0 space-y-1">
                             <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">Venue Shape</span>
-                            <select value={layout.venue_shape} onChange={(event) => updateLayout({ venue_shape: event.target.value as VenueShape })} className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-primary">
+                            <select value={layout.venue_shape} onChange={(event) => updateLayout({ venue_shape: event.target.value as VenueShape })} className="w-full min-w-0 rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-primary">
                                 <option value="rectangle">Rectangle</option>
                                 <option value="square">Square</option>
                                 <option value="oval">Oval</option>
                             </select>
                         </label>
-                        <label className="space-y-1">
+                        <label className="min-w-0 space-y-1">
                             <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">Width</span>
-                            <input type="number" min={30} max={240} value={layout.venue_width} onChange={(event) => updateLayout({ venue_width: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-primary" />
+                            <input type="number" min={30} max={240} value={layout.venue_width} onChange={(event) => updateLayout({ venue_width: Number(event.target.value) })} className="w-full min-w-0 rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-primary" />
                         </label>
-                        <label className="space-y-1">
+                        <label className="min-w-0 space-y-1">
                             <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">Height</span>
-                            <input type="number" min={30} max={240} value={layout.venue_height} disabled={layout.venue_shape === 'square'} onChange={(event) => updateLayout({ venue_height: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-primary disabled:opacity-50" />
+                            <input type="number" min={30} max={240} value={layout.venue_height} disabled={layout.venue_shape === 'square'} onChange={(event) => updateLayout({ venue_height: Number(event.target.value) })} className="w-full min-w-0 rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-primary disabled:opacity-50" />
                         </label>
                         <button type="button" onClick={() => updateLayout({ grid_enabled: !layout.grid_enabled })} className={`inline-flex min-h-[44px] items-center justify-center rounded-xl border px-4 py-2 text-sm font-bold transition ${layout.grid_enabled ? 'border-primary bg-primary text-white' : 'border-border bg-white text-text-secondary hover:text-primary'}`}>
                             {layout.grid_enabled ? 'Grid On' : 'Grid Off'}
@@ -1719,17 +1719,17 @@ export default function SeatingChartBuilder({
                                             </button>
                                         </div>
                                         <div className="mt-4 grid grid-cols-3 gap-2">
-                                            <label className="space-y-1">
+                                            <label className="min-w-0 space-y-1">
                                                 <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Width</span>
-                                                <input type="number" min={7} max={28} value={selectedTableSize.width} onChange={(event) => void updateTableStyle(selectedTableData.id, { width: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                                <input type="number" min={7} max={28} value={selectedTableSize.width} onChange={(event) => void updateTableStyle(selectedTableData.id, { width: Number(event.target.value) })} className="w-full min-w-0 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
                                             </label>
-                                            <label className="space-y-1">
+                                            <label className="min-w-0 space-y-1">
                                                 <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Height</span>
-                                                <input type="number" min={6} max={24} value={selectedTableSize.height} onChange={(event) => void updateTableStyle(selectedTableData.id, { height: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                                <input type="number" min={6} max={24} value={selectedTableSize.height} onChange={(event) => void updateTableStyle(selectedTableData.id, { height: Number(event.target.value) })} className="w-full min-w-0 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
                                             </label>
-                                            <label className="space-y-1">
+                                            <label className="min-w-0 space-y-1">
                                                 <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Rotate</span>
-                                                <input type="number" step={15} value={selectedTableSize.rotation} onChange={(event) => void updateTableStyle(selectedTableData.id, { rotation: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                                <input type="number" step={15} value={selectedTableSize.rotation} onChange={(event) => void updateTableStyle(selectedTableData.id, { rotation: Number(event.target.value) })} className="w-full min-w-0 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
                                             </label>
                                         </div>
                                     </div>
@@ -1744,17 +1744,17 @@ export default function SeatingChartBuilder({
                                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Selected Venue Item</p>
                                         <input value={selectedObjectData.label} onChange={(event) => updateVenueObject(selectedObjectData.id, { label: event.target.value })} className="mt-2 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm font-bold outline-none focus:border-primary" />
                                         <div className="mt-4 grid grid-cols-3 gap-2">
-                                            <label className="space-y-1">
+                                            <label className="min-w-0 space-y-1">
                                                 <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Width</span>
-                                                <input type="number" min={5} max={50} value={selectedObjectData.width} onChange={(event) => updateVenueObject(selectedObjectData.id, { width: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                                <input type="number" min={5} max={50} value={selectedObjectData.width} onChange={(event) => updateVenueObject(selectedObjectData.id, { width: Number(event.target.value) })} className="w-full min-w-0 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
                                             </label>
-                                            <label className="space-y-1">
+                                            <label className="min-w-0 space-y-1">
                                                 <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Height</span>
-                                                <input type="number" min={4} max={40} value={selectedObjectData.height} onChange={(event) => updateVenueObject(selectedObjectData.id, { height: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                                <input type="number" min={4} max={40} value={selectedObjectData.height} onChange={(event) => updateVenueObject(selectedObjectData.id, { height: Number(event.target.value) })} className="w-full min-w-0 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
                                             </label>
-                                            <label className="space-y-1">
+                                            <label className="min-w-0 space-y-1">
                                                 <span className="block text-[9px] font-black uppercase tracking-[0.14em] text-text-secondary">Rotate</span>
-                                                <input type="number" step={15} value={selectedObjectData.rotation} onChange={(event) => updateVenueObject(selectedObjectData.id, { rotation: Number(event.target.value) })} className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
+                                                <input type="number" step={15} value={selectedObjectData.rotation} onChange={(event) => updateVenueObject(selectedObjectData.id, { rotation: Number(event.target.value) })} className="w-full min-w-0 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold outline-none focus:border-primary" />
                                             </label>
                                         </div>
                                         <button type="button" onClick={() => deleteVenueObject(selectedObjectData.id)} className="mt-4 inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-red-100 bg-white px-3 py-2 text-xs font-bold text-red-500 transition hover:bg-red-50">

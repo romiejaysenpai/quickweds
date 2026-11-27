@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 import type { ReactElement } from 'react';
 import { getUserTriggeredEmailUsage } from '@/lib/planner-limits';
 import { render } from '@react-email/render';
-import { claimEmailDelivery, finishEmailDelivery, type EmailTracking, type DeliveryClaim } from '@/lib/email-delivery';
+import { claimEmailDelivery, EmailMigrationMissingError, finishEmailDelivery, type EmailTracking, type DeliveryClaim } from '@/lib/email-delivery';
 import {
     getGuestConfirmationHtml,
     getCoupleNotificationHtml,
@@ -86,11 +86,24 @@ export async function sendEmail({ to, subject, html, react, template, attachment
         if (tracking) {
             if (react) { payload.html = await render(react); delete payload.react; }
             if (attachments?.length || template) throw new Error('Tracked sends require frozen HTML without attachments or hosted templates.');
-            delivery = await claimEmailDelivery(tracking, payload);
-            if (delivery.state === 'accepted') return { success: true, id: delivery.provider_id, alreadyAccepted: true };
-            if (delivery.state !== 'processing') return { success: false, error: delivery.state === 'limited' ? 'Guest email allowance reached.' : `Email is ${delivery.state}. Retry the same operation later.`, retryable: delivery.state === 'busy' };
-            payload = { ...delivery.payload, tags: [...((delivery.payload.tags as Array<{name:string;value:string}>) || []), { name: 'quickweds_delivery', value: delivery.id }] };
-            idempotencyKey = `quickweds/${delivery.id}`;
+            try {
+                delivery = await claimEmailDelivery(tracking, payload);
+                if (delivery.state === 'accepted') return { success: true, id: delivery.provider_id, alreadyAccepted: true };
+                if (delivery.state !== 'processing') return { success: false, error: delivery.state === 'limited' ? 'Guest email allowance reached.' : `Email is ${delivery.state}. Retry the same operation later.`, retryable: delivery.state === 'busy' };
+                payload = { ...delivery.payload, tags: [...((delivery.payload.tags as Array<{name:string;value:string}>) || []), { name: 'quickweds_delivery', value: delivery.id }] };
+                idempotencyKey = `quickweds/${delivery.id}`;
+            } catch (claimError) {
+                const isMissingMigration =
+                    claimError instanceof EmailMigrationMissingError ||
+                    (claimError && typeof claimError === 'object' && 'code' in claimError && (claimError as { code?: unknown }).code === 'EMAIL_MIGRATION_MISSING');
+                const canFallbackTransactional =
+                    isMissingMigration &&
+                    tracking.quotaLimit == null &&
+                    tracking.recoverable !== true;
+                if (!canFallbackTransactional) throw claimError;
+                console.warn('Durable email RPC not installed yet; sending transactional email via Resend with deterministic idempotency key.');
+                idempotencyKey = `quickweds/fallback/${createHash('sha256').update(tracking.key).digest('hex')}`;
+            }
         }
         if(!tracking && !idempotencyKey){
             if(react){payload.html=await render(react);delete payload.react;}

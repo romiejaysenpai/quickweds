@@ -28,6 +28,29 @@ export type DeliveryClaim = {
   first_dispatch_at?: string;
   created_at?: string;
 };
+export class EmailMigrationMissingError extends Error {
+  readonly code = "EMAIL_MIGRATION_MISSING";
+  constructor() {
+    super(
+      "Reliable email delivery is unavailable. Please retry after the email migration is installed.",
+    );
+    this.name = "EmailMigrationMissingError";
+  }
+}
+
+function isMissingEmailRpcError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const record = error as { code?: unknown; message?: unknown; details?: unknown };
+  const code = String(record.code || "");
+  const text = `${record.message || ""} ${record.details || ""}`.toLowerCase();
+  return (
+    code === "PGRST202" ||
+    code === "42883" ||
+    text.includes("could not find the function") ||
+    (text.includes("quickweds_claim_email") && text.includes("does not exist"))
+  );
+}
+
 export async function claimEmailDelivery(
   tracking: EmailTracking,
   payload: Record<string, unknown>,
@@ -46,10 +69,12 @@ export async function claimEmailDelivery(
     p_guard: tracking.guard || null,
     p_recoverable: tracking.recoverable === true,
   });
-  if (error)
+  if (error) {
+    if (isMissingEmailRpcError(error)) throw new EmailMigrationMissingError();
     throw new Error(
       "Reliable email delivery is unavailable. Please retry after the email migration is installed.",
     );
+  }
   return data as DeliveryClaim;
 }
 export async function finishEmailDelivery(

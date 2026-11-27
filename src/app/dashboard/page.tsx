@@ -177,7 +177,7 @@ function DashboardWelcomeHero({
                                 <Users className="h-5 w-5" />
                             </Link>
                         )}
-                        <Link href={hasWeddings && latestWedding ? `/builder?edit=${latestWedding.id}` : '/builder'} title="Customize website" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
+                        <Link href={hasWeddings && latestWedding ? (latestWedding.planner_only ? `/dashboard/${latestWedding.id}/connection` : `/builder?edit=${latestWedding.id}`) : '/builder'} title="Customize website" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral text-primary shadow-lg shadow-primary/10 transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
                             <Settings className="h-5 w-5" />
                         </Link>
                     </div>
@@ -265,27 +265,27 @@ function CoupleOnboardingSection({
     const onboardingItems = [
         {
             id: 'site',
-            title: 'Create your wedding site',
-            body: 'Choose a template and start shaping the guest experience.',
-            href: primaryWebsite && !primaryWebsite.planner_only ? `/builder?edit=${primaryWebsite.id}` : '/builder',
+            title: primaryWebsite?.planner_only ? 'Connect your wedding website' : 'Create your wedding site',
+            body: primaryWebsite?.planner_only ? 'Keep your existing website and add a QuickWeds RSVP page.' : 'Choose a template and start shaping the guest experience.',
+            href: primaryWebsite ? (primaryWebsite.planner_only ? `/dashboard/${primaryWebsite.id}/connection` : `/builder?edit=${primaryWebsite.id}`) : '/builder',
             icon: Heart,
-            done: weddings.some((w) => !w.planner_only),
+            done: weddings.some((w) => !w.planner_only || w.rsvp_page_enabled),
         },
         {
             id: 'details',
-            title: 'Add details and photos',
-            body: 'Bring in the date, venue, story, gallery, and dress code.',
-            href: primaryWebsite && !primaryWebsite.planner_only ? `/builder?edit=${primaryWebsite.id}` : '/builder',
+            title: primaryWebsite?.planner_only ? 'Add RSVP page details' : 'Add details and photos',
+            body: primaryWebsite?.planner_only ? 'Set your names, event date, venue, RSVP deadline, and accent color.' : 'Bring in the date, venue, story, gallery, and dress code.',
+            href: primaryWebsite ? (primaryWebsite.planner_only ? `/dashboard/${primaryWebsite.id}/connection` : `/builder?edit=${primaryWebsite.id}`) : '/builder',
             icon: ImagePlus,
             done: weddings.some((w) => Boolean(w.venue_name || w.wedding_date || (Array.isArray(w.gallery_images) && w.gallery_images.length > 0))),
         },
         {
             id: 'share',
             title: 'Share your RSVP link',
-            body: 'Once your site is ready, send guests one simple place to reply.',
-            href: primaryWebsite ? `/dashboard/${primaryWebsite.id}` : '/builder',
+            body: 'Once your RSVP page is ready, send guests one simple place to reply.',
+            href: primaryWebsite ? `/dashboard/${primaryWebsite.id}${primaryWebsite.planner_only ? '/connection' : ''}` : '/builder',
             icon: Send,
-            done: weddings.some((w) => !w.planner_only && Array.isArray(w.rsvps) && w.rsvps.length > 0),
+            done: weddings.some((w) => (!w.planner_only || w.rsvp_page_enabled) && Array.isArray(w.rsvps) && w.rsvps.length > 0),
         },
         {
             id: 'planner',
@@ -429,10 +429,10 @@ function CoupleOnboardingSection({
     );
 }
 
-function CopyLinkButton({ wedding }: { wedding: { id: string; public_slug?: string | null } }) {
+function CopyLinkButton({ wedding }: { wedding: { id: string; public_slug?: string | null; planner_only?: boolean; rsvp_page_enabled?: boolean } }) {
     const [copied, setCopied] = useState(false);
     const handleCopy = useCallback(() => {
-        const url = `${window.location.origin}${getWeddingPublicPath(wedding)}`;
+        const url = `${window.location.origin}${wedding.planner_only ? `/rsvp/${wedding.id}` : getWeddingPublicPath(wedding)}`;
         copyText(url).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2500);
@@ -470,7 +470,10 @@ function StatusBadge({ wedding }: { wedding: any }) {
     let label = '';
     let colorClass = '';
 
-    if (wedding.is_thank_you_mode) {
+    if (wedding.planner_only && !wedding.rsvp_page_enabled) {
+        label = 'Private workspace';
+        colorClass = 'bg-neutral text-text-secondary border-border';
+    } else if (wedding.is_thank_you_mode) {
         label = 'Thank You';
         colorClass = 'bg-accent/20 text-accent border-accent/30';
     } else if (weddingIsPast) {
@@ -480,7 +483,7 @@ function StatusBadge({ wedding }: { wedding: any }) {
         label = 'RSVP Closed';
         colorClass = 'bg-neutral text-text-secondary border-border';
     } else {
-        label = 'Live';
+        label = wedding.planner_only ? 'RSVP enabled' : 'Live';
         colorClass = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
     }
 
@@ -1150,7 +1153,7 @@ export default function DashboardRedirect() {
                                         <div className="flex items-center justify-between">
                                             <StatusBadge wedding={wedding} />
                                             <span className="text-[10px] text-text-secondary/50 font-bold uppercase tracking-widest">
-                                                {wedding.template || 'classic'}
+                                                {wedding.planner_only ? (wedding.external_website_url ? 'External website' : 'Planner') : wedding.template || 'classic'}
                                             </span>
                                         </div>
 
@@ -1165,13 +1168,13 @@ export default function DashboardRedirect() {
                                             </Link>
                                             <button
                                                 type="button"
-                                                onClick={() => void openExternalUrl(`${window.location.origin}${getWeddingPublicPath(wedding)}`)}
-                                                title="Guest view"
+                                                onClick={() => wedding.planner_only ? (typeof wedding.external_website_url === 'string' && wedding.external_website_url.startsWith('https://') ? void openExternalUrl(wedding.external_website_url) : router.push(`/dashboard/${wedding.id}/connection`)) : void openExternalUrl(`${window.location.origin}${getWeddingPublicPath(wedding)}`)}
+                                                title={wedding.planner_only ? (wedding.external_website_url ? 'Open wedding website' : 'Set up RSVP page') : 'Guest view'}
                                                 className="h-10 sm:h-11 w-10 sm:w-11 rounded-xl border border-border flex items-center justify-center text-text-secondary hover:bg-primary hover:text-white hover:border-primary transition-all flex-shrink-0"
                                             >
                                                 <ExternalLink className="w-4 h-4" />
                                             </button>
-                                            <CopyLinkButton wedding={wedding} />
+                                            {(!wedding.planner_only || wedding.rsvp_page_enabled) && <CopyLinkButton wedding={wedding} />}
                                             <DeleteButton
                                                 weddingId={wedding.id}
                                                 coupleName={`${wedding.bride_name} & ${wedding.groom_name}`}
@@ -1197,12 +1200,12 @@ export default function DashboardRedirect() {
                                                 {wedding.is_premium || accountIsPro ? 'Planner' : 'Planner Lite'}
                                             </Link>
                                             <Link
-                                                href={`/builder?edit=${wedding.id}`}
-                                                title="Edit design"
+                                                href={wedding.planner_only ? `/dashboard/${wedding.id}/connection` : `/builder?edit=${wedding.id}`}
+                                                title={wedding.planner_only ? 'Manage website / RSVP' : 'Edit design'}
                                                 className="h-10 sm:h-11 px-3 sm:px-4 rounded-xl border border-primary/20 text-primary text-xs font-bold hover:bg-primary/5 transition-all flex items-center gap-1.5 min-h-[44px]"
                                             >
                                                 <Pencil className="w-3.5 h-3.5" />
-                                                <span className="hidden sm:inline">Edit</span>
+                                                <span className="hidden sm:inline">{wedding.planner_only ? 'RSVP' : 'Edit'}</span>
                                             </Link>
                                         </div>
 

@@ -38,6 +38,25 @@ export async function DELETE(req: NextRequest) {return handle(req);}
 export async function PATCH(req: NextRequest) {
   return handle(req);
 }
+function isSchemaMissingError(error: any) {
+  const code = String(error?.code || "");
+  const text = `${error?.message || ""} ${error?.details || ""}`.toLowerCase();
+  return (
+    code === "42703" ||
+    code === "42P01" ||
+    code === "PGRST204" ||
+    code === "PGRST205" ||
+    text.includes("schema cache") ||
+    text.includes("does not exist")
+  );
+}
+
+const OPTIONAL_PROGRESS_TABLES = new Set([
+  "planner_payment_milestones",
+  "planner_gifts",
+  "planner_activity",
+]);
+
 async function handle(req: NextRequest) {
   const auth = await getAuthenticatedRequest(req, "AUTHENTICATED_DEFAULT");
   if (auth.response) return auth.response;
@@ -52,10 +71,19 @@ async function handle(req: NextRequest) {
     );
   try {
     const db = getSupabaseAdminClient() as any;
-    const access = await getWeddingAccess(db, auth.user, weddingId, {
-      select:
-        "id,user_id,currency,total_budget,wedding_date,rsvp_events,planner_only",
-    });
+    let access;
+    try {
+      access = await getWeddingAccess(db, auth.user, weddingId, {
+        select:
+          "id,user_id,currency,total_budget,wedding_date,rsvp_events,planner_only",
+      });
+    } catch (accessError) {
+      if (!isSchemaMissingError(accessError)) throw accessError;
+      access = await getWeddingAccess(db, auth.user, weddingId, {
+        select: "id,user_id,currency,total_budget,wedding_date,rsvp_events",
+      });
+      if (access.wedding) access.wedding = { ...access.wedding, planner_only: false };
+    }
     if (!access.wedding || !access.canManage)
       return NextResponse.json(
         { error: "Planner access required." },
@@ -91,7 +119,20 @@ async function handle(req: NextRequest) {
       );
       const data: Record<string, unknown> = { wedding: access.wedding };
       for (let i = 0; i < tables.length; i++) {
-        if (results[i].error) throw results[i].error;
+        if (results[i].error) {
+          if (
+            OPTIONAL_PROGRESS_TABLES.has(tables[i]) &&
+            isSchemaMissingError(results[i].error)
+          ) {
+            console.warn(
+              `Planner progress skipped missing table ${tables[i]}:`,
+              results[i].error.message || results[i].error,
+            );
+            data[tables[i]] = [];
+            continue;
+          }
+          throw results[i].error;
+        }
         if (results[i].data?.length > 5000)
           throw new Error(
             "This planner is too large for the overview. Use the individual planning tools.",

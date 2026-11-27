@@ -4,6 +4,7 @@ import {createHash} from 'crypto';
 import { sendEmail } from '@/lib/email';
 import { getCoupleNotificationReact, getGuestConfirmationReact } from '@/emails/quickweds-transactional';
 import { sanitizeEmail } from '@/lib/rate-limiter';
+import { normalizeExternalWebsiteUrl } from '@/lib/url-safety';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
 
 type RsvpNotificationInput = {
@@ -119,9 +120,10 @@ export async function sendRsvpNotifications(db: any, input: RsvpNotificationInpu
     // Never fall back to platform admin email — private guest RSVP PII belongs only to the couple.
 
     const rootDomain = getRootDomain();
-    const publicWeddingUrl = wedding.custom_domain
+    const externalUrl = typeof wedding.external_website_url === 'string' ? normalizeExternalWebsiteUrl(wedding.external_website_url) : null;
+    const publicWeddingUrl = externalUrl || (wedding.custom_domain
         ? `https://${wedding.custom_domain}`
-        : getWeddingPublicUrl(`https://${rootDomain}`, { ...wedding, id: weddingId });
+        : getWeddingPublicUrl(`https://${rootDomain}`, { ...wedding, id: weddingId }));
     const dashboardUrl = `https://${rootDomain}/dashboard/${weddingId}`;
     const checkInUrl = seatLookupToken ? `https://${rootDomain}/seat/${encodeURIComponent(seatLookupToken)}` : '';
     const confirmationImageUrl = getWeddingConfirmationImageUrl(wedding, rootDomain);

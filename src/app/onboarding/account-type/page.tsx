@@ -11,6 +11,7 @@ import {
     ClipboardList,
     Heart,
     ImagePlus,
+    Link2,
     Loader2,
     PartyPopper,
     Send,
@@ -31,6 +32,13 @@ import {
 type OnboardingStep = 'account' | 'goal' | 'ready';
 
 const coupleGoals = [
+    {
+        id: 'external',
+        title: 'We already have a website',
+        body: 'Keep your Canva, GHL, or other wedding website. Use QuickWeds for RSVPs and planning.',
+        icon: Link2,
+        accent: 'bg-primary/10 text-primary',
+    },
     {
         id: 'site',
         title: 'Create our wedding site',
@@ -102,6 +110,7 @@ function AccountTypeOnboardingContent() {
     const [step, setStep] = useState<OnboardingStep>('account');
     const nextPath = useMemo(() => getSafeAppPath(searchParams?.get('next'), ''), [searchParams]);
     const initialGoal = useMemo(() => {
+        if (nextPath.includes('goal=external')) return 'external';
         if (nextPath.includes('goal=guests')) return 'guests';
         if (nextPath.startsWith('/planner')) return 'planner';
         return 'site';
@@ -202,6 +211,7 @@ function AccountTypeOnboardingContent() {
 
     const getGoalDestination = () => {
         if (selectedGoal === 'site') return '/builder';
+        if (selectedGoal === 'external') return '/planner?goal=external';
         if (selectedGoal === 'guests') return '/planner?goal=guests';
         if (selectedGoal === 'planner') return '/planner';
         return '/builder';

@@ -1,6 +1,9 @@
 export interface Wedding {
     id: string;
     public_slug?: string;
+    planner_only?: boolean;
+    external_website_url?: string | null;
+    rsvp_page_enabled?: boolean;
     user_id: string;
     bride_name: string;
     groom_name: string;

@@ -55,7 +55,7 @@ export async function GET(req: Request) {
         const weddingIds = Array.from(new Set(invites.map((invite: any) => invite.wedding_id).filter(Boolean)));
         const { data: weddings, error: weddingError } = await (supabase as any)
             .from('weddings')
-            .select('id, bride_name, groom_name, wedding_date, venue_name, hero_image, template, is_premium, deleted_at')
+            .select('id, bride_name, groom_name, wedding_date, venue_name, hero_image, template, is_premium, planner_only, external_website_url, rsvp_page_enabled, deleted_at')
             .in('id', weddingIds);
 
         if (weddingError) {

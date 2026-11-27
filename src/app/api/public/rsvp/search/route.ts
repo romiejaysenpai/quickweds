@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createRateLimitMiddleware, getClientIP, sanitizeWeddingId } from '@/lib/rate-limit';
 import { escapeLikePattern, escapePostgrestQuotedValue } from '@/lib/sql-like';
-import { resolvePublicWeddingById } from '@/lib/public-wedding-lookup';
+import { resolveRsvpWeddingById } from '@/lib/rsvp-wedding';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const { wedding, error: weddingError } = await resolvePublicWeddingById(
+        const { wedding, error: weddingError } = await resolveRsvpWeddingById(
             db,
             weddingId,
             'id, rsvp_search_guest_list'

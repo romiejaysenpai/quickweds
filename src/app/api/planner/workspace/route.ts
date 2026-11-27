@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getRequestUser } from '@/lib/api-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import { normalizeExternalWebsiteUrl } from '@/lib/external-website';
 import { isKnownAdminEmail } from '@/lib/admin';
-const input = z.object({ requestId: z.string().uuid(), brideName: z.string().trim().min(1).max(100), groomName: z.string().trim().min(1).max(100) });
+const input = z.object({ requestId: z.string().uuid(), brideName: z.string().trim().min(1).max(100), groomName: z.string().trim().min(1).max(100), mode: z.enum(['external', 'private']).optional(), externalWebsiteUrl: z.string().trim().max(2048).optional() });
 export async function POST(req: NextRequest) {
     const { user } = await getRequestUser(req);
     if (!user) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 });
     const parsed = input.safeParse(await req.json().catch(() => null));
     if (!parsed.success) return NextResponse.json({ error: 'Add both names to start your workspace.' }, { status: 400 });
+    if (parsed.data.externalWebsiteUrl && !normalizeExternalWebsiteUrl(parsed.data.externalWebsiteUrl)) return NextResponse.json({ error: 'Enter a full https:// website address.' }, { status: 400 });
     try {
         const db = getSupabaseAdminClient() as any;
         const { data: profile, error: profileError } = await db.from('user_app_profiles').select('is_pro,payment_status,account_type').eq('user_id', user.id).maybeSingle();
@@ -19,6 +21,10 @@ export async function POST(req: NextRequest) {
         if (error) {
             if (String(error.message).includes('website_limit_reached')) return NextResponse.json({ error: 'Free accounts include 3 active workspaces. Open an existing wedding or upgrade Account Pro.' }, { status: 402 });
             throw error;
+        }
+        if (parsed.data.externalWebsiteUrl) {
+            const { error: connectionError } = await db.from('weddings').update({ external_website_url: normalizeExternalWebsiteUrl(parsed.data.externalWebsiteUrl) }).eq('id', data).eq('user_id', user.id).eq('planner_only', true);
+            if (connectionError) throw connectionError;
         }
         return NextResponse.json({ id: data });
     } catch (error) {

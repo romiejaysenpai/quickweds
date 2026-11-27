@@ -13,3 +13,12 @@ export function toSafeHttpUrl(raw?: string | null): string | null {
         return null;
     }
 }
+
+export function normalizeExternalWebsiteUrl(value: string): string | null {
+    if (/[\u0000-\u001f\u007f]/.test(value)) return null;
+    try {
+        const url = new URL(value.trim());
+        if (url.protocol !== 'https:' || url.username || url.password || !url.hostname.includes('.')) return null;
+        return url.toString();
+    } catch { return null; }
+}

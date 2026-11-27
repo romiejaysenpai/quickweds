@@ -167,7 +167,7 @@ export default function PlannerCheckInPage() {
                         </div>
                     </div>
 
-                    <form onSubmit={submitLookup} className="mt-6 grid gap-3 lg:grid-cols-[auto,1fr,auto]">
+                    <form onSubmit={submitLookup} className="mt-6 grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
                         <button
                             type="button"
                             onClick={() => setScannerOpen(true)}
@@ -177,7 +177,7 @@ export default function PlannerCheckInPage() {
                             <Camera className="h-4 w-4" />
                             Scan Camera
                         </button>
-                        <input value={lookup} onChange={(event) => setLookup(event.target.value)} placeholder="Scan/paste QR link, guest code, or search name" className="min-h-[48px] flex-1 rounded-2xl border border-border bg-white px-4 text-sm font-bold outline-none focus:border-primary" />
+                        <input value={lookup} onChange={(event) => setLookup(event.target.value)} placeholder="Scan/paste QR link, guest code, or search name" className="min-h-[48px] min-w-0 flex-1 rounded-2xl border border-border bg-white px-4 text-sm font-bold outline-none focus:border-primary" />
                         <button disabled={saving || !lookup.trim()} className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-bold text-white disabled:opacity-50">
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                             Check In

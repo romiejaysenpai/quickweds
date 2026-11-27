@@ -3,7 +3,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { rsvpSubmissionSchema } from '@/lib/validations';
 import { createRateLimitMiddleware, getClientIP, sanitizeEmail, sanitizeInput, sanitizeWeddingId } from '@/lib/rate-limit';
 import { sendRsvpNotifications } from '@/lib/rsvp-notifications';
-import { resolvePublicWeddingById } from '@/lib/public-wedding-lookup';
+import { resolveRsvpWeddingById } from '@/lib/rsvp-wedding';
 import { invalidateDashboardCounters } from '@/lib/dashboard-counters';
 import { makeGuestCode, makeSeatLookupToken } from '@/lib/seat-finder';
 import { isRsvpDeadlineExpired } from '@/lib/rsvp-deadline';
@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
 
     try {
         const db = getSupabaseAdminClient() as any;
-        const weddingSelect = 'id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, rsvp_allow_plus_ones, rsvp_allow_children, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
-        const { wedding, error: weddingError } = await resolvePublicWeddingById(db, weddingId, weddingSelect);
+        const weddingSelect = 'external_website_url, id, user_id, public_slug, bride_name, groom_name, wedding_date, wedding_time, venue_name, venue_address, maps_link, couple_email, contact_person, custom_domain, notify_on_rsvp, rsvp_deadline, rsvp_events, rsvp_allow_plus_ones, rsvp_allow_children, hero_image, couple_photo, gallery_images, invitation_image, reception_venue_photos';
+        const { wedding, error: weddingError } = await resolveRsvpWeddingById(db, weddingId, weddingSelect);
 
         if (weddingError) throw weddingError;
         if (!wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });

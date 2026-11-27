@@ -329,7 +329,7 @@ export default function WeddingDayModePage() {
                     <ActionCard href={`/dashboard/${weddingId}/wedding-day/coordinator-report`} icon={FileText} label="Handoff Report" description="Export or print the complete report." />
                 </section>
 
-                <form onSubmit={handleSubmit} className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr),minmax(0,1fr)]">
+                <form onSubmit={handleSubmit} className="mt-6 grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-2 [&>section]:min-w-0">
                     <section className="rounded-2xl border border-border bg-white p-5 shadow-lg shadow-primary/5 sm:p-6">
                         <div className="border-b border-border/70 pb-4">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Guest Access</p>
@@ -365,14 +365,14 @@ export default function WeddingDayModePage() {
                             )}
                             {settings.emergency_contacts.map((contact, index) => (
                                 <div key={index} className="rounded-2xl border border-border bg-neutral/25 p-3.5">
-                                    <div className="grid gap-2.5 sm:grid-cols-[1fr,1fr,auto]">
-                                        <input value={contact.name} onChange={(event) => updateContact(index, { name: event.target.value })} placeholder="Name" className="min-h-[44px] rounded-xl border border-border bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
-                                        <input value={contact.role} onChange={(event) => updateContact(index, { role: event.target.value })} placeholder="Role" className="min-h-[44px] rounded-xl border border-border bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
+                                    <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                                        <input value={contact.name} onChange={(event) => updateContact(index, { name: event.target.value })} placeholder="Name" className="min-h-[44px] w-full min-w-0 rounded-xl border border-border bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
+                                        <input value={contact.role} onChange={(event) => updateContact(index, { role: event.target.value })} placeholder="Role" className="min-h-[44px] w-full min-w-0 rounded-xl border border-border bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
                                         <button type="button" onClick={() => removeContact(index)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-rose-100 bg-white text-rose-500 transition hover:bg-rose-50" title="Remove">
                                             <Trash2 className="h-4 w-4" />
                                         </button>
                                     </div>
-                                    <input value={contact.phone} onChange={(event) => updateContact(index, { phone: event.target.value })} placeholder="Phone or radio channel" className="mt-2.5 min-h-[44px] w-full rounded-xl border border-border bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
+                                    <input value={contact.phone} onChange={(event) => updateContact(index, { phone: event.target.value })} placeholder="Phone or radio channel" className="mt-2.5 min-h-[44px] w-full min-w-0 rounded-xl border border-border bg-white px-3.5 text-sm font-semibold outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10" />
                                 </div>
                             ))}
                         </div>

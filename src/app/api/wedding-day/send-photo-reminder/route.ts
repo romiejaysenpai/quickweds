@@ -38,13 +38,29 @@ export async function POST(req: NextRequest) {
         if (limited.limited) return limited.response;
 
         const db = getSupabaseAdminClient() as any;
-        const access = await getWeddingAccess(db, user, weddingId, {
-            select: 'id, user_id, bride_name, groom_name, wedding_date, public_slug, custom_domain, is_premium, payment_status',
-            collaboratorRoles: ['partner', 'coordinator'],
-        });
+        let access;
+        try {
+            access = await getWeddingAccess(db, user, weddingId, {
+                select: 'id, user_id, bride_name, groom_name, wedding_date, public_slug, custom_domain, planner_only, is_premium, payment_status',
+                collaboratorRoles: ['partner', 'coordinator'],
+            });
+        } catch (accessError: any) {
+            const code = String(accessError?.code || '');
+            if (code !== '42703' && code !== 'PGRST204') throw accessError;
+            access = await getWeddingAccess(db, user, weddingId, {
+                select: 'id, user_id, bride_name, groom_name, wedding_date, public_slug, custom_domain, is_premium, payment_status',
+                collaboratorRoles: ['partner', 'coordinator'],
+            });
+        }
 
         if (!access.wedding) return NextResponse.json({ error: 'Wedding not found.' }, { status: 404 });
         if (!access.canManage) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        if (access.wedding.planner_only) {
+            return NextResponse.json(
+                { error: 'Guest photo portal reminders are only available for QuickWeds-hosted wedding websites.' },
+                { status: 409 }
+            );
+        }
 
         const { data: ownerProfile, error: profileError } = await db.from('user_app_profiles').select('is_pro,payment_status').eq('user_id', access.wedding.user_id).maybeSingle();
         if (profileError) throw profileError;

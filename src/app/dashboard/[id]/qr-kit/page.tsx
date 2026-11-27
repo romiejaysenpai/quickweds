@@ -7,6 +7,8 @@ import { ArrowLeft, Loader2, Printer, QrCode, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { getCachedSession } from '@/lib/session-cache';
 import { getWeddingPublicUrl } from '@/lib/wedding-slugs';
+import { normalizeExternalWebsiteUrl } from '@/lib/url-safety';
+import { getWeddingGuestUrl } from '@/lib/guest-links';
 import QrCodeActions from '@/components/dashboard/QrCodeActions';
 
 type QrType = {
@@ -18,6 +20,9 @@ type QrType = {
 };
 
 type WeddingSummary = {
+    planner_only?: boolean;
+    rsvp_page_enabled?: boolean;
+    external_website_url?: string | null;
     id?: string | null;
     public_slug?: string | null;
     custom_domain?: string | null;
@@ -101,6 +106,14 @@ export default function QrKitPage() {
 
     const qrCards = useMemo(() => {
         if (!wedding || typeof window === 'undefined') return [];
+        if (wedding.planner_only) {
+            const cards = [{ ...QR_TYPES[2], url: `${window.location.origin}/dashboard/${weddingId}/check-in` }];
+            const rsvp = getWeddingGuestUrl(window.location.origin, wedding);
+            if (rsvp) cards.unshift({ ...QR_TYPES[1], url: rsvp });
+            const external = wedding.external_website_url ? normalizeExternalWebsiteUrl(wedding.external_website_url) : null;
+            if (external) cards.unshift({ ...QR_TYPES[0], url: external });
+            return cards;
+        }
         const publicUrl = getWeddingPublicUrl(window.location.origin, wedding).replace(/\/+$/, '');
         const staffCheckInUrl = `${window.location.origin}/dashboard/${weddingId}/check-in`;
         return QR_TYPES.map((type) => {
@@ -152,6 +165,7 @@ export default function QrKitPage() {
                     <h1 className="mt-2 font-serif text-3xl font-bold sm:text-4xl">Event QR Codes</h1>
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">Download individual PNGs or print this page for signage. Staff check-in stays behind login.</p>
                     {error && <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">{error}</div>}
+                    {wedding?.planner_only && <p className="mt-4 text-sm leading-6 text-text-secondary">Only enabled guest links are shown. <Link href={`/dashboard/${weddingId}/connection`} className="font-bold text-primary underline">Manage your Canva website and RSVP connection</Link>.</p>}
                     {qrStatus && <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/5 p-4 text-sm font-semibold text-primary print:hidden">{qrStatus}</div>}
                 </section>
 

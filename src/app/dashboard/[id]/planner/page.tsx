@@ -655,9 +655,9 @@ export default function PlannerPage({ params }: { params: Promise<{ id: string }
                                 <ClipboardCheck className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                                 <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">Wedding Day</span>
                             </Link>
-                            <Link href={`/dashboard/${weddingId}/qr-kit?from=planner`} title="Open QR Kit" className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral hover:text-foreground">
+                            <Link href={wedding?.planner_only ? `/dashboard/${weddingId}/connection` : `/dashboard/${weddingId}/qr-kit?from=planner`} title={wedding?.planner_only ? "Website / RSVP connection" : "Open QR Kit"} className="relative flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-3 px-2 md:px-4 py-3 md:py-3 rounded-xl font-bold transition-all min-h-[44px] text-text-secondary hover:bg-neutral hover:text-foreground">
                                 <QrCode className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">QR Kit</span>
+                                <span className="text-[10px] sm:text-xs md:text-sm text-center md:text-left">{wedding?.planner_only ? 'Website / RSVP' : 'QR Kit'}</span>
                             </Link>
                         </div>
                     </div>
@@ -2208,7 +2208,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
         const isOverdue = !item.is_paid && Boolean(dueDate && dueDate < today);
 
         return (
-            <div key={item.id} className="grid gap-3 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(6rem,0.75fr))_44px] lg:items-center">
+            <div key={item.id} className="grid min-w-0 grid-cols-1 gap-3 px-3 py-3 sm:px-4 @min-[30rem]/budget-estimates:grid-cols-2 @min-[64rem]/budget-estimates:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(0,0.75fr))_auto] @min-[64rem]/budget-estimates:items-center [&>div]:min-w-0">
                 <div className="min-w-0">
                     <p className="font-serif text-sm font-bold text-foreground break-words">{item.item_name}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -2242,7 +2242,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                                     updateBudgetItem(item.id, { actual_cost: nextActual });
                                 }
                             }}
-                            className="h-10 w-full rounded-lg border border-border bg-white pl-6 pr-2 text-right font-mono text-sm font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                            className="icon-field-left-compact h-10 w-full min-w-0 rounded-lg border border-border bg-white pl-6 pr-2 text-right font-mono text-sm font-bold outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
                         />
                     </div>
                 </div>
@@ -2361,7 +2361,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
     };
 
     return (
-        <div className="overflow-x-hidden rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-2xl sm:p-6 md:rounded-3xl lg:p-8 print:p-0 print:border-none print:shadow-none">
+        <div className="@container/budget min-w-0 rounded-xl border border-border bg-white p-4 soft-shadow sm:rounded-2xl sm:p-6 md:rounded-3xl lg:p-8 print:p-0 print:border-none print:shadow-none">
             <div className="print:hidden">
                 <div className="mb-5 border-b border-border/50 pb-5">
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
@@ -2389,10 +2389,10 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                     </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(21rem,2fr)_repeat(3,minmax(9rem,1fr))]">
-                    <div className="rounded-2xl border border-primary/15 bg-neutral/40 p-3 sm:col-span-2 sm:p-4 lg:col-span-1">
+                <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 @min-[30rem]/budget:grid-cols-3 @min-[64rem]/budget:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
+                    <div className="@container/budget-total min-w-0 rounded-2xl border border-primary/15 bg-neutral/40 p-3 sm:p-4 @min-[30rem]/budget:col-span-3 @min-[64rem]/budget:col-span-1">
                         <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Whole Wedding Budget</p>
-                        <div className="mt-2 grid grid-cols-[minmax(8.25rem,0.95fr)_minmax(7.75rem,1fr)] gap-2 sm:grid-cols-[11rem_minmax(10rem,1fr)]">
+                        <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 @min-[22rem]/budget-total:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)]">
                             <div className="relative min-w-0">
                                 <button
                                     ref={currencyButtonRef}
@@ -2498,7 +2498,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                         </div>,
                         document.body,
                     )}
-                    <div className="rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
+                    <div className="min-w-0 rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Guests</p>
                         <div className="relative mt-2">
                             <Users className="absolute left-2 top-1/2 -translate-y-1/2 text-primary w-4 h-4 pointer-events-none" />
@@ -2515,15 +2515,15 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                                         saveWeddingBudget('guest_limit', val);
                                     }}
                                     aria-label="Guest target"
-                                    className="icon-field-left-compact h-12 w-full rounded-xl border border-border bg-white pl-8 pr-3 text-right font-mono text-lg font-bold tabular-nums text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    className="icon-field-left-compact h-12 w-full min-w-0 rounded-xl border border-border bg-white pl-8 pr-3 text-right font-mono text-lg font-bold tabular-nums text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                         </div>
                     </div>
-                    <div className="rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
+                    <div className="min-w-0 rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Tracked</p>
                         <p className={`mt-3 break-words font-mono text-xl font-black leading-tight tabular-nums ${totalCommitted > totalBudgetValue && totalBudgetValue > 0 ? 'text-red-500' : 'text-primary'}`}>{currencySymbol}{money(totalCommitted)}</p>
                     </div>
-                    <div className="rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
+                    <div className="min-w-0 rounded-2xl border border-border bg-neutral/40 p-3 sm:p-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Remaining</p>
                         <p className={`mt-3 break-words font-mono text-xl font-black leading-tight tabular-nums ${budgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                             {budgetRemaining < 0 ? '-' : ''}{currencySymbol}{money(Math.abs(budgetRemaining))}
@@ -2568,9 +2568,10 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                 )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-3 sm:gap-4 mb-4">
+            <div className="grid min-w-0 grid-cols-1 gap-3 sm:gap-4 mb-4 @min-[56rem]/budget:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
                 {/* Visual Usage */}
-                <div className="bg-neutral/30 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/50 grid gap-3 sm:grid-cols-[170px_1fr] sm:items-center shadow-inner">
+                <div className="@container/budget-chart min-w-0 bg-neutral/30 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-border/50 shadow-inner">
+                  <div className="grid min-w-0 gap-3 @min-[28rem]/budget-chart:grid-cols-[170px_minmax(0,1fr)] @min-[28rem]/budget-chart:items-center">
                     <div className="h-[150px] min-h-[1px] w-full min-w-[1px] sm:h-[170px]">
                         {hasBudgetActivity ? (
                             <LazyBudgetPieChart
@@ -2608,6 +2609,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                             ))}
                         </div>
                     </div>
+                  </div>
                 </div>
 
                 {/* Quick Info */}
@@ -2832,7 +2834,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                         <span>Paid {currencySymbol}{money(totalSpentFromVendors)}</span>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_1.35fr_minmax(9rem,0.8fr)_minmax(9rem,0.85fr)_minmax(8rem,auto)] xl:items-end">
+                <div className="grid min-w-0 grid-cols-1 gap-3 @min-[30rem]/budget:grid-cols-2 @min-[64rem]/budget:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)_minmax(0,0.8fr)_minmax(0,0.85fr)_auto] @min-[64rem]/budget:items-end">
                     <div className="min-w-0">
                         <label className="block text-[9px] uppercase font-black tracking-widest text-text-secondary mb-1 ml-1">Category</label>
                         <select 
@@ -2890,7 +2892,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 {/* Estimates from Budget Table */}
-                <div className="space-y-3">
+                <div className="@container/budget-estimates min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <h3 className="text-base sm:text-lg font-serif font-bold text-foreground flex items-center gap-2">
                             <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" /> Budget Estimates
@@ -2924,16 +2926,16 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                         <>
                             {/* Search, Filter & View Controls */}
                             <div className="space-y-3 rounded-2xl border border-border/60 bg-neutral/30 p-3 sm:p-4">
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="grid min-w-0 grid-cols-1 gap-2 @min-[44rem]/budget-estimates:grid-cols-[minmax(0,1fr)_auto] @min-[44rem]/budget-estimates:items-center">
                                     {/* Search Input */}
-                                    <div className="relative flex-1">
+                                    <div className="relative min-w-0 flex-1">
                                         <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-secondary" />
                                         <input
                                             type="text"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder="Search expense or category..."
-                                            className="h-9 w-full rounded-xl border border-border bg-white pl-8 pr-7 text-xs font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                                            className="icon-field-left-compact icon-field-right h-9 w-full min-w-0 rounded-xl border border-border bg-white pl-8 pr-7 text-xs font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
                                         />
                                         {searchQuery && (
                                             <button
@@ -2947,7 +2949,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                                     </div>
 
                                     {/* View Toggle (Categories vs Timeline) & Sort */}
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                                         <div className="inline-flex rounded-xl border border-border bg-white p-0.5 shadow-sm">
                                             <button
                                                 type="button"
@@ -2969,7 +2971,7 @@ function PlannerBudgets({ weddingId, initialBudgets, setBudgets, setWedding, wed
                                         <select
                                             value={sortBy}
                                             onChange={(e: any) => setSortBy(e.target.value)}
-                                            className="h-8 rounded-xl border border-border bg-white px-2.5 text-[11px] font-bold text-text-secondary outline-none focus:border-primary cursor-pointer"
+                                            className="h-8 max-w-full min-w-0 rounded-xl border border-border bg-white px-2.5 text-[11px] font-bold text-text-secondary outline-none focus:border-primary cursor-pointer"
                                         >
                                             <option value="category">Sort: Category</option>
                                             <option value="cost_desc">Cost: High → Low</option>
